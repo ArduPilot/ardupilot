@@ -18,20 +18,17 @@
  *   https://gpsd.gitlab.io/gpsd/NMEA.html#_mtw_mean_temperature_of_water
  */
 
-#include <AP_Vehicle/AP_Vehicle.h>
+#include "AP_Airspeed_NMEA.h"
+
+#if AP_AIRSPEED_NMEA_ENABLED
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
 
-#include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #define TIMEOUT_MS 2000
-
-extern const AP_HAL::HAL &hal;
-
-AP_Airspeed_NMEA::AP_Airspeed_NMEA(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
 
 bool AP_Airspeed_NMEA::init()
 {
@@ -69,8 +66,11 @@ bool AP_Airspeed_NMEA::get_airspeed(float &airspeed)
     uint16_t count = 0;
     int16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        char c = _uart->read();
-        if (decode(c)) {
+        int16_t c = _uart->read();
+        if (c==-1) {
+            return false;
+        }
+        if (decode(char(c))) {
             _last_update_ms = now;
             if (_sentence_type == TYPE_VHW) {
                 sum += _speed;
@@ -218,3 +218,5 @@ bool AP_Airspeed_NMEA::decode_latest_term()
 }
 
 #endif  // APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+
+#endif  // AP_AIRSPEED_NMEA_ENABLED

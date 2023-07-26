@@ -33,9 +33,9 @@ namespace AP_HAL {
     class OpticalFlow;
     class DSP;
 
-    class QSPIDevice;
-    class QSPIDeviceDriver;
-    class QSPIDeviceManager;
+    class WSPIDevice;
+    class WSPIDeviceDriver;
+    class WSPIDeviceManager;
 
     class CANIface;
     class CANFrame;
@@ -64,6 +64,8 @@ namespace AP_HAL {
         // Devices using AP_HAL::SPIDevice abstraction
         SPIDevice_Type              = -1,
     };
+
+    class SIMState;
 
     // Must be implemented by the concrete HALs.
     const HAL& get_HAL();

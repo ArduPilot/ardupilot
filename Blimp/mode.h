@@ -13,8 +13,8 @@ public:
 
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
-        MANUAL =        0,  // manual control
-        LAND =          1,  // currently just stops moving
+        LAND =          0,  // currently just stops moving
+        MANUAL =        1,  // manual control
         VELOCITY =      2,  // velocity mode
         LOITER =        3,  // loiter mode (position hold)
     };
@@ -23,8 +23,7 @@ public:
     Mode(void);
 
     // do not allow copying
-    Mode(const Mode &other) = delete;
-    Mode &operator=(const Mode&) = delete;
+    CLASS_NO_COPY(Mode);
 
     // child classes should override these methods
     virtual bool init(bool ignore_checks)
@@ -117,10 +116,6 @@ public:
     {
 
     public:
-
-        // yaw(): main product of AutoYaw; the heading:
-        float yaw();
-
         // mode(): current method of determining desired yaw:
         autopilot_yaw_mode mode() const
         {
@@ -130,8 +125,6 @@ public:
         void set_mode(autopilot_yaw_mode new_mode);
         autopilot_yaw_mode default_mode(bool rtl) const;
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds() const;
         void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
@@ -143,6 +136,12 @@ public:
                            bool relative_angle);
 
     private:
+
+        // yaw_cd(): main product of AutoYaw; the heading:
+        float yaw_cd();
+
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds();
 
         float look_ahead_yaw();
         float roi_yaw();
@@ -165,9 +164,6 @@ public:
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
 
-        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _rate_cds;
-
         // used to reduce update rate to 100hz:
         uint8_t roi_yaw_counter;
 
@@ -178,9 +174,7 @@ public:
     // these are candidates for moving into the Mode base
     // class.
     bool set_mode(Mode::Number mode, ModeReason reason);
-    void set_land_complete(bool b);
     GCS_Blimp &gcs();
-    void set_throttle_takeoff(void);
 
     // end pass-through functions
 };

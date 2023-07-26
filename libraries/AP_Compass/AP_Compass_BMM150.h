@@ -16,6 +16,10 @@
  */
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_BMM150_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -70,3 +74,5 @@ private:
     enum Rotation _rotation;
     bool _force_external;
 };
+
+#endif  // AP_COMPASS_BMM150_ENABLED

@@ -20,7 +20,7 @@ class AP_WindVane_NMEA : public AP_WindVane_Backend
 {
 public:
     // constructor
-    AP_WindVane_NMEA(AP_WindVane &frontend);
+    using AP_WindVane_Backend::AP_WindVane_Backend;
 
     // initialization
     void init(const AP_SerialManager& serial_manager) override;
@@ -41,9 +41,6 @@ private:
 
     // decode each term
     bool decode_latest_term();
-
-    // convert from char to hex value for checksum
-    int16_t char_to_hex(char a);
 
     // latest values read in
     float _speed_ms;

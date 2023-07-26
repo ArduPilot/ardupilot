@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
 
@@ -10,6 +14,7 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 {
 
 public:
+
     // constructor
     using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
@@ -45,3 +50,5 @@ private:
 
     MAV_DISTANCE_SENSOR sensor_type = MAV_DISTANCE_SENSOR_UNKNOWN;
 };
+
+#endif

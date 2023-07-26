@@ -78,6 +78,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
             ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
              (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
             // continue with mission in auto mode
+            gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
         } else {
             switch (g.fs_action) {
             case Failsafe_Action_None:
@@ -149,6 +150,6 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
 void Rover::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-    g2.afs.check(g2.fence.get_breaches() != 0, failsafe.last_valid_rc_ms);
+    g2.afs.check(failsafe.last_valid_rc_ms);
 }
 #endif

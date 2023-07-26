@@ -1,3 +1,5 @@
+#!/bin/sh
+
 cp ../../../modules/gsoap/gsoap/typemap.dat .
 wsdl2h -O4 -P -s -x -o onvif.h \
   http://www.onvif.org/onvif/ver10/device/wsdl/devicemgmt.wsdl \

@@ -25,9 +25,6 @@
 
 #define ADSB_CHAN_TIMEOUT_MS            15000
 
-#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
-#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
-
 
 extern const AP_HAL::HAL& hal;
 
@@ -46,8 +43,8 @@ void AP_ADSB_uAvionix_MAVLink::update()
     // send static configuration data to transceiver, every 5s
     if (_frontend.out_state.chan_last_ms > 0 && now - _frontend.out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-        // TODO: reset out_state.chan
         _frontend.out_state.chan = -1;
+        _frontend.out_state.chan_last_ms = 0; // if the time isn't reset we spam the message
         gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_frontend.out_state.chan >= 0 && !_frontend._my_loc.is_zero() && _frontend.out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + _frontend.out_state.chan);
@@ -72,7 +69,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
     const int32_t latitude = _frontend._my_loc.lat;
     const int32_t longitude = _frontend._my_loc.lng;
     const int32_t altGNSS = _frontend._my_loc.alt * 10; // convert cm to mm
-    const int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    const int16_t velVert = -1.0f * gps_velocity.z * 1E2; // convert m/s to cm/s
     const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
     const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
     const uint8_t fixType = gps.status(); // this lines up perfectly with our enum

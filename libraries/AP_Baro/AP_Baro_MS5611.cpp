@@ -14,11 +14,14 @@
  */
 #include "AP_Baro_MS5611.h"
 
+#if AP_BARO_MS56XX_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -92,6 +95,13 @@ bool AP_Baro_MS56XX::_init()
 
     _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
     hal.scheduler->delay(4);
+
+    /*
+      cope with vendors substituting a MS5607 for a MS5611 on Pixhawk1 'clone' boards
+     */
+    if (_ms56xx_type == BARO_MS5611 && _frontend.option_enabled(AP_Baro::Options::TreatMS5611AsMS5607)) {
+        _ms56xx_type = BARO_MS5607;
+    }
     
     const char *name = "MS5611";
     switch (_ms56xx_type) {
@@ -134,7 +144,23 @@ bool AP_Baro_MS56XX::_init()
 
     _instance = _frontend.register_sensor();
 
-    _dev->set_device_type(DEVTYPE_BARO_MS5611);
+    enum DevTypes devtype = DEVTYPE_BARO_MS5611;
+    switch (_ms56xx_type) {
+    case BARO_MS5607:
+        devtype = DEVTYPE_BARO_MS5607;
+        break;
+    case BARO_MS5611:
+        devtype = DEVTYPE_BARO_MS5611;
+        break;
+    case BARO_MS5837:
+        devtype = DEVTYPE_BARO_MS5837;
+        break;
+    case BARO_MS5637:
+        devtype = DEVTYPE_BARO_MS5637;
+        break;
+    }
+
+    _dev->set_device_type(devtype);
     set_bus_id(_instance, _dev->get_bus_id());
 
     if (_ms56xx_type == BARO_MS5837) {
@@ -490,3 +516,5 @@ void AP_Baro_MS56XX::_calculate_5837()
 
     _copy_to_frontend(_instance, (float)pressure, temperature);
 }
+
+#endif  // AP_BARO_MS56XX_ENABLED

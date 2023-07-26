@@ -2,6 +2,10 @@
 
 '''A helper script for bisecting common problems when working with ArduPilot
 
+When running bisections, you should
+
+export SITL_PANIC_EXIT=1
+
 Bisect between a commit which builds and one which doesn't,
 finding the first commit which broke the build with a
  specific failure:
@@ -65,7 +69,7 @@ import traceback
 def get_exception_stacktrace(e):
     if sys.version_info[0] >= 3:
         ret = "%s\n" % e
-        ret += ''.join(traceback.format_exception(etype=type(e),
+        ret += ''.join(traceback.format_exception(type(e),
                                                   value=e,
                                                   tb=e.__traceback__))
         return ret
@@ -115,7 +119,6 @@ class Bisect(object):
         '''run cmd_list, spewing and setting output in self'''
         self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list,
-                             bufsize=1,
                              stdin=None,
                              close_fds=True,
                              stdout=subprocess.PIPE,
@@ -124,8 +127,8 @@ class Bisect(object):
         while True:
             x = p.stdout.readline()
             if len(x) == 0:
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
+                waitpid_result = os.waitpid(p.pid, 0)
+                if waitpid_result:
                     break
                     # select not available on Windows... probably...
                 time.sleep(0.1)
@@ -135,12 +138,12 @@ class Bisect(object):
             self.program_output += x
             x = x.rstrip()
             print("%s: %s" % (prefix, x))
-        (_, status) = returncode
+        (pid, status) = waitpid_result
         if status != 0:
             self.progress("Process failed (%s)" %
-                          str(returncode))
+                          str(waitpid_result))
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                status, cmd_list)
 
     def build(self):
         '''run ArduCopter build.  May exit with skip or fail'''
@@ -170,6 +173,13 @@ class Bisect(object):
             else:
                 self.exit_fail()
 
+    def update_submodules(self):
+        try:
+            self.run_program("Update submodules",
+                             ["git", "submodule", "update", "--init", "--recursive"])
+        except subprocess.CalledProcessError:
+            self.exit_abort()
+
 
 class BisectBuild(Bisect):
 
@@ -177,6 +187,11 @@ class BisectBuild(Bisect):
         super(BisectBuild, self).__init__(opts)
 
     def run(self):
+        if self.opts.build_failure_string is None:
+            self.progress("--build-failure-string is required when using --build")
+            self.exit_abort()
+
+        self.update_submodules()
         self.build()  # may exit with skip or fail
         self.exit_pass()
 
@@ -211,11 +226,7 @@ class BisectCITest(Bisect):
         if self.opts.autotest_branch is None:
             raise ValueError("expected autotest branch")
 
-        try:
-            self.run_program("Update submodules",
-                             ["git", "submodule", "update", "--init", "--recursive"])
-        except subprocess.CalledProcessError:
-            self.exit_abort()
+        self.update_submodules()
 
         try:
             self.run_program("Check autotest directory out from master",
@@ -269,7 +280,7 @@ class BisectCITest(Bisect):
 
             if code == self.exit_fail_code():
                 with open("/tmp/fail-counts", "a") as f:
-                    print("Failed on run %u" % (i+1,), file=f)
+                    f.write("Failed on run %u\n" % (i+1,))
             if ignore:
                 self.progress("Ignoring this run")
                 continue
@@ -277,6 +288,8 @@ class BisectCITest(Bisect):
                 break
 
         self.git_reset()
+
+        self.progress("Exit code is %u" % code)
 
         sys.exit(code)
 
@@ -290,8 +303,7 @@ if __name__ == '__main__':
                       help="Help bisect a build failure")
     parser.add_option("--build-failure-string",
                       type='string',
-                      default=None,
-                      help="If supplied, must be present in"
+                      help="Must be present in"
                       "build output to count as a failure")
 
     group_autotest = optparse.OptionGroup(parser, "Run-AutoTest Options")

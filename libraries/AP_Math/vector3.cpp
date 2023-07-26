@@ -20,6 +20,8 @@
 
 #include "AP_Math.h"
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // rotate a vector by a standard rotation, attempting
 // to use the minimum number of floating point operations
@@ -75,7 +77,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp; z = -z;
         return;
     }
-    case ROTATION_ROLL_180_YAW_90: {
+    case ROTATION_ROLL_180_YAW_90:
+    case ROTATION_PITCH_180_YAW_270: {
         tmp = x; x = y; y = tmp; z = -z;
         return;
     }
@@ -95,7 +98,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp; z = -z;
         return;
     }
-    case ROTATION_ROLL_180_YAW_270: {
+    case ROTATION_ROLL_180_YAW_270: 
+    case ROTATION_PITCH_180_YAW_90: {
         tmp = x; x = -y; y = -tmp; z = -z;
         return;
     }
@@ -159,16 +163,6 @@ void Vector3<T>::rotate(enum Rotation rotation)
         tmp = z; z = x; x = -tmp;
         return;
     }
-    case ROTATION_PITCH_180_YAW_90: {
-        z = -z;
-        tmp = -x; x = -y; y = tmp;
-        return;
-    }
-    case ROTATION_PITCH_180_YAW_270: {
-        x = -x; z = -z;
-        tmp = x; x = y; y = -tmp;
-        return;
-    }
     case ROTATION_ROLL_90_PITCH_90: {
         tmp = z; z = y; y = -tmp;
         tmp = z; z = -x; x = tmp;
@@ -224,9 +218,9 @@ void Vector3<T>::rotate(enum Rotation rotation)
         T tmpx = x;
         T tmpy = y;
         T tmpz = z;
-        x =  0.143039f * tmpx +  0.368776f * tmpy + -0.918446f * tmpz;
-        y = -0.332133f * tmpx + -0.856289f * tmpy + -0.395546f * tmpz;
-        z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
+        x =  0.14303897231223747232853327204793 * tmpx +  0.36877648650320382639478111741482 * tmpy + -0.91844638134308709265241077446262 * tmpz;
+        y = -0.33213277779664740485543461545603 * tmpx + -0.85628942146641884303193137384369 * tmpy + -0.39554550256296522325882847326284 * tmpz;
+        z = -0.93232380121551217122544130688766 * tmpx +  0.36162457008209242248497616856184 * tmpy +  0.00000000000000002214311861220361 * tmpz;
         return;
     }
     case ROTATION_PITCH_315: {
@@ -243,19 +237,36 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_PITCH_7: {
-        const T sin_pitch = 0.12186934340514748f; // sinF(pitch);
-        const T cos_pitch = 0.992546151641322f; // cosF(pitch);
+        const T sin_pitch = 0.1218693434051474899781908334262; // sinF(pitch);
+        const T cos_pitch = 0.99254615164132198312785249072476; // cosF(pitch);
         T tmpx = x;
         T tmpz = z;
         x =  cos_pitch * tmpx + sin_pitch * tmpz;
         z = -sin_pitch * tmpx + cos_pitch * tmpz;
         return;
     }
-    case ROTATION_CUSTOM: 
-        // Error: caller must perform custom rotations via matrix multiplication
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    case ROTATION_ROLL_45: {
+        tmp = HALF_SQRT_2*(ftype)(y - z);
+        z   = HALF_SQRT_2*(ftype)(y + z);
+        y = tmp;
         return;
+    }
+    case ROTATION_ROLL_315: {
+        tmp = HALF_SQRT_2*(ftype)(y + z);
+        z   = HALF_SQRT_2*(ftype)(z - y);
+        y = tmp;
+        return;
+    }
+    case ROTATION_CUSTOM_1:
+    case ROTATION_CUSTOM_2:
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+        // Do not support custom rotations on Periph
+        AP::custom_rotations().rotate(rotation, *this);
+        return;
+#endif
     case ROTATION_MAX:
+    case ROTATION_CUSTOM_OLD:
+    case ROTATION_CUSTOM_END:
         break;
     }
     // rotation invalid
@@ -426,7 +437,7 @@ T Vector3<T>::angle(const Vector3<T> &v2) const
 
 // multiplication of transpose by a vector
 template <typename T>
-Vector3<T> Vector3<T>::operator *(const Matrix3<T> &m) const
+Vector3<T> Vector3<T>::row_times_mat(const Matrix3<T> &m) const
 {
     return Vector3<T>(*this * m.colx(),
                       *this * m.coly(),
@@ -498,7 +509,7 @@ Vector3<T> Vector3<T>::point_on_line_closest_to_other_point(const Vector3<T> &w1
     const T line_vec_len = line_vec.length();
     // protection against divide by zero
     if(::is_zero(line_vec_len)) {
-        return {0.0f, 0.0f, 0.0f};
+        return w1;
     }
 
     const T scale = 1/line_vec_len;
@@ -583,7 +594,7 @@ void Vector3<T>::segment_to_segment_closest_point(const Vector3<T>& seg1_start, 
         }
     }
     // finally do the division to get tc
-    tc = (fabsf(tN) < FLT_EPSILON ? 0.0 : tN / tD);
+    tc = (::is_zero(tN) ? 0.0 : tN / tD);
 
     // closest point on seg2
     closest_point = seg2_start + line2*tc;
@@ -599,7 +610,7 @@ bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vect
     T D = plane_normal * u;
     T N = -(plane_normal * w);
 
-    if (fabsf(D) < FLT_EPSILON) {
+    if (::is_zero(D)) {
         if (::is_zero(N)) {
             // segment lies in this plane
             return true;
@@ -621,5 +632,6 @@ bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vect
 template class Vector3<float>;
 template class Vector3<double>;
 
-// define needed ops for Vector3l
+// define needed ops for Vector3l, Vector3i as needed
 template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);
+template bool Vector3<int16_t>::operator ==(const Vector3<int16_t> &v) const;

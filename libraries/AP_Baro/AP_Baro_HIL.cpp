@@ -1,6 +1,7 @@
 #include "AP_Baro.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -66,7 +67,7 @@ void AP_Baro::SimpleUnderWaterAtmosphere(
     // \f$T(D)\f$ Temperature underwater at given temperature
     // \f$S\f$ Surface temperature at the surface
     // \f$T(D)\approx\frac{S}{1.8 \cdot 10^{-4} \cdot S \cdot T + 1}\f$
-    const float seaTempSurface = 15.0f; // Celsius
+    const float seaTempSurface = KELVIN_TO_C(SSL_AIR_TEMPERATURE); // Celsius
     const float S = seaTempSurface * 0.338f;
     theta = 1.0f / ((1.8e-4f) * S * (alt * 1e3f) + 1.0f);
 }

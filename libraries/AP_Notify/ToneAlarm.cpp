@@ -105,9 +105,7 @@ bool AP_ToneAlarm::init()
     if (pNotify->buzzer_enabled() == false) {
         return false;
     }
-#if ((defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM) && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || \
-    CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
-    CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_NOTIFY_TONEALARM_ENABLED
     if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
         return false;
     }
@@ -122,7 +120,7 @@ bool AP_ToneAlarm::init()
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
 
-#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if (AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_FATFS_ENABLED) && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     // if we don't have a SDcard then play a failure tone instead of
     // normal startup tone. This gives the user a chance to fix it
     // before they try to arm. We don't do this on Linux as Linux
@@ -449,26 +447,25 @@ void AP_ToneAlarm::update()
 }
 
 
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
 /*
  *  handle a PLAY_TUNE message
  */
-void AP_ToneAlarm::handle_play_tune(const mavlink_message_t &msg)
+void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
 
     mavlink_msg_play_tune_decode(&msg, &packet);
 
-    WITH_SEMAPHORE(_sem);
-
-    _mml_player.stop();
-
+    char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE] {};  // ~100 bytes
     strncpy(_tone_buf, packet.tune, MIN(sizeof(packet.tune), sizeof(_tone_buf)-1));
-    _tone_buf[sizeof(_tone_buf)-1] = 0;
     uint8_t len = strlen(_tone_buf);
     uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
     len2 = MIN((sizeof(_tone_buf)-1)-len, len2);
-    strncpy(_tone_buf+len, packet.tune2, len2);
+    memcpy(_tone_buf+len, packet.tune2, len2);  // not strncpy to avoid truncation warning
     _tone_buf[sizeof(_tone_buf)-1] = 0;
-    _mml_player.play(_tone_buf);
+
+    play_tune(_tone_buf);
 }
+#endif

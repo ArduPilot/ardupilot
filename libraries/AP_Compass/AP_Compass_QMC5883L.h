@@ -16,6 +16,10 @@
  */
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_QMC5883L_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -66,3 +70,5 @@ private:
     uint8_t _instance;
     bool _force_external:1;
 };
+
+#endif  // AP_COMPASS_QMC5883L_ENABLED

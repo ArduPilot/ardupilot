@@ -1,4 +1,5 @@
 -- height above terrain warning script
+-- luacheck: only 0
 
 -- min altitude above terrain, script will warn if lower than this
 local terrain_min_alt = 20

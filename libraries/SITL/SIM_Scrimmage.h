@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_SCRIMMAGE_ENABLED
+#define HAL_SIM_SCRIMMAGE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_SCRIMMAGE_ENABLED
+
 #include <string>
 
 #include <AP_HAL/utility/Socket.h>
@@ -78,8 +86,8 @@ private:
     uint64_t prev_timestamp_us;
     SocketAPM recv_sock;
     SocketAPM send_sock;
-
-    const char *frame_str;
 };
 
 } // namespace SITL
+
+#endif  // HAL_SIM_SCRIMMAGE_ENABLED

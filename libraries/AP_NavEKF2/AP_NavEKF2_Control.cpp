@@ -408,7 +408,7 @@ bool NavEKF2_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
-    return dal.get_compass() && dal.get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
+    return dal.compass().use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
 /*
@@ -519,6 +519,10 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
+    // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
+    filterStatus.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
+                                            (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
+                                            (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
 

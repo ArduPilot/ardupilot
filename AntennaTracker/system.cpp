@@ -27,14 +27,18 @@ void Tracker::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
+    // update_send so that if the first packet we receive happens to
+    // be an arm message we don't trigger an internal error when we
+    // try to initialise stream rates in the main loop.
+    gcs().update_send();
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     scripting.init();
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
@@ -55,10 +59,8 @@ void Tracker::init_ardupilot()
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
 
-    // set serial ports non-blocking
-    serial_manager.set_blocking_writes_all(false);
-
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // initialise servos
@@ -97,7 +99,7 @@ void Tracker::init_ardupilot()
 /*
   fetch HOME from EEPROM
 */
-bool Tracker::get_home_eeprom(struct Location &loc) const
+bool Tracker::get_home_eeprom(Location &loc) const
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
@@ -242,9 +244,11 @@ bool Tracker::should_log(uint32_t mask)
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#if AP_ADVANCEDFAILSAFE_ENABLED
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+#endif  // AP_ADVANCEDFAILSAFE_ENABLED
 #if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }

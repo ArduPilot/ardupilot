@@ -20,12 +20,17 @@
   timing for register reads and writes is critical
  */
 
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_PIXART_ENABLED
+
+#include "AP_OpticalFlow_Pixart.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <utility>
-#include "OpticalFlow.h"
-#include "AP_OpticalFlow_Pixart.h"
+#include "AP_OpticalFlow.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"
 #include <stdio.h>
 
@@ -80,14 +85,14 @@ extern const AP_HAL::HAL& hal;
 #define PIXART_SROM_CRC_RESULT 0xBEEF
 
 // constructor
-AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, OpticalFlow &_frontend) :
+AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, AP_OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend)
 {
     _dev = std::move(hal.spi->get_device(devname));
 }
 
 // detect the device
-AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, OpticalFlow &_frontend)
+AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, AP_OpticalFlow &_frontend)
 {
     AP_OpticalFlow_Pixart *sensor = new AP_OpticalFlow_Pixart(devname, _frontend);
     if (!sensor) {
@@ -107,9 +112,6 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
         return false;
     }
     WITH_SEMAPHORE(_dev->get_semaphore());
-
-    uint8_t id;
-    uint16_t crc;
 
     // power-up sequence
     reg_write(PIXART_REG_POWER_RST, 0x5A);
@@ -136,7 +138,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     if (model == PIXART_3900) {
         srom_download();
 
-        id = reg_read(PIXART_REG_SROM_ID);
+        const uint8_t id = reg_read(PIXART_REG_SROM_ID);
         if (id != srom_id) {
             debug("Pixart: bad SROM ID: 0x%02x\n", id);
             return false;
@@ -145,7 +147,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
         reg_write(PIXART_REG_SROM_EN, 0x15);
         hal.scheduler->delay(10);
 
-        crc = reg_read16u(PIXART_REG_DOUT_L);
+        const uint16_t crc = reg_read16u(PIXART_REG_DOUT_L);
         if (crc != 0xBEEF) {
             debug("Pixart: bad SROM CRC: 0x%04x\n", crc);
             return false;
@@ -285,7 +287,7 @@ void AP_OpticalFlow_Pixart::timer(void)
 
     uint32_t dt_us = last_burst_us - integral.last_frame_us;
     float dt = dt_us * 1.0e-6;
-    const Vector3f &gyro = AP::ahrs_navekf().get_gyro();
+    const Vector3f &gyro = AP::ahrs().get_gyro();
 
     {
         WITH_SEMAPHORE(_sem);
@@ -329,7 +331,7 @@ void AP_OpticalFlow_Pixart::update(void)
     }
     last_update_ms = now;
 
-    struct OpticalFlow::OpticalFlow_state state;
+    struct AP_OpticalFlow::OpticalFlow_state state;
     state.surface_quality = burst.squal;
 
     if (integral.sum_us > 0) {
@@ -360,3 +362,5 @@ void AP_OpticalFlow_Pixart::update(void)
     // copy results to front end
     _update_frontend(state);
 }
+
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED

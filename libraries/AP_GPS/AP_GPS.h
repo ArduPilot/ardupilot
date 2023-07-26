@@ -20,9 +20,11 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include "GPS_detect_state.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <SITL/SIM_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -31,21 +33,30 @@
 #ifndef GPS_MAX_RECEIVERS
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #endif
-#ifndef GPS_MAX_INSTANCES
+#if !defined(GPS_MAX_INSTANCES)
+#if GPS_MAX_RECEIVERS > 1
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
+#else
+#define GPS_MAX_INSTANCES 1
+#endif // GPS_MAX_RECEIVERS > 1
+#endif // GPS_MAX_INSTANCES
+
+#if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
+#error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
 #endif
+
 #if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
-// the number of GPS leap seconds
+// the number of GPS leap seconds - copied into SIM_GPS.cpp
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 #ifndef GPS_MOVING_BASELINE
-#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
 #endif
 
 #ifndef HAL_MSP_GPS_ENABLED
@@ -67,8 +78,6 @@ class AP_GPS
     friend class AP_GPS_MAV;
     friend class AP_GPS_MSP;
     friend class AP_GPS_ExternalAHRS;
-    friend class AP_GPS_MTK;
-    friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
     friend class AP_GPS_PX4;
@@ -78,14 +87,13 @@ class AP_GPS
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
-    friend class AP_GPS_UAVCAN;
+    friend class AP_GPS_DroneCAN;
 
 public:
     AP_GPS();
 
     /* Do not allow copies */
-    AP_GPS(const AP_GPS &other) = delete;
-    AP_GPS &operator=(const AP_GPS&) = delete;
+    CLASS_NO_COPY(AP_GPS);
 
     static AP_GPS *get_singleton() {
         return _singleton;
@@ -101,8 +109,8 @@ public:
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_AUTO  = 1,
         GPS_TYPE_UBLOX = 2,
-        GPS_TYPE_MTK   = 3,
-        GPS_TYPE_MTK19 = 4,
+        // GPS_TYPE_MTK   = 3,  // driver removed
+        // GPS_TYPE_MTK19 = 4,  // driver removed
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
@@ -119,17 +127,25 @@ public:
         GPS_TYPE_MSP = 19,
         GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
         GPS_TYPE_EXTERNAL_AHRS = 21,
+        GPS_TYPE_UAVCAN_RTK_BASE = 22,
+        GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+        GPS_TYPE_UNICORE_NMEA = 24,
+        GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
+#if HAL_SIM_GPS_ENABLED
+        GPS_TYPE_SITL = 100,
+#endif
     };
 
-    /// GPS status codes
+    /// GPS status codes.  These are kept aligned with MAVLink by
+    /// static_assert in AP_GPS.cpp
     enum GPS_Status {
-        NO_GPS = GPS_FIX_TYPE_NO_GPS,                     ///< No GPS connected/detected
-        NO_FIX = GPS_FIX_TYPE_NO_FIX,                     ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = GPS_FIX_TYPE_2D_FIX,              ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = GPS_FIX_TYPE_3D_FIX,              ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS,           ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT, ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED, ///< Receiving valid messages and 3D RTK Fixed
+        NO_GPS = 0,                  ///< No GPS connected/detected
+        NO_FIX = 1,                  ///< Receiving valid GPS messages but no lock
+        GPS_OK_FIX_2D = 2,           ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = 3,           ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = 4,      ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK_FLOAT = 5, ///< Receiving valid messages and 3D RTK Float
+        GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -153,6 +169,14 @@ public:
         GPS_ROLE_MB_ROVER,
     };
 
+    // GPS Covariance Types matching ROS2 sensor_msgs/msg/NavSatFix
+    enum class CovarianceType : uint8_t {
+        UNKNOWN = 0,  ///< The GPS does not support any accuracy metrics
+        APPROXIMATED = 1,  ///< The accuracy is approximated through metrics such as HDOP/VDOP
+        DIAGONAL_KNOWN = 2, ///< The diagonal (east, north, up) components of covariance are reported by the GPS
+        KNOWN = 3, ///< The full covariance array is reported by the GPS
+    };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -165,9 +189,10 @@ public:
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
-        float ground_speed;                 ///< ground speed in m/sec
+        float ground_speed;                 ///< ground speed in m/s
         float ground_course;                ///< ground course in degrees
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
+        uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
         bool  gps_yaw_configured;           ///< GPS is configured to provide yaw
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
@@ -183,8 +208,11 @@ public:
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
+        float undulation;                   //<height that WGS84 is above AMSL at the current location
+        bool have_undulation;               ///<do we have a value for the undulation
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
-        uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
+        uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
+        bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
 
         // all the following fields must only all be filled by RTK capable backend drivers
@@ -198,10 +226,17 @@ public:
         int32_t  rtk_baseline_z_mm;        ///< Current baseline in ECEF z or NED down component in mm
         uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
         int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
+        
+        // UBX Relative Position and Heading message information
+        float relPosHeading;               ///< Reported Heading in degrees
+        float relPosLength;                ///< Reported Position horizontal distance in meters
+        float relPosD;                     ///< Reported Vertical distance in meters
+        float accHeading;                  ///< Reported Heading Accuracy in degrees
+        uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
     };
 
     /// Startup initialisation.
-    void init(const AP_SerialManager& serial_manager);
+    void init(const class AP_SerialManager& serial_manager);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -265,7 +300,7 @@ public:
     }
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -273,6 +308,16 @@ public:
     }
     const Location &location() const {
         return location(primary_instance);
+    }
+
+    // get the difference between WGS84 and AMSL. A positive value means
+    // the AMSL height is higher than WGS84 ellipsoid height
+    bool get_undulation(uint8_t instance, float &undulation) const;
+
+    // get the difference between WGS84 and AMSL. A positive value means
+    // the AMSL height is higher than WGS84 ellipsoid height
+    bool get_undulation(float &undulation) const {
+        return get_undulation(primary_instance, undulation);
     }
 
     // report speed accuracy
@@ -290,6 +335,8 @@ public:
     bool vertical_accuracy(float &vacc) const {
         return vertical_accuracy(primary_instance, vacc);
     }
+
+    CovarianceType position_covariance(const uint8_t instance, Matrix3f& cov) const WARN_IF_UNUSED;
 
     // 3D velocity in NED format
     const Vector3f &velocity(uint8_t instance) const {
@@ -328,21 +375,9 @@ public:
     }
 
     // yaw in degrees if available
-    bool gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg) const {
-        if (!have_gps_yaw(instance)) {
-            return false;
-        }
-        yaw_deg = state[instance].gps_yaw;
-        if (state[instance].have_gps_yaw_accuracy) {
-            accuracy_deg = state[instance].gps_yaw_accuracy;
-        } else {
-            // fall back to 10 degrees as a generic default
-            accuracy_deg = 10;
-        }
-        return true;
-    }
-    bool gps_yaw_deg(float &yaw_deg, float &accuracy_deg) const {
-        return gps_yaw_deg(primary_instance, yaw_deg, accuracy_deg);
+    bool gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const;
+    bool gps_yaw_deg(float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const {
+        return gps_yaw_deg(primary_instance, yaw_deg, accuracy_deg, time_ms);
     }
 
     // number of locked satellites
@@ -464,6 +499,7 @@ public:
     bool blend_health_check() const;
 
     // handle sending of initialisation strings to the GPS - only used by backends
+    void send_blob_start(uint8_t instance);
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
@@ -473,8 +509,13 @@ public:
         return time_epoch_usec(primary_instance);
     }
 
+    uint64_t last_message_epoch_usec(uint8_t instance) const;
+    uint64_t last_message_epoch_usec() const {
+        return last_message_epoch_usec(primary_instance);
+    }
+
     // convert GPS week and millis to unix epoch in ms
-    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
+    static uint64_t istate_time_to_epoch_ms(uint16_t gps_week, uint32_t gps_ms);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -531,6 +572,14 @@ public:
         DoNotChange = 2,
     };
 
+#if GPS_MOVING_BASELINE
+    // methods used by UAVCAN GPS driver and AP_Periph for moving baseline
+    void inject_MBL_data(uint8_t* data, uint16_t length);
+    void get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading);
+    bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len);
+    void clear_RTCMV3();
+#endif // GPS_MOVING_BASELINE
+
 protected:
 
     // configuration parameters
@@ -555,7 +604,7 @@ protected:
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if GPS_MAX_RECEIVERS > 1 && HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
     AP_Int32 _node_id[GPS_MAX_RECEIVERS];
     AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
 #endif
@@ -564,6 +613,19 @@ protected:
 #endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
+
+    enum DriverOptions : int16_t {
+        UBX_MBUseUart2    = (1U << 0U),
+        SBF_UseBaseForYaw = (1U << 1U),
+        UBX_Use115200     = (1U << 2U),
+        UAVCAN_MBUseDedicatedBus  = (1 << 3U),
+        HeightEllipsoid   = (1U << 4),
+    };
+
+    // check if an option is set
+    bool option_set(const DriverOptions option) const {
+        return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
+    }
 
 private:
     static AP_GPS *_singleton;
@@ -612,8 +674,6 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-        struct MTK_detect_state mtk_detect_state;
-        struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
@@ -631,6 +691,10 @@ private:
     static const char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
+    // run detection step for one GPS instance. If this finds a GPS then it
+    // will return it - otherwise nullptr
+    AP_GPS_Backend *_detect_instance(uint8_t instance);
+
     void update_instance(uint8_t instance);
 
     /*
@@ -652,6 +716,11 @@ private:
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
+
+    struct {
+        uint16_t fragments_used;
+        uint16_t fragments_discarded;
+    } rtcm_stats;
 
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
@@ -679,8 +748,10 @@ private:
 
     bool needs_uart(GPS_Type type) const;
 
+#if GPS_MAX_RECEIVERS > 1
     /// Update primary instance
     void update_primary(void);
+#endif
 
     // helper function for mavlink gps yaw
     uint16_t gps_yaw_cdeg(uint8_t instance) const;
@@ -688,7 +759,8 @@ private:
     // Auto configure types
     enum GPS_AUTO_CONFIG {
         GPS_AUTO_CONFIG_DISABLE = 0,
-        GPS_AUTO_CONFIG_ENABLE  = 1
+        GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY  = 1,
+        GPS_AUTO_CONFIG_ENABLE_ALL = 2,
     };
 
     enum class GPSAutoSwitch {

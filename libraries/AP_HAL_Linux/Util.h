@@ -37,9 +37,11 @@ public:
     void commandline_arguments(uint8_t &argc, char * const *&argv) override;
 
     /*
-      set system clock in UTC microseconds
+      get/set system clock in UTC microseconds
      */
     void set_hw_rtc(uint64_t time_utc_usec) override;
+    uint64_t get_hw_rtc() const override;
+
     const char *get_custom_log_directory() const override final { return custom_log_directory; }
     const char *get_custom_terrain_directory() const override final { return custom_terrain_directory; }
     const char *get_custom_storage_directory() const override final { return custom_storage_directory; }
@@ -58,19 +60,22 @@ public:
         return custom_defaults;
     }
 
+    /* Parse cpu set in the form 0; 0,2; or 0-2 */
+    bool parse_cpu_set(const char *s, cpu_set_t *cpu_set) const;
+
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;
     void set_imu_target_temp(int8_t *target) override;
 
     uint32_t available_memory(void) override;
 
-    bool get_system_id(char buf[40]) override;
+    bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
 #ifdef ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *h, void *ptr, size_t new_size) override;
+    virtual void *heap_realloc(void *h, void *ptr, size_t old_size, size_t new_size) override;
 #endif // ENABLE_HEAP
     
     /*

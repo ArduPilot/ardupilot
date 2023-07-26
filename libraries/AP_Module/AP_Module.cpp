@@ -135,7 +135,7 @@ void AP_Module::call_hook_setup_complete(void)
 /*
   call any AHRS_update hooks
 */
-void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
+void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
 {
 #if AP_MODULE_SUPPORTED
     if (hooks[HOOK_AHRS_UPDATE] == nullptr) {
@@ -177,7 +177,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
         state.origin.altitude = loc.alt*0.01f;
     }
 
-    if (ahrs.get_position(loc)) {
+    if (ahrs.get_location(loc)) {
         state.position.available = true;
         state.position.latitude = loc.lat;
         state.position.longitude = loc.lng;

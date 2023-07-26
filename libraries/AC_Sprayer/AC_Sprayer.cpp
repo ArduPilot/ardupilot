@@ -86,16 +86,16 @@ AC_Sprayer *AC_Sprayer::get_singleton()
     return _singleton;
 }
 
-void AC_Sprayer::run(const bool true_false)
+void AC_Sprayer::run(const bool activate)
 {
     // return immediately if no change
-    if (true_false == _flags.running) {
+    if (_flags.running == activate) {
         return;
     }
 
     // set flag indicate whether spraying is permitted:
     // do not allow running to be set to true if we are currently not enabled
-    _flags.running = true_false && _enabled;
+    _flags.running = _enabled && activate;
 
     // turn off the pump and spinner servos if necessary
     if (!_flags.running) {
@@ -132,7 +132,8 @@ void AC_Sprayer::update()
         // velocity will already be zero but this avoids a coverity warning
         velocity.zero();
     }
-    float ground_speed = norm(velocity.x * 100.0f, velocity.y * 100.0f);
+
+    float ground_speed = velocity.xy().length() * 100.0;
 
     // get the current time
     const uint32_t now = AP_HAL::millis();

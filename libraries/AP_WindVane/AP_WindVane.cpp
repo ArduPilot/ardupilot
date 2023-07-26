@@ -23,7 +23,13 @@
 #include "AP_WindVane_SITL.h"
 #include "AP_WindVane_NMEA.h"
 
+#include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
@@ -40,13 +46,13 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: DIR_PIN
     // @DisplayName: Wind vane analog voltage pin for direction
     // @Description: Analog input pin to read as wind vane direction
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("DIR_PIN", 3, AP_WindVane, _dir_analog_pin, WINDVANE_DEFAULT_PIN),
 
     // @Param: DIR_V_MIN
     // @DisplayName: Wind vane voltage minimum
-    // @Description: Minimum voltage supplied by analog wind vane
+    // @Description: Minimum voltage supplied by analog wind vane. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -55,7 +61,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: DIR_V_MAX
     // @DisplayName: Wind vane voltage maximum
-    // @Description: Maximum voltage supplied by analog wind vane
+    // @Description: Maximum voltage supplied by analog wind vane. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -114,14 +120,14 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: SPEED_PIN
     // @DisplayName: Wind vane speed sensor analog pin
     // @Description: Wind speed analog speed input pin for Modern Devices Wind Sensor rev. p
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("SPEED_PIN", 12, AP_WindVane, _speed_sensor_speed_pin,  WINDSPEED_DEFAULT_SPEED_PIN),
 
     // @Param: TEMP_PIN
     // @DisplayName: Wind vane speed sensor analog temp pin
     // @Description: Wind speed sensor analog temp input pin for Modern Devices Wind Sensor rev. p, set to -1 to diasble temp readings
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("TEMP_PIN", 13, AP_WindVane, _speed_sensor_temp_pin,  WINDSPEED_DEFAULT_TEMP_PIN),
 
@@ -203,12 +209,12 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
         case WindVaneType::WINDVANE_ANALOG_PIN:
             _direction_driver = new AP_WindVane_Analog(*this);
             break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case WindVaneType::WINDVANE_SITL_TRUE:
         case WindVaneType::WINDVANE_SITL_APPARENT:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             _direction_driver = new AP_WindVane_SITL(*this);
-#endif
             break;
+#endif
         case WindVaneType::WINDVANE_NMEA:
             _direction_driver = new AP_WindVane_NMEA(*this);
             _direction_driver->init(serial_manager);
@@ -225,17 +231,17 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
         case Speed_type::WINDVANE_WIND_SENSOR_REV_P:
             _speed_driver = new AP_WindVane_ModernDevice(*this);
             break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case Speed_type::WINDSPEED_SITL_TRUE:
         case Speed_type::WINDSPEED_SITL_APPARENT:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             // single driver does both speed and direction
             if (_direction_type != _speed_sensor_type) {
                 _speed_driver = new AP_WindVane_SITL(*this);
             } else {
                 _speed_driver = _direction_driver;
             }
-#endif
             break;
+#endif
         case Speed_type::WINDSPEED_NMEA:
             // single driver does both speed and direction
             if (_direction_type != WindVaneType::WINDVANE_NMEA) {
@@ -269,11 +275,11 @@ void AP_WindVane::update()
         } else if (_calibration == 2 && have_speed) {
             _speed_driver->calibrate();
         } else if (_calibration != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "WindVane: driver not found");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: driver not found");
             _calibration.set_and_save(0);
         }
     } else if (_calibration != 0) {
-        gcs().send_text(MAV_SEVERITY_INFO, "WindVane: disarm for cal");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: disarm for cal");
         _calibration.set_and_save(0);
     }
 
@@ -357,7 +363,7 @@ void AP_WindVane::update()
 // @Field: SpdRaw: raw wind speed direct from sensor
 // @Field: SpdApp: Apparent wind Speed
 // @Field: SpdTru: True wind speed
-    AP::logger().Write("WIND", "TimeUS,DrRaw,DrApp,DrTru,SpdRaw,SpdApp,SpdTru",
+    AP::logger().WriteStreaming("WIND", "TimeUS,DrRaw,DrApp,DrTru,SpdRaw,SpdApp,SpdTru",
                         "sddhnnn", "F000000", "Qffffff",
                         AP_HAL::micros64(),
                         degrees(_direction_apparent_raw),
@@ -369,12 +375,16 @@ void AP_WindVane::update()
 
 }
 
+void AP_WindVane::record_home_heading()
+{
+    _home_heading = AP::ahrs().yaw;
+}
 
 // to start direction calibration from mavlink or other
 bool AP_WindVane::start_direction_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 1;
+        _calibration.set(1);
         return true;
     }
     return false;
@@ -384,7 +394,7 @@ bool AP_WindVane::start_direction_calibration()
 bool AP_WindVane::start_speed_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 2;
+        _calibration.set(2);
         return true;
     }
     return false;

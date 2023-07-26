@@ -37,16 +37,40 @@
 // include generated config
 #include "hwdef.h"
 
+#ifdef HAL_CHIBIOS_ENABLE_ASSERTS
+#define STM32_DMA_ERROR_HOOK(devp) osalSysHalt("DMA failure")
+#else
+#define STM32_DMA_ERROR_HOOK(devp) do {} while(0)
+#endif
+
+#if !defined(HAL_XIP_ENABLED)
+#define HAL_XIP_ENABLED                     FALSE
+#endif
+
 #if defined(STM32F1)
 #include "stm32f1_mcuconf.h"
 #elif defined(STM32F3)
 #include "stm32f3_mcuconf.h"
 #elif defined(STM32F4) || defined(STM32F7)
 #include "stm32f47_mcuconf.h"
+#elif defined(STM32H730xx)
+#include "stm32h7_type2_mcuconf.h"
 #elif defined(STM32H7)
 #include "stm32h7_mcuconf.h"
 #elif defined(STM32G4)
 #include "stm32g4_mcuconf.h"
+#elif defined(STM32L4PLUS)
+#include "stm32l4+_mcuconf.h"
+#elif defined(STM32L4)
+#include "stm32l4_mcuconf.h"
 #else
 #error "Unsupported MCU"
+#endif
+
+#ifndef STM32_SDC_USE_SDMMC1
+#define STM32_SDC_USE_SDMMC1                FALSE
+#endif
+
+#ifndef STM32_SDC_USE_SDMMC2
+#define STM32_SDC_USE_SDMMC2                FALSE
 #endif

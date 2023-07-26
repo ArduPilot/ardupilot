@@ -20,6 +20,10 @@
    - 2016.10.23: SRXL variant V1 sucessfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SRXL_ENABLED
+
 #include "AP_RCProtocol_SRXL.h"
 #include <AP_Math/crc.h>
 #include <AP_Math/AP_Math.h>
@@ -281,3 +285,5 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
     }
     _process_byte(AP_HAL::micros(), byte);
 }
+
+#endif  // AP_RCPROTOCOL_SRXL_ENABLED

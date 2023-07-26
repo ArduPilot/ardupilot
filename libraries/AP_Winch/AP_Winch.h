@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Winch_config.h"
+
+#if AP_WINCH_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
@@ -31,8 +35,7 @@ public:
     AP_Winch();
 
     // Do not allow copies
-    AP_Winch(const AP_Winch &other) = delete;
-    AP_Winch &operator=(const AP_Winch&) = delete;
+    CLASS_NO_COPY(AP_Winch);
 
     // indicate whether this module is enabled
     bool enabled() const;
@@ -59,7 +62,7 @@ public:
     float get_rate_max() const { return MAX(config.rate_max, 0.0f); }
 
     // send status to ground station
-    void send_status(const GCS_MAVLINK &channel);
+    void send_status(const class GCS_MAVLINK &channel);
 
     // write log
     void write_log();
@@ -104,3 +107,5 @@ private:
 namespace AP {
     AP_Winch *winch();
 };
+
+#endif  // AP_WINCH_ENABLED

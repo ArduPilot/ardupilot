@@ -29,8 +29,8 @@ PB5 LED_BLUE OUTPUT LOW GPIO(0)
 # buzzer
 PC9 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -71,11 +71,11 @@ define HAL_BATT_CURR_SCALE 17.0
 SERIAL_ORDER OTG1 USART6 USART1 UART4 UART5 USART3
 
 # rcinput is PB11
-PB11 TIM2_CH4 TIM2 RCININT FLOAT LOW
+PB11 TIM2_CH4 TIM2 RCININT PULLDOWN LOW
 PB10 USART3_TX USART3
 
-# SBUS inversion control pin, active low
-PB15 SBUS_INVERT OUTPUT LOW
+# SBUS inversion control pin, active high
+PB15 USART3_RXINV OUTPUT LOW GPIO(78) POL(1)
 
 # for FrSky S.PORT. Has builtin inverters and diode to combine
 # RX and TX onto the one pin
@@ -83,7 +83,7 @@ PA9 USART1_TX USART1
 PA10 USART1_RX USART1
 
 # default Serial2 to FrSky telemetry
-define HAL_SERIAL2_PROTOCOL 10
+define DEFAULT_SERIAL2_PROTOCOL 10
 
 # USART6, telem1, SERIAL1
 PC6 USART6_TX USART6
@@ -117,7 +117,7 @@ PC8 TIM8_CH3 TIM8 PWM(5) GPIO(54) # LED strip
 define HAL_NEOPIXEL_COUNT 8
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -125,7 +125,6 @@ FLASH_RESERVE_START_KB 64
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -140,14 +139,18 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one baro
 BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-# 8 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
+
+define DEFAULT_NTF_LED_TYPES 256

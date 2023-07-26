@@ -14,6 +14,14 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_BUTTON_ENABLED
+#define HAL_BUTTON_ENABLED 1
+#endif
+
+#if HAL_BUTTON_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -29,8 +37,7 @@ public:
     AP_Button(void);
 
     /* Do not allow copies */
-    AP_Button(const AP_Button &other) = delete;
-    AP_Button &operator=(const AP_Button&) = delete;
+    CLASS_NO_COPY(AP_Button);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -45,6 +52,9 @@ public:
     // used by scripting
     bool get_button_state(uint8_t number);
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+    
 private:
 
     static AP_Button *_singleton;
@@ -73,6 +83,8 @@ private:
 
     // current state of PWM pins:
     uint8_t pwm_state;
+    uint8_t tentative_pwm_state;  // for debouncing
+    uint64_t pwm_start_debounce_ms;
 
     // mask indicating which action was most recent taken for pins
     uint8_t state_actioned_mask;
@@ -122,3 +134,5 @@ private:
 namespace AP {
     AP_Button &button();
 };
+
+#endif

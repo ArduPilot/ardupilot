@@ -46,10 +46,10 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Quad::init_outputs()
+void AP_MotorsHeli_Quad::init_outputs()
 {
     if (initialised_ok()) {
-        return true;
+        return;
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
@@ -60,60 +60,14 @@ bool AP_MotorsHeli_Quad::init_outputs()
     // set rotor servo range
     _main_rotor.init_servo();
 
-    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
-        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
-    } else {
-        _main_rotor.set_ext_gov_arot_bail(0);
-    }
-
-    set_initialised_ok(true);
-
-    return true;
-}
-
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // exit immediately if not armed
-    if (!armed()) {
-        return;
-    }
-
-    // output to motors and servos
-    switch (motor_seq) {
-    case 1 ... AP_MOTORS_HELI_QUAD_NUM_MOTORS:
-        rc_write(AP_MOTORS_MOT_1 + (motor_seq-1), pwm);
-        break;
-    case AP_MOTORS_HELI_QUAD_NUM_MOTORS+1:
-        // main rotor
-        rc_write(AP_MOTORS_HELI_RSC, pwm);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-}
-
-// set_desired_rotor_speed
-void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
-{
-    _main_rotor.set_desired_speed(desired_speed);
-}
-
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
-{
-    _main_rotor.set_rotor_rpm(rotor_rpm);
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
 }
 
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
     // Set rsc mode specific parameters
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
         _main_rotor.set_throttle_curve();
     }
     // keeps user from changing RSC mode while armed
@@ -128,13 +82,12 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _heliflags.save_rsc_mode = false;
     }
 
-    // set bailout ramp time
-    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-
-    // allow use of external governor autorotation bailout window on main rotor
-    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
-        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
+    if (_heliflags.in_autorotation) {
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+        // set bailout ramp time
+        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+    }else {
+        _main_rotor.set_autorotation_flag(false);
     }
 }
 
@@ -143,14 +96,24 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 {
     // range check collective min, max and mid
     if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+        _collective_min.set(AP_MOTORS_HELI_COLLECTIVE_MIN);
+        _collective_max.set(AP_MOTORS_HELI_COLLECTIVE_MAX);
     }
 
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
+    _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
+
+    if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
+        // calculate collective zero thrust point as a number from 0 to 1
+        _collective_zero_thrust_pct = (_collective_zero_thrust_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+
+        // calculate collective land min point as a number from 0 to 1
+        _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+    } else {
+        _collective_zero_thrust_pct = 0.0f;
+        _collective_land_min_pct = 0.0f;
+    }
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -182,18 +145,6 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
     }
 }
 
-// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsHeli_Quad::get_motor_mask()
-{
-    uint16_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    mask |= 1U << AP_MOTORS_HELI_RSC;
-    return mask;
-}
-
 // update_motor_controls - sends commands to motor controllers
 void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 {
@@ -210,6 +161,8 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 
     // Check if rotors are run-up
     _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    // Check if rotors are spooled down
+    _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
 
 //
@@ -238,16 +191,16 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_mid_pct) {
-        collective_out = _collective_mid_pct;
+    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct) {
+        collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
     }
 
-    // updates below mid collective flag
-    if (collective_out <= _collective_mid_pct) {
-        _heliflags.below_mid_collective = true;
+    // updates below land min collective flag
+    if (collective_out <= _collective_land_min_pct) {
+        _heliflags.below_land_min_coll = true;
     } else {
-        _heliflags.below_mid_collective = false;
+        _heliflags.below_land_min_coll = false;
     }
 
     // updates takeoff collective flag based on 50% hover collective
@@ -263,7 +216,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     _main_rotor.set_collective(fabsf(collective_out));
 
     // rescale collective for overhead calc
-    collective_out -= _collective_mid_pct;
+    collective_out -= _collective_zero_thrust_pct;
 
     // reserve some collective for attitude control
     collective_out *= collective_range;
@@ -304,7 +257,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         // scale output to 0 to 1
-        _out[i] += _collective_mid_pct;
+        _out[i] += _collective_zero_thrust_pct;
         // scale output to -1 to 1 for servo output
         _out[i] = _out[i] * 2.0f - 1.0f;
     }

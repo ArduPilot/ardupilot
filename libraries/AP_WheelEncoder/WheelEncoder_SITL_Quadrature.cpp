@@ -22,14 +22,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_WheelEncoder_SITL_Qaudrature::AP_WheelEncoder_SITL_Qaudrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state) :
-    AP_WheelEncoder_Backend(frontend, instance, state),
-    _sitl(AP::sitl())
+void AP_WheelEncoder_SITL_Quadrature::update(void)
 {
-}
+    const auto *_sitl = AP::sitl();
 
-void AP_WheelEncoder_SITL_Qaudrature::update(void)
-{
     // earth frame velocity of vehicle in vector form
     const Vector2f ef_velocity(_sitl->state.speedN, _sitl->state.speedE);
     // store current heading

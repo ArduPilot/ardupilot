@@ -21,12 +21,7 @@
   Tom Pittenger, November 2015
 */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_ADSB_ENABLED
-#define HAL_ADSB_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
+#include "AP_ADSB_config.h"
 
 #if HAL_ADSB_ENABLED
 #include <AP_Common/AP_Common.h>
@@ -36,20 +31,26 @@
 
 #define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
 
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_OUT        (1 << 2)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_OUT     (1 << 3)
+
 class AP_ADSB_Backend;
 
 class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
     friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
+    friend class AP_ADSB_Sagetech_MXS;
 
     // constructor
     AP_ADSB();
 
     /* Do not allow copies */
-    AP_ADSB(const AP_ADSB &other) = delete;
-    AP_ADSB &operator=(const AP_ADSB&) = delete;
+    CLASS_NO_COPY(AP_ADSB);
 
     // get singleton instance
     static AP_ADSB *get_singleton(void) {
@@ -61,11 +62,21 @@ public:
         None                = 0,
         uAvionix_MAVLink    = 1,
         Sagetech            = 2,
+        uAvionix_UCP        = 3,
+        Sagetech_MXS        = 4,
     };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
+    };
+
+    // enum for adsb optional features
+    enum class AdsbOption {
+        Ping200X_Send_GPS               = (1<<0),
+        Squawk_7400_FS_RC               = (1<<1),
+        Squawk_7400_FS_GCS              = (1<<2),
+        SagteTech_MXS_External_Config   = (1<<3),
     };
 
     // for holding parameters
@@ -128,15 +139,32 @@ public:
     // mavlink message handler
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
+    void send_adsb_out_status(const mavlink_channel_t chan) const;
+
     // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
 
     uint32_t get_special_ICAO_target() const { return (uint32_t)_special_ICAO_target; };
-    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target = (int32_t)new_icao_target; };
+    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target.set((int32_t)new_icao_target); };
     bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
 
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
+
+    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
+    // stored on a GCS as a string field in different format, but then transmitted
+    // over mavlink as a float which is always a decimal.
+    static uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
+
+    // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
+    // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+    bool ident_start() {
+        if (!healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
+            return false;
+        }
+        out_state.ctrl.identActive = true;
+        return true;
+    }
 
     AP_ADSB::Type get_type(uint8_t instance) const;
 
@@ -168,6 +196,9 @@ private:
 
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
+
+    // control ADSB-out transcievers
+    void handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet);
 
     // mavlink handler
     void handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet);
@@ -228,12 +259,30 @@ private:
             bool        was_set_externally;
         } cfg;
 
+        struct {
+            bool                          baroCrossChecked;
+            uint8_t                       airGroundState;
+            bool                          identActive;
+            bool                          modeAEnabled;
+            bool                          modeCEnabled;
+            bool                          modeSEnabled;
+            bool                          es1090TxEnabled;
+            int32_t                       externalBaroAltitude_mm;
+            uint16_t                      squawkCode;
+            uint8_t                       emergencyState;
+            uint8_t                       callsign[8];
+            bool                          x_bit;
+        } ctrl;
+
+        mavlink_uavionix_adsb_out_status_t tx_status;
     } out_state;
 
     uint8_t detected_num_instances;
 
     // special ICAO of interest that ignored filters when != 0
     AP_Int32 _special_ICAO_target;
+
+    AP_Int32 _options;
 
     static const uint8_t _max_samples = 30;
     ObjectBuffer<adsb_vehicle_t> _samples{_max_samples};

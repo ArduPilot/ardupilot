@@ -1,5 +1,6 @@
 -- demo of waving paw of opendog
---
+-- luacheck: only 0
+
 local flipflop = true
 
 pwm = { 1500, 1500, 2000,

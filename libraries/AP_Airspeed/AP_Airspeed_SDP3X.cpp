@@ -19,6 +19,9 @@
   with thanks to https://github.com/PX4/Firmware/blob/master/src/drivers/sdp3x_airspeed
  */
 #include "AP_Airspeed_SDP3X.h"
+
+#if AP_AIRSPEED_SDP3X_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Baro/AP_Baro.h>
 
@@ -38,11 +41,6 @@
 #define SDP3X_SCALE_PRESSURE_SDP33	20
 
 extern const AP_HAL::HAL &hal;
-
-AP_Airspeed_SDP3X::AP_Airspeed_SDP3X(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
 
 /*
   send a 16 bit command code
@@ -115,7 +113,7 @@ bool AP_Airspeed_SDP3X::init()
 
         found = true;
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         char c = 'X';
         switch (_scale) {
         case SDP3X_SCALE_PRESSURE_SDP31:
@@ -223,16 +221,25 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 
     AP_Baro *baro = AP_Baro::get_singleton();
 
-    if (baro == nullptr) {
-        return press;
+    float baro_pressure;
+    if (baro == nullptr || baro->num_instances() == 0) {
+        // with no baro assume sea level
+        baro_pressure = SSL_AIR_PRESSURE;
+    } else {
+        baro_pressure = baro->get_pressure();
     }
 
     float temperature;
     if (!get_temperature(temperature)) {
-        return press;
+        // assume 25C if no temperature
+        temperature = 25;
     }
 
-    float rho_air = baro->get_pressure() / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
+    float rho_air = baro_pressure / (ISA_GAS_CONSTANT * C_TO_KELVIN(temperature));
+    if (!is_positive(rho_air)) {
+        // bad pressure
+        return press;
+    }
 
     /*
       the constants in the code below come from a calibrated test of
@@ -338,3 +345,5 @@ bool AP_Airspeed_SDP3X::_crc(const uint8_t data[], uint8_t size, uint8_t checksu
     // verify checksum
     return (crc_value == checksum);
 }
+
+#endif  // AP_AIRSPEED_SDP3X_ENABLED

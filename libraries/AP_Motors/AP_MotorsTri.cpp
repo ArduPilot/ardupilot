@@ -14,8 +14,12 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
+
 #include "AP_MotorsTri.h"
 
 extern const AP_HAL::HAL& hal;
@@ -35,17 +39,11 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane) // Tilt Rotors do not need a yaw servo
-    // find the yaw servo
-    if (!SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW)) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsTri: unable to setup yaw channel");
-        // don't set initialised_ok
-        return;
-    }
-#endif
-
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
+
+    // Check for tail servo
+    _have_tail_servo = SRV_Channels::function_assigned(SRV_Channel::k_motor7);
 
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
 
@@ -111,9 +109,9 @@ void AP_MotorsTri::output_to_motors()
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
             // set motor output based on thrust requests
-            set_actuator_with_slew(_actuator[1], thrust_to_actuator(_thrust_right));
-            set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_left));
-            set_actuator_with_slew(_actuator[4], thrust_to_actuator(_thrust_rear));
+            set_actuator_with_slew(_actuator[1], thr_lin.thrust_to_actuator(_thrust_right));
+            set_actuator_with_slew(_actuator[2], thr_lin.thrust_to_actuator(_thrust_left));
+            set_actuator_with_slew(_actuator[4], thr_lin.thrust_to_actuator(_thrust_rear));
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
@@ -124,14 +122,13 @@ void AP_MotorsTri::output_to_motors()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsTri::get_motor_mask()
+uint32_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
+    uint32_t motor_mask = (1U << AP_MOTORS_MOT_1) |
                           (1U << AP_MOTORS_MOT_2) |
-                          (1U << AP_MOTORS_MOT_4) |
-                          (1U << AP_MOTORS_CH_TRI_YAW);
-    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
+                          (1U << AP_MOTORS_MOT_4);
+    uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
@@ -157,10 +154,10 @@ void AP_MotorsTri::output_armed_stabilizing()
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
 
     // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
-    _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
+    _yaw_servo_angle_max_deg.set(constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX));
 
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain();
+    const float compensation_gain = thr_lin.get_compensation_gain();
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain * sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
@@ -172,11 +169,16 @@ void AP_MotorsTri::output_armed_stabilizing()
         pitch_thrust *= -1.0f;
     }
 
-    // calculate angle of yaw pivot
-    _pivot_angle = safe_asin(yaw_thrust);
-    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
-        limit.yaw = true;
-        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+    // VTOL plane may not have tail servo
+    if (!_have_tail_servo) {
+        _pivot_angle = 0.0;
+    } else {
+        // calculate angle of yaw pivot
+        _pivot_angle = safe_asin(yaw_thrust);
+        if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
+            limit.yaw = true;
+            _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+        }
     }
 
     float pivot_thrust_max = cosf(_pivot_angle);
@@ -281,13 +283,8 @@ void AP_MotorsTri::output_armed_stabilizing()
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsTri::output_test_seq(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
-    // exit immediately if not armed
-    if (!armed()) {
-        return;
-    }
-
     // output to motors and servos
     switch (motor_seq) {
         case 1:
@@ -336,7 +333,7 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsTri::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
 {
     // normal multicopter output
     AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);
@@ -361,4 +358,19 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
     }
 
     return ret;
+}
+
+// Run arming checks
+bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
+{
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane) // Tilt Rotors do not need a yaw servo
+    // Check for yaw servo
+    if (!_have_tail_servo) {
+        hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor7 for tail servo");
+        return false;
+    }
+#endif
+
+    // run base class checks
+    return AP_MotorsMulticopter::arming_checks(buflen, buffer);
 }

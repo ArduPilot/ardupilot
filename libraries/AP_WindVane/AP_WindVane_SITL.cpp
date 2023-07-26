@@ -15,13 +15,10 @@
 
 #include "AP_WindVane_SITL.h"
 
-// constructor
-AP_WindVane_SITL::AP_WindVane_SITL(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#include <SITL/SITL.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 void AP_WindVane_SITL::update_direction()
 {
@@ -45,8 +42,8 @@ void AP_WindVane_SITL::update_direction()
         _frontend._direction_apparent_raw =  wrap_PI(atan2f(wind_vector_ef.y, wind_vector_ef.x) - AP::ahrs().yaw);
 
     } else { // WINDVANE_SITL_APARRENT
-        // directly read the apparent wind from as set by physics backend
-        _frontend._direction_apparent_raw =  wrap_PI(AP::sitl()->get_apparent_wind_dir() - AP::ahrs().yaw);
+        // directly read the body frame apparent wind set by physics backend
+        _frontend._direction_apparent_raw =  wrap_PI(AP::sitl()->get_apparent_wind_dir());
     }
 
 }

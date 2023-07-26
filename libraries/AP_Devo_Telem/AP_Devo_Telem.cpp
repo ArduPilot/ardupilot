@@ -17,19 +17,22 @@
    DEVO Telemetry library
 */
 
-#define DEVOM_SYNC_BYTE        0xAA
 
-
-#define AP_SERIALMANAGER_DEVO_TELEM_BAUD        38400
-#define AP_SERIALMANAGER_DEVO_BUFSIZE_RX        0
-#define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 #include "AP_Devo_Telem.h"
+
+#if AP_DEVO_TELEM_ENABLED
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
+
+#define DEVOM_SYNC_BYTE        0xAA
+#define AP_SERIALMANAGER_DEVO_TELEM_BAUD        38400
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_RX        0
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 extern const AP_HAL::HAL& hal;
 
@@ -48,10 +51,10 @@ void AP_DEVO_Telem::init()
 }
 
 
-uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(float ddm)
+uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(int32_t ddm)
 {
-    int32_t deg = (int32_t)ddm;
-    float mm = (ddm - deg) * 60.0f;
+    int32_t deg = (int32_t)(ddm * 1e-7);
+    float mm = (ddm * 1.0e-7 - deg) * 60.0f;
 
     mm = ((float)deg * 100.0f + mm) /100.0f;
 
@@ -94,7 +97,7 @@ void AP_DEVO_Telem::send_frames()
     const AP_GPS &gps = AP::gps();
     Location loc;
 
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_location(loc)) {
         devoPacket.lat = gpsDdToDmsFormat(loc.lat);
         devoPacket.lon = gpsDdToDmsFormat(loc.lng);
         devoPacket.speed = (int16_t)(gps.ground_speed() * DEVO_SPEED_FACTOR * 100.0f);  // * 100 for cm
@@ -105,7 +108,7 @@ void AP_DEVO_Telem::send_frames()
         */
         float alt;
         _ahrs.get_relative_position_D_home(alt);
-        devoPacket.alt   = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
+        devoPacket.alt = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
     }
 
 
@@ -133,3 +136,4 @@ void AP_DEVO_Telem::tick(void)
         send_frames();
     }
 }
+#endif

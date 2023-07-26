@@ -5,7 +5,7 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+    aparm.angle_max.set(constrain_int16(aparm.angle_max,1000,8000));
 
     // limit max lean angle
     angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
@@ -64,7 +64,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position_xy_cm(), roi_WP.xy());
     }
 
     return yaw_look_at_WP_bearing;
@@ -72,10 +72,10 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
+    if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
@@ -103,7 +103,7 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
-    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+    g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
@@ -131,7 +131,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
+    float current_alt = inertial_nav.get_position_z_up_cm();
 
     uint32_t now = AP_HAL::millis();
 
@@ -161,29 +161,6 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 #else
     return (float)target_rate;
 #endif
-}
-
-// updates position controller's maximum altitude using fence and EKF limits
-void Sub::update_poscon_alt_max()
-{
-    // minimum altitude, ie. maximum depth
-    // interpreted as no limit if left as zero
-    float min_alt_cm = 0.0;
-
-    // no limit if greater than 100, a limit is necessary,
-    // or the vehicle will try to fly out of the water
-    float max_alt_cm = g.surface_depth; // minimum depth
-
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        min_alt_cm = fence.get_safe_alt_min()*100.0f;
-        max_alt_cm = fence.get_safe_alt_max()*100.0f;
-    }
-#endif
-    // pass limit to pos controller
-    pos_control.set_alt_min(min_alt_cm);
-    pos_control.set_alt_max(max_alt_cm);
 }
 
 // rotate vector from vehicle's perspective to North-East frame

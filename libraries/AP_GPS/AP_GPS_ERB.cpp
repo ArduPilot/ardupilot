@@ -20,9 +20,13 @@
 #include "AP_GPS.h"
 #include "AP_GPS_ERB.h"
 
+#if AP_GPS_ERB_ENABLED
+
 #define ERB_DEBUGGING 0
 
 #define STAT_FIX_VALID 0x01
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,6 +57,9 @@ AP_GPS_ERB::read(void)
 
         // read the next byte
         data = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&data, 1);
+#endif
 
         reset:
         switch(_step) {
@@ -144,6 +151,8 @@ AP_GPS_ERB::_parse_gps(void)
         state.location.lng    = (int32_t)(_buffer.pos.longitude * (double)1e7);
         state.location.lat    = (int32_t)(_buffer.pos.latitude * (double)1e7);
         state.location.alt    = (int32_t)(_buffer.pos.altitude_msl * 100);
+        state.have_undulation = true;
+        state.undulation = _buffer.pos.altitude_msl - _buffer.pos.altitude_ellipsoid;
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.pos.horizontal_accuracy * 1.0e-3f;
@@ -285,3 +294,4 @@ reset:
     }
     return false;
 }
+#endif

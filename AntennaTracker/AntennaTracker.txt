@@ -10,16 +10,16 @@ high-gain antenna to track a mavlink equipped air or ground vehicle in real
 time, providing higher quality radio links over longer distances than a
 stationary or omnidirectional antenna.
 
-AntennaTracker can be a stationary installation on the ground, or can be
+AntennaTracker can be a stationary installation on the ground or can be
 mobile, mounted on a vehicle, and moving at the same time as the vehicle it is
-tracking, such as on a pursuit vehicle etc.
+tracking, such as on a pursuit vehicle, etc.
 
 Antenna Tracker Hardware
 
 The software works with:
 
 - Alt-Azimuth mounted antenna tracker, equipped with 2 servos: one for Azimuth
-(also called bearing or yaw) -180 to 180 degreees and one for Altitude (also
+(also called bearing or yaw) -180 to 180 degrees and one for Altitude (also
 called elevation, or pitch) -90 degrees (straight down) to 90 degrees
 (straight up). I used an Eagle Tree Antenna Pan-Tilt.
 
@@ -39,19 +39,19 @@ Theory of Operation
 AntennaTracker receives real-time GPS position reports from the vehicle being
 tracked (in the form of GLOBAL_POSITION_INT messages sent by mavlink radio
 connection or possibly by hardwired serial connection). AntennaTracker also
-knows it own current position. Based on these 2 sets of coordinates, it
+knows its own current position. Based on these 2 sets of coordinates, it
 calculates the magnetic bearing and elevation to the vehicle. It then moves
 the tracker servos until the antenna (and the AntennaTracker processor) are
-aligned with the desired bearing and elevation. At this stage the antenna is
+aligned with the desired bearing and elevation. At this stage, the antenna is
 pointed straight at the tracked vehicle. As the vehicle (and possibly the
-antenna mount itself) move around, the servos are continually move to track
+antenna mount itself) move around, the servos are continually moved to track
 the vehicle.
 
 AntennaTracker currently only supports closed loop feedback to position the
-antenna. This requires that AntennaTracker processor (including
+antenna. This requires that the AntennaTracker processor (including
 accelerometers and compass) be mounted on the moving part of the antenna
 tracker hardware. The servos are moved until the yaw and pitch of the processor
-(and therfore of the antenna itself) matches the bearing and elevation to the
+(and therefore of the antenna itself) matches the bearing and elevation to the
 tracked vehicle.
 
 How does AntennaTracker know where it is on the earth?
@@ -63,7 +63,7 @@ recent good GPS fix is used.
 recent good GPS fix is used.
 
 - If there is no good GPS fix since startup (either because there is no GPS
-equipped or because the GPS has not yet got a fix), the most resently set HOME
+equipped or because the GPS has not yet got a fix), the most recently set HOME
 location is used.
 
 - If no HOME location has ever been set in the tracker, 0.0 Latitude, 0.0
@@ -166,7 +166,7 @@ available. DON'T just move the yaw and pitch motors around. You will probably ha
 pick the whole thing up.
 - At the end of the minute, Mission Planner will update AntennaTrackers compass offsets.
 
-Levelling
+Leveling
 
 Since AntennaTracker uses its internal accelerometers (amongst other things)
 to determine the current elevation/pitch of the antenna, it is also important
@@ -190,7 +190,7 @@ Operation
 <more here>
 
 After powering up AntennaTracker, it may take up to 1 minute while it
-automatially calibrates the compass before it points in the expected
+automatically calibrates the compass before it points in the expected
 direction. Moving the tracker around will speed up this process.
 
 How to set the HOME location

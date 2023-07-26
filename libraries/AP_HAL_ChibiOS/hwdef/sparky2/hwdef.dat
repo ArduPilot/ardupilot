@@ -57,7 +57,7 @@ PB11 USART3_RX USART3
 
 # -------RCIN-------------
 # Soft Serial for serial RC & PPM
-PC7 TIM8_CH2 TIM8 RCIN FLOAT LOW
+PC7 TIM8_CH2 TIM8 RCIN PULLDOWN LOW
 PC6 SBUS_INVERT OUTPUT
 
 # -------ADC-------------
@@ -110,7 +110,7 @@ PA0 TIM2_CH1 TIM2 PWM(6) GPIO(55)
 PB14 TIM1_CH2N TIM1 PWM(7) GPIO(35)
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # reserve 16k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -132,11 +132,9 @@ SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  1*MHZ  4*MHZ
 SPIDEV dataflash      SPI3 DEVID1  FLASH_CS     MODE3  32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 7
-
 # we are low on flash on this board
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc

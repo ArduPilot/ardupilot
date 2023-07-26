@@ -20,11 +20,14 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBP2.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+
+#if AP_GPS_SBP2_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -100,6 +103,9 @@ AP_GPS_SBP2::_sbp_process()
     while (nleft > 0) {
         nleft--;
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
         //This switch reads one character at a time,
@@ -205,17 +211,21 @@ AP_GPS_SBP2::_sbp_process_message() {
         case SBP_EXT_EVENT_MSGTYPE:
             memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
             check_new_itow(last_event.tow, parser_state.msg_len);
+#if HAL_LOGGING_ENABLED
             logging_ext_event();
+#endif
             break;
 
         default:
             break;
     }
 
+#if HAL_LOGGING_ENABLED
     // send all messages we receive to log, even if it's an unsupported message,
     // so we can do additional post-processing from logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
+#endif
 }
 
 int32_t 
@@ -302,10 +312,7 @@ AP_GPS_SBP2::_attempt_state_update()
         state.velocity[1]       = (float)(last_vel_ned.e * 1.0e-3);
         state.velocity[2]       = (float)(last_vel_ned.d * 1.0e-3);
 
-        float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
-        state.ground_speed = safe_sqrt(ground_vector_sq);
-
-        state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+        velocity_to_speed_course(state);
 
         state.speed_accuracy        = safe_sqrt(
                                         powf((float)last_vel_ned.h_accuracy * 1.0e-3f, 2) + 
@@ -437,6 +444,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
     return false;
 }
 
+#if HAL_LOGGING_ENABLED
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
@@ -522,3 +530,5 @@ AP_GPS_SBP2::logging_ext_event() {
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
+#endif // HAL_LOGGING_ENABLED
+#endif //AP_GPS_SBP2_ENABLED

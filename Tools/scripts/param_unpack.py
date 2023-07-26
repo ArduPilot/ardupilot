@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 unpack a param.pck file from @PARAM/param.pck via mavlink FTP
 '''

@@ -1,6 +1,10 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_FUELLEVEL_PWM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_BattMonitor_FuelLevel_PWM.h"
-#include <GCS_MAVLink/GCS.h>
 
 /*
   "battery" monitor for liquid fuel level systems that give a PWM value indicating quantity of remaining fuel.
@@ -15,7 +19,7 @@ extern const AP_HAL::HAL& hal;
 
 /// Constructor
 AP_BattMonitor_FuelLevel_PWM::AP_BattMonitor_FuelLevel_PWM(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params)
+    AP_BattMonitor_Analog(mon, mon_state, params)
 {
     _state.voltage = 1.0; // show a fixed voltage of 1v
 
@@ -28,7 +32,7 @@ AP_BattMonitor_FuelLevel_PWM::AP_BattMonitor_FuelLevel_PWM(AP_BattMonitor &mon, 
 */
 void AP_BattMonitor_FuelLevel_PWM::read()
 {
-    if (!pwm_source.set_pin(_params._curr_pin, "FuelLevelPWM")) {
+    if (!pwm_source.set_pin(_curr_pin, "FuelLevelPWM")) {
         _state.healthy = false;
         return;
     }
@@ -62,3 +66,5 @@ void AP_BattMonitor_FuelLevel_PWM::read()
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;
 }
+
+#endif  // AP_BATTERY_FUELLEVEL_PWM_ENABLED

@@ -1,0 +1,111 @@
+# hw definition file for processing by chibios_pins.py
+
+# Sierra RM3100 & Airspeed common hwdef
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+
+# store parameters in pages 18 and 19
+STORAGE_FLASH_PAGE 18
+define HAL_STORAGE_SIZE 800
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 15
+define CH_CFG_ST_RESOLUTION 16
+
+# board ID for firmware load
+APJ_BOARD_ID 1050
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# Flash available
+FLASH_SIZE_KB 256
+
+define HAL_CAN_POOL_SIZE 6000
+
+# LEDs
+PA15 LED OUTPUT LOW GPIO(1)
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# USART1
+PA9  USART1_TX USART1 SPEED_HIGH NODMA
+PA10  USART1_RX USART1 SPEED_HIGH NODMA
+
+define SERIAL_BUFFERS_SIZE 512
+
+# SPI1 bus for RM3100
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PB12 MAG_CS CS
+
+# compass
+SPIDEV rm3100 SPI1 DEVID1    MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
+
+# MS4525DO Airspeed
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 1
+
+I2C_ORDER I2C1
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_NO_GPIO_IRQ
+define DMA_RESERVE_SIZE 0
+
+# stack for fast interrupts
+define PORT_INT_REQUIRED_STACK 64
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+CAN_ORDER 1
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+PA0 VDD_5V_SENS ADC1 SCALE(2)
+
+define HAL_GCS_ENABLED 0
+define HAL_NO_MONITOR_THREAD
+define HAL_NO_LOGGING
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+define CAN_APP_NODE_NAME "org.ardupilot.Sierra-L431"
+
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_AIRSPEED
+define AIRSPEED_MAX_SENSORS 1
+define HAL_AIRSPEED_TYPE_DEFAULT 1
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True

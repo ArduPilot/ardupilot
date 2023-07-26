@@ -1,16 +1,19 @@
 #pragma once
 
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include "AccelCalibrator.h"
-#include "AP_Vehicle/AP_Vehicle_Type.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <GCS_MAVLink/GCS_config.h>
 
 #ifndef HAL_INS_ACCELCAL_ENABLED
-#ifndef HAL_NO_GCS
-#define HAL_INS_ACCELCAL_ENABLED 1
+#if HAL_GCS_ENABLED
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
+#define HAL_INS_ACCELCAL_ENABLED AP_INERTIALSENSOR_ENABLED
 #else
 #define HAL_INS_ACCELCAL_ENABLED 0
 #endif
 #endif
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AccelCalibrator.h"
 
 #define AP_ACCELCAL_MAX_NUM_CLIENTS 4
 class GCS_MAVLINK;
@@ -42,13 +45,15 @@ public:
     // interface to the clients for registration
     static void register_client(AP_AccelCal_Client* client);
 
-    void handleMessage(const mavlink_message_t &msg);
+#if HAL_GCS_ENABLED
+    void handle_command_ack(const mavlink_command_ack_t &packet);
+#endif
 
     // true if we are in a calibration process
     bool running(void) const;
 
 private:
-    GCS_MAVLINK *_gcs;
+    class GCS_MAVLINK *_gcs;
     bool _use_gcs_snoop;
     bool _waiting_for_mavlink_ack = false;
     uint32_t _last_position_request_ms;

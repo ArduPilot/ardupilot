@@ -8,6 +8,9 @@
 // stabilize_init - initialise stabilize controller
 bool ModeStabilize_Heli::init(bool ignore_checks)
 {
+    // be aware that when adding code to this function that it is *NOT
+    // RUN* at vehicle startup!
+
     // set stab collective true to use stabilize scaled collective pitch range
     copter.input_manager.set_use_stab_col(true);
 
@@ -19,7 +22,6 @@ bool ModeStabilize_Heli::init(bool ignore_checks)
 void ModeStabilize_Heli::run()
 {
     float target_roll, target_pitch;
-    float target_yaw_rate;
     float pilot_throttle_scaled;
 
     // apply SIMPLE mode transform to pilot inputs
@@ -29,7 +31,7 @@ void ModeStabilize_Heli::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     // get pilot's desired throttle
     pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());

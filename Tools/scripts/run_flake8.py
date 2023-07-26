@@ -19,16 +19,18 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 class Flake8Checker(object):
     def __init__(self):
         self.retcode = 0
+        self.files_to_check = []
 
     def progress(self, string):
         print("****** %s" % (string,))
 
-    def check(self, filepath):
-        self.progress("Checking (%s)" % filepath)
-        retcode = subprocess.call(["flake8", filepath])
-        if retcode != 0:
-            self.progress("File (%s) failed with retcode (%s)" %
-                          (filepath, retcode))
+    def check(self):
+        for path in self.files_to_check:
+            self.progress("Checking (%s)" % path)
+        ret = subprocess.run(["flake8", "--show-source"] + self.files_to_check,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if ret.returncode != 0:
+            self.progress("Flake8 check failed: (%s)" % (ret.stdout))
             self.retcode = 1
 
     def run(self):
@@ -40,7 +42,8 @@ class Flake8Checker(object):
                 content = open(filepath).read()
                 if "AP_FLAKE8_CLEAN" not in content:
                     continue
-                self.check(filepath)
+                self.files_to_check.append(filepath)
+        self.check()
         return self.retcode
 
 

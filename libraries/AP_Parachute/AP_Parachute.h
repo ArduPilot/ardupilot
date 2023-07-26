@@ -4,7 +4,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Relay/AP_Relay.h>
 
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_0       0
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_1       1
@@ -35,8 +34,7 @@ class AP_Parachute {
 
 public:
     /// Constructor
-    AP_Parachute(AP_Relay &relay)
-        : _relay(relay)
+    AP_Parachute()
     {
         // setup parameter defaults
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -49,8 +47,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Parachute(const AP_Parachute &other) = delete;
-    AP_Parachute &operator=(const AP_Parachute&) = delete;
+    CLASS_NO_COPY(AP_Parachute);
 
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);
@@ -86,6 +83,9 @@ public:
     // trigger parachute release if sink_rate is below critical_sink_rate for 1sec
     void check_sink_rate();
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+    
     static const struct AP_Param::GroupInfo        var_info[];
 
     // get singleton instance
@@ -103,13 +103,18 @@ private:
     AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
 
     // internal variables
-    AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
     bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
+
+    enum class Options : uint8_t {
+        HoldOpen = (1U<<0),
+    };
+
+    AP_Int32    _options;
 };
 
 namespace AP {

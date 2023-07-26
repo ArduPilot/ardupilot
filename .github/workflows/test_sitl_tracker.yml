@@ -1,9 +1,158 @@
 name: test tracker
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  push:
+    paths-ignore:
+      # remove other vehicles
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove other vehicles autotest
+      - 'Tools/autotest/arducopter.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/helicopter.py'
+      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/swarminit.txt'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+  pull_request:
+    paths-ignore:
+      # remove other vehicles
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove other vehicles autotest
+      - 'Tools/autotest/arducopter.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/helicopter.py'
+      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/swarminit.txt'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,7 +160,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -21,7 +170,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -29,28 +178,23 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
-          mkdir -p ~/.ccache
-          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-          echo "compression = true" >> ~/.ccache/ccache.conf
-          echo "compression_level = 6" >> ~/.ccache/ccache.conf
-          echo "max_size = 400M" >> ~/.ccache/ccache.conf
-          ccache -s
-          ccache -z
+          . .github/workflows/ccache.env
       - name: build tracker ${{ matrix.toolchain }}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           if [[ ${{ matrix.toolchain }} == "clang" ]]; then
-            export CC=clang-7
-            export CXX=clang++-7
+            export CC=clang
+            export CXX=clang++
           fi
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl
@@ -62,7 +206,7 @@ jobs:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
     container:
-      image: ardupilot/ardupilot-dev-base:latest
+      image: ardupilot/ardupilot-dev-base:v0.0.29
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -73,7 +217,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -81,32 +225,27 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache/restore@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-base-  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
-          mkdir -p ~/.ccache
-          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-          echo "compression = true" >> ~/.ccache/ccache.conf
-          echo "compression_level = 6" >> ~/.ccache/ccache.conf
-          echo "max_size = 400M" >> ~/.ccache/ccache.conf
-          ccache -s
-          ccache -z
+          . .github/workflows/ccache.env
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
            name: fail-${{matrix.config}}
@@ -120,7 +259,7 @@ jobs:
            retention-days: 14
 
       - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
            name: BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs

@@ -17,7 +17,6 @@
 
 #define EFI_MAX_INSTANCES 2
 #define EFI_MAX_BACKENDS 2
-#define ENGINE_MAX_CYLINDERS 1
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -61,10 +60,10 @@ enum class Fuel_Pressure_Status : uint8_t {
 };
 
 enum class Oil_Pressure_Status : uint8_t {
-    OIL_PRESSURE_STATUS_NOT_SUPPORTED = 0,
-    OIL_PRESSURE_OK                   = 1,
-    OIL_PRESSURE_BELOW_NOMINAL        = 2,
-    OIL_PRESSURE_ABOVE_NOMINAL        = 3
+    NOT_SUPPORTED        = 0,
+    OK                   = 1,
+    BELOW_NOMINAL        = 2,
+    ABOVE_NOMINAL        = 3
 };
 
 enum class Detonation_Status : uint8_t {
@@ -197,6 +196,14 @@ struct EFI_State {
     Spark_Plug_Usage spark_plug_usage;
 
     // Status for each cylinder in the engine
-    Cylinder_Status cylinder_status[ENGINE_MAX_CYLINDERS];
+    Cylinder_Status cylinder_status;
 
+    // ignition voltage in Volts
+    float ignition_voltage = -1;  // -1 is "unknown";
+
+    // throttle output percentage
+    float throttle_out;
+
+    // PT compensation
+    float pt_compensation;
 };

@@ -59,6 +59,6 @@ struct PACKED log_BCL {
 
 #define LOG_STRUCTURE_FROM_BATTMONITOR        \
     { LOG_BAT_MSG, sizeof(log_BAT), \
-        "BAT", "QBfffffcfB", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res,RemPct", "s#vvAaXOw%", "F-000C0?00" },  \
+        "BAT", "QBfffffcfB", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res,RemPct", "s#vvAaXOw%", "F-000C0?00" , true },  \
     { LOG_BCL_MSG, sizeof(log_BCL), \
-        "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" },
+        "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" , true },

@@ -19,15 +19,20 @@
 //
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#ifndef AP_GPS_MAV_ENABLED
+  #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
+#endif 
+
+#if AP_GPS_MAV_ENABLED
 class AP_GPS_MAV : public AP_GPS_Backend {
 public:
-    AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+
+    using AP_GPS_Backend::AP_GPS_Backend;
 
     bool read() override;
 
@@ -42,3 +47,4 @@ private:
     uint32_t first_week;
     JitterCorrection jitter{2000};
 };
+#endif

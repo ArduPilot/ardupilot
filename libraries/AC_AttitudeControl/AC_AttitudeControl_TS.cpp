@@ -19,12 +19,6 @@
  */
 #include "AC_AttitudeControl_TS.h"
 
-
-AC_AttitudeControl_TS::AC_AttitudeControl_TS(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
-    AC_AttitudeControl_Multi(ahrs, aparm, motors, dt)
-{
-}
-
 void AC_AttitudeControl_TS::relax_attitude_controllers(bool exclude_pitch)
 {
     // If exclude_pitch: relax roll and yaw rate controller outputs only,

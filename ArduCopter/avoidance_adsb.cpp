@@ -144,7 +144,7 @@ void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(Mode::Number mode)
     }
 }
 
-int16_t AP_Avoidance_Copter::get_altitude_minimum() const
+int32_t AP_Avoidance_Copter::get_altitude_minimum() const
 {
 #if MODE_RTL_ENABLED == ENABLED
     // do not descend if below RTL alt
@@ -179,7 +179,7 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     // decide on whether we should climb or descend
     bool should_climb = false;
     Location my_loc;
-    if (AP::ahrs().get_position(my_loc)) {
+    if (AP::ahrs().get_location(my_loc)) {
         should_climb = my_loc.alt > obstacle->_location.alt;
     }
 

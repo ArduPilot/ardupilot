@@ -1,0 +1,17 @@
+repositories:
+  ardupilot:
+    type: git
+    url: https://github.com/srmainwaring/ardupilot.git
+    version: pr/pr-dds-launch-tests
+  microxrcedds_gen:
+    type: git
+    url: https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
+    version: develop
+  micro_ros_agent:
+    type: git
+    url: https://github.com/srmainwaring/micro-ROS-Agent.git
+    version: cmake-macos
+  micro_ros_msgs:
+    type: git
+    url: https://github.com/micro-ROS/micro_ros_msgs.git
+    version: humble

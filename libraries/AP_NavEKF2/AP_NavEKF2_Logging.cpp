@@ -169,8 +169,8 @@ void NavEKF2_core::Log_Write_NKF5(uint64_t time_us) const
         normInnov : (uint8_t)(MIN(100*MAX(flowTestRatio[0],flowTestRatio[1]),255)),  // normalised innovation variance ratio for optical flow observations fused by the main nav filter
         FIX : (int16_t)(1000*innovOptFlow[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*innovOptFlow[1]),  // optical flow LOS rate vector innovations from the main nav filter
-        AFI : (int16_t)(1000*norm(auxFlowObsInnov.x,auxFlowObsInnov.y)),  // optical flow LOS rate innovation from terrain offset estimator
-        HAGL : (int16_t)(100*(terrainState - stateStruct.position.z)),  // height above ground level
+        AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
+        HAGL : float_to_int16(100*(terrainState - stateStruct.position.z)),  // height above ground level
         offset : (int16_t)(100*terrainState),  // // estimated vertical position of the terrain relative to the nav filter zero datum
         RI : (int16_t)(100*innovRng),  // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
@@ -199,6 +199,7 @@ void NavEKF2_core::Log_Write_Quaternion(uint64_t time_us) const
     AP::logger().WriteBlock(&pktq1, sizeof(pktq1));
 }
 
+#if AP_BEACON_ENABLED
 void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
 {
     if (core_index != frontend->primary) {
@@ -248,11 +249,11 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
     AP::logger().WriteBlock(&pkt0, sizeof(pkt0));
     rngBcnFuseDataReportIndex++;
 }
+#endif  // AP_BEACON_ENABLED
 
 void NavEKF2_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
-    static uint32_t lastTimingLogTime_ms = 0;
     if (AP::dal().millis() - lastTimingLogTime_ms <= 5000) {
         return;
     }
@@ -315,8 +316,10 @@ void NavEKF2_core::Log_Write(uint64_t time_us)
     Log_Write_Quaternion(time_us);
     Log_Write_GSF(time_us);
 
+#if AP_BEACON_ENABLED
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
+#endif
 
     Log_Write_Timing(time_us);
 }

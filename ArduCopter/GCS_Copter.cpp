@@ -10,7 +10,7 @@ uint8_t GCS_Copter::sysid_this_mav() const
 const char* GCS_Copter::frame_string() const
 {
     if (copter.motors == nullptr) {
-        return "motors not allocated";
+        return "MultiCopter";
     }
     return copter.motors->get_frame_string();
 }
@@ -58,6 +58,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
 
     switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
@@ -113,18 +114,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
-#if OPTFLOW == ENABLED
-    const OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     if (copter.precland.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;

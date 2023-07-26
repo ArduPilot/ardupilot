@@ -28,11 +28,17 @@ public:
     void accumulate() override;
 
     void start() override;
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
 
     enum class Invensensev3_Type : uint8_t {
         ICM40609 = 0,
         ICM42688,
         ICM42605,
+        ICM40605,
+        IIM42652,
+        ICM42670,
+        ICM45686
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -48,7 +54,10 @@ private:
     bool check_whoami();
 
     void set_filter_and_scaling(void);
+    void set_filter_and_scaling_icm42670(void);
+    void set_filter_and_scaling_icm456xy(void);
     void fifo_reset();
+    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const;
 
     /* Read samples from FIFO */
     void read_fifo();
@@ -57,21 +66,48 @@ private:
     uint8_t register_read(uint8_t reg);
     void register_write(uint8_t reg, uint8_t val, bool checked=false);
 
+    uint8_t register_read_bank(uint8_t bank, uint8_t reg);
+    void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    uint8_t register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg);
+    void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
+
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
     uint8_t accel_instance;
 
+    // reset FIFO configure1 register
+    uint8_t fifo_config1;
+
     // temp scaling for FIFO temperature
-    const float temp_sensitivity = 1.0f/2.07;
+    float temp_sensitivity;
     const float temp_zero = 25; // degC
     
     const enum Rotation rotation;
 
-    float accel_scale;
+    /*
+      gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==0)
+    */
+    static constexpr float GYRO_SCALE_2000DPS = (0.0174532f / 16.4f);
+    /*
+      gyro as 8.2 LSB/DPS at scale factor of +/- 4000dps (FS_SEL==0)
+    */
+    static constexpr float GYRO_SCALE_4000DPS = (0.0174532f / 8.2f);
+
+    float accel_scale = (GRAVITY_MSS / 2048);
+    float gyro_scale = GYRO_SCALE_2000DPS;
+
+    // are we doing more than 1kHz sampling?
+    bool fast_sampling;
+
+    // what rate are we generating samples into the backend for gyros and accels?
+    uint16_t backend_rate_hz;
+    // pre-calculated backend period
+    uint32_t backend_period_us;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device::PeriodicHandle periodic_handle;
 
     // which sensor type this is
     enum Invensensev3_Type inv3_type;

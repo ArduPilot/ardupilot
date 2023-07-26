@@ -2,10 +2,10 @@
   support for sending UDP packets on MAVLink packet boundaries.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
+
+#if HAL_GCS_ENABLED
+
 #include "packetise.h"
 
 /*
@@ -67,4 +67,5 @@ uint16_t mavlink_packetise(ByteBuffer &writebuf, uint16_t n)
     }
     return n;
 }
-#endif // HAL_BOOTLOADER_BUILD
+
+#endif // HAL_GCS_ENABLED

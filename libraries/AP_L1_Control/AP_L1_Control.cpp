@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Units: deg
     // @Range: 0 89
     // @User: Advanced
-    AP_GROUPINFO_FRAME("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f, AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
 
     AP_GROUPEND
 };
@@ -141,11 +141,9 @@ float AP_L1_Control::loiter_radius(const float radius) const
     float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
     float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
 
-    float nominal_velocity_sea_level;
-    if(_spdHgtControl == nullptr) {
-        nominal_velocity_sea_level = 0.0f;
-    } else {
-        nominal_velocity_sea_level =  _spdHgtControl->get_target_airspeed();
+    float nominal_velocity_sea_level = 0.0f;
+    if(_tecs != nullptr) {
+        nominal_velocity_sea_level =  _tecs->get_target_airspeed();
     }
 
     float eas2tas_sq = sq(_ahrs.get_EAS2TAS());
@@ -195,10 +193,10 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
 }
 
 // update L1 control for waypoint navigation
-void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min)
+void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &next_WP, float dist_min)
 {
 
-    struct Location _current_loc;
+    Location _current_loc;
     float Nu;
     float xtrackVel;
     float ltrackVel;
@@ -219,7 +217,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
     // Get current position and velocity
-    if (_ahrs.get_position(_current_loc) == false) {
+    if (_ahrs.get_location(_current_loc) == false) {
         // if no GPS loc available, maintain last nav/target_bearing
         _data_is_stale = true;
         return;
@@ -315,7 +313,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         Nu1 += _L1_xtrack_i;
 
         Nu = Nu1 + Nu2;
-        _nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point
+        _nav_bearing = wrap_PI(atan2f(AB.y, AB.x) + Nu1);   // bearing (radians) from AC to L1 point
     }
 
     _prevent_indecision(Nu);
@@ -334,9 +332,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 }
 
 // update L1 control for loitering
-void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
+void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_t loiter_direction)
 {
-    struct Location _current_loc;
+    Location _current_loc;
 
     // scale loiter radius with square of EAS2TAS to allow us to stay
     // stable at high altitude
@@ -351,7 +349,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
     //Get current position and velocity
-    if (_ahrs.get_position(_current_loc) == false) {
+    if (_ahrs.get_location(_current_loc) == false) {
         // if no GPS loc available, maintain last nav/target_bearing
         _data_is_stale = true;
         return;

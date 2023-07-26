@@ -1,15 +1,10 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Generator_config.h"
 
-#ifndef GENERATOR_ENABLED
-#define GENERATOR_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
-#endif
-
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
 class AP_Generator_Backend;
@@ -29,8 +24,7 @@ public:
     AP_Generator();
 
     // Do not allow copies
-    AP_Generator(const AP_Generator &other) = delete;
-    AP_Generator &operator=(const AP_Generator&) = delete;
+    CLASS_NO_COPY(AP_Generator);
 
     static AP_Generator* get_singleton();
 
@@ -44,7 +38,8 @@ public:
     // Helpers to retrieve measurements
     float get_voltage(void) const { return _voltage; }
     float get_current(void) const { return _current; }
-    float get_fuel_remain(void) const { return _fuel_remain_pct; }
+    // get_fuel_remaining returns fuel remaining as a scale 0-1
+    float get_fuel_remaining(void) const { return _fuel_remaining; }
     float get_batt_consumed(void) const { return _consumed_mah; }
     uint16_t get_rpm(void) const { return _rpm; }
 
@@ -62,10 +57,19 @@ public:
     bool idle(void);
     bool run(void);
 
-    void send_generator_status(const GCS_MAVLINK &channel);
+    void send_generator_status(const class GCS_MAVLINK &channel);
 
     // Parameter block
     static const struct AP_Param::GroupInfo var_info[];
+
+    // bits which can be set in _options to modify generator behaviour:
+    enum class Option {
+        INHIBIT_MAINTENANCE_WARNINGS = 0,
+    };
+
+    bool option_set(Option opt) const {
+        return (_options & 1U<<uint32_t(opt)) != 0;
+    }
 
 private:
 
@@ -74,12 +78,20 @@ private:
 
     // Parameters
     AP_Int8 _type; // Select which generator to use
+    AP_Int32 _options; // Select which generator to use
 
     enum class Type {
         GEN_DISABLED = 0,
+#if AP_GENERATOR_IE650_800_ENABLED
         IE_650_800 = 1,
+#endif
+#if AP_GENERATOR_IE2400_ENABLED
         IE_2400 = 2,
+#endif
+#if AP_GENERATOR_RICHENPOWER_ENABLED
         RICHENPOWER = 3,
+#endif
+        // LOWEHEISER = 4,
     };
 
     // Helper to get param and cast to GenType
@@ -88,13 +100,13 @@ private:
     // Front end variables
     float _voltage;
     float _current;
-    float _fuel_remain_pct;
+    float _fuel_remaining;  // 0-1
+    bool _has_fuel_remaining;
     float _consumed_mah;
     uint16_t _rpm;
     bool _healthy;
     bool _has_current;
     bool _has_consumed_energy;
-    bool _has_fuel_remaining;
 
     static AP_Generator *_singleton;
 

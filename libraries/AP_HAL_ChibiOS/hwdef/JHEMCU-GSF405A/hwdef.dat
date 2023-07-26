@@ -1,0 +1,171 @@
+# hw definition file for processing by chibios_pins.py
+# JHEMCU GSF405A by V-22
+# With F405 MCU, MPU6000 IMU and MAX7456 series OSD
+# Based on Mamba F405 hwdef from jeanphilippehell
+# thanks to betaflight for pin information (https://github.com/betaflight/unified-targets/blob/master/configs/default/JHEF-JHEF405PRO.config)
+
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1059
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# board voltage
+STM32_VDD 330U
+
+# need to use timer 4 so timer 5 is available for bidir DShot
+define STM32_ST_USE_TIMER 4
+define CH_CFG_ST_RESOLUTION 16
+
+# order of I2C buses
+I2C_ORDER I2C1
+
+# order of UARTs (and USB)
+# this order follows the labels on the board
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6
+
+# The pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USB detection
+PA8 VBUS INPUT OPENDRAIN
+
+# USART1 (DMA) - wired to on-board ELRS receiver - need DMA for CRSF protocol
+PB6 USART1_TX USART1
+PA10 USART1_RX USART1
+# default Serial1 to ELRS RX
+define DEFAULT_SERIAL1_PROTOCOL 23
+define HAL_RSSI_TYPE 3 
+
+# USART2
+PD5 USART2_TX USART2 NODMA
+PD6 USART2_RX USART2 NODMA
+
+# USART3 (DMA) - Use for GPS as it is close to I2C pins. 
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# UART4
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+
+# USART6 (DMA)
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# analog pins
+PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# RSSI analog input
+PC0 RSSI_ADC_PIN ADC1 SCALE(1)
+define BOARD_RSSI_ANA_PIN 12
+
+# Motor outputs on AIO ESC
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(50) 
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(51) BIDIR
+PA3 TIM5_CH4 TIM5 PWM(3) GPIO(52) BIDIR
+PA2 TIM5_CH3 TIM5 PWM(4) GPIO(53) 
+
+# Board LEDs
+PC14 LED1 OUTPUT LOW GPIO(1)
+PC15 LED2 OUTPUT LOW GPIO(2)
+define HAL_GPIO_A_LED_PIN 1
+define HAL_GPIO_B_LED_PIN 2
+
+# Assign timer to LED_STRIP
+PA9 TIM1_CH2 TIM1 PWM(5) GPIO(54)
+
+DMA_PRIORITY SPI1* SPI3* USART3* USART6* TIM1_CH2
+DMA_NOSHARE USART1_RX TIM5_CH4 TIM5_UP
+
+# Buzzer
+PC13 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+
+
+# I2C1
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# SPI1 - Internal IMU
+PB12 MPU6000_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI3 - OSD + 8MB flash
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+# OSD max7456
+PB14 OSD_CS CS
+# Dataflash 8MB on-board
+PB3 FLASH_CS CS
+
+# SPI Device table
+SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 4*MHZ
+SPIDEV dataflash  SPI3 DEVID2 FLASH_CS   MODE3 32*MHZ 32*MHZ
+SPIDEV osd        SPI3 DEVID3 OSD_CS MODE0 10*MHZ 10*MHZ
+
+# One IMU rotated in yaw
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
+
+# Probe for I2C BMP280
+BARO BMP280 I2C:0:0x76
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 1
+
+# flash size
+FLASH_SIZE_KB 1024
+# reserve 16k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 48
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_CURR_PIN 13
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 17
+
+# Setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+
+# Font for OSD
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# -------reduce max size of embedded params for apj_tool.py
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+define HAL_GYROFFT_ENABLED 0
+
+# --------------------- save flash ----------------------
+define AP_BATTERY_SMBUS_ENABLED 0
+define AP_BATT_MONITOR_MAX_INSTANCES 1
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+define HAL_GENERATOR_ENABLED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define AC_PRECLAND_ENABLED 0
+define HAL_BARO_WIND_COMP_ENABLED 0
+define AP_GRIPPER_ENABLED 0
+define HAL_HOTT_TELEM_ENABLED 0
+define HAL_NMEA_OUTPUT_ENABLED 0
+define HAL_BUTTON_ENABLED 0
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_PICCOLO_CAN_ENABLE 0
+define BARO_MAX_INSTANCES 1

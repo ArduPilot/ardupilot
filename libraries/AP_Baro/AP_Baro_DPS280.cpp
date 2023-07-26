@@ -18,8 +18,11 @@
 
 #include "AP_Baro_DPS280.h"
 
+#if AP_BARO_DPS280_ENABLED
+
 #include <utility>
 #include <stdio.h>
+#include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -305,3 +308,5 @@ void AP_Baro_DPS280::update(void)
     temperature_sum = 0;
     count=0;
 }
+
+#endif  // AP_BARO_DPS280_ENABLED

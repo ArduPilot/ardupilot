@@ -17,9 +17,9 @@ typedef enum mcu_rev_e {
 // Before a rev is known it is set to ?
 // There for new silicon will result in STM32F4..,?
 mcu_des_t mcu_descriptions[] = {
-    { STM32_UNKNOWN,	"STM32F??????",		'?'},
-    { STM32F74x_75x, 	"STM32F7[4|5]x",	'?'},
-    { STM32F76x_77x, 	"STM32F7[6|7]x",	'?'},
+    { STM32_UNKNOWN,	"STM32F??????" },
+    { STM32F74x_75x, 	"STM32F7[4|5]x" },
+    { STM32F76x_77x, 	"STM32F7[6|7]x" },
 };
 
 const mcu_rev_t silicon_revs[] = {

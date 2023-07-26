@@ -41,7 +41,7 @@ bool ModePosHold::init(bool ignore_checks)
     pilot_pitch = 0.0f;
 
     // compute brake_gain
-    brake.gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) / 100.0f;
+    brake.gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) * 0.01f;
 
     if (copter.ap.land_complete) {
         // if landed begin in loiter mode
@@ -69,7 +69,7 @@ void ModePosHold::run()
 {
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
-    const Vector3f& vel = inertial_nav.get_velocity();
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
@@ -80,10 +80,10 @@ void ModePosHold::run()
 
     // convert pilot input to lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -106,7 +106,6 @@ void ModePosHold::run()
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update(false);
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -114,6 +113,22 @@ void ModePosHold::run()
 
         // initialise wind compensation estimate
         init_wind_comp_estimate();
+        break;
+
+    case AltHold_Landed_Ground_Idle:
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
+        attitude_control->reset_yaw_target_and_rate();
+        init_wind_comp_estimate();
+        FALLTHROUGH;
+
+    case AltHold_Landed_Pre_Takeoff:
+        attitude_control->reset_rate_controller_I_terms_smoothly();
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+
+        // set poshold state to pilot override
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
     case AltHold_Takeoff:
@@ -131,24 +146,6 @@ void ModePosHold::run()
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update(false);
-
-        // set poshold state to pilot override
-        roll_mode = RPMode::PILOT_OVERRIDE;
-        pitch_mode = RPMode::PILOT_OVERRIDE;
-        break;
-
-    case AltHold_Landed_Ground_Idle:
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        loiter_nav->update(false);
-        attitude_control->reset_yaw_target_and_rate();
-        init_wind_comp_estimate();
-        FALLTHROUGH;
-
-    case AltHold_Landed_Pre_Takeoff:
-        attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -158,16 +155,14 @@ void ModePosHold::run()
     case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
-        }
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+        // update the vertical offset based on the surface measurement
+        copter.surface_tracking.update_surface_offset();
+
+        // Send the commanded climb rate to the position controller
+        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
         break;
     }
 
@@ -380,7 +375,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
-        loiter_nav->init_target(inertial_nav.get_position().xy());
+        loiter_nav->init_target(inertial_nav.get_position_xy_cm());
         // set delay to start of wind compensation estimate updates
         wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
     }
@@ -505,12 +500,12 @@ void ModePosHold::update_pilot_lean_angle(float &lean_angle_filtered, float &lea
         // lean_angle_raw must be pulling lean_angle_filtered towards zero, smooth the decrease
         if (lean_angle_filtered > 0) {
             // reduce the filtered lean angle at 5% or the brake rate (whichever is faster).
-            lean_angle_filtered -= MAX((float)lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1, g.poshold_brake_rate/LOOP_RATE_FACTOR));
+            lean_angle_filtered -= MAX(lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate/(float)LOOP_RATE_FACTOR));
             // do not let the filtered angle fall below the pilot's input lean angle.
             // the above line pulls the filtered angle down and the below line acts as a catch
             lean_angle_filtered = MAX(lean_angle_filtered, lean_angle_raw);
         }else{
-            lean_angle_filtered += MAX(-(float)lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1, g.poshold_brake_rate/LOOP_RATE_FACTOR));
+            lean_angle_filtered += MAX(-lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate/(float)LOOP_RATE_FACTOR));
             lean_angle_filtered = MIN(lean_angle_filtered, lean_angle_raw);
         }
     }
@@ -532,7 +527,7 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
     float lean_angle;
     float brake_rate = g.poshold_brake_rate;
 
-    brake_rate /= 4.0f;
+    brake_rate /= (float)LOOP_RATE_FACTOR;
     if (brake_rate <= 1.0f) {
         brake_rate = 1.0f;
     }
@@ -571,7 +566,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (inertial_nav.get_speed_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
+    if (inertial_nav.get_speed_xy_cms() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
         return;
     }
 

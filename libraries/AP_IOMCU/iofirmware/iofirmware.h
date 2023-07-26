@@ -94,11 +94,6 @@ public:
         uint16_t pwm[IOMCU_MAX_CHANNELS];
     } reg_failsafe_pwm;
 
-    // PAGE_SAFETY_PWM
-    struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
-    } reg_safety_pwm;
-
     // output rates
     struct {
         uint16_t freq;
@@ -109,6 +104,11 @@ public:
 
     // MIXER values
     struct page_mixing mixing;
+
+    // GPIO masks
+    struct page_GPIO GPIO;
+    uint8_t last_GPIO_channel_mask;
+    void GPIO_write();
 
     // true when override channel active
     bool override_active;

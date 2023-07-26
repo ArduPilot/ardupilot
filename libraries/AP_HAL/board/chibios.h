@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hwdef.h>
-#include <hal.h>
 
 #define HAL_BOARD_NAME "ChibiOS"
 
@@ -60,12 +59,14 @@
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
 #endif
 
+#ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
@@ -109,15 +110,7 @@
 
 // we support RC serial for BLHeli pass-thru
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
-#define HAL_SUPPORT_RCOUT_SERIAL !defined(HAL_BUILD_AP_PERIPH)
-#endif
-
-#ifndef HAL_DSHOT_ALARM
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && HAL_USE_PWM == TRUE
-#define HAL_DSHOT_ALARM 1
-#else
-#define HAL_DSHOT_ALARM 0
-#endif
+#define HAL_SUPPORT_RCOUT_SERIAL 1
 #endif
 
 // by default assume first I2C bus is internal
@@ -129,3 +122,26 @@
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
+
+#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
+#define HAL_USE_QUADSPI1 TRUE
+#else
+#define HAL_USE_QUADSPI1 FALSE
+#endif
+#if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
+#define HAL_USE_QUADSPI2 TRUE
+#else
+#define HAL_USE_QUADSPI2 FALSE
+#endif
+#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
+#define HAL_USE_OCTOSPI1 TRUE
+#else
+#define HAL_USE_OCTOSPI1 FALSE
+#endif
+#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
+#define HAL_USE_OCTOSPI2 TRUE
+#else
+#define HAL_USE_OCTOSPI2 FALSE
+#endif
+#define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
+#define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)

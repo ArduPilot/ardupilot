@@ -187,7 +187,7 @@ private:
     // Static functions, for interrupt support
     static void irq_handler_thd(void* arg);
     static void trigger_irq_radio_event(void);
-    static void trigger_timeout_event(void *arg);
+    static void trigger_timeout_event(virtual_timer_t* vt, void *arg);
 
     //  Private functions
     void radio_init(void);

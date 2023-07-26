@@ -1,8 +1,11 @@
 #pragma once
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+
 #include "AP_Proximity_LightWareSerial.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <Filter/Filter.h>
 
 class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
@@ -11,8 +14,10 @@ class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
 public:
     // constructor
     AP_Proximity_LightWareSF45B(AP_Proximity &_frontend,
-                                AP_Proximity::Proximity_State &_state) :
-            AP_Proximity_LightWareSerial(_frontend, _state) {}
+                                AP_Proximity::Proximity_State &_state,
+                                AP_Proximity_Params& _params,
+                                uint8_t serial_instance) :
+            AP_Proximity_LightWareSerial(_frontend, _state, _params, serial_instance) {}
 
     uint16_t rxspace() const override {
         return 1280;
@@ -79,7 +84,7 @@ private:
     uint32_t _last_init_ms;                 // system time of last re-initialisation
     uint32_t _last_distance_received_ms;    // system time of last distance measurement received from sensor
     bool _init_complete;                    // true once sensor initialisation is complete
-    ModeFilterInt16_Size5 _distance_filt{2};// mode filter to reduce glitches
+    ModeFilterInt16_Size3 _distance_filt{1};// mode filter to reduce glitches
 
     // 3D boundary face and distance for latest readings
     AP_Proximity_Boundary_3D::Face _face;   // face of most recently received distance
@@ -102,4 +107,4 @@ private:
 
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED

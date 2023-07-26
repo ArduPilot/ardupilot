@@ -13,11 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Beacon_SITL.h"
+
+#if AP_BEACON_SITL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#include "AP_Beacon_SITL.h"
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -110,4 +111,4 @@ void AP_Beacon_SITL::update(void)
     last_update_ms = now;
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_BEACON_SITL_ENABLED

@@ -1,4 +1,5 @@
 -- Script decodes, checks and prints NMEA messages
+-- luacheck: only 0
 
 -- find the serial first (0) scripting serial port instance
 local port = serial:find_serial(0)

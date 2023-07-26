@@ -15,27 +15,33 @@ import sys
 import subprocess
 
 
-class PreCommitFlake8(object):
+class AP_PreCommit(object):
 
     def __init__(self):
         pass
 
-    def progress(self, message):
+    @staticmethod
+    def progress(message):
         print("***** %s" % (message, ))
 
-    def check_file(self, filepath):
+    @staticmethod
+    def has_flake8_tag(filepath):
         content = open(filepath).read()
-        if "AP_FLAKE8_CLEAN" not in content:
-            return True
-        self.progress("Checking (%s)" % filepath)
-        retcode = subprocess.call(["flake8", filepath])
-        if retcode != 0:
-            self.progress("File (%s) failed with retcode (%s)" %
-                          (filepath, retcode))
-            return False
+        return "AP_FLAKE8_CLEAN" in content
+
+    def files_are_flake8_clean(self, files_to_check):
+        if files_to_check:
+            for path in files_to_check:
+                self.progress("Checking (%s)" % path)
+            try:
+                subprocess.check_output(["flake8"] + files_to_check, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                self.progress("Flake8 check failed: (%s)" % (e.output))
+                return False
         return True
 
-    def split_git_diff_output(self, output):
+    @staticmethod
+    def split_git_diff_output(output):
         '''split output from git-diff into a list of (status, filepath) tuples'''
         ret = []
         if type(output) == bytes:
@@ -59,7 +65,7 @@ class PreCommitFlake8(object):
         output = subprocess.check_output([
             "git", "diff", "--cached", "--name-status"])
         output_tuples = self.split_git_diff_output(output)
-        self.retcode = 0
+        files_to_check_flake8 = []
         for output_tuple in output_tuples:
             if len(output_tuple) > 2:
                 if output_tuple[0].startswith('R'):
@@ -75,13 +81,13 @@ class PreCommitFlake8(object):
                 # don't check deleted files
                 continue
             (base, extension) = os.path.splitext(filepath)
-            if extension != ".py":
-                continue
-            if not self.check_file(filepath):
-                self.retcode = 1
-        return self.retcode
+            if extension == ".py" and self.has_flake8_tag(filepath):
+                files_to_check_flake8.append(filepath)
+        if not self.files_are_flake8_clean(files_to_check_flake8):
+            return 1
+        return 0
 
 
 if __name__ == '__main__':
-    precommit = PreCommitFlake8()
+    precommit = AP_PreCommit()
     sys.exit(precommit.run())

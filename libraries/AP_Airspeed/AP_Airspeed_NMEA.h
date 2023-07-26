@@ -1,13 +1,17 @@
 #pragma once
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_NMEA_ENABLED
+
 #include "AP_Airspeed_Backend.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_Airspeed_NMEA : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_NMEA(AP_Airspeed &frontend, uint8_t _instance);
+
+    using AP_Airspeed_Backend::AP_Airspeed_Backend;
 
     // probe and initialise the sensor
     bool init(void) override;
@@ -65,3 +69,5 @@ private:
     // time last message was received
     uint32_t _last_update_ms;
 };
+
+#endif  // AP_AIRSPEED_NMEA_ENABLED

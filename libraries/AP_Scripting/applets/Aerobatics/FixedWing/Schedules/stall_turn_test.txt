@@ -1,0 +1,10 @@
+name: StallTurnTest
+
+message: Straight1
+straight_roll 5 0
+
+message: StallTurn
+stall_turn 30 100 1 4
+
+message: Straight2
+straight_roll 5 0

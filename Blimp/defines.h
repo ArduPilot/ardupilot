@@ -105,15 +105,13 @@ enum GuidedMode {
 
 enum PayloadPlaceStateType {
     PayloadPlaceStateType_FlyToLocation,
-    PayloadPlaceStateType_Calibrating_Hover_Start,
-    PayloadPlaceStateType_Calibrating_Hover,
-    PayloadPlaceStateType_Descending_Start,
-    PayloadPlaceStateType_Descending,
-    PayloadPlaceStateType_Releasing_Start,
+    PayloadPlaceStateType_Descent_Start,
+    PayloadPlaceStateType_Descent,
+    PayloadPlaceStateType_Release,
     PayloadPlaceStateType_Releasing,
-    PayloadPlaceStateType_Released,
-    PayloadPlaceStateType_Ascending_Start,
-    PayloadPlaceStateType_Ascending,
+    PayloadPlaceStateType_Delay,
+    PayloadPlaceStateType_Ascent_Start,
+    PayloadPlaceStateType_Ascent,
     PayloadPlaceStateType_Done,
 };
 
@@ -124,7 +122,7 @@ enum DevOptions {
     DevOptionSetAttitudeTarget_ThrustAsThrust = 4,
 };
 
-//  Logging parameters
+//  Logging parameters - only 32 messages are available to the vehicle here.
 enum LoggingParameters {
     LOG_CONTROL_TUNING_MSG,
     LOG_DATA_INT16_MSG,
@@ -132,7 +130,6 @@ enum LoggingParameters {
     LOG_DATA_INT32_MSG,
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
-    LOG_MOTBATT_MSG,
     LOG_PARAMTUNE_MSG,
     LOG_HELI_MSG,
     LOG_GUIDEDTARGET_MSG,

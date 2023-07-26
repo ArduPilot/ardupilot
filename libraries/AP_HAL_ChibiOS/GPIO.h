@@ -35,6 +35,7 @@ enum class PERIPH_TYPE : uint8_t {
     I2C_SDA,
     I2C_SCL,
     OTHER,
+    GPIO,
 };
 
 class ChibiOS::GPIO : public AP_HAL::GPIO {
@@ -76,13 +77,29 @@ public:
 #ifndef IOMCU_FW
     // timer tick
     void timer_tick(void) override;
+
+    // Check for ISR floods
+    bool arming_checks(size_t buflen, char *buffer) const override;
 #endif
+
+    // check if a pin number is valid
+    bool valid_pin(uint8_t pin) const override;
+
+    // return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument
+    // servo_ch uses zero-based indexing
+    bool pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const override;
 
     /*
       resolve an ioline to take account of alternative configurations
      */
     static ioline_t resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance);
 
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
+    // allow for save and restore of pin settings
+    bool    get_mode(uint8_t pin, uint32_t &mode) override;
+    void    set_mode(uint8_t pin, uint32_t mode) override;
+#endif
+    
 private:
     bool _usb_connected;
     bool _ext_started;
@@ -105,3 +122,17 @@ public:
 private:
     ioline_t line;
 };
+
+#if HAL_WITH_IO_MCU
+class ChibiOS::IOMCU_DigitalSource : public AP_HAL::DigitalSource {
+public:
+    IOMCU_DigitalSource(uint8_t _pin);
+    void    write(uint8_t value) override;
+    void    toggle() override;
+    // IOMCU GPIO is write only
+    void    mode(uint8_t output) override {};
+    uint8_t    read() override { return 0; }
+private:
+    uint8_t pin;
+};
+#endif

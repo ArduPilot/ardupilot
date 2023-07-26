@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LightWareSerial.h"
 
+#if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -24,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -33,6 +35,9 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
     float sum = 0;              // sum of all readings taken
     uint16_t valid_count = 0;   // number of valid readings
     uint16_t invalid_count = 0; // number of invalid readings
+
+    // max distance the sensor can reliably measure - read from parameters
+    const int16_t distance_cm_max = max_distance_cm();
 
     // read any available lines from the lidar
     int16_t nbytes = uart->available();
@@ -44,7 +49,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
             if (c == '\r') {
                 linebuf[linebuf_len] = 0;
                 const float dist = strtof(linebuf, nullptr);
-                if (!is_negative(dist)) {
+                if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
                     sum += dist;
                     valid_count++;
                     // if still determining protocol update legacy valid count
@@ -74,8 +79,8 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
             } else {
                 // received the low byte which should be second
                 if (high_byte_received) {
-                    const float dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
-                    if (!is_negative(dist)) {
+                    const int16_t dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
+                    if (dist >= 0 && !is_lost_signal_distance(dist, distance_cm_max)) {
                         sum += dist * 0.01f;
                         valid_count++;
                         // if still determining protocol update binary valid count
@@ -115,16 +120,36 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
 
     // return average of all valid readings
     if (valid_count > 0) {
-        reading_cm = 100 * sum / valid_count;
+        reading_m = sum / valid_count;
+        no_signal = false;
         return true;
     }
 
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
-        reading_cm = MIN(MAX(LIGHTWARE_DIST_MAX_CM, max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX);
+        reading_m = MIN(MAX(LIGHTWARE_DIST_MAX_CM, distance_cm_max + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
+        no_signal = true;
         return true;
     }
 
     // no readings so return false
     return false;
 }
+
+// check to see if distance returned by the LiDAR is a known lost-signal distance flag
+bool AP_RangeFinder_LightWareSerial::is_lost_signal_distance(int16_t distance_cm, int16_t distance_cm_max)
+{
+    if (distance_cm < distance_cm_max + LIGHTWARE_OUT_OF_RANGE_ADD_CM) {
+        // in-range
+        return false;
+    }
+    const int16_t bad_distances[] { 13000, 16000, 23000, 25000 };
+    for (const auto bad_distance_cm : bad_distances) {
+        if (distance_cm == bad_distance_cm) {
+            return true;
+        }
+    }
+    return false;
+}
+
+#endif

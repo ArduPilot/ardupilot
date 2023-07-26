@@ -17,11 +17,13 @@
 /*
   with thanks to PX4 dsm.c for DSM decoding approach
  */
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol_DSM.h"
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-#include "AP_RCProtocol_SRXL2.h"
-#endif
+#include <AP_VideoTX/AP_VideoTX_config.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -235,15 +237,15 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
     }
 
     // Handle VTX control frame.
+#if AP_VIDEOTX_ENABLED
     if (haveVtxControl) {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-        AP_RCProtocol_SRXL2::configure_vtx(
+        configure_vtx(
             (vtxControl & SPEKTRUM_VTX_BAND_MASK)     >> SPEKTRUM_VTX_BAND_SHIFT,
             (vtxControl & SPEKTRUM_VTX_CHANNEL_MASK)  >> SPEKTRUM_VTX_CHANNEL_SHIFT,
             (vtxControl & SPEKTRUM_VTX_POWER_MASK)    >> SPEKTRUM_VTX_POWER_SHIFT,
             (vtxControl & SPEKTRUM_VTX_PIT_MODE_MASK) >> SPEKTRUM_VTX_PIT_MODE_SHIFT);
-#endif
     }
+#endif
 
     /*
      * The encoding of the first two bytes is uncertain, so we're
@@ -353,6 +355,11 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
  */
 void AP_RCProtocol_DSM::start_bind(void)
 {
+#if defined(HAL_GPIO_SPEKTRUM_RC) && HAL_GPIO_SPEKTRUM_RC
+    if (!hal.gpio->get_mode(HAL_GPIO_SPEKTRUM_RC, bind_mode_saved)) {
+        return;
+    }
+#endif
     bind_state = BIND_STATE1;
 }
 
@@ -408,6 +415,7 @@ void AP_RCProtocol_DSM::update(void)
         if (now - bind_last_ms > 50) {
             hal.gpio->pinMode(HAL_GPIO_SPEKTRUM_RC, 0);
             bind_state = BIND_STATE_NONE;
+            hal.gpio->set_mode(HAL_GPIO_SPEKTRUM_RC, bind_mode_saved);
         }
         break;
     }
@@ -530,3 +538,5 @@ void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
     }
     _process_byte(AP_HAL::millis(), b);
 }
+
+#endif  // AP_RCPROTOCOL_ENABLED

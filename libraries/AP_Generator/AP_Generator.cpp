@@ -15,11 +15,13 @@
 
 #include "AP_Generator.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include "AP_Generator_IE_650_800.h"
 #include "AP_Generator_IE_2400.h"
 #include "AP_Generator_RichenPower.h"
+
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_Generator::var_info[] = {
 
@@ -30,6 +32,13 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Generator, _type, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: OPTIONS
+    // @DisplayName: Generator Options
+    // @Description: Bitmask of options for generators
+    // @Bitmask: 0:Supress Maintenance-Required Warnings
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
 
     AP_GROUPEND
 };
@@ -56,17 +65,23 @@ void AP_Generator::init()
             // Not using a generator
             return;
 
+#if AP_GENERATOR_IE650_800_ENABLED
         case Type::IE_650_800:
             _driver_ptr = new AP_Generator_IE_650_800(*this);
             break;
+#endif
 
+#if AP_GENERATOR_IE2400_ENABLED
         case Type::IE_2400:
             _driver_ptr = new AP_Generator_IE_2400(*this);
             break;
+#endif
 
+#if AP_GENERATOR_RICHENPOWER_ENABLED
         case Type::RICHENPOWER:
             _driver_ptr = new AP_Generator_RichenPower(*this);
             break;
+#endif
     }
 
     if (_driver_ptr != nullptr) {

@@ -232,7 +232,7 @@ void AP_Motors6DOF::output_min()
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16(1500 + thrust_in * 400, _throttle_radio_min, _throttle_radio_max);
+    return constrain_int16(1500 + thrust_in * 400, get_pwm_output_min(), get_pwm_output_max());
 }
 
 void AP_Motors6DOF::output_to_motors()
@@ -367,15 +367,13 @@ void AP_Motors6DOF::output_armed_stabilizing()
 
     float _batt_current_delta = _batt_current - _batt_current_last;
 
-    float loop_interval = 1.0f/_loop_rate;
+    float _current_change_rate = _batt_current_delta / _dt;
 
-    float _current_change_rate = _batt_current_delta / loop_interval;
+    float predicted_current = _batt_current + (_current_change_rate * _dt * 5);
 
-    float predicted_current = _batt_current + (_current_change_rate * loop_interval * 5);
+    float batt_current_ratio = _batt_current / _batt_current_max;
 
-    float batt_current_ratio = _batt_current/_batt_current_max;
-
-    float predicted_current_ratio = predicted_current/_batt_current_max;
+    float predicted_current_ratio = predicted_current / _batt_current_max;
     _batt_current_last = _batt_current;
 
     if (predicted_current > _batt_current_max * 1.5f) {
@@ -383,7 +381,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
         batt_current_ratio = predicted_current_ratio;
     }
-    _output_limited += (loop_interval/(loop_interval+_batt_current_time_constant)) * (1 - batt_current_ratio);
+    _output_limited += (_dt / (_dt + _batt_current_time_constant)) * (1 - batt_current_ratio);
 
     _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
 

@@ -16,8 +16,8 @@ public:
     EKFGSF_yaw();
 
     // Update Filter States - this should be called whenever new IMU data is available
-    void update(const Vector3F &delAng,// IMU delta angle rotation vector meassured in body frame (rad)
-                const Vector3F &delVel,// IMU delta velocity vector meassured in body frame (m/s)
+    void update(const Vector3F &delAng,// IMU delta angle rotation vector measured in body frame (rad)
+                const Vector3F &delVel,// IMU delta velocity vector measured in body frame (m/s)
                 const ftype delAngDT, // time interval that delAng was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
                 const ftype delVelDT, // time interval that delVel was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
                 bool runEKF,          // set to true when flying or movement suitable for yaw estimation
@@ -31,9 +31,11 @@ public:
     // set the gyro bias in rad/sec
     void setGyroBias(Vector3f &gyroBias);
 
-    // get yaw estimated and corresponding variance
-    // return false if yaw estimation is inactive
-    bool getYawData(ftype &yaw, ftype &yawVariance) const;
+    // get yaw estimated and corresponding variance return false if
+    // yaw estimation is inactive.  n_clips will contain the number of
+    // models which were *not* used to create the yaw and yawVariance
+    // return values.
+    bool getYawData(ftype &yaw, ftype &yawVariance, uint8_t *n_clips=nullptr) const;
 
     // get the length of the weighted average velocity innovation vector
     // return false if not available
@@ -136,4 +138,8 @@ private:
     // Returns the probability for a selected model assuming a Gaussian error distribution
     // Used by the Guassian Sum Filter to calculate the weightings when combining the outputs from the bank of EKF's
     ftype gaussianDensity(const uint8_t mdl_idx) const;
+
+    // number of models whose weights underflowed due to excessive
+    // innovation variances:
+    uint8_t n_clips;
 };

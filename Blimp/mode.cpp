@@ -5,6 +5,8 @@
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
+#include <AP_Vehicle/AP_MultiCopter.h>
+
 /*
   constructor for Mode object
  */
@@ -27,11 +29,11 @@ Mode *Blimp::mode_from_mode_num(const Mode::Number mode)
     Mode *ret = nullptr;
 
     switch (mode) {
-    case Mode::Number::MANUAL:
-        ret = &mode_manual;
-        break;
     case Mode::Number::LAND:
         ret = &mode_land;
+        break;
+    case Mode::Number::MANUAL:
+        ret = &mode_manual;
         break;
     case Mode::Number::VELOCITY:
         ret = &mode_velocity;
@@ -62,8 +64,7 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
 
     Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        notify_no_such_mode((uint8_t)mode);
         return false;
     }
 
@@ -176,11 +177,6 @@ bool Mode::is_disarmed_or_landed() const
 bool Mode::set_mode(Mode::Number mode, ModeReason reason)
 {
     return blimp.set_mode(mode, reason);
-}
-
-void Mode::set_land_complete(bool b)
-{
-    return blimp.set_land_complete(b);
 }
 
 GCS_Blimp &Mode::gcs()

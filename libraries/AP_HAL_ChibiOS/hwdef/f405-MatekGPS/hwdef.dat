@@ -7,22 +7,19 @@ MCU STM32F4xx STM32F405xx
 FLASH_RESERVE_START_KB 64
 FLASH_SIZE_KB 1024
 
-# store parameters in pages 11 and 12
-define STORAGE_FLASH_PAGE 1
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
 APJ_BOARD_ID 1014
 
 env AP_PERIPH 1
-define PERIPH_FW TRUE
-define HAL_BUILD_AP_PERIPH
 
 define STM32_ST_USE_TIMER 5
 define CH_CFG_ST_RESOLUTION 32
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -38,32 +35,28 @@ define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
 
+# debug (disabled to allow for PA14 LED above), to enable debugging disable the use of PA14 above
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
+
 # avoid timer and RCIN threads to save memory
 define HAL_NO_RCIN_THREAD
 
 define HAL_USE_RTC FALSE
 define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
 define HAL_DISABLE_LOOP_DELAY
 
-define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
-
-define HAL_MINIMIZE_FEATURES 0
 
 define HAL_DEVICE_THREAD_STACK 768
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
@@ -109,8 +102,7 @@ PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
-# use a default node ID so this works with MSP only
-define HAL_CAN_DEFAULT_NODE_ID 113
+# use DNA for node allocation
 
 define CAN_APP_NODE_NAME "org.ardupilot.f405_MatekGPS"
 
@@ -197,12 +189,9 @@ define AP_PERIPH_MSP_PORT_DEFAULT 4
 
 # ----------------- rangefinder,ADSB ----------------------
 define HAL_PERIPH_ENABLE_RANGEFINDER
-define RANGEFINDER_MAX_INSTANCES 1
 
 # disable rangefinder by default
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
-
-define HAL_PERIPH_ENABLE_ADSB
 
 # ------------------ BATTERY Monitor -----------------------
 define HAL_PERIPH_ENABLE_BATTERY
@@ -221,8 +210,8 @@ PC5 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
 # define BOARD_RSSI_ANA_PIN 12
 # define HAL_DEFAULT_AIRSPEED_PIN 13
 
-define HAL_BATT_MONITOR_DEFAULT 4
-define HAL_BATT2_MONITOR_DEFAULT 4
+# Set the Default Battery Monitor Type to be Off
+define HAL_BATT_MONITOR_DEFAULT 0
 
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_VOLT_SCALE 21.0
@@ -237,3 +226,5 @@ define HAL_BATT2_VOLT_SCALE 11.0
 # -------------------- Buzzer+NeoPixels --------------d------
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
+
+define DEFAULT_NTF_LED_TYPES 455

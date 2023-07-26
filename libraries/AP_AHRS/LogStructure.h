@@ -8,7 +8,8 @@
     LOG_ATTITUDE_MSG, \
     LOG_ORGN_MSG, \
     LOG_POS_MSG, \
-    LOG_RATE_MSG
+    LOG_RATE_MSG, \
+    LOG_ATSC_MSG
 
 // @LoggerMessage: AHR2
 // @Description: Backup AHRS data
@@ -77,6 +78,7 @@ struct PACKED log_Attitude {
 // @Description: Vehicle navigation origin or other notable position
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Position type
+// @FieldValueEnum: Type: AP_AHRS::LogOriginType
 // @Field: Lat: Position latitude
 // @Field: Lng: Position longitude
 // @Field: Alt: Position altitude
@@ -122,6 +124,7 @@ struct PACKED log_POS {
 // @Field: ADes: desired vehicle vertical acceleration
 // @Field: A: achieved vehicle vertical acceleration
 // @Field: AOut: percentage of vertical thrust output current being used
+// @Field: AOutSlew: vertical thrust output slew rate
 struct PACKED log_Rate {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -137,19 +140,74 @@ struct PACKED log_Rate {
     float   control_accel;
     float   accel;
     float   accel_out;
+    float   throttle_slew;
+};
+
+// @LoggerMessage: VSTB
+// @Description: Log message for video stabilisation software such as Gyroflow
+// @Field: TimeUS: Time since system startup
+// @Field: GyrX: measured rotation rate about X axis
+// @Field: GyrY: measured rotation rate about Y axis
+// @Field: GyrZ: measured rotation rate about Z axis
+// @Field: AccX: acceleration along X axis
+// @Field: AccY: acceleration along Y axis
+// @Field: AccZ: acceleration along Z axis
+// @Field: Q1: Estimated attitude quaternion component 1
+// @Field: Q2: Estimated attitude quaternion component 2
+// @Field: Q3: Estimated attitude quaternion component 3
+// @Field: Q4: Estimated attitude quaternion component 4
+
+struct PACKED log_Video_Stabilisation {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float gyro_x;
+    float gyro_y;
+    float gyro_z;
+    float accel_x;
+    float accel_y;
+    float accel_z;
+    float Q1;
+    float Q2;
+    float Q3;
+    float Q4;
+};
+
+// @LoggerMessage: ATSC
+// @Description: Scale factors for attitude controller
+// @Field: TimeUS: Time since system startup
+// @Field: AngPScX: Angle P scale X
+// @Field: AngPScY: Angle P scale Y
+// @Field: AngPScZ: Angle P scale Z
+// @Field: PDScX: PD scale X
+// @Field: PDScY: PD scale Y
+// @Field: PDScZ: PD scale Z
+struct PACKED log_ATSC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float scaleP_x;
+    float scaleP_y;
+    float scaleP_z;
+    float scalePD_x;
+    float scalePD_y;
+    float scalePD_z;
 };
 
 
 #define LOG_STRUCTURE_FROM_AHRS \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
-        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
+        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" , true }, \
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
-        "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" }, \
+        "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" }, \
+        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" , true }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
-        "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s-DUm", "F-GGB" }, \
+        "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s#DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
-        "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" }, \
+        "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" },
+        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
+    { LOG_ATSC_MSG, sizeof(log_ATSC), \
+        "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
+    { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
+        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo????", "F000000????" },
+

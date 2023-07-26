@@ -99,6 +99,8 @@ protected:
     bool reverse_elevator_rudder;
     bool ice_engine;
     bool tailsitter;
+    bool aerobatic;
+    bool copter_tailsitter;
     bool have_launcher;
     float launch_accel;
     float launch_time;
@@ -114,7 +116,8 @@ protected:
         choke_servo,
         ignition_servo,
         starter_servo,
-        slewrate
+        slewrate,
+        true
     };
 
     float liftCoeff(float alpha) const;

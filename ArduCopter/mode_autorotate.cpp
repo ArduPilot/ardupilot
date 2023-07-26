@@ -41,7 +41,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     g2.arot.init_hs_controller();
     g2.arot.init_fwd_spd_controller();
 
-    // Retrive rpm and start rpm sensor health checks
+    // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
 
     // Display message 
@@ -86,7 +86,7 @@ void ModeAutorotate::run()
     uint32_t now = millis(); //milliseconds
 
     // Initialise internal variables
-    float curr_vel_z = inertial_nav.get_velocity().z;   // Current vertical descent
+    float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
 
     //----------------------------------------------------------------
     //                  State machine logic
@@ -173,7 +173,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Set target head speed in head speed controller
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs hasent reached target for glide
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs hasent reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again
@@ -209,7 +209,7 @@ void ModeAutorotate::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
                 #endif
 
-                // Set bail out timer remaining equal to the paramter value, bailout time 
+                // Set bail out timer remaining equal to the parameter value, bailout time 
                 // cannot be less than the motor spool-up time: BAILOUT_MOTOR_RAMP_TIME.
                 _bail_time = MAX(g2.arot.get_bail_time(),BAILOUT_MOTOR_RAMP_TIME+0.1f);
 
@@ -252,7 +252,7 @@ void ModeAutorotate::run()
             _pitch_target -= _target_pitch_adjust*G_Dt;
         }
         // Set position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(_desired_v_z, false);
+        pos_control->set_pos_target_z_from_climb_rate_cm(_desired_v_z);
 
         // Update controllers
         pos_control->update_z_controller();
@@ -282,7 +282,7 @@ void ModeAutorotate::run()
             get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
             // Get pilot's desired yaw rate
-            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
             // Pitch target is calculated in autorotation phase switch above
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pilot_roll, _pitch_target, pilot_yaw_rate);

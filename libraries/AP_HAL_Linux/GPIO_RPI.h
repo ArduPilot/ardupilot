@@ -192,6 +192,9 @@ private:
     // File descriptor for the memory device file
     // If it's negative, then there was an error opening the file.
     int _system_memory_device;
+    // store GPIO output status.
+    uint32_t _gpio_output_port_status = 0x00;
+
 };
 
 }

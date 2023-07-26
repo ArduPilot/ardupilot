@@ -12,18 +12,13 @@ class AC_P_1D {
 public:
 
     // constructor
-    AC_P_1D(float initial_p, float dt);
+    AC_P_1D(float initial_p);
 
     CLASS_NO_COPY(AC_P_1D);
 
-    // set time step in seconds
-    void set_dt(float dt) { _dt = dt; }
-
     // update_all - set target and measured inputs to P controller and calculate outputs
     // target and measurement are filtered
-    // if measurement is further than error_min or error_max (see set_limits method)
-    //   the target is moved closer to the measurement and limit_min or limit_max will be set true
-    float update_all(float &target, float measurement, bool &limit_min, bool &limit_max) WARN_IF_UNUSED;
+    float update_all(float &target, float measurement) WARN_IF_UNUSED;
 
     // set_limits - sets the maximum error to limit output and first and second derivative of output
     void set_limits(float output_min, float output_max, float D_Out_max = 0.0f, float D2_Out_max = 0.0f);
@@ -58,9 +53,10 @@ private:
     AP_Float _kp;
 
     // internal variables
-    float _dt;          // time step in seconds
     float _error;       // time step in seconds
     float _error_min; // error limit in negative direction
     float _error_max; // error limit in positive direction
     float _D1_max;      // maximum first derivative of output
+
+    const float default_kp;
 };

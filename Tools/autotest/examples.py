@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Contains functions used to test the ArduPilot examples
 

@@ -13,6 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "AP_RangeFinder_LightWareI2C.h"
+
+#if AP_RANGEFINDER_LWI2C_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -188,14 +191,14 @@ void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const c
 bool AP_RangeFinder_LightWareI2C::init()
 {
     if (sf20_init()) {
-        hal.console->printf("Found SF20 native Lidar\n");
+        DEV_PRINTF("Found SF20 native Lidar\n");
         return true;
     }
     if (legacy_init()) {
-        hal.console->printf("Found SF20 legacy Lidar\n");
+        DEV_PRINTF("Found SF20 legacy Lidar\n");
         return true;
     }
-    hal.console->printf("SF20 not found\n");
+    DEV_PRINTF("SF20 not found\n");
     return false;
 }
 
@@ -242,7 +245,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     sf20_get_version("?P\r\n", "p:", version);
 
     if (version[0]) {
-        hal.console->printf("SF20 Lidar version %s\n", version);
+        DEV_PRINTF("SF20 Lidar version %s\n", version);
     }
 
     // Makes sure that "address tagging" is turned off.
@@ -337,7 +340,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_LightWareI2C::legacy_get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_LightWareI2C::legacy_get_reading(float &reading_m)
 {
     be16_t val;
 
@@ -348,9 +351,9 @@ bool AP_RangeFinder_LightWareI2C::legacy_get_reading(uint16_t &reading_cm)
         int16_t signed_val = int16_t(be16toh(val));
         if (signed_val < 0) {
             // some lidar firmwares will return 65436 for out of range
-            reading_cm = uint16_t(max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM);
+            reading_m = uint16_t(max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM) * 0.01f;
         } else {
-            reading_cm = uint16_t(signed_val);
+            reading_m = uint16_t(signed_val) * 0.01f;
         }
         return true;
     }
@@ -358,7 +361,7 @@ bool AP_RangeFinder_LightWareI2C::legacy_get_reading(uint16_t &reading_cm)
 }
 
 // read - return last value measured by sf20 sensor
-bool AP_RangeFinder_LightWareI2C::sf20_get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_LightWareI2C::sf20_get_reading(float &reading_m)
 {
     // Parses up to 5 ASCII streams for LiDAR data.
     // If a parse fails, the stream measurement is not updated until it is successfully read in the future.
@@ -378,7 +381,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_get_reading(uint16_t &reading_cm)
     }
 
     if (i==0) {
-        reading_cm = sf20_stream_val[0];
+        reading_m = sf20_stream_val[0] * 0.01f;
     }
 
     // Increment the stream sequence
@@ -462,7 +465,7 @@ void AP_RangeFinder_LightWareI2C::update(void)
 
 void AP_RangeFinder_LightWareI2C::legacy_timer(void)
 {
-    if (legacy_get_reading(state.distance_cm)) {
+    if (legacy_get_reading(state.distance_m)) {
         // update range_valid state based on distance measured
         update_status();
     } else {
@@ -472,7 +475,7 @@ void AP_RangeFinder_LightWareI2C::legacy_timer(void)
 
 void AP_RangeFinder_LightWareI2C::sf20_timer(void)
 {
-    if (sf20_get_reading(state.distance_cm)) {
+    if (sf20_get_reading(state.distance_m)) {
         // update range_valid state based on distance measured
         update_status();
     } else {
@@ -500,3 +503,5 @@ bool AP_RangeFinder_LightWareI2C::sf20_wait_on_reply(uint8_t *rx_two_byte)
     }
     return false;
 }
+
+#endif  // AP_RANGEFINDER_LWI2C_ENABLED

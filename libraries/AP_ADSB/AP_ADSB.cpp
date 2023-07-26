@@ -24,10 +24,12 @@
 
 #if HAL_ADSB_ENABLED
 #include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
-#include <AP_Vehicle/AP_Vehicle.h>
+#include "AP_ADSB_Sagetech_MXS.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
@@ -54,7 +56,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
@@ -80,7 +82,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: ICAO_ID
     // @DisplayName: ICAO_ID vehicle identification number
-    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is an integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
     // @Range: -1 16777215
     // @User: Advanced
     AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
@@ -156,6 +158,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
 
+    // @Param: OPTIONS
+    // @DisplayName: ADS-B Options
+    // @Description: Options for emergency failsafe codes and device capabilities
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -171,7 +180,7 @@ AP_ADSB::AP_ADSB()
     _singleton = this;
 
 #ifdef ADSB_STATIC_CALLSIGN
-    strncpy(&out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, sizeof(out_state.cfg.callsign));
+    strncpy(out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, sizeof(out_state.cfg.callsign));
 #endif
 }
 
@@ -182,7 +191,7 @@ void AP_ADSB::init(void)
 {
     if (in_state.vehicle_list == nullptr) {
         // sanity check param
-        in_state.list_size_param = constrain_int16(in_state.list_size_param, 1, INT16_MAX);
+        in_state.list_size_param.set(constrain_int16(in_state.list_size_param, 1, INT16_MAX));
 
         in_state.vehicle_list = new adsb_vehicle_t[in_state.list_size_param];
 
@@ -250,19 +259,38 @@ void AP_ADSB::detect_instance(uint8_t instance)
         return;
 
     case Type::uAvionix_MAVLink:
+#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
             _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
-            return;
         }
+#endif
+        break;
+
+    case Type::uAvionix_UCP:
+#if HAL_ADSB_UCP_ENABLED
+        if (AP_ADSB_uAvionix_UCP::detect()) {
+            _backend[instance] = new AP_ADSB_uAvionix_UCP(*this, instance);
+        }
+#endif
         break;
 
     case Type::Sagetech:
+#if HAL_ADSB_SAGETECH_ENABLED
         if (AP_ADSB_Sagetech::detect()) {
             _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
-            return;
         }
+#endif
+        break;
+
+    case Type::Sagetech_MXS:
+#if HAL_ADSB_SAGETECH_MXS_ENABLED
+        if (AP_ADSB_Sagetech_MXS::detect()) {
+            _backend[instance] = new AP_ADSB_Sagetech_MXS(*this, instance);
+        }
+#endif
         break;
     }
+
 }
 
 // get instance type from instance
@@ -302,7 +330,7 @@ void AP_ADSB::update(void)
 
     const uint32_t now = AP_HAL::millis();
 
-    if (!AP::ahrs().get_position(_my_loc)) {
+    if (!AP::ahrs().get_location(_my_loc)) {
         _my_loc.zero();
     }
 
@@ -323,7 +351,7 @@ void AP_ADSB::update(void)
         // param changed, check that it's a valid octal
         if (!is_valid_callsign(out_state.cfg.squawk_octal_param)) {
             // invalid, reset it to default
-            out_state.cfg.squawk_octal_param = ADSB_SQUAWK_OCTAL_DEFAULT;
+            out_state.cfg.squawk_octal_param.set(ADSB_SQUAWK_OCTAL_DEFAULT);
         }
         out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
     }
@@ -347,10 +375,9 @@ void AP_ADSB::update(void)
 
 #ifndef ADSB_STATIC_CALLSIGN
         if (!out_state.cfg.was_set_externally) {
-            set_callsign("PING", true);
+            set_callsign("ARDU", true);
         }
 #endif
-        gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -590,16 +617,16 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
     out_state.cfg.was_set_externally = true;
 
     out_state.cfg.ICAO_id = packet.ICAO;
-    out_state.cfg.ICAO_id_param = out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF;
+    out_state.cfg.ICAO_id_param.set(out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF);
 
     // May contain a non-null value at the end so accept it as-is with memcpy instead of strcpy
     memcpy(out_state.cfg.callsign, packet.callsign, sizeof(out_state.cfg.callsign));
 
-    out_state.cfg.emitterType = packet.emitterType;
-    out_state.cfg.lengthWidth = packet.aircraftSize;
-    out_state.cfg.gpsOffsetLat = packet.gpsOffsetLat;
-    out_state.cfg.gpsOffsetLon = packet.gpsOffsetLon;
-    out_state.cfg.rfSelect = packet.rfSelect;
+    out_state.cfg.emitterType.set(packet.emitterType);
+    out_state.cfg.lengthWidth.set(packet.aircraftSize);
+    out_state.cfg.gpsOffsetLat.set(packet.gpsOffsetLat);
+    out_state.cfg.gpsOffsetLon.set(packet.gpsOffsetLon);
+    out_state.cfg.rfSelect.set(packet.rfSelect);
     out_state.cfg.stall_speed_cm = packet.stallSpeed;
 
     // guard against string with non-null end char
@@ -610,6 +637,26 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 
     // send now
     out_state.last_config_ms = 0;
+}
+
+/*
+ * handle incoming packet UAVIONIX_ADSB_OUT_CONTROL
+ * allows a GCS to set the contents of the control message sent by ardupilot to the transponder
+ */
+void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet)
+{
+    out_state.ctrl.baroCrossChecked = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_EXTERNAL_BARO_CROSSCHECKED;
+    out_state.ctrl.airGroundState = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_ON_GROUND;
+    out_state.ctrl.identActive = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE;
+    out_state.ctrl.modeAEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_A_ENABLED;
+    out_state.ctrl.modeCEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_C_ENABLED;
+    out_state.ctrl.modeSEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_S_ENABLED;
+    out_state.ctrl.es1090TxEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_1090ES_TX_ENABLED;
+    out_state.ctrl.externalBaroAltitude_mm = packet.baroAltMSL;
+    out_state.ctrl.squawkCode = packet.squawk;
+    out_state.ctrl.emergencyState = packet.emergencyStatus;
+    memcpy(out_state.ctrl.callsign, packet.flight_id, sizeof(out_state.ctrl.callsign));
+    out_state.ctrl.x_bit = packet.x_bit;
 }
 
 /*
@@ -625,6 +672,19 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
     out_state.chan_last_ms = AP_HAL::millis();
     out_state.chan = chan;
     out_state.status = (UAVIONIX_ADSB_RF_HEALTH)packet.rfHealth;
+}
+
+/*
+ * send a periodic report of the ADSB out status
+ */
+void AP_ADSB::send_adsb_out_status(const mavlink_channel_t chan) const
+{
+    for (uint8_t i=0; i < ADSB_MAX_INSTANCES; i++) {
+        if (_type[i] == (int8_t)(AP_ADSB::Type::uAvionix_UCP) || _type[i] == (int8_t)(AP_ADSB::Type::Sagetech_MXS)) {
+            mavlink_msg_uavionix_adsb_out_status_send_struct(chan, &out_state.tx_status);
+            return;
+        }
+    }
 }
 
 /*
@@ -707,31 +767,38 @@ bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-    case MAVLINK_MSG_ID_ADSB_VEHICLE: {
-        adsb_vehicle_t vehicle {};
-        mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
-        vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
-        handle_adsb_vehicle(vehicle);
-        break;
-    }
+        case MAVLINK_MSG_ID_ADSB_VEHICLE: {
+            adsb_vehicle_t vehicle {};
+            mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
+            vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
+            handle_adsb_vehicle(vehicle);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
-        mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-        mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
-        handle_transceiver_report(chan, packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
+            mavlink_uavionix_adsb_transceiver_health_report_t packet {};
+            mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
+            handle_transceiver_report(chan, packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
-        mavlink_uavionix_adsb_out_cfg_t packet {};
-        mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
-        handle_out_cfg(packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
+            mavlink_uavionix_adsb_out_cfg_t packet {};
+            mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
+            handle_out_cfg(packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        // unhandled, this is an outbound packet only
-        break;
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+            // unhandled, this is an outbound packet only
+            break;
+
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL: {
+            mavlink_uavionix_adsb_out_control_t packet {};            
+            mavlink_msg_uavionix_adsb_out_control_decode(&msg, &packet);
+            handle_out_control(packet);
+            break;
+        }
     }
 
 }
@@ -786,6 +853,29 @@ void AP_ADSB::write_log(const adsb_vehicle_t &vehicle) const
         squawk        : vehicle.info.squawk,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+/**
+* @brief Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value stored on a GCS as a string field in different format, but then transmitted over mavlink as a float which is always a decimal.
+* baseIn: base of input number
+* inputNumber: value currently in base "baseIn" to be converted to base "baseOut"
+*
+* Example: convert ADSB squawk octal "1200" stored in memory as 0x0280 to 0x04B0
+*          uint16_t squawk_decimal = convertMathBase(8, squawk_octal);
+*/
+uint32_t AP_ADSB::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber)
+{
+    // Our only sensible input bases are 16 and 8
+    if (baseIn != 8 && baseIn != 16) {
+        return inputNumber;
+    }
+    uint32_t outputNumber = 0;
+    for (uint8_t i=0; i < 10; i++) {
+        outputNumber += (inputNumber % 10) * powf(baseIn, i);
+        inputNumber /= 10;
+        if (inputNumber == 0) break;
+    }
+    return outputNumber;
 }
 
 AP_ADSB *AP::ADSB()

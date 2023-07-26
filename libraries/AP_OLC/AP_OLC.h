@@ -17,11 +17,10 @@
 
 #pragma once
 #include <stdint.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_PLUSCODE_ENABLE
-#define HAL_PLUSCODE_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#define HAL_PLUSCODE_ENABLE BOARD_FLASH_SIZE > 1024
 #endif
 
 

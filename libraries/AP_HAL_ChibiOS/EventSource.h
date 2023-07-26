@@ -21,6 +21,6 @@ public:
     void signalI(uint32_t evt_mask) override;
 
     // Wait on an Event handle, method for internal use by EventHandle
-    bool wait(uint64_t duration, AP_HAL::EventHandle* evt_handle) override;
+    bool wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle) override;
 };
 #endif //#if CH_CFG_USE_EVENTS == TRUE

@@ -15,11 +15,7 @@
 
 #include "AP_WindVane_Home.h"
 
-// constructor
-AP_WindVane_Home::AP_WindVane_Home(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
+#include <AP_AHRS/AP_AHRS.h>
 
 void AP_WindVane_Home::update_direction()
 {

@@ -14,25 +14,35 @@
  */
 /*
   simulate MegaSquirt EFI system
+
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --uartF=sim:megasquirt --speedup=1
+param set SERIAL5_PROTOCOL 24
+param set SIM_EFI_TYPE 1
+param set EFI_TYPE 1
+reboot
+status EFI_STATUS
+
+./Tools/autotest/autotest.py --gdb --debug build.Plane test.Plane.MegaSquirt
+
 */
 
 #pragma once
 
 #include <SITL/SITL.h>
 #include <AP_HAL/utility/Socket.h>
+#include "SIM_SerialDevice.h"
 
 namespace SITL {
 
-class EFI_MegaSquirt {
+class EFI_MegaSquirt : public SerialDevice {
 public:
+
+    using SerialDevice::SerialDevice;
+
     void update();
 
 private:
     void send_table();
-    SocketAPM sock{false};
-
-    uint32_t time_send_ms;
-    bool connected;
 
     struct PACKED {
         uint16_t size;

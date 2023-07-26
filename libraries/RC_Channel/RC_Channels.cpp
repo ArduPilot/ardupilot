@@ -18,6 +18,10 @@
  *
  */
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <stdlib.h>
 #include <cmath>
 
@@ -95,7 +99,10 @@ int16_t RC_Channels::get_receiver_rssi(void)
 {
     return hal.rcin->get_rssi();
 }
-
+int16_t RC_Channels::get_receiver_link_quality(void)
+{
+    return hal.rcin->get_rx_link_quality();
+}
 void RC_Channels::clear_overrides(void)
 {
     RC_Channels &_rc = rc();
@@ -145,7 +152,7 @@ bool RC_Channels::receiver_bind(const int dsmMode)
 }
 
 
-// support for auxillary switches:
+// support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void RC_Channels::read_aux_all()
 {
@@ -257,6 +264,45 @@ uint32_t RC_Channels::enabled_protocols() const
     return uint32_t(_protocols.get());
 }
 
+#if AP_SCRIPTING_ENABLED
+/*
+  implement aux function cache for scripting
+ */
+
+/*
+  get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
+*/
+bool RC_Channels::get_aux_cached(RC_Channel::aux_func_t aux_fn, uint8_t &pos)
+{
+    const uint16_t aux_idx = uint16_t(aux_fn);
+    if (aux_idx >= unsigned(RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX)) {
+        return false;
+    }
+    WITH_SEMAPHORE(aux_cache_sem);
+    uint8_t v = aux_cached.get(aux_idx*2) | (aux_cached.get(aux_idx*2+1)<<1);
+    if (v == 0) {
+        // never been set
+        return false;
+    }
+    pos = v-1;
+    return true;
+}
+
+/*
+  set cached value of an aux function
+ */
+void RC_Channels::set_aux_cached(RC_Channel::aux_func_t aux_fn, RC_Channel::AuxSwitchPos pos)
+{
+    const uint16_t aux_idx = uint16_t(aux_fn);
+    if (aux_idx < unsigned(RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX)) {
+        WITH_SEMAPHORE(aux_cache_sem);
+        uint8_t v = unsigned(pos)+1;
+        aux_cached.setonoff(aux_idx*2, v&1);
+        aux_cached.setonoff(aux_idx*2+1, v>>1);
+    }
+}
+#endif // AP_SCRIPTING_ENABLED
+
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
 
@@ -265,3 +311,5 @@ RC_Channels &rc()
 {
     return *RC_Channels::get_singleton();
 }
+
+#endif  // AP_RC_CHANNEL_ENABLED

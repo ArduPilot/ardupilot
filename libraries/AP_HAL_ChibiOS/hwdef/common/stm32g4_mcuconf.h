@@ -117,7 +117,11 @@
 #define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
 #define STM32_SAI1SEL                       STM32_SAI1SEL_SYSCLK
 #define STM32_I2S23SEL                      STM32_I2S23SEL_SYSCLK
-#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE // STM32_FDCANSEL_PLLQCLK
+#if STM32_HSECLK == 0U
+#define STM32_FDCANSEL                      STM32_FDCANSEL_PLLQCLK
+#else
+#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE
+#endif
 #define STM32_CLK48SEL                      STM32_CLK48SEL_HSI48
 #define STM32_ADC12SEL                      STM32_ADC12SEL_PLLPCLK
 #define STM32_ADC345SEL                     STM32_ADC345SEL_PLLPCLK
@@ -235,7 +239,7 @@
 #define STM32_I2C_I2C2_DMA_PRIORITY         3
 #define STM32_I2C_I2C3_DMA_PRIORITY         3
 #define STM32_I2C_I2C4_DMA_PRIORITY         3
-#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      osalSysHalt("DMA failure")
+#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      STM32_DMA_ERROR_HOOK(i2cp)
 
 /*
  * SPI driver system settings.
@@ -248,7 +252,7 @@
 #define STM32_SPI_SPI2_IRQ_PRIORITY         10
 #define STM32_SPI_SPI3_IRQ_PRIORITY         10
 #define STM32_SPI_SPI4_IRQ_PRIORITY         10
-#define STM32_SPI_DMA_ERROR_HOOK(spip)      osalSysHalt("DMA failure")
+#define STM32_SPI_DMA_ERROR_HOOK(spip)      STM32_DMA_ERROR_HOOK(spip)
 
 /*
  * ST driver system settings.
@@ -272,7 +276,7 @@
 #define STM32_UART_USART3_DMA_PRIORITY      0
 #define STM32_UART_UART4_DMA_PRIORITY       0
 #define STM32_UART_UART5_DMA_PRIORITY       0
-#define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+#define STM32_UART_DMA_ERROR_HOOK(uartp)    STM32_DMA_ERROR_HOOK(uartp)
 
 /*
  * USB driver system settings.

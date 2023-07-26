@@ -1,13 +1,19 @@
 #pragma once
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_PX4FLOW_ENABLED
+
+#include "AP_OpticalFlow_Backend.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_PX4Flow : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend);
+    using OpticalFlow_backend::OpticalFlow_backend;
+
+    CLASS_NO_COPY(AP_OpticalFlow_PX4Flow);
 
     // init - initialise the sensor
     void init() override {}
@@ -16,7 +22,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_PX4Flow *detect(OpticalFlow &_frontend);
+    static AP_OpticalFlow_PX4Flow *detect(AP_OpticalFlow &_frontend);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
@@ -46,3 +52,5 @@ private:
 
     void timer(void);
 };
+
+#endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED

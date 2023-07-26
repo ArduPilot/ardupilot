@@ -3,12 +3,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -19,35 +19,38 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RollController.h"
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: 2SRV_TCONST
-	// @DisplayName: Roll Time Constant
-	// @Description: Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
-	// @Range: 0.4 1.0
-	// @Units: s
-	// @Increment: 0.1
-	// @User: Advanced
+    // @DisplayName: Roll Time Constant
+    // @Description: Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
+    // @Range: 0.4 1.0
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_TCONST",      0, AP_RollController, gains.tau,       0.5f),
 
     // index 1 to 3 reserved for old PID values
 
     // @Param: 2SRV_RMAX
-	// @DisplayName: Maximum Roll Rate
-	// @Description: Maximum roll rate that the roll controller demands (degrees/sec) in ACRO mode.
-	// @Range: 0 180
-	// @Units: deg/s
-	// @Increment: 1
-	// @User: Advanced
+    // @DisplayName: Maximum Roll Rate
+    // @Description: This sets the maximum roll rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables this limit.
+    // @Range: 0 180
+    // @Units: deg/s
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_RMAX",   4, AP_RollController, gains.rmax_pos,       0),
 
     // index 5, 6 reserved for old IMAX, FF
 
     // @Param: _RATE_P
     // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Description: Roll axis rate controller P gain. Corrects in proportion to the difference between the desired roll rate vs actual roll rate
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -61,7 +64,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
     // @Param: _RATE_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -112,14 +115,13 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
-    
+
     AP_GROUPEND
 };
 
 // constructor
-AP_RollController::AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
-        : aparm(parms)
-        , _ahrs(ahrs)
+AP_RollController::AP_RollController(const AP_FixedWing &parms)
+    : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
@@ -129,16 +131,16 @@ AP_RollController::AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing 
 /*
   AC_PID based rate controller
 */
-int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
+float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
     bool limit_I = fabsf(_last_out) >= 45;
     float rate_x = _ahrs.get_gyro().x;
     float aspeed;
     float old_I = rate_pid.get_i();
-
-    rate_pid.set_dt(dt);
 
     if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0;
@@ -153,13 +155,13 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, dt, limit_I);
 
     if (underspeed) {
         // when underspeed we lock the integrator
         rate_pid.set_integrator(old_I);
     }
-    
+
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
@@ -185,46 +187,50 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 
     // sum components
     float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    if (ground_mode) {
+        // when on ground suppress D term to prevent oscillations
+        out -= pinfo.D + 0.5*pinfo.P;
+    }
 
     // remember the last output to trigger the I limit
     _last_out = out;
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
+        // let autotune have a go at the values
         autotune->update(pinfo, scaler, angle_err_deg);
     }
-    
+
     // output is scaled to notional centidegrees of deflection
-    return constrain_int32(out * 100, -4500, 4500);
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 /*
  Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are: 
+ Inputs are:
  1) desired roll rate in degrees/sec
  2) control gain scaler = scaling_speed / aspeed
 */
-int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
+float AP_RollController::get_rate_out(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, false);
+    return _get_rate_out(desired_rate, scaler, false, false);
 }
 
 /*
  Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are: 
+ Inputs are:
  1) demanded bank angle in centi-degrees
  2) control gain scaler = scaling_speed / aspeed
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
 */
-int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
 {
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
     }
-	
+
     // Calculate the desired roll rate (deg/sec) from the angle error
     angle_err_deg = angle_err * 0.01;
     float desired_rate = angle_err_deg/ gains.tau;
@@ -236,12 +242,11 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
         desired_rate = gains.rmax_pos;
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 
 void AP_RollController::reset_I()
 {
-	_pid_info.I = 0;
     rate_pid.reset_I();
 }
 
@@ -252,7 +257,7 @@ void AP_RollController::reset_I()
 void AP_RollController::convert_pid()
 {
     AP_Float &ff = rate_pid.ff();
-    if (ff.configured_in_storage()) {
+    if (ff.configured()) {
         return;
     }
     float old_ff=0, old_p=1.0, old_i=0.3, old_d=0.08;

@@ -16,13 +16,18 @@
   driver for PX4Flow optical flow sensor
  */
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_PX4FLOW_ENABLED
+
 #include "AP_OpticalFlow_PX4Flow.h"
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
@@ -31,15 +36,9 @@ extern const AP_HAL::HAL& hal;
 #define PX4FLOW_BASE_I2C_ADDR   0x42
 #define PX4FLOW_INIT_RETRIES    10      // attempt to initialise the sensor up to 10 times at startup
 
-// constructor
-AP_OpticalFlow_PX4Flow::AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend) :
-    OpticalFlow_backend(_frontend)
-{
-}
-
 
 // detect the device
-AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(AP_OpticalFlow &_frontend)
 {
     AP_OpticalFlow_PX4Flow *sensor = new AP_OpticalFlow_PX4Flow(_frontend);
     if (!sensor) {
@@ -116,7 +115,7 @@ void AP_OpticalFlow_PX4Flow::timer(void)
     if (!dev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame))) {
         return;
     }
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     if (frame.integration_timespan > 0) {
         const Vector2f flowScaler = _flowScaler();
@@ -135,3 +134,5 @@ void AP_OpticalFlow_PX4Flow::timer(void)
 
     _update_frontend(state);
 }
+
+#endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED

@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
     // @Param: DRIVER
     // @DisplayName: Index of virtual driver to be used with physical CAN interface
     // @Description: Enabling this option enables use of CAN buses.
-    // @Values: 0:Disabled,1:First driver,2:Second driver
+    // @Values: 0:Disabled,1:First driver,2:Second driver,3:Third driver
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("DRIVER", 1, AP_CANManager::CANIface_Params, _driver_number, HAL_CAN_DRIVER_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -35,6 +35,14 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BITRATE", 2, AP_CANManager::CANIface_Params, _bitrate, 1000000),
 
+#if HAL_CANFD_SUPPORTED
+    // @Param: FDBITRATE
+    // @DisplayName: Bitrate of CANFD interface
+    // @Description: Bit rate can be set up to from 1000000 to 8000000
+    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
+    // @User: Advanced
+    AP_GROUPINFO("FDBITRATE", 3, AP_CANManager::CANIface_Params, _fdbitrate, HAL_CANFD_SUPPORTED),
+#endif
     // Index 3 occupied by Param: DEBUG
     AP_GROUPEND
 };

@@ -32,10 +32,11 @@ struct GCS_MAVLINK::ftp_state GCS_MAVLINK::ftp;
 bool GCS_MAVLINK::ftp_init(void) {
 
     // check if ftp is disabled for memory savings
+#if !defined(HAL_BUILD_AP_PERIPH)
     if (AP_BoardConfig::ftp_disabled()) {
         goto failed;
     }
-
+#endif
     // we can simply check if we allocated everything we need
 
     if (ftp.requests != nullptr) {
@@ -43,11 +44,7 @@ bool GCS_MAVLINK::ftp_init(void) {
     }
 
     ftp.requests = new ObjectBuffer<pending_ftp>(5);
-    if (ftp.requests == nullptr) {
-        goto failed;
-    }
-    ftp.replies = new ObjectBuffer<pending_ftp>(30);
-    if (ftp.replies == nullptr) {
+    if (ftp.requests == nullptr || ftp.requests->get_size() == 0) {
         goto failed;
     }
 
@@ -61,8 +58,6 @@ bool GCS_MAVLINK::ftp_init(void) {
 failed:
     delete ftp.requests;
     ftp.requests = nullptr;
-    delete ftp.replies;
-    ftp.replies = nullptr;
     gcs().send_text(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
 
     return false;
@@ -95,50 +90,38 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
     }
 }
 
-void GCS_MAVLINK::send_ftp_replies(void)
+bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
 {
     /*
       provide same banner we would give with old param download
     */
-    if (ftp.need_banner_send_mask & (1U<<chan)) {
-        ftp.need_banner_send_mask &= ~(1U<<chan);
+    if (ftp.need_banner_send_mask & (1U<<reply.chan)) {
+        ftp.need_banner_send_mask &= ~(1U<<reply.chan);
         send_banner();
     }
-    
-    if (ftp.replies == nullptr || ftp.replies->is_empty()) {
-        return;
+    WITH_SEMAPHORE(comm_chan_lock(reply.chan));
+    if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
+        return false;
     }
-
-    for (uint8_t i = 0; i < 20; i++) {
-        if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
-            return;
-        }
-        if ((i > 0) && comm_get_txspace(chan) < (2 * (packet_overhead() + MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL_LEN))) {
-            // if this isn't the first packet we have to leave deadspace for the next message
-            return;
-        }
-
-        struct pending_ftp reply;
-        uint8_t payload[251] = {};
-        if (ftp.replies->peek(reply) && (reply.chan == chan)) {
-            put_le16_ptr(payload, reply.seq_number);
-            payload[2] = reply.session;
-            payload[3] = static_cast<uint8_t>(reply.opcode);
-            payload[4] = reply.size;
-            payload[5] = static_cast<uint8_t>(reply.req_opcode);
-            payload[6] = reply.burst_complete ? 1 : 0;
-            put_le32_ptr(&payload[8], reply.offset);
-            memcpy(&payload[12], reply.data, sizeof(reply.data));
-            mavlink_msg_file_transfer_protocol_send(
-                reply.chan,
-                0, reply.sysid, reply.compid,
-                payload);
-            ftp.replies->pop();
-            ftp.last_send_ms = AP_HAL::millis();
-        } else {
-            return;
-        }
+    uint8_t payload[251] = {};
+    put_le16_ptr(payload, reply.seq_number);
+    payload[2] = reply.session;
+    payload[3] = static_cast<uint8_t>(reply.opcode);
+    payload[4] = reply.size;
+    payload[5] = static_cast<uint8_t>(reply.req_opcode);
+    payload[6] = reply.burst_complete ? 1 : 0;
+    put_le32_ptr(&payload[8], reply.offset);
+    memcpy(&payload[12], reply.data, sizeof(reply.data));
+    mavlink_msg_file_transfer_protocol_send(
+        reply.chan,
+        0, reply.sysid, reply.compid,
+        payload);
+    if (reply.req_opcode == FTP_OP::TerminateSession) {
+        ftp.last_send_ms = 0;
+    } else {
+        ftp.last_send_ms = AP_HAL::millis();
     }
+    return true;
 }
 
 void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
@@ -167,7 +150,7 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
 // send our response back out to the system
 void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
 {
-    while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
+    while (!send_ftp_reply(reply)) {
         hal.scheduler->delay(2);
     }
 }
@@ -180,7 +163,7 @@ void GCS_MAVLINK::ftp_worker(void) {
     while (true) {
         bool skip_push_reply = false;
 
-        while (!ftp.requests->pop(request)) {
+        while (ftp.requests == nullptr || !ftp.requests->pop(request)) {
             // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
             hal.scheduler->delay(2);
         }
@@ -322,7 +305,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         }
 
                         // fill the buffer
-                        const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, request.size);
+                        const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, MIN(sizeof(reply.data),request.size));
                         if (read_bytes == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
@@ -504,10 +487,29 @@ void GCS_MAVLINK::ftp_worker(void) {
                             break;
                         }
 
-                        const uint32_t transfer_size = 100;
+                        /*
+                          calculate a burst delay so that FTP burst
+                          transfer doesn't use more than 1/3 of
+                          available bandwidth on links that don't have
+                          flow control. This reduces the chance of
+                          lost packets a lot, which results in overall
+                          faster transfers
+                         */
+                        uint32_t burst_delay_ms = 0;
+                        if (valid_channel(request.chan)) {
+                            auto *port = mavlink_comm_port[request.chan];
+                            if (port != nullptr && port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE) {
+                                const uint32_t bw = port->bw_in_bytes_per_second();
+                                const uint16_t pkt_size = PAYLOAD_SIZE(request.chan, FILE_TRANSFER_PROTOCOL) - (sizeof(reply.data) - max_read);
+                                burst_delay_ms = 3000 * pkt_size / bw;
+                            }
+                        }
+
+                        // this transfer size is enough for a full parameter file with max parameters
+                        const uint32_t transfer_size = 500;
                         for (uint32_t i = 0; (i < transfer_size); i++) {
                             // fill the buffer
-                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, max_read);
+                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, MIN(sizeof(reply.data), max_read));
                             if (read_bytes == -1) {
                                 ftp_error(reply, FTP_ERROR::FailErrno);
                                 break;
@@ -537,6 +539,8 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                             // prep the reply to be used again
                             reply.seq_number++;
+
+                            hal.scheduler->delay(burst_delay_ms);
                         }
 
                         if (reply.opcode != FTP_OP::Nack) {
@@ -546,8 +550,28 @@ void GCS_MAVLINK::ftp_worker(void) {
                         }
                         break;
                     }
+
+                case FTP_OP::Rename: {
+                    // sanity check that the request looks well formed
+                    const char *filename1 = (char*)request.data;
+                    const size_t len1 = strnlen(filename1, sizeof(request.data)-2);
+                    const char *filename2 = (char*)&request.data[len1+1];
+                    const size_t len2 = strnlen(filename2, sizeof(request.data)-(len1+1));
+                    if (filename1[len1] != 0 || (len1+len2+1 != request.size) || (request.size == 0)) {
+                        ftp_error(reply, FTP_ERROR::InvalidDataSize);
+                        break;
+                    }
+                    request.data[sizeof(request.data) - 1] = 0; // ensure the 2nd path is null terminated
+                    // remove the file/dir
+                    if (AP::FS().rename(filename1, filename2) != 0) {
+                        ftp_error(reply, FTP_ERROR::FailErrno);
+                        break;
+                    }
+                    reply.opcode = FTP_OP::Ack;
+                    break;
+                }
+
                 case FTP_OP::TruncateFile:
-                case FTP_OP::Rename:
                 default:
                     // this was bad data, just nack it
                     gcs().send_text(MAV_SEVERITY_DEBUG, "Unsupported FTP: %d", static_cast<int>(request.opcode));
@@ -566,7 +590,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
 // calculates how much string length is needed to fit this in a list response
 int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
-    const bool is_file = entry->d_type == DT_REG;
+    const bool is_file = entry->d_type == DT_REG || entry->d_type == DT_LNK;
 
     if (space < 3) {
         return -1;
@@ -578,16 +602,21 @@ int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const
     }
 
     if (is_file) {
-        const size_t full_path_len = strlen(path) + strnlen(entry->d_name, 256); // FIXME: Really should do better then just hardcoding 256
+#ifdef MAX_NAME_LEN
+        const uint8_t max_name_len = MIN(unsigned(MAX_NAME_LEN), 255U);
+#else
+        const uint8_t max_name_len = 255U;
+#endif
+        const size_t full_path_len = strlen(path) + strnlen(entry->d_name, max_name_len);
         char full_path[full_path_len + 2];
         hal.util->snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
         struct stat st;
         if (AP::FS().stat(full_path, &st)) {
             return -1;
         }
-        return hal.util->snprintf(dest, space, "F%s\t%u\0", entry->d_name, (unsigned)st.st_size);
+        return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
     } else {
-        return hal.util->snprintf(dest, space, "D%s\0", entry->d_name);
+        return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
     }
 }
 

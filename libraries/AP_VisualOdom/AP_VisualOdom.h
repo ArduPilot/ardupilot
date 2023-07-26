@@ -14,19 +14,17 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
-#ifndef HAL_VISUALODOM_ENABLED
-#define HAL_VISUALODOM_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
-#endif
+#include "AP_VisualOdom_config.h"
 
 #if HAL_VISUALODOM_ENABLED
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
+#include <AP_Math/AP_Math.h>
 
 class AP_VisualOdom_Backend;
 
@@ -44,10 +42,15 @@ public:
     }
 
     // external position backend types (used by _TYPE parameter)
-    enum AP_VisualOdom_Type {
-        AP_VisualOdom_Type_None         = 0,
-        AP_VisualOdom_Type_MAV          = 1,
-        AP_VisualOdom_Type_IntelT265    = 2
+    enum class VisualOdom_Type {
+        None         = 0,
+#if AP_VISUALODOM_MAV_ENABLED
+        MAV          = 1,
+#endif
+#if AP_VISUALODOM_INTELT265_ENABLED
+        IntelT265    = 2,
+        VOXL         = 3,
+#endif
     };
 
     // detect and initialise any sensors
@@ -80,20 +83,22 @@ public:
     // return yaw measurement noise in rad
     float get_yaw_noise() const { return _yaw_noise; }
 
+#if HAL_GCS_ENABLED
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+#endif
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians
     void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter);
-    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter);
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter);
     
     // general purpose methods to consume velocity estimate data and send to EKF
     // velocity in NED meters per second
     void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter);
 
-    // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
-    void align_sensor_to_vehicle();
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    void request_align_yaw_to_ahrs();
 
     // update position offsets to align to AHRS position
     // should only be called when this library is not being used as the position source
@@ -104,12 +109,16 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    VisualOdom_Type get_type(void) const {
+        return _type;
+    }
+
 private:
 
     static AP_VisualOdom *_singleton;
 
     // parameters
-    AP_Int8 _type;              // sensor type
+    AP_Enum<VisualOdom_Type> _type; // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
     AP_Float _pos_scale;        // position scale factor applied to sensor values

@@ -1,5 +1,7 @@
 #include "AP_Frsky_SPort.h"
 
+#if AP_FRSKY_SPORT_TELEM_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -66,8 +68,12 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_FAS: // Sensor ID  2
                 switch (_SPort.fas_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining as %
-                    break;
+                    {
+                        uint8_t percentage = 0;
+                        IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
+                        send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(percentage)); // send battery remaining
+                        break;
+                    }
                 case 1:
                     send_sport_frame(SPORT_DATA_FRAME, VFAS_ID, (uint16_t)roundf(_battery.voltage() * 100.0f)); // send battery voltage in cV
                     break;
@@ -109,6 +115,7 @@ void AP_Frsky_SPort::send(void)
                 }
                 break;
             case SENSOR_ID_RPM: // Sensor ID 4
+#if AP_RPM_ENABLED
                 {
                     const AP_RPM* rpm = AP::rpm();
                     if (rpm == nullptr) {
@@ -128,6 +135,7 @@ void AP_Frsky_SPort::send(void)
                         _SPort.rpm_call = 0;
                     }
                 }
+#endif  // AP_RPM_ENABLED
                 break;
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
@@ -242,7 +250,7 @@ extern const AP_HAL::HAL& hal;
 bool AP_Frsky_SPortParser::should_process_packet(const uint8_t *packet, bool discard_duplicates)
 {
     // check for duplicate packets
-    if (discard_duplicates && _parse_state.last_packet != nullptr) {
+    if (discard_duplicates) {
         /*
           Note: the polling byte packet[0] should be ignored in the comparison
           because we might get the same packet with different polling bytes
@@ -319,10 +327,10 @@ bool AP_Frsky_SPortParser::get_packet(AP_Frsky_SPort::sport_packet_t &sport_pack
     }
 
     const AP_Frsky_SPort::sport_packet_t sp {
-        _parse_state.rx_buffer[0],
+        { _parse_state.rx_buffer[0],
         _parse_state.rx_buffer[1],
         le16toh_ptr(&_parse_state.rx_buffer[2]),
-        le32toh_ptr(&_parse_state.rx_buffer[4])
+        le32toh_ptr(&_parse_state.rx_buffer[4]) },
     };
 
     sport_packet = sp;
@@ -380,7 +388,13 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
     uint16_t res = 0;
     uint32_t abs_number = abs(number);
 
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
+    if ((digits == 2) && (power == 0)) { // number encoded on 7 bits, client side needs to know if expected range is 0,127 or -63,63
+        uint8_t max_value = number < 0 ? (0x1<<6)-1 : (0x1<<7)-1;
+        res = constrain_int16(abs_number,0,max_value);
+        if (number < 0) {   // if number is negative, add sign bit in front
+            res |= 1U<<6;
+        }
+    } else if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
         if (abs_number < 100) {
             res = abs_number<<1;
         } else if (abs_number < 1270) {
@@ -411,7 +425,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = abs_number<<1;
         } else if (abs_number < 10240) {
             res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
+        } else { // transmit max possible value (0x3FF x 10^1 = 10230)
             res = 0x7FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
@@ -426,7 +440,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
         } else if (abs_number < 1024000) {
             res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
+        } else { // transmit max possible value (0x3FF x 10^3 = 1023000)
             res = 0xFFF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
@@ -460,3 +474,5 @@ namespace AP {
         return AP_Frsky_SPort::get_singleton();
     }
 };
+
+#endif  // AP_FRSKY_SPORT_TELEM_ENABLED

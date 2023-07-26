@@ -1,4 +1,3 @@
-
 /*
  * File: ardupilot_SITL_TRICOPTER.c
  * Date: 18 Aug 2019
@@ -59,7 +58,6 @@ static WbDeviceTag receiver;
 static WbDeviceTag emitter;
 #endif
 static double _linear_velocity[3] = {0.0,0.0,0.0};
-static double northDirection = 1;
 static double v[MOTOR_NUM];
 static double servo_value = 0;
 #ifdef DEBUG_USE_KB
@@ -67,6 +65,7 @@ static double servo_value_extra = 0;
 #endif
 
 int port;
+float dragFactor = VEHICLE_DRAG_FACTOR;
 
 int timestep;
 
@@ -163,7 +162,6 @@ static void read_incoming_messages()
      _linear_velocity[0] = data[0];
      _linear_velocity[1] = data[1];
      _linear_velocity[2] = data[2];
-     northDirection      = data[3];
      //printf("RAW Data [%f, %f, %f]\n", linear_velocity[0], linear_velocity[2], linear_velocity[1]);
     
      wb_receiver_next_packet(receiver);
@@ -269,7 +267,7 @@ bool parse_controls(const char *json)
         // find key inside section
         p = strstr(p, key->key);
         if (!p) {
-            printf("Failed to find key %s/%s DATA:%s\n", key->section, key->key, json);
+            fprintf(stderr,"Failed to find key %s/%s DATA:%s\n", key->section, key->key, json);
             return false;
         }
 
@@ -294,7 +292,7 @@ bool parse_controls(const char *json)
           case DATA_VECTOR4F: {
               VECTOR4F *v = (VECTOR4F *)key->ptr;
               if (sscanf(p, "[%f, %f, %f, %f]", &(v->w), &(v->x), &(v->y), &(v->z)) != 4) {
-                  printf("Failed to parse Vector3f for %s %s/%s\n",p,  key->section, key->key);
+                  fprintf(stderr,"Failed to parse Vector3f for %s %s/%s\n",p,  key->section, key->key);
                   return false;
               }
               else
@@ -311,7 +309,6 @@ bool parse_controls(const char *json)
     return true;
 }
 
-#define TIME_DIV 1000.0
 void run ()
 {
     
@@ -337,12 +334,10 @@ void run ()
         }
 
         
-        
         read_incoming_messages();
         
-        
         // trigget ArduPilot to send motor data
-        getAllSensors ((char *)send_buf, northDirection, gyro,accelerometer,compass,gps, inertialUnit);
+        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit);
 
         #ifdef DEBUG_SENSORS
         printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
@@ -416,7 +411,7 @@ bool initialize (int argc, char *argv[])
   for (int i = 0; i < argc; ++i)
   {
         if (strcmp (argv[i],"-p")==0)
-        {
+        { // specify port for SITL.
           if (argc > i+1 )
           {
             port = atoi (argv[i+1]);
@@ -424,17 +419,30 @@ bool initialize (int argc, char *argv[])
           }
         }
         else if (strcmp (argv[i],"-df")==0)
-        { 
-          //TODO: to be implemented later. use same logic as in Quad file.
-
+        { // specify drag functor used to simulate air resistance.
+          if (argc > i+1 )
+          {
+            dragFactor = atof (argv[i+1]);
+            printf("drag Factor %f\n",dragFactor);
+          }
+          else
+          {
+            fprintf(stderr,"Missing drag factor value.\n");
+            return false;
+          }
+        
         }
   }
     
+
   sfd = create_socket_server(port);
+
   /* necessary to initialize webots stuff */
   wb_robot_init();
   
   timestep = (int)wb_robot_get_basic_time_step();
+  timestep_scale = timestep * 1000.0;
+  printf("timestep_scale: %f \n", timestep_scale);
   
   // init receiver from Supervisor
   receiver = wb_robot_get_device("receiver_main");
@@ -460,11 +468,12 @@ bool initialize (int argc, char *argv[])
     return false;
   }
   
-  
-  
+    
+  // keybaard
   #ifdef DEBUG_USE_KB
   wb_keyboard_enable(timestep);
   #endif
+
 
   // inertialUnit
   inertialUnit = wb_robot_get_device("inertial_unit");
@@ -513,6 +522,7 @@ bool initialize (int argc, char *argv[])
   // init linear_velocity untill we receive valid data from Supervisor.
   linear_velocity = &_linear_velocity[0] ;
 
+
   return true;
 }
 /*
@@ -523,6 +533,8 @@ bool initialize (int argc, char *argv[])
 int main(int argc, char **argv)
 {
 
+
+
   if (initialize( argc, argv))
   {
   
@@ -532,7 +544,6 @@ int main(int argc, char **argv)
      */
     run();
   }
-
 
     /* Enter your cleanup code here */
 

@@ -14,15 +14,15 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RPM.h"
+
+#if AP_RPM_ENABLED
 
 class AP_RPM_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
+    AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
 
     // we declare a virtual destructor so that RPM drivers can
     // override with a custom destructor if need be
@@ -35,11 +35,13 @@ public:
         if (state.instance >= RPM_MAX_INSTANCES) {
             return -1;
         }
-        return ap_rpm._pin[state.instance].get();
+        return ap_rpm._params[state.instance].pin.get();
     }
-    
+
 protected:
 
     AP_RPM &ap_rpm;
     AP_RPM::RPM_State &state;
 };
+
+#endif   // AP_RPM_ENABLED

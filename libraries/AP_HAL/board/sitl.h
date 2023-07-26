@@ -3,14 +3,9 @@
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
-#define HAL_OS_POSIX_IO 1
 #define HAL_OS_SOCKETS 1
-#define HAL_DSHOT_ALARM 0
-#define HAL_WITH_ESC_TELEM 1
 
 #define AP_FLASHSTORAGE_TYPE 3
-
-#if defined(STORAGE_USE_FLASH) && STORAGE_USE_FLASH==1
 
 #if AP_FLASHSTORAGE_TYPE == 1
 // emulate F1/F3 flash
@@ -33,7 +28,6 @@
 #define HAL_FLASH_MIN_WRITE_SIZE 32
 #define HAL_FLASH_ALLOW_UPDATE 0
 #endif
-#endif
 
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE            32768
@@ -45,7 +39,6 @@
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #define HAL_BARO_DEFAULT HAL_BARO_NONE
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #define HAL_GPIO_A_LED_PIN        61
 #define HAL_GPIO_B_LED_PIN        48
 #define HAL_GPIO_C_LED_PIN        117
@@ -54,14 +47,17 @@
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
-#define HAL_HAVE_SAFETY_SWITCH 0
+#define HAL_HAVE_SAFETY_SWITCH 1
 
+// only include if compiling C++ code
+#ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
@@ -77,4 +73,12 @@
 
 #ifndef HAL_WITH_EKF_DOUBLE
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
+#ifndef HAL_CAN_DRIVER_DEFAULT
+#define HAL_CAN_DRIVER_DEFAULT 0
+#endif
+
+#ifndef AP_UART_MONITOR_ENABLED
+#define AP_UART_MONITOR_ENABLED 1
 #endif

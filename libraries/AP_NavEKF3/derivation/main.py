@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
 from sympy import *
@@ -13,9 +14,23 @@ def quat2Rot(q):
     q2 = q[2]
     q3 = q[3]
 
-    Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
-                  [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
-                   [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
+    # This form is the one normally used in flight dynamics and inertial navigation texts, eg
+    # Aircraft Control and Simulation, Stevens,B.L, Lewis,F.L, Johnson,E.N, Third Edition, eqn 1.8-18
+    # It does produce second order terms in the covariance prediction that can be problematic
+    # with single precision processing.
+    # It requires the quternion to be unit length.
+    # Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
+    #               [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
+    #                [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
+
+    # This form removes q1 from the 0,0, q2 from the 1,1 and q3 from the 2,2 entry and results
+    # in a covariance prediction that is better conditioned.
+    # It requires the quaternion to be unit length and is mathematically identical
+    # to the alternate form when q0**2 + q1**2 + q2**2 + q3**2 = 1
+    # See https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
+    Rot = Matrix([[1 - 2*(q2**2 + q3**2), 2*(q1*q2 - q0*q3)    , 2*(q1*q3 + q0*q2)    ],
+                 [2*(q1*q2 + q0*q3)     , 1 - 2*(q1**2 + q3**2), 2*(q2*q3 - q0*q1)    ],
+                 [2*(q1*q3-q0*q2)       , 2*(q2*q3 + q0*q1)    , 1 - 2*(q1**2 + q2**2)]])
 
     return Rot
 
@@ -253,7 +268,7 @@ def body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy):
     # accYpred = -0.5*rho*vrel[1]*vrel[1]*BCYinv # predicted acceleration measured along Y body axis
 
     # Use a simple viscous drag model for the linear estimator equations
-    # Use the the derivative from speed to acceleration averaged across the
+    # Use the derivative from speed to acceleration averaged across the
     # speed range. This avoids the generation of a dirac function in the derivation
     # The nonlinear equation will be used to calculate the predicted measurement in implementation
     observation = Matrix([-Kaccx*vrel[0],-Kaccy*vrel[1]])

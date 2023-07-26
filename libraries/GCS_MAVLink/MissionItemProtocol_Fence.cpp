@@ -1,6 +1,10 @@
 #include "MissionItemProtocol_Fence.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
+#include <GCS_MAVLink/GCS.h>
+
+#if AP_FENCE_ENABLED
 
 /*
   public function to format mission item as mavlink_mission_item_int_t
@@ -226,7 +230,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
 MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
 {
     const uint16_t _item_count = _fence.polyfence().num_stored_items();
-    _updated_mask = new uint8_t[(_item_count+7/8)];
+    _updated_mask = new uint8_t[(_item_count+7)/8];
     if (_updated_mask == nullptr) {
         return MAV_MISSION_ERROR;
     }
@@ -239,3 +243,5 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
     _new_items_count = _item_count;
     return MAV_MISSION_ACCEPTED;
 }
+
+#endif // AP_FENCE_ENABLED

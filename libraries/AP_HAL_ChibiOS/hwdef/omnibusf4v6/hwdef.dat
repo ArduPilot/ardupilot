@@ -112,22 +112,23 @@ SPIDEV osd        SPI3 DEVID4 OSD_CS MODE0 10*MHZ 10*MHZ
 SPIDEV dataflash  SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # one IMU
 IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
 # one baro
 BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 
@@ -147,8 +148,9 @@ define HAL_GPIO_A_LED_PIN 41
 #To have complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 6
-
 define OSD_ENABLED 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

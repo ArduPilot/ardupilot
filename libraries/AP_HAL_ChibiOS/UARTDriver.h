@@ -25,51 +25,33 @@
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartI, plus IOMCU
-#define UART_MAX_DRIVERS 10
+// enough for uartA to uartJ, plus IOMCU
+#define UART_MAX_DRIVERS 11
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
 
     /* Do not allow copies */
-    UARTDriver(const UARTDriver &other) = delete;
-    UARTDriver &operator=(const UARTDriver&) = delete;
+    CLASS_NO_COPY(UARTDriver);
 
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
+    uint32_t get_usb_baud() const override;
 
-
-    uint32_t available() override;
-    uint32_t available_locked(uint32_t key) override;
-
+    // disable TX/RX pins for unusued uart
+    void disable_rxtx(void) const override;
+    
     uint32_t txspace() override;
-    int16_t read() override;
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-    int16_t read_locked(uint32_t key) override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
-
-    bool discard_input() override;
-
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t write_key, uint32_t read_key) override;
+#if HAL_FORWARD_OTG2_SERIAL
+    void fwd_otg2_serial(void);
+#endif
 
     // control optional features
     bool set_options(uint16_t options) override;
-    uint8_t get_options(void) const override;
-
-    // write to a locked port. If port is locked and key is not correct then 0 is returned
-    // and write is discarded
-    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    uint16_t get_options(void) const override;
 
     struct SerialDef {
         BaseSequentialStream* serial;
@@ -91,6 +73,7 @@ public:
         uint8_t rxinv_polarity;
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
+        uint8_t endpoint_id;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
@@ -129,15 +112,19 @@ public:
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
-    uint32_t bw_in_kilobytes_per_second() const override {
+    uint32_t bw_in_bytes_per_second() const override {
         if (sdef.is_usb) {
-            return 200;
+            return 200*1024;
         }
-        return _baudrate/(9*1024);
+        return _baudrate/10;
     }
 
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
+#if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
     void uart_info(ExpandingString &str) override;
+#endif
 
     /*
       return true if this UART has DMA enabled on both RX and TX
@@ -150,10 +137,12 @@ private:
     bool tx_dma_enabled;
 
     /*
-      copy of rx_line and tx_line with alternative configs resolved
+      copy of rx_line, tx_line, rts_line and cts_line with alternative configs resolved
      */
     ioline_t atx_line;
     ioline_t arx_line;
+    ioline_t arts_line;
+    ioline_t acts_line;
 
     // thread used for all UARTs
     static thread_t* volatile uart_rx_thread_ctx;
@@ -167,10 +156,6 @@ private:
 
     // index into uart_drivers table
     uint8_t serial_num;
-
-    // key for a locked port
-    uint32_t lock_write_key;
-    uint32_t lock_read_key;
 
     uint32_t _baudrate;
 #if HAL_USE_SERIAL == TRUE
@@ -202,7 +187,6 @@ private:
 #endif
     volatile bool _in_rx_timer;
     volatile bool _in_tx_timer;
-    bool _blocking_writes;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
@@ -282,6 +266,15 @@ private:
     void uart_thread();
     static void uart_rx_thread(void* arg);
     static void uart_thread_trampoline(void* p);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    uint32_t _available() override;
+    bool _discard_input() override;
 };
 
 // access to usb init for stdio.cpp

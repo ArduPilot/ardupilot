@@ -1,0 +1,3 @@
+include ../BeastF7/hwdef-bl.dat
+undef APJ_BOARD_ID
+APJ_BOARD_ID 1057

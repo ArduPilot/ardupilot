@@ -72,6 +72,7 @@ SECTIONS
     {
         /* we want app_descriptor near the start of flash so a false
            positive isn't found by the bootloader (eg. ROMFS) */
+        KEEP(*(.apsec_data));
         KEEP(*(.app_descriptor));
         *(.text)
         *(.text.*)
@@ -192,4 +193,14 @@ SECTIONS
         . = ORIGIN(HEAP_RAM) + LENGTH(HEAP_RAM);
         __heap_end__ = .;
     } > HEAP_RAM
+
+    /* The crash log uses the unused part of a flash section.*/
+    .crash_log (NOLOAD) :
+    {
+        . = ALIGN(32);
+        __crash_log_base__ = .;
+        . = ORIGIN(flash) + LENGTH(flash);
+        __crash_log_end__ = .;
+    } > flash
+
 }

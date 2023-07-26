@@ -5,12 +5,6 @@
  *
  */
 
-#define GSCALAR(v, name, def) { tracker.g.v.vtype, name, Parameters::k_param_ ## v, &tracker.g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { tracker.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&tracker.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &tracker.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&tracker.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
-
 const AP_Param::Info Tracker::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -273,18 +267,18 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
 
-    // @Group: INS_
+    // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT(ins,                    "INS_", AP_InertialSensor),
+    GOBJECT(ins,                    "INS", AP_InertialSensor),
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
     // @Group: BRD_
@@ -456,7 +450,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
@@ -525,7 +519,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&tracker, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
@@ -549,6 +543,7 @@ void Tracker::load_parameters(void)
         g.format_version.set_and_save(Parameters::k_format_version);
         hal.console->printf("done.\n");
     }
+    g.format_version.set_default(Parameters::k_format_version);
 
     uint32_t before = AP_HAL::micros();
     // Load all auto-loaded EEPROM variables

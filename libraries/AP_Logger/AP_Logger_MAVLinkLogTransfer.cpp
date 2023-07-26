@@ -22,31 +22,27 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h> // for LOG_ENTRY
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 extern const AP_HAL::HAL& hal;
-
-// We avoid doing log messages when timing is critical:
-bool AP_Logger::should_handle_log_message() const
-{
-    if (!WritesEnabled()) {
-        // this is currently used as a proxy for "in_mavlink_delay"
-        return false;
-    }
-    if (vehicle_is_armed()) {
-        return false;
-    }
-    return true;
-}
 
 /**
    handle all types of log download requests from the GCS
  */
 void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
-    if (!should_handle_log_message()) {
+    if (!WritesEnabled()) {
+        // this is currently used as a proxy for "in_mavlink_delay"
         return;
     }
+    if (vehicle_is_armed()) {
+        if (!_warned_log_disarm) {
+            link.send_text(MAV_SEVERITY_ERROR, "Disarm for log download");
+            _warned_log_disarm = true;
+        }
+        return;
+    }
+    _warned_log_disarm = false;
     _last_mavlink_log_transfer_message_handled_ms = AP_HAL::millis();
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:

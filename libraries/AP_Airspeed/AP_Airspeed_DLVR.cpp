@@ -18,6 +18,9 @@
  */
 
 #include "AP_Airspeed_DLVR.h"
+
+#if AP_AIRSPEED_DLVR_ENABLED
+
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
@@ -36,13 +39,29 @@ AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, co
     range_inH2O(_range_inH2O)
 {}
 
-// probe and initialise the sensor
-bool AP_Airspeed_DLVR::init()
+/*
+  probe for a sensor on a given i2c address
+ */
+AP_Airspeed_Backend *AP_Airspeed_DLVR::probe(AP_Airspeed &_frontend,
+                                             uint8_t _instance,
+                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev,
+                                             const float _range_inH2O)
 {
-    dev = hal.i2c_mgr->get_device(get_bus(), DLVR_I2C_ADDR);
-    if (!dev) {
-        return false;
+    if (!_dev) {
+        return nullptr;
     }
+    AP_Airspeed_DLVR *sensor = new AP_Airspeed_DLVR(_frontend, _instance, _range_inH2O);
+    if (!sensor) {
+        return nullptr;
+    }
+    sensor->dev = std::move(_dev);
+    sensor->setup();
+    return sensor;
+}
+
+// initialise the sensor
+void AP_Airspeed_DLVR::setup()
+{
     WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
@@ -51,6 +70,16 @@ bool AP_Airspeed_DLVR::init()
 
     dev->register_periodic_callback(1000000UL/50U,
                                     FUNCTOR_BIND_MEMBER(&AP_Airspeed_DLVR::timer, void));
+}
+
+// probe and initialise the sensor
+bool AP_Airspeed_DLVR::init()
+{
+    dev = hal.i2c_mgr->get_device(get_bus(), DLVR_I2C_ADDR);
+    if (!dev) {
+        return false;
+    }
+    setup();
     return true;
 }
 
@@ -78,7 +107,7 @@ void AP_Airspeed_DLVR::timer()
 
     if ((data >> STATUS_SHIFT)) {
         // anything other then 00 in the status bits is an error
-        Debug("DLVR: Bad status read %d", data >> STATUS_SHIFT);
+        Debug("DLVR: Bad status read %u", (unsigned int)(data >> STATUS_SHIFT));
         return;
     }
 
@@ -86,15 +115,31 @@ void AP_Airspeed_DLVR::timer()
     uint32_t temp_raw = (data >> TEMPERATURE_SHIFT) & TEMPERATURE_MASK;
 
     float press_h2o = 1.25f * 2.0f * range_inH2O * ((pres_raw - DLVR_OFFSET) / DLVR_SCALE);
+
+    if ((press_h2o > range_inH2O) || (press_h2o < -range_inH2O)) {
+        Debug("DLVR: Out of range pressure %f", press_h2o);
+        return;
+    }
+
     float temp = temp_raw * (200.0f / 2047.0f) - 50.0f;
 
     WITH_SEMAPHORE(sem);
+
+    const uint32_t now = AP_HAL::millis();
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as we are only worried about the case where we had never read
+    if ((temperature != 0) && (fabsf(temperature - temp) > 10) && ((now - last_sample_time_ms) < 2000)) {
+        Debug("DLVR: Temperature swing %f", temp);
+        return;
+    }
+#pragma GCC diagnostic pop
 
     pressure_sum += INCH_OF_H2O_TO_PASCAL * press_h2o;
     temperature_sum += temp;
     press_count++;
     temp_count++;
-    last_sample_time_ms = AP_HAL::millis();
+    last_sample_time_ms = now;
 }
 
 // return the current differential_pressure in Pascal
@@ -134,3 +179,5 @@ bool AP_Airspeed_DLVR::get_temperature(float &_temperature)
     _temperature = temperature;
     return true;
 }
+
+#endif

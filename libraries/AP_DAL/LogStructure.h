@@ -35,6 +35,7 @@
     LOG_RMGI_MSG, \
     LOG_ROFH_MSG, \
     LOG_REPH_MSG, \
+    LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG
@@ -62,7 +63,7 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t get_compass_is_null:1;
+    uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
@@ -208,6 +209,7 @@ struct log_RGPJ {
     float sacc;
     float yaw_deg;
     float yaw_accuracy_deg;
+    uint32_t yaw_deg_time_ms;
     int32_t lat;
     int32_t lng;
     int32_t alt;
@@ -239,6 +241,7 @@ struct log_RASI {
 // @Description: Replay Data Magnetometer Header
 struct log_RMGH {
     float declination;
+    bool available;
     uint8_t count;
     bool auto_declination_enabled;
     uint8_t num_enabled;
@@ -304,6 +307,7 @@ struct log_ROFH {
     Vector2f rawGyroRates;
     uint32_t msecFlowMeas;
     Vector3f posOffset;
+    float heightOverride;
     uint8_t rawFlowQuality;
     uint8_t _end;
 };
@@ -318,6 +322,16 @@ struct log_REPH {
     uint32_t timeStamp_ms;
     uint32_t resetTime_ms;
     uint16_t delay_ms;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RSLL
+// @Description: Replay Set Lat Lng event
+struct log_RSLL {
+    int32_t lat; // WGS-84 latitude in 1E-7 degrees
+    int32_t lng; // WGS-84 longitude in 1E7 degrees
+    float posAccSD; // horizontal position 1 STD uncertainty (m)
+    uint32_t timestamp_ms;
     uint8_t _end;
 };
 
@@ -399,9 +413,9 @@ struct log_RBOH {
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
-      "RGPJ", "IffffffiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,Lat,Lon,Alt,HA,VA,HD,I", "-------------#", "--------------" }, \
+      "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
-      "RMGH", "BBfBBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C,FUsable", "-------", "-------" },  \
+      "RMGH", "fBBBBBBB", "Dec,Avail,NumInst,AutoDec,NumEna,LOE,C,FUsable", "--------", "--------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \
@@ -411,9 +425,11 @@ struct log_RBOH {
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIfffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,Qual", "---------", "---------" }, \
+      "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
+    { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \
+      "RSLL", "IIfI", "Lat,Lng,PosAccSD,TS", "DU--", "GG--" }, \
     { LOG_REVH_MSG, RLOG_SIZE(REVH),                                   \
       "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" }, \
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \

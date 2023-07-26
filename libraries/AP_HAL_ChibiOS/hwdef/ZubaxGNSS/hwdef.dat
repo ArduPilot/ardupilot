@@ -12,11 +12,8 @@ define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
 # bootloader starts firmware at 34k
 FLASH_RESERVE_START_KB 34
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
-
 # store parameters in last 2 pages
-define STORAGE_FLASH_PAGE 126
+STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
@@ -31,12 +28,6 @@ OSCILLATOR_HZ 16000000
 define CH_CFG_ST_FREQUENCY 1000
 
 FLASH_SIZE_KB 256
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
-
-# reserve space for params
-FLASH_RESERVE_END_KB 2
 
 # USART3 for debug
 STDOUT_SERIAL SD3
@@ -73,7 +64,6 @@ PB11 USART3_RX USART3 SPEED_HIGH NODMA
 define HAL_UART_NODMA
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # enable CAN support
 PA11 CAN_RX CAN
@@ -114,13 +104,11 @@ define __FPU_PRESENT 0
 
 define HAL_USE_RTC FALSE
 define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 MAIN_STACK 0x200
-PROCESS_STACK 0x600
+PROCESS_STACK 0xA00
 define HAL_DISABLE_LOOP_DELAY
 
 define HAL_USE_I2C TRUE
@@ -132,9 +120,6 @@ define HAL_UART_MIN_RX_SIZE 128
 define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 512
 
-define HAL_MINIMIZE_FEATURES 0
-
-define HAL_BUILD_AP_PERIPH
 
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
@@ -152,10 +137,7 @@ BARO MS56XX SPI:ms5611
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
-define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
 
 define HAL_PERIPH_ENABLE_GPS

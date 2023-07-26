@@ -17,8 +17,7 @@ public:
     }
 
     /* Do not allow copies */
-    AC_InputManager(const AC_InputManager &other) = delete;
-    AC_InputManager &operator=(const AC_InputManager&) = delete;
+    CLASS_NO_COPY(AC_InputManager);
 
     static const struct AP_Param::GroupInfo        var_info[];
     void set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }

@@ -45,7 +45,7 @@
 // detect if any port is configured as Sagetech
 bool AP_ADSB_Sagetech::detect()
 {
-    return (AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_ADSB, 0) != nullptr);
+    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_ADSB, 0);
 }
 
 // Init, called once after class is constructed
@@ -69,11 +69,11 @@ void AP_ADSB_Sagetech::update()
     // -----------------------------
     uint32_t nbytes = MIN(_port->available(), 10 * PAYLOAD_XP_MAX_SIZE);
     while (nbytes-- > 0) {
-        const int16_t data = (uint8_t)_port->read();
-        if (data < 0) {
+        uint8_t data;
+        if (!_port->read(data)) {
             break;
         }
-        if (parse_byte_XP((uint8_t)data)) {
+        if (parse_byte_XP(data)) {
             handle_packet_XP(message_in.packet);
         }
     } // while nbytes
@@ -185,16 +185,12 @@ void AP_ADSB_Sagetech::handle_ack(const Packet_XP &msg)
     const uint8_t system_state = msg.payload[2];
     transponder_type = (Transponder_Type)msg.payload[6];
 
-    const char* rfmode = "RF mode: ";
     const uint8_t prev_transponder_mode = last_ack_transponder_mode;
     last_ack_transponder_mode = (system_state >> 6) & 0x03;
     if (prev_transponder_mode != last_ack_transponder_mode) {
-        switch (last_ack_transponder_mode) {
-        case 0: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sOFF",   rfmode); break;
-        case 1: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sSTBY",  rfmode); break;
-        case 2: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sON",    rfmode); break;
-        case 3: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sON-ALT",rfmode); break;
-        default:  break;
+        static const char *mode_names[] = {"OFF", "STBY", "ON", "ON-ALT"};
+        if (last_ack_transponder_mode < ARRAY_SIZE(mode_names)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: RF Mode: %s", mode_names[last_ack_transponder_mode]);
         }
     }
 }
@@ -401,7 +397,7 @@ void AP_ADSB_Sagetech::send_msg_Installation()
 
 //    // convert a decimal 123456 to 0x123456
     // TODO: do a proper conversion. The param contains "131313" but what gets transmitted over the air is 0x200F1.
-    const uint32_t icao_hex = convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param);
+    const uint32_t icao_hex = AP_ADSB::convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param);
     put_le24_ptr(&pkt.payload[0], icao_hex);
 
     memcpy(&pkt.payload[3], &_frontend.out_state.cfg.callsign, 8);
@@ -456,7 +452,7 @@ void AP_ADSB_Sagetech::send_msg_Operating()
     // squawk
     // param is saved as native octal so we need convert back to
     // decimal because Sagetech will convert it back to octal
-    uint16_t squawk = convert_base_to_decimal(8, last_operating_squawk);
+    const uint16_t squawk = AP_ADSB::convert_base_to_decimal(8, last_operating_squawk);
     put_le16_ptr(&pkt.payload[0], squawk);
 
     // altitude
@@ -500,7 +496,7 @@ void AP_ADSB_Sagetech::send_msg_GPS()
 
     // ground speed
     const Vector2f speed = AP::ahrs().groundspeed_vector();
-    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
 
     // heading
@@ -528,29 +524,6 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     }
 
     send_msg(pkt);
-}
-
-/*
- * Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value stored on a GCS as a string field in different format, but then transmitted over mavlink as a float which is always a decimal.
- * baseIn: base of input number
- * inputNumber: value currently in base "baseIn" to be converted to base "baseOut"
- *
- * Example: convert ADSB squawk octal "1200" stored in memory as 0x0280 to 0x04B0
- *          uint16_t squawk_decimal = convertMathBase(8, squawk_octal);
- */
-uint32_t AP_ADSB_Sagetech::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber)
-{
-    // Our only sensible input bases are 16 and 8
-    if (baseIn != 8 && baseIn != 16) {
-        return inputNumber;
-    }
-
-    uint32_t outputNumber = 0;
-    for (uint8_t i=0; inputNumber != 0; i++) {
-        outputNumber += (inputNumber % 10) * powf(10, i);
-        inputNumber /= 10;
-    }
-    return outputNumber;
 }
 
 #endif // HAL_ADSB_SAGETECH_ENABLED

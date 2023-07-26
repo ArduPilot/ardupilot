@@ -32,10 +32,8 @@ public:
 
 static AP_SerialManager serial_manager;
 
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&v, {group_info : class::var_info} }
 const struct AP_Param::Info var_info[] = {
-//    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
-    { AP_PARAM_GROUP, "SERIAL", Parameters::k_param_serial_manager, (const void *)&serial_manager, {group_info : AP_SerialManager::var_info} },
+    { "SERIAL", (const void *)&serial_manager, {group_info : AP_SerialManager::var_info}, 0, Parameters::k_param_serial_manager, AP_PARAM_GROUP },
     AP_VAREND
 };
 
@@ -48,7 +46,7 @@ static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle : public AP_Vehicle {
 public:
-    AP_AHRS_NavEKF ahrs{AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; };
     uint8_t get_mode() const override { return 1; };
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) override {};
@@ -78,10 +76,7 @@ void setup(void)
     vehicle.ahrs.init();
 
     AP::compass().init();
-    if(AP::compass().read()) {
-        hal.console->printf("Enabling compass\n");
-        vehicle.ahrs.set_compass(&AP::compass());
-    } else {
+    if(!AP::compass().read()) {
         hal.console->printf("No compass detected\n");
     }
     AP::gps().init(serial_manager);

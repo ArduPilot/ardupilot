@@ -16,6 +16,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -67,7 +68,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @Description: OADatabase output level to configure which database objects are sent to the ground station. All data is always available internally for avoidance algorithms.
     // @Values: 0:Disabled,1:Send only HIGH importance items,2:Send HIGH and NORMAL importance items,3:Send all items
     // @User: Advanced
-    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, (float)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH),
+    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, (float)OutputLevel::HIGH),
 
     // @Param: BEAM_WIDTH
     // @DisplayName: OADatabase beam width
@@ -96,7 +97,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
     // @Param{Copter}: ALT_MIN
     // @DisplayName: OADatabase minimum altitude above home before storing obstacles
-    // @Description: OADatabase will reject obstacle's if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
+    // @Description: OADatabase will reject obstacles if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
     // @Units: m
     // @Range: 0 4
     // @User: Advanced
@@ -149,24 +150,22 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
     }
 
     // check if this obstacle needs to be rejected from DB because of low altitude near home
-    #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_COPTER_OR_HELI
     if (!is_zero(_min_alt)) { 
-        Vector2f current_pos;
-        if (!AP::ahrs().get_relative_position_NE_home(current_pos)) {
+        Vector3f current_pos;
+        if (!AP::ahrs().get_relative_position_NED_home(current_pos)) {
             // we do not know where the vehicle is
             return;
         }
-        if (current_pos.length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
+        if (current_pos.xy().length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
             // vehicle is within a small radius of home 
-            float height_above_home;
-            AP::ahrs().get_relative_position_D_home(height_above_home);
-            if (-height_above_home < _min_alt) {
+            if (-current_pos.z < _min_alt) {
                 // vehicle is below the minimum alt
                 return;
             }
         }
     }
-    #endif
+#endif
     
     // ignore objects that are far away
     if ((_dist_max > 0.0f) && (distance > _dist_max)) {
@@ -188,6 +187,11 @@ void AP_OADatabase::init_queue()
     }
 
     _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    if (_queue.items != nullptr && _queue.items->get_size() == 0) {
+        // allocation failed
+        delete _queue.items;
+        _queue.items = nullptr;
+    }
 }
 
 void AP_OADatabase::init_database()
@@ -206,19 +210,19 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
 {
     switch (importance) {
     case OA_DbItemImportance::Low:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_ALL) {
+        if (_output_level >= OutputLevel::ALL) {
             return 0xFF;
         }
         break;
 
     case OA_DbItemImportance::Normal:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH_AND_NORMAL) {
+        if (_output_level >= OutputLevel::HIGH_AND_NORMAL) {
             return 0xFF;
         }
         break;
 
     case OA_DbItemImportance::High:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH) {
+        if (_output_level >= OutputLevel::HIGH) {
             return 0xFF;
         }
         break;
@@ -368,7 +372,7 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
     static_assert(MAVLINK_COMM_NUM_BUFFERS <= sizeof(OA_DbItem::send_to_gcs) * 8,
                   "AP_OADatabase's OA_DBItem.send_to_gcs bitmask must be large enough to hold MAVLINK_COMM_NUM_BUFFERS");
 
-    if ((_output_level.get() <= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_DISABLED) || !healthy()) {
+    if ((_output_level <= OutputLevel::NONE) || !healthy()) {
         return;
     }
 

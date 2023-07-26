@@ -1,11 +1,14 @@
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_LSM9DS1_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
-#include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
 class AP_Compass_LSM9DS1 : public AP_Compass_Backend
@@ -40,3 +43,5 @@ private:
     float _scaling;
     enum Rotation _rotation;
 };
+
+#endif

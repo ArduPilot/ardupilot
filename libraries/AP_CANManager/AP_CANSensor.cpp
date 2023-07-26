@@ -30,24 +30,30 @@ extern const AP_HAL::HAL& hal;
 #define debug_can(level_debug, fmt, args...)
 #endif
 
-CANSensor::CANSensor(const char *driver_name, AP_CANManager::Driver_Type dtype, uint16_t stack_size) :
+CANSensor::CANSensor(const char *driver_name, uint16_t stack_size) :
     _driver_name(driver_name),
     _stack_size(stack_size)
+{}
+
+
+void CANSensor::register_driver(AP_CAN::Protocol dtype)
 {
 #if HAL_CANMANAGER_ENABLED
     if (!AP::can().register_driver(dtype, this)) {
-        debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", driver_name);
+        debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", _driver_name);
     } else {
-        debug_can(AP_CANManager::LOG_INFO, "%s: constructed", driver_name);
+        debug_can(AP_CANManager::LOG_INFO, "%s: constructed", _driver_name);
     }
 #elif defined(HAL_BUILD_AP_PERIPH)
     register_driver_periph(dtype);
 #endif
 }
+
+
 #ifdef HAL_BUILD_AP_PERIPH
 CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
 
-void CANSensor::register_driver_periph(const AP_CANManager::Driver_Type dtype)
+void CANSensor::register_driver_periph(const AP_CAN::Protocol dtype)
 {
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (_periph[i].protocol != dtype) {

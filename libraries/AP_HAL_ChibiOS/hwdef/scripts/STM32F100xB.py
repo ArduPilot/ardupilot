@@ -29,7 +29,11 @@ mcu = {
         (0x20000000, 8, 1), # main memory, DMA safe
     ],
 
-    'EXPECTED_CLOCK' : 24000000
+    'EXPECTED_CLOCK' : 24000000,
+
+    'DEFINES' : {
+        'STM32F1' : '1',
+    }
 }
 
 ADC1_map = {

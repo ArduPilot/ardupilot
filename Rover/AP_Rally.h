@@ -23,8 +23,7 @@ public:
     AP_Rally_Rover() : AP_Rally() { }
 
     /* Do not allow copies */
-    AP_Rally_Rover(const AP_Rally_Rover &other) = delete;
-    AP_Rally_Rover &operator=(const AP_Rally_Rover&) = delete;
+    CLASS_NO_COPY(AP_Rally_Rover);
 
 private:
     bool is_valid(const Location &rally_point) const override;

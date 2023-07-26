@@ -5,13 +5,11 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_Logger_Backend.h"
 
 #if HAL_LOGGING_MAVLINK_ENABLED
 
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL/Semaphores.h>
 
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
@@ -26,6 +24,11 @@ public:
             _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
             // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
         }
+
+    static AP_Logger_Backend  *probe(AP_Logger &front,
+                                     LoggerMessageWriter_DFLogStart *ls) {
+        return new AP_Logger_MAVLink(front, ls);
+    }
 
     // initialisation
     void Init() override;

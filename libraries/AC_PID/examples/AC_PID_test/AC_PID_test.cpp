@@ -70,8 +70,8 @@ void setup()
 void loop()
 {
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
-    AC_PID pid(TEST_P, TEST_I, TEST_D, 0.0f, TEST_IMAX * 100.0f, 0.0f, 0.0f, TEST_FILTER, TEST_DT);
-    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_INITIAL_FF, TEST_IMAX * 100, 0.0f, 0.0f, TEST_FILTER, TEST_DT);
+    AC_PID pid(TEST_P, TEST_I, TEST_D, 0.0f, TEST_IMAX * 100.0f, 0.0f, 0.0f, TEST_FILTER);
+    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_INITIAL_FF, TEST_IMAX * 100, 0.0f, 0.0f, TEST_FILTER);
 
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
@@ -91,7 +91,7 @@ void loop()
         rc().read_input(); // poll the radio for new values
         const uint16_t radio_in = c->get_radio_in();
         const int16_t error = radio_in - radio_trim;
-        pid.update_error(error);
+        pid.update_error(error, TEST_DT);
         const float control_P = pid.get_p();
         const float control_I = pid.get_i();
         const float control_D = pid.get_d();

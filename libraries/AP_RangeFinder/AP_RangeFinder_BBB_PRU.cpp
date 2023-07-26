@@ -16,10 +16,9 @@
    by Mirko Denecke <mirkix@gmail.com>
  */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-
 #include "AP_RangeFinder_BBB_PRU.h"
+
+#if AP_RANGEFINDER_BBB_PRU_ENABLED
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,21 +34,12 @@ extern const AP_HAL::HAL& hal;
 volatile struct range *rangerpru;
 
 /*
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-}
-
-/*
    Stop PRU, load firmware (check if firmware is present), start PRU.
    If we get a result the sensor seems to be there.
 */
 bool AP_RangeFinder_BBB_PRU::detect()
 {
+    //The constructor is called when the detect() method returns true, more on this in the header file
     bool result = true;
     uint32_t mem_fd;
     uint32_t *ctrl;
@@ -111,7 +101,7 @@ bool AP_RangeFinder_BBB_PRU::detect()
 void AP_RangeFinder_BBB_PRU::update(void)
 {
     state.status = (RangeFinder::Status)rangerpru->status;
-    state.distance_cm = rangerpru->distance;
+    state.distance_m = rangerpru->distance * 0.01f;
     state.last_reading_ms = AP_HAL::millis();
 }
-#endif // CONFIG_HAL_BOARD_SUBTYPE
+#endif // AP_RANGEFINDER_BBB_PRU_ENABLED

@@ -26,9 +26,11 @@
 #include <AP_HAL/Util.h>
 #include <limits.h>
 #include <ctype.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -125,7 +127,7 @@ static const char* event_names[5] = {
 #endif
 
 static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SCREENS][AP_OSD_ParamScreen::NUM_PARAMS] {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_COPTER_OR_HELI
     {
         { 1, { 102, 0, 4033 }, OSD_PARAM_NONE },            // ATC_RAT_RLL_P
         { 2, { 102, 0, 129  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_D
@@ -295,19 +297,18 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
     const AP_OSD_ParamSetting& setting = params[number-1];
     AP_Param* p = setting._param;
 
-    if (p->is_read_only()) {
+    if (p == nullptr || p->is_read_only()) {
         return;
     }
 
     _requires_save |= 1 << (number-1);
 
-    float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
-    int32_t incr_int = int32_t(roundf(incr));
-    int32_t max_int = int32_t(roundf(setting._param_max));
-    int32_t min_int = int32_t(roundf(setting._param_min));
+    const float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
+    const int32_t incr_int = int32_t(roundf(incr));
+    const int32_t max_int = int32_t(roundf(setting._param_max));
+    const int32_t min_int = int32_t(roundf(setting._param_min));
 
-    if (p != nullptr) {
-        switch (setting._param_type) {
+    switch (setting._param_type) {
         // there is no way to validate the ranges, so as a rough guess prevent
         // integer types going below -1;
         case AP_PARAM_INT8: {
@@ -334,8 +335,8 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
         case AP_PARAM_NONE:
         case AP_PARAM_GROUP:
             break;
-        }
     }
+
 }
 
 // modify which parameter is configured for the given selection
@@ -376,11 +377,11 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
 
     if (param != nullptr) {
         // update the stored index
-        setting._param_group = setting._current_token.group_element;
-        setting._param_key = AP_Param::get_persistent_key(setting._current_token.key);
-        setting._param_idx = setting._current_token.idx;
+        setting._param_group.set(setting._current_token.group_element);
+        setting._param_key.set(AP_Param::get_persistent_key(setting._current_token.key));
+        setting._param_idx.set(setting._current_token.idx);
         setting._param = param;
-        setting._type = OSD_PARAM_NONE;
+        setting._type.set(OSD_PARAM_NONE);
         // force update() to refresh the token
         setting._current_token.key = 0;
         setting._current_token.idx = 0;
@@ -404,7 +405,7 @@ RC_Channel::AuxSwitchPos AP_OSD_ParamScreen::get_channel_pos(uint8_t rcmapchan) 
     }
 
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
-    bool switch_reversed = chan->get_reverse() && rc().switch_reverse_allowed();
+    bool switch_reversed = chan->get_reverse() && rc().option_is_enabled(RC_Channels::Option::ALLOW_SWITCH_REV);
 
     if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
         return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
@@ -569,7 +570,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     }
 }
 
-#if HAL_WITH_OSD_BITMAP
+#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_ParamScreen::draw(void)
 {
     if (!enabled || !backend) {
@@ -594,19 +595,6 @@ void AP_OSD_ParamScreen::draw(void)
 }
 #endif
 
-// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
-{
-    // currently in the OSD menu, do not allow arming
-    if (!is_readonly_screen()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "In OSD menu");
-        return false;
-    }
-
-    // if we got this far everything must be ok
-    return true;
-}
-
 #endif // OSD_ENABLED
 
 // save all of the parameters
@@ -629,7 +617,8 @@ void AP_OSD_ParamScreen::save_parameters()
 }
 
 // handle OSD configuration messages
-void AP_OSD_ParamScreen::handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link)
+#if HAL_GCS_ENABLED
+void AP_OSD_ParamScreen::handle_write_msg(const mavlink_osd_param_config_t& packet, const class GCS_MAVLINK& link)
 {
     // request out of range - return an error
     if (packet.osd_index < 1 || packet.osd_index > AP_OSD_ParamScreen::NUM_PARAMS) {
@@ -642,7 +631,7 @@ void AP_OSD_ParamScreen::handle_write_msg(const mavlink_osd_param_config_t& pack
 }
 
 // handle OSD show configuration messages
-void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& packet, const GCS_MAVLINK& link)
+void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& packet, const class GCS_MAVLINK& link)
 {
     // request out of range - return an error
     if (packet.osd_index < 1 || packet.osd_index > AP_OSD_ParamScreen::NUM_PARAMS) {
@@ -667,5 +656,6 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_SUCCESS,
         buf, param._type, param._param_min, param._param_max, param._param_incr);
 }
+#endif
 
 #endif // OSD_PARAM_ENABLED

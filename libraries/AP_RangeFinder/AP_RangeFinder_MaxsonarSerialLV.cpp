@@ -17,6 +17,8 @@
 
 #include "AP_RangeFinder_MaxsonarSerialLV.h"
 
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -24,8 +26,16 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(
+    RangeFinder::RangeFinder_State &_state,
+    AP_RangeFinder_Params &_params):
+    AP_RangeFinder_Backend_Serial(_state, _params)
+{
+    params.scaling.set_default(0.0254f);
+}
+
 // read - return last value measured by sensor
-bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_MaxsonarSerialLV::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -55,8 +65,10 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    // This sonar gives the metrics in inches, so we have to transform this to centimeters
-    reading_cm = 2.54f * sum / count;
+    // This sonar gives the metrics in inches, so we have to transform this to meters
+    reading_m = params.scaling * (float(sum) / count);
 
     return true;
 }
+
+#endif  // AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED

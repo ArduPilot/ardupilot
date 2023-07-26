@@ -131,7 +131,6 @@
 #endif
 #define BWBRIGHTNESS ((BLACKBRIGHTNESS << 2) | WHITEBRIGHTNESS)
 
-
 extern const AP_HAL::HAL &hal;
 
 AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):

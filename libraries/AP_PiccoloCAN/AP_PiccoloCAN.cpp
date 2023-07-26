@@ -32,6 +32,9 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_CANManager/AP_CANManager.h>
+
+#include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
 #include <stdio.h>
 
@@ -57,7 +60,7 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Param: ESC_BM
     // @DisplayName: ESC channels
     // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
-    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0xFFFF),
 
@@ -83,7 +86,22 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @User: Advanced
     // @Range: 1 500
     AP_GROUPINFO("SRV_RT", 4, AP_PiccoloCAN, _srv_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+    // @Param: ECU_ID
+    // @DisplayName: ECU Node ID
+    // @Description: Node ID to send ECU throttle messages to. Set to zero to disable ECU throttle messages. Set to 255 to broadcast to all ECUs.
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("ECU_ID", 5, AP_PiccoloCAN, _ecu_id, PICCOLO_CAN_ECU_ID_DEFAULT),
 
+    // @Param: ECU_RT
+    // @DisplayName: ECU command output rate
+    // @Description: Output rate of ECU command messages
+    // @Units: Hz
+    // @User: Advanced
+    // @Range: 1 500
+    AP_GROUPINFO("ECU_RT", 6, AP_PiccoloCAN, _ecu_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+#endif
     AP_GROUPEND
 };
 
@@ -97,7 +115,7 @@ AP_PiccoloCAN::AP_PiccoloCAN()
 AP_PiccoloCAN *AP_PiccoloCAN::get_pcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_PiccoloCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CAN::Protocol::PiccoloCAN) {
         return nullptr;
     }
 
@@ -161,6 +179,9 @@ void AP_PiccoloCAN::loop()
 
     uint16_t esc_tx_counter = 0;
     uint16_t servo_tx_counter = 0;
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+    uint16_t ecu_tx_counter = 0;
+#endif
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -175,15 +196,19 @@ void AP_PiccoloCAN::loop()
         }
 
         // Calculate the output rate for ESC commands
-        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+        _esc_hz.set(constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t escCmdRateMs = 1000 / _esc_hz;
 
         // Calculate the output rate for servo commands
-        _srv_hz = constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+        _srv_hz.set(constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t servoCmdRateMs = 1000 / _srv_hz;
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+        _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
+        uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
+#endif
         uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
@@ -201,6 +226,14 @@ void AP_PiccoloCAN::loop()
             send_servo_messages();
         }
 
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+        // Transmit ecu throttle commands at regular intervals
+        if (ecu_tx_counter++ > ecuCmdRateMs) {
+            ecu_tx_counter = 0;
+            send_ecu_messages();
+        }
+#endif
+
         // Look for any message responses on the CAN bus
         while (read_frame(rxFrame, timeout)) {
 
@@ -213,26 +246,27 @@ void AP_PiccoloCAN::loop()
                 continue;
             }
 
-            switch (MessageGroup(frame_id_group)) {
+            switch (PiccoloCAN_MessageGroup(frame_id_group)) {
             // ESC messages exist in the ACTUATOR group
-            case MessageGroup::ACTUATOR:
+            case PiccoloCAN_MessageGroup::ACTUATOR:
 
-                switch (ActuatorType(frame_id_device)) {
-                case ActuatorType::SERVO:
-                    if (handle_servo_message(rxFrame)) {
-                        // Returns true if the message was successfully decoded
-                    }
+                switch (PiccoloCAN_ActuatorType(frame_id_device)) {
+                case PiccoloCAN_ActuatorType::SERVO:
+                    handle_servo_message(rxFrame);
                     break;
-                case ActuatorType::ESC:
-                    if (handle_esc_message(rxFrame)) {
-                        // Returns true if the message was successfully decoded
-                    }
+                case PiccoloCAN_ActuatorType::ESC:
+                    handle_esc_message(rxFrame);
                     break;
                 default:
                     // Unknown actuator type
                     break;
                 }
 
+                break;
+            case PiccoloCAN_MessageGroup::ECU_OUT:
+            #if AP_EFI_CURRAWONG_ECU_ENABLED
+                handle_ecu_message(rxFrame);
+            #endif
                 break;
             default:
                 break;
@@ -298,8 +332,8 @@ void AP_PiccoloCAN::update()
             SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(ii);
 
             if (SRV_Channels::get_output_pwm(function, output)) {
-                _servo_info[ii].command = output;
-                _servo_info[ii].newCommand = true;
+                _servos[ii].command = output;
+                _servos[ii].newCommand = true;
             }
         }
     }
@@ -314,32 +348,49 @@ void AP_PiccoloCAN::update()
             SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
-
-                _esc_info[ii].command = output;
-                _esc_info[ii].newCommand = true;
+                _escs[ii].command = output;
+                _escs[ii].newCommand = true;
             }
         }
     }
 
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+    if (_ecu_id != 0) {
+        _ecu_info.command = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+        _ecu_info.newCommand = true;
+    }
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED
+
     AP_Logger *logger = AP_Logger::get_singleton();
 
-    // Push received telemtry data into the logging system
+    // Push received telemetry data into the logging system
     if (logger && logger->logging_enabled()) {
 
         WITH_SEMAPHORE(_telem_sem);
 
         for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
-            CBSServo_Info_t &servo = _servo_info[ii];
+
+            AP_PiccoloCAN_Servo &servo = _servos[ii];
 
             if (servo.newTelemetry) {
-
+                union {
+                    Servo_ErrorBits_t ebits;
+                    uint8_t errors;
+                } err;
+                err.ebits = servo.status.statusA.errors;
                 logger->Write_ServoStatus(
                     timestamp,
                     ii,
-                    (float) servo.statusA.position,         // Servo position (represented in microsecond units)
-                    (float) servo.statusB.current / 100.0f, // Servo force (actually servo current, 0.01A per bit)
-                    (float) servo.statusB.speed,            // Servo speed (degrees per second)
-                    (uint8_t) abs(servo.statusB.dutyCycle)  // Servo duty cycle (absolute value as it can be +/- 100%)
+                    servo.position(),                       // Servo position (represented in microsecond units)
+                    servo.current() * 0.01f,                // Servo force (actually servo current, 0.01A per bit)
+                    servo.speed(),                          // Servo speed (degrees per second)
+                    servo.dutyCycle(),                      // Servo duty cycle (absolute value as it can be +/- 100%)
+                    uint16_t(servo.commandedPosition()),    // Commanded position
+                    servo.voltage(),                        // Servo voltage
+                    servo.current(),                        // Servo current
+                    servo.temperature(),                    // Servo temperature
+                    servo.temperature(),                    // 
+                    err.errors
                 );
 
                 servo.newTelemetry = false;
@@ -370,17 +421,18 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         // Calculate index within storage array
         idx = (ii % 4);
 
-        VelocityESC_Info_t &esc = _esc_info[idx];
+        AP_PiccoloCAN_ESC &esc = _escs[idx];
 
         // Has the ESC been heard from recently?
         if (is_esc_present(ii)) {
             dataAvailable = true;
 
-            temperature[idx] = esc.fetTemperature;
-            voltage[idx] = esc.voltage;
-            current[idx] = esc.current;
+            // Provide the maximum ESC temperature in the telemetry stream
+            temperature[idx] = esc.temperature();   // Convert to C
+            voltage[idx] = esc.voltage() * 10;      // Convert to cV
+            current[idx] = esc.current() * 10;      // Convert to cA
             totalcurrent[idx] = 0;
-            rpm[idx] = esc.rpm;
+            rpm[idx] = esc.rpm();
             count[idx] = 0;
         } else {
             temperature[idx] = 0;
@@ -408,6 +460,9 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
                     break;
                 case 11:
                     mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 15:
+                    mavlink_msg_esc_telemetry_13_to_16_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
                     break;
                 default:
                     break;
@@ -462,11 +517,11 @@ void AP_PiccoloCAN::send_servo_messages(void)
                 encodeServo_EnablePacket(&txFrame);
                 txFrame.id |= (idx + 1);
                 write_frame(txFrame, timeout);
-            } else if (_servo_info[idx].newCommand) {
+            } else if (_servos[idx].newCommand) {
                 // A new command is provided
                 send_cmd = true;
-                cmd[jj] = _servo_info[idx].command;
-                _servo_info[idx].newCommand = false;
+                cmd[jj] = _servos[idx].command;
+                _servos[idx].newCommand = false;
             }
         }
 
@@ -533,10 +588,10 @@ void AP_PiccoloCAN::send_esc_messages(void)
                     txFrame.id |= (idx + 1);
                     write_frame(txFrame, timeout);
                 }
-                else if (_esc_info[idx].newCommand) {
+                else if (_escs[idx].newCommand) {
                     send_cmd = true;
-                    cmd[jj] = _esc_info[idx].command;
-                    _esc_info[idx].newCommand = false;
+                    cmd[jj] = _escs[idx].command;
+                    _escs[idx].newCommand = false;
                 } else {
                     // A command of 0x7FFF is 'out of range' and will be ignored by the corresponding ESC
                     cmd[jj] = 0x7FFF;
@@ -577,8 +632,6 @@ void AP_PiccoloCAN::send_esc_messages(void)
 // interpret a servo message received over CAN
 bool AP_PiccoloCAN::handle_servo_message(AP_HAL::CANFrame &frame)
 {
-    uint64_t timestamp = AP_HAL::micros64();
-
     // The servo address is the lower byte of the frame ID
     uint8_t addr = frame.id & 0xFF;
 
@@ -595,44 +648,14 @@ bool AP_PiccoloCAN::handle_servo_message(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    CBSServo_Info_t &servo = _servo_info[addr];
-
-    bool result = true;
-
-    // Throw the incoming packet against each decoding routine
-    if (decodeServo_StatusAPacketStructure(&frame, &servo.statusA)) {
-        servo.newTelemetry = true;
-    } else if (decodeServo_StatusBPacketStructure(&frame, &servo.statusB)) {
-        servo.newTelemetry = true;
-    } else if (decodeServo_FirmwarePacketStructure(&frame, &servo.firmware)) {
-        // TODO
-    } else if (decodeServo_AddressPacketStructure(&frame, &servo.address)) {
-        // TODO
-    } else if (decodeServo_SettingsInfoPacketStructure(&frame, &servo.settings)) {
-        // TODO
-    } else if (decodeServo_TelemetryConfigPacketStructure(&frame, &servo.telemetry)) {
-    } else {
-        // Incoming frame did not match any of the packet decoding routines
-        result = false;
-    }
-
-    if (result) {
-        // Reset the rx timestamp
-        servo.last_rx_msg_timestamp = timestamp;
-    }
-
-    return result;
+    // Pass the CAN frame off to the specific servo
+    return _servos[addr].handle_can_frame(frame);
 }
 
 
 // interpret an ESC message received over CAN
 bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 {
-    bool result = true;
-
-#if HAL_WITH_ESC_TELEM
-    uint64_t timestamp = AP_HAL::micros64();
-
     // The ESC address is the lower byte of the frame ID
     uint8_t addr = frame.id & 0xFF;
 
@@ -649,85 +672,41 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    VelocityESC_Info_t &esc = _esc_info[addr];
-
-    /*
-     * The STATUS_A packet has slight variations between Gen-1 and Gen-2 ESCs.
-     * We can differentiate between the different versions,
-     * and coerce the "legacy" values into the modern values
-     * Legacy STATUS_A packet variables
-     */
-    ESC_LegacyStatusBits_t legacyStatus;
-    ESC_LegacyWarningBits_t legacyWarnings;
-    ESC_LegacyErrorBits_t legacyErrors;
-
-    // Throw the packet against each decoding routine
-    if (decodeESC_StatusAPacket(&frame, &esc.mode, &esc.status, &esc.setpoint, &esc.rpm)) {
-        esc.newTelemetry = true;
-        update_rpm(addr, esc.rpm);
-    } else if (decodeESC_LegacyStatusAPacket(&frame, &esc.mode, &legacyStatus, &legacyWarnings, &legacyErrors, &esc.setpoint, &esc.rpm)) {
-        // The status / warning / error bits need to be converted to modern values
-        // Note: Not *all* of the modern status bits are available in the Gen-1 packet
-        esc.status.hwInhibit = legacyStatus.hwInhibit;
-        esc.status.swInhibit = legacyStatus.swInhibit;
-        esc.status.afwEnabled = legacyStatus.afwEnabled;
-        esc.status.direction = legacyStatus.timeout;
-        esc.status.timeout = legacyStatus.timeout;
-        esc.status.starting = legacyStatus.starting;
-        esc.status.commandSource = legacyStatus.commandSource;
-        esc.status.running = legacyStatus.running;
-
-        // Copy the legacy warning information across
-        esc.warnings.overspeed = legacyWarnings.overspeed;
-        esc.warnings.overcurrent = legacyWarnings.overcurrent;
-        esc.warnings.escTemperature = legacyWarnings.escTemperature;
-        esc.warnings.motorTemperature = legacyWarnings.motorTemperature;
-        esc.warnings.undervoltage = legacyWarnings.undervoltage;
-        esc.warnings.overvoltage = legacyWarnings.overvoltage;
-        esc.warnings.invalidPWMsignal = legacyWarnings.invalidPWMsignal;
-        esc.warnings.settingsChecksum = legacyErrors.settingsChecksum;
-
-        // There are no common error bits between the Gen-1 and Gen-2 ICD
-    } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
-        
-        AP_ESC_Telem_Backend::TelemetryData t {
-            .temperature_cdeg = int16_t(esc.escTemperature * 100),
-            .voltage = float(esc.voltage) * 0.01f,
-            .current = float(esc.current) * 0.01f,
-        };
-
-        update_telem_data(addr, t,
-            AP_ESC_Telem_Backend::TelemetryType::CURRENT
-                | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
-                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
-
-        esc.newTelemetry = true;
-    } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
-        AP_ESC_Telem_Backend::TelemetryData t { };
-        t.motor_temp_cdeg = int16_t(esc.fetTemperature * 100);
-        update_telem_data(addr, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
-
-        esc.newTelemetry = true;
-    } else if (decodeESC_WarningErrorStatusPacket(&frame, &esc.warnings, &esc.errors)) {
-        esc.newTelemetry = true;
-    } else if (decodeESC_FirmwarePacketStructure(&frame, &esc.firmware)) {
-        // TODO
-    } else if (decodeESC_AddressPacketStructure(&frame, &esc.address)) {
-        // TODO
-    } else if (decodeESC_EEPROMSettingsPacketStructure(&frame, &esc.eeprom)) {
-        // TODO
-    } else {
-        result = false;
-    }
-
-    if (result) {
-        // Reset the Rx timestamp
-        esc.last_rx_msg_timestamp = timestamp;
-    }
-#endif // HAL_WITH_ESC_TELEM
-
-    return result;
+    return _escs[addr].handle_can_frame(frame);
 }
+
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+void AP_PiccoloCAN::send_ecu_messages(void)
+{
+    AP_HAL::CANFrame txFrame {};
+
+    const uint64_t timeout = AP_HAL::micros64() + 1000ULL;
+
+    // No ECU node id set, don't send anything
+    if (_ecu_id == 0) {
+        return;
+    }
+
+    if (_ecu_info.newCommand) {
+        encodeECU_ThrottleCommandPacket(&txFrame, _ecu_info.command);
+        txFrame.id |= (uint8_t) _ecu_id;
+
+        _ecu_info.newCommand = false;
+
+        write_frame(txFrame, timeout);
+    }
+}
+
+bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
+{
+    // Get the ecu instance
+    AP_EFI_Currawong_ECU* ecu = AP_EFI_Currawong_ECU::get_instance();
+    if (ecu != nullptr) {
+        return ecu->handle_message(frame);
+    }
+    return false;
+}
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)
@@ -742,7 +721,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
 
     // Ignore if the servo channel does not have a function assigned
-    if (function == SRV_Channel::k_none) {
+    if (function <= SRV_Channel::k_none) {
         return false;
     }
 
@@ -785,22 +764,7 @@ bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint64_t timeout_ms)
         return false;
     }
 
-    CBSServo_Info_t &servo = _servo_info[chan];
-
-    // No messages received from this servo
-    if (servo.last_rx_msg_timestamp == 0) {
-        return false;
-    }
-
-    uint64_t now = AP_HAL::micros64();
-
-    uint64_t timeout_us = timeout_ms * 1000ULL;
-
-    if (now > (servo.last_rx_msg_timestamp + timeout_us)) {
-        return false;
-    }
-
-    return true;
+    return _servos[chan].is_connected(timeout_ms);
 }
 
 
@@ -813,22 +777,7 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
         return false;
     }
 
-    VelocityESC_Info_t &esc = _esc_info[chan];
-
-    // No messages received from this ESC
-    if (esc.last_rx_msg_timestamp == 0) {
-        return false;
-    }
-
-    uint64_t now = AP_HAL::micros64();
-
-    uint64_t timeout_us = timeout_ms * 1000ULL;
-
-    if (now > (esc.last_rx_msg_timestamp + timeout_us)) {
-        return false;
-    }
-
-    return true;
+    return _escs[chan].is_connected(timeout_ms);
 }
 
 
@@ -846,9 +795,7 @@ bool AP_PiccoloCAN::is_servo_enabled(uint8_t chan)
         return false;
     }
 
-    CBSServo_Info_t &servo = _servo_info[chan];
-
-    return servo.statusA.status.enabled;
+    return _servos[chan].is_enabled();
 }
 
 
@@ -866,15 +813,7 @@ bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
         return false;
     }
 
-    VelocityESC_Info_t &esc = _esc_info[chan];
-
-    if (esc.status.hwInhibit || esc.status.swInhibit) {
-        return false;
-    }
-
-    // ESC is present, and enabled
-    return true;
-
+    return _escs[chan].is_enabled();
 }
 
 
@@ -903,9 +842,7 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
                 return false;
             }
 
-            VelocityESC_Info_t &esc = _esc_info[ii];
-
-            if (esc.status.hwInhibit) {
+            if (_escs[ii].is_hw_inhibited()) {
                 snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
@@ -915,142 +852,5 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
     return true;
 }
 
-/* Piccolo Glue Logic
- * The following functions are required by the auto-generated protogen code.
- */
-
-//! \return the packet data pointer from the packet
-uint8_t* getESCVelocityPacketData(void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (uint8_t*) frame->data;
-}
-
-//! \return the packet data pointer from the packet, const
-const uint8_t* getESCVelocityPacketDataConst(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (const uint8_t*) frame->data;
-}
-
-//! Complete a packet after the data have been encoded
-void finishESCVelocityPacket(void* pkt, int size, uint32_t packetID)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    if (size > AP_HAL::CANFrame::MaxDataLen) {
-        size = AP_HAL::CANFrame::MaxDataLen;
-    }
-
-    frame->dlc = size;
-
-    /* Encode the CAN ID
-     * 0x07mm20dd
-     * - 07 = ACTUATOR group ID
-     * - mm = Message ID
-     * - 20 = ESC actuator type
-     * - dd = Device ID
-     *
-     * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
-     */
-
-    uint32_t id = (((uint8_t) AP_PiccoloCAN::MessageGroup::ACTUATOR) << 24) |       // CAN Group ID
-                  ((packetID & 0xFF) << 16) |                                       // Message ID
-                  (((uint8_t) AP_PiccoloCAN::ActuatorType::ESC) << 8);              // Actuator type
-
-    // Extended frame format
-    id |= AP_HAL::CANFrame::FlagEFF;
-
-    frame->id = id;
-}
-
-//! \return the size of a packet from the packet header
-int getESCVelocityPacketSize(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (int) frame->dlc;
-}
-
-//! \return the ID of a packet from the packet header
-uint32_t getESCVelocityPacketID(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    // Extract the message ID field from the 29-bit ID
-    return (uint32_t) ((frame->id >> 16) & 0xFF);
-}
-
-/* Piccolo Glue Logic
- * The following functions are required by the auto-generated protogen code.
- */
-
-
-//! \return the packet data pointer from the packet
-uint8_t* getServoPacketData(void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (uint8_t*) frame->data;
-}
-
-//! \return the packet data pointer from the packet, const
-const uint8_t* getServoPacketDataConst(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (const uint8_t*) frame->data;
-}
-
-//! Complete a packet after the data have been encoded
-void finishServoPacket(void* pkt, int size, uint32_t packetID)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    if (size > AP_HAL::CANFrame::MaxDataLen) {
-        size = AP_HAL::CANFrame::MaxDataLen;
-    }
-
-    frame->dlc = size;
-
-    /* Encode the CAN ID
-     * 0x07mm20dd
-     * - 07 = ACTUATOR group ID
-     * - mm = Message ID
-     * - 00 = Servo actuator type
-     * - dd = Device ID
-     *
-     * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
-     */
-
-    uint32_t id = (((uint8_t) AP_PiccoloCAN::MessageGroup::ACTUATOR) << 24) |       // CAN Group ID
-                  ((packetID & 0xFF) << 16) |                                       // Message ID
-                  (((uint8_t) AP_PiccoloCAN::ActuatorType::SERVO) << 8);            // Actuator type
-
-    // Extended frame format
-    id |= AP_HAL::CANFrame::FlagEFF;
-
-    frame->id = id;
-}
-
-//! \return the size of a packet from the packet header
-int getServoPacketSize(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    return (int) frame->dlc;
-}
-
-//! \return the ID of a packet from the packet header
-uint32_t getServoPacketID(const void* pkt)
-{
-    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
-
-    // Extract the message ID field from the 29-bit ID
-    return (uint32_t) ((frame->id >> 16) & 0xFF);
-}
 
 #endif // HAL_PICCOLO_CAN_ENABLE
-

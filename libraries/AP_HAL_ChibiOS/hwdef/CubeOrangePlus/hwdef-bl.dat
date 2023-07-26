@@ -1,0 +1,20 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+define CORE_CM7
+define SMPS_PWR
+
+include ../CubeOrange/hwdef-bl.inc
+
+undef USB_STRING_PRODUCT
+undef USB_STRING_MANUFACTURER
+undef APJ_BOARD_ID
+undef USB_PRODUCT
+
+# USB setup
+USB_PRODUCT 0x1058
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "CubeOrange+-BL"
+
+APJ_BOARD_ID 1063

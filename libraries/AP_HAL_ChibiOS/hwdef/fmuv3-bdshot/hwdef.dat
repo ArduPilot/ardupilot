@@ -210,7 +210,7 @@ PA7 SPI1_MOSI SPI1
 # This defines an output pin which will default to output LOW. It is a
 # pin that enables peripheral power on this board.
 
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
@@ -337,12 +337,6 @@ PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) NODMA
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) NODMA
 
-define BOARD_PWM_COUNT_DEFAULT 4
-
-# Relays default to use GPIO pins 54 and 55.
-define RELAY1_PIN_DEFAULT 54
-define RELAY2_PIN_DEFAULT 55
-
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.
 PD15 MPU_DRDY INPUT
@@ -430,10 +424,6 @@ SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 # define. Any line starting with 'define' is copied literally as
 # a #define in the hwdef.h header.
 define HAL_CHIBIOS_ARCH_FMUV3 1
-
-# Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # We need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes).

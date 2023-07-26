@@ -15,7 +15,7 @@
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
 #define VELNE_M_NSE_DEFAULT     0.3f
 #define VELD_M_NSE_DEFAULT      0.5f
@@ -25,7 +25,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -51,7 +51,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -77,7 +77,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -103,7 +103,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -120,6 +120,15 @@
 #define WIND_P_NSE_DEFAULT      0.1
 
 #endif // APM_BUILD_DIRECTORY
+
+#ifndef EK3_PRIMARY_DEFAULT
+#define EK3_PRIMARY_DEFAULT 0
+#endif
+
+// This allows boards to default to using a specified number of IMUs and EKF lanes
+#ifndef HAL_EKF_IMU_MASK_DEFAULT
+#define HAL_EKF_IMU_MASK_DEFAULT 3       // Default to using two IMUs
+#endif
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF3::var_info[] = {
@@ -156,7 +165,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: VEL_I_GATE
     // @DisplayName: GPS velocity innovation gate size
-    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
@@ -218,7 +227,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -322,7 +330,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -361,7 +368,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.00001 0.005
+    // @Range: 0.00001 0.02
     // @User: Advanced
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
@@ -371,7 +378,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This state process noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
-    // @Range: 0.01 1.0
+    // @Range: 0.01 2.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
@@ -380,10 +387,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
-    // @Range: 0.0 1.0
+    // @Range: 0.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 0.5f),
+    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 1.0f),
 
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
@@ -398,7 +405,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, 3),
+    AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, HAL_EKF_IMU_MASK_DEFAULT),
     
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
@@ -507,7 +514,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -587,7 +593,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: Specifies the crossover frequency of the complementary filter used to calculate the output predictor height rate derivative.
     // @Range: 0.1 30.0
     // @Units: Hz
-    // @RebootRequired: False
     AP_GROUPINFO("HRT_FILT", 55, NavEKF3, _hrt_filt_freq, 2.0f),
 
     // @Param: MAG_EF_LIM
@@ -600,7 +605,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: GSF_RUN_MASK
     // @DisplayName: Bitmask of which EKF-GSF yaw estimators run
-    // @Description: 1 byte bitmap of which EKF3 instances run an independant EKF-GSF yaw estimator to provide a backup yaw estimate that doesn't rely on magnetometer data. This estimator uses IMU, GPS and, if available, airspeed data. EKF-GSF yaw estimator data for the primary EKF3 instance will be logged as GSF0 and GSF1 messages. Use of the yaw estimate generated by this algorithm is controlled by the EK3_GSF_USE, EK3_GSF_DELAY and EK3_GSF_MAXCOUNT parameters. To run the EKF-GSF yaw estimator in ride-along and logging only, set EK3_GSF_USE to 0. 
+    // @Description: 1 byte bitmap of which EKF3 instances run an independant EKF-GSF yaw estimator to provide a backup yaw estimate that doesn't rely on magnetometer data. This estimator uses IMU, GPS and, if available, airspeed data. EKF-GSF yaw estimator data for the primary EKF3 instance will be logged as GSF0 and GSF1 messages. Use of the yaw estimate generated by this algorithm is controlled by the EK3_GSF_USE_MASK and EK3_GSF_RST_MAX parameters. To run the EKF-GSF yaw estimator in ride-along and logging only, set EK3_GSF_USE to 0. 
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
     // @RebootRequired: True
@@ -608,25 +613,17 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: GSF_USE_MASK
     // @DisplayName: Bitmask of which EKF-GSF yaw estimators are used
-    // @Description: 1 byte bitmap of which EKF3 instances will use the output from the EKF-GSF yaw estimator that has been turned on by the EK3_GSF_RUN parameter. If the inertial navigation calculation stops following the GPS, then the vehicle code can request EKF3 to attempt to resolve the issue, either by performing a yaw reset if enabled by this parameter by switching to another EKF3 instance. Additionally the EKF3 will  initiate a reset internally if navigation is lost for more than EK3_GSF_DELAY milli seconds.
+    // @Description: A bitmask of which EKF3 instances will use the output from the EKF-GSF yaw estimator that has been turned on by the EK3_GSF_RUN_MASK parameter. If the inertial navigation calculation stops following the GPS, then the vehicle code can request EKF3 to attempt to resolve the issue, either by performing a yaw reset if enabled by this parameter by switching to another EKF3 instance.
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GSF_USE_MASK", 58, NavEKF3, _gsfUseMask, 3),
 
-    // @Param: GSF_DELAY
-    // @DisplayName: Delay from loss of navigation to yaw reset
-    // @Description: If the inertial navigation calculation stops following the GPS and other positioning sensors for longer than EK3_GSF_DELAY milli-seconds, then the EKF3 code will generate a reset request internally and reset the yaw to the estimate from the EKF-GSF filter and reset the horizontal velocity and position to the GPS. This reset will not be performed unless the use of the EKF-GSF yaw estimate is enabled via the EK3_GSF_USE parameter.
-    // @Range: 500 5000
-    // @Increment: 100
-    // @Units: ms
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("GSF_DELAY", 59, NavEKF3, _gsfResetDelay, 1000),
+    // 59 was GSF_DELAY which was never released in a stable version
 
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed
-    // @Description: Sets the maximum number of times the EKF3 will be allowed to reset it's yaw to the estimate from the EKF-GSF yaw estimator. No resets will be allowed unless the use of the EKF-GSF yaw estimate is enabled via the EK3_GSF_USE parameter.
+    // @Description: Sets the maximum number of times the EKF3 will be allowed to reset its yaw to the estimate from the EKF-GSF yaw estimator. No resets will be allowed unless the use of the EKF-GSF yaw estimate is enabled via the EK3_GSF_USE_MASK parameter.
     // @Range: 1 10
     // @Increment: 1
     // @User: Advanced
@@ -664,7 +661,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_BCOEF_X
     // @DisplayName: Ballistic coefficient for X axis drag
-    // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_DRAG_MCOEF parameter.
     // @Range: 0.0 1000.0
     // @Units: kg/m/m
     // @User: Advanced
@@ -672,7 +669,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_BCOEF_Y
     // @DisplayName: Ballistic coefficient for Y axis drag
-    // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_DRAG_MCOEF parameter.
     // @Range: 50.0 1000.0
     // @Units: kg/m/m
     // @User: Advanced
@@ -680,7 +677,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_M_NSE
     // @DisplayName: Observation noise for drag acceleration
-    // @Description: This sets the amount of noise used when fusing X and Y acceleration as an observation that enables esitmation of wind velocity for multi-rotor vehicles. This feature is enabled by the EK3_BCOEF_X and EK3_BCOEF_Y parameters
+    // @Description: This sets the amount of noise used when fusing X and Y acceleration as an observation that enables esitmation of wind velocity for multi-rotor vehicles. This feature is enabled by the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters
     // @Range: 0.1 2.0
     // @Increment: 0.1
     // @User: Advanced
@@ -689,7 +686,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_MCOEF
     // @DisplayName: Momentum coefficient for propeller drag
-    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
+    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_DRAG_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
     // @Units: 1/s
@@ -706,11 +703,36 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: GND_EFF_DZ
     // @DisplayName: Baro height ground effect dead zone
-    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when takeing off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. 
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present.
     // @Range: 0.0 10.0
     // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
+
+    // @Param: PRIMARY
+    // @DisplayName: Primary core number
+    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK.
+    // @Range: 0 2
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, EK3_PRIMARY_DEFAULT),
+
+    // @Param: LOG_LEVEL
+    // @DisplayName: Logging Level
+    // @Description: Determines how verbose the EKF3 streaming logging is. A value of 0 provides full logging(default), a value of 1 only XKF4 scaled innovations are logged, a value of 2 both XKF4 and GSF are logged, and a value of 3 disables all streaming logging of EKF3.
+    // @Range: 0 3
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LOG_LEVEL", 9, NavEKF3, _log_level, 0),
+    
+    // @Param: GPS_VACC_MAX
+    // @DisplayName: GPS vertical accuracy threshold
+    // @Description: Vertical accuracy threshold for GPS as the altitude source. The GPS will not be used as an altitude source if the reported vertical accuracy of the GPS is larger than this threshold, falling back to baro instead. Set to zero to deactivate the threshold check.
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("GPS_VACC_MAX", 10, NavEKF3, _gpsVAccThreshold, 0.0f),
 
     AP_GROUPEND
 };
@@ -769,7 +791,7 @@ bool NavEKF3::InitialiseFilter(void)
         num_cores = 0;
 
         // count IMUs from mask
-        for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_imuMask & (1U<<i)) {
                 coreSetupRequired[num_cores] = true;
                 coreImuIndex[num_cores] = i;
@@ -781,6 +803,7 @@ bool NavEKF3::InitialiseFilter(void)
         if (AP::dal().available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
             _enable.set(0);
+            num_cores = 0;
             return false;
         }
 
@@ -788,6 +811,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = (NavEKF3_core*)AP::dal().malloc_type(sizeof(NavEKF3_core)*num_cores, AP::dal().MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
+            num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 allocation failed");
             return false;
         }
@@ -818,8 +842,8 @@ bool NavEKF3::InitialiseFilter(void)
     // set relative error scores for all cores to 0
     resetCoreErrors();
 
-    // Set the primary initially to be the lowest index
-    primary = 0;
+    // Set the primary initially to be users selected primary
+    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
 
     // invalidate shared origin
     common_origin_valid = false;
@@ -964,16 +988,17 @@ void NavEKF3::UpdateFilter(void)
         }       
     }
 
-    if (primary != 0 && core[0].healthy() && !armed) {
-        // when on the ground and disarmed force the first lane. This
-        // avoids us ending with with a lottery for which IMU is used
-        // in each flight. Otherwise the alignment of the timing of
-        // the lane updates with the timing of GPS updates can lead to
-        // a lane other than the first one being used as primary for
-        // some flights. As different IMUs may have quite different
-        // noise characteristics this leads to inconsistent
-        // performance
-        primary = 0;
+    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    if (primary != user_primary && core[user_primary].healthy() && !armed) {
+        // when on the ground and disarmed force the selected primary
+        // core. This avoids us ending with with a lottery for which
+        // IMU is used in each flight. Otherwise the alignment of the
+        // timing of the core selection updates with the timing of GPS
+        // updates can lead to a core other than the first one being
+        // used as primary for some flights. As different IMUs may
+        // have quite different noise characteristics this leads to
+        // inconsistent performance
+        primary = user_primary;
     }
 
     // align position of inactive sources to ahrs
@@ -1074,6 +1099,9 @@ void NavEKF3::resetCoreErrors(void)
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
+    if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
+        AP::dal().log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+    }
     sources.setPosVelYawSourceSet(source_set_idx);
 }
 
@@ -1110,7 +1138,7 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         if (!core[i].healthy()) {
-            const char *failure = core[primary].prearm_failure_reason();
+            const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
                 AP::dal().snprintf(failure_msg, failure_msg_len, failure);
             } else {
@@ -1145,55 +1173,58 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosNE(int8_t instance, Vector2f &posNE) const
+bool NavEKF3::getPosNE(Vector2f &posNE) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosNE(posNE);
+    return core[primary].getPosNE(posNE);
 }
 
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosD(int8_t instance, float &posD) const
+bool NavEKF3::getPosD(float &posD) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosD(posD);
+    return core[primary].getPosD(posD);
 }
 
 // return NED velocity in m/s
-void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
+void NavEKF3::getVelNED(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getVelNED(vel);
+        core[primary].getVelNED(vel);
     }
 }
 
-// return estimate of true airspeed vector in body frame in m/s for the specified instance
-// An out of range instance (eg -1) returns data for the primary instance
+// return estimate of true airspeed vector in body frame in m/s
 // returns false if estimate is unavailable
-bool NavEKF3::getAirSpdVec(int8_t instance, Vector3f &vel) const
+bool NavEKF3::getAirSpdVec(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        return core[instance].getAirSpdVec(vel);
+        return core[primary].getAirSpdVec(vel);
+    }
+    return false;
+}
+
+// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+bool NavEKF3::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
+{
+    if (core) {
+        return core[primary].getAirSpdHealthData(innovation, innovationVariance, age_ms);
     }
     return false;
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
-float NavEKF3::getPosDownDerivative(int8_t instance) const
+float NavEKF3::getPosDownDerivative() const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
-        return core[instance].getPosDownDerivative();
+        return core[primary].getPosDownDerivative();
     }
     return 0.0f;
 }
@@ -1214,6 +1245,12 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (core) {
         core[instance].getAccelBias(accelBias);
     }
+}
+
+// returns active source set used by EKF3
+uint8_t NavEKF3::get_active_source_set() const
+{
+    return sources.get_active_source_set();
 }
 
 // reset body axis gyro bias estimates
@@ -1264,40 +1301,35 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 // returns true if wind state estimation is active
-bool NavEKF3::getWind(int8_t instance, Vector3f &wind) const
+bool NavEKF3::getWind(Vector3f &wind) const
 {
-    bool ret = false;
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        ret = core[instance].getWind(wind);
+    if (core == nullptr) {
+        return false;
     }
-    return ret;
+    return core[primary].getWind(wind);
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagNED(int8_t instance, Vector3f &magNED) const
+void NavEKF3::getMagNED(Vector3f &magNED) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagNED(magNED);
+        core[primary].getMagNED(magNED);
     }
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
+void NavEKF3::getMagXYZ(Vector3f &magXYZ) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagXYZ(magXYZ);
+        core[primary].getMagXYZ(magXYZ);
     }
 }
 
-// return the airspeed sensor in use for the specified instance
-uint8_t NavEKF3::getActiveAirspeed(int8_t instance) const
+// return the airspeed sensor in use
+uint8_t NavEKF3::getActiveAirspeed() const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        return core[instance].getActiveAirspeed();
+        return core[primary].getActiveAirspeed();
     } else {
         return 255;
     }
@@ -1326,7 +1358,7 @@ bool NavEKF3::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3::getLLH(struct Location &loc) const
+bool NavEKF3::getLLH(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1334,17 +1366,19 @@ bool NavEKF3::getLLH(struct Location &loc) const
     return core[primary].getLLH(loc);
 }
 
-// Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the primary instance
+// Return the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
+bool NavEKF3::getOriginLLH(Location &loc) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getOriginLLH(loc);
+    if (common_origin_valid) {
+        loc = common_EKF_origin;
+        return true;
+    }
+    return core[primary].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
@@ -1374,6 +1408,26 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     return ret;
 }
 
+bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+{
+#if EK3_FEATURE_POSITION_RESET
+    AP::dal().log_SetLatLng(loc, posAccuracy, timestamp_ms);
+
+    if (!core) {
+        return false;
+    }
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setLatLng(loc, posAccuracy, timestamp_ms);
+    }
+    // return true if any core accepts the new origin
+    return ret;
+#else
+    return false;
+#endif // EK3_FEATURE_POSITION_RESET
+}
+
+
 // return estimated height above ground level
 // return false if ground height is not being estimated.
 bool NavEKF3::getHAGL(float &HAGL) const
@@ -1384,12 +1438,11 @@ bool NavEKF3::getHAGL(float &HAGL) const
     return core[primary].getHAGL(HAGL);
 }
 
-// return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF3::getEulerAngles(int8_t instance, Vector3f &eulers) const
+// return the Euler roll, pitch and yaw angle in radians
+void NavEKF3::getEulerAngles(Vector3f &eulers) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getEulerAngles(eulers);
+        core[primary].getEulerAngles(eulers);
     }
 }
 
@@ -1413,41 +1466,39 @@ void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
-void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
+void NavEKF3::getQuaternion(Quaternion &quat) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getQuaternion(quat);
+        core[primary].getQuaternion(quat);
     }
 }
 
-// return the innovations for the specified instance
-void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+// return the innovations
+bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    if (core == nullptr) {
+        return false;
     }
+
+    return core[primary].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    if (core == nullptr) {
+        return false;
     }
+
+    return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
-// get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
+// get a source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
-bool NavEKF3::getVelInnovationsAndVariancesForSource(int8_t instance, AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
+bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
 {
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
     if (core) {
-        return core[instance].getVelInnovationsAndVariancesForSource(source, innovations, variances);
+        return core[primary].getVelInnovationsAndVariancesForSource(source, innovations, variances);
     }
     return false;
 }
@@ -1462,13 +1513,22 @@ bool NavEKF3::use_compass(void) const
     return core[primary].use_compass();
 }
 
-// are we using an external yaw source? Needed for ahrs attitudes_consistent
-bool NavEKF3::using_external_yaw(void) const
+// are we using (aka fusing) a non-compass yaw?
+bool NavEKF3::using_noncompass_for_yaw(void) const
 {
     if (!core) {
         return false;
     }
-    return core[primary].using_external_yaw();
+    return core[primary].using_noncompass_for_yaw();
+}
+
+// are we using (aka fusing) external nav for yaw?
+bool NavEKF3::using_extnav_for_yaw() const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].using_extnav_for_yaw();
 }
 
 // check if configured to use GPS for horizontal position estimation
@@ -1485,15 +1545,26 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
-void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+// heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
-    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
         }
     }
+}
+
+// retrieve latest corrected optical flow samples (used for calibration)
+bool NavEKF3::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
+{
+    // return optical flow samples from primary core
+    if (core) {
+        return core[primary].getOptFlowSample(timeStamp_ms, flowRate, bodyRate, losPred);
+    }
+    return false;
 }
 
 // write yaw angle sensor measurements
@@ -1512,7 +1583,7 @@ void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t tim
  * Write position and quaternion data from an external navigation system
  *
  * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
- * quat       : quaternion describing the the rotation from navigation frame to body frame
+ * quat       : quaternion describing the rotation from navigation frame to body frame
  * posErr     : 1-sigma spherical position error (m)
  * angErr     : 1-sigma spherical angle error (rad)
  * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
@@ -1594,7 +1665,7 @@ void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms,
 void NavEKF3::convert_parameters()
 {
     // exit immediately if param conversion has been done before
-    if (sources.configured_in_storage()) {
+    if (sources.configured()) {
         return;
     }
 
@@ -1631,12 +1702,12 @@ void NavEKF3::convert_parameters()
         case 3:
         default:
             // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow, beacon or external nav
-            sources.mark_configured_in_storage();
+            sources.mark_configured();
             break;
         }
     } else {
         // mark configured in storage so conversion is only run once
-        sources.mark_configured_in_storage();
+        sources.mark_configured();
     }
 
     // use EK3_ALT_SOURCE to set EK3_SRC1_POSZ
@@ -1722,11 +1793,10 @@ void NavEKF3::setTerrainHgtStable(bool val)
   6 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
+void NavEKF3::getFilterFaults(uint16_t &faults) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterFaults(faults);
+        core[primary].getFilterFaults(faults);
     } else {
         faults = 0;
     }
@@ -1735,21 +1805,20 @@ void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
 /*
   return filter status flags
 */
-void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status) const
+void NavEKF3::getFilterStatus(nav_filter_status &status) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterStatus(status);
+        core[primary].getFilterStatus(status);
     } else {
         memset(&status, 0, sizeof(status));
     }
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(mavlink_channel_t chan) const
+void NavEKF3::send_status_report(GCS_MAVLINK &link) const
 {
     if (core) {
-        core[primary].send_status_report(chan);
+        core[primary].send_status_report(link);
     }
 }
 
@@ -1958,8 +2027,8 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
     // Record the position delta between current core and new primary core and the timestamp of the core change
     // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosD(posDownOldPrimary);
-    core[new_primary].getPosD(posDownNewPrimary);
+    core[old_primary].getPosD_local(posDownOldPrimary);
+    core[new_primary].getPosD_local(posDownNewPrimary);
     pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;
@@ -1985,4 +2054,22 @@ bool NavEKF3::yawAlignmentComplete(void) const
         return false;
     }
     return core[primary].have_aligned_yaw();
+}
+
+// returns true when the state estimates are significantly degraded by vibration
+bool NavEKF3::isVibrationAffected() const
+{
+    if (core) {
+        return core[primary].isVibrationAffected();
+    }
+    return false;
+}
+
+// get a yaw estimator instance
+const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
+{
+    if (core) {
+        return core[primary].get_yawEstimator();
+    }
+    return nullptr;
 }

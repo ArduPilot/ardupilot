@@ -1,8 +1,11 @@
+# AP_FLAKE8_CLEAN
+
+
 from __future__ import print_function
 
 from LogAnalyzer import Test, TestResult
-import DataflashLog
 from VehicleType import VehicleType
+
 
 class TestPerformance(Test):
     '''check performance monitoring messages (PM) for issues with slow loops, etc'''
@@ -20,7 +23,8 @@ class TestPerformance(Test):
             self.result.status = TestResult.StatusType.NA
             return
 
-        # NOTE: we'll ignore MaxT altogether for now, it seems there are quite regularly one or two high values in there, even ignoring the ones expected after arm/disarm events
+        # NOTE: we'll ignore MaxT altogether for now, it seems there are quite regularly one or two high values in
+        # there, even ignoring the ones expected after arm/disarm events.
         # gather info on arm/disarm lines, we will ignore the MaxT data from the first line found after each of these
         # armingLines = []
         # for line,ev in logdata.channels["EV"]["Id"].listData:
@@ -29,9 +33,8 @@ class TestPerformance(Test):
         # ignoreMaxTLines = []
         # for maxT in logdata.channels["PM"]["MaxT"].listData:
         #   if not armingLines:
-        #       break 
+        #       break
         #   if maxT[0] > armingLines[0]:
-        #       #print("Ignoring maxT from line %d, as it is the first PM line after arming on line %d" % (maxT[0],armingLines[0]))
         #       ignoreMaxTLines.append(maxT[0])
         #       armingLines.pop(0)
 
@@ -45,22 +48,26 @@ class TestPerformance(Test):
         maxPercentSlowLine = 0
         slowLoopLineCount = 0
         for i in range(len(logdata.channels["PM"]["NLon"].listData)):
-            (line, nLon)  = logdata.channels["PM"]["NLon"].listData[i]
+            (line, nLon) = logdata.channels["PM"]["NLon"].listData[i]
             (line, nLoop) = logdata.channels["PM"]["NLoop"].listData[i]
-            (line, maxT)  = logdata.channels["PM"]["MaxT"].listData[i]
+            (line, maxT) = logdata.channels["PM"]["MaxT"].listData[i]
             percentSlow = (nLon / float(nLoop)) * 100
             if percentSlow > 6.0:
                 slowLoopLineCount = slowLoopLineCount + 1
                 if percentSlow > maxPercentSlow:
                     maxPercentSlow = percentSlow
                     maxPercentSlowLine = line
-            #if (maxT > 13000) and line not in ignoreMaxTLines:
-            #   print("MaxT of %d detected on line %d" % (maxT,line))
         if (maxPercentSlow > 10) or (slowLoopLineCount > 6):
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (slowLoopLineCount,maxPercentSlow,maxPercentSlowLine)
-        elif (maxPercentSlow > 6):
+            self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (
+                slowLoopLineCount,
+                maxPercentSlow,
+                maxPercentSlowLine,
+            )
+        elif maxPercentSlow > 6:
             self.result.status = TestResult.StatusType.WARN
-            self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (slowLoopLineCount,maxPercentSlow,maxPercentSlowLine)
-
-
+            self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (
+                slowLoopLineCount,
+                maxPercentSlow,
+                maxPercentSlowLine,
+            )

@@ -17,7 +17,12 @@
 
 #pragma once
 
-#include "AP_RCProtocol.h"
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
+#include "AP_RCProtocol_Backend.h"
+
 #include "SoftSerial.h"
 
 #define AP_DSM_MAX_CHANNELS 12
@@ -57,6 +62,7 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
+    uint32_t bind_mode_saved;
 
     uint16_t last_values[AP_DSM_MAX_CHANNELS];
 
@@ -76,3 +82,5 @@ private:
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
+
+#endif  // AP_RCPROTOCOL_ENABLED

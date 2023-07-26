@@ -80,6 +80,7 @@ bool AP_IRLock_I2C::sync_frame_start(void)
 /*
   converts IRLOCK pixels to a position on a normal plane 1m in front of the lens
   based on a characterization of IR-LOCK with the standard lens, focused such that 2.38mm of threads are exposed
+  see: https://github.com/ArduPilot/ardupilot/issues/5232 and https://gist.github.com/jschall/eac130ed9d6e5dcd9ce582f3eeeb3071
  */
 void AP_IRLock_I2C::pixel_to_1M_plane(float pix_x, float pix_y, float &ret_x, float &ret_y)
 {

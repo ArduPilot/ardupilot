@@ -1,0 +1,75 @@
+# hw definition file for processing by chibios_pins.py
+
+AUTOBUILD_TARGETS None
+
+# MCU class and specific type
+MCU STM32G491 STM32G491xx
+
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+
+# store parameters in pages 18/19
+STORAGE_FLASH_PAGE 18
+define HAL_STORAGE_SIZE 800
+
+# board ID for firmware load
+APJ_BOARD_ID 1040
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# assume the 256k flash part
+FLASH_SIZE_KB 256
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# USART1, telemetry
+PA9 USART1_TX USART1 SPEED_HIGH
+PA10 USART1_RX USART1 SPEED_HIGH
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+CAN_ORDER 1
+
+# LEDs
+PA5 LED OUTPUT LOW
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Order of I2C buses
+I2C_ORDER I2C1
+
+define HAL_I2C_INTERNAL_MASK 0
+
+PA15 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# an I2C baro (DPS310)
+BARO DPS280 I2C:0:0x77
+
+IMU Invensense I2C:0:0x69 ROTATION_NONE
+
+define HAL_NO_GPIO_IRQ
+define SERIAL_BUFFERS_SIZE 512
+
+define DMA_RESERVE_SIZE 2048
+
+define HAL_DISABLE_LOOP_DELAY
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+PB11 BAT_CURR_SENS ADC1 SCALE(1)
+

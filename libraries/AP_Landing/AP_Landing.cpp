@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
     // @Param: ABORT_THR
     // @DisplayName: Landing abort using throttle
-    // @Description: Allow a landing abort to trigger with a throttle > 95%
+    // @Description: Allow a landing abort to trigger with an input throttle >= 90%. This works with or without stick-mixing enabled.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ABORT_THR", 12, AP_Landing, abort_throttle_enable, 0),
@@ -138,12 +138,37 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLAP_PERCNT", 13, AP_Landing, flap_percent, 0),
 
+    // @Param: OPTIONS
+    // @DisplayName: Landing options bitmask
+    // @Description: Bitmask of options to use with landing.
+    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to ARSPD_FBW_MAX
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
+
+    // @Param: FLARE_AIM
+    // @DisplayName: Flare aim point adjustment percentage.
+    // @Description: This parameter controls how much the aim point is moved to allow for the time spent in the flare manoeuvre. When set to 100% the aim point is adjusted on the assumption that the flare sink rate controller instantly achieves the sink rate set by TECS_LAND_SINK. when set to 0%, no aim point adjustment is made. If the plane consistently touches down short of the aim point reduce the parameter and vice verse.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("FLARE_AIM", 17, AP_Landing, flare_effectivness_pct, 50),
+
+    // @Param: WIND_COMP
+    // @DisplayName: Headwind Compensation when Landing
+    // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to ARSPD_FBW_MAX.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("WIND_COMP", 18, AP_Landing, wind_comp, 50),
+
     // @Param: TYPE
     // @DisplayName: Auto-landing type
     // @Description: Specifies the auto-landing type to use
     // @Values: 0:Standard Glide Slope, 1:Deepstall
     // @User: Standard
-    AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
+    AP_GROUPINFO_FLAGS("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE, AP_PARAM_FLAG_ENABLE),
 
 #if HAL_LANDING_DEEPSTALL_ENABLED
     // @Group: DS_
@@ -151,18 +176,13 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
 #endif
 
-    // @Param: OPTIONS
-    // @DisplayName: Landing options bitmask
-    // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare
-    // @User: Advanced
-    AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
+    // additional global params should be placed in the list above TYPE to avoid the enable flag hiding the deepstall params
 
     AP_GROUPEND
 };
 
     // constructor
-AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
+AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Controller, AP_Navigation *_nav_controller, AP_FixedWing &_aparm,
                        set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
                        constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
                        adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
@@ -171,7 +191,7 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_
                        update_flight_stage_fn_t _update_flight_stage_fn) :
     mission(_mission)
     ,ahrs(_ahrs)
-    ,SpdHgt_Controller(_SpdHgt_Controller)
+    ,tecs_Controller(_tecs_Controller)
     ,nav_controller(_nav_controller)
     ,aparm(_aparm)
     ,set_target_altitude_proportion_fn(_set_target_altitude_proportion_fn)
@@ -265,11 +285,12 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
              mission.resume();
          }
          // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
-
+#if AP_FENCE_ENABLED
         AC_Fence *fence = AP::fence();
         if (fence) {
             fence->auto_enable_fence_after_takeoff();
         }
+#endif
      }
 
      Log();
@@ -278,7 +299,7 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
      return false;
 }
 
-void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
+void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
 {
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
@@ -406,7 +427,7 @@ bool AP_Landing::override_servos(void) {
 
 // returns a PID_Info object if there is one available for the selected landing
 // type, otherwise returns a nullptr, indicating no data to be logged/sent
-const AP_Logger::PID_Info* AP_Landing::get_pid_info(void) const
+const AP_PIDInfo* AP_Landing::get_pid_info(void) const
 {
     switch (type) {
 #if HAL_LANDING_DEEPSTALL_ENABLED
@@ -575,7 +596,7 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
         // don't return the landing airspeed, because if type is invalid we have
         // no postive indication that the land airspeed has been configured or
         // how it was meant to be utilized
-        return SpdHgt_Controller->get_target_airspeed();
+        return tecs_Controller->get_target_airspeed();
     }
 }
 
@@ -670,6 +691,12 @@ bool AP_Landing::is_throttle_suppressed(void) const
 bool AP_Landing::use_thr_min_during_flare(void) const
 {
     return (OptionsMask::ON_LANDING_FLARE_USE_THR_MIN & _options) != 0;
+}
+
+//defaults to false, but _options bit zero enables it.
+bool AP_Landing::allow_max_airspeed_on_land(void) const
+{
+    return (OptionsMask::ON_LANDING_USE_ARSPD_MAX & _options) != 0;
 }
 
 /*

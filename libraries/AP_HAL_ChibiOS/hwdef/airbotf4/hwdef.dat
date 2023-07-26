@@ -75,7 +75,7 @@ SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ
 SPIDEV dataflash  SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # one IMU
 IMU Invensense SPI:mpu6000_cs ROTATION_YAW_180
@@ -85,12 +85,11 @@ BARO MS56XX I2C:0:0x77
 
 # no builtin compasses
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 # define default battery setup
@@ -104,4 +103,5 @@ define HAL_GPIO_A_LED_PIN 57
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 6
+# 64kB FLASH_RESERVE_START_KB means we're lacking a lot of space:
+include ../include/minimize_features.inc

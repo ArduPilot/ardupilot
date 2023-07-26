@@ -2,21 +2,25 @@
 
 <a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
 
-![Test Copter](https://github.com/ArduPilot/ardupilot/workflows/test%20copter/badge.svg?branch=master) ![Test Plane](https://github.com/ArduPilot/ardupilot/workflows/test%20plane/badge.svg?branch=master) ![Test Rover](https://github.com/ArduPilot/ardupilot/workflows/test%20rover/badge.svg?branch=master) ![Test Sub](https://github.com/ArduPilot/ardupilot/workflows/test%20sub/badge.svg?branch=master) ![Test Tracker](https://github.com/ArduPilot/ardupilot/workflows/test%20tracker/badge.svg?branch=master)
+[![Test Copter](https://github.com/ArduPilot/ardupilot/workflows/test%20copter/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_copter.yml) [![Test Plane](https://github.com/ArduPilot/ardupilot/workflows/test%20plane/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_plane.yml) [![Test Rover](https://github.com/ArduPilot/ardupilot/workflows/test%20rover/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_rover.yml) [![Test Sub](https://github.com/ArduPilot/ardupilot/workflows/test%20sub/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_sub.yml) [![Test Tracker](https://github.com/ArduPilot/ardupilot/workflows/test%20tracker/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_tracker.yml)
 
-![Test AP_Periph](https://github.com/ArduPilot/ardupilot/workflows/test%20ap_periph/badge.svg?branch=master) ![Test Chibios](https://github.com/ArduPilot/ardupilot/workflows/test%20chibios/badge.svg?branch=master) ![Test Linux SBC](https://github.com/ArduPilot/ardupilot/workflows/test%20Linux%20SBC/badge.svg?branch=master) ![Test Replay](https://github.com/ArduPilot/ardupilot/workflows/test%20replay/badge.svg?branch=master)
+[![Test AP_Periph](https://github.com/ArduPilot/ardupilot/workflows/test%20ap_periph/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_periph.yml) [![Test Chibios](https://github.com/ArduPilot/ardupilot/workflows/test%20chibios/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_chibios.yml) [![Test Linux SBC](https://github.com/ArduPilot/ardupilot/workflows/test%20Linux%20SBC/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_linux_sbc.yml) [![Test Replay](https://github.com/ArduPilot/ardupilot/workflows/test%20replay/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_replay.yml)
 
-![Test Unit Tests](https://github.com/ArduPilot/ardupilot/workflows/test%20unit%20tests/badge.svg?branch=master)
+[![Test Unit Tests](https://github.com/ArduPilot/ardupilot/workflows/test%20unit%20tests/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_unit_tests.yml) [![test size](https://github.com/ArduPilot/ardupilot/actions/workflows/test_size.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_size.yml)
 
-[![Build SemaphoreCI](https://semaphoreci.com/api/v1/ardupilot/ardupilot/branches/master/badge.svg)](https://semaphoreci.com/ardupilot/ardupilot) [![Build Status](https://dev.azure.com/ardupilot-org/ardupilot/_apis/build/status/ArduPilot.ardupilot?branchName=master)](https://dev.azure.com/ardupilot-org/ardupilot/_build/latest?definitionId=1&branchName=master)
+[![Test Environment Setup](https://github.com/ArduPilot/ardupilot/actions/workflows/test_environment.yml/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_environment.yml)
+
+[![Cygwin Build](https://github.com/ArduPilot/ardupilot/actions/workflows/cygwin_build.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/cygwin_build.yml) [![Macos Build](https://github.com/ArduPilot/ardupilot/actions/workflows/macos_build.yml/badge.svg)](https://github.com/ArduPilot/ardupilot/actions/workflows/macos_build.yml)
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
 
+[![Test Coverage](https://github.com/ArduPilot/ardupilot/actions/workflows/test_coverage.yml/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_coverage.yml)
+
 [![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
-ArduPilot is the most advanced, full-featured and reliable open source autopilot software available.
-It has been under development since 2010 by a diverse team of professional engineers, computer scientists and community contributors.
-Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots and even submarines.
+ArduPilot is the most advanced, full-featured, and reliable open source autopilot software available.
+It has been under development since 2010 by a diverse team of professional engineers, computer scientists, and community contributors.
+Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots, and even submarines.
 It is continually being expanded to provide support for new emerging vehicle types.
 
 ## The ArduPilot project is made up of: ##
@@ -90,7 +94,7 @@ for reviewing patches on their specific area.
   - ***Bug Master***
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
-- [Jacob Walser](https://github.com/jaxxzer):
+- [Willian Galvani](https://github.com/williangalvani):
   - ***Vehicle***: Sub
 - [Lucas De Marchi](https://github.com/lucasdemarchi):
   - ***Subsystem***: Linux
@@ -108,8 +112,6 @@ for reviewing patches on their specific area.
 - [Tom Pittenger](https://github.com/magicrub):
   - ***Vehicle***: Plane
 - [Bill Geyer](https://github.com/bnsgeyer):
-  - ***Vehicle***: TradHeli
-- [Chris Olson](https://github.com/ChristopherOlson):
   - ***Vehicle***: TradHeli
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo):
   - ***Board***: VRBrain
@@ -130,11 +132,30 @@ for reviewing patches on their specific area.
 - [Paul Riseborough](https://github.com/priseborough):
   - ***Subsystem***: AP_NavEKF2
   - ***Subsystem***: AP_NavEKF3
-- [Pierre Kancir](https://github.com/khancyr):
-  - ***Subsystem***: Copter SITL, Rover SITL
 - [Víctor Mayoral Vilches](https://github.com/vmayoral):
   - ***Board***: PXF, Erle-Brain 2, PXFmini
 - [Amilcar Lucas](https://github.com/amilcarlucas):
   - ***Subsystem***: Marvelmind
 - [Samuel Tabor](https://github.com/samuelctabor):
   - ***Subsystem***: Soaring/Gliding
+- [Henry Wurzburg](https://github.com/Hwurzburg):
+  - ***Subsystem***: OSD
+  - ***Site***: Wiki
+- [Peter Hall](https://github.com/IamPete1):
+  - ***Vehicle***: Tailsitters
+  - ***Vehicle***: Sailboat
+  - ***Subsystem***: Scripting
+- [Andy Piper](https://github.com/andyp1per):
+  - ***Subsystem***: Crossfire
+  - ***Subsystem***: ESC
+  - ***Subsystem***: OSD
+  - ***Subsystem***: SmartAudio
+- [Alessandro Apostoli ](https://github.com/yaapu):
+  - ***Subsystem***: Telemetry
+  - ***Subsystem***: OSD
+- [Rishabh Singh ](https://github.com/rishabsingh3003):
+  - ***Subsystem***: Avoidance/Proximity
+- [David Bussenschutt ](https://github.com/davidbuzz):
+  - ***Subsystem***: ESP32,AP_HAL_ESP32
+- [Charles Villard ](https://github.com/Silvanosky):
+  - ***Subsystem***: ESP32,AP_HAL_ESP32

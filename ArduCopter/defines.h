@@ -10,19 +10,6 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-// Autopilot Yaw Mode enumeration
-enum autopilot_yaw_mode {
-    AUTO_YAW_HOLD =             0,  // pilot controls the heading
-    AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-    AUTO_YAW_ROI =              2,  // point towards a location held in roi (no pilot input accepted)
-    AUTO_YAW_FIXED =            3,  // point towards a particular angle (no pilot input accepted)
-    AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
-    AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
-    AUTO_YAW_ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
-    AUTO_YAW_RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
-    AUTO_YAW_CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
-};
-
 // Frame types
 #define UNDEFINED_FRAME 0
 #define MULTICOPTER_FRAME 1
@@ -43,7 +30,7 @@ enum tuning_func {
     TUNING_ALTITUDE_HOLD_KP =           14, // altitude hold controller's P term (alt error to desired rate)
     TUNING_RATE_ROLL_PITCH_KD =         21, // body frame roll/pitch rate controller's D term
     TUNING_VEL_XY_KP =                  22, // loiter rate controller's P term (speed error to tilt angle)
-    TUNING_ACRO_RP_KP =                 25, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+    TUNING_ACRO_RP_RATE =               25, // acro controller's desired roll and pitch rate in deg/s
     TUNING_YAW_RATE_KD =                26, // body frame yaw rate controller's D term
     TUNING_VEL_XY_KI =                  28, // loiter rate controller's I term (speed error to tilt angle)
     TUNING_AHRS_YAW_KP =                30, // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
@@ -53,8 +40,8 @@ enum tuning_func {
     TUNING_ACCEL_Z_KD =                 36, // accel based throttle controller's D term
     TUNING_DECLINATION =                38, // compass declination in radians
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
-    TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-    TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
+    TUNING_ACRO_YAW_RATE =              40, // acro controller's desired yaw rate in deg/s
+    TUNING_RANGEFINDER_GAIN =           41, // unused
     TUNING_EKF_VERTICAL_POS =           42, // unused
     TUNING_EKF_HORIZONTAL_POS =         43, // unused
     TUNING_EKF_ACCEL_NOISE =            44, // unused
@@ -71,7 +58,8 @@ enum tuning_func {
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
     UNUSED =                            57, // was winch control
-    TUNING_SYSTEM_ID_MAGNITUDE =        58  // magnitude of the system ID signal
+    TUNING_SYSTEM_ID_MAGNITUDE =        58, // magnitude of the system ID signal
+    TUNING_POS_CONTROL_ANGLE_MAX =      59  // position controller maximum angle
 };
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
@@ -90,15 +78,13 @@ enum class AirMode {
 
 enum PayloadPlaceStateType {
     PayloadPlaceStateType_FlyToLocation,
-    PayloadPlaceStateType_Calibrating_Hover_Start,
-    PayloadPlaceStateType_Calibrating_Hover,
-    PayloadPlaceStateType_Descending_Start,
-    PayloadPlaceStateType_Descending,
-    PayloadPlaceStateType_Releasing_Start,
+    PayloadPlaceStateType_Descent_Start,
+    PayloadPlaceStateType_Descent,
+    PayloadPlaceStateType_Release,
     PayloadPlaceStateType_Releasing,
-    PayloadPlaceStateType_Released,
-    PayloadPlaceStateType_Ascending_Start,
-    PayloadPlaceStateType_Ascending,
+    PayloadPlaceStateType_Delay,
+    PayloadPlaceStateType_Ascent_Start,
+    PayloadPlaceStateType_Ascent,
     PayloadPlaceStateType_Done,
 };
 
@@ -108,7 +94,7 @@ enum DevOptions {
     DevOptionVFR_HUDRelativeAlt = 2,
 };
 
-//  Logging parameters
+//  Logging parameters - only 32 messages are available to the vehicle here.
 enum LoggingParameters {
      LOG_CONTROL_TUNING_MSG,
      LOG_DATA_INT16_MSG,
@@ -116,12 +102,12 @@ enum LoggingParameters {
      LOG_DATA_INT32_MSG,
      LOG_DATA_UINT32_MSG,
      LOG_DATA_FLOAT_MSG,
-     LOG_MOTBATT_MSG,
      LOG_PARAMTUNE_MSG,
      LOG_HELI_MSG,
-     LOG_GUIDEDTARGET_MSG,
+     LOG_GUIDED_POSITION_TARGET_MSG,
      LOG_SYSIDD_MSG,
      LOG_SYSIDS_MSG,
+     LOG_GUIDED_ATTITUDE_TARGET_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -143,6 +129,8 @@ enum LoggingParameters {
 #define MASK_LOG_MOTBATT                (1UL<<17)
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
+#define MASK_LOG_VIDEO_STABILISATION    (1UL<<20)
+#define MASK_LOG_FTN_FAST               (1UL<<21)
 #define MASK_LOG_ANY                    0xFFFF
 
 // Radio failsafe definitions (FS_THR parameter)
@@ -152,6 +140,8 @@ enum LoggingParameters {
 #define FS_THR_ENABLED_ALWAYS_LAND                 3
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
+#define FS_THR_ENABLED_AUTO_RTL_OR_RTL             6
+#define FS_THR_ENABLED_BRAKE_OR_LAND               7
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0
@@ -160,6 +150,8 @@ enum LoggingParameters {
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
 #define FS_GCS_ENABLED_ALWAYS_LAND             5
+#define FS_GCS_ENABLED_AUTO_RTL_OR_RTL         6
+#define FS_GCS_ENABLED_BRAKE_OR_LAND           7
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

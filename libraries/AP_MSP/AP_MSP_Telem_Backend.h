@@ -16,13 +16,17 @@
 */
 #pragma once
 
+#include "AP_MSP_config.h"
+
+#if HAL_MSP_ENABLED
+
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_OSD/AP_OSD.h>
 
 #include "msp.h"
 
 #include <time.h>
-
-#if HAL_MSP_ENABLED
 
 #define MSP_TIME_SLOT_MAX 12
 #define CELLFULL 4.35
@@ -33,6 +37,7 @@ class AP_MSP;
 
 class AP_MSP_Telem_Backend : AP_RCTelemetry
 {
+friend AP_MSP;
 public:
     AP_MSP_Telem_Backend(AP_HAL::UARTDriver *uart);
 
@@ -77,6 +82,17 @@ public:
     void process_incoming_data();     // incoming data
     void process_outgoing_data();     // push outgoing data
 
+#if HAL_WITH_MSP_DISPLAYPORT
+    // displayport commands
+    // betaflight/src/main/io/displayport_msp.c
+    virtual void msp_displayport_heartbeat();
+    virtual void msp_displayport_grab();
+    virtual void msp_displayport_release();
+    virtual void msp_displayport_clear_screen();
+    virtual void msp_displayport_draw_screen();
+    virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string);
+    virtual void msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution);
+#endif
 protected:
     enum msp_packet_type : uint8_t {
         EMPTY_SLOT = 0,
@@ -145,18 +161,22 @@ protected:
 
     // telemetry helpers
     uint8_t calc_cell_count(float battery_voltage);
-    float get_vspeed_ms(void);
-    void update_home_pos(home_state_t &home_state);
-    void update_battery_state(battery_state_t &_battery_state);
-    void update_gps_state(gps_state_t &gps_state);
-    void update_airspeed(airspeed_state_t &airspeed_state);
-    void update_flight_mode_str(char *flight_mode_str, bool wind_enabled);
+    virtual float get_vspeed_ms(void) const;
+    virtual bool get_rssi(float &rssi) const;
+    virtual void update_home_pos(home_state_t &home_state);
+    virtual void update_battery_state(battery_state_t &_battery_state);
+    virtual void update_gps_state(gps_state_t &gps_state);
+    virtual void update_airspeed(airspeed_state_t &airspeed_state);
+    virtual void update_flight_mode_str(char *flight_mode_str, uint8_t size, bool wind_enabled);
 
     // MSP parsing
     void msp_process_received_command();
     MSP::MSPCommandResult msp_process_command(MSP::msp_packet_t *cmd, MSP::msp_packet_t *reply);
     MSP::MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, MSP::sbuf_t *src);
     MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *dst);
+
+    // MSP send
+    void msp_send_packet(uint16_t cmd, MSP::msp_version_e msp_version, const void *p, uint16_t size, bool is_request);
 
     // MSP sensor command processing
     void msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt);
@@ -167,18 +187,19 @@ protected:
     void msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt);
 
     // implementation specific helpers
+    // we only set arming status
     // custom masks are needed for vendor specific settings
-    virtual uint32_t get_osd_flight_mode_bitmask(void)
-    {
-        return 0;
-    }
+    virtual uint32_t get_osd_flight_mode_bitmask(void);
 
-    virtual bool is_scheduler_enabled() = 0;                            // only osd backends should allow a push type telemetry
+    virtual bool is_scheduler_enabled() const = 0;                            // only osd backends should allow a push type telemetry
+    virtual bool use_msp_thread() const {return true;};                       // is this backend hanlded by the MSP thread?
+    virtual AP_SerialManager::SerialProtocol get_serial_protocol() const = 0;
+    virtual bool displaying_stats_screen() const;
 
     // implementation specific MSP out command processing
-    virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) = 0;
-    virtual MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) = 0;
-    virtual MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) = 0;
+    virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_uid(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_board_info(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_build_info(MSP::sbuf_t *dst);

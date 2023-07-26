@@ -1,0 +1,108 @@
+# hw definition file for processing by chibios_pins.py
+# MCU class and specific type
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 36
+
+STORAGE_FLASH_PAGE 16
+define HAL_STORAGE_SIZE 800
+
+# board ID for firmware load
+APJ_BOARD_ID 1088
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# debug on USART2
+STDOUT_SERIAL SD2
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART2
+
+# sensor power control
+PC11 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# LEDs
+PC10 LED OUTPUT HIGH GPIO(2) # blue
+PB15 LED_R OUTPUT HIGH GPIO(0)
+PC6  LED_G OUTPUT HIGH GPIO(1)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+define HAL_HAVE_PIXRACER_LED
+
+# USART2, debug
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# one SPI bus
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI CS
+PC14 MAG_CS CS
+
+# SPI devices
+SPIDEV rm3100 SPI1 DEVID1 MAG_CS MODE0  1*MHZ  1*MHZ
+
+# compass
+COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_NO_RCIN_THREAD
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+define CAN_APP_NODE_NAME "org.ardupilot.HolybroG4_Compass"
+
+define HAL_NO_LOGGING
+define HAL_NO_MONITOR_THREAD
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# MAG
+define HAL_PERIPH_ENABLE_MAG
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True

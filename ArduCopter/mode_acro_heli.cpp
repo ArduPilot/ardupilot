@@ -69,7 +69,7 @@ void ModeAcro_Heli::run()
 
     if (!motors->has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
+        get_pilot_desired_angle_rates(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll, target_pitch, target_yaw);
         // only mimic flybar response when trainer mode is disabled
         if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
             // while landed always leak off target attitude to current attitude
@@ -111,7 +111,7 @@ void ModeAcro_Heli::run()
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         }
 
         // run attitude controller

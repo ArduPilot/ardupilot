@@ -124,13 +124,15 @@ MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, AP_Motor
 
             // arm motors
             if (!arming.is_armed()) {
-                arming.arm(AP_Arming::Method::MOTORTEST);
+                if (!arming.arm(AP_Arming::Method::MOTORTEST)) {
+                    return MAV_RESULT_FAILED;
+                }
             }
 
             // disable failsafes
-            g.fs_gcs_enabled = 0;
-            g.fs_throttle_enabled = 0;
-            g.fs_crash_check = 0;
+            g.fs_gcs_enabled.set(0);
+            g.fs_throttle_enabled.set(0);
+            g.fs_crash_check.set(0);
 
             // turn on notify leds
             AP_Notify::flags.esc_calibration = true;

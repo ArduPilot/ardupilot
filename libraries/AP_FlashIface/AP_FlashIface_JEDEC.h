@@ -225,7 +225,7 @@ protected:
     // Does initial configuration to bring up and setup chip
     bool detect_device();
 
-    // Configures device to normal working state, currently 4-4-4 QSPI
+    // Configures device to normal working state, currently 4-4-4 WSPI
     bool configure_device();
 
     // Enables commands that modify flash data or settings
@@ -247,13 +247,17 @@ protected:
     // sends instruction to write a register value in the chip
     bool write_reg(uint8_t read_ins, uint8_t write_val);
 
-    // Sends QSPI command without data
+    // Sends WSPI command without data
     bool send_cmd(uint8_t ins);
 
-    // Is device in quad spi mode
-    bool _quad_spi_mode;
+    // Is device in wide spi mode
+    enum class WSPIMode {
+        NormalSPI,
+        QuadSPI,
+        OctoSPI
+    } _wide_spi_mode;
 
-    AP_HAL::OwnPtr<AP_HAL::QSPIDevice> _dev;
+    AP_HAL::OwnPtr<AP_HAL::WSPIDevice> _dev;
 
     enum xip_entry_methods {
         XIP_ENTRY_METHOD_1,
@@ -286,7 +290,7 @@ protected:
         uint8_t fast_read_ins; // instruction to do fast read, i.e. read any number of bytes in single trx
         uint8_t fast_read_dummy_cycles; // number of dummy cycles after which the chip will respond with data
         uint8_t quad_mode_ins; // instruction to enter 4-4-4 mode
-        uint8_t quad_mode_enable;
+        uint8_t wide_mode_enable;
         bool quad_mode_rmw_seq; // use Read modify write sequence to enter 4-4-4 mode supported or not
         uint8_t status_read_ins; // read status of the chip, gets us if busy writing/erasing
         bool legacy_status_polling; // check if legacy status polling supported or not

@@ -1,14 +1,11 @@
-//#define DEBUG_MOTORS    
+// #define DEBUG_MOTORS    
 // #define DEBUG_SENSORS   
-//#define DEBUG_USE_KB 
-//#define DEBUG_INPUT_DATA
+// #define DEBUG_USE_KB 
+// #define DEBUG_INPUT_DATA
 // #define LINEAR_THRUST   
+// #define WIND_SIMULATION
 
-
-
-
-//#define WIND_SIMULATION
-
+#define VEHICLE_DRAG_FACTOR 0.001
 
 // # of simulation steps between two image frames.
 #define CAMERA_FRAME_RATE_FACTOR  50

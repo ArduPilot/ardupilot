@@ -20,11 +20,13 @@
 param set SERIAL5_PROTOCOL 30  # Generator
 param set SERIAL5_BAUD 115200
 param set GEN_TYPE 2  # IE24
-param set BATT2_MONITOR 17  # electrical
+param set BATT3_MONITOR 17  # electrical generator
+param set BATT2_MONITOR 18  # fuel-based generator
 param set SIM_IE24_ENABLE 1
 param fetch
 
-graph BATTERY_STATUS.voltages[0]
+graph BATTERY_STATUS[0].voltages[0]/1000.0
+graph BATTERY_STATUS[1].voltages[0]/1000.0
 
 reboot
 

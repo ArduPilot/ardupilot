@@ -5,6 +5,7 @@
 --    a) switches to Guided mode
 --    b) sets the target location to be 10m above home
 --    c) switches the vehicle to land once it is within a couple of meters of home
+-- luacheck: only 0
 
 local wp_radius = 2
 local target_alt_above_home = 10
@@ -35,7 +36,7 @@ function update()
         -- change to land mode when within 2m of home
         if not (mode == copter_land_mode_num) then
           local home = ahrs:get_home()
-          local curr_loc = ahrs:get_position()
+          local curr_loc = ahrs:get_location()
           if home and curr_loc then
             local home_dist = curr_loc:get_distance(home)   -- get horizontal distance to home
             if (home_dist < wp_radius) then                 -- change to land mode if close

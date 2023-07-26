@@ -1,0 +1,64 @@
+# See https://pre-commit.com for more information, specially https://pre-commit.com/#pre-commit-run for manual trigger
+# Some example useful invocations:
+#  pre-commit run: this is what pre-commit runs by default when committing. This will run all hooks against currently staged files.
+#  pre-commit run --all-files: run all the hooks against all the files. This is a useful invocation if you are using pre-commit in CI.
+#  pre-commit run check-executables-have-shebangs: run the check-executables-have-shebangs hook against all staged files.
+
+# Files or directory we want to excude from checking
+exclude: |
+  (?x)(
+  ^modules/ |
+  ^build/ |
+  ^cmake-build-debug/ |
+  \.m |
+  ^libraries/AP_HAL_ChibiOS/hwdef/scripts/
+  )
+
+repos:
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.2.0
+      hooks:
+        #-   id: trailing-whitespace
+        #-   id: end-of-file-fixer
+        -   id: mixed-line-ending
+            name: Check line ending character (LF)
+            args: ["--fix=lf"]
+            types_or: [python, c, c++, shell]
+        -   id: check-added-large-files
+        -   id: check-executables-have-shebangs
+        -   id: check-shebang-scripts-are-executable
+            exclude: |
+              (?x)^(
+                .*\/wscript |
+                wscript
+              )$
+        -   id: check-merge-conflict
+        -   id: check-xml
+        -   id: check-yaml
+
+  -   repo: https://github.com/lsst-ts/pre-commit-xmllint
+      rev: v1.0.0
+      hooks:
+        - id: format-xmllint
+          files: libraries/AP_DDS/dds_xrce_profile.xml
+  -   repo: https://github.com/psf/black
+      rev: 23.1.0
+      hooks:
+        - id: black
+          files: libraries\/AP_DDS\/(wscript|.*\.py)$
+
+# # Use to sort python imports by name and put system import first.
+#   -   repo: https://github.com/pycqa/isort
+#       rev: 5.12.0
+#       hooks:
+#         - id: isort
+#           args: [--check-only]
+#           name: isort (python)
+
+# # Use to check python typing to show errors.
+#   -   repo: https://github.com/pre-commit/mirrors-mypy
+#       rev: 'v0.950'
+#       hooks:
+#         - id: mypy
+#           args: [--no-strict-optional, --ignore-missing-imports]
+#           additional_dependencies: [types-PyYAML, types-requests]

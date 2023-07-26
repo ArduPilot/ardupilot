@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_Frsky_SPort.h"
+
+#if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 
 #include "AP_Frsky_SPortParser.h"
@@ -73,6 +76,8 @@ public:
         MAV =           13,  // mavlite
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         TERRAIN =       14, // 0x500B terrain data
+        WIND =          15, // 0x500C wind data
+        WAYPOINT =      16, // 0x500D waypoint data
         WFQ_LAST_ITEM       // must be last
     };
 
@@ -108,6 +113,8 @@ private:
     uint32_t calc_attiandrng(void);
     uint32_t calc_rpm(void);
     uint32_t calc_terrain(void);
+    uint32_t calc_wind(void);
+    uint32_t calc_waypoint(void);
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort
@@ -169,3 +176,6 @@ private:
 namespace AP {
     AP_Frsky_SPort_Passthrough *frsky_passthrough_telem();
 };
+
+
+#endif  // AP_FRSKY_SPORT_PASSTHROUGH_ENABLED

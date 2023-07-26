@@ -10,22 +10,21 @@
 
 // constructor
 ekf_ring_buffer::ekf_ring_buffer(uint8_t _elsize) :
-    elsize(_elsize)
+    elsize(_elsize),
+    buffer(nullptr)
 {}
 
-bool ekf_ring_buffer::init(uint8_t size)
+bool ekf_ring_buffer::init(uint8_t _size)
 {
     if (buffer) {
         free(buffer);
     }
-    buffer = calloc(size, elsize);
+    buffer = calloc(_size, elsize);
     if (buffer == nullptr) {
         return false;
     }
-    _size = size;
-    _head = 0;
-    _tail = 0;
-    _new_data = false;
+    size = _size;
+    reset();
     return true;
 }
 
@@ -40,7 +39,7 @@ void *ekf_ring_buffer::get_offset(uint8_t idx) const
 /*
   get a reference to the timestamp for an index
  */
-uint32_t &ekf_ring_buffer::time_ms(uint8_t idx)
+uint32_t ekf_ring_buffer::time_ms(uint8_t idx) const
 {
     EKF_obs_element_t *el = (EKF_obs_element_t *)get_offset(idx);
     return el->time_ms;
@@ -48,53 +47,30 @@ uint32_t &ekf_ring_buffer::time_ms(uint8_t idx)
 
 /*
   Search through a ring buffer and return the newest data that is
-  older than the time specified by sample_time_ms Zeros old data
-  so it cannot not be used again Returns false if no data can be
-  found that is less than 100msec old
+  older than the time specified by sample_time_ms
+  Returns false if no data can be found that is less than 100msec old
 */
-bool ekf_ring_buffer::recall(void *element,uint32_t sample_time)
+bool ekf_ring_buffer::recall(void *element, const uint32_t sample_time_ms)
 {
-    if (!_new_data) {
-        return false;
-    }
-    bool success = false;
-    uint8_t tail = _tail, bestIndex;
-
-    if (_head == tail) {
-        if (time_ms(tail) != 0 && time_ms(tail) <= sample_time) {
-            // if head is equal to tail just check if the data is unused and within time horizon window
-            if (((sample_time - time_ms(tail)) < 100)) {
-                bestIndex = tail;
-                success = true;
-                _new_data = false;
-            }
+    bool ret = false;
+    while (count > 0) {
+        const uint32_t toldest = time_ms(oldest);
+        const int32_t dt = sample_time_ms - toldest;
+        const bool matches = dt >= 0 && dt < 100;
+        if (matches) {
+            memcpy(element, get_offset(oldest), elsize);
+            ret = true;
         }
-    } else {
-        while(_head != tail) {
-            // find a measurement older than the fusion time horizon that we haven't checked before
-            if (time_ms(tail) != 0 && time_ms(tail) <= sample_time) {
-                // Find the most recent non-stale measurement that meets the time horizon criteria
-                if (((sample_time - time_ms(tail)) < 100)) {
-                    bestIndex = tail;
-                    success = true;
-                }
-            } else if (time_ms(tail) > sample_time){
-                break;
-            }
-            tail = (tail+1) % _size;
+        if (dt < 0) {
+            // the oldest element is younger than we want, stop
+            // searching and don't consume this element
+            break;
         }
+        // discard the sample
+        count--;
+        oldest = (oldest+1) % size;
     }
-
-    if (!success) {
-        return false;
-    }
-
-    memcpy(element, get_offset(bestIndex), elsize);
-    _tail = (bestIndex+1) % _size;
-    // make time zero to stop using it again,
-    // resolves corner case of reusing the element when head == tail
-    time_ms(bestIndex) = 0;
-    return true;
+    return ret;
 }
 
 /*
@@ -106,21 +82,26 @@ void ekf_ring_buffer::push(const void *element)
     if (buffer == nullptr) {
         return;
     }
+
     // Advance head to next available index
-    _head = (_head+1) % _size;
+    const uint8_t head = (oldest+count) % size;
+
     // New data is written at the head
-    memcpy(get_offset(_head), element, elsize);
-    _new_data = true;
+    memcpy(get_offset(head), element, elsize);
+
+    if (count < size) {
+        count++;
+    } else {
+        oldest = (oldest+1) % size;
+    }
 }
 
 
 // zeroes all data in the ring buffer
 void ekf_ring_buffer::reset()
 {
-    _head = 0;
-    _tail = 0;
-    _new_data = false;
-    memset((void *)buffer,0,_size*uint32_t(elsize));
+    count = 0;
+    oldest = 0;
 }
 
 ////////////////////////////////////////////////////

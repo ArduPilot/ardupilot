@@ -1,0 +1,40 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Swan-K1 (HWing) from Foxtech
+# This is a variant of fmuv5 without the IOMCU
+
+include ../fmuv5/hwdef.dat
+
+# order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
+SERIAL_ORDER OTG1 USART2 UART4 USART1 USART6 UART7 OTG2
+
+# enable TX on USART6 (disabled for fmuv5 with iomcu)
+PG14 USART6_TX USART6 NODMA
+
+# start with PE3 low
+undef PE3
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+
+# disable the IOMCU UART
+undef IOMCU_UART
+undef UART8_TX
+undef UART8_RX
+undef AP_FEATURE_SBUS_OUT
+
+# RCInput on the PPM pin, for all protocols
+PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
+
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364
+
+# this board has a 16k RAMTROM
+undef HAL_STORAGE_SIZE
+define HAL_STORAGE_SIZE 16384
+define HAL_WITH_RAMTRON 1
+
+# use a longer frame gap detector for more robust SBUS with H12 controller
+define HAL_SBUS_FRAME_GAP 5000U
+
+AUTOBUILD_TARGETS Plane

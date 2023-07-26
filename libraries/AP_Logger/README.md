@@ -100,5 +100,6 @@ tl;dr a GCS shouldn't/mustn't infer any scaling from the unit name
 | 'E' | 1e-5 ||
 | 'F' | 1e-6 ||
 | 'G' | 1e-7 ||
+| 'I' | 1e-9 ||
 | '!' | 3.6 | (milliampere \* hour => ampere \* second) and (km/h => m/s)|
 | '/' | 3600 | (ampere \* hour => ampere \* second)|

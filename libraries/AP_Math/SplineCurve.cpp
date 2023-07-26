@@ -26,7 +26,7 @@ extern const AP_HAL::HAL &hal;
 
 #define SPLINE_FACTOR           4.0f    // defines shape of curves.  larger numbers result in longer spline curves, lower numbers take a direct path
 #define TANGENTIAL_ACCEL_SCALER 0.5f    // the proportion of the maximum accel that can be used for tangential acceleration (aka in the direction of travel along the track)
-#define LATERAL_ACCEL_SCALER    1.0f    // the proportion of the maximum accel that can be used for lateral acceleration (aka crosstrack acceleration)
+#define LATERAL_ACCEL_SCALER    0.5f    // the proportion of the maximum accel that can be used for lateral acceleration (aka crosstrack acceleration)
 
 // limit the maximum speed along the track to that which will achieve a cornering (aka lateral) acceleration of LATERAL_SPEED_SCALER * acceleration limit
 

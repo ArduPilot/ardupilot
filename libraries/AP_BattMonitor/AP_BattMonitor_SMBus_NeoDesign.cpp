@@ -1,6 +1,11 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_NEODESIGN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_SMBus_NeoDesign.h"
 
 #define BATTMONITOR_ND_CELL_COUNT                0x5C    // cell-count register
@@ -9,9 +14,8 @@
 // Constructor
 AP_BattMonitor_SMBus_NeoDesign::AP_BattMonitor_SMBus_NeoDesign(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
-                                                   AP_BattMonitor_Params &params,
-                                                   AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
+                                                   AP_BattMonitor_Params &params)
+    : AP_BattMonitor_SMBus(mon, mon_state, params, AP_BATTMONITOR_SMBUS_BUS_INTERNAL)
 {
     _pec_supported = true;
 }
@@ -77,3 +81,4 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     read_temp();
 }
 
+#endif  // AP_BATTERY_SMBUS_NEODESIGN_ENABLED

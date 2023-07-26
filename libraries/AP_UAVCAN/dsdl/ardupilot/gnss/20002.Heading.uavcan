@@ -1,5 +1,0 @@
-bool heading_valid
-bool heading_accuracy_valid
-
-float16 heading_rad
-float16 heading_accuracy_rad

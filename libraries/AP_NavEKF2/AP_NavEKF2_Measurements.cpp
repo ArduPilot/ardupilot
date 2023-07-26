@@ -1,9 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,7 +39,7 @@ void NavEKF2_core::readRangeFinder(void)
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
 
-        for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
+        for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
@@ -56,7 +56,7 @@ void NavEKF2_core::readRangeFinder(void)
             }
 
             // check for three fresh samples
-            bool sampleFresh[2][3] = {};
+            bool sampleFresh[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3] = {};
             for (uint8_t index = 0; index <= 2; index++) {
                 sampleFresh[sensorIndex][index] = (imuSampleTime_ms - storedRngMeasTime_ms[sensorIndex][index]) < 500;
             }
@@ -99,12 +99,6 @@ void NavEKF2_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
-                rangeDataNew.time_ms = imuSampleTime_ms;
-
-                // don't allow time to go backwards
-                if (imuSampleTime_ms > rangeDataNew.time_ms) {
-                    rangeDataNew.time_ms = imuSampleTime_ms;
-                }
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -119,7 +113,7 @@ void NavEKF2_core::readRangeFinder(void)
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -164,6 +158,8 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         ofDataNew.flowRadXY = (-rawFlowRates).toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
         ofDataNew.body_offset = posOffset.toftype();
+        // write the flow sensor height override
+        ofDataNew.heightOverride = heightOverride;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -228,12 +224,12 @@ void NavEKF2_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (!dal.get_compass()) {
+    const auto &compass = dal.compass();
+
+    if (!compass.available()) {
         allMagSensorsFailed = true;
         return;        
     }
-
-    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -598,7 +594,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
-            const struct Location &gpsloc = gps.location();
+            const Location &gpsloc = gps.location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
@@ -627,8 +623,9 @@ void NavEKF2_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                const auto *compass = dal.get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
+                const auto &compass = dal.compass();
+                if (compass.have_scale_factor(magSelectIndex) &&
+                    compass.auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc).toftype();
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
@@ -740,7 +737,7 @@ void NavEKF2_core::correctEkfOriginHeight()
     } else if (activeHgtSource == HGT_SOURCE_RNG) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25f;
-        ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
+        ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
     } else {
         // by definition our height source is absolute so cannot run this filter
         return;
@@ -800,6 +797,7 @@ void NavEKF2_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
+#if AP_BEACON_ENABLED
 // check for new range beacon data and push to data buffer if available
 void NavEKF2_core::readRngBcnData()
 {
@@ -906,6 +904,7 @@ void NavEKF2_core::readRngBcnData()
     rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
 
 }
+#endif  // AP_BEACON_ENABLED
 
 /*
   update timing statistics structure
@@ -984,7 +983,7 @@ ftype NavEKF2_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return dal.get_compass()->get_declination();
+    return dal.compass().get_declination();
 }
 
 /*

@@ -33,8 +33,7 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -83,7 +82,7 @@ PA10 USART1_RX USART1
 #PA3 USART3_RX USART3
 
 # rcinput 
-PA3 TIM9_CH2 TIM9 RCININT FLOAT LOW
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN LOW
 
 # USART3
 PC10 USART3_TX USART3
@@ -114,7 +113,7 @@ PA15 TIM2_CH1 TIM2 PWM(5) GPIO(54)
 PA8  TIM1_CH1 TIM1 PWM(6) GPIO(55)
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -124,13 +123,11 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_270
 
 # probe for a BMP085, but also look for other baros
 BARO BMP085 I2C:0:0x77
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
@@ -140,13 +137,14 @@ SPIDEV osd       SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
 SPIDEV dataflash SPI3 DEVID1 FLASH_CS    MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
-
-
-# 8 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
+include ../include/no_bootloader_DFU.inc
+define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0

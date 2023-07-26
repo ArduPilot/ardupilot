@@ -1,0 +1,398 @@
+#   trajectory tracking aerobatic control
+#   See README.md for usage
+#   Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
+#   assistance from Paul Riseborough, testing by Henry Wurzburg
+
+# To use this schedule put the file on your microSD in the root directory 
+# (not the APM directory) with name trick93.txt The schedule can then be 
+# used in auto missions or in TRIKn_ID commands for tricks on a switch
+
+# This schedule is set up to be flown Left to Right. The schedule starts downwind - so 
+# the mission should be set up with WP's lined up on the flight line (150m out from the 
+# pilot), and the mission should be triggered when the plane gets to the center marker 
+# heading RIGHT to LEFT. Schedule direction is reversed with aerom_scale = -1 (and 
+# remember to reverse the mission WP's as well). Note the required height is greater 
+# than 400 feet - so only fly at an airfield where there is a 1500 foot clearance
+
+# This is an example of a F3A F23 schedule. Some manouvers are flown over the center
+# line of the runway. Please understand the behaviour by flying in SITL before flying this
+# schedule with a real aircraft! Your aircraft requires adequate performance to complete 
+# the schedule
+
+name: F3AF23
+
+function half_reverse_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("half_reverse_cuban_eight", {
+         { path_vertical_arc(r,  45),   roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 225),  roll_angle(0) },
+   })
+end
+
+function f23_1(radius, arg2, arg3, arg4) -- loop
+   return make_paths("f23_1", {
+            { path_straight(radius/2),             roll_angle(0) },
+            { path_straight(radius/2),             roll_angle(-270) },
+            { path_straight(radius/2),             roll_angle(0) },     
+            { path_vertical_arc(radius, 360),      roll_angle(360) },             
+            { path_straight(radius/2),             roll_angle(0) },
+            { path_straight(radius/2),             roll_angle(-270) },
+            { path_straight(radius/2),             roll_angle(0), roll_ref=180 },          
+      })
+end
+
+function f23_2(radius, height, arg3, arg4)  -- stall turn   -- Currently a humpty!
+   return make_paths("f23_2", {
+            { path_vertical_arc(radius, 90),          roll_angle(0) },
+            { path_straight((height-2*radius)/3),     roll_angle(0) },
+            { path_straight((height-2*radius)/3),     roll_angle(180) },
+            { path_straight((height-2*radius)/3),     roll_angle(0) },
+            { path_vertical_arc(-radius, 180),        roll_angle(0) },   
+            { path_straight((height-2*radius)),       roll_angle(0) },    
+            { path_vertical_arc(-radius, 90),         roll_angle(0) },            
+      })
+end
+
+function f23_3(length, arg2, arg3, arg4)   -- eight point roll
+   return make_paths("f23_3", {
+            { path_straight(length/16),       roll_angle(45) },
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },  
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) }, 
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },
+            { path_straight(length/16),       roll_angle(0) },
+            { path_straight(length/16),       roll_angle(45) },  
+            { path_straight(length/16),       roll_angle(0) },            
+      })
+end
+
+function f23_4(radius, height, arg3, arg4)   -- sharks tooth 
+   local l = (height - (2 * radius)) 
+   local angle_l = l * 1.9                                -- WRONG
+   return make_paths("f23_4", {
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90) },
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_vertical_arc(radius, 135),              roll_angle(0) },    
+            { path_straight(angle_l/3),                    roll_angle(0) },
+            { path_straight(angle_l/3),                    roll_angle(270) },
+            { path_straight(angle_l/3),                    roll_angle(0) },
+            { path_vertical_arc(-radius, 45),              roll_angle(0), roll_ref=180 },                                
+      })
+end
+
+function f23_5(radius, height_gain, arg3, arg4)   -- square loop on corner
+   local l = ((height_gain - (2 * radius)) * math.sin(math.rad(45)))     -- CHECK
+   return make_paths("f23_5", {
+            { path_vertical_arc(radius, 45),         roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(90) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(0) },  
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(180) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(0) },  
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(180) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(0) }, 
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(90) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 45),         roll_angle(0) , roll_ref=180 },              
+      })
+end
+
+function f23_6(radius, height_gain, arg3, arg4)   -- humpty bump
+   local l = (height_gain - 2*radius) 
+   return make_paths("f23_6", {
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(2 * l/7),                      roll_angle(0) },
+            { path_straight(l/7),                          roll_angle(180) },
+            { path_straight(l/7),                          roll_angle(0) },
+            { path_straight(l/7),                          roll_angle(180) },
+            { path_straight(2 * l/7),                      roll_angle(0) },
+            { path_vertical_arc(-radius, 180),             roll_angle(360) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(360) },       -- should be a snap roll
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(-radius, 90),              roll_angle(0) , roll_ref=180 },          
+      })
+end
+
+function f23_7(radius, arg2, arg3, arg4) -- horizontal eight
+   return make_paths("f23_7", {
+            { path_vertical_arc(radius, 270),             roll_angle(270) },
+            { path_vertical_arc(-radius, 360),            roll_angle(360) },
+            { path_vertical_arc(radius, 90),              roll_angle(90) },                 
+      })
+end
+
+function f23_8(radius, height, arg3, arg4)  -- tear drop
+   local l = (height - 2*radius)
+   local angle_l = l * 0.74                                       -- WRONG
+   return make_paths("f23_8", {
+         { path_vertical_arc(radius, 90),           roll_angle(0) },
+         { path_straight(l/6),                      roll_angle(0) },
+         { path_straight(4 * l/6),                  roll_angle(360) },
+         { path_straight(l/6),                      roll_angle(0) },         
+         { path_vertical_arc(radius, 225),          roll_angle(0) },  
+         { path_straight(2 * angle_l/7),            roll_angle(0) },
+         { path_straight(angle_l/7),                roll_angle(90) },
+         { path_straight(angle_l/7),                roll_angle(0) },
+         { path_straight(angle_l/7),                roll_angle(90) },
+         { path_straight(2 * angle_l/7),            roll_angle(0) },   
+         { path_vertical_arc(-radius, 135),         roll_angle(0) },          
+      })
+end
+
+function f23_9(radius, height, arg3, arg4)   -- 45 up
+   local l = (height - (2 * radius) + (2 * radius * math.cos(math.rad(45)))) / math.cos(math.rad(45))
+   return make_paths("f23_9", {
+            { path_straight(radius/3),                    roll_angle(90) },
+            { path_straight(radius/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 45),              roll_angle(0) },
+            { path_straight(l/3),                         roll_angle(0) },
+            { path_straight(l/6),                         roll_angle(180) },
+            { path_straight(l/6),                         roll_angle(-180) },
+            { path_straight(l/3),                         roll_angle(0) },
+            { path_vertical_arc(-radius, 45),             roll_angle(0) }, 
+            { path_straight(radius/3),                    roll_angle(0) },
+            { path_straight(radius/3),                    roll_angle(90) , roll_ref=180 },            
+      })
+end
+
+function f23_10(radius, height, arg3, arg4)   -- figure z  
+   local l = height - (2 * radius)
+   -- local angle_l = (l + (2 * radius * math.cos(math.rad(45)))) / math.cos(math.rad(45)) -- WRONG
+   local angle_l = l  * 1.1  
+   return make_paths("f23_10", {
+            { path_vertical_arc(-radius, 90),              roll_angle(0) },
+            { path_straight(l/4),                          roll_angle(0) },
+            { path_straight(l/4),                          roll_angle(180) },
+            { path_straight(l/4),                          roll_angle(-180) },
+            { path_straight(l/4),                          roll_angle(0) },
+            { path_vertical_arc(-radius, 90),              roll_angle(0) },
+            { path_straight(2 * l/7),                      roll_angle(0) },
+            { path_straight(l/7),                          roll_angle(90) },
+            { path_straight(l/7),                          roll_angle(0) },
+            { path_straight(l/7),                          roll_angle(90) },
+            { path_straight(2 * l/7),                      roll_angle(0) },  
+            { path_vertical_arc(-radius, 135),             roll_angle(0) },         
+            { path_straight(angle_l/6),                    roll_angle(0) },
+            { path_straight(angle_l/3),                    roll_angle(360) },
+            { path_straight(angle_l/6),                    roll_angle(0) },           
+            { path_vertical_arc(radius, 135),              roll_angle(0) },                             
+      })
+end
+
+function f23_11(radius, height, arg3, arg4)   -- heart
+   local rabs = math.abs(radius)             
+   local l =  height * 1.15                     -- WRONG                                 
+   return make_paths("f23_11", {
+            { path_vertical_arc(-radius, 45),              roll_angle(0) },
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(-90),  roll_ref=90 },
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_vertical_arc(radius, 180),              roll_angle(0) }, 
+            { path_straight(l * 1/3),                      roll_angle(0) },
+            { path_straight(l * 1/3),                      roll_angle(180) ,  roll_ref=-90 },
+            { path_straight(l * 1/3),                      roll_angle(0) },
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l * 1/3),                      roll_angle(0) },
+            { path_straight(l * 1/3),                      roll_angle(180) ,  roll_ref=90 },
+            { path_straight(l * 1/3),                      roll_angle(0) },
+            { path_vertical_arc(-radius, 180),             roll_angle(0) },            
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(90) },
+            { path_straight(l * 1/9),                      roll_angle(0) },
+            { path_straight(l * 1/9),                      roll_angle(90),  roll_ref=-90 },
+            { path_straight(l * 2/9),                      roll_angle(0) },
+            { path_vertical_arc(-radius, 45),              roll_angle(0) },           
+      })
+end
+
+function f23_12(radius, height, arg3, arg4)   -- reverse top hat
+   return make_paths("f23_12", {
+            { path_vertical_arc(-radius, 90),         roll_angle(0) },
+            { path_straight((height-2*radius)/3),     roll_angle(0) },
+            { path_straight((height-2*radius)/3),     roll_angle(180) },
+            { path_straight((height-2*radius)/3),     roll_angle(0) },
+            { path_vertical_arc(-radius, 90),         roll_angle(0) },   
+            { path_straight(radius/2),                roll_angle(0) }, 
+            { path_vertical_arc(-radius, 90),         roll_angle(0) },  
+            { path_straight((height-2*radius)/3),     roll_angle(0) },
+            { path_straight((height-2*radius)/3),     roll_angle(180) },
+            { path_straight((height-2*radius)/3),     roll_angle(0) }, 
+            { path_vertical_arc(radius, 90),          roll_angle(0) , roll_ref=180 },            
+      })
+end
+
+function f23_13(radius, height, arg3, arg4)  -- spin place holder
+   local l = height - (2 * radius)
+   return make_paths("f23_13", {
+         { path_vertical_arc(-radius, 90),             roll_angle(0) },
+         { path_straight(2 * l/7),                     roll_angle(0) },
+         { path_straight(l/7),                         roll_angle(180) },
+         { path_straight(l/7),                         roll_angle(0) },
+         { path_straight(l/7),                         roll_angle(-180) },
+         { path_straight(2 * l/7),                     roll_angle(0) }, 
+         { path_vertical_arc(radius, 90),              roll_angle(0) },        
+      })
+end
+
+function f23_14(r, arg2, arg3, arg4)   -- half cuban eight - needs a snap on the way down
+   local rabs = math.abs(r)
+   return make_paths("f23_14", {
+         --{ path_straight((2*rabs*math.sqrt(2))/4),          roll_angle(0) },
+         { path_straight((2*rabs*math.sqrt(2))/4),          roll_angle(180) },
+         { path_straight((2*rabs*math.sqrt(2))/4),          roll_angle(-180) },
+         { path_straight((2*rabs*math.sqrt(2))/4),          roll_angle(0) },
+         { path_vertical_arc(r,  225),                      roll_angle(0) },
+         { path_straight(2*rabs/3),                         roll_angle(0) },
+         { path_straight(2*rabs/3),                         roll_angle(180) },
+         { path_straight(2*rabs/3),                         roll_angle(0) },
+         { path_vertical_arc(-r, 45),                       roll_angle(0) },
+   })
+end                            
+
+function f23_15(radius, arg2, arg3, arg4)   -- rolling circle
+   return make_paths("f23_15", { 
+         { path_horizontal_arc(radius, 180),       roll_angle(-180),     thr_boost=true },
+         { path_horizontal_arc(radius, 180),       roll_angle(180),      thr_boost=true },
+      })
+end
+
+function f23_16(radius, height, arg3, arg4)   -- half square loop
+   local l = height - (2 * radius)
+   return make_paths("f23_16", {
+         { path_vertical_arc(radius, 90),              roll_angle(0) },
+         { path_straight(l/4),                         roll_angle(0) },
+         { path_straight(l/4),                         roll_angle(180) },
+         { path_straight(l/4),                         roll_angle(-180) },
+         { path_straight(l/4),                         roll_angle(0) }, 
+         { path_vertical_arc(radius, 90),              roll_angle(0)  , roll_ref=180},         
+      })
+end
+
+function f23_17(radius, arg2, arg3, arg4)   -- down loop
+   return make_paths("f23_17", {
+            { path_vertical_arc(-radius, 90),       roll_angle(180) },
+            { path_vertical_arc(-radius, 90),       roll_angle(0) },     -- needs a snap in here
+            { path_vertical_arc(-radius, 90),       roll_angle(0) },              
+            { path_vertical_arc(-radius, 90),       roll_angle(180) },
+            
+      })
+end
+
+function half_roll(arg1, arg2, arg3, arg4)   -- half roll for testing inverted manouvers
+   return make_paths("half_roll", {
+            { path_straight(40),             roll_angle(180) },
+            { path_straight(10),             roll_angle(0) },   
+      })
+end
+
+straight_roll 80 0
+half_reverse_cuban_eight 70
+
+align_center
+message: Loop
+f23_1 90
+
+align_box 1
+message: StallTurn
+f23_2 40 200
+
+align_center
+message: RollCombination
+f23_3 200
+
+align_box 1
+message: KnifeEdgeSharksTooth
+f23_4 30 190
+
+align_center
+message: SquareLooponCorner
+f23_5 40 200
+
+align_box 1
+message: Humpty
+f23_6 40 200
+
+align_center
+message: HorizontalEight
+f23_7 100
+
+align_box 1
+message: TearDrop
+f23_8 40 200  
+         
+align_center
+message: 45Up
+f23_9 40 200
+
+align_box 1
+message: FigureZ
+f23_10 40 200
+
+align_center
+message: Heart
+f23_11 40 200
+
+align_box 1
+message: ReverseTopHat
+f23_12 40 200
+
+align_center
+message: Spin
+f23_13 40 200
+
+align_box 1
+message: HalfCuban
+f23_14 70
+  
+align_center
+message: RollingCircle
+f23_15 100
+
+align_box 1
+message: HalfSquareLoop
+f23_16 40 200
+
+align_center
+message: DownLoop
+f23_17 100
+
+straight_roll 50 0
+half_roll 0
+straight_roll 50 0
+
+
+
+
+
+ 
+ 

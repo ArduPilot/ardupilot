@@ -4,7 +4,8 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 ||   \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH ||           \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK ||         \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI ||      \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -23,7 +24,7 @@
 
 #include "GPIO.h"
 #include "RCInput_RPI.h"
-#include "Util_RPI.h"
+
 
 #ifdef DEBUG
 #define debug(fmt, args ...) do { fprintf(stderr,"[RCInput_RPI]: %s:%d: " fmt, __FUNCTION__, __LINE__, ## args); } while (0)
@@ -49,6 +50,14 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
     RPI_GPIO_<5>(),  RPI_GPIO_<6>(),  RPI_GPIO_<12>(),
     RPI_GPIO_<13>(), RPI_GPIO_<19>(), RPI_GPIO_<20>(),
     RPI_GPIO_<21>(), RPI_GPIO_<26>()
+};
+#elif (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1) 
+#define RCIN_RPI_SIG_HIGH        0
+#define RCIN_RPI_SIG_LOW         1
+static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
+    RPI_GPIO_<5>(),  RPI_GPIO_<6>(),  RPI_GPIO_<13>(),
+    RPI_GPIO_<19>(), RPI_GPIO_<26>(), RPI_GPIO_<21>(), 
+    RPI_GPIO_<20>(), RPI_GPIO_<16>()
 };
 #else
 #define RCIN_RPI_SIG_HIGH        1
@@ -143,12 +152,12 @@ Memory_table::Memory_table()
 }
 
 // Init Memory table
-Memory_table::Memory_table(uint32_t page_count, int version)
+Memory_table::Memory_table(const uint32_t page_count, const LINUX_BOARD_TYPE version)
 {
     uint32_t i;
     int fdMem, file;
     // Cache coherent adresses depends on RPI's version
-    uint32_t bus = version == 1 ? 0x40000000 : 0xC0000000;
+    uint32_t bus = version == LINUX_BOARD_TYPE::RPI_ZERO_1 ? 0x40000000 : 0xC0000000;
     uint64_t pageInfo;
     void *offset;
 
@@ -158,6 +167,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
 
     if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr, "Failed to open /dev/mem\n");
+        printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
         exit(-1);
     }
 
@@ -173,6 +183,10 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Get list of available cache coherent physical addresses
     for (i = 0; i < _page_count; i++) {
         _virt_pages[i] = mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE | MAP_LOCKED, -1, 0);
+        if (_virt_pages[i] == MAP_FAILED) {
+            fprintf(stderr, "Failed to map cache coherent physical page (%m)\n");
+            exit(-1);
+        }
         if (::read(file, &pageInfo, 8) < 8) {
             fprintf(stderr, "Failed to read pagemap\n");
             exit(-1);
@@ -183,7 +197,15 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Map physical addresses to virtual memory
     for (i = 0; i < _page_count; i++) {
         munmap(_virt_pages[i], PAGE_SIZE);
-        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == 1 ? 0xFFFFFFFF : ~bus)));
+
+        void * prev_virt = _virt_pages[i];
+        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == LINUX_BOARD_TYPE::RPI_ZERO_1 ? 0xFFFFFFFFFFFFFFFF : ~bus)));
+        if (_virt_pages[i] == MAP_FAILED) {
+            fprintf(stderr, "Failed phys2virt prev_virt=%p phys_page=%p %m\n", prev_virt, _phys_pages[i]);
+            printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
+            exit(-1);
+        }
+
         memset(_virt_pages[i], 0xee, PAGE_SIZE);
     }
     close(file);
@@ -223,11 +245,11 @@ void *Memory_table::get_virt_addr(const uint32_t phys_addr) const
 
 // This function returns offset from the beginning of the buffer using virtual
 // address and memory_table.
-uint32_t Memory_table::get_offset(void ** const pages, const uint32_t addr) const
+uint32_t Memory_table::get_offset(void ** const pages, const uint64_t addr) const
 {
     uint32_t i = 0;
     for (; i < _page_count; i++) {
-        if ((uintptr_t) pages[i] == (addr & 0xFFFFF000) ) {
+        if ((uintptr_t) pages[i] == (addr & 0xFFFFFFFFFFFFF000) ) {
             return (i*PAGE_SIZE + (addr & 0xFFF));
         }
     }
@@ -252,20 +274,23 @@ uint32_t Memory_table::get_page_count() const
 // Physical addresses of peripheral depends on Raspberry Pi's version
 void RCInput_RPI::set_physical_addresses()
 {
-    if (_version == 1) { 
+    if (_version == LINUX_BOARD_TYPE::RPI_ZERO_1) {
         // 1 & zero are the same
         dma_base = RCIN_RPI_RPI1_DMA_BASE;
         clk_base = RCIN_RPI_RPI1_CLK_BASE;
         pcm_base = RCIN_RPI_RPI1_PCM_BASE;
-    } else if (_version == 2) { 
+    } else if (_version == LINUX_BOARD_TYPE::RPI_2_3_ZERO2) {
         // 2 & 3 are the same
         dma_base = RCIN_RPI_RPI2_DMA_BASE;
         clk_base = RCIN_RPI_RPI2_CLK_BASE;
         pcm_base = RCIN_RPI_RPI2_PCM_BASE;
-    } else if (_version == 4) {
+    } else if (_version == LINUX_BOARD_TYPE::RPI_4) {
         dma_base = RCIN_RPI_RPI4_DMA_BASE;
         clk_base = RCIN_RPI_RPI4_CLK_BASE;
         pcm_base = RCIN_RPI_RPI4_PCM_BASE;
+    } else {
+        fprintf(stderr,"Unknown Linux Board version!\n");
+        exit(-1);
     }
 }
 
@@ -277,11 +302,13 @@ void *RCInput_RPI::map_peripheral(uint32_t base, uint32_t len)
 
     if (fd < 0) {
         printf("Failed to open /dev/mem: %m\n");
+        printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
         return nullptr;
     }
     vaddr = mmap(nullptr, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base);
     if (vaddr == MAP_FAILED) {
         printf("rpio-pwm: Failed to map peripheral at 0x%08x: %m\n", base);
+        exit(-1);
     }
 
     close(fd);
@@ -397,10 +424,11 @@ void RCInput_RPI::init_PCM()
     hal.scheduler->delay_microseconds(100);
     clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000006;                              // Source=PLLD (500MHz)
     hal.scheduler->delay_microseconds(100);
-    if (_version != 4) {
+    if (_version != LINUX_BOARD_TYPE::RPI_4) {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div for BCM2835 500MHZ clock. If we need to configure DMA frequency.
     }
     else {
+        // RPI-4
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // Set pcm div for BCM2711 700MHz clock. If we need to configure DMA frequency.
     }
     hal.scheduler->delay_microseconds(100);
@@ -497,9 +525,9 @@ void RCInput_RPI::init()
     uint64_t signal_states(0);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-    _version = 2;
+    _version = LINUX_BOARD_TYPE::RPI_2_3_ZERO2;
 #else
-    _version = UtilRPI::from(hal.util)->get_rpi_version();
+    _version = UtilRPI::from(hal.util)->detect_linux_board_type();
 #endif
 
     set_physical_addresses();

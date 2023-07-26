@@ -29,12 +29,15 @@ public:
     // get serial port number, -1 for not enabled
     virtual int8_t get_port(void) const { return -1; }
 
+    // Get model/type name
+    virtual const char* get_name() const = 0;
+
     // accessors for AP_AHRS
     virtual bool healthy(void) const = 0;
     virtual bool initialised(void) const = 0;
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
     virtual void get_filter_status(nav_filter_status &status) const {}
-    virtual void send_status_report(mavlink_channel_t chan) const {}
+    virtual void send_status_report(class GCS_MAVLINK &link) const {}
 
     // check for new data
     virtual void update() = 0;
@@ -42,6 +45,7 @@ public:
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
+    bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
 private:
     AP_ExternalAHRS &frontend;

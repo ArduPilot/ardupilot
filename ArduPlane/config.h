@@ -25,28 +25,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Advanced Failsafe support
-//
-
-#ifndef ADVANCED_FAILSAFE
- # define ADVANCED_FAILSAFE ENABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Optical flow sensor support
-//
-
-#ifndef OPTFLOW
-#if AP_AHRS_NAVEKF_AVAILABLE
- # define OPTFLOW ENABLED
-#else
- # define OPTFLOW DISABLED
-#endif
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
@@ -122,13 +100,6 @@
 
 #ifndef DSPOILR_RUD_RATE_DEFAULT
  #define DSPOILR_RUD_RATE_DEFAULT 100
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// CAMERA TRIGGER AND CONTROL
-//
-#ifndef CAMERA
- # define CAMERA         ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -246,11 +217,6 @@
  # define SCALING_SPEED          15.0
 #endif
 
-// use this to disable geo-fencing
-#ifndef AC_FENCE
- # define AC_FENCE ENABLED
-#endif
-
 // a digital pin to set high when the geo-fence triggers. Defaults
 // to -1, which means don't activate a pin
 #ifndef FENCE_TRIGGERED_PIN
@@ -261,12 +227,6 @@
 // Parachute release
 #ifndef PARACHUTE
 #define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Payload Gripper
-#ifndef GRIPPER_ENABLED
-  #define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #ifndef STATS_ENABLED
@@ -281,12 +241,14 @@
  #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
 #endif
 
-#ifndef LANDING_GEAR_ENABLED
- #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+//  Landing Throttle Control Trigger Threshold
+#ifndef THR_CTRL_LAND_THRESH
+ #define THR_CTRL_LAND_THRESH 0.7
 #endif

@@ -1,6 +1,7 @@
 #include "Blimp.h"
 
 #include "GCS_Mavlink.h"
+#include <AP_RPM/AP_RPM_config.h>
 
 MAV_TYPE GCS_Blimp::frame_type() const
 {
@@ -52,7 +53,7 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
             POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-            POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+            POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
 
     mavlink_msg_position_target_global_int_send(
         chan,
@@ -123,7 +124,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
-        const AP_Logger::PID_Info *pid_info = nullptr;
+        const AP_PIDInfo *pid_info = nullptr;
         switch (axes[i]) {
         case PID_SEND::VELX:
             pid_info = &blimp.pid_vel_xy.get_pid_info_x();
@@ -160,7 +161,9 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
                                         pid_info->FF,
                                         pid_info->P,
                                         pid_info->I,
-                                        pid_info->D);
+                                        pid_info->D,
+                                        pid_info->slew_rate,
+                                        pid_info->Dmod);
         }
     }
 }
@@ -215,15 +218,17 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[0],  0),
 
     // @Param: EXT_STAT
     // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
+    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[1],  0),
 
@@ -233,6 +238,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
 
@@ -242,6 +248,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK_Parameters, streamRates[3],  0),
 
@@ -251,6 +258,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[4],  0),
 
@@ -260,6 +268,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[5],  0),
 
@@ -269,15 +278,17 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[6],  0),
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS, HWSTATUS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, BATTERY2, MOUNT_STATUS, OPTICAL_FLOW, GIMBAL_REPORT, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
+    // @Description: Stream rate of AHRS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[7],  0),
 
@@ -287,6 +298,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  0),
     AP_GROUPEND
@@ -299,11 +311,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
     MSG_GPS_RAW,
@@ -334,21 +346,20 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_HWSTATUS,
     MSG_SYSTEM_TIME,
     MSG_WIND,
     MSG_RANGEFINDER,
     MSG_DISTANCE_SENSOR,
-    MSG_BATTERY2,
     MSG_BATTERY_STATUS,
-    MSG_MOUNT_STATUS,
+    MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
     MSG_OPTICAL_FLOW,
-    MSG_GIMBAL_REPORT,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
+#if AP_RPM_ENABLED
     MSG_RPM,
+#endif
     MSG_ESC_TELEMETRY,
     MSG_GENERATOR_STATUS,
 };
@@ -356,7 +367,8 @@ static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
 static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE
+    MSG_ADSB_VEHICLE,
+    MSG_AIS_VESSEL,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -379,14 +391,6 @@ bool GCS_MAVLINK_Blimp::handle_guided_request(AP_Mission::Mission_Command &cmd)
     // #else
     return false;
     // #endif
-}
-
-void GCS_MAVLINK_Blimp::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
-{
-    // add home alt if needed
-    if (cmd.content.location.relative_alt) {
-        cmd.content.location.alt += blimp.ahrs.get_home().alt;
-    }
 }
 
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
@@ -413,9 +417,9 @@ void GCS_MAVLINK_Blimp::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", blimp.get_frame_string());
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
-    return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
+    return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
 }
 
 
@@ -426,12 +430,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
     }
     // blimp.flightmode->auto_yaw.set_roi(roi_loc);
     return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK_Blimp::handle_preflight_reboot(const mavlink_command_long_t &packet)
-{
-    // call parent
-    return GCS_MAVLINK::handle_preflight_reboot(packet);
 }
 
 bool GCS_MAVLINK_Blimp::set_home_to_current_location(bool _lock)
@@ -456,18 +454,9 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
     }
 
     Location request_location {};
-    request_location.lat = packet.x;
-    request_location.lng = packet.y;
-
-    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+    if (!location_from_command_t(packet, request_location)) {
         return MAV_RESULT_DENIED;
     }
-
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
-        return MAV_RESULT_DENIED; // failed as the location is not valid
-    }
-    request_location.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
 
     if (request_location.sanitize(blimp.current_loc)) {
         // if the location wasn't already sane don't load it
@@ -488,16 +477,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
-}
-
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_mount(const mavlink_command_long_t &packet)
-{
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
-    switch (packet.command) {
-    default:
-        break;
-    }
-    return GCS_MAVLINK::handle_command_mount(packet);
 }
 
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_long_t &packet)
@@ -542,31 +521,6 @@ void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
-        break;
-
-    case MAVLINK_MSG_ID_SET_HOME_POSITION: {
-        mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(&msg, &packet);
-        if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            if (!blimp.set_home_to_current_location(true)) {
-                // silently ignored
-            }
-        } else {
-            Location new_home_loc;
-            new_home_loc.lat = packet.latitude;
-            new_home_loc.lng = packet.longitude;
-            new_home_loc.alt = packet.altitude / 10;
-            if (!blimp.set_home(new_home_loc, true)) {
-                // silently ignored
-            }
-        }
-        break;
-    }
-
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
         break;
 
     default:

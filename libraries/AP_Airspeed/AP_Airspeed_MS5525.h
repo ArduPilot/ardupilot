@@ -18,8 +18,11 @@
   backend driver for airspeed from I2C
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_MS5525_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
@@ -76,3 +79,5 @@ private:
     
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };
+
+#endif  // AP_AIRSPEED_MS5525_ENABLED

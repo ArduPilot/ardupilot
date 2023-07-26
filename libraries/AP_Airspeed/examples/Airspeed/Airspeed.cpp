@@ -32,7 +32,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 float temperature;
 
 // create an AHRS object for get_airspeed_max
-AP_AHRS_DCM ahrs;
+AP_AHRS ahrs;
 
 // create airspeed object
 AP_Airspeed airspeed;
@@ -65,6 +65,7 @@ void setup()
     board_config.init();
 
     // initialize airspeed
+    // Note airspeed.set_log_bit(LOG_BIT) would need to be called in order to enable logging
     airspeed.init();
 
     airspeed.calibrate(false);
@@ -80,7 +81,7 @@ void loop(void)
 
         // current system time in milliseconds
         timer = AP_HAL::millis();
-        airspeed.update(false);
+        airspeed.update();
         airspeed.get_temperature(temperature);
 
         // print temperature and airspeed to console

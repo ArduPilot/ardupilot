@@ -55,8 +55,8 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        ftype temp = (tasErrVar + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= tasErrVar) {
+        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (temp >= tasDataDelayed.tasVariance) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
         } else {
@@ -68,7 +68,7 @@ void NavEKF3_core::FuseAirspeed()
         }
         SK_TAS[1] = SH_TAS[1];
 
-        if (!airDataFusionWindOnly) {
+        if (tasDataDelayed.allowFusion && !airDataFusionWindOnly) {
             Kfusion[0] = SK_TAS[0]*(P[0][4]*SH_TAS[2] - P[0][22]*SH_TAS[2] + P[0][5]*SK_TAS[1] - P[0][23]*SK_TAS[1] + P[0][6]*vd*SH_TAS[0]);
             Kfusion[1] = SK_TAS[0]*(P[1][4]*SH_TAS[2] - P[1][22]*SH_TAS[2] + P[1][5]*SK_TAS[1] - P[1][23]*SK_TAS[1] + P[1][6]*vd*SH_TAS[0]);
             Kfusion[2] = SK_TAS[0]*(P[2][4]*SH_TAS[2] - P[2][22]*SH_TAS[2] + P[2][5]*SK_TAS[1] - P[2][23]*SK_TAS[1] + P[2][6]*vd*SH_TAS[0]);
@@ -84,7 +84,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 0, 9);
         }
 
-        if (!inhibitDelAngBiasStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.allowFusion && !inhibitDelAngBiasStates && !airDataFusionWindOnly) {
             Kfusion[10] = SK_TAS[0]*(P[10][4]*SH_TAS[2] - P[10][22]*SH_TAS[2] + P[10][5]*SK_TAS[1] - P[10][23]*SK_TAS[1] + P[10][6]*vd*SH_TAS[0]);
             Kfusion[11] = SK_TAS[0]*(P[11][4]*SH_TAS[2] - P[11][22]*SH_TAS[2] + P[11][5]*SK_TAS[1] - P[11][23]*SK_TAS[1] + P[11][6]*vd*SH_TAS[0]);
             Kfusion[12] = SK_TAS[0]*(P[12][4]*SH_TAS[2] - P[12][22]*SH_TAS[2] + P[12][5]*SK_TAS[1] - P[12][23]*SK_TAS[1] + P[12][6]*vd*SH_TAS[0]);
@@ -93,7 +93,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 10, 12);
         }
 
-        if (!inhibitDelVelBiasStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.allowFusion && !inhibitDelVelBiasStates && !airDataFusionWindOnly) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
@@ -108,7 +108,7 @@ void NavEKF3_core::FuseAirspeed()
         }
 
         // zero Kalman gains to inhibit magnetic field state estimation
-        if (!inhibitMagStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.allowFusion && !inhibitMagStates && !airDataFusionWindOnly) {
             Kfusion[16] = SK_TAS[0]*(P[16][4]*SH_TAS[2] - P[16][22]*SH_TAS[2] + P[16][5]*SK_TAS[1] - P[16][23]*SK_TAS[1] + P[16][6]*vd*SH_TAS[0]);
             Kfusion[17] = SK_TAS[0]*(P[17][4]*SH_TAS[2] - P[17][22]*SH_TAS[2] + P[17][5]*SK_TAS[1] - P[17][23]*SK_TAS[1] + P[17][6]*vd*SH_TAS[0]);
             Kfusion[18] = SK_TAS[0]*(P[18][4]*SH_TAS[2] - P[18][22]*SH_TAS[2] + P[18][5]*SK_TAS[1] - P[18][23]*SK_TAS[1] + P[18][6]*vd*SH_TAS[0]);
@@ -120,7 +120,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 16, 21);
         }
 
-        if (!inhibitWindStates) {
+        if (tasDataDelayed.allowFusion && !inhibitWindStates) {
             Kfusion[22] = SK_TAS[0]*(P[22][4]*SH_TAS[2] - P[22][22]*SH_TAS[2] + P[22][5]*SK_TAS[1] - P[22][23]*SK_TAS[1] + P[22][6]*vd*SH_TAS[0]);
             Kfusion[23] = SK_TAS[0]*(P[23][4]*SH_TAS[2] - P[23][22]*SH_TAS[2] + P[23][5]*SK_TAS[1] - P[23][23]*SK_TAS[1] + P[23][6]*vd*SH_TAS[0]);
         } else {
@@ -135,11 +135,16 @@ void NavEKF3_core::FuseAirspeed()
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
+        if (!isConsistent) {
+            lastTasFailTime_ms = imuSampleTime_ms;
+        } else {
+            lastTasFailTime_ms = 0;
+        }
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
-        if (tasHealth || (tasTimeout && posTimeout)) {
+        if (tasDataDelayed.allowFusion && (isConsistent || (tasTimeout && posTimeout))) {
 
             // restart the counter
             lastTasPassTime_ms = imuSampleTime_ms;
@@ -184,11 +189,10 @@ void NavEKF3_core::FuseAirspeed()
                 }
             }
         }
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
     }
-
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-    ForceSymmetry();
-    ConstrainVariances();
 }
 
 // select fusion of true airspeed measurements
@@ -236,7 +240,7 @@ void NavEKF3_core::SelectBetaDragFusion()
 
     // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastPosPassTime_ms) > frontend->deadReckonDeclare_ms) && ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
-    const bool noYawSensor = !use_compass() && !using_external_yaw();
+    const bool noYawSensor = !use_compass() && !using_noncompass_for_yaw();
     const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
 
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
@@ -249,7 +253,7 @@ void NavEKF3_core::SelectBetaDragFusion()
             // we are required to correct all states
             airDataFusionWindOnly = false;
         } else {
-            // we are required to corrrect only wind states
+            // we are required to correct only wind states
             airDataFusionWindOnly = true;
         }
         // Fuse estimated airspeed to aid wind estimation
@@ -265,6 +269,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
         FuseDragForces();
     }
+    dragTimeout = (imuSampleTime_ms - lastDragPassTime_ms) > frontend->dragFailTimeLimit_ms;
 #endif
 }
 
@@ -428,12 +433,7 @@ void NavEKF3_core::FuseSideslip()
         }
 
         // calculate predicted sideslip angle and innovation using small angle approximation
-        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
-
-        // reject measurement if greater than 3-sigma inconsistency
-        if (innovBeta > 0.5f) {
-            return;
-        }
+        innovBeta = constrain_ftype(vel_rel_wind.y / vel_rel_wind.x, -0.5f, 0.5f);
 
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
@@ -529,7 +529,7 @@ void NavEKF3_core::FuseDragForces()
         // correct accel data for bias
         const ftype mea_acc = dragSampleDelayed.accelXY[axis_index]  - stateStruct.accel_bias[axis_index] / dtEkfAvg;
 
-        // Acceleration in m/s/s predicfed using vehicle and wind velocity estimates
+        // Acceleration in m/s/s predicted using vehicle and wind velocity estimates
         // Initialised to measured value and updated later using available drag model
         ftype predAccel = mea_acc;
 
@@ -620,7 +620,7 @@ void NavEKF3_core::FuseDragForces()
 
 
         } else if (axis_index == 1) {
-            // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
+            // drag can be modelled as an arbitrary combination of bluff body drag that proportional to
             // speed squared, and rotor momentum drag that is proportional to speed.
             ftype Kacc; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_y) {
@@ -751,6 +751,9 @@ void NavEKF3_core::FuseDragForces()
             }
         }
     }
+
+    // record time of successful fusion
+    lastDragPassTime_ms = imuSampleTime_ms;
 }
 #endif // EK3_FEATURE_DRAG_FUSION
 

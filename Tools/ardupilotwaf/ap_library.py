@@ -53,9 +53,14 @@ def _vehicle_index(vehicle):
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
-                   'APM_BUILD_TYPE',
-                   'AP_NavEKF3_core.h']
+                   'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
+                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
+
+# some cpp files are not available at the time we run this check so need to be
+# unilaterally added
+_vehicle_cpp_need_macros = ['lua_generated_bindings.cpp']
+_macros_cpp_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_cpp_need_macros))
 
 def _remove_comments(s):
     return c_preproc.re_cpp.sub(c_preproc.repl, s)
@@ -66,18 +71,16 @@ def _depends_on_vehicle(bld, source_node):
 
     if not bld.env.BUILDROOT:
         bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
-    if path.startswith(bld.env.BUILDROOT) or path.startswith("build.tmp.binaries/"):
-        _depends_on_vehicle_cache[path] = False
 
-    if path.startswith("build/") or path.startswith(bld.env.BUILDROOT):
-        # allow vehicle dependend #if in cpp generated in build/
-        # only scripting bindings currently
+    if _macros_cpp_re.search(path) is not None:
         _depends_on_vehicle_cache[path] = True
 
-
     if path not in _depends_on_vehicle_cache:
-        s = _remove_comments(source_node.read())
-        _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        try:
+            s = _remove_comments(source_node.read())
+            _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        except Exception:
+            return False
 
     return _depends_on_vehicle_cache[path]
 
@@ -136,7 +139,7 @@ def ap_library(bld, library, vehicle):
         kw.update(
             name=_vehicle_tgen_name(library, vehicle),
             source=source,
-            defines=ap.get_legacy_defines(vehicle),
+            defines=ap.get_legacy_defines(vehicle, bld),
             idx=_vehicle_index(vehicle),
         )
         bld.objects(**kw)
@@ -153,16 +156,24 @@ def process_ap_libraries(self):
         if vehicle:
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
+@before_method('process_source')
+@feature('cxxstlib')
+def dynamic_post(self):
+    if not getattr(self, 'dynamic_source', None):
+        return
+    self.source = Utils.to_list(self.source)
+    self.source.extend(self.bld.bldnode.ant_glob(self.dynamic_source))
+
 class ap_library_check_headers(Task.Task):
     color = 'PINK'
     before  = 'cxx c'
     dispatched_headers = set()
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
-        'libraries/AP_Camera/AP_RunCam.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
+        'libraries/AP_LandingGear/AP_LandingGear_config.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -228,6 +239,25 @@ class ap_library_check_headers(Task.Task):
     def keyword(self):
         return 'Checking included headers'
 
+def custom_flags_check(tgen):
+    '''
+     check for tasks marked as having custom cpp or c flags
+     a library can do this by setting AP_LIB_EXTRA_CXXFLAGS and AP_LIB_EXTRA_CFLAGS
+
+     For example add this is the configure section of the library, using AP_DDS as an example:
+
+        cfg.env.AP_LIB_EXTRA_CXXFLAGS['AP_DDS'] = ['-DSOME_CXX_FLAG']
+        cfg.env.AP_LIB_EXTRA_CFLAGS['AP_DDS'] = ['-DSOME_C_FLAG']
+    '''
+    if not tgen.name.startswith("objs/"):
+        return
+    libname = tgen.name[5:]
+    if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
+        tgen.env.CXXFLAGS.extend(tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
+    if libname in tgen.env.AP_LIB_EXTRA_CFLAGS:
+        tgen.env.CFLAGS.extend(tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
+
+
 def double_precision_check(tasks):
     '''check for tasks marked as double precision'''
 
@@ -273,6 +303,7 @@ def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
         return
 
+    custom_flags_check(self)
     double_precision_check(self.compiled_tasks)
     if self.env.ENABLE_ONVIF:
         gsoap_library_check(self.bld, self.compiled_tasks)
@@ -287,4 +318,6 @@ def ap_library_register_for_check(self):
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
     cfg.env.AP_LIB_EXTRA_SOURCES = dict()
+    cfg.env.AP_LIB_EXTRA_CXXFLAGS = dict()
+    cfg.env.AP_LIB_EXTRA_CFLAGS = dict()
     cfg.env.DOUBLE_PRECISION_SOURCES = dict()

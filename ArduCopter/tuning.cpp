@@ -2,7 +2,7 @@
 
 /*
  * Function to update various parameters in flight using the ch6 tuning knob
- * This should not be confused with the AutoTune feature which can bve found in control_autotune.cpp
+ * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
  */
 
 // tuning - updates parameters based on the ch6 tuning knob's position
@@ -104,15 +104,19 @@ void Copter::tuning()
         wp_nav->set_speed_xy(tuning_value);
         break;
 
-    // Acro roll pitch gain
-    case TUNING_ACRO_RP_KP:
-        g.acro_rp_p = tuning_value;
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+    // Acro roll pitch rates
+    case TUNING_ACRO_RP_RATE:
+        g2.command_model_acro_rp.set_rate(tuning_value);
         break;
+#endif
 
-    // Acro yaw gain
-    case TUNING_ACRO_YAW_KP:
-        g.acro_yaw_p = tuning_value;
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+    // Acro yaw rate
+    case TUNING_ACRO_YAW_RATE:
+        g2.command_model_acro_y.set_rate(tuning_value);
         break;
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:
@@ -139,13 +143,6 @@ void Copter::tuning()
 #if MODE_CIRCLE_ENABLED == ENABLED
     case TUNING_CIRCLE_RATE:
         circle_nav->set_rate(tuning_value);
-        break;
-#endif
-
-#if RANGEFINDER_ENABLED == ENABLED
-    case TUNING_RANGEFINDER_GAIN:
-        // set rangefinder gain
-        g.rangefinder_gain.set(tuning_value);
         break;
 #endif
 
@@ -183,14 +180,18 @@ void Copter::tuning()
         break;
 #endif
 
-     case TUNING_RATE_YAW_FILT:
-         attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
-         break;
+    case TUNING_RATE_YAW_FILT:
+        attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
+        break;
 
-     case TUNING_SYSTEM_ID_MAGNITUDE:
+    case TUNING_SYSTEM_ID_MAGNITUDE:
 #if MODE_SYSTEMID_ENABLED == ENABLED
-         copter.mode_systemid.set_magnitude(tuning_value);
+        copter.mode_systemid.set_magnitude(tuning_value);
 #endif
-         break;
+        break;
+
+    case TUNING_POS_CONTROL_ANGLE_MAX:
+        pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
+        break;
     }
 }

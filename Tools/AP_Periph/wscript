@@ -2,6 +2,20 @@
 # encoding: utf-8
 
 import fnmatch
+import sys
+
+try:
+    import em
+except ImportError:
+    print("you need to install empy with 'python -m pip install empy'")
+    sys.exit(1)
+
+try:
+    import pexpect
+except ImportError:
+    print("you need to install pexpect with 'python -m pip install pexpect'")
+    sys.exit(1)
+    
 
 def build(bld):
     targets = bld.ap_periph_boards()
@@ -14,6 +28,7 @@ def build(bld):
 
     if bld.env.AP_PERIPH_HEAVY:
         libraries = bld.ap_get_all_libraries()
+        libraries.extend(['AP_ADSB/sagetech-sdk'])
         bld.env.DEFINES += ['HAL_BOARD_AP_PERIPH_HEAVY']
     else:
         libraries = ['AP_Common',
@@ -23,6 +38,7 @@ def build(bld):
                      'AP_BoardConfig',
                      'AP_BattMonitor',
                      'AP_CANManager',
+                     'AP_KDECAN',
                      'AP_Param',
                      'StorageManager',
                      'AP_FlashStorage',
@@ -31,12 +47,14 @@ def build(bld):
                      'AP_SerialManager',
                      'AP_RTC',
                      'AP_Compass',
+                     'AP_NMEA_Output',
                      'AP_Baro',
                      'Filter',
                      'AP_InternalError',
                      'AP_Airspeed',
                      'AP_RangeFinder',
                      'AP_ROMFS',
+                     'AP_TemperatureSensor',
                      'AP_MSP',
                      'SRV_Channel',
                      'AP_Notify',
@@ -46,30 +64,32 @@ def build(bld):
                      'AP_AccelCal',
                      'AP_Logger',
                      'AC_PID',
+                     'AP_BLHeli',
+                     'AP_ESC_Telem',
+                     'AP_Stats',
+                     'AP_EFI',
+                     'AP_CheckFirmware',
+                     'AP_Proximity',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',
+        dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Periph',
         ap_libraries= libraries,
+        use='dronecan',
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
         ]
     )
 
     # build external libcanard library
-    bld.stlib(source='../../modules/libcanard/canard.c',
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
+              use='dronecan',
               target='libcanard')
 
     bld.ap_program(
         program_name='AP_Periph',
-        use=['AP_Periph_libs', 'libcanard'],
+        use=['AP_Periph_libs', 'libcanard', 'dronecan'],
         program_groups=['bin','AP_Periph'],
-        includes=[bld.env.SRCROOT + '/modules/libcanard',
-                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
-    )
-
-    bld(
-        # build libcanard headers
-        rule="python3 ${SRCROOT}/modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ${SRCROOT}/modules/uavcan/dsdl/uavcan ${SRCROOT}/libraries/AP_UAVCAN/dsdl/ardupilot ${SRCROOT}/libraries/AP_UAVCAN/dsdl/com",
-        group='dynamic_sources',
     )

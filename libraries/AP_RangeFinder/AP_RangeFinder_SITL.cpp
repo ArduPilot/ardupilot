@@ -12,20 +12,18 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 #include "AP_RangeFinder_SITL.h"
 
-extern const AP_HAL::HAL& hal;
+#if AP_RANGEFINDER_SIM_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
+#include <SITL/SITL.h>
 
 /*
   constructor - registers instance at top RangeFinder driver
  */
 AP_RangeFinder_SITL::AP_RangeFinder_SITL(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, uint8_t instance) :
     AP_RangeFinder_Backend(_state, _params),
-    sitl(AP::sitl()),
     _instance(instance)
 {}
 
@@ -34,7 +32,7 @@ AP_RangeFinder_SITL::AP_RangeFinder_SITL(RangeFinder::RangeFinder_State &_state,
  */
 void AP_RangeFinder_SITL::update(void)
 {
-    const float dist = sitl->get_rangefinder(_instance);
+    const float dist = AP::sitl()->get_rangefinder(_instance);
 
     // negative distance means nothing is connected
     if (is_negative(dist)) {
@@ -42,11 +40,11 @@ void AP_RangeFinder_SITL::update(void)
         return;
     }
 
-    state.distance_cm = dist * 100.0f;
+    state.distance_m = dist;
     state.last_reading_ms = AP_HAL::millis();
 
     // update range_valid state based on distance measured
     update_status();
 }
 
-#endif
+#endif  // AP_RANGEFINDER_SIM_ENABLED

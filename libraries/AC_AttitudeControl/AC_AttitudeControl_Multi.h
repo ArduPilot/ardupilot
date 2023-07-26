@@ -41,7 +41,7 @@
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors);
 
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
@@ -83,6 +83,9 @@ public:
 
 protected:
 
+    // boost angle_p/pd each cycle on high throttle slew
+    void update_throttle_gain_boost();
+
     // update_throttle_rpy_mix - updates thr_low_comp value towards the target
     void update_throttle_rpy_mix();
 
@@ -97,4 +100,7 @@ protected:
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+
+    // angle_p/pd boost multiplier
+    AP_Float              _throttle_gain_boost;
 };

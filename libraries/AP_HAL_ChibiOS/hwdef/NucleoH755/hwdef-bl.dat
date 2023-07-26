@@ -1,0 +1,43 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H755 bootloader - H755 is almost identical to H757, so utilizing its STM32H757xx.py file
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define CORE_CM7
+define SMPS_PWR
+
+# board ID for firmware load
+APJ_BOARD_ID 139
+
+# the nucleo seems to have trouble with flashing the last sector?
+FLASH_SIZE_KB 2048
+
+# the location where the bootloader will put the firmware
+# the H755 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 256
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+#LED setup
+PB0 LED_BOOTLOADER OUTPUT LOW
+PB14 LED_ACTIVITY OUTPUT LOW
+define HAL_LED_ON 0
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU_CS CS
+PC7 BARO_CS CS
+

@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_NMEA_ENABLED
+
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
@@ -23,7 +27,11 @@ class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_NMEA(_state, _params);
+    }
 
 protected:
 
@@ -33,19 +41,22 @@ protected:
 
 private:
 
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     /// enum for handled messages
     enum sentence_types : uint8_t {
         SONAR_UNKNOWN = 0,
         SONAR_DBT,
         SONAR_DPT,
-        SONAR_MTW   // mean water temperature
+        SONAR_MTW,  // mean water temperature
+        SONAR_HDED, // hondex custom sonar message
     };
 
     // get a distance reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    bool get_temp(float &temp) override;
+    bool get_temp(float &temp) const override;
 
     uint16_t read_timeout_ms() const override { return 3000; }
 
@@ -71,3 +82,5 @@ private:
     sentence_types _sentence_type;          // the sentence type currently being processed
     bool _sentence_done;                    // true if this sentence has already been decoded
 };
+
+#endif  // AP_RANGEFINDER_NMEA_ENABLED

@@ -42,6 +42,9 @@
 #define PCA9685_MODE2_OUTNE1_BIT   (1 << 1)
 #define PCA9685_MODE2_OUTNE0_BIT   (1 << 0)
 
+#define PCA9685_LED_ON_H_ALWAYS_ON_BIT  (1 << 4)
+#define PCA9685_LED_OFF_H_ALWAYS_OFF_BIT (1 << 4)
+
 /*
  * Drift for internal oscillator
  * see: https://github.com/ArduPilot/ardupilot/commit/50459bdca0b5a1adf95
@@ -167,12 +170,49 @@ void RCOutput_PCA9685::disable_ch(uint8_t ch)
     write(ch, 0);
 }
 
+bool RCOutput_PCA9685::force_safety_on() {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
+        return false;
+    }
+    /* Shutdown before sleeping. */
+    _dev->write_register(PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
+
+    _dev->get_semaphore()->give();
+    return true;
+}
+
+void RCOutput_PCA9685::force_safety_off() {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
+        return;
+    }
+    /* Restart the device and enable auto-incremented write */
+    _dev->write_register(PCA9685_RA_MODE1,
+                         PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
+    _dev->get_semaphore()->give();
+}
+
 void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
         return;
     }
+    if (_is_gpio_mask & (1U << ch)) {
+        return;
+    }
+    write_raw(ch, period_us);
+}
 
+void RCOutput_PCA9685::write_gpio(uint8_t chan, bool active)
+{
+    if (chan >= (PWM_CHAN_COUNT - _channel_offset)) {
+        return;
+    }
+    _is_gpio_mask |= (1U << chan);
+    write_raw(chan, active);
+}
+
+void RCOutput_PCA9685::write_raw(uint8_t ch, uint16_t period_us) {
+    /* Common code used by both write() and write_gpio() */
     _pulses_buffer[ch] = period_us;
     _pending_write_mask |= (1U << ch);
 
@@ -219,10 +259,18 @@ void RCOutput_PCA9685::push()
         }
 
         uint8_t *d = &pwm_values.data[(ch - min_ch) * 4];
-        *d++ = 0;
-        *d++ = 0;
-        *d++ = length & 0xFF;
-        *d++ = length >> 8;
+
+        if (_is_gpio_mask & (1 << ch)) {
+            *d++ = 0;                                                // LEDn_ON_L
+            *d++ = period_us ? PCA9685_LED_ON_H_ALWAYS_ON_BIT : 0;   // LEDn_ON_H
+            *d++ = 0;                                                // LEDn_OFF_L
+            *d++ = period_us ? 0 : PCA9685_LED_OFF_H_ALWAYS_OFF_BIT; // LEDn_OFF_H
+        } else {
+            *d++ = 0;               // LEDn_ON_L
+            *d++ = 0;               // LEDn_ON_H
+            *d++ = length & 0xFF;   // LEDn_OFF_L
+            *d++ = length >> 8;     // LEDn_OFF_H
+        }
     }
 
     if (!_dev || !_dev->get_semaphore()->take_nonblocking()) {

@@ -7,7 +7,7 @@ static uint32_t bottom_detector_count = 0;
 static uint32_t surface_detector_count = 0;
 static float current_depth = 0;
 
-// checks if we have have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
+// checks if we have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
 // called at MAIN_LOOP_RATE
 // ToDo: doesn't need to be called this fast
 void Sub::update_surface_and_bottom_detector()
@@ -19,7 +19,7 @@ void Sub::update_surface_and_bottom_detector()
     }
 
     Vector3f velocity;
-    ahrs.get_velocity_NED(velocity);
+    UNUSED_RESULT(ahrs.get_velocity_NED(velocity));
 
     // check that we are not moving up or down
     bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;

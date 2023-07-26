@@ -14,16 +14,23 @@
  */
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
-#ifndef RANGEFINDER_MAX_INSTANCES
-#define RANGEFINDER_MAX_INSTANCES 10
+#ifndef RANGEFINDER_MAX_INSTANCES 
+  #if AP_RANGEFINDER_ENABLED
+  #define RANGEFINDER_MAX_INSTANCES 10
+  #else
+  #define RANGEFINDER_MAX_INSTANCES 1
+  #endif
 #endif
 
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
@@ -34,23 +41,18 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
-#ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
-#endif
-
 class AP_RangeFinder_Backend;
 
 class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
     //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
-    friend class AP_RangeFinder_UAVCAN;
+    friend class AP_RangeFinder_DroneCAN;
 public:
     RangeFinder();
 
     /* Do not allow copies */
-    RangeFinder(const RangeFinder &other) = delete;
-    RangeFinder &operator=(const RangeFinder&) = delete;
+    CLASS_NO_COPY(RangeFinder);
 
     // RangeFinder driver types
     enum class Type {
@@ -65,7 +67,7 @@ public:
         LWSER  = 8,
         BEBOP  = 9,
         MAVLink = 10,
-        ULANDING= 11,
+        USD1_Serial = 11,
         LEDDARONE = 12,
         MBSER  = 13,
         TRI2C  = 14,
@@ -88,7 +90,11 @@ public:
         GYUS42v2 = 31,
         MSP = 32,
         USD1_CAN = 33,
-        SITL = 100,
+        Benewake_CAN = 34,
+        TeraRanger_Serial = 35,
+        Lua_Scripting = 36,
+        NoopLoop_P = 37,
+        SIM = 100,
     };
 
     enum class Function {
@@ -107,7 +113,7 @@ public:
 
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
-        uint16_t distance_cm;           // distance: in cm
+        float distance_m;               // distance in meters
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
@@ -170,6 +176,7 @@ public:
     
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
+    float distance_orient(enum Rotation orientation) const;
     uint16_t distance_cm_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
@@ -203,16 +210,13 @@ private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
-    bool init_done;
     HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
-    void convert_params(void);
-
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
-    bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
+    bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;

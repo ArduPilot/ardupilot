@@ -25,23 +25,27 @@
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
+#endif
+
 #include <AP_Math/crc.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_Motors/AP_MotorsUGV.h>
+#include <AR_Motors/AP_MotorsUGV.h>
 #else
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug(fmt, args ...) do { if (debug_level) { gcs().send_text(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
+#define debug(fmt, args ...) do { if (debug_level) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
 
 // key for locking UART for exclusive use. This prevents any other writes from corrupting
 // the MSP protocol on hal.console
@@ -54,16 +58,18 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: MASK
     // @DisplayName: BLHeli Channel Bitmask
     // @Description: Enable of BLHeli pass-thru servo protocol support to specific channels. This mask is in addition to motors enabled using SERVO_BLH_AUTO (if any)
-    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
     // @DisplayName: BLHeli pass-thru auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("AUTO",  2, AP_BLHeli, channel_auto, 0),
 #endif
 
@@ -102,12 +108,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Description: When set to a non-zero value this overrides the output type for the output channels given by SERVO_BLH_MASK. This can be used to enable DShot on outputs that are not part of the multicopter motors group.
     // @Values: 0:None,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("OTYPE",  7, AP_BLHeli, output_type, 0),
 
     // @Param: PORT
     // @DisplayName: Control port
-    // @Description: This sets the serial port to use for blheli pass-thru
-    // @Values: 0:Console,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5
+    // @Description: This sets the mavlink channel to use for blheli pass-thru. The channel number is determined by the number of serial ports configured to use mavlink. So 0 is always the console, 1 is the next serial port using mavlink, 2 the next after that and so on.
+    // @Values: 0:Console,1:Mavlink Serial Channel1,2:Mavlink Serial Channel2,3:Mavlink Serial Channel3,4:Mavlink Serial Channel4,5:Mavlink Serial Channel5
     // @User: Advanced
     AP_GROUPINFO("PORT",  8, AP_BLHeli, control_port, 0),
 
@@ -116,28 +123,32 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Description: This allows calculation of true RPM from ESC's eRPM. The default is 14.
     // @Range: 1 127
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("POLES",  9, AP_BLHeli, motor_poles, 14),
 
     // @Param: 3DMASK
     // @DisplayName: BLHeli bitmask of 3D channels
     // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction
-    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("3DMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
 
 #ifdef HAL_WITH_BIDIR_DSHOT
     // @Param: BDMASK
     // @DisplayName: BLHeli bitmask of bi-directional dshot channels
     // @Description: Mask of channels which support bi-directional dshot. This is used for ESCs which have firmware that supports bi-directional dshot allowing fast rpm telemetry values to be returned for the harmonic notch.
-    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("BDMASK",  11, AP_BLHeli, channel_bidir_dshot_mask, 0),
 #endif
     // @Param: RVMASK
     // @DisplayName: BLHeli bitmask of reversed channels
     // @Description: Mask of channels which are reversed. This is used to configure ESCs in reversed mode
-    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("RVMASK",  12, AP_BLHeli, channel_reversed_mask, 0),
 
     AP_GROUPEND
@@ -439,6 +450,18 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 
+    case MSP_BATTERY_STATE: {
+        debug("MSP_BATTERY_STATE");
+        uint8_t buf[8];
+        buf[0] = 4; // cell count
+        putU16(&buf[1], 1500); // mAh
+        buf[3] = 16; // V
+        putU16(&buf[4], 1500); // mAh
+        putU16(&buf[6], 1); // A
+        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
+        break;
+    }
+
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
         uint8_t buf[10];
@@ -474,6 +497,7 @@ void AP_BLHeli::msp_process_command(void)
             // set the output to each motor
             uint8_t nmotors = msp.dataSize / 2;
             debug("MSP_SET_MOTOR %u", nmotors);
+            motors_disabled_mask = SRV_Channels::get_disabled_channel_mask();
             SRV_Channels::set_disabled_channel_mask(0xFFFF);
             motors_disabled = true;
             EXPECT_DELAY_MS(1000);
@@ -515,7 +539,15 @@ void AP_BLHeli::msp_process_command(void)
             serial_start_ms = 0;
             break;
         }
-        msp_send_reply(msp.cmdMSP, &n, 1);
+        // doing the serial setup here avoids delays when doing it on demand and makes
+        // BLHeliSuite considerably more reliable
+        EXPECT_DELAY_MS(1000);
+        if (!hal.rcout->serial_setup_output(motor_map[0], 19200, motor_mask)) {
+            msp_send_ack(ACK_D_GENERAL_ERROR);
+            break;
+        } else {
+            msp_send_reply(msp.cmdMSP, &n, 1);
+        }
         break;
     }
     default:
@@ -743,8 +775,9 @@ bool AP_BLHeli::BL_ConnectEx(void)
 
     blheli.interface_mode[blheli.chan] = 0;
 
-    uint16_t *devword = (uint16_t *)blheli.deviceInfo[blheli.chan];
-    switch (*devword) {
+    uint16_t devword;
+    memcpy(&devword, blheli.deviceInfo[blheli.chan], sizeof(devword));
+    switch (devword) {
     case 0x9307:
     case 0x930A:
     case 0x930F:
@@ -769,7 +802,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
             debug("Interface type imARM_BLB");
         } else {
             blheli.ack = ACK_D_GENERAL_ERROR;
-            debug("Unknown interface type 0x%04x", *devword);
+            debug("Unknown interface type 0x%04x", devword);
             break;
         }
     }
@@ -926,7 +959,7 @@ void AP_BLHeli::blheli_process_command(void)
         serial_start_ms = 0;
         if (motors_disabled) {
             motors_disabled = false;
-            SRV_Channels::set_disabled_channel_mask(0);            
+            SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
         }
         if (uart_locked) {
             debug("Unlocked UART");
@@ -1192,11 +1225,11 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
     debug_uart = hal.console;
     uint8_t saved_chan = blheli.chan;
     if (chan >= num_motors) {
-        gcs().send_text(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
         return;
     }
     blheli.chan = chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
     bool passed = false;
     for (uint8_t tries=0; tries<5; tries++) {
         EXPECT_DELAY_MS(3000);
@@ -1224,11 +1257,11 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
         }
     }
     hal.rcout->serial_end();
-    SRV_Channels::set_disabled_channel_mask(0);
+    SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
     motors_disabled = false;
     serial_start_ms = 0;
     blheli.chan = saved_chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
     debug_uart = nullptr;
 }
 
@@ -1257,11 +1290,13 @@ void AP_BLHeli::update(void)
         }
         if (motors_disabled) {
             motors_disabled = false;
-            SRV_Channels::set_disabled_channel_mask(0);
+            SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
         }
-        debug("Unlocked UART");
-        uart->lock_port(0, 0);
-        uart_locked = false;
+        if (uart != nullptr) {
+            debug("Unlocked UART");
+            uart->lock_port(0, 0);
+            uart_locked = false;
+        }
         if (motor_control_active) {
             for (uint8_t i = 0; i < num_motors; i++) {
                 bool reversed = ((1U<<motor_map[i]) & channel_reversible_mask.get()) != 0;
@@ -1280,13 +1315,15 @@ void AP_BLHeli::update(void)
 /*
   Initialize BLHeli, called by SRV_Channels::init()
   Used to install protocol handler
+  The motor mask of enabled motors can be passed in
  */
-void AP_BLHeli::init(void)
+void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 {
     initialised = true;
 
     run_test.set_and_notify(0);
 
+#if HAL_GCS_ENABLED
     // only install pass-thru protocol handler if either auto or the motor mask are set
     if (channel_mask.get() != 0 || channel_auto.get() != 0) {
         if (last_control_port > 0 && last_control_port != control_port) {
@@ -1300,6 +1337,7 @@ void AP_BLHeli::init(void)
             last_control_port = control_port;
         }
     }
+#endif // HAL_GCS_ENABLED
 
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -1308,53 +1346,43 @@ void AP_BLHeli::init(void)
     }
 #endif
 
-    uint16_t mask = uint16_t(channel_mask.get());
+    mask |= uint32_t(channel_mask.get());
 
     /*
       allow mode override - this makes it possible to use DShot for
       rovers and subs, plus for quadplane fwd motors
      */
-    AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
-    AP_Motors::pwm_type otype = AP_Motors::pwm_type(output_type.get());
-
+    // +1 converts from AP_Motors::pwm_type to AP_HAL::RCOutput::output_mode and saves doing a param conversion
+    // this is the only use of the param, but this is still a bit of a hack
+    const int16_t type = output_type.get() + 1;
+    if (otype == AP_HAL::RCOutput::MODE_PWM_NONE) {
+        otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
+    }
     switch (otype) {
-    case AP_Motors::PWM_TYPE_ONESHOT:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
-        break;
-    case AP_Motors::PWM_TYPE_ONESHOT125:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT125;
-        break;
-    case AP_Motors::PWM_TYPE_BRUSHED:
-        mode = AP_HAL::RCOutput::MODE_PWM_BRUSHED;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT150:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT150;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT300:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT300;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT600:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT600;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT1200:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT1200;
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
+    case AP_HAL::RCOutput::MODE_PWM_BRUSHED:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT1200:
+        if (mask) {
+            hal.rcout->set_output_mode(mask, otype);
+        }
         break;
     default:
         break;
     }
-    if (mask && mode != AP_HAL::RCOutput::MODE_PWM_NONE) {
-        hal.rcout->set_output_mode(mask, mode);
-    }
 
-    uint16_t digital_mask = 0;
+    uint32_t digital_mask = 0;
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
-    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+    if (mask && hal.rcout->is_dshot_protocol(otype)) {
         digital_mask = mask;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
@@ -1364,24 +1392,24 @@ void AP_BLHeli::init(void)
     AP_Motors *motors = AP::motors();
 #endif
     if (motors) {
-        uint16_t motormask = motors->get_motor_mask();
+        uint32_t motormask = motors->get_motor_mask();
         // set the rest of the digital channels
-        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+        if (motors->is_digital_pwm_type()) {
             digital_mask |= motormask;
         }
         mask |= motormask;
     }
 #endif
     // tell SRV_Channels about ESC capabilities
-    SRV_Channels::set_digital_outputs(digital_mask, uint16_t(channel_reversible_mask.get()) & digital_mask);
+    SRV_Channels::set_digital_outputs(digital_mask, uint32_t(channel_reversible_mask.get()) & digital_mask);
     // the dshot ESC type is required in order to send the reversed/reversible dshot command correctly
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
-    hal.rcout->set_reversible_mask(uint16_t(channel_reversible_mask.get()) & digital_mask);
-    hal.rcout->set_reversed_mask(uint16_t(channel_reversed_mask.get()) & digital_mask);
+    hal.rcout->set_reversible_mask(uint32_t(channel_reversible_mask.get()) & digital_mask);
+    hal.rcout->set_reversed_mask(uint32_t(channel_reversed_mask.get()) & digital_mask);
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
     hal.rcout->set_motor_poles(motor_poles);
-    hal.rcout->set_bidir_dshot_mask(uint16_t(channel_bidir_dshot_mask.get()) & digital_mask);
+    hal.rcout->set_bidir_dshot_mask(uint32_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
@@ -1391,7 +1419,7 @@ void AP_BLHeli::init(void)
         }
     }
     motor_mask = mask;
-    debug("ESC: %u motors mask=0x%04x", num_motors, mask);
+    debug("ESC: %u motors mask=0x%08lx", num_motors, mask);
 
     // check if we have a combination of reversable and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
@@ -1455,7 +1483,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                 trpm = trpm * 200 / motor_poles;
             }
         }
-        hal.console->printf("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
+        DEV_PRINTF("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
                             t.temperature_cdeg,
                             t.voltage,
@@ -1477,13 +1505,14 @@ void AP_BLHeli::log_bidir_telemetry(void)
         if (has_bidir_dshot(last_telem_esc)) {
             const uint8_t motor_idx = motor_map[last_telem_esc];
             uint16_t trpm = hal.rcout->get_erpm(motor_idx);
-            const float terr = hal.rcout->get_erpm_error_rate(motor_idx);
             if (trpm != 0xFFFF) {    // don't log invalid values as they are never used
                 trpm = trpm * 200 / motor_poles;
             }
 
-            last_log_ms[last_telem_esc] = now;
-            hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());
+            if (trpm > 0) {
+                last_log_ms[last_telem_esc] = now;
+                DEV_PRINTF("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
+            }
         }
     }
 
@@ -1494,7 +1523,7 @@ void AP_BLHeli::log_bidir_telemetry(void)
     // ask the next ESC for telemetry
     uint8_t idx_pos = last_telem_esc;
     uint8_t idx = (idx_pos + 1) % num_motors;
-    for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+    for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
         if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
             break;
         }
@@ -1563,12 +1592,12 @@ void AP_BLHeli::update_telemetry(void)
         // ask the next ESC for telemetry
         uint8_t idx_pos = last_telem_esc;
         uint8_t idx = (idx_pos + 1) % num_motors;
-        for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+        for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
             if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
                 break;
             }
         }
-        uint16_t mask = 1U << motor_map[idx];
+        uint32_t mask = 1U << motor_map[idx];
         if (SRV_Channels::have_digital_outputs(mask)) {
             hal.rcout->set_telem_request_mask(mask);
             last_telem_esc = idx;

@@ -1,5 +1,10 @@
 #include <AP_Winch/AP_Winch_Daiwa.h>
+
+#if AP_WINCH_DAIWA_ENABLED
+
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,10 +23,6 @@ void AP_Winch_Daiwa::init()
     // initialise serial connection to winch
     const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Winch, 0);
-    if (uart != nullptr) {
-        // always use baudrate of 115200
-        uart->begin(115200);
-    }
 }
 
 void AP_Winch_Daiwa::update()
@@ -184,7 +185,7 @@ void AP_Winch_Daiwa::read_data_from_winch()
 void AP_Winch_Daiwa::control_winch()
 {
     const uint32_t now_ms = AP_HAL::millis();
-    float dt = (now_ms - control_update_ms) / 1000.0f;
+    float dt = (now_ms - control_update_ms) * 0.001f;
     if (dt > 1.0f) {
         dt = 0.0f;
     }
@@ -214,9 +215,11 @@ void AP_Winch_Daiwa::control_winch()
     const float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
 
     // use linear interpolation to calculate output to move winch at desired rate
-    int16_t scaled_output = 0;
+    float scaled_output = 0;
     if (!is_zero(rate_limited)) {
         scaled_output = linear_interpolate(output_dz, 1000, fabsf(rate_limited), 0, config.rate_max) * (is_positive(rate_limited) ? 1.0f : -1.0f);
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
 }
+
+#endif  // AP_WINCH_DAIWA_ENABLED

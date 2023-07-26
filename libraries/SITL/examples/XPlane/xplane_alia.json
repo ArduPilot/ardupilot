@@ -1,0 +1,44 @@
+# XPlane DREF map file for Alii quadplane
+
+{
+    "settings" : { "debug" : 0 },
+
+    "sim/operation/override/override_engines" : { "type" : "fixed", "value" : 1 },
+    "sim/operation/override/override_control_surfaces" : { "type" : "fixed", "value" : 1 },
+
+    # forward throttle
+    "sim/flightmodel/engine/ENGN_TRQ[4]" : { "type" : "range", "range" : 3000, "channel" : 3 },
+
+    # VTOL motors
+    "sim/flightmodel/engine/ENGN_TRQ[0]" : { "type" : "range", "range" : 4000, "channel" : 5 },
+    "sim/flightmodel/engine/ENGN_TRQ[1]" : { "type" : "range", "range" : 4000, "channel" : 7 },
+    "sim/flightmodel/engine/ENGN_TRQ[2]" : { "type" : "range", "range" : 4000, "channel" : 6 },
+    "sim/flightmodel/engine/ENGN_TRQ[3]" : { "type" : "range", "range" : 4000, "channel" : 8 },
+
+    # ailerons
+    "sim/flightmodel2/wing/aileron1_deg[2]" : { "type" : "angle", "range" : 30, "channel" : 1 }, # left inner
+    "sim/flightmodel2/wing/aileron1_deg[3]" : { "type" : "angle", "range" : -30, "channel" : 9 }, # right inner
+    "sim/flightmodel2/wing/aileron2_deg[4]" : { "type" : "angle", "range" : 30, "channel" : 1 }, # left outer
+    "sim/flightmodel2/wing/aileron2_deg[5]" : { "type" : "angle", "range" : -30, "channel" : 9 }, # right outer
+
+    # elevators
+    "sim/flightmodel2/wing/elevator1_deg[8]" : { "type" : "angle", "range" : -30, "channel" : 2 }, # left inner
+    "sim/flightmodel2/wing/elevator1_deg[9]" : { "type" : "angle", "range" : -30, "channel" : 2 }, # right inner
+    "sim/flightmodel2/wing/elevator2_deg[8]" : { "type" : "angle", "range" : -30, "channel" : 2 }, # left outer
+    "sim/flightmodel2/wing/elevator2_deg[9]" : { "type" : "angle", "range" : -30, "channel" : 2 }, # right outer
+
+    # rudders
+    "sim/flightmodel2/wing/rudder1_deg[10]" : { "type" : "angle", "range" : -30, "channel" : 4 }, # left
+    "sim/flightmodel2/wing/rudder2_deg[11]" : { "type" : "angle", "range" : 30, "channel" : 4 }, # right
+
+    # joystick input
+    "axis6" : { "type" : "joyaxis", "channel" : 1, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis5" : { "type" : "joyaxis", "channel" : 2, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis4" : { "type" : "joyaxis", "channel" : 3, "input_min" : 0.8, "input_max" : 0.2 },
+    "axis2" : { "type" : "joyaxis", "channel" : 4, "input_min" : 0.2, "input_max" : 0.9 },
+    "axis3" : { "type" : "joyaxis", "channel" : 5, "input_min" : 0.2, "input_max" : 0.9 },
+    "button1" : { "channel" : 6, "mask" : 1 },
+    "button2" : { "channel" : 7, "mask" : 2 },
+    "button3" : { "type" : "joybutton", "channel" : 8, "mask" : 24 },
+    "button4" : { "type" : "joybutton", "channel" : 9, "mask" : 4 }
+}

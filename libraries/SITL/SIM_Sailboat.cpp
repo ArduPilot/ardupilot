@@ -22,7 +22,6 @@
 
 #include "SIM_Sailboat.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -185,11 +184,14 @@ void Sailboat::update(const struct sitl_input &input)
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
     // Note than the SITL wind direction is defined as the direction the wind is travelling to
     // This is accounted for in these calculations
-    Vector3f wind_apparent_ef = wind_ef + velocity_ef;
+    Vector3f wind_apparent_ef = velocity_ef - wind_ef;
     const float wind_apparent_dir_ef = degrees(atan2f(wind_apparent_ef.y, wind_apparent_ef.x));
     const float wind_apparent_speed = safe_sqrt(sq(wind_apparent_ef.x)+sq(wind_apparent_ef.y));
 
-    const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(AP::ahrs().yaw));
+    float roll, pitch, yaw;
+    dcm.to_euler(&roll, &pitch, &yaw);
+
+    const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(yaw));
 
     // set RPM and airspeed from wind speed, allows to test RPM and Airspeed wind vane back end in SITL
     rpm[0] = wind_apparent_speed;

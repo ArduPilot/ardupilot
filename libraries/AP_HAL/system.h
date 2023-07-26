@@ -12,6 +12,7 @@ void init();
 
 void panic(const char *errormsg, ...) FMT_PRINTF(1, 2) NORETURN;
 
+uint16_t micros16();
 uint32_t micros();
 uint32_t millis();
 uint16_t millis16();

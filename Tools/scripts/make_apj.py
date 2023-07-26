@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 Create an apj file from a *.bin binary firmware
 
@@ -27,7 +27,8 @@ d = {
     "summary": args.bin,
     "version": "0.1",
     "image_size": len(img),
-    "board_revision": 0
+    "board_revision": 0,
+    "signed_firmware": False,
 }
 
 f = open(args.apj, "w")

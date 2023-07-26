@@ -1,0 +1,3 @@
+include ../MatekL431/hwdef-bl.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-DShot"

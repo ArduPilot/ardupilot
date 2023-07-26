@@ -1,0 +1,361 @@
+#   trajectory tracking aerobatic control
+#   See README.md for usage
+#   Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
+#   assistance from Paul Riseborough, testing by Henry Wurzburg
+
+# To use this schedule put the file on your microSD in the root directory 
+# (not the APM directory) with name trick95.txt The schedule can then be 
+# used in auto missions or in TRIKn_ID commands for tricks on a switch
+
+# This schedule is set up to be flown Left to Right. The schedule starts downwind - so 
+# the mission should be set up with WP's lined up on the flight line (150m out from the 
+# pilot), and the mission should be triggered when the plane gets to the center marker 
+# heading RIGHT to LEFT. Schedule direction is reversed with aerom_scale = -1 (and 
+# remember to reverse the mission WP's as well). Note the required height is greater 
+# than 400 feet - so only fly at an airfield where there is a 1500 foot clearance
+
+# This is an example of a F3A F25 schedule. Some manouvers are flown over the center
+# line of the runway. Please understand the behaviour by flying in SITL before flying this
+# schedule with a real aircraft! Your aircraft requires adequate performance to complete 
+# the schedule
+
+name: F3AF25
+
+function half_reverse_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("half_reverse_cuban_eight", {
+         { path_vertical_arc(r,  45),   roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 225),  roll_angle(0) },
+   })
+end
+
+function f25_1(radius, height, width, arg4) -- square loop on corner
+   local l = ((height - (2 * radius)) * math.sin(math.rad(45)))     -- CHECK
+   return make_paths("f25_1", {
+            { path_vertical_arc(radius, 45),         roll_angle(90) },
+            { path_straight(l),                      roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(180) },  
+            { path_straight(l),                      roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(-180) },  
+            { path_straight(l),                      roll_angle(0) },
+            { path_vertical_arc(radius, 90),         roll_angle(180) }, 
+            { path_straight(l),                      roll_angle(0) },
+            { path_vertical_arc(radius, 45),         roll_angle(-90) , roll_ref=180 },                  
+      })
+end
+
+function f25_2(radius, height, arg3, arg4)  -- figure p
+   local l = (height - (2 * radius))  
+   return make_paths("f25_2", {
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l/20),                         roll_angle(0) },
+            { path_straight(l* 6/10),                      roll_angle(360) },
+            { path_straight(l* 3/10),                      roll_angle(-180) },
+            { path_straight(l/20),                         roll_angle(0) },
+            { path_vertical_arc(-radius, 270),             roll_angle(0) },                     
+      })
+end
+
+function f25_3(length, arg2, arg3, arg4)   -- roll combination
+   return make_paths("f25_3", {
+            { path_straight(length/13),       roll_angle(90) },
+            { path_straight(length/13),       roll_angle(0) },
+            { path_straight(length/13),       roll_angle(90) },
+            { path_straight(length/13),       roll_angle(-90) },
+            { path_straight(length/13),       roll_angle(0) },
+            { path_straight(length/13),       roll_angle(-90) }, 
+            { path_straight(length/13),       roll_angle(0) },
+            { path_straight(length/13),       roll_angle(-90) },  
+            { path_straight(length/13),       roll_angle(0) },
+            { path_straight(length/13),       roll_angle(-90) },             
+            { path_straight(length/13),       roll_angle(90) },
+            { path_straight(length/13),       roll_angle(0) },
+            { path_straight(length/13),       roll_angle(90) },            
+      })
+end
+
+function f25_4(radius, arg2, arg3, arg4)   -- half loop                            
+   return make_paths("f25_4", {
+            { path_vertical_arc(radius, 180),          roll_angle(180) },                               
+      })
+end
+
+function f25_5(radius, height, arg3, arg4)   -- reverse humpty
+   local l = height - (2 * radius)
+   return make_paths("f25_5", {
+            { path_vertical_arc(-radius, 90),          roll_angle(0) },
+            { path_straight(l/8),                      roll_angle(0) },
+            { path_straight(l*6/8),                    roll_angle(180) },
+            { path_straight(l/8),                      roll_angle(0) },
+            { path_vertical_arc(radius, 180),          roll_angle(180) },    
+            { path_straight(l/8),                      roll_angle(0) },
+            { path_straight(l*6/8),                    roll_angle(180) },     -- 540
+            { path_straight(l/8),                      roll_angle(0) },
+            { path_vertical_arc(-radius, 90),          roll_angle(0) , roll_ref=180  },            
+      })
+end
+
+function f25_6(radius, height, arg3, arg4)   -- spin
+   local l = (height - (2 * radius))
+   return make_paths("f25_6", {
+         { path_vertical_arc(-radius, 90),             roll_angle(0) },
+         { path_straight(l/5),                         roll_angle(0) },
+         { path_straight(l/5),                         roll_angle(360) },
+         { path_straight(l/5),                         roll_angle(0) },
+         { path_straight(l/5),                         roll_angle(180) },
+         { path_straight(l/5),                         roll_angle(0) }, 
+         { path_vertical_arc(-radius, 90),             roll_angle(0) },            
+      })
+end
+
+function f25_7(radius, arg2, arg3, arg4) -- rolling circle
+   return make_paths("f25_7", {
+         { path_horizontal_arc(radius, 90),       roll_angle(180),     thr_boost=true },
+         { path_horizontal_arc(radius, 180),      roll_angle(-180),    thr_boost=true },   
+         { path_horizontal_arc(radius, 90),       roll_angle(180),     thr_boost=true },
+         { path_straight(1),                      roll_angle(0),       roll_ref=180 },          
+      })
+end
+
+function f25_8(radius, height, arg3, arg4)  -- sharks tooth
+   local l = height - (2 * radius)       -- WRONG
+   local angle_l = l * 1.9
+   return make_paths("f25_8", {
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l * 1/6),                      roll_angle(0) },
+            { path_straight(l * 4/6),                      roll_angle(360) },
+            { path_straight(l * 1/6),                      roll_angle(0) },
+            { path_vertical_arc(radius, 135),              roll_angle(0) },    
+            { path_straight(angle_l/4),                    roll_angle(0) },
+            { path_straight(angle_l/4),                    roll_angle(180) },
+            { path_straight(angle_l/4),                    roll_angle(-180) },
+            { path_straight(angle_l/4),                    roll_angle(0) },
+            { path_vertical_arc(-radius, 45),              roll_angle(0), roll_ref=180 },                   
+      })
+end
+
+function f25_9(radius, height, arg3, arg4)   -- vertical square eight
+   local l = (height - (4 * radius)) / 2
+   return make_paths("f25_9", {
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(180) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(360) },
+            { path_straight(l/3),                          roll_angle(0) },            
+            { path_vertical_arc(-radius, 90),              roll_angle(0) },    
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(-90) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(-radius, 90),              roll_angle(0) }, 
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(360) },
+            { path_straight(l/3),                          roll_angle(0) }, 
+            { path_vertical_arc(-radius, 90),              roll_angle(0) },   
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(-90) },
+            { path_straight(l/3),                          roll_angle(0) },    
+            { path_vertical_arc(-radius, 90),              roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(360) },
+            { path_straight(l/3),                          roll_angle(0) },            
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(180) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(radius, 90),               roll_angle(0), roll_ref=180  },                                      
+      })
+end
+
+function f25_10(radius, height, arg3, arg4)   -- humpty    
+   local l = height - (2 * radius)                         
+   return make_paths("f25_10", {
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_straight(l/3),                          roll_angle(180) },
+            { path_straight(l/3),                          roll_angle(0) },
+            { path_vertical_arc(-radius, 180),             roll_angle(0) },
+            { path_straight(l/8),                          roll_angle(0) },
+            { path_straight(l * 6/8),                      roll_angle(540) },
+            { path_straight(l/8),                          roll_angle(0) },
+            { path_vertical_arc(-radius, 90),              roll_angle(0), roll_ref=180  },                             
+      })
+end
+
+function f25_11(radius, height, arg3, arg4)   -- triangle
+   local h1 = radius * math.sin(math.rad(45))
+   local h2 = (2 * radius) - (radius * math.cos(math.rad(45)))
+   local h3 = height - (2 * radius)
+   local side = h3 / math.cos(math.rad(45))
+   --local base = (h3 + (2 * (radius - radius * math.cos(math.rad(45))))) - (2 * radius)   
+   local base = (2 * (h3 + radius)) - 2 * radius                                   
+   return make_paths("f25_11", {
+            { path_straight(base / 2),                        roll_angle(0) },        
+            { path_vertical_arc(radius, 135) ,                roll_angle(-90) },
+            { path_straight(side/3),                          roll_angle(0) },
+            { path_straight(side/3),                          roll_angle(180) },
+            { path_straight(side/3),                          roll_angle(0) },
+            { path_vertical_arc(radius, 90),                  roll_angle(180) },
+            { path_straight(side/3),                          roll_angle(0) },
+            { path_straight(side/3),                          roll_angle(180) },
+            { path_straight(side/3),                          roll_angle(0) },
+            { path_vertical_arc(radius, 135),                 roll_angle(-90)  },          
+      })
+end
+
+function f25_12(radius, height, arg3, arg4)   -- half eight sided loop
+   local l = (height - 2*radius) / ((2*math.sin(math.rad(45))) + 1)
+   return make_paths("f25_12", {
+            { path_vertical_arc(radius, 45),       roll_angle(0) },
+            { path_straight(l/3),                  roll_angle(0) },
+            { path_straight(l/3),                  roll_angle(-90) },
+            { path_straight(l/3),                  roll_angle(0) },
+            { path_vertical_arc(radius, 45),       roll_angle(0) },
+            { path_straight(l),                    roll_angle(0) },
+            { path_vertical_arc(radius, 45),       roll_angle(0) },            
+            { path_straight(l/3),                  roll_angle(0) },
+            { path_straight(l/3),                  roll_angle(90) },
+            { path_straight(l/3),                  roll_angle(0) },
+            { path_vertical_arc(radius, 45),       roll_angle(0) , roll_ref=180 },             
+      })
+end
+
+function f25_13(radius, height, arg3, arg4)  -- 45 down
+   local l = (height - (2 * radius) + (2 * radius * math.cos(math.rad(45)))) / math.cos(math.rad(45))
+   return make_paths("f25_13", {
+            { path_vertical_arc(-radius, 45),        roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/6),                    roll_angle(90) },
+            { path_straight(l/6),                    roll_angle(-90) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_vertical_arc(radius, 45),         roll_angle(0) },           
+      })
+end
+
+function f25_14(radius, height, arg3, arg4)   -- half square
+   local l = height - (2 * radius)
+   return make_paths("f25_14", {
+         { path_vertical_arc(radius, 90),              roll_angle(0) },
+         { path_straight(l/4),                         roll_angle(0) },
+         { path_straight(l/4),                         roll_angle(360) },
+         { path_straight(l/4),                         roll_angle(-180) },
+         { path_straight(l/4),                         roll_angle(0) }, 
+         { path_vertical_arc(radius, 90),              roll_angle(0) },
+   })
+end                            
+
+function f25_15(radius, arg2, arg3, arg4)   -- down loop
+   return make_paths("f25_15", {
+            { path_vertical_arc(-radius, 90),       roll_angle(-90) },
+            { path_vertical_arc(-radius, 90),       roll_angle(0) },     -- needs a snap in here
+            { path_vertical_arc(-radius, 90),       roll_angle(0) },              
+            { path_vertical_arc(-radius, 90),       roll_angle(90) }, 
+      })
+end
+
+function f25_16(radius, arg2, arg3, arg4)   -- half loop
+   return make_paths("f25_16", {           
+            { path_straight(radius/2),               roll_angle(90) },      
+            { path_vertical_arc(-radius, 180),       roll_angle(0) },
+            { path_straight(radius/2),               roll_angle(90) },            
+      })
+end
+
+function f25_17(radius, height, arg3, arg4)   -- stall turn
+   local l = height - 2 * radius
+   return make_paths("f25_17", {
+            { path_straight(radius/2),               roll_angle(180) }, 
+            { path_straight(radius/2),               roll_angle(0) }, 
+            { path_vertical_arc(radius, 90),         roll_angle(0) },
+            { path_straight(l),                      roll_angle(0) },
+            { path_vertical_arc(radius, 180),        roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(0) },
+            { path_straight(l/3),                    roll_angle(360) },
+            { path_straight(l/3),                    roll_angle(0) },            
+            { path_vertical_arc(radius, 90),         roll_angle(0) }, 
+            { path_straight(radius/2),               roll_angle(0) }, 
+            { path_straight(radius/2),               roll_angle(180) },            
+            
+      })
+end
+
+straight_roll 80
+half_reverse_cuban_eight 60
+
+align_center
+message: LooponCorner
+f25_1 50 200
+
+align_box 1
+message: FigureP
+f25_2 70 200
+
+align_center
+message: RollCombination
+thr_boost: true
+f25_3 200
+
+align_box 1
+message: HalfLoop
+f25_4 70
+
+align_center
+message: InvertedHumpty
+f25_5 40 200
+         
+align_box 1
+message: Spin
+f25_6 40 200
+
+align_center   
+message: RollingCircle
+f25_7 100
+
+align_box 1
+message: SharksTooth     
+f25_8 30 190
+
+align_center
+message: VerticalSquareEight
+f25_9 40 200
+
+align_box 1
+message: Humpty
+f25_10 40 200
+
+align_center
+message: Triangle
+f25_11 40 200
+
+align_box 1
+message: HalfEightSidedLoop
+f25_12 40 200
+          
+align_center 
+message: 45Down
+f25_13 40 200 
+
+align_box 1  
+message: HalfSquareLoop
+f25_14 40 200
+
+align_center
+message: DownLoop
+f25_15 100
+
+align_box 1
+message: HalfLoop
+f25_16 100
+
+align_center
+message: Stall Turn      
+f25_17 40 200
+
+straight_roll 100
+

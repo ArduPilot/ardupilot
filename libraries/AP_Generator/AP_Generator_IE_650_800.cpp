@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_650_800.h"
 
-#if GENERATOR_ENABLED
+#if AP_GENERATOR_IE650_800_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,7 +40,7 @@ void AP_Generator_IE_650_800::assign_measurements(const uint32_t now)
     _err_code = _parsed.err_code;
 
     // Update variables to be returned to front end
-    _fuel_remain_pct = _parsed.tank_pct * 0.01;
+    _fuel_remaining = _parsed.tank_pct * 0.01;
 
     // Invert bat remaining percent to match AP_BattMonitor convention
     _consumed_mah = 100.0f - _parsed.battery_pct;
@@ -61,7 +61,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
 
     switch (_term_number) {
         case 1:
-            _parsed.tank_pct = atof(_term);
+            _parsed.tank_pct = strtof(_term, NULL);
             // Out of range values
             if (_parsed.tank_pct > 100.0f || _parsed.tank_pct < 0.0f) {
                 _data_valid = false;
@@ -69,7 +69,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
             break;
 
         case 2:
-            _parsed.battery_pct = atof(_term);
+            _parsed.battery_pct = strtof(_term, NULL);
             // Out of range values
             if (_parsed.battery_pct > 100.0f || _parsed.battery_pct < 0.0f) {
                 _data_valid = false;
@@ -122,4 +122,5 @@ AP_BattMonitor::Failsafe AP_Generator_IE_650_800::update_failsafes() const
     return AP_BattMonitor::Failsafe::None;
 }
 
-#endif
+#endif  // AP_GENERATOR_IE650_800_ENABLED
+

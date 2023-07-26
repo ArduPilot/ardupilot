@@ -14,8 +14,18 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 1
+#endif
+
+#if HAL_SCHEDULER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
+#include <hal.h>
 #include "AP_HAL_ChibiOS.h"
 #include "Scheduler.h"
 #include "Util.h"
@@ -39,6 +49,8 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
+#include <AP_Common/ExpandingString.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -142,7 +154,8 @@ void Scheduler::delay_microseconds(uint16_t usec)
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
     }
-    chThdSleep(ticks); //Suspends Thread for desired microseconds
+    ticks = MIN(TIME_MAX_INTERVAL, ticks);
+    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*
@@ -224,7 +237,7 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
     } else {
-        hal.console->printf("Out of timer processes\n");
+        DEV_PRINTF("Out of timer processes\n");
     }
     chBSemSignal(&_timer_semaphore);
 }
@@ -243,7 +256,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
-        hal.console->printf("Out of IO processes\n");
+        DEV_PRINTF("Out of IO processes\n");
     }
     chBSemSignal(&_io_semaphore);
 }
@@ -274,7 +287,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     AP::FS().unmount();
 #endif
 
-#if !defined(NO_FASTBOOT)
+#if AP_FASTBOOT_ENABLED
     // setup RTC for fast reboot
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
@@ -408,47 +421,72 @@ void Scheduler::_monitor_thread(void *arg)
 #if HAL_LOGGING_ENABLED
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
-                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
-                                   AP_HAL::micros64(),
-                                   loop_delay,
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.internal_error_last_line,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.spi_count,
-                                   pd.i2c_count);
-                }
+                const struct log_MON mon{
+                    LOG_PACKET_HEADER_INIT(LOG_MON_MSG),
+                    time_us               : AP_HAL::micros64(),
+                    loop_delay            : loop_delay,
+                    current_task          : pd.scheduler_task,
+                    internal_error_mask   : pd.internal_errors,
+                    internal_error_count  : pd.internal_error_count,
+                    internal_error_line   : pd.internal_error_last_line,
+                    mavmsg                : pd.last_mavlink_msgid,
+                    mavcmd                : pd.last_mavlink_cmd,
+                    semline               : pd.semaphore_line,
+                    spicnt                : pd.spi_count,
+                    i2ccnt                : pd.i2c_count
+                };
+                AP::logger().WriteCriticalBlock(&mon, sizeof(mon));
+            }
 #endif
         }
         if (loop_delay >= 500 && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
+            AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
+            /*
+              if we are armed and get this condition then it is likely
+              a lock ordering deadlock. If the main thread is waiting
+              on a mutex then we try to force release the mutex from
+              the thread that is holding it.
+            */
+            try_force_mutex();
         }
+
+#if AP_CRASHDUMP_ENABLED
+        if (loop_delay >= 1800 && using_watchdog) {
+            // we are about to watchdog, better to trigger a hardfault
+            // now and get a crash dump file
+            void *ptr = (void*)0xE000FFFF;
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *)ptr;
+            gptr();
+        }
+#endif
 
 #if HAL_LOGGING_ENABLED
     if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
         log_wd_counter = 0;
         // log watchdog message once a second
         const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIHHHHHHHIBIIn",
-                                   AP_HAL::micros64(),
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.internal_error_last_line,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.fault_line,
-                                   pd.fault_type,
-                                   pd.fault_addr,
-                                   pd.fault_thd_prio,
-                                   pd.fault_icsr,
-                                   pd.fault_lr,
-                                   pd.thread_name4);
+        struct log_WDOG wdog{
+            LOG_PACKET_HEADER_INIT(LOG_WDOG_MSG),
+            time_us                  : AP_HAL::micros64(),
+            scheduler_task           : pd.scheduler_task,
+            internal_errors          : pd.internal_errors,
+            internal_error_count     : pd.internal_error_count,
+            internal_error_last_line : pd.internal_error_last_line,
+            last_mavlink_msgid       : pd.last_mavlink_msgid,
+            last_mavlink_cmd         : pd.last_mavlink_cmd,
+            semaphore_line           : pd.semaphore_line,
+            fault_line               : pd.fault_line,
+            fault_type               : pd.fault_type,
+            fault_addr               : pd.fault_addr,
+            fault_thd_prio           : pd.fault_thd_prio,
+            fault_icsr               : pd.fault_icsr,
+            fault_lr                 : pd.fault_lr
+        };
+        memcpy(wdog.thread_name4, pd.thread_name4, ARRAY_SIZE(wdog.thread_name4));
+
+        AP::logger().WriteCriticalBlock(&wdog, sizeof(wdog));
     }
 #endif // HAL_LOGGING_ENABLED
 
@@ -556,10 +594,13 @@ void Scheduler::check_low_memory_is_zero()
     // we can't do address 0, but can check next 3 bytes
     const uint8_t *addr0 = (const uint8_t *)0;
     for (uint8_t i=1; i<4; i++) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
         if (addr0[i] != 0) {
             AP_memory_guard_error(1023);
             break;
         }
+#pragma GCC diagnostic pop
     }
 }
 #endif // STM32H7
@@ -641,6 +682,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_CAN, APM_CAN_PRIORITY},
         { PRIORITY_TIMER, APM_TIMER_PRIORITY},
         { PRIORITY_RCOUT, APM_RCOUT_PRIORITY},
+        { PRIORITY_LED, APM_LED_PRIORITY},
         { PRIORITY_RCIN, APM_RCIN_PRIORITY},
         { PRIORITY_IO, APM_IO_PRIORITY},
         { PRIORITY_UART, APM_UART_PRIORITY},
@@ -742,7 +784,22 @@ void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+    ext_watchdog_pat(last_watchdog_pat_ms);
+#endif
 }
+
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+// toggle the external watchdog gpio pin
+void Scheduler::ext_watchdog_pat(uint32_t now_ms)
+{
+    // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
+    if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
+        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        last_ext_watchdog_ms = now_ms;
+    }
+}
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*
@@ -776,5 +833,44 @@ void Scheduler::check_stack_free(void)
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
-
 #endif // CH_CFG_USE_DYNAMIC
+
+/*
+  try to avoid watchdog during a locking deadlock by force releasing a
+  mutex that is blocking the main thread
+ */
+void Scheduler::try_force_mutex(void)
+{
+#if HAL_LOGGING_ENABLED
+    chSysLock();
+    thread_t *main_thread = get_main_thread();
+
+    if (main_thread == nullptr || main_thread->state != CH_STATE_WTMTX) {
+        chSysUnlock();
+        return;
+    }
+
+    mutex_t *wtmtx = main_thread->u.wtmtxp;
+    if (wtmtx == nullptr || wtmtx->owner == nullptr) {
+        chSysUnlock();
+        return;
+    }
+    char thdname[17] {};
+    uint16_t sem_line = hal.util->persistent_data.semaphore_line;
+    strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
+
+    // we will force release the lock
+    chMtxForceReleaseS(wtmtx);
+    chSysUnlock();
+
+    // log a DLCK message with information on the deadlock we have avoided
+    AP::logger().WriteCritical("DLCK", "TimeUS,SemLine,ThdName,MtxP", "QHNI",
+                               AP_HAL::micros64(),
+                               sem_line,
+                               thdname,
+                               unsigned(wtmtx));
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "CRITICAL Deadlock %u %s %p", sem_line, thdname, wtmtx);
+#endif
+}
+
+#endif  // HAL_SCHEDULER_ENABLED

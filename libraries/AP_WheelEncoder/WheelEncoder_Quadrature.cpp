@@ -21,12 +21,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// constructor
-AP_WheelEncoder_Quadrature::AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state) :
-    AP_WheelEncoder_Backend(frontend, instance, state)
-{
-}
-
 // check if pin has changed and initialise gpio event callback
 void AP_WheelEncoder_Quadrature::update_pin(uint8_t &pin,
                                             uint8_t new_pin,
@@ -144,5 +138,5 @@ void AP_WheelEncoder_Quadrature::irq_handler(uint8_t pin,
     update_phase_and_error_count();
 
     // record update time
-    irq_state.last_reading_ms = timestamp;
+    irq_state.last_reading_ms = timestamp * 1e-3f;
 }

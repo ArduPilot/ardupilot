@@ -1,8 +1,11 @@
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_SITL_ENABLED
+
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <AP_Math/AP_Math.h>
 #include <SITL/SITL.h>
 
 /*
@@ -32,11 +35,15 @@ public:
     // return true if there is a valid los measurement available
     bool have_los_meas() override;
 
+    // returns distance to target in meters (0 means distance is not known)
+    float distance_to_target() override { return _distance_to_target; }
+
 private:
-    SITL::SITL          *_sitl;                 // sitl instance pointer
+    SITL::SIM           *_sitl;                 // sitl instance pointer
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
+    float               _distance_to_target;    // distance to target in meters
 };
 
-#endif
+#endif  // AC_PRECLAND_SITL_ENABLED

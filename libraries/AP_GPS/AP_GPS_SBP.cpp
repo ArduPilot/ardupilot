@@ -20,14 +20,17 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBP.h"
 #include <AP_Logger/AP_Logger.h>
 
+#if AP_GPS_SBP_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 #define SBP_DEBUGGING 1
-#define SBP_HW_LOGGING 1
+#define SBP_HW_LOGGING HAL_LOGGING_ENABLED
 
 #define SBP_TIMEOUT_HEATBEAT  4000
 #define SBP_TIMEOUT_PVT       500
@@ -97,6 +100,9 @@ AP_GPS_SBP::_sbp_process()
 
     while (port->available() > 0) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
 
@@ -225,7 +231,9 @@ AP_GPS_SBP::_sbp_process_message() {
             break;
     }
 
+#if SBP_HW_LOGGING
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
+#endif
 }
 
 bool
@@ -265,10 +273,7 @@ AP_GPS_SBP::_attempt_state_update()
         state.velocity[2]       = (float)(last_vel_ned.d * 1.0e-3);
         state.have_vertical_velocity = true;
 
-        float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
-        state.ground_speed = safe_sqrt(ground_vector_sq);
-
-        state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+        velocity_to_speed_course(state);
 
         // Update position state
 
@@ -289,7 +294,9 @@ AP_GPS_SBP::_attempt_state_update()
         last_full_update_cpu_ms = now;
         state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
+#if SBP_HW_LOGGING
         logging_log_full_update();
+#endif
         ret = true;
 
     } else if (now - last_full_update_cpu_ms > SBP_TIMEOUT_PVT) {
@@ -456,3 +463,4 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 };
 
 #endif // SBP_HW_LOGGING
+#endif // AP_GPS_SBP_ENABLED

@@ -1,0 +1,80 @@
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1016
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID 140
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2 USART3 UART7
+
+PE12 LED_BOOTLOADER OUTPUT HIGH OPENDRAIN
+
+# telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT HIGH
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PC1 MAG_CS CS
+PC2 MPU_CS CS
+PC13 GYRO_EXT_CS CS
+PC14 BARO_EXT_CS CS
+PC15 ACCEL_EXT_CS CS
+PD7 BARO_CS CS
+PE4 MPU_EXT_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW
+
+# disable peripheral and sensor power in the bootloader
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1
+
+# enable flashing from SD card:
+include sdcard.inc
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1

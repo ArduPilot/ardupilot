@@ -90,16 +90,16 @@ bool Plane::allow_reverse_thrust(void) const
     case Mode::Number::TAKEOFF:
         allow = false;
         break;
-case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::FLY_BY_WIRE_A:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWA);
         break;
-case Mode::Number::ACRO:
+    case Mode::Number::ACRO:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_ACRO);
         break;
-case Mode::Number::STABILIZE:
+    case Mode::Number::STABILIZE:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_STABILIZE);
         break;
-case Mode::Number::THERMAL:
+    case Mode::Number::THERMAL:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_THERMAL);
         break;
     default:
@@ -123,9 +123,9 @@ bool Plane::have_reverse_thrust(void) const
 /*
   return control in from the radio throttle channel.
  */
-int16_t Plane::get_throttle_input(bool no_deadzone) const
+float Plane::get_throttle_input(bool no_deadzone) const
 {
-    int16_t ret;
+    float ret;
     if (no_deadzone) {
         ret = channel_throttle->get_control_in_zero_dz();
     } else {
@@ -134,6 +134,23 @@ int16_t Plane::get_throttle_input(bool no_deadzone) const
     if (reversed_throttle) {
         // RC option for reverse throttle has been set
         ret = -ret;
+    }
+    return ret;
+}
+
+/*
+  return control in from the radio throttle channel with curve giving mid-stick equal to TRIM_THROTTLE.
+ */
+float Plane::get_adjusted_throttle_input(bool no_deadzone) const
+{
+    if ((plane.channel_throttle->get_type() != RC_Channel::ControlType::RANGE) ||
+        (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)) == 0) {
+       return  get_throttle_input(no_deadzone);
+    }
+    float ret = channel_throttle->get_range() * throttle_curve(aparm.throttle_cruise * 0.01, 0, 0.5 + 0.5*channel_throttle->norm_input());
+    if (reversed_throttle) {
+        // RC option for reverse throttle has been set
+        return -ret;
     }
     return ret;
 }

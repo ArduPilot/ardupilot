@@ -12,7 +12,7 @@ BINFILE="$1"
 ABINFILE="$2"
 
 [ -f "$BINFILE" ] || {
-    echo "Can't find bin file"
+    echo "Can't find bin file $BINFILE for abin"
     exit 1
 }
 

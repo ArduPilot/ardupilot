@@ -10,8 +10,8 @@
 bool ModeBrake::init(bool ignore_checks)
 {
     // initialise pos controller speed and acceleration
-    pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity().length(), BRAKE_MODE_DECEL_RATE);
-    pos_control->set_correction_speed_accel_xy(inertial_nav.get_velocity().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
 
     // initialise position controller
     pos_control->init_xy_controller();
@@ -36,8 +36,7 @@ void ModeBrake::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
-        pos_control->relax_velocity_controller_xy();
+        make_safe_ground_handling();
         pos_control->relax_z_controller(0.0f);
         return;
     }
@@ -47,7 +46,7 @@ void ModeBrake::run()
 
     // relax stop target if we might be landed
     if (copter.ap.land_complete_maybe) {
-        loiter_nav->soften_for_landing();
+        pos_control->soften_for_landing_xy();
     }
 
     // use position controller to stop
@@ -59,9 +58,10 @@ void ModeBrake::run()
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f, false);
+    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
+    // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
         if (!copter.set_mode(Mode::Number::LOITER, ModeReason::BRAKE_TIMEOUT)) {
             copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::BRAKE_TIMEOUT);
@@ -69,6 +69,16 @@ void ModeBrake::run()
     }
 }
 
+/**
+ * Set a timeout for the brake mode
+ * 
+ * @param timeout_ms [in] timeout in milliseconds
+ * 
+ * @note MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
+ * If the timeout is reached, the mode will switch to loiter or alt hold depending on the current mode.
+ * If timeout_ms is 0, the timeout is disabled.
+ * 
+*/
 void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();

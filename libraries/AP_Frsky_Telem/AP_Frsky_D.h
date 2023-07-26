@@ -2,6 +2,8 @@
 
 #include "AP_Frsky_Backend.h"
 
+#if AP_FRSKY_D_TELEM_ENABLED
+
 class AP_Frsky_D : public AP_Frsky_Backend
 {
 
@@ -29,3 +31,5 @@ private:
     } _D;
 
 };
+
+#endif  // AP_FRSKY_D_TELEM_ENABLED

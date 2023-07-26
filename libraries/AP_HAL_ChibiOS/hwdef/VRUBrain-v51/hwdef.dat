@@ -74,7 +74,7 @@ STDOUT_BAUDRATE 57600
 #PC4
  PC5  LED_GREEN OUTPUT GPIO(25)
 #PC6
- PC7  TIM8_CH2 TIM8 RCIN FLOAT LOW
+ PC7  TIM8_CH2 TIM8 RCIN PULLDOWN LOW
  PC8  RELAY_1   OUTPUT LOW GPIO(33)
  PC9  RELAY_2   OUTPUT LOW GPIO(34)
  PC10 SPI3_SCK SPI3
@@ -128,11 +128,8 @@ SPIDEV sdcard      SPI3 DEVID1  SDCARD_CS  MODE0 400*KHZ  25*MHZ
 
 define HAL_CHIBIOS_ARCH_UBRAINV51 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 define HAL_STORAGE_SIZE      15360
-define STORAGE_FLASH_PAGE    2
+STORAGE_FLASH_PAGE    2
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
 
@@ -160,8 +157,8 @@ define RELAY2_PIN_DEFAULT  34
 #define RELAY3_PIN_DEFAULT  35
 
 define HAL_BUZZER_PIN 32
-define HAL_BUZZER_ON  1
-define HAL_BUZZER_OFF 0
+
+
 
 # battery setup
 define HAL_BATT_VOLT_PIN 10
@@ -171,14 +168,10 @@ define HAL_BATT_CURR_SCALE 17.0
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# 12 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 14
-
 # save some flash
-define GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define HAL_BARO_WIND_COMP_ENABLED 0
-define HAL_RUNCAM_ENABLED 0
+include ../include/save_some_flash.inc
 define HAL_SPEKTRUM_TELEM_ENABLED 0
-define HAL_SOARING_ENABLED 0
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
+include ../include/minimize_features.inc

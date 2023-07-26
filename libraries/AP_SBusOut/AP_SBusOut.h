@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include "AP_SBusOut_config.h"
+
+#if AP_SBUSOUTPUT_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -15,8 +19,7 @@ public:
     AP_SBusOut();
 
     /* Do not allow copies */
-    AP_SBusOut(const AP_SBusOut &other) = delete;
-    AP_SBusOut &operator=(const AP_SBusOut&) = delete;
+    CLASS_NO_COPY(AP_SBusOut);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -36,3 +39,5 @@ private:
     AP_Int16 sbus_rate;
     bool initialised;
 };
+
+#endif  // AP_SBUSOUTPUT_ENABLED

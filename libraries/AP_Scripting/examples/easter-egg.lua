@@ -26,7 +26,7 @@ function find_next_point ()
     target:lng(top_left:lng())
     target:offset(math.random()*-100, math.random()*10)
     gcs:send_text(6, string.format("New target %d %d", target:lat(), target:lng()))
-    local current = ahrs:get_position()
+    local current = ahrs:get_location()
     if current then
         last_distance = current:get_distance(target)
     end
@@ -35,7 +35,7 @@ function find_next_point ()
 end
 
 function update ()
-    local current = ahrs:get_position()
+    local current = ahrs:get_location()
     if current then
         local dist = target:get_distance(current)
         local now = millis()

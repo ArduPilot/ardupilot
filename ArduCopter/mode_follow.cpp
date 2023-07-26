@@ -20,6 +20,15 @@ bool ModeFollow::init(const bool ignore_checks)
         gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
+
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP_Mount::get_singleton();
+    // follow the lead vehicle using sysid
+    if (g2.follow.option_is_enabled(AP_Follow::Option::MOUNT_FOLLOW_ON_ENTER) && mount != nullptr) {
+        mount->set_target_sysid(g2.follow.get_target_sysid());
+    }
+#endif
+
     // re-use guided mode
     return ModeGuided::init(ignore_checks);
 }
@@ -34,7 +43,7 @@ void ModeFollow::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
         return;
     }
 
@@ -108,9 +117,8 @@ void ModeFollow::run()
         // calculate vehicle heading
         switch (g2.follow.get_yaw_behave()) {
             case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
-                const Vector3f dist_vec_xy(dist_vec.x, dist_vec.y, 0.0f);
-                if (dist_vec_xy.length() > 1.0f) {
-                    yaw_cd = get_bearing_cd(Vector3f(), dist_vec_xy);
+                if (dist_vec.xy().length_squared() > 1.0) {
+                    yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
                     use_yaw = true;
                 }
                 break;
@@ -126,9 +134,8 @@ void ModeFollow::run()
             }
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
-                const Vector3f vel_vec(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y, 0.0f);
-                if (vel_vec.length() > 100.0f) {
-                    yaw_cd = get_bearing_cd(Vector3f(), vel_vec);
+                if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
+                    yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
                     use_yaw = true;
                 }
                 break;

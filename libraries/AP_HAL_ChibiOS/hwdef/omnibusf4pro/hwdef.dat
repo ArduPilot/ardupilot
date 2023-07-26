@@ -1,6 +1,6 @@
 # hw definition file for processing by chibios_pins.py
 # Omnibus F4 PRO with on-board current sensor
-# with F405 mcu, mpu6000 imu, bmp280 barometer, 7456 series osd  and sdcard
+# with F405 mcu, mpu6000 and bmi270 imu, bmp280 barometer, 7456 series osd  and sdcard
 
 MCU STM32F4xx STM32F405xx
 
@@ -107,31 +107,33 @@ PB8 TIM4_CH3 TIM4 RCININT PULLDOWN LOW
 
 
 # SPI Device table 
+SPIDEV bmi270     SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 10*MHZ 
 SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ
 SPIDEV sdcard     SPI2 DEVID2 SDCARD_CS MODE0 400*KHZ 25*MHZ
 SPIDEV bmp280     SPI3 DEVID3 BMP280_CS MODE3 1*MHZ 8*MHZ
 SPIDEV osd        SPI3 DEVID4 OSD_CS MODE0 10*MHZ 10*MHZ
 
-# one IMU
+# one IMU  BMI270 or MPU6000 
 IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+IMU BMI270     SPI:bmi270  ROTATION_ROLL_180
+
 
 # one baro
 BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # define default battery setup
 define HAL_BATT_VOLT_PIN 12
@@ -145,14 +147,11 @@ define HAL_OSD_TYPE_DEFAULT 1
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 8
-
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable SMBUS and fuel battery monitors to save flash
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+# disable SMBUS monitors to save flash
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
@@ -162,6 +161,8 @@ define HAL_SPRAYER_ENABLED 0
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
-define GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc
+define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc

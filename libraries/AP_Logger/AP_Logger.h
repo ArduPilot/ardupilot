@@ -3,93 +3,20 @@
 /* ************************************************************ */
 #pragma once
 
-#include <AP_Filesystem/AP_Filesystem_Available.h>
-
-#ifndef HAL_LOGGING_ENABLED
-#define HAL_LOGGING_ENABLED 1
-#endif
-
-// set default for HAL_LOGGING_DATAFLASH_ENABLED
-#ifndef HAL_LOGGING_DATAFLASH_ENABLED
-    #ifdef HAL_LOGGING_DATAFLASH
-        #define HAL_LOGGING_DATAFLASH_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_DATAFLASH_ENABLED 0
-    #endif
-#endif
-
-#ifndef HAL_LOGGING_MAVLINK_ENABLED
-    #define HAL_LOGGING_MAVLINK_ENABLED HAL_LOGGING_ENABLED
-#endif
-
-#ifndef HAL_LOGGING_FILESYSTEM_ENABLED
-    #if HAVE_FILESYSTEM_SUPPORT
-        #define HAL_LOGGING_FILESYSTEM_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_FILESYSTEM_ENABLED 0
-    #endif
-#endif
-
-#ifndef HAL_LOGGING_SITL_ENABLED
-    #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        #define HAL_LOGGING_SITL_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_SITL_ENABLED 0
-    #endif
-#endif
-
-#if HAL_LOGGING_SITL_ENABLED || HAL_LOGGING_DATAFLASH_ENABLED
-    #define HAL_LOGGING_BLOCK_ENABLED 1
-#else
-    #define HAL_LOGGING_BLOCK_ENABLED 0
-#endif
-
-// sanity checks:
-#if defined(HAL_LOGGING_DATAFLASH) && !HAL_LOGGING_DATAFLASH_ENABLED
-#error Can not default to dataflash if it is not enabled
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    #if HAL_LOGGING_DATAFLASH_ENABLED
-        #error DATAFLASH not supported on SITL; you probably mean SITL
-    #endif
-#endif
-
-#if HAL_LOGGING_FILESYSTEM_ENABLED
-
-#if !defined (HAL_BOARD_LOG_DIRECTORY)
-#error Need HAL_BOARD_LOG_DIRECTORY for filesystem backend support
-#endif
-
-#if !defined (HAVE_FILESYSTEM_SUPPORT)
-#error Need HAVE_FILESYSTEM_SUPPORT for filesystem backend support
-#endif
-
-#endif
+#include "AP_Logger_config.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_AHRS/AP_AHRS_DCM.h>
-#include <AP_AHRS/AP_AHRS_NavEKF.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/LogStructure.h>
-#include <AP_Motors/AP_Motors.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_Beacon/AP_Beacon.h>
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
 
-
 class AP_Logger_Backend;
-class AP_AHRS;
-class AP_AHRS_View;
 
 // do not do anything here apart from add stuff; maintaining older
 // entries means log analysis is easier
@@ -153,6 +80,14 @@ enum class LogEvent : uint8_t {
     FENCE_FLOOR_ENABLE = 80,
     FENCE_FLOOR_DISABLE = 81,
 
+    // if the EKF's source input set is changed (e.g. via a switch or
+    // a script), we log an event:
+    EK3_SOURCES_SET_TO_PRIMARY = 85,
+    EK3_SOURCES_SET_TO_SECONDARY = 86,
+    EK3_SOURCES_SET_TO_TERTIARY = 87,
+
+    AIRSPEED_PRIMARY_CHANGED = 90,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
@@ -195,6 +130,8 @@ enum class LogErrorSubsystem : uint8_t {
     FAILSAFE_LEAK = 27,
     PILOT_INPUT = 28,
     FAILSAFE_VIBE = 29,
+    INTERNAL_ERROR = 30,
+    FAILSAFE_DEADRECKON = 31
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
@@ -224,6 +161,8 @@ enum class LogErrorCode : uint8_t {
     FAILED_CIRCLE_INIT = 4,
     DEST_OUTSIDE_FENCE = 5,
     RTL_MISSING_RNGFND = 6,
+    // subsystem specific error codes -- internal_error
+    INTERNAL_ERRORS_DETECTED = 1,
 
 // parachute failed to deploy because of low altitude or landed
     PARACHUTE_TOO_LOW = 2,
@@ -241,6 +180,7 @@ enum class LogErrorCode : uint8_t {
 class AP_Logger
 {
     friend class AP_Logger_Backend; // for _num_types
+    friend class AP_Logger_RateLimiter;
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
@@ -248,8 +188,7 @@ public:
     AP_Logger(const AP_Int32 &log_bitmask);
 
     /* Do not allow copies */
-    AP_Logger(const AP_Logger &other) = delete;
-    AP_Logger &operator=(const AP_Logger&) = delete;
+    CLASS_NO_COPY(AP_Logger);
 
     // get singleton instance
     static AP_Logger *get_singleton(void) {
@@ -261,6 +200,12 @@ public:
     void set_num_types(uint8_t num_types) { _num_types = num_types; }
 
     bool CardInserted(void);
+    bool _log_pause;
+
+    // pause logging if aux switch is active and log rate limit enabled
+    void log_pause(bool value) {
+        _log_pause = value;
+    }
 
     // erase handling
     void EraseAll();
@@ -299,52 +244,45 @@ public:
     void Write_RCOUT(void);
     void Write_RSSI();
     void Write_Rally();
+#if HAL_LOGGER_FENCE_ENABLED
+    void Write_Fence();
+#endif
+    void Write_NamedValueFloat(const char *name, float value);
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
+    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
+                           float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
-    void Write_Command(const mavlink_command_int_t &packet, MAV_RESULT result, bool was_command_long=false);
+    void Write_Command(const mavlink_command_int_t &packet,
+                       uint8_t source_system,
+                       uint8_t source_component,
+                       MAV_RESULT result,
+                       bool was_command_long=false);
     void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    void Write_RPM(const AP_RPM &rpm_sensor);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
-                          const RallyLocation &rally_point);
-    void Write_Beacon(AP_Beacon &beacon);
-#if HAL_PROXIMITY_ENABLED
-    void Write_Proximity(AP_Proximity &proximity);
-#endif
+                          const class RallyLocation &rally_point);
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
-    void Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y);
-    void Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out);
+    void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    void Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    void Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
 
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
+    void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
-    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false);
+    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // This structure provides information on the internal member data of a PID for logging purposes
-    struct PID_Info {
-        float target;
-        float actual;
-        float error;
-        float P;
-        float I;
-        float D;
-        float FF;
-        float Dmod;
-        float slew_rate;
-        bool  limit;
-    };
-
-    void Write_PID(uint8_t msg_type, const PID_Info &info);
+    void Write_PID(uint8_t msg_type, const class AP_PIDInfo &info);
 
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
@@ -367,12 +305,21 @@ public:
     // number of blocks that have been dropped
     uint32_t num_dropped(void) const;
 
-    // accesss to public parameters
+    // access to public parameters
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
+    void set_long_log_persist(bool b) { _force_long_log_persist = b; }
     bool log_while_disarmed(void) const;
+    bool in_log_persistance(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
     vehicle_startup_message_Writer _vehicle_messages;
+
+    enum class LogDisarmed : uint8_t {
+        NONE = 0,
+        LOG_WHILE_DISARMED = 1,
+        LOG_WHILE_DISARMED_NOT_USB = 2,
+        LOG_WHILE_DISARMED_DISCARD = 3,
+    };
 
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
@@ -380,11 +327,15 @@ public:
         AP_Int8 backend_types;
         AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
-        AP_Int8 log_disarmed;
+        AP_Enum<LogDisarmed> log_disarmed;
         AP_Int8 log_replay;
         AP_Int8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
         AP_Int16 min_MB_free;
+        AP_Float file_ratemax;
+        AP_Float mav_ratemax;
+        AP_Float blk_ratemax;
+        AP_Float disarm_ratemax;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -400,7 +351,12 @@ public:
 
     // notify logging subsystem of an arming failure. This triggers
     // logging for HAL_LOGGER_ARM_PERSIST seconds
-    void arming_failure() { _last_arming_failure_ms = AP_HAL::millis(); }
+    void arming_failure() {
+        _last_arming_failure_ms = AP_HAL::millis();
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        file_content_prepare_for_arming = true;
+#endif
+    }
 
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
@@ -434,7 +390,7 @@ public:
     } *log_write_fmts;
 
     // return (possibly allocating) a log_write_fmt for a name
-    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false);
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false, const bool copy_strings = false);
 
     // output a FMT message for each backend if not already done so
     void Safe_Write_Emit_FMT(log_write_fmt *f);
@@ -443,6 +399,9 @@ public:
     uint8_t get_log_start_count(void) const {
         return _log_start_count;
     }
+
+    // add a filename to list of files to log. The name must be a constant string, not allocated
+    void log_file_content(const char *name);
 
 protected:
 
@@ -491,7 +450,7 @@ private:
 
     bool _armed;
 
-    // state to help us not log unneccesary RCIN values:
+    // state to help us not log unnecessary RCIN values:
     bool should_log_rcin2;
 
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
@@ -519,6 +478,15 @@ private:
 
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
+    bool _force_long_log_persist:1;
+
+    struct log_write_fmt_strings {
+        char name[LS_NAME_SIZE];
+        char format[LS_FORMAT_SIZE];
+        char labels[LS_LABELS_SIZE];
+        char units[LS_UNITS_SIZE];
+        char multipliers[LS_MULTIPLIERS_SIZE];
+    };
 
     // remember formats for replay
     void save_format_Replay(const void *pBuffer);
@@ -528,7 +496,37 @@ private:
 
     void start_io_thread(void);
     void io_thread();
+    bool check_crash_dump_save(void);
 
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    // support for logging file content
+    struct file_list {
+        struct file_list *next;
+        const char *filename;
+        char log_filename[16];
+    };
+    struct FileContent {
+        void reset();
+        void remove_and_free(file_list *victim);
+        struct file_list *head, *tail;
+        int fd{-1};
+        uint32_t offset;
+        bool fast;
+        uint8_t counter;
+        HAL_Semaphore sem;
+    };
+    FileContent normal_file_content;
+    FileContent at_arm_file_content;
+
+    // protect this with a semaphore?
+    bool file_content_prepare_for_arming;
+
+    void file_content_update(void);
+
+    void prepare_at_arming_sys_file_logging();
+
+#endif
+    
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {
@@ -539,6 +537,7 @@ private:
 
     // last time we handled a log-transfer-over-mavlink message:
     uint32_t _last_mavlink_log_transfer_message_handled_ms;
+    bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
 
     // next log list entry to send
     uint16_t _log_next_list_entry;
@@ -574,7 +573,6 @@ private:
     // can be used by other subsystems to detect if they should log data
     uint8_t _log_start_count;
 
-    bool should_handle_log_message() const;
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
 
     void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
@@ -591,6 +589,14 @@ private:
 
     /* end support for retrieving logs via mavlink: */
 
+    // convenience method for writing out the identical NED PIDs - and
+    // to save bytes
+    void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    void log_file_content(FileContent &file_content, const char *filename);
+    void file_content_update(FileContent &file_content);
+#endif
 };
 
 namespace AP {

@@ -54,8 +54,8 @@ enum iopage {
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
-    PAGE_SAFETY_PWM = 108,
     PAGE_MIXING = 200,
+    PAGE_GPIO = 201,
 };
 
 // setup page registers
@@ -66,6 +66,7 @@ enum iopage {
 #define P_SETUP_FEATURES_ADC_RSSI   8
 #define P_SETUP_FEATURES_ONESHOT   16
 #define P_SETUP_FEATURES_BRUSHED   32
+#define P_SETUP_FEATURES_HEATER    64
 
 #define PAGE_REG_SETUP_ARMING 1
 #define P_SETUP_ARMING_IO_ARM_OK (1<<0)
@@ -159,5 +160,12 @@ struct page_mixing {
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
 
-    uint8_t pad; // pad to even size
+    uint8_t pad;
+};
+
+static_assert(sizeof(struct page_mixing) % 2 == 0, "page_mixing must be even size");
+
+struct __attribute__((packed, aligned(2))) page_GPIO {
+    uint8_t channel_mask;
+    uint8_t output_mask;
 };

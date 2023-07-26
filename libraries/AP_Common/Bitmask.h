@@ -37,6 +37,18 @@ public:
         return *this;
     }
 
+    bool operator==(const Bitmask&other) {
+        if (other.numbits != numbits) {
+            return false;
+        } else {
+            return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
+        }
+    }
+
+    bool operator!=(const Bitmask&other) {
+        return !(*this == other);
+    }
+
     Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
@@ -67,6 +79,15 @@ public:
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
         bits[word] &= ~(1U << ofs);
+    }
+
+    // set given bitnumber to on/off
+    void setonoff(uint16_t bit, bool onoff) {
+        if (onoff) {
+            set(bit);
+        } else {
+            clear(bit);
+        }
     }
 
     // clear all bits

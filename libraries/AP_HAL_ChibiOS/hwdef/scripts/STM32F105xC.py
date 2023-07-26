@@ -23,7 +23,14 @@ pincount = {
 mcu = {
     'RAM_MAP' : [
         (0x20000000, 64, 1), # main memory, DMA safe
-    ]
+    ],
+
+    'EXPECTED_CLOCK' : 72000000,
+
+    'DEFINES' : {
+        'STM32F1' : '1',
+    }
+
 }
 
 ADC1_map = {

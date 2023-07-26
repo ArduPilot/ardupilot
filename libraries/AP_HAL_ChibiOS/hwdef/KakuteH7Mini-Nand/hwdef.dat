@@ -1,0 +1,14 @@
+# KakuteH7Mini Nand with larger flash chip
+
+include ../KakuteH7Mini/hwdef.dat
+
+undef mpu6000
+undef IMU
+
+SPIDEV bmi270    SPI4 DEVID1 MPU6000_CS    MODE3  1*MHZ  4*MHZ
+
+IMU BMI270 SPI:bmi270 ROTATION_PITCH_180_YAW_90
+
+define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25N01GV
+
+define DEFAULT_NTF_LED_TYPES 257

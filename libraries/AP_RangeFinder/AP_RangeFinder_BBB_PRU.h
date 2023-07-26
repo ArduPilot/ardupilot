@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
+#include "AP_RangeFinder_config.h"
 
+#if AP_RANGEFINDER_BBB_PRU_ENABLED
+
+#include "AP_RangeFinder_Backend.h"
 
 #define PRU0_CTRL_BASE 0x4a322000
 
@@ -20,8 +22,13 @@ struct range {
 class AP_RangeFinder_BBB_PRU : public AP_RangeFinder_Backend
 {
 public:
-    // constructor
-    AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
+    /*
+        Constructor:
+        The constructor also initialises the rangefinder. Note that this
+        constructor is not called until detect() returns true, so we
+        already know that we should setup the rangefinder
+    */
+    using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
     // static detection function
     static bool detect();
@@ -38,3 +45,5 @@ protected:
 private:
 
 };
+
+#endif  // AP_RANGEFINDER_BBB_PRU_ENABLED

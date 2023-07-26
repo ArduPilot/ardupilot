@@ -1,6 +1,7 @@
 -- warn the user if wind speed exceeds a threshold, failsafe if a second threshold is exceeded
 
 -- note that this script is only intended to be run on ArduPlane
+-- luacheck: only 0
 
 -- tuning parameters
 local warn_speed = 10 -- metres/second

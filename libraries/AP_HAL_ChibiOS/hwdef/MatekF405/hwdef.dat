@@ -34,8 +34,8 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -122,7 +122,7 @@ PA15 TIM2_CH1 TIM2 PWM(5) GPIO(54)
 PA8  TIM1_CH1 TIM1 PWM(6) GPIO(55)
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -132,13 +132,13 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # probe for I2C BMP280, but allow init on board variants without onboard baro too
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -150,20 +150,14 @@ SPIDEV osd       SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-# 8 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable SMBUS and fuel battery monitors to save flash
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+# disable SMBUS battery monitors to save flash
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
@@ -173,6 +167,7 @@ define HAL_SPRAYER_ENABLED 0
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
-define GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc

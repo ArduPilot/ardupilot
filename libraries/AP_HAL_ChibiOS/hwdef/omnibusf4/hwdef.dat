@@ -16,6 +16,5 @@ APJ_BOARD_ID 1002
 PC8 SBUS_INVERT_RX OUTPUT LOW
 PC9 SBUS_INVERT_TX OUTPUT LOW
 
-
-undef BOARD_PWM_COUNT_DEFAULT
-define BOARD_PWM_COUNT_DEFAULT 6
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc

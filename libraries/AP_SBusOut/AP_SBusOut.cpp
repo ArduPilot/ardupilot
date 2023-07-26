@@ -37,6 +37,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+#include "AP_SBusOut_config.h"
+
+#if AP_SBUSOUTPUT_ENABLED
+
 #include "AP_SBusOut.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -189,3 +194,4 @@ void AP_SBusOut::init() {
     sbus1_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Sbus1,0);
 }
 
+#endif  // AP_SBUSOUTPUT_ENABLED

@@ -52,7 +52,7 @@ struct SPIDesc {
         : name(_name), bus(_bus), device(_device),
           pal_line(_pal_line), mode(_mode),
           lowspeed(_lowspeed), highspeed(_highspeed),
-          bank_select_cb(nullptr)
+          bank_select_cb(nullptr), register_rw_cb(nullptr)
     {
     }
 
@@ -64,6 +64,7 @@ struct SPIDesc {
     uint32_t lowspeed;
     uint32_t highspeed;
     AP_HAL::Device::BankSelectCb bank_select_cb;
+    AP_HAL::Device::RegisterRWCb register_rw_cb;
 };
 
 
@@ -159,6 +160,8 @@ public:
     }
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+
+    void set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb) override;
 
 private:
     static SPIDesc device_table[];

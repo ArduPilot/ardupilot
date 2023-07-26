@@ -13,20 +13,23 @@ protected:
                            AuxSwitchPos ch_flag) override;
     bool do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
 
+    // called when the mode switch changes position:
+    void mode_switch_changed(modeswitch_pos_t new_pos) override;
+
 private:
 
     void do_aux_function_change_mode(Mode::Number number,
                                      AuxSwitchPos ch_flag);
 
+#if HAL_QUADPLANE_ENABLED
     void do_aux_function_q_assist_state(AuxSwitchPos ch_flag);
+#endif
 
     void do_aux_function_crow_mode(AuxSwitchPos ch_flag);
 
     void do_aux_function_soaring_3pos(AuxSwitchPos ch_flag);
 
     void do_aux_function_flare(AuxSwitchPos ch_flag);
-
-    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag) override;
 
 };
 
@@ -42,9 +45,12 @@ public:
         return &obj_channels[chan];
     }
 
+    bool in_rc_failsafe() const override;
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;
+
+    void read_mode_switch() override;
 
 protected:
 

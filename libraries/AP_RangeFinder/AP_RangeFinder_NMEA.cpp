@@ -15,13 +15,15 @@
 
 #include "AP_RangeFinder_NMEA.h"
 
+#if AP_RANGEFINDER_NMEA_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
 // return last value measured by sensor
-bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_NMEA::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -45,12 +47,12 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
     }
 
     // return average of all measurements
-    reading_cm = 100.0f * sum / count;
+    reading_m = sum / count;
     return true;
 }
 
 // get temperature reading
-bool AP_RangeFinder_NMEA::get_temp(float &temp)
+bool AP_RangeFinder_NMEA::get_temp(float &temp) const
 {
     uint32_t now_ms = AP_HAL::millis();
     if ((_temp_readtime_ms == 0) || ((now_ms - _temp_readtime_ms) > read_timeout_ms())) {
@@ -124,7 +126,7 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         }
         const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _checksum) {
-            if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT) && !is_negative(_distance_m)) {
+            if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT || _sentence_type == SONAR_HDED) && !is_negative(_distance_m)) {
                 // return true if distance is valid
                 return true;
             }
@@ -155,6 +157,8 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
             _sentence_type = SONAR_DPT;
         } else if (strcmp(term_type, "MTW") == 0) {
             _sentence_type = SONAR_MTW;
+        } else if (strcmp(term_type, "ED") == 0) {
+            _sentence_type = SONAR_HDED;
         } else {
             _sentence_type = SONAR_UNKNOWN;
         }
@@ -176,7 +180,14 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         if (_term_number == 1) {
             _temp_unvalidated = strtof(_term, NULL);
         }
+    } else if (_sentence_type == SONAR_HDED) {
+        // parse HDED (Hondex custom message)
+        if (_term_number == 4) {
+            _distance_m = strtof(_term, NULL);
+        }
     }
 
     return false;
 }
+
+#endif  // AP_RANGEFINDER_NMEA_ENABLED

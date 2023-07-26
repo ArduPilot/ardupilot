@@ -41,7 +41,6 @@ void Copter::init_rc_in()
  // init_rc_out -- initialise motors
 void Copter::init_rc_out()
 {
-    motors->set_loop_rate(scheduler.get_loop_rate_hz());
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
     // enable aux servos to cope with multiple output channels per motor
@@ -51,7 +50,14 @@ void Copter::init_rc_out()
     motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
-    motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    if (channel_throttle->configured()) {
+        // throttle inputs setup, use those to set motor PWM min and max if not already configured
+        motors->convert_pwm_min_max_param(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    } else {
+        // throttle inputs default, force set motor PWM min and max to defaults so they will not be over-written by a future change in RC min / max
+        motors->convert_pwm_min_max_param(1000, 2000);
+    }
+    motors->update_throttle_range();
 #else
     // setup correct scaling for ESCs like the UAVCAN ESCs which
     // take a proportion of speed.
@@ -70,13 +76,6 @@ void Copter::init_rc_out()
 #endif
 }
 
-
-// enable_motor_output() - enable and output lowest possible value to motors
-void Copter::enable_motor_output()
-{
-    // enable motors
-    motors->output_min();
-}
 
 void Copter::read_radio()
 {
@@ -106,10 +105,9 @@ void Copter::read_radio()
         return;
     }
 
-    const uint32_t elapsed = tnow_ms - last_radio_update_ms;
-    // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
-    const uint32_t timeout = RC_Channels::has_active_overrides() ? FS_RADIO_RC_OVERRIDE_TIMEOUT_MS : FS_RADIO_TIMEOUT_MS;
-    if (elapsed < timeout) {
+    // trigger failsafe if no update from the RC Radio for RC_FS_TIMEOUT seconds
+    const uint32_t elapsed_ms = tnow_ms - last_radio_update_ms;
+    if (elapsed_ms < rc().get_fs_timeout_ms()) {
         // not timed out yet
         return;
     }
@@ -122,7 +120,7 @@ void Copter::read_radio()
         return;
     }
 
-    // Nobody ever talks to us.  Log an error and enter failsafe.
+    // Log an error and enter failsafe.
     AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
 }
@@ -180,7 +178,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // and we are flying. Immediately set as non-zero
     if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
         (ap.using_interlock && motors->get_interlock()) ||
-        ap.armed_with_switch || air_mode == AirMode::AIRMODE_ENABLED) {
+        ap.armed_with_airmode_switch || air_mode == AirMode::AIRMODE_ENABLED) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {

@@ -25,7 +25,11 @@ void init()
     gettimeofday(&state.start_time, nullptr);
 }
 
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
 void panic(const char *errormsg, ...)
+#else
+void WEAK panic(const char *errormsg, ...)
+#endif
 {
     va_list ap;
 
@@ -48,7 +52,7 @@ void panic(const char *errormsg, ...)
 }
 
 // partly flogged from: https://github.com/tridge/junkcode/blob/master/segv_handler/segv_handler.c
-void run_command_on_ownpid(const char *commandname)
+static void run_command_on_ownpid(const char *commandname)
 {
     // find dumpstack command:
     const char *command_filepath = commandname; // if we can't find it trust in PATH
@@ -192,12 +196,20 @@ uint64_t millis64()
 
 uint32_t native_micros()
 {
+#if AP_TEST_DRONECAN_DRIVERS
+    return micros();
+#else
     return native_micros64() & 0xFFFFFFFF;
+#endif
 }
 
 uint32_t native_millis()
 {
+#if AP_TEST_DRONECAN_DRIVERS
+    return millis();
+#else
     return native_millis64() & 0xFFFFFFFF;
+#endif
 }
 
 /*
@@ -205,28 +217,40 @@ uint32_t native_millis()
  */
 uint16_t native_millis16()
 {
+#if AP_TEST_DRONECAN_DRIVERS
+    return millis16();
+#else
     return native_millis64() & 0xFFFF;
+#endif
 }
     
 
 uint64_t native_micros64()
 {
+#if AP_TEST_DRONECAN_DRIVERS
+    return micros64();
+#else
     struct timeval tp;
     gettimeofday(&tp, nullptr);
     uint64_t ret = 1.0e6 * ((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
                             (state.start_time.tv_sec +
                              (state.start_time.tv_usec * 1.0e-6)));
     return ret;
+#endif
 }
 
 uint64_t native_millis64()
 {
+#if AP_TEST_DRONECAN_DRIVERS
+    return millis64();
+#else
     struct timeval tp;
     gettimeofday(&tp, nullptr);
     uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
                           (state.start_time.tv_sec +
                            (state.start_time.tv_usec*1.0e-6)));
     return ret;
+#endif
 }
 
 

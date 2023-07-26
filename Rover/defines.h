@@ -11,20 +11,19 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-#define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
+#define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
 
-//  Logging parameters
-#define LOG_THR_MSG             0x01
-#define LOG_NTUN_MSG            0x02
-#define LOG_STARTUP_MSG         0x06
-#define LOG_STEERING_MSG        0x0D
-#define LOG_GUIDEDTARGET_MSG    0x0E
-
-#define TYPE_GROUNDSTART_MSG    0x01
+//  Logging parameters - only 32 messages are available to the vehicle here.
+enum LoggingParameters {
+    LOG_THR_MSG,
+    LOG_NTUN_MSG,
+    LOG_STEERING_MSG,
+    LOG_GUIDEDTARGET_MSG,
+};
 
 #define MASK_LOG_ATTITUDE_FAST  (1<<0)
 #define MASK_LOG_ATTITUDE_MED   (1<<1)
@@ -43,6 +42,8 @@
 #define MASK_LOG_RC             (1<<14)
 // #define MASK_LOG_ARM_DISARM     (1<<15)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
+#define MASK_LOG_VIDEO_STABILISATION (1UL<<20)
+#define MASK_LOG_OPTFLOW                (1UL<<21)
 
 // for mavlink SET_POSITION_TARGET messages
 #define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1))
@@ -100,4 +101,9 @@ enum frame_class {
     FRAME_ROVER = 1,
     FRAME_BOAT = 2,
     FRAME_BALANCEBOT = 3,
+};
+
+// manual mode options
+enum ManualOptions {
+    SPEED_SCALING = (1 << 0),
 };

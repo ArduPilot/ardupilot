@@ -13,10 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_TeraRangerTowerEvo.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -116,8 +119,11 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
     }
 
     while (nbytes-- > 0) {
-        char c = _uart->read();
-        if (c == 'T' ) {
+        int16_t c = _uart->read();
+        if (c==-1) {
+            return false;
+        }
+        if (char(c) == 'T' ) {
             buffer_count = 0;
         }
         buffer[buffer_count++] = c;
@@ -145,20 +151,20 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 }
 
 // process reply
-void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint16_t distance_cm)
+void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
 {
     // Get location on 3-D boundary based on angle to the object
-    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
     //check for target too far, target too close and sensor not connected
-    const bool valid = (distance_cm != 0xffff) && (distance_cm > 0x0001);
-    if (valid && !check_obstacle_near_ground(angle_deg, distance_cm * 0.001f)) {
-        boundary.set_face_attributes(face, angle_deg, ((float) distance_cm) / 1000);
+    const bool valid = (distance_mm != 0xffff) && (distance_mm > 0x0001);
+    if (valid && !ignore_reading(angle_deg, distance_mm * 0.001f, false)) {
+        frontend.boundary.set_face_attributes(face, angle_deg, ((float) distance_mm) / 1000, state.instance);
         // update OA database
-        database_push(angle_deg, ((float) distance_cm) / 1000);
+        database_push(angle_deg, ((float) distance_mm) / 1000);
     } else {
-        boundary.reset_face(face);
+        frontend.boundary.reset_face(face, state.instance);
     }
     _last_distance_received_ms = AP_HAL::millis();
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED

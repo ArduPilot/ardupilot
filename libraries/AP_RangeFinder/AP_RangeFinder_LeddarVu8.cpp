@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LeddarVu8.h"
 
+#if AP_RANGEFINDER_LEDDARVU8_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -29,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 #define LEDDARVU8_TIMEOUT_MS                200         // timeout in milliseconds if no distance messages received
 
 // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
-bool AP_RangeFinder_LeddarVu8::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_LeddarVu8::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -73,11 +75,11 @@ bool AP_RangeFinder_LeddarVu8::get_reading(uint16_t &reading_cm)
 
         if (count > 0) {
             // return average distance of readings
-            reading_cm = sum_cm / count;
+            reading_m = (sum_cm * 0.01f) / count;
         } else {
             // if only out of range readings return larger of
             // driver defined maximum range for the model and user defined max range + 1m
-            reading_cm = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM);
+            reading_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
         }
         return true;
     }
@@ -202,3 +204,5 @@ bool AP_RangeFinder_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16
     valid_reading = false;
     return false;
 }
+
+#endif  // AP_RANGEFINDER_LEDDARVU8_ENABLED

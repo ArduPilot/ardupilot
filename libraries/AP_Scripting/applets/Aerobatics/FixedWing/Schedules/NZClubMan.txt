@@ -1,0 +1,183 @@
+#   trajectory tracking aerobatic control
+#   See README.md for usage
+#   Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
+#   assistance from Paul Riseborough, testing by Henry Wurzburg
+
+# To use this schedule put the file on your microSD in the root directory 
+# (not the APM directory) with name trick90.txt The schedule can then be 
+# used in auto missions or in TRIKn_ID commands for tricks on a switch
+
+# This schedule is set up to be flown Left to Right. The schedule starts downwind - so 
+# the mission should be set up with WP's lined up on the flight line (150m out from the 
+# pilot), and the mission should be triggered when the plane gets to the center marker 
+# heading RIGHT to LEFT. Schedule direction is reversed with aerom_scale = -1 (and 
+# remember to reverse the mission WP's as well). Note the required height is greater 
+# than 400 feet - so only fly at an airfield where there is a 1500 foot clearance
+
+# This is the New Zealand Clubman Aerobatics schedule. Please understand the behaviour 
+# by flying in SITL before flying this schedule with a real aircraft! Your aircraft 
+# requires adequate performance to complete the schedule
+
+name: NZClubmanSchedule
+
+function half_reverse_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("half_reverse_cuban_eight", {
+         { path_vertical_arc(r,  45),   roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 225),  roll_angle(0) },
+   })
+end
+
+function cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("cuban_eight", {
+         --{ path_straight(rabs*math.sqrt(2)), roll_angle(0) },
+         { path_vertical_arc(r,  225),       roll_angle(0) },
+         { path_straight(2*rabs/3),          roll_angle(0) },
+         { path_straight(2*rabs/3),          roll_angle(180) },
+         { path_straight(2*rabs/3),          roll_angle(0) },
+         { path_vertical_arc(-r, 270),       roll_angle(0) },
+         { path_straight(2*rabs/3),          roll_angle(0) },
+         { path_straight(2*rabs/3),          roll_angle(180) },
+         { path_straight(2*rabs/3),          roll_angle(0) },
+         { path_vertical_arc(r, 45),         roll_angle(0) },
+   })
+end
+
+function multi_point_roll(length, N, hold_frac, num_points)
+   if hold_frac <= 0 then
+      hold_frac = 0.2
+   end
+   if num_points <= 0 then
+      num_points = N
+   end
+   --[[
+      construct a roll sequence to use over the full length
+   --]]
+   local seq = {}
+   local roll_frac = 1.0 - hold_frac
+   for i = 1, num_points do
+      seq[#seq+1] = { roll_frac, 360 / N }
+      if i < num_points then
+         seq[#seq+1] = { hold_frac, 0 }
+      end
+   end
+   return make_paths("multi_point_roll", {{ path_straight(length), roll_sequence(seq) }})
+end
+
+function upline_45(r, height_gain, arg3, arg4)
+   --local h = (height_gain - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
+   local h = (height_gain - (2 * r) + (2 * r * math.cos(math.rad(45)))) / math.cos(math.rad(45))
+  assert(h >= 0)
+   return make_paths("upline_45", {
+         { path_vertical_arc(r, 45),  roll_angle(0) },
+         { path_straight(h),          roll_angle(0) },
+         { path_vertical_arc(-r, 45), roll_angle(0) },
+   })
+end
+
+function split_s(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("split_s", {
+         { path_straight(rabs/2),                roll_angle(180) },
+         { path_vertical_arc(-r, 180),           roll_angle(0) },
+   })
+end
+
+function half_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("half_cuban_eight", {
+         { path_straight(2*rabs*math.sqrt(2)), roll_angle(0) },
+         { path_vertical_arc(r,  225),         roll_angle(0) },
+         { path_straight(2*rabs/3),            roll_angle(0) },
+         { path_straight(2*rabs/3),            roll_angle(180) },
+         { path_straight(2*rabs/3),            roll_angle(0) },
+         { path_vertical_arc(-r, 45),          roll_angle(0) },
+   })
+end
+
+function loop(radius, bank_angle, num_loops, arg4)
+   if not num_loops or num_loops <= 0 then
+      num_loops = 1
+   end
+   return make_paths("loop", {
+         { path_vertical_arc(radius, 360*num_loops), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function immelmann_turn(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("immelmann_turn", {
+         { path_vertical_arc(r, 180),      roll_angle(0) },
+         { path_straight(rabs/2),          roll_angle(180) },
+   })
+end
+
+function downline_45(r, height_loss, arg3, arg4)
+   local h = (height_loss - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
+   assert(h >= 0)
+   return make_paths("downline_45", {
+         { path_vertical_arc(-r, 45),  roll_angle(0) },
+         { path_straight(h),           roll_angle(0) },
+         { path_vertical_arc(r, 45),   roll_angle(0) },
+   })
+end
+
+straight_roll 100 0
+half_reverse_cuban_eight 80
+
+align_center
+message: CubanEight
+cuban_eight 80
+
+straight_align -130
+half_reverse_cuban_eight 80
+
+straight_align 40
+message: HalfReverseCuban
+half_reverse_cuban_eight 80
+
+straight_align -180
+half_reverse_cuban_eight 80
+
+align_center
+message: TwoPointRoll
+thr_boost: true
+multi_point_roll 240 2 0.8 2
+
+straight_align 150
+half_reverse_cuban_eight 80
+
+align_center
+message: 45DegreeUpline
+upline_45 40 180
+
+straight_align -200
+split_s 90 90
+
+align_center
+message: SlowRoll
+thr_boost: true 
+straight_roll 240 1
+
+straight_align 130
+half_cuban_eight 80
+
+align_center
+message: TwoLoops
+loop 80 0 2
+
+straight_align -210
+immelmann_turn 90 90
+
+align_center
+message: 45DegreeDownline
+downline_45 40 180
+
+straight_align 150
+half_cuban_eight 80
+straight_roll 100
+

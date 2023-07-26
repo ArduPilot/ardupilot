@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to build iofirmware and copy to Tools/IO_Firmware
@@ -28,3 +28,9 @@ run_program(["./waf", "clean"])
 run_program(["./waf", "iofirmware"])
 shutil.copy('build/iomcu/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_lowpolh.bin')
 shutil.copy('build/iomcu/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_highpolh.bin')
+
+run_program(["./waf", "configure", "--board", 'iomcu_f103_8MHz'])
+run_program(["./waf", "clean"])
+run_program(["./waf", "iofirmware"])
+shutil.copy('build/iomcu_f103_8MHz/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_f103_8MHz_lowpolh.bin')
+shutil.copy('build/iomcu_f103_8MHz/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_f103_8MHz_highpolh.bin')

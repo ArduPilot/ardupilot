@@ -39,7 +39,7 @@ define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
 # RC Input set for Interrupt not DMA
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW 
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW 
 
 # also USART6_RX for serial RC
 
@@ -237,8 +237,6 @@ PE5  TIM15_CH1 TIM15 PWM(10) GPIO(59)
 PC6  TIM8_CH1  TIM8  PWM(11) GPIO(60)
 PD15 TIM4_CH4  TIM4  PWM(12) GPIO(61)
 
-define BOARD_PWM_COUNT_DEFAULT 12
-
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.
 PG2 MPU_DRDY INPUT
@@ -259,10 +257,6 @@ SPIDEV icm20608 SPI1 DEVID2  ICM_20602_CS    MODE3  2*MHZ  8*MHZ
 SPIDEV icm20948 SPI1 DEVID1  ICM_20948_CS    MODE3  2*MHZ  4*MHZ
 SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
-
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1

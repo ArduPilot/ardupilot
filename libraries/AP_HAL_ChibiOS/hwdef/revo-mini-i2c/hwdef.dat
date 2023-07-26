@@ -41,9 +41,6 @@ define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
-
-PC0 SBUS_INVERT OUTPUT LOW
-
 # LEDs
 PB5 LED_BLUE OUTPUT LOW GPIO(0)
 PB6 LED_YELLOW OUTPUT LOW GPIO(1) # optional
@@ -52,6 +49,8 @@ PB4 LED_RED OUTPUT LOW GPIO(2)
 # GPS port
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
+# SBUS inversion control pin, active high
+PC0 USART6_RXINV OUTPUT LOW GPIO(78) POL(1)
 
 # USART3 (SERIAL2)  on flexi port in BRD_ALT_CONFIG = 3 & 4 & 5
 PB10 USART3_TX USART3 ALT(3)
@@ -126,7 +125,7 @@ PC9 TIM8_CH4 TIM8 PWM(8) GPIO(57)
 PB7 DRDY_HMC5883 INPUT PULLUP
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -137,19 +136,17 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 # one baro
 BARO MS56XX I2C:0:0x77
 
-# also allow for probing of external barometers
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-
 # look for internal I2C compass
 COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
+
+# also allow for probing of external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 # SPI devices
 SPIDEV mpu6000   SPI1 DEVID1 MPU_CS   MODE3 1*MHZ 8*MHZ 
 SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
-# 6 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0

@@ -8,44 +8,35 @@ const AP_Param::GroupInfo AC_P_1D::var_info[] = {
     // @Param: P
     // @DisplayName: P Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P",    0, AC_P_1D, _kp, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    0, AC_P_1D, _kp, default_kp),
     AP_GROUPEND
 };
 
 // Constructor
-AC_P_1D::AC_P_1D(float initial_p, float dt) :
-    _dt(dt)
+AC_P_1D::AC_P_1D(float initial_p) :
+    default_kp(initial_p)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
-
-    _kp = initial_p;
 }
 
 // update_all - set target and measured inputs to P controller and calculate outputs
 // target and measurement are filtered
-// if measurement is further than error_min or error_max (see set_limits method)
-//   the target is moved closer to the measurement and limit_min or limit_max will be set true
-float AC_P_1D::update_all(float &target, float measurement, bool &limit_min, bool &limit_max)
+float AC_P_1D::update_all(float &target, float measurement)
 {
-    limit_min = false;
-    limit_max = false;
-
     // calculate distance _error
     _error = target - measurement;
 
     if (is_negative(_error_min) && (_error < _error_min)) {
         _error = _error_min;
         target = measurement + _error;
-        limit_min = true;
     } else if (is_positive(_error_max) && (_error > _error_max)) {
         _error = _error_max;
         target = measurement + _error;
-        limit_max = true;
     }
 
     // MIN(_Dxy_max, _D2xy_max / _kxy_P) limits the max accel to the point where max jerk is exceeded
-    return sqrt_controller(_error, _kp, _D1_max, _dt);
+    return sqrt_controller(_error, _kp, _D1_max, 0.0);
 }
 
 // set_limits - sets the maximum error to limit output and first and second derivative of output

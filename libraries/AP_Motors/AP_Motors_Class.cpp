@@ -17,6 +17,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Notify/AP_Notify.h>
+
+#define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f
 
 extern const AP_HAL::HAL& hal;
 
@@ -24,19 +27,25 @@ extern const AP_HAL::HAL& hal;
 AP_Motors *AP_Motors::_singleton;
 
 // Constructor
-AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
-    _loop_rate(loop_rate),
+AP_Motors::AP_Motors(uint16_t speed_hz) :
     _speed_hz(speed_hz),
     _throttle_filter(),
+    _throttle_slew(),
+    _throttle_slew_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
-    _spool_state(SpoolState::SHUT_DOWN),
-    _air_density_ratio(1.0f)
+    _spool_state(SpoolState::SHUT_DOWN)
 {
     _singleton = this;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
     _throttle_filter.reset(0.0f);
+
+    _throttle_slew_filter.set_cutoff_frequency(AP_MOTORS_SLEW_FILTER_CUTOFF);
+    _throttle_slew_filter.reset(0.0f);
+
+    // setup throttle slew detector
+    _throttle_slew.reset();
 
     // init limit flags
     limit.roll = true;
@@ -52,7 +61,11 @@ void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
 {
     const char *frame_str = get_frame_string();
     const char *type_str = get_type_string();
-    if (type_str != nullptr && strlen(type_str)) {
+    if (type_str != nullptr && strlen(type_str)
+#if AP_SCRIPTING_ENABLED
+        && custom_frame_string == nullptr
+#endif
+    ) {
         hal.util->snprintf(buffer, buflen, "Frame: %s/%s", frame_str, type_str);
     } else {
         hal.util->snprintf(buffer, buflen, "Frame: %s", frame_str);
@@ -92,7 +105,12 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
-    SRV_Channels::set_output_pwm(function, pwm);
+    if ((1U<<chan) & _motor_pwm_range_mask) {
+        // note that PWM_MIN/MAX has been forced to 1000/2000
+        SRV_Channels::set_output_scaled(function, pwm - 1000);
+    } else {
+        SRV_Channels::set_output_pwm(function, pwm);
+    }
 }
 
 /*
@@ -107,14 +125,15 @@ void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
 /*
   set frequency of a set of channels
  */
-void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
+void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
 {
     if (freq_hz > 50) {
-        _motor_fast_mask |= mask;
+        _motor_fast_mask |= motor_mask;
     }
 
-    mask = motor_mask_to_srv_channel_mask(mask);
+    const uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
     hal.rcout->set_freq(mask, freq_hz);
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
     switch (pwm_type(_pwm_type.get())) {
     case PWM_TYPE_ONESHOT:
@@ -141,6 +160,19 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
         break;
     case PWM_TYPE_DSHOT1200:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
+        break;
+    case PWM_TYPE_PWM_RANGE:
+        /*
+          this is a motor output type for multirotors which honours
+          the SERVOn_MIN/MAX values per channel
+         */
+        _motor_pwm_range_mask |= motor_mask;
+        for (uint8_t i=0; i<16; i++) {
+            if ((1U<<i) & motor_mask) {
+                SRV_Channels::set_range(SRV_Channels::get_motor_function(i), 1000);
+            }
+        }
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
         break;
     default:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
@@ -173,12 +205,8 @@ void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
-        uint8_t chan;
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
-        }
     }
 }
 
@@ -188,6 +216,89 @@ void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
     limit.roll = flag;
     limit.pitch = flag;
     limit.yaw = flag;
+}
+
+#if AP_SCRIPTING_ENABLED
+void AP_Motors::set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper)
+{
+    external_limits.roll = roll;
+    external_limits.pitch = pitch;
+    external_limits.yaw = yaw;
+    external_limits.throttle_lower = throttle_lower;
+    external_limits.throttle_upper = throttle_upper;
+}
+#endif
+
+// returns true if the configured PWM type is digital and should have fixed endpoints
+bool AP_Motors::is_digital_pwm_type() const
+{
+    switch (_pwm_type) {
+        case PWM_TYPE_DSHOT150:
+        case PWM_TYPE_DSHOT300:
+        case PWM_TYPE_DSHOT600:
+        case PWM_TYPE_DSHOT1200:
+            return true;
+        case PWM_TYPE_NORMAL:
+        case PWM_TYPE_ONESHOT:
+        case PWM_TYPE_ONESHOT125:
+        case PWM_TYPE_BRUSHED:
+        case PWM_TYPE_PWM_RANGE:
+            break;
+    }
+    return false;
+}
+
+// return string corresponding to frame_class
+const char* AP_Motors::get_frame_string() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (custom_frame_string != nullptr) {
+        return custom_frame_string;
+    }
+#endif
+    return _get_frame_string();
+}
+
+#if AP_SCRIPTING_ENABLED
+// set custom frame string
+void AP_Motors::set_frame_string(const char * str) {
+    if (custom_frame_string != nullptr) {
+        return;
+    }
+    const size_t len = strlen(str)+1;
+    custom_frame_string = new char[len];
+    if (custom_frame_string != nullptr) {
+        strncpy(custom_frame_string, str, len);
+    }
+}
+#endif
+
+// output_test_seq - spin a motor at the pwm value specified
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
+{
+    if (armed() && _interlock) {
+        _output_test_seq(motor_seq, pwm);
+    }
+}
+
+bool AP_Motors::arming_checks(size_t buflen, char *buffer) const
+{
+    if (!initialised_ok()) {
+        hal.util->snprintf(buffer, buflen, "Check frame class and type");
+        return false;
+    }
+
+    return true;
+}
+
+bool AP_Motors::motor_test_checks(size_t buflen, char *buffer) const
+{
+    // Must pass base class arming checks (the function above)
+    // Do not run frame specific arming checks as motor test is less strict
+    // For example not all the outputs have to be assigned
+    return AP_Motors::arming_checks(buflen, buffer);
 }
 
 namespace AP {

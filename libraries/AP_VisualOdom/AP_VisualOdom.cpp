@@ -13,15 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_VisualOdom.h"
+#include "AP_VisualOdom_config.h"
 
 #if HAL_VISUALODOM_ENABLED
 
+#include "AP_VisualOdom.h"
 #include "AP_VisualOdom_Backend.h"
 #include "AP_VisualOdom_MAV.h"
 #include "AP_VisualOdom_IntelT265.h"
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Visual odometry camera connection type
     // @Description: Visual odometry camera connection type
-    // @Values: 0:None,1:MAVLink,2:IntelT265
+    // @Values: 0:None,1:MAVLink,2:IntelT265,3:VOXL(ModalAI)
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_VisualOdom, _type, 0, AP_PARAM_FLAG_ENABLE),
@@ -124,23 +124,28 @@ AP_VisualOdom::AP_VisualOdom()
 void AP_VisualOdom::init()
 {
     // create backend
-    switch (_type) {
-    case AP_VisualOdom_Type_None:
+    switch (VisualOdom_Type(_type.get())) {
+    case VisualOdom_Type::None:
         // do nothing
         break;
-    case AP_VisualOdom_Type_MAV:
+#if AP_VISUALODOM_MAV_ENABLED
+    case VisualOdom_Type::MAV:
         _driver = new AP_VisualOdom_MAV(*this);
         break;
-    case AP_VisualOdom_Type_IntelT265:
+#endif
+#if AP_VISUALODOM_INTELT265_ENABLED
+    case VisualOdom_Type::IntelT265:
+    case VisualOdom_Type::VOXL:
         _driver = new AP_VisualOdom_IntelT265(*this);
         break;
+#endif
     }
 }
 
 // return true if sensor is enabled
 bool AP_VisualOdom::enabled() const
 {
-    return ((_type != AP_VisualOdom_Type_None));
+    return ((_type != VisualOdom_Type::None));
 }
 
 // return true if sensor is basically healthy (we are receiving data)
@@ -156,6 +161,7 @@ bool AP_VisualOdom::healthy() const
     return _driver->healthy();
 }
 
+#if HAL_GCS_ENABLED
 // consume vision_position_delta mavlink messages
 void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
 {
@@ -169,6 +175,7 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
         _driver->handle_vision_position_delta_msg(msg);
     }
 }
+#endif
 
 // general purpose method to consume position estimate data and send to EKF
 // distances in meters, roll, pitch and yaw are in radians
@@ -189,7 +196,7 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
 }
 
 // general purpose method to consume position estimate data and send to EKF
-void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter)
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -198,7 +205,7 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, 0, 0, reset_counter);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter);
     }
 }
 
@@ -215,8 +222,8 @@ void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32
     }
 }
 
-// calibrate camera attitude to align with vehicle's AHRS/EKF attitude
-void AP_VisualOdom::align_sensor_to_vehicle()
+// request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+void AP_VisualOdom::request_align_yaw_to_ahrs()
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -225,7 +232,7 @@ void AP_VisualOdom::align_sensor_to_vehicle()
 
     // call backend
     if (_driver != nullptr) {
-        _driver->align_sensor_to_vehicle();
+        _driver->request_align_yaw_to_ahrs();
     }
 }
 
@@ -251,15 +258,15 @@ bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) co
         return true;
     }
 
-    // check healthy
-    if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
-        return false;
-    }
-
     // if no backend we must have failed to create because out of memory
     if (_driver == nullptr) {
         hal.util->snprintf(failure_msg, failure_msg_len, "out of memory");
+        return false;
+    }
+
+    // check healthy
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
         return false;
     }
 

@@ -44,8 +44,9 @@ PB10 I2C2_SCL I2C2 PULLUP
 PB11 I2C2_SDA I2C2 PULLUP
 
 # I2C1 on PPM / PB9 pads of V6.x board revision
-PB8 I2C1_SCL I2C1 PULLUP
-PB9 I2C1_SDA I2C1 PULLUP
+# On ALT config as it interferes with 6.0 revisions
+PB8 I2C1_SCL I2C1 PULLUP ALT(1)
+PB9 I2C1_SDA I2C1 PULLUP ALT(1)
 
 # use RX3 / TX3 pins as USART3 = SERIAL4 in BRD_ALT_CONFIG = 1
 PB10 USART3_TX USART3 ALT(1)
@@ -86,8 +87,8 @@ PA8 LED OUTPUT HIGH GPIO(41)
 # use active buzzer instead
 PB4 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -108,7 +109,7 @@ SPIDEV osd        SPI3 DEVID4 OSD_CS     MODE0 10*MHZ 10*MHZ
 SPIDEV dataflash  SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # one IMU
 IMU Invensense SPI:mpu6000 ROTATION_YAW_90
@@ -119,11 +120,10 @@ BARO BMP280 SPI:bmp280
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 
@@ -146,9 +146,10 @@ define HAL_OSD_TYPE_DEFAULT 1
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 4
-
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_MOUNT_ENABLED 0
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

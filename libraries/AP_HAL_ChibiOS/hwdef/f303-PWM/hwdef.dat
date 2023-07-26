@@ -1,0 +1,32 @@
+include ../f303-periph/hwdef.inc
+
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_PWM"
+
+undef PA2
+undef PA3
+undef PB14
+undef PB15
+undef USART2
+
+undef PB6
+undef PB7
+undef I2C1
+
+undef PA5
+undef PA6
+undef PA7
+undef SPI1
+
+SERIAL_ORDER USART1
+I2C_ORDER
+
+# setup for 4 PWM
+PA2 TIM2_CH3 TIM2 PWM(1) GPIO(50)
+PA3 TIM2_CH4 TIM2 PWM(2) GPIO(51)
+PB14 TIM1_CH2N TIM1 PWM(3) GPIO(52)
+PB15 TIM1_CH3N TIM1 PWM(4) GPIO(53)
+
+# enable PWM
+define HAL_PERIPH_ENABLE_RC_OUT
+

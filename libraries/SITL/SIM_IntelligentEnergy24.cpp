@@ -79,9 +79,6 @@ void IntelligentEnergy24::update_send()
     // Simulate constant current charge/discharge of the battery
     float amps = discharge ? -20.0f : 20.0f;
 
-    // Simulate constant tank pressure. This isn't true in reality, but is good enough
-    const int16_t tank_bar = 250;
-
     // Update pack capacity remaining
     bat_capacity_mAh += amps*(now - last_sent_ms)/3600.0f;
 
@@ -89,6 +86,11 @@ void IntelligentEnergy24::update_send()
     const float min_bat_vol = 42.0f;
     const float max_bat_vol = 50.4f;
     const float max_bat_capactiy_mAh = 3300;
+
+    // Simulate tank pressure
+    // Scale tank pressure linearly to a percentage.
+    // Min = 5 bar, max = 300 bar, PRESS_GRAD = 1/295.
+    const int16_t tank_bar = linear_interpolate(5, 295, bat_capacity_mAh / max_bat_capactiy_mAh, 0, 1);
 
     battery_voltage = bat_capacity_mAh / max_bat_capactiy_mAh * (max_bat_vol - min_bat_vol) + min_bat_vol;
 
@@ -102,8 +104,8 @@ void IntelligentEnergy24::update_send()
     int32_t battery_pwr = battery_voltage * amps; // Watts
 
     // These are non-physical values
-    const int32_t pwr_out = battery_pwr*1.4f;
-    const uint32_t spm_pwr = battery_pwr*0.3f;
+    const int32_t pwr_out = float_to_int32(battery_pwr*1.4f);
+    const uint32_t spm_pwr = float_to_uint32(battery_pwr*0.3f);
 
     uint32_t state = set_state;
     if (set_state == -1) {
@@ -116,11 +118,11 @@ void IntelligentEnergy24::update_send()
     hal.util->snprintf(message, ARRAY_SIZE(message), "<%i,%.1f,%i,%u,%i,%u,%u>\n",
              tank_bar,
              battery_voltage,
-             pwr_out,
-             spm_pwr,
-             battery_pwr,
-             state,
-             (uint32_t)err_code);
+             (signed)pwr_out,
+             (unsigned)spm_pwr,
+             (signed)battery_pwr,
+             (unsigned)state,
+             (unsigned)err_code);
 
     if ((unsigned)write_to_autopilot(message, strlen(message)) != strlen(message)) {
         AP_HAL::panic("Failed to write to autopilot: %s", strerror(errno));

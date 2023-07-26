@@ -73,15 +73,21 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("CRT_SINK", 6, AP_Parachute, _critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
-    
-    
+
+    // @Param: OPTIONS
+    // @DisplayName: Parachute options
+    // @Description: Optional behaviour for parachute
+    // @Bitmask: 0:hold open forever after release
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, 0),
+
     AP_GROUPEND
 };
 
 /// enabled - enable or disable parachute release
 void AP_Parachute::enabled(bool on_off)
 {
-    _enabled = on_off;
+    _enabled.set(on_off);
 
     // clear release_time
     _release_time = 0;
@@ -123,26 +129,39 @@ void AP_Parachute::update()
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
 
+    bool hold_forever = (_options.get() & uint32_t(Options::HoldOpen)) != 0;
+
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
                 SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
+#if AP_RELAY_ENABLED
             } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
-                _relay.on(_release_type);
+                AP_Relay*_relay = AP::relay();
+                if (_relay != nullptr) {
+                    _relay->on(_release_type);
+                }
+#endif
             }
             _release_in_progress = true;
             _released = true;
         }
-    } else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    } else if ((_release_time == 0) ||
+               (!hold_forever && time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS)) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
+#if AP_RELAY_ENABLED
         } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
-            _relay.off(_release_type);
+            AP_Relay*_relay = AP::relay();
+            if (_relay != nullptr) {
+                _relay->off(_release_type);
+            }
+#endif
         }
         // reset released flag and release_time
         _release_in_progress = false;
@@ -185,6 +204,35 @@ void AP_Parachute::check_sink_rate()
     if ((_sink_time_ms > 0) && ((AP_HAL::millis() - _sink_time_ms) > 1000)) {
         release();
     }
+}
+
+// check settings are valid
+bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
+{
+    if (_enabled > 0) {
+        if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_parachute_release)) {
+                hal.util->snprintf(buffer, buflen, "Chute has no channel");
+                return false;
+            }
+        } else {
+#if AP_RELAY_ENABLED
+            AP_Relay*_relay = AP::relay();
+            if (_relay == nullptr || !_relay->enabled(_release_type)) {
+                hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
+                return false;
+            }
+#else
+            hal.util->snprintf(buffer, buflen, "AP_Relay not available");
+#endif
+        }
+
+        if (_release_initiated) {
+            hal.util->snprintf(buffer, buflen, "Chute is released");
+            return false;
+        }
+    }
+    return true;
 }
 
 // singleton instance

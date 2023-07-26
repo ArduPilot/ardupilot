@@ -8,6 +8,9 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_CSVReader/AP_CSVReader.h>
+
+#include <SITL/SIM_SerialDevice.h>
 
 class HALSITL::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -22,45 +25,18 @@ public:
         _listen_fd = -1;
     }
 
-    /* Implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) override {
-        begin(b, 0, 0);
-    }
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override {
         return true;
     }
 
     ssize_t get_system_outqueue_length() const;
 
-    void set_blocking_writes(bool blocking) override
-    {
-        _nonblocking_writes = !blocking;
-    }
-
     bool tx_pending() override {
         return false;
     }
 
     /* Implementations of Stream virtual methods */
-    uint32_t available() override;
     uint32_t txspace() override;
-    int16_t read() override;
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-
-    bool discard_input() override;
-
-    /* Implementations of Print virtual methods */
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    // file descriptor, exposed so SITL_State::loop_hook() can use it
-    int _fd;
-
-    // file descriptor for reading multicast packets
-    int _mc_fd;
 
     bool _unbuffered_writes;
 
@@ -86,8 +62,14 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
 private:
+
+    int _fd;
+
+    // file descriptor for reading multicast packets
+    int _mc_fd;
+
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
@@ -95,7 +77,6 @@ private:
     struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
-    bool _nonblocking_writes;
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
@@ -125,12 +106,41 @@ private:
     bool _is_udp;
     bool _packetise;
     uint16_t _mc_myport;
-    uint32_t last_tick_us;
 
-    // if this is not -1 then data should be written here instead of
-    // _fd.  This is to support simulated serial devices, which use a
-    // pipe for read and a pipe for write
-    int _fd_write = -1;
+    // for baud-rate limiting:
+    uint32_t last_read_tick_us;
+    uint32_t last_write_tick_us;
+
+    SITL::SerialDevice *_sim_serial_device;
+
+    struct {
+        bool active;
+        uint8_t term[20];
+        AP_CSVReader csvreader{term, sizeof(term), ','};
+        struct {
+            uint32_t timestamp_us;
+            uint8_t b;  // the byte
+        } loaded_data;
+        bool loaded;  // true if data is all valid
+        bool done_first_line = false;
+        uint8_t terms_seen;
+        uint32_t first_timestamp_us;
+        uint32_t first_emit_micros_us;
+    } logic_async_csv;
+    uint16_t read_from_async_csv(uint8_t *buffer, uint16_t space);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    uint32_t _available() override;
+    void _end() override;
+    void _flush() override;
+    bool _discard_input() override;
+
+private:
+    void handle_writing_from_writebuffer_to_device();
+    void handle_reading_from_device_to_readbuffer();
 };
 
 #endif

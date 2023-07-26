@@ -18,6 +18,8 @@
 
 #include "SIM_PS_TeraRangerTower.h"
 
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
@@ -75,3 +77,5 @@ void PS_TeraRangerTower::update(const Location &location)
 {
     update_output(location);
 }
+
+#endif  // HAL_SIM_PS_TERARANGERTOWER_ENABLED

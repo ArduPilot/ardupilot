@@ -39,7 +39,7 @@ void Sub::Log_Write_Control_Tuning()
         throttle_out        : motors.get_throttle(),
         throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_pos_target_z_cm() / 100.0f,
-        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,
@@ -57,35 +57,7 @@ void Sub::Log_Write_Attitude()
     targets.z = wrap_360_cd(targets.z);
     ahrs.Write_Attitude(targets);
 
-    AP::ahrs_navekf().Log_Write();
-    ahrs.Write_AHRS2();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
-}
-
-struct PACKED log_MotBatt {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   lift_max;
-    float   bat_volt;
-    float   bat_res;
-    float   th_limit;
-};
-
-// Write an rate packet
-void Sub::Log_Write_MotBatt()
-{
-    struct log_MotBatt pkt_mot = {
-        LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
-        time_us         : AP_HAL::micros64(),
-        lift_max        : (float)(motors.get_lift_max()),
-        bat_volt        : (float)(motors.get_batt_voltage_filt()),
-        bat_res         : (float)(battery.get_resistance()),
-        th_limit        : (float)(motors.get_throttle_limit())
-    };
-    logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
+    AP::ahrs().Log_Write();
 }
 
 struct PACKED log_Data_Int16t {
@@ -196,22 +168,6 @@ void Sub::Log_Write_Data(LogDataID id, float value)
     }
 }
 
-// logs when baro or compass becomes unhealthy
-void Sub::Log_Sensor_Health()
-{
-    // check baro
-    if (sensor_health.baro != barometer.healthy()) {
-        sensor_health.baro = barometer.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::BARO, (sensor_health.baro ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-
-    // check compass
-    if (sensor_health.compass != compass.healthy()) {
-        sensor_health.compass = compass.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-}
-
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -257,14 +213,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 
-// @LoggerMessage: MOTB
-// @Description: Battery information
-// @Field: TimeUS: Time since system startup
-// @Field: LiftMax: Maximum motor compensation gain
-// @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
-// @Field: BatRes: Estimated battery resistance
-// @Field: ThLimit: Throttle limit set due to battery current limitations
-
 // @LoggerMessage: D16
 // @Description: Generic 16-bit-signed-integer storage
 // @Field: TimeUS: Time since system startup
@@ -295,7 +243,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: Id: Data type identifier
 // @Field: Value: Value
 
-// @LoggerMessage: GUID
+// @LoggerMessage: GUIP
 // @Description: Guided mode target information
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
@@ -313,8 +261,6 @@ const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
-    { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
@@ -326,13 +272,13 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode((uint8_t)control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
@@ -347,13 +293,11 @@ void Sub::log_init()
 
 void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Attitude(void) {}
-void Sub::Log_Write_MotBatt() {}
 void Sub::Log_Write_Data(LogDataID id, int32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, float value) {}
-void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Sub::Log_Write_Vehicle_Startup_Messages() {}
 

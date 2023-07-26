@@ -13,8 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Notify/AP_Notify.h"
 #include "NeoPixel.h"
+
+#if AP_NOTIFY_NEOPIXEL_ENABLED
+
+#include "AP_Notify/AP_Notify.h"
 #include "SRV_Channel/SRV_Channel.h"
 
 // This limit is from the dshot driver rcout groups limit
@@ -64,3 +67,5 @@ uint16_t NeoPixel::init_ports()
 
     return mask;
 }
+
+#endif  // AP_NOTIFY_NEOPIXEL_ENABLED

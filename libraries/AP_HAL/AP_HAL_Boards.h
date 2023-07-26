@@ -13,6 +13,7 @@
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
 #define HAL_BOARD_F4LIGHT  11 // reserved
+#define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -40,6 +41,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_POCKET     1022
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR  1023
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
+#define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -57,6 +59,14 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
+
+#define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
+#define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
+#define HAL_BOARD_SUBTYPE_ESP32_BUZZ            6003
+#define HAL_BOARD_SUBTYPE_ESP32_EMPTY           6004
+#define HAL_BOARD_SUBTYPE_ESP32_TOMTE76         6005
+#define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
+#define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -77,10 +87,6 @@
 #define HAL_BARO_20789_I2C_I2C  14
 #define HAL_BARO_20789_I2C_SPI  15
 #define HAL_BARO_LPS25H_IMU_I2C 17
-
-/* Compass driver types */
-#define HAL_COMPASS_NONE                0
-#define HAL_COMPASS_HIL_UNUSED          3  // unused
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
@@ -129,16 +135,14 @@
     #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    #include <AP_HAL/board/esp32.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
 
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
-#endif
-
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
 #endif
 
 #ifndef HAL_OS_SOCKETS
@@ -153,10 +157,6 @@
 #define HAL_HAVE_IMU_HEATER 0
 #endif
 
-#ifndef HAL_COMPASS_HMC5843_I2C_ADDR
-#define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-#endif
-
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif
@@ -167,10 +167,6 @@
 
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
-#endif
-
-#ifndef HAL_HAVE_GETTIME_SETTIME
-#define HAL_HAVE_GETTIME_SETTIME 0
 #endif
 
 // this is used as a general mechanism to make a 'small' build by
@@ -184,20 +180,17 @@
 #define BOARD_FLASH_SIZE 2048
 #endif
 
-#ifndef HAL_WITH_DSP
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || defined(HAL_BOOTLOADER_BUILD) || defined(HAL_BUILD_AP_PERIPH) || BOARD_FLASH_SIZE <= 1024
-#define HAL_WITH_DSP 0
-#else
-#define HAL_WITH_DSP !HAL_MINIMIZE_FEATURES
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED (BOARD_FLASH_SIZE > 1024)
 #endif
+
+// enable AP_GyroFFT library only if required:
+#ifndef HAL_WITH_DSP
+#define HAL_WITH_DSP HAL_GYROFFT_ENABLED
 #endif
 
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
-#endif
-
-#ifndef HAL_COMPASS_DEFAULT
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #endif
 
 #ifndef HAL_BARO_DEFAULT
@@ -217,19 +210,19 @@
 #endif
 
 #ifndef HAL_MAX_CAN_PROTOCOL_DRIVERS
-#if defined(HAL_BOOTLOADER_BUILD)
-    #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
-#else
     #define HAL_MAX_CAN_PROTOCOL_DRIVERS HAL_NUM_CAN_IFACES
-#endif
 #endif
 
 #ifndef HAL_CANMANAGER_ENABLED
-#define HAL_CANMANAGER_ENABLED ((HAL_MAX_CAN_PROTOCOL_DRIVERS > 0) && !defined(HAL_BUILD_AP_PERIPH))
+#define HAL_CANMANAGER_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 0)
 #endif
 
-#ifndef HAL_ENABLE_LIBUAVCAN_DRIVERS
-#define HAL_ENABLE_LIBUAVCAN_DRIVERS HAL_CANMANAGER_ENABLED
+#ifndef HAL_ENABLE_DRONECAN_DRIVERS
+#define HAL_ENABLE_DRONECAN_DRIVERS HAL_CANMANAGER_ENABLED
+#endif
+
+#ifndef AP_TEST_DRONECAN_DRIVERS
+#define AP_TEST_DRONECAN_DRIVERS 0
 #endif
 
 #ifdef HAVE_LIBDL
@@ -242,25 +235,110 @@
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
 
+#ifndef HAL_FORWARD_OTG2_SERIAL
+#define HAL_FORWARD_OTG2_SERIAL 0
+#endif
 
 #ifndef HAL_HAVE_DUAL_USB_CDC
 #define HAL_HAVE_DUAL_USB_CDC 0
 #endif
 
+#ifndef AP_CAN_SLCAN_ENABLED
 #if HAL_NUM_CAN_IFACES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#define AP_UAVCAN_SLCAN_ENABLED 1
+#define AP_CAN_SLCAN_ENABLED 1
 #else
-#define AP_UAVCAN_SLCAN_ENABLED 0
+#define AP_CAN_SLCAN_ENABLED 0
+#endif
 #endif
 
 #ifndef USE_LIBC_REALLOC
 #define USE_LIBC_REALLOC 1
 #endif
 
+#ifndef AP_HAL_SHARED_DMA_ENABLED
+#define AP_HAL_SHARED_DMA_ENABLED 1
+#endif
+
 #ifndef HAL_ENABLE_THREAD_STATISTICS
 #define HAL_ENABLE_THREAD_STATISTICS 0
 #endif
 
-#ifndef HAL_INS_ENABLED
-#define HAL_INS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
+#ifndef AP_STATS_ENABLED
+#define AP_STATS_ENABLED 1
+#endif
+
+#ifndef HAL_WITH_MCU_MONITORING
+#define HAL_WITH_MCU_MONITORING 0
+#endif
+
+#ifndef AP_CRASHDUMP_ENABLED
+#define AP_CRASHDUMP_ENABLED 0
+#endif
+
+#ifndef AP_SIGNED_FIRMWARE
+#define AP_SIGNED_FIRMWARE 0
+#endif
+
+#ifndef HAL_DSHOT_ALARM_ENABLED
+#define HAL_DSHOT_ALARM_ENABLED 0
+#endif
+
+#ifndef HAL_HNF_MAX_FILTERS
+// On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
+// The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
+// So at 1Khz almost all notch combinations can be supported on F7 and certainly H7
+#if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// Enough for a double-notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one double-notch harmonics
+#define HAL_HNF_MAX_FILTERS 54
+#elif defined(STM32F7)
+// Enough for a notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one harmonics
+#define HAL_HNF_MAX_FILTERS 27
+#else
+// Enough for a notch per motor on an octa quad using two IMUs and one harmonic
+// plus one static notch with one harmonic
+#define HAL_HNF_MAX_FILTERS 18
+#endif
+#endif // HAL_HNF_MAX_FILTERS
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL // allow SITL to have all the CANFD options
+#define HAL_CANFD_SUPPORTED 8
+#elif !defined(HAL_CANFD_SUPPORTED)
+#define HAL_CANFD_SUPPORTED 0
+#endif
+
+#ifndef HAL_USE_QUADSPI
+#define HAL_USE_QUADSPI 0
+#endif
+#ifndef HAL_USE_OCTOSPI
+#define HAL_USE_OCTOSPI 0
+#endif
+
+#ifndef __RAMFUNC__
+#define __RAMFUNC__
+#endif
+
+#ifndef __FASTRAMFUNC__
+#define __FASTRAMFUNC__
+#endif
+
+#ifndef __EXTFLASHFUNC__
+#define __EXTFLASHFUNC__
+#endif
+
+#ifndef HAL_ENABLE_DFU_BOOT
+#define HAL_ENABLE_DFU_BOOT 0
+#endif
+
+
+// sanity checks for the configuration.  This can't test everything as
+// the libraries can do their own definitions - but we can catch some
+// things:
+#if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#error "2MB board with minimize features?!"
+#endif
+
+#ifndef HAL_ENABLE_SENDING_STATS
+#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif

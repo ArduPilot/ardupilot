@@ -127,7 +127,7 @@ bool ModeThermal::exit_heading_aligned() const
     switch (plane.previous_mode->mode_number()) {
     case Mode::Number::AUTO: {
         //Get the lat/lon of next Nav waypoint after this one:
-        AP_Mission::Mission_Command current_nav_cmd = plane.mission.get_current_nav_cmd();;
+        AP_Mission::Mission_Command current_nav_cmd = plane.mission.get_current_nav_cmd();
         return plane.mode_loiter.isHeadingLinedUp(plane.next_WP_loc, current_nav_cmd.content.location);
     }
     case Mode::Number::FLY_BY_WIRE_B:

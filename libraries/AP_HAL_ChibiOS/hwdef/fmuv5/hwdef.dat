@@ -180,8 +180,6 @@ PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 PH6  TIM12_CH1 TIM12 PWM(7) GPIO(56) NODMA
 PH9  TIM12_CH2 TIM12 PWM(8) GPIO(57) NODMA
 
-define BOARD_PWM_COUNT_DEFAULT 8
-
 # PWM output for buzzer
 PE5 TIM9_CH1 TIM9 GPIO(77) ALARM
 
@@ -296,7 +294,6 @@ define HAL_WITH_RAMTRON 1
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 DMA_PRIORITY SDMMC* UART8* ADC* SPI* TIM*
@@ -305,9 +302,6 @@ DMA_PRIORITY SDMMC* UART8* ADC* SPI* TIM*
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 

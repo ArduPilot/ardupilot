@@ -46,17 +46,25 @@ private:
       initialise driver
      */
     bool init();
-    void read_sensor(void);
+    void read_sensor16(void);
+    void read_sensor32(void);
+    void read_sensor32_delta(void);
     void loop(void);
-    bool check_product_id();
+    bool check_product_id(uint16_t &id);
 
     // read a 16 bit register
     uint16_t read_reg16(uint8_t regnum) const;
 
     // write a 16 bit register
-    void write_reg16(uint8_t regnum, uint16_t value) const;
+    bool write_reg16(uint8_t regnum, uint16_t value, bool confirm=false) const;
     
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+
+    enum class OpMode : uint8_t {
+        Basic      =1,
+        AG32       =2,
+        Delta32    =3
+    } opmode;
 
     uint8_t accel_instance;
     uint8_t gyro_instance;
@@ -67,7 +75,10 @@ private:
     bool done_first_read;
     float temp_sum;
     uint8_t temp_count;
+    float expected_sample_rate_hz;
 
     float accel_scale;
     float gyro_scale;
+    double dangle_scale;
+    double dvel_scale;
 };

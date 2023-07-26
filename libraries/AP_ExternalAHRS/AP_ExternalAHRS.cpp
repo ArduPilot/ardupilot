@@ -16,10 +16,14 @@
   suppport for serial connected AHRS systems
  */
 
-#include "AP_ExternalAHRS.h"
-#include "AP_ExternalAHRS_VectorNav.h"
+#include "AP_ExternalAHRS_config.h"
 
 #if HAL_EXTERNAL_AHRS_ENABLED
+
+#include "AP_ExternalAHRS.h"
+#include "AP_ExternalAHRS_backend.h"
+#include "AP_ExternalAHRS_VectorNav.h"
+#include "AP_ExternalAHRS_LORD.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -49,7 +53,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav
+    // @Values: 0:None,1:VectorNav,2:LORD
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -59,6 +63,20 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 50),
+
+    // @Param: _OPTIONS
+    // @DisplayName: External AHRS options
+    // @Description: External AHRS options bitmask
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
+
+    // @Param: _SENSORS
+    // @DisplayName: External AHRS sensors
+    // @Description: External AHRS sensors bitmask
+    // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
+    // @User: Advanced
+    AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
     
     AP_GROUPEND
 };
@@ -75,19 +93,31 @@ void AP_ExternalAHRS::init(void)
     case DevType::None:
         // nothing to do
         break;
+#if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
     case DevType::VecNav:
         backend = new AP_ExternalAHRS_VectorNav(this, state);
         break;
+#endif
+#if AP_EXTERNAL_AHRS_LORD_ENABLED
+    case DevType::LORD:
+        backend = new AP_ExternalAHRS_LORD(this, state);
+        break;
     default:
+#endif
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
         break;
     }
 }
 
-// get serial port number for the uart, or -1 if not applicable
-int8_t AP_ExternalAHRS::get_port(void) const
+bool AP_ExternalAHRS::enabled() const
 {
-    if (!backend) {
+    return DevType(devtype) != DevType::None;
+}
+
+// get serial port number for the uart, or -1 if not applicable
+int8_t AP_ExternalAHRS::get_port(AvailableSensor sensor) const
+{
+    if (!backend || !has_sensor(sensor)) {
         return -1;
     }
     return backend->get_port();
@@ -190,10 +220,10 @@ Vector3f AP_ExternalAHRS::get_accel(void)
 }
 
 // send an EKF_STATUS message to GCS
-void AP_ExternalAHRS::send_status_report(mavlink_channel_t chan) const
+void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
-        backend->send_status_report(chan);
+        backend->send_status_report(link);
     }
 }
 
@@ -202,6 +232,15 @@ void AP_ExternalAHRS::update(void)
     if (backend) {
         backend->update();
     }
+}
+
+// Get model/type name
+const char* AP_ExternalAHRS::get_name() const
+{
+    if (backend) {
+        return backend->get_name();
+    }
+    return nullptr;
 }
 
 namespace AP {

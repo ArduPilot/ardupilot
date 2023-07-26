@@ -172,7 +172,7 @@ PA7 SPI1_MOSI SPI1
 # this defines an output pin which will default to output LOW. It is a
 # pin that enables peripheral power on this board
 
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -384,10 +384,6 @@ SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 # a #define in the hwdef.h header
 define HAL_CHIBIOS_ARCH_FMUV3 1
 
-# now some defines for logging and terrain data files
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)
 define HAL_STORAGE_SIZE 32768
@@ -426,7 +422,7 @@ DMA_PRIORITY USART6*
 FLASH_RESERVE_START_KB 96
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

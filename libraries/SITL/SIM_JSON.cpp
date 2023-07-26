@@ -18,6 +18,8 @@
 
 #include "SIM_JSON.h"
 
+#if HAL_SIM_JSON_ENABLED
+
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -25,6 +27,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/replace.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #define UDP_TIMEOUT_MS 100
 
@@ -98,20 +101,34 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
 */
 void JSON::output_servos(const struct sitl_input &input)
 {
-    servo_packet pkt;
-    pkt.frame_rate = rate_hz;
-    pkt.frame_count = frame_counter;
-    for (uint8_t i=0; i<16; i++) {
-        pkt.pwm[i] = input.servos[i];
+    size_t pkt_size = 0;
+    ssize_t send_ret = -1;
+    if (SRV_Channels::have_32_channels()) {
+      servo_packet_32 pkt;
+      pkt.frame_rate = rate_hz;
+      pkt.frame_count = frame_counter;
+      for (uint8_t i=0; i<32; i++) {
+          pkt.pwm[i] = input.servos[i];
+      }
+      pkt_size = sizeof(pkt);
+      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+    } else {
+      servo_packet_16 pkt;
+      pkt.frame_rate = rate_hz;
+      pkt.frame_count = frame_counter;
+      for (uint8_t i=0; i<16; i++) {
+          pkt.pwm[i] = input.servos[i];
+      }
+      pkt_size = sizeof(pkt);
+      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
     }
 
-    size_t send_ret = sock.sendto(&pkt, sizeof(pkt), target_ip, control_port);
-    if (send_ret != sizeof(pkt)) {
+    if ((size_t)send_ret != pkt_size) {
         if (send_ret <= 0) {
             printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
                    target_ip, control_port, strerror(errno), (long)send_ret);
         } else {
-            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)pkt_size);
         }
     }
 }
@@ -124,9 +141,9 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
-uint16_t JSON::parse_sensors(const char *json)
+uint32_t JSON::parse_sensors(const char *json)
 {
-    uint16_t received_bitmask = 0;
+    uint32_t received_bitmask = 0;
 
     //printf("%s\n", json);
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
@@ -203,6 +220,11 @@ uint16_t JSON::parse_sensors(const char *json)
                 break;
             }
 
+            case BOOLEAN:
+                *((bool *)key.ptr) = strtoull(p, nullptr, 10) != 0;
+                //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
+                break;
+
         }
     }
 
@@ -246,9 +268,9 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    const uint16_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint32_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
-        // did not receve one of the mandatory fields
+        // did not receive one of the mandatory fields
         printf("Did not contain all mandatory fields\n");
         return;
     }
@@ -284,6 +306,8 @@ void JSON::recv_fdm(const struct sitl_input &input)
     gyro = state.imu.gyro;
     velocity_ef = state.velocity;
     position = state.position;
+    position.xy() += origin.get_distance_NE_double(home);
+    use_time_sync = !state.no_time_sync;
 
     // deal with euler or quaternion attitude
     if ((received_bitmask & QUAT_ATT) != 0) {
@@ -341,8 +365,9 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     if (is_positive(deltat) && deltat < 0.1) {
         // time in us to hz
-        adjust_frame_time(1.0 / deltat);
-
+        if (use_time_sync) {
+            adjust_frame_time(1.0 / deltat);
+        }
         // match actual frame rate with desired speedup
         time_advance();
     }
@@ -370,7 +395,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 // @Field: GX: Simulated gyroscope, X-axis (rad/sec)
 // @Field: GY: Simulated gyroscope, Y-axis (rad/sec)
 // @Field: GZ: Simulated gyroscope, Z-axis (rad/sec)
-    AP::logger().Write("JSN1", "TimeUS,TStamp,R,P,Y,GX,GY,GZ",
+    AP::logger().WriteStreaming("JSN1", "TimeUS,TStamp,R,P,Y,GX,GY,GZ",
                        "ssrrrEEE",
                        "F???????",
                        "Qfffffff",
@@ -397,7 +422,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 // @Field: AN: simulation's acceleration, North (m/s^2)
 // @Field: AE: simulation's acceleration, East (m/s^2)
 // @Field: AD: simulation's acceleration, Down (m/s^2)
-    AP::logger().Write("JSN2", "TimeUS,VN,VE,VD,AX,AY,AZ,AN,AE,AD",
+    AP::logger().WriteStreaming("JSN2", "TimeUS,VN,VE,VD,AX,AY,AZ,AN,AE,AD",
                        "snnnoooooo",
                        "F?????????",
                        "Qfffffffff",
@@ -436,7 +461,9 @@ void JSON::update(const struct sitl_input &input)
 #if 0
     // report frame rate
     if (frame_counter % 1000 == 0) {
-        printf("FPS %.2f\n", achieved_rate_hz); // this is instantaneous rather than any clever average
+        printf("FPS %.2f\n", rate_hz); // this is instantaneous rather than any clever average
     }
 #endif
 }
+
+#endif  // HAL_SIM_JSON_ENABLED

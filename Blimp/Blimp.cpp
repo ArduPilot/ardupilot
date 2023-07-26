@@ -21,45 +21,80 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros)
+#define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros, priority)
+#define FAST_TASK(func) FAST_TASK_CLASS(Blimp, &blimp, func)
 
 /*
-  scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called (in hz)
-  and the maximum time they are expected to take (in microseconds)
+  scheduler table - all tasks should be listed here.
+
+  All entries in this table must be ordered by priority.
+
+  This table is interleaved with the table in AP_Vehicle to determine
+  the order in which tasks are run.  Convenience methods SCHED_TASK
+  and SCHED_TASK_CLASS are provided to build entries in this structure:
+
+SCHED_TASK arguments:
+ - name of static function to call
+ - rate (in Hertz) at which the function should be called
+ - expected time (in MicroSeconds) that the function should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
+SCHED_TASK_CLASS arguments:
+ - class name of method to be called
+ - instance on which to call the method
+ - method to call on that instance
+ - rate (in Hertz) at which the method should be called
+ - expected time (in MicroSeconds) that the method should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
  */
 const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,              100,    130),
-    SCHED_TASK(throttle_loop,         50,     75),
-    SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200),
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50),
-    SCHED_TASK(arm_motors_check,      10,     50),
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(three_hz_loop,          3,     75),
-    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75),
-    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,           accumulate,      50,  90),
-#if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(full_rate_logging,     50,    50),
+    // update INS immediately to get current gyro data populated
+    FAST_TASK_CLASS(AP_InertialSensor, &blimp.ins, update),
+    // send outputs to the motors library immediately
+    FAST_TASK(motors_output),
+     // run EKF state estimator (expensive)
+    FAST_TASK(read_AHRS),
+    // Inertial Nav
+    FAST_TASK(read_inertia),
+    // check if ekf has reset target heading or position
+    FAST_TASK(check_ekf_reset),
+    // run the attitude controllers
+    FAST_TASK(update_flight_mode),
+    // update home from EKF if necessary
+    FAST_TASK(update_home_from_EKF),
+
+    SCHED_TASK(rc_loop,              100,    130,   3),
+    SCHED_TASK(throttle_loop,         50,     75,   6),
+    SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
+    SCHED_TASK(update_batt_compass,   10,    120,  12),
+    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
+    SCHED_TASK(arm_motors_check,      10,     50,  18),
+    SCHED_TASK(update_altitude,       10,    100,  21),
+    SCHED_TASK(three_hz_loop,          3,     75,  24),
+#if AP_SERVORELAYEVENTS_ENABLED
+    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75,  27),
 #endif
-    SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90),
-    SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
-    SCHED_TASK(check_vibration,       10,     50),
-    SCHED_TASK(gpsglitch_check,       10,     50),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550),
+    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,             accumulate,    50,     90,  30),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300),
+    SCHED_TASK(full_rate_logging,     50,    50,  33),
 #endif
-    SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50),
-    SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75),
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
+    SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90,  36),
+    SCHED_TASK(one_hz_loop,            1,    100,  39),
+    SCHED_TASK(ekf_check,             10,     75,  42),
+    SCHED_TASK(check_vibration,       10,     50,  45),
+    SCHED_TASK(gpsglitch_check,       10,     50,  48),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180,  51),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550,  54),
+#if LOGGING_ENABLED == ENABLED
+    SCHED_TASK(ten_hz_logging_loop,   10,    350,  57),
+    SCHED_TASK(twentyfive_hz_logging, 25,    110,  60),
+    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300,  63),
+#endif
+    SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50,  66),
+    SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75,  69),
 #if STATS_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100),
+    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100,  75),
 #endif
 };
 
@@ -73,40 +108,6 @@ void Blimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 }
 
 constexpr int8_t Blimp::_failsafe_priorities[4];
-
-// Main loop
-void Blimp::fast_loop()
-{
-    // update INS immediately to get current gyro data populated
-    ins.update();
-
-    // send outputs to the motors library immediately
-    motors_output();
-
-    // run EKF state estimator (expensive)
-    // --------------------
-    read_AHRS();
-
-    // Inertial Nav
-    // --------------------
-    read_inertia();
-
-    // check if ekf has reset target heading or position
-    check_ekf_reset();
-
-    // run the attitude controllers
-    update_flight_mode();
-
-    // update home from EKF if necessary
-    update_home_from_EKF();
-
-    // log sensor health
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Sensor_Health();
-    }
-
-    AP_Vehicle::fast_loop(); //just does gyro fft
-}
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
@@ -133,7 +134,7 @@ void Blimp::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if (AP::compass().enabled()) {
+    if (AP::compass().available()) {
         // update compass with throttle value - used for compassmot
         compass.set_voltage(battery.voltage());
         compass.read();
@@ -162,9 +163,6 @@ void Blimp::ten_hz_logging_loop()
     // log EKF attitude data
     if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
-    }
-    if (should_log(MASK_LOG_MOTBATT)) {
-        Log_Write_MotBatt();
     }
     if (should_log(MASK_LOG_RCIN)) {
         logger.Write_RCIN();
@@ -207,13 +205,6 @@ void Blimp::one_hz_loop()
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    arming.update();
-
-    if (!motors->armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-    }
-
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
@@ -241,10 +232,9 @@ void Blimp::update_altitude()
     read_barometer();
 
     if (should_log(MASK_LOG_CTUN)) {
+        AP::ins().write_notch_log_messages();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
-#else
-        write_notch_log_messages();
 #endif
     }
 }
@@ -274,15 +264,11 @@ Blimp::Blimp(void)
     : logger(g.log_bitmask),
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
-      land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
       rc_throttle_control_in_filter(1.0f),
       inertial_nav(ahrs),
       param_loader(var_info),
       flightmode(&mode_manual)
 {
-    // init sensor error logging flags
-    sensor_health.baro = true;
-    sensor_health.compass = true;
 }
 
 Blimp blimp;

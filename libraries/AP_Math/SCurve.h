@@ -36,8 +36,8 @@
  *    velocity: rate of change of position.  aka speed
  *    acceleration: rate of change of speed
  *    jerk: rate of change of acceleration
+ *    snap: rate of change of jerk
  *    jerk time: the time (in seconds) for jerk to increase from zero to its maximum value
- *    jounce: rate of change of jerk
  *    track: 3D path that the vehicle will follow
  *    path: position, velocity, accel and jerk kinematic profile that this library generates
  */
@@ -53,21 +53,22 @@ public:
     void init();
 
     // calculate the segment times for the trigonometric S-Curve path defined by:
-    // tj - duration of the raised cosine jerk profile (aka jerk time)
-    // Jm - maximum value of the raised cosine jerk profile (aka jerk max)
+    // Sm - maximum value of the snap profile
+    // Jm - maximum value of the raised cosine jerk profile
     // V0 - initial velocity magnitude
     // Am - maximum constant acceleration
     // Vm - maximum constant velocity
     // L - Length of the path
+    // tj_out, t2_out, t4_out, t6_out are the segment durations needed to achieve the kinematic path specified by the input variables
     // this is an internal function, static for test suite
-    static void calculate_path(float tj, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &t2_out, float &t4_out, float &t6_out);
+    static void calculate_path(float Sm, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &tj_out, float &t2_out, float &t4_out, float &t6_out);
 
     // generate a trigonometric track in 3D space that moves over a straight line
     // between two points defined by the origin and destination
     void calculate_track(const Vector3f &origin, const Vector3f &destination,
                          float speed_xy, float speed_up, float speed_down,
                          float accel_xy, float accel_z,
-                         float jerk_time_sec, float jerk_maximum);
+                         float snap_maximum, float jerk_maximum);
 
     // set maximum velocity and re-calculate the path using these limits
     void set_speed_max(float speed_xy, float speed_up, float speed_down);
@@ -80,14 +81,15 @@ public:
     void set_destination_speed_max(float speed);
 
     // move target location along path from origin to destination
-    // prev_leg and next_leg are the paths before and after this path
-    // wp_radius is max distance from the waypoint at the apex of the turn
-    // fast_waypoint should be true if vehicle will not stop at end of this leg
-    // dt is the time increment the vehicle will move along the path
-    // target_pos should be set to this segment's origin and it will be updated to the current position target
-    // target_vel and target_accel are updated with new targets
-    // returns true if vehicle has passed the apex of the corner
-    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
+    // prev_leg and next_leg - the paths before and after this path
+    // wp_radius - max distance from the waypoint at the apex of the turn
+    // accel_corner - max acceleration that the aircraft may use during the corner
+    // fast_waypoint - true if vehicle will not stop at end of this leg
+    // dt - the time increment the vehicle will move along the path
+    // target_pos - set to this segment's origin and it will be updated to the current position target
+    // target_vel and target_accel - updated with new targets
+    // advance_target_along_track returns true if vehicle has passed the apex of the corner
+    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
 
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
@@ -127,6 +129,12 @@ private:
     // return true if the sequence is braking to a stop
     bool braking() const WARN_IF_UNUSED;
 
+    // return time offset used to initiate the turn onto leg
+    float time_turn_in() const WARN_IF_UNUSED;
+
+    // return time offset used to initiate the turn from leg
+    float time_turn_out() const WARN_IF_UNUSED;
+
     // increment the internal time
     void advance_time(float dt);
 
@@ -146,16 +154,16 @@ private:
     void add_segments(float L);
 
     // generate three time segments forming the jerk profile
-    void add_segments_jerk(uint8_t &seg_pnt, float tj, float Jm, float Tcj);
+    void add_segments_jerk(uint8_t &seg_pnt, float Jm, float tj, float Tcj);
 
     // generate constant jerk time segment
-    void add_segment_const_jerk(uint8_t &seg_pnt, float tin, float J0);
+    void add_segment_const_jerk(uint8_t &seg_pnt, float J0, float tin);
 
     // generate increasing jerk magnitude time segment based on a raised cosine profile
-    void add_segment_incr_jerk(uint8_t &seg_pnt, float tj, float Jm);
+    void add_segment_incr_jerk(uint8_t &seg_pnt, float Jm, float tj);
 
     // generate decreasing jerk magnitude time segment based on a raised cosine profile
-    void add_segment_decr_jerk(uint8_t &seg_pnt, float tj, float Jm);
+    void add_segment_decr_jerk(uint8_t &seg_pnt, float Jm, float tj);
 
     // set speed and acceleration limits for the path
     // origin and destination are offsets from EKF origin
@@ -183,7 +191,7 @@ private:
     void add_segment(uint8_t &seg_pnt, float end_time, SegmentType seg_type, float jerk_ref, float end_accel, float end_vel, float end_pos);
 
     // members
-    float jerk_time;    // duration of jerk raised cosine time segment
+    float snap_max;     // maximum snap magnitude
     float jerk_max;     // maximum jerk magnitude
     float accel_max;    // maximum acceleration magnitude
     float vel_max;      // maximum velocity magnitude

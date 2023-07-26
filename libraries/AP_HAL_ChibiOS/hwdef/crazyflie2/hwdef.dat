@@ -93,7 +93,7 @@ define HAL_I2C_MAX_CLOCK 400000
 SERIAL_ORDER OTG1 USART3 USART6 USART2
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -113,7 +113,6 @@ BARO LPS2XH:probe_InvensenseIMU I2C:0:0x5D 0x69
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

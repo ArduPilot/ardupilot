@@ -118,7 +118,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-constexpr float expo_curve(float alpha, float x)
+float expo_curve(float alpha, float x)
 {
     return (1.0f - alpha) * x + alpha * x * x * x;
 }
@@ -313,9 +313,13 @@ T constrain_value(const T amt, const T low, const T high)
 }
 
 template int constrain_value<int>(const int amt, const int low, const int high);
+template unsigned int constrain_value<unsigned int>(const unsigned int amt, const unsigned int low, const unsigned int high);
 template long constrain_value<long>(const long amt, const long low, const long high);
+template unsigned long constrain_value<unsigned long>(const unsigned long amt, const unsigned long low, const unsigned long high);
 template long long constrain_value<long long>(const long long amt, const long long low, const long long high);
+template unsigned long long constrain_value<unsigned long long>(const unsigned long long amt, const unsigned long long low, const unsigned long long high);
 template short constrain_value<short>(const short amt, const short low, const short high);
+template unsigned short constrain_value<unsigned short>(const unsigned short amt, const unsigned short low, const unsigned short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
 
@@ -333,22 +337,25 @@ uint16_t get_random16(void)
 }
 
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
 // generate a random float between -1 and 1, for use in SITL
 float rand_float(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+#else
+    return get_random16() / 65535.0;
+#endif
 }
 
+// generate a random Vector3f with each value between -1.0 and 1.0
 Vector3f rand_vec3f(void)
 {
-    Vector3f v = Vector3f(rand_float(),
-                          rand_float(),
-                          rand_float());
-    if (!is_zero(v.length())) {
-        v.normalize();
-    }
-    return v;
+    return Vector3f{
+        rand_float(),
+        rand_float(),
+        rand_float()
+    };
 }
 #endif
 
@@ -392,30 +399,72 @@ Vector3F get_vel_correction_for_sensor_offset(const Vector3F &sensor_offset_bf, 
  */
 float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
 {
-    if (dt <= 0.0f || cutoff_freq <= 0.0f) {
+    if (is_negative(dt) || is_negative(cutoff_freq)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return 1.0;
     }
-    float rc = 1.0f/(M_2PI*cutoff_freq);
-    return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+    if (is_zero(cutoff_freq)) {
+        return 1.0;
+    }
+    if (is_zero(dt)) {
+        return 0.0;
+    }
+    float rc = 1.0f / (M_2PI * cutoff_freq);
+    return dt / (dt + rc);
 }
+
+#ifndef AP_MATH_FILL_NANF_USE_MEMCPY
+#define AP_MATH_FILL_NANF_USE_MEMCPY (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
+#if AP_MATH_FILL_NANF_USE_MEMCPY
+    static bool created;
+    static float many_nanfs[2048];
+    if (!created) {
+        for (uint16_t i=0; i<ARRAY_SIZE(many_nanfs); i++) {
+            created = true;
+            many_nanfs[i] = std::numeric_limits<float>::signaling_NaN();
+        }
+    }
+    if (count > ARRAY_SIZE(many_nanfs)) {
+        AP_HAL::panic("Too big an area to fill");
+    }
+    memcpy(f, many_nanfs, count*sizeof(many_nanfs[0]));
+#else
     const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
         *f++ = n;
     }
+#endif
 }
 
 void fill_nanf(double *f, uint16_t count)
 {
+#if AP_MATH_FILL_NANF_USE_MEMCPY
+    static bool created;
+    static double many_nanfs[2048];
+    if (!created) {
+        for (uint16_t i=0; i<ARRAY_SIZE(many_nanfs); i++) {
+            created = true;
+            many_nanfs[i] = std::numeric_limits<double>::signaling_NaN();
+        }
+    }
+    if (count > ARRAY_SIZE(many_nanfs)) {
+        AP_HAL::panic("Too big an area to fill");
+    }
+    memcpy(f, many_nanfs, count*sizeof(many_nanfs[0]));
+#else
     while (count--) {
         *f++ = std::numeric_limits<double>::signaling_NaN();
     }
-}
 #endif
+}
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 // Convert 16-bit fixed-point to float
 float fixed2float(const uint16_t input, const uint8_t fractional_bits)
@@ -437,4 +486,80 @@ float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
 {
     bank_angle_deg = constrain_float(bank_angle_deg, -80, 80);
     return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
+}
+
+// convert degrees farenheight to Kelvin
+float degF_to_Kelvin(float temp_f)
+{
+    return (temp_f + 459.67) * 0.55556;
+}
+
+/*
+  conversion functions to prevent undefined behaviour
+ */
+int16_t float_to_int16(const float v)
+{
+    return int16_t(constrain_float(v, INT16_MIN, INT16_MAX));
+}
+
+int32_t float_to_int32(const float v)
+{
+    return int32_t(constrain_float(v, INT32_MIN, INT32_MAX));
+}
+
+uint16_t float_to_uint16(const float v)
+{
+    return uint16_t(constrain_float(v, 0, UINT16_MAX));
+}
+
+uint32_t float_to_uint32(const float v)
+{
+    return uint32_t(constrain_float(v, 0, UINT32_MAX));
+}
+
+uint32_t double_to_uint32(const double v)
+{
+    return uint32_t(constrain_double(v, 0, UINT32_MAX));
+}
+
+int32_t double_to_int32(const double v)
+{
+    return int32_t(constrain_double(v, INT32_MIN, UINT32_MAX));
+}
+
+
+int32_t float_to_int32_le(const float& value)
+{
+    int32_t out;
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
+}
+
+float int32_to_float_le(const uint32_t& value)
+{
+    float out;
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
+}
+
+double uint64_to_double_le(const uint64_t& value)
+{
+    double out;
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
 }

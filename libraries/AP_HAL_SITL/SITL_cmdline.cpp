@@ -7,7 +7,7 @@
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
-#include <AP_Logger/AP_Logger_SITL.h>
+#include <AP_HAL_SITL/Storage.h>
 #include <AP_Param/AP_Param.h>
 
 #include <SITL/SIM_Multicopter.h>
@@ -34,16 +34,19 @@
 #include <SITL/SIM_AirSim.h>
 #include <SITL/SIM_Scrimmage.h>
 #include <SITL/SIM_Webots.h>
+#include <SITL/SIM_Webots_Python.h>
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
 
-extern const AP_HAL::HAL& hal;
+extern HAL_SITL& hal;
 
 using namespace HALSITL;
 using namespace SITL;
@@ -95,6 +98,7 @@ void SITL_State::_usage(void)
            "\t--uartG device           set device string for UARTG\n"
            "\t--uartH device           set device string for UARTH\n"
            "\t--uartI device           set device string for UARTI\n"
+           "\t--uartJ device           set device string for UARTJ\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -104,6 +108,7 @@ void SITL_State::_usage(void)
            "\t--serial6 device         set device string for SERIAL6\n"
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
+           "\t--serial9 device         set device string for SERIAL9\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -113,6 +118,7 @@ void SITL_State::_usage(void)
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--slave number           set the number of JSON slaves\n"
         );
 }
 
@@ -146,6 +152,7 @@ static const struct {
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
+    { "heli-blade360",         Helicopter::create },
     { "singlecopter",       SingleCopter::create },
     { "coaxcopter",         SingleCopter::create },
     { "rover",              SimRover::create },
@@ -167,6 +174,7 @@ static const struct {
     { "morse",              Morse::create },
     { "airsim",             AirSim::create},
     { "scrimmage",          Scrimmage::create },
+    { "webots-python",      WebotsPython::create },
     { "webots",             Webots::create },
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
@@ -195,11 +203,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
     int opt;
     float speedup = 1.0f;
+    float sim_rate_hz = 0;
     _instance = 0;
     _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
+    const char *vehicle_str = SKETCH;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
@@ -242,6 +252,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTG,
         CMDLINE_UARTH,
         CMDLINE_UARTI,
+        CMDLINE_UARTJ,
         CMDLINE_SERIAL0,
         CMDLINE_SERIAL1,
         CMDLINE_SERIAL2,
@@ -251,6 +262,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SERIAL6,
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
+        CMDLINE_SERIAL9,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -260,6 +272,16 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_IRLOCK_PORT,
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
+        CMDLINE_SLAVE,
+#if STORAGE_USE_FLASH
+        CMDLINE_SET_STORAGE_FLASH_ENABLED,
+#endif
+#if STORAGE_USE_POSIX
+        CMDLINE_SET_STORAGE_POSIX_ENABLED,
+#endif
+#if STORAGE_USE_FRAM
+        CMDLINE_SET_STORAGE_FRAM_ENABLED,
+#endif
     };
 
     const struct GetOptLong::option options[] = {
@@ -289,6 +311,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartG",           true,   0, CMDLINE_UARTG},
         {"uartH",           true,   0, CMDLINE_UARTH},
         {"uartI",           true,   0, CMDLINE_UARTI},
+        {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
@@ -298,6 +321,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"serial6",         true,   0, CMDLINE_SERIAL6},
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
+        {"serial9",         true,   0, CMDLINE_SERIAL9},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -307,6 +331,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
+        {"slave",           true,   0, CMDLINE_SLAVE},
+#if STORAGE_USE_FLASH
+        {"set-storage-flash-enabled", true,   0, CMDLINE_SET_STORAGE_FLASH_ENABLED},
+#endif
+#if STORAGE_USE_POSIX
+        {"set-storage-posix-enabled", true,   0, CMDLINE_SET_STORAGE_POSIX_ENABLED},
+#endif
+#if STORAGE_USE_FRAM
+        {"set-storage-fram-enabled", true,   0, CMDLINE_SET_STORAGE_FRAM_ENABLED},
+#endif
+        {"vehicle",           true,   0, 'v'},
         {0, false, 0, 0}
     };
 
@@ -314,6 +349,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         model_str = "quad";
         HALSITL::UARTDriver::_console = true;
     }
+
+    // storage defaults are set here:
+    bool storage_posix_enabled = true;
+    bool storage_flash_enabled = false;
+    bool storage_fram_enabled = false;
+    bool erase_all_storage = false;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
@@ -323,17 +364,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
-    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
+    bool wiping_storage = false;
+
+    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:v:",
                     options);
     while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
-#if HAL_LOGGING_FILESYSTEM_ENABLED
-            AP_Param::erase_all();
-#endif
-#if HAL_LOGGING_SITL_ENABLED
-            unlink(AP_Logger_SITL::filename);
-#endif
+            erase_all_storage = true;
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);
@@ -345,7 +383,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
-            _framerate = (unsigned)atoi(gopt.optarg);
+            sim_rate_hz = strtof(gopt.optarg, nullptr);
+            temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
@@ -390,6 +431,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'F':
             _fg_address = gopt.optarg;
             break;
+        case 'v':
+            vehicle_str = gopt.optarg;
+            break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
             break;
@@ -411,6 +455,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTG:
         case CMDLINE_UARTH:
         case CMDLINE_UARTI:
+        case CMDLINE_UARTJ:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
         case CMDLINE_SERIAL0:
@@ -422,8 +467,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
-            _uart_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
+        case CMDLINE_SERIAL9: {
+            static const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
+            _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
             break;
+        }
         case CMDLINE_RTSCTS:
             _use_rtscts = true;
             break;
@@ -459,9 +507,33 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
+#if STORAGE_USE_POSIX
+        case CMDLINE_SET_STORAGE_POSIX_ENABLED:
+            storage_posix_enabled = atoi(gopt.optarg);
+            break;
+#endif
+#if STORAGE_USE_FLASH
+        case CMDLINE_SET_STORAGE_FLASH_ENABLED:
+            storage_flash_enabled = atoi(gopt.optarg);
+            break;
+#endif
+#if STORAGE_USE_FRAM
+        case CMDLINE_SET_STORAGE_FRAM_ENABLED:
+            storage_fram_enabled = atoi(gopt.optarg);
+            break;
+#endif
         case 'h':
             _usage();
             exit(0);
+        case CMDLINE_SLAVE: {
+#if HAL_SIM_JSON_MASTER_ENABLED
+            const int32_t slaves = atoi(gopt.optarg);
+            if (slaves > 0) {
+                ride_along.init(slaves);
+            }
+#endif
+            break;
+        }
         default:
             _usage();
             exit(1);
@@ -511,38 +583,50 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         exit(1);
     }
 
+    if (storage_posix_enabled && storage_flash_enabled) {
+        // this will change in the future!
+        printf("Only one of flash or posix storage may be selected");
+        exit(1);
+    }
+
     if (AP::sitl()) {
         // Set SITL start time.
         AP::sitl()->start_time_UTC = start_time_UTC;
     }
 
-    fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
+    hal.set_storage_posix_enabled(storage_posix_enabled);
+    hal.set_storage_flash_enabled(storage_flash_enabled);
+    hal.set_storage_fram_enabled(storage_fram_enabled);
 
-    if (strcmp(SKETCH, "ArduCopter") == 0) {
+    if (erase_all_storage) {
+        AP_Param::erase_all();
+        unlink("flash.dat");
+        hal.set_wipe_storage(wiping_storage);
+    }
+
+    fprintf(stdout, "Starting sketch '%s'\n", vehicle_str);
+
+    if (strcmp(vehicle_str, "ArduCopter") == 0) {
         _vehicle = ArduCopter;
-        if (_framerate == 0) {
-            _framerate = 200;
-        }
-    } else if (strcmp(SKETCH, "Rover") == 0) {
+    } else if (strcmp(vehicle_str, "Rover") == 0) {
         _vehicle = Rover;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
-    } else if (strcmp(SKETCH, "ArduSub") == 0) {
+    } else if (strcmp(vehicle_str, "ArduSub") == 0) {
         _vehicle = ArduSub;
+        for(uint8_t i = 0; i < 8; i++) {
+            pwm_input[i] = 1500;
+        }
+    } else if (strcmp(vehicle_str, "Blimp") == 0) {
+        _vehicle = Blimp;
         for(uint8_t i = 0; i < 8; i++) {
             pwm_input[i] = 1500;
         }
     } else {
         _vehicle = ArduPlane;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
     }
 
-    _sitl_setup(home_str);
+    _sitl_setup();
 }
 
 /*

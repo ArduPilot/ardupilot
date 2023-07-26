@@ -10,6 +10,7 @@
 // @Field: TimeUS: microseconds since system startup
 // @Field: Instance: ESC instance number
 // @Field: RPM: reported motor rotation rate
+// @Field: RawRPM: reported motor rotation rate without slew adjustment
 // @Field: Volt: Perceived input voltage for the ESC
 // @Field: Curr: Perceived current through the ESC
 // @Field: Temp: ESC temperature in centi-degrees C
@@ -21,6 +22,7 @@ struct PACKED log_Esc {
     uint64_t time_us;
     uint8_t instance;
     int32_t rpm;
+    int32_t raw_rpm;
     float voltage;
     float current;
     int16_t esc_temp;
@@ -31,4 +33,4 @@ struct PACKED log_Esc {
 
 #define LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBeffcfcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-B--BCB-" },
+      "ESC",  "QBeeffcfcf", "TimeUS,Instance,RPM,RawRPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qqvAOaO%", "F-BB--BCB-" , true },

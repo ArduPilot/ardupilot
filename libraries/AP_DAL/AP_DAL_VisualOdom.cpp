@@ -6,6 +6,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 /*
    update position offsets to align to AHRS position

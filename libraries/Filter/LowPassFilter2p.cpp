@@ -1,3 +1,7 @@
+#ifndef HAL_DEBUG_BUILD
+#define AP_INLINE_VECTOR_OPS
+#pragma GCC optimize("O2")
+#endif
 #include "LowPassFilter2p.h"
 
 

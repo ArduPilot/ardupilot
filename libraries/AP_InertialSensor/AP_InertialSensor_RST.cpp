@@ -291,7 +291,7 @@ bool AP_InertialSensor_RST::_init_accel(void)
 
     _dev_accel->read_registers(ACCEL_WHO_AM_I, &whoami, sizeof(whoami));
     if (whoami != ACCEL_WHO_I_AM) {
-        hal.console->printf("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
+        DEV_PRINTF("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
         printf("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }

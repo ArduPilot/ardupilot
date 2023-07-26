@@ -15,6 +15,7 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 
+#include <SITL/SITL.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
@@ -29,13 +30,6 @@ class HALSITL::SITL_State {
     friend class HALSITL::GPIO;
 public:
     void init(int argc, char * const argv[]);
-    int gps_pipe(uint8_t index);
-
-    // create a file descriptor attached to a virtual device; type of
-    // device is given by name parameter
-    int sim_fd(const char *name, const char *arg);
-    // returns a write file descriptor for a created virtual device
-    int sim_fd_write(const char *name);
 
     bool use_rtscts(void) const {
         return _use_rtscts;
@@ -46,13 +40,12 @@ public:
     }
 
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value; // pin 1
-    uint16_t airspeed_2_pin_value; // pin 2
-    uint16_t voltage_pin_value;  // pin 13
-    uint16_t current_pin_value;  // pin 12
-    uint16_t voltage2_pin_value;  // pin 15
-    uint16_t current2_pin_value;  // pin 14
+    float sonar_pin_voltage;    // pin 0
+    float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
+    float voltage_pin_voltage;  // pin 13
+    float current_pin_voltage;  // pin 12
+    float voltage2_pin_voltage;  // pin 15
+    float current2_pin_voltage;  // pin 14
     // paths for UART devices
     const char *_uart_path[9] {
         "none:0",
@@ -68,6 +61,12 @@ public:
 
     uint8_t get_instance() const { return _instance; }
 
+    bool run_in_maintenance_mode() const { return _maintenance; }
+
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg) {
+        return nullptr;
+    }
+
 private:
 
     void wait_clock(uint64_t wait_time_usec);
@@ -77,6 +76,7 @@ private:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     uint8_t _instance;
+    bool _maintenance;
 };
 
 #endif

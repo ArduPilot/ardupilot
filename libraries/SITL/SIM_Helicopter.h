@@ -40,7 +40,7 @@ public:
 protected:
 
     void update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt);
-    float update_rpm(bool interlock, float dt);
+    float update_rpm(float curr_rpm, float throttle, float &engine_torque, float collective, float dt);
 
     // buffers to provide time delay
     struct servos_stored {
@@ -59,33 +59,33 @@ protected:
 
 private:
     float terminal_rotation_rate = 4*radians(360.0f);
-    float hover_throttle = 0.5f;
-    float terminal_velocity = 80;
     float hover_lean = 3.2f;
-    float yaw_zero = 0.1f;
     float rotor_rot_accel = radians(20);
     float roll_rate_max = radians(1400);
     float pitch_rate_max = radians(1400);
     float yaw_rate_max = radians(1400);
-    float rsc_setpoint = 0.8f;
-    float izz = 0.2f;
+    float izz = 0.2f; 
+    float iyy;
     float tr_dist = 0.85f;
-    float tr_accel_max = 50.0f; //rad/s/s
     float cyclic_scalar = 7.2; // converts swashplate servo ouputs to cyclic blade pitch
     float thrust_scale;
-    float tail_thrust_scale;
     Vector2f _tpp_angle;
+    Vector2f _tpp_angle_1;
+    Vector2f _tpp_angle_2;
     float torque_scale;
     float torque_mpog;
+    float torque_max;
     float hover_coll = 5.0f;
     bool motor_interlock;
-    uint8_t _time_delay = 30;
+    uint8_t _time_delay;
     enum frame_types {
         HELI_FRAME_CONVENTIONAL,
         HELI_FRAME_DUAL,
-        HELI_FRAME_COMPOUND
+        HELI_FRAME_COMPOUND,
+        HELI_FRAME_BLADE360,
     } frame_type = HELI_FRAME_CONVENTIONAL;
     bool gas_heli = false;
+    float nominal_rpm;
 };
 
 } // namespace SITL

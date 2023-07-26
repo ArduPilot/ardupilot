@@ -1,8 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -54,7 +52,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
 
     // Check for significant change in GPS position if disarmed which indicates bad GPS
     // This check can only be used when the vehicle is stationary
-    const struct Location &gpsloc = gps.location(); // Current location
+    const Location &gpsloc = gps.location(); // Current location
     const ftype posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsed since last update and limit to prevent numerical errors
     ftype deltaTime = constrain_ftype(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
@@ -105,7 +103,7 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
     // This check can only be used if the vehicle is stationary
     bool gpsHorizVelFail;
     if (onGround) {
-        gpsHorizVelFilt = 0.1f * norm(gpsDataDelayed.vel.x,gpsDataDelayed.vel.y) + 0.9f * gpsHorizVelFilt;
+        gpsHorizVelFilt = 0.1f * gpsDataDelayed.vel.xy().length() + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_ftype(gpsHorizVelFilt,-10.0f,10.0f);
         gpsHorizVelFail = (fabsF(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {

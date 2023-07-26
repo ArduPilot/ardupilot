@@ -46,8 +46,6 @@ arm throttle (denied because generator not running)
 
 #include "SIM_SerialDevice.h"
 
-#include <stdio.h>
-
 namespace SITL {
 
 class RichenPower : public SerialDevice {
@@ -73,8 +71,6 @@ private:
 // So we set batt fs high 46s
 // Gennie keeps batts charged to 49v + typically
 
-    class SITL *_sitl;
-
     uint32_t last_sent_ms;
 
     void update_control_pin(const struct sitl_input &input);
@@ -87,10 +83,7 @@ private:
         STOPPING = 24, // idle cool-down period
     };
     State _state = State::STOP;
-    void set_run_state(State newstate) {
-        ::fprintf(stderr, "Moving to state %u from %u\n", (unsigned)newstate, (unsigned)_state);
-        _state = newstate;
-    }
+    void set_run_state(State newstate);
 
     AP_Int8  _enabled;  // enable richenpower sim
     AP_Int8  _ctrl_pin;
@@ -102,6 +95,10 @@ private:
     float _current_current;
 
     uint32_t last_rpm_update_ms;
+
+    enum class Errors {
+        MaintenanceRequired = 0,
+    };
 
     // packet to send:
     struct PACKED RichenPacket {
@@ -127,7 +124,7 @@ private:
         uint8_t footermagic1;
         uint8_t footermagic2;
     };
-    assert_storage_size<RichenPacket, 70> _assert_storage_size_RichenPacket;
+    assert_storage_size<RichenPacket, 70> _assert_storage_size_RichenPacket UNUSED_PRIVATE_MEMBER;
 
     union RichenUnion {
         uint8_t parse_buffer[70];

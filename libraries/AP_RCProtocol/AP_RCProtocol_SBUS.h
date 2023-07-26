@@ -17,12 +17,16 @@
 
 #pragma once
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SBUS_ENABLED
+
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
 class AP_RCProtocol_SBUS : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool inverted);
+    AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool inverted, uint32_t configured_baud);
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
@@ -32,7 +36,7 @@ private:
                      bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values);
 
     bool inverted;
-    SoftSerial ss{100000, SoftSerial::SERIAL_CONFIG_8E2I};
+    SoftSerial ss;
     uint32_t saved_width;
 
     struct {
@@ -41,3 +45,5 @@ private:
         uint32_t last_byte_us;
     } byte_input;
 };
+
+#endif  // AP_RCPROTOCOL_SBUS_ENABLED

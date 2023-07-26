@@ -27,8 +27,7 @@ SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7
 PD15 TIM4_CH4 TIM4 GPIO(77) ALARM
 #PD15 BUZZER OUTPUT GPIO(80) LOW
 #define HAL_BUZZER_PIN 80
-#define HAL_BUZZER_ON 1
-#define HAL_BUZZER_OFF 0
+#
 
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1
@@ -69,6 +68,7 @@ define HAL_BATT_VOLT_SCALE 10.9
 define HAL_BATT_CURR_SCALE 28.5
 
 PC5 RSSI_ADC ADC1
+define BOARD_RSSI_ANA_PIN 15
 
 PA2 LED0 OUTPUT LOW
 
@@ -94,8 +94,8 @@ PA1 UART4_RX UART4 NODMA
 # RC input defaults to UART to allow for bi-dir dshot
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
-define HAL_SERIAL6_PROTOCOL SerialProtocol_RCIN
-define HAL_SERIAL6_BAUD 115
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL6_BAUD 115
 
 # UART7, RX only for ESC Telemetry
 # No DMA because SPI2 requires the DMA slot
@@ -120,10 +120,10 @@ DMA_PRIORITY ADC* USART6* TIM1* TIM3* SPI4* SPI1*
 DMA_NOSHARE SPI4_RX
 
 define HAL_STORAGE_SIZE 16384
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # spi devices
 SPIDEV mpu6000  SPI4 DEVID1 ICM20689_CS MODE3  1*MHZ  4*MHZ
@@ -133,7 +133,6 @@ SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -143,18 +142,18 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one BARO
 BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define BOARD_PWM_COUNT_DEFAULT 6
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS and fuel battery monitors to save flash
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+# disable SMBUS battery monitors to save flash
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
@@ -166,6 +165,4 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_MOUNT_ENABLED 0
 
 # save some flash
-define GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc

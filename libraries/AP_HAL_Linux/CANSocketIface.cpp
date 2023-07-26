@@ -167,17 +167,19 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, const uint64_t tx_deadline
     tx_item.setup = true;
     tx_item.index = _tx_frame_counter;
     tx_item.deadline = tx_deadline;
+    WITH_SEMAPHORE(sem);
     _tx_queue.emplace(tx_item);
     _tx_frame_counter++;
     stats.tx_requests++;
     _pollRead();     // Read poll is necessary because it can release the pending TX flag
     _pollWrite();
-    return 1;
+    return AP_HAL::CANIface::send(frame, tx_deadline, flags);
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                           CANIface::CanIOFlags& out_flags)
 {
+    WITH_SEMAPHORE(sem);
     if (_rx_queue.empty()) {
         _pollRead();            // This allows to use the socket not calling poll() explicitly.
         if (_rx_queue.empty()) {
@@ -191,16 +193,18 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
         out_flags        = rx.flags;
     }
     (void)_rx_queue.pop();
-    return 1;
+    return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
 
-bool CANIface::_hasReadyTx() const
+bool CANIface::_hasReadyTx()
 {
+    WITH_SEMAPHORE(sem);
     return !_tx_queue.empty() && (_frames_in_socket_tx_queue < _max_frames_in_socket_tx_queue);
 }
 
-bool CANIface::_hasReadyRx() const
+bool CANIface::_hasReadyRx()
 {
+    WITH_SEMAPHORE(sem);
     return !_rx_queue.empty();
 }
 
@@ -217,7 +221,7 @@ void CANIface::_poll(bool read, bool write)
 }
 
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
-                              const std::uint16_t num_configs)
+                              const uint16_t num_configs)
 {
     if (filter_configs == nullptr || mode_ != FilteredMode) {
         return false;
@@ -263,6 +267,7 @@ uint32_t CANIface::getErrorCount() const
 void CANIface::_pollWrite()
 {
     while (_hasReadyTx()) {
+        WITH_SEMAPHORE(sem);
         const CanTxItem tx = _tx_queue.top();
         uint64_t curr_time = AP_HAL::native_micros64();
         if (tx.deadline >= curr_time) {
@@ -309,6 +314,7 @@ bool CANIface::_pollRead()
                 stats.tx_confirmed++;
             }
             if (accept) {
+                WITH_SEMAPHORE(sem);
                 _rx_queue.push(rx);
                 stats.rx_received++;
                 return true;
@@ -390,6 +396,7 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
 // Might block forever, only to be used for testing
 void CANIface::flush_tx()
 {
+    WITH_SEMAPHORE(sem);
     do {
         _updateDownStatusFromPollResult(_pollfd);
         _poll(true, true);
@@ -398,6 +405,7 @@ void CANIface::flush_tx()
 
 void CANIface::clear_rx()
 {
+    WITH_SEMAPHORE(sem);
     // Clean Rx Queue
     std::queue<CanRxItem> empty;
     std::swap( _rx_queue, empty );
@@ -454,8 +462,11 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 {
     char iface_name[16];
+#if HAL_LINUX_USE_VIRTUAL_CAN
+    sprintf(iface_name, "vcan%u", _self_index);
+#else
     sprintf(iface_name, "can%u", _self_index);
-
+#endif
     if (_initialized) {
         return _initialized;
     }
@@ -524,7 +535,7 @@ bool CANIface::set_event_handle(AP_HAL::EventHandle* handle) {
 }
 
 
-bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle* evt_handle)
+bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle)
 {
     if (evt_handle == nullptr) {
         return false;
@@ -553,8 +564,8 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
 
     // Timeout conversion
     auto ts = timespec();
-    ts.tv_sec = duration / 1000000LL;
-    ts.tv_nsec = (duration % 1000000LL) * 1000;
+    ts.tv_sec = 0;
+    ts.tv_nsec = duration_us * 1000UL;
 
     // Blocking here
     const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);

@@ -30,7 +30,7 @@ public:
     void init() override;
     void update(const class Aircraft &aircraft) override;
 
-    virtual uint8_t cellcount() const = 0;
+    virtual uint8_t cellcount() const { return 12; }
 
     virtual uint8_t connected_cells() const { return 3; }
 };

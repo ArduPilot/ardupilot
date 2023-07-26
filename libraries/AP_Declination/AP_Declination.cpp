@@ -36,9 +36,10 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
 {
     bool valid_input_data = true;
 
-    /* round down to nearest sampling resolution */
-    int32_t min_lat = static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES);
-    int32_t min_lon = static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES);
+    /* round down to nearest sampling resolution. On some platforms (e.g. clang on macOS),
+        the behaviour of implicit casts from int32 to float can be undefined thus making it explicit here. */
+    float min_lat = float(static_cast<int32_t>(static_cast<int32_t>(floorf(latitude_deg / SAMPLING_RES)) * SAMPLING_RES));
+    float min_lon = float(static_cast<int32_t>(static_cast<int32_t>(floorf(longitude_deg / SAMPLING_RES)) * SAMPLING_RES));
 
     /* for the rare case of hitting the bounds exactly
      * the rounding logic wouldn't fit, so enforce it.
@@ -46,33 +47,33 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
 
     /* limit to table bounds - required for maxima even when table spans full globe range */
     if (latitude_deg <= SAMPLING_MIN_LAT) {
-        min_lat = static_cast<int32_t>(SAMPLING_MIN_LAT);
+        min_lat = float(static_cast<int32_t>(SAMPLING_MIN_LAT));
         valid_input_data = false;
     }
 
     if (latitude_deg >= SAMPLING_MAX_LAT) {
-        min_lat = static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
+        min_lat = float(static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES));
         valid_input_data = false;
     }
 
     if (longitude_deg <= SAMPLING_MIN_LON) {
-        min_lon = static_cast<int32_t>(SAMPLING_MIN_LON);
+        min_lon = float(static_cast<int32_t>(SAMPLING_MIN_LON));
         valid_input_data = false;
     }
 
     if (longitude_deg >= SAMPLING_MAX_LON) {
-        min_lon = static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
+        min_lon = float(static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES));
         valid_input_data = false;
     }
 
     /* find index of nearest low sampling point */
-    uint32_t min_lat_index = static_cast<uint32_t>((-(SAMPLING_MIN_LAT) + min_lat)  / SAMPLING_RES);
-    uint32_t min_lon_index = static_cast<uint32_t>((-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES);
+    uint32_t min_lat_index = constrain_int32(static_cast<uint32_t>((-(SAMPLING_MIN_LAT) + min_lat)  / SAMPLING_RES), 0, LAT_TABLE_SIZE - 2);
+    uint32_t min_lon_index = constrain_int32(static_cast<uint32_t>((-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES), 0, LON_TABLE_SIZE -2);
 
     /* calculate intensity */
 
     float data_sw = intensity_table[min_lat_index][min_lon_index];
-    float data_se = intensity_table[min_lat_index][min_lon_index + 1];;
+    float data_se = intensity_table[min_lat_index][min_lon_index + 1];
     float data_ne = intensity_table[min_lat_index + 1][min_lon_index + 1];
     float data_nw = intensity_table[min_lat_index + 1][min_lon_index];
 
@@ -86,7 +87,7 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     /* calculate declination */
 
     data_sw = declination_table[min_lat_index][min_lon_index];
-    data_se = declination_table[min_lat_index][min_lon_index + 1];;
+    data_se = declination_table[min_lat_index][min_lon_index + 1];
     data_ne = declination_table[min_lat_index + 1][min_lon_index + 1];
     data_nw = declination_table[min_lat_index + 1][min_lon_index];
 
@@ -100,7 +101,7 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     /* calculate inclination */
 
     data_sw = inclination_table[min_lat_index][min_lon_index];
-    data_se = inclination_table[min_lat_index][min_lon_index + 1];;
+    data_se = inclination_table[min_lat_index][min_lon_index + 1];
     data_ne = inclination_table[min_lat_index + 1][min_lon_index + 1];
     data_nw = inclination_table[min_lat_index + 1][min_lon_index];
 

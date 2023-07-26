@@ -35,14 +35,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// RPM
-//
-
-#ifndef RPM_ENABLED
-# define RPM_ENABLED DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // RCMAP
 //
 
@@ -100,28 +92,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW
-#ifndef OPTFLOW
-# define OPTFLOW       DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  gripper
-#ifndef GRIPPER_ENABLED
-# define GRIPPER_ENABLED DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
 # define NAV_GUIDED    ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// CAMERA TRIGGER AND CONTROL
-//
-#ifndef CAMERA
-# define CAMERA        DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -217,6 +190,12 @@
 # define LOGGING_ENABLED                ENABLED
 #endif
 
+// Statistics
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED (AP_STATS_ENABLED ? ENABLED : DISABLED)
+#endif
+
+
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
 # define DEFAULT_LOG_BITMASK \
@@ -234,13 +213,4 @@
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA | \
     MASK_LOG_MOTBATT
-#endif
-
-// Enable/disable Fence
-#ifndef AC_FENCE
-#define AC_FENCE ENABLED
-#endif
-
-#ifndef AC_RALLY
-#define AC_RALLY   DISABLED
 #endif

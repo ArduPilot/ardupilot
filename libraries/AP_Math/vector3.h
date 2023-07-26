@@ -158,7 +158,7 @@ public:
     }
     
     // multiply a row vector by a matrix, to give a row vector
-    Vector3<T> operator *(const Matrix3<T> &m) const;
+    Vector3<T> row_times_mat(const Matrix3<T> &m) const;
 
     // multiply a column vector by a row vector, returning a 3x3 matrix
     Matrix3<T> mul_rowcol(const Vector3<T> &v) const;
@@ -187,9 +187,7 @@ public:
 
     // check if all elements are zero
     bool is_zero(void) const WARN_IF_UNUSED {
-        return (fabsf(x) < FLT_EPSILON) &&
-               (fabsf(y) < FLT_EPSILON) &&
-               (fabsf(z) < FLT_EPSILON);
+        return x == 0 && y == 0 && z == 0;
     }
 
 
@@ -290,7 +288,7 @@ public:
     static Vector3<T> perpendicular(const Vector3<T> &p1, const Vector3<T> &v1)
     {
         const T d = p1 * v1;
-        if (fabsf(d) < FLT_EPSILON) {
+        if (::is_zero(d)) {
             return p1;
         }
         const Vector3<T> parallel = (v1 * d) / v1.length_squared();
@@ -314,6 +312,92 @@ public:
     // Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
     static bool segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point);
 };
+
+// check if all elements are zero
+template<> inline bool Vector3<float>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y) && ::is_zero(z);
+}
+
+template<> inline bool Vector3<double>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y) && ::is_zero(z);
+}
+
+// The creation of temporary vector objects as return types creates a significant overhead in certain hot 
+// code paths. This allows callers to select the inline versions where profiling shows a significant benefit
+#if defined(AP_INLINE_VECTOR_OPS) && !defined(HAL_DEBUG_BUILD)
+
+// vector cross product
+template <typename T>
+inline Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
+{
+    return Vector3<T>(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
+}
+
+// dot product
+template <typename T>
+inline T Vector3<T>::operator *(const Vector3<T> &v) const
+{
+    return x*v.x + y*v.y + z*v.z;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator *=(const T num)
+{
+    x*=num; y*=num; z*=num;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator /=(const T num)
+{
+    x /= num; y /= num; z /= num;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator -=(const Vector3<T> &v)
+{
+    x -= v.x; y -= v.y; z -= v.z;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator +=(const Vector3<T> &v)
+{
+    x+=v.x; y+=v.y; z+=v.z;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator /(const T num) const
+{
+    return Vector3<T>(x/num, y/num, z/num);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator *(const T num) const
+{
+    return Vector3<T>(x*num, y*num, z*num);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator -(const Vector3<T> &v) const
+{
+    return Vector3<T>(x-v.x, y-v.y, z-v.z);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator +(const Vector3<T> &v) const
+{
+    return Vector3<T>(x+v.x, y+v.y, z+v.z);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator -(void) const
+{
+    return Vector3<T>(-x,-y,-z);
+}
+#endif
 
 typedef Vector3<int16_t>                Vector3i;
 typedef Vector3<uint16_t>               Vector3ui;

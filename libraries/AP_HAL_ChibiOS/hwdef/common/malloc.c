@@ -85,7 +85,13 @@ void malloc_init(void)
     // check for changes which indicate a write to an uninitialised
     // object.  We start at address 0x1 as writing the first byte
     // causes a fault
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#if defined(__GNUC__) &&  __GNUC__ >= 10
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
     memset((void*)0x00000001, 0, 1023);
+#pragma GCC diagnostic pop
 #endif
 
     uint8_t i;
@@ -420,6 +426,7 @@ size_t mem_available(void)
     return totalp;
 }
 
+#if CH_CFG_USE_DYNAMIC == TRUE
 /*
   allocate a thread on any available heap
  */
@@ -444,6 +451,7 @@ thread_t *thread_create_alloc(size_t size,
     }
     return NULL;
 }
+#endif
 
 /*
   return heap information
@@ -483,3 +491,102 @@ char *strdup(const char *str)
     ret[len] = 0;
     return ret;
 }
+
+/*
+    is valid memory region
+ */
+bool is_address_in_memory(void *addr)
+{
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  return the start of memory region that contains the address
+ */
+void* get_addr_mem_region_start_addr(void *addr)
+{ 
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return memory_regions[i].address;
+        }
+    }
+    return 0;
+}
+
+/*
+  return the end of memory region that contains the address
+ */
+void* get_addr_mem_region_end_addr(void *addr)
+{ 
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return memory_regions[i].address + memory_regions[i].size;
+        }
+    }
+    return 0;
+}
+
+/*
+  alloction functions for newlib
+ */
+void *__wrap__calloc_r(void *rptr, size_t nmemb, size_t size)
+{
+    (void)rptr;
+    return calloc(nmemb, size);
+}
+
+void *__wrap__malloc_r(void *rptr, size_t size)
+{
+    (void)rptr;
+    // we want consistent zero memory
+    return calloc(1, size);
+}
+
+void __wrap__free_r(void *rptr, void *ptr)
+{
+    (void)rptr;
+    return free(ptr);
+}
+
+#ifdef USE_POSIX
+/*
+  allocation functions for FATFS
+ */
+void *ff_memalloc(unsigned msize)
+{
+    if (msize > 4096) {
+        // refuse large sizes. FATFS tries for 32k blocks for creating
+        // directories which ends up trying to allocate 64k with the
+        // DMA bouncebuffer, and this can cause filesystem operation
+        // failures. We want FATFS to limit itself to 4k blocks, which
+        // it does when the allocation of the larger size fails
+        return NULL;
+    }
+    // try to get DMA capable memory which results in less copying so
+    // faster access
+    void *ret = malloc_axi_sram(msize);
+    if (ret != NULL) {
+        return ret;
+    }
+    // fallback to any memory, which means we will use the
+    // preallocated bouncebuffer on systems where general purpose
+    // memory cannot be used for microSD access
+    return malloc(msize);
+}
+
+void ff_memfree(void* mblock)
+{
+    free(mblock);
+}
+#endif // USE_POSIX

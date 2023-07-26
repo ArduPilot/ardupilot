@@ -11,7 +11,7 @@
 #include <AP_Math/crc.h>
 #include "telem_structure.h"
 #include <AP_Notify/AP_Notify.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   driver for CYRF6936 radio
@@ -1199,7 +1199,7 @@ void AP_Radio_cypress::irq_handler_thd(void *arg)
     }
 }
 
-void AP_Radio_cypress::trigger_timeout_event(void *arg)
+void AP_Radio_cypress::trigger_timeout_event(virtual_timer_t* vt, void *arg)
 {
     (void)arg;
     //we are called from ISR context

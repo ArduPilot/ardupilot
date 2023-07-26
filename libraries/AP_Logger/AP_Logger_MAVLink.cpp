@@ -12,7 +12,7 @@
 
 #if REMOTE_LOG_DEBUGGING
 #include <stdio.h>
- # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+ # define Debug(fmt, args ...)  do {fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -274,10 +274,16 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == 0){
-        handle_retry(packet.seqno);
-    } else{
-        handle_ack(link, msg, packet.seqno);
+    switch ((MAV_REMOTE_LOG_DATA_BLOCK_STATUSES)packet.status) {
+        case MAV_REMOTE_LOG_DATA_BLOCK_NACK:
+            handle_retry(packet.seqno);
+            break;
+        case MAV_REMOTE_LOG_DATA_BLOCK_ACK:
+            handle_ack(link, msg, packet.seqno);
+            break;
+        // we apparently have to handle an END enum entry, just drop it so we catch future additions
+        case MAV_REMOTE_LOG_DATA_BLOCK_STATUSES_ENUM_END:
+            break;
     }
     semaphore.give();
 }
@@ -352,7 +358,7 @@ void AP_Logger_MAVLink::stats_log()
     Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           dropped,
+           _dropped,
            _blocks_retry.sent_count,
            stats.resends,
            stats.state_free_min,
@@ -524,6 +530,14 @@ void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
 }
 void AP_Logger_MAVLink::periodic_1Hz()
 {
+    if (rate_limiter == nullptr &&
+        (_front._params.mav_ratemax > 0 ||
+         _front._params.disarm_ratemax > 0 ||
+         _front._log_pause)) {
+        // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
+    }
+
     if (_sending_to_client &&
         _last_response_time + 10000 < _last_send_time) {
         // other end appears to have timed out!
@@ -555,7 +569,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // deliberately fail 10% of the time in SITL:
-    if (rand() < 0.1) {
+    if ((rand() % 100 + 1) < 10) {
         return false;
     }
 #endif

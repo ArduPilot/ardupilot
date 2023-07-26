@@ -36,8 +36,8 @@ public:
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) = 0;
 
-    // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
-    virtual void align_sensor_to_vehicle() {}
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    virtual void request_align_yaw_to_ahrs() {}
 
     // handle request to align position with AHRS
     virtual void align_position_to_ahrs(bool align_xy, bool align_z) {}
@@ -50,6 +50,10 @@ protected:
     // returns the system time of the last reset if reset_counter has not changed
     // updates the reset timestamp to the current system time if the reset_counter has changed
     uint32_t get_reset_timestamp_ms(uint8_t reset_counter);
+
+    AP_VisualOdom::VisualOdom_Type get_type(void) const {
+        return _frontend.get_type();
+    }
 
     // Logging Functions
     void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
@@ -64,5 +68,4 @@ protected:
     uint32_t _reset_timestamp_ms;   // time reset counter was received
 };
 
-#endif
-
+#endif  // HAL_VISUALODOM_ENABLED

@@ -10,7 +10,7 @@ void Sub::enable_motor_output()
 void Sub::motors_output()
 {
     // Motor detection mode controls the thrusters directly
-    if (control_mode == MOTOR_DETECT){
+    if (control_mode == Mode::Number::MOTOR_DETECT){
         return;
     }
     // check if we are performing the motor test
@@ -70,7 +70,7 @@ bool Sub::verify_motor_test()
 
     if (!pass) {
         ap.motor_test = false;
-        motors.armed(false); // disarm motors
+        AP::arming().disarm(AP_Arming::Method::MOTORTEST);
         last_do_motor_test_fail_ms = AP_HAL::millis();
         return false;
     }

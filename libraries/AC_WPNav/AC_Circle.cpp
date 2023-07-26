@@ -3,6 +3,8 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include "AC_Circle.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_Circle::var_info[] = {
@@ -17,17 +19,17 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: Circle rate
-    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
+    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise. Circle rate must be less than ATC_SLEW_YAW parameter.
     // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
+    AP_GROUPINFO("RATE",    1, AC_Circle, _rate_parm,    AC_CIRCLE_RATE_DEFAULT),
 
     // @Param: OPTIONS
     // @DisplayName: Circle options
     // @Description: 0:Enable or disable using the pitch/roll stick control circle mode's radius and rate
-    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter
+    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AC_Circle, _options, 1),
 
@@ -53,15 +55,18 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 
     // init flags
     _flags.panorama = false;
+    _rate = _rate_parm;
 }
 
 /// init - initialise circle controller setting center specifically
-///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
+///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-void AC_Circle::init(const Vector3p& center, bool terrain_alt)
+void AC_Circle::init(const Vector3p& center, bool terrain_alt, float rate_deg_per_sec)
 {
     _center = center;
     _terrain_alt = terrain_alt;
+    _rate = rate_deg_per_sec;
+
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller_stopping_point();
     _pos_control.init_z_controller_stopping_point();
@@ -77,9 +82,10 @@ void AC_Circle::init(const Vector3p& center, bool terrain_alt)
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
 {
-    // initialize radius from params
+    // initialize radius and rate from params
     _radius = _radius_parm;
     _last_radius_param = _radius_parm;
+    _rate = _rate_parm;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller_stopping_point();
@@ -114,7 +120,7 @@ void AC_Circle::set_center(const Location& center)
             set_center(Vector3f(center_xy.x, center_xy.y, terr_alt_cm), true);
         } else {
             // failed to convert location so set to current position and log error
-            set_center(_inav.get_position(), false);
+            set_center(_inav.get_position_neu_cm(), false);
             AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
     } else {
@@ -122,7 +128,7 @@ void AC_Circle::set_center(const Location& center)
         Vector3f circle_center_neu;
         if (!center.get_vector_from_origin_NEU(circle_center_neu)) {
             // default to current position and log error
-            circle_center_neu = _inav.get_position();
+            circle_center_neu = _inav.get_position_neu_cm();
             AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
         set_center(circle_center_neu, false);
@@ -132,13 +138,13 @@ void AC_Circle::set_center(const Location& center)
 /// set_circle_rate - set circle rate in degrees per second
 void AC_Circle::set_rate(float deg_per_sec)
 {
-    if (!is_equal(deg_per_sec, _rate.get())) {
+    if (!is_equal(deg_per_sec, _rate)) {
         _rate = deg_per_sec;
     }
 }
 
 /// set_circle_rate - set circle rate in degrees per second
-void AC_Circle::set_radius(float radius_cm)
+void AC_Circle::set_radius_cm(float radius_cm)
 {
     _radius = constrain_float(radius_cm, 0, AC_CIRCLE_RADIUS_MAX);
 }
@@ -200,7 +206,7 @@ bool AC_Circle::update(float climb_rate_cms)
         target.y += - _radius * sinf(-_angle);
 
         // heading is from vehicle to center of circle
-        _yaw = get_bearing_cd(_inav.get_position(), _center.tofloat());
+        _yaw = get_bearing_cd(_inav.get_position_xy_cm(), _center.tofloat().xy());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw += is_positive(_rate)?-9000.0f:9000.0f;
@@ -220,7 +226,7 @@ bool AC_Circle::update(float climb_rate_cms)
         float target_zf = target.z;
         _pos_control.input_pos_vel_accel_z(target_zf, zero2, 0);
     } else {
-        _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms,  false);
+        _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
     }
 
     // update position controller
@@ -313,7 +319,7 @@ void AC_Circle::init_start_angle(bool use_heading)
         _angle = wrap_PI(_ahrs.yaw-M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
-        const Vector3f &curr_pos = _inav.get_position();
+        const Vector3f &curr_pos = _inav.get_position_neu_cm();
         if (is_equal(curr_pos.x,float(_center.x)) && is_equal(curr_pos.y,float(_center.y))) {
             _angle = wrap_PI(_ahrs.yaw-M_PI);
         } else {
@@ -352,7 +358,7 @@ bool AC_Circle::get_terrain_offset(float& offset_cm)
         return false;
     case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
-            offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
+            offset_cm = _rangefinder_terrain_offset_cm;
             return true;
         }
         return false;
@@ -361,7 +367,7 @@ bool AC_Circle::get_terrain_offset(float& offset_cm)
         float terr_alt = 0.0f;
         AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt, true)) {
-            offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
+            offset_cm = _inav.get_position_z_up_cm() - (terr_alt * 100.0);
             return true;
         }
 #endif

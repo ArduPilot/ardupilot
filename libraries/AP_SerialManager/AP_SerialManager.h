@@ -22,7 +22,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
@@ -38,14 +37,27 @@
 #define SERIALMANAGER_NUM_PORTS 8
 #endif
 
- // console default baud rates and buffer sizes
-#ifdef HAL_SERIAL0_BAUD_DEFAULT
-# define AP_SERIALMANAGER_CONSOLE_BAUD          HAL_SERIAL0_BAUD_DEFAULT
+/*
+  array size for state[]. This needs to be at least
+  SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
+  similar boards to get the ccache efficiency up. This wastes a small
+  amount of memory, but makes a huge difference to the build times
+ */
+#if SERIALMANAGER_NUM_PORTS > 10 || SERIALMANAGER_NUM_PORTS < 5
+#define SERIALMANAGER_MAX_PORTS SERIALMANAGER_NUM_PORTS
 #else
-# define AP_SERIALMANAGER_CONSOLE_BAUD          115200
+#define SERIALMANAGER_MAX_PORTS 10
 #endif
-# define AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX    128
-# define AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX    512
+
+
+ // console default baud rates and buffer sizes
+#ifdef DEFAULT_SERIAL0_BAUD
+#define AP_SERIALMANAGER_CONSOLE_BAUD          DEFAULT_SERIAL0_BAUD
+#else
+#define AP_SERIALMANAGER_CONSOLE_BAUD          115200
+#endif
+#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX    128
+#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX    512
 
 // mavlink default baud rates and buffer sizes
 #define AP_SERIALMANAGER_MAVLINK_BAUD           57600
@@ -73,9 +85,9 @@
 #define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX     128
 
-#define AP_SERIALMANAGER_SToRM32_BAUD           115200
-#define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
+#define AP_SERIALMANAGER_GIMBAL_BAUD            115200
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX      128
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX      128
 
 #define AP_SERIALMANAGER_VOLZ_BAUD           115
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
@@ -108,8 +120,7 @@ public:
     AP_SerialManager();
 
     /* Do not allow copies */
-    AP_SerialManager(const AP_SerialManager &other) = delete;
-    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
+    CLASS_NO_COPY(AP_SerialManager);
 
     enum SerialProtocol {
         SerialProtocol_None = -1,
@@ -121,11 +132,11 @@ public:
         SerialProtocol_GPS = 5,
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
-        SerialProtocol_SToRM32 = 8,
+        SerialProtocol_Gimbal = 8,                   // SToRM32, Siyi custom serial protocols
         SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
-        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
+        SerialProtocol_Aerotenna_USD1      = 12, // USD1 support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
         SerialProtocol_Sbus1 = 15,
@@ -137,7 +148,7 @@ public:
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
         SerialProtocol_RCIN = 23,
-        SerialProtocol_EFI_MS = 24,                   // MegaSquirt EFI serial protocol
+        SerialProtocol_EFI = 24,                   // EFI serial protocol
         SerialProtocol_LTM_Telem = 25,
         SerialProtocol_RunCam = 26,
         SerialProtocol_Hott = 27,
@@ -151,7 +162,14 @@ public:
         SerialProtocol_ADSB = 35,
         SerialProtocol_AHRS = 36,
         SerialProtocol_SmartAudio = 37,
+        SerialProtocol_FETtecOneWire = 38,
         SerialProtocol_Torqeedo = 39,
+        SerialProtocol_AIS = 40,
+        SerialProtocol_CoDevESC = 41,
+        SerialProtocol_MSP_DisplayPort = 42,
+        SerialProtocol_MAVLinkHL = 43,
+        SerialProtocol_Tramp = 44,
+        SerialProtocol_DDS_XRCE = 45,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -159,7 +177,7 @@ public:
     static AP_SerialManager *get_singleton(void) {
         return _singleton;
     }
-    
+
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -169,8 +187,12 @@ public:
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found
+    // note that the SERIALn_OPTIONS are applied if the port is found
     AP_HAL::UARTDriver *find_serial(enum SerialProtocol protocol, uint8_t instance) const;
 
+    // have_serial - return true if we have the corresponding serial protocol configured
+    bool have_serial(enum SerialProtocol protocol, uint8_t instance) const;
+    
     // find_baudrate - searches available serial ports for the first instance that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found
@@ -178,21 +200,6 @@ public:
 
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
     int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
-    
-    // get_mavlink_channel - provides the mavlink channel associated with a given protocol (and instance)
-    //  instance should be zero if searching for the first instance, 1 for the second, etc
-    //  returns true if a channel is found, false if not
-    bool get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const;
-
-    // should_forward_mavlink_telemetry - returns true if this port should forward telemetry
-    bool should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const;
-
-    // get_mavlink_protocol - provides the specific MAVLink protocol for a
-    // given channel, or SerialProtocol_None if not found
-    SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;
-    
-    // set_blocking_writes_all - sets block_writes on or off for all serial channels
-    void set_blocking_writes_all(bool blocking);
 
     // get the passthru ports if enabled
     bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
@@ -212,25 +219,45 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
-    static AP_SerialManager *_singleton;
-    
-    // array of uart info
-    struct UARTState {
-        AP_Int8 protocol;
+    class UARTState {
+        friend class AP_SerialManager;
+    public:
+        bool option_enabled(uint16_t option) const {
+            return (options & option) == option;
+        }
+        // returns a baudrate such as 9600.  May map from a special
+        // parameter value like "57" to "57600":
+        uint32_t baudrate() const {
+            return AP_SerialManager::map_baudrate(baud);
+        }
+        AP_SerialManager::SerialProtocol get_protocol() const {
+            return AP_SerialManager::SerialProtocol(protocol.get());
+        }
+    private:
         AP_Int32 baud;
         AP_Int16 options;
-    } state[SERIALMANAGER_NUM_PORTS];
+        AP_Int8 protocol;
+    };
+
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol.
+    // protocol_match is used to determine equivalence of one protocol
+    // to another, e.g. MAVLink2 is considered MAVLink1 for finding
+    // mavlink1 protocol instances.
+    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+                                            uint8_t instance) const;
+
+private:
+    static AP_SerialManager *_singleton;
+
+    // array of uart info. See comment above about
+    // SERIALMANAGER_MAX_PORTS
+    UARTState state[SERIALMANAGER_MAX_PORTS];
 
     // pass-through serial support
     AP_Int8 passthru_port1;
     AP_Int8 passthru_port2;
     AP_Int8 passthru_timeout;
-
-    // search through managed serial connections looking for the
-    // instance-nth UART which is running protocol protocol
-    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
-                                      uint8_t instance) const;
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;

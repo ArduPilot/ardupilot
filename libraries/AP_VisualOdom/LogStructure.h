@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_VisualOdom_config.h"
 
 #define LOG_IDS_FROM_VISUALODOM \
     LOG_VISUALODOM_MSG, \
@@ -87,6 +88,7 @@ struct PACKED log_VisualVelocity {
     uint8_t ignored;
 };
 
+#if HAL_VISUALODOM_ENABLED
 #define LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
@@ -94,4 +96,6 @@ struct PACKED log_VisualVelocity {
       "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
       "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" },
-
+#else
+#define LOG_STRUCTURE_FROM_VISUALODOM
+#endif

@@ -10,12 +10,25 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "EKF_Maths.h"
+
+#if HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <arm_math.h>
+#endif
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+
+// On H750 we want to measure external flash to ram performance
+#if defined(EXT_FLASH_SIZE_MB) && EXT_FLASH_SIZE_MB>0 && defined(STM32H7)
+#include "ch.h"
+#define DISABLE_CACHES
+#endif
 
 #ifdef STM32_SYS_CK
 static uint32_t sysclk = STM32_SYS_CK;
@@ -28,8 +41,15 @@ static uint32_t sysclk = 0;
 static EKF_Maths ekf;
 
 HAL_Semaphore sem;
+AP_ESC_Telem telem;
 
 void setup() {
+#ifdef DISABLE_CACHES
+#if !HAL_XIP_ENABLED // can't disable DCache in memory-mapped mode
+    SCB_DisableDCache();
+#endif
+    SCB_DisableICache();
+#endif
     ekf.init();
 }
 
@@ -55,13 +75,14 @@ static void show_sizes(void)
 #define FIFTYTIMES(x) do { TENTIMES(x); TENTIMES(x); TENTIMES(x); TENTIMES(x); TENTIMES(x); } while (0)
 
 #define TIMEIT(name, op, count) do { \
-    uint32_t us_end, us_start; \
-    us_start = AP_HAL::micros(); \
+    uint16_t us_end, us_start; \
+    us_start = AP_HAL::micros16(); \
     for (uint8_t i = 0; i < count; i++) { \
         FIFTYTIMES(op); \
     } \
-    us_end = AP_HAL::micros(); \
-    hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end - us_start) / double(count * 50.0)); \
+    us_end = AP_HAL::micros16(); \
+    uint16_t dt_us = us_end - us_start; \
+    hal.console->printf("%-10s %7.4f usec/call\n", name, double(dt_us) / double(count * 50.0)); \
     hal.scheduler->delay(10); \
 } while (0)
 
@@ -79,12 +100,14 @@ volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
 
+#pragma GCC diagnostic error "-Wframe-larger-than=2000"
 static void show_timings(void)
 {
 
     v_f = 1+(AP_HAL::micros() % 5);
     v_out = 1+(AP_HAL::micros() % 3);
 
+    v_32 = AP_HAL::millis();
     v_32 = 1+(AP_HAL::micros() % 5);
     v_out_32 = 1+(AP_HAL::micros() % 3);
 
@@ -101,7 +124,9 @@ static void show_timings(void)
     TIMEIT("nop", asm volatile("nop"::), 255);
 
     TIMEIT("micros()", AP_HAL::micros(), 200);
+    TIMEIT("micros16()", AP_HAL::micros16(), 200);
     TIMEIT("millis()", AP_HAL::millis(), 200);
+    TIMEIT("millis16()", AP_HAL::millis16(), 200);
     TIMEIT("micros64()", AP_HAL::micros64(), 200);
 
     TIMEIT("fadd", v_out += v_f, 100);
@@ -115,24 +140,31 @@ static void show_timings(void)
     TIMEIT("dmul", v_out_d *= v_d, 100);
     TIMEIT("ddiv", v_out_d /= v_d, 100);
 
-    TIMEIT("sinf()", v_out = sinf(v_f), 20);
-    TIMEIT("cosf()", v_out = cosf(v_f), 20);
-    TIMEIT("tanf()", v_out = tanf(v_f), 20);
-    TIMEIT("acosf()", v_out = acosf(v_f * 0.2), 20);
-    TIMEIT("asinf()", v_out = asinf(v_f * 0.2), 20);
-    TIMEIT("atan2f()", v_out = atan2f(v_f * 0.2, v_f * 0.3), 20);
-    TIMEIT("sqrtf()",v_out = sqrtf(v_f), 20);
+    TIMEIT("sinf()", v_out = sinf(v_f), 100);
+    TIMEIT("cosf()", v_out = cosf(v_f), 100);
+    #if HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    TIMEIT("arm_sin_f32()", v_out = arm_sin_f32(v_f), 100);
+    TIMEIT("arm_cos_f32()", v_out = arm_cos_f32(v_f), 100);
+    #endif
+    TIMEIT("tanf()", v_out = tanf(v_f), 100);
+    TIMEIT("acosf()", v_out = acosf(v_f * 0.2), 100);
+    TIMEIT("asinf()", v_out = asinf(v_f * 0.2), 100);
+    TIMEIT("atan2f()", v_out = atan2f(v_f * 0.2, v_f * 0.3), 100);
+    TIMEIT("sqrtf()",v_out = sqrtf(v_f), 100);
 
-    TIMEIT("sin()", v_out = sin(v_f), 20);
-    TIMEIT("cos()", v_out = cos(v_f), 20);
-    TIMEIT("tan()", v_out = tan(v_f), 20);
-    TIMEIT("acos()", v_out = acos(v_f * 0.2), 20);
-    TIMEIT("asin()", v_out = asin(v_f * 0.2), 20);
-    TIMEIT("atan2()", v_out = atan2(v_f * 0.2, v_f * 0.3), 20);
-    TIMEIT("sqrt()",v_out = sqrt(v_f), 20);
-    TIMEIT("sq()",v_out = sq(v_f), 20);
-    TIMEIT("powf(v,2)",v_out = powf(v_f, 2), 20);
-    TIMEIT("powf(v,3.1)",v_out = powf(v_f, 3.1), 20);
+    TIMEIT("sin()", v_out = sin(v_f), 100);
+    TIMEIT("cos()", v_out = cos(v_f), 100);
+    TIMEIT("tan()", v_out = tan(v_f), 100);
+    TIMEIT("acos()", v_out = acos(v_f * 0.2), 100);
+    TIMEIT("asin()", v_out = asin(v_f * 0.2), 100);
+    TIMEIT("atan2()", v_out = atan2(v_f * 0.2, v_f * 0.3), 100);
+    TIMEIT("sqrt()",v_out = sqrt(v_f), 100);
+    #if HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+	TIMEIT("arm_sqrt_f32()", arm_sqrt_f32(v_f, (float32_t*)&v_out), 100);
+    #endif
+    TIMEIT("sq()",v_out = sq(v_f), 100);
+    TIMEIT("powf(v,2)",v_out = powf(v_f, 2), 100);
+    TIMEIT("powf(v,3.1)",v_out = powf(v_f, 3.1), 100);
     TIMEIT("EKF",v_out = ekf.test(), 5);
 
     TIMEIT("iadd8", v_out_8 += v_8, 100);
@@ -170,5 +202,10 @@ void loop()
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }
+
+#else
+void loop() {}
+void setup() {}
+#endif
 
 AP_HAL_MAIN();
