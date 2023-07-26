@@ -606,34 +606,32 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
                 packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
                 packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-                packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+                packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED &&
+                packet.coordinate_frame != MAV_FRAME_BODY_FRD) {
             break;
         }
 
         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
-
-        /*
-         * for future use:
-         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
-         * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
-         * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
-         */
+        bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
+        bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
 
         // prepare position
         Vector3f pos_vector;
         if (!pos_ignore) {
             // convert to cm
             pos_vector = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
-            // rotate to body-frame if necessary
+            // rotate from body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
+                    packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 sub.rotate_body_frame_to_NE(pos_vector.x, pos_vector.y);
             }
             // add body offset if necessary
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_NED ||
+                    packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 pos_vector += sub.inertial_nav.get_position_neu_cm();
             }
@@ -644,19 +642,31 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         if (!vel_ignore) {
             // convert to cm
             vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
-            // rotate to body-frame if necessary
-            if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+            // rotate from body-frame if necessary
+            if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_FRD || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 sub.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
             }
         }
 
+        // prepare yaw
+        float yaw_cd =  0.0f;
+        bool yaw_relative = false;
+        float yaw_rate_cds = 0.0f;
+        if (!yaw_ignore) {
+            yaw_cd = ToDeg(packet.yaw) * 100.0f;
+            yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
+        }
+        if (!yaw_rate_ignore) {
+            yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        }
+
         // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination_posvel(pos_vector, vel_vector);
+            sub.mode_guided.guided_set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_velocity(vel_vector);
+            sub.mode_guided.guided_set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_vector);
+            sub.mode_guided.guided_set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
         break;
