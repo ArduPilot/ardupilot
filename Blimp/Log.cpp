@@ -92,7 +92,9 @@ void Blimp::Log_Write_PIDs()
 // Write an attitude packet
 void Blimp::Log_Write_Attitude()
 {
-
+    //Attitude targets are all zero since Blimp doesn't have attitude control,
+    //but the rest of the log message is useful.
+    ahrs.Write_Attitude(Vector3f{0,0,0});
 }
 
 // Write an EKF and POS packet
@@ -231,7 +233,6 @@ tuning_max     : tune_max
 
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
-
 
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
@@ -403,8 +404,6 @@ void Blimp::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Blimp::Log_Write_Data(LogDataID id, float value) {}
 void Blimp::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Blimp::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Blimp::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
-void Blimp::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
 void Blimp::Log_Write_Vehicle_Startup_Messages() {}
 
 void Blimp::log_init(void) {}
