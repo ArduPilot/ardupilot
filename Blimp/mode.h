@@ -17,6 +17,7 @@ public:
         MANUAL =        1,  // manual control
         VELOCITY =      2,  // velocity mode
         LOITER =        3,  // loiter mode (position hold)
+        RTL =           4,  // rtl
     };
 
     // constructor
@@ -83,7 +84,7 @@ public:
     void update_navigation();
 
     // pilot input processing
-    void get_pilot_desired_accelerations(float &right_out, float &front_out) const;
+    void get_pilot_input(Vector3f &pilot, float &yaw);
 
 protected:
 
@@ -104,6 +105,7 @@ protected:
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     Fins *&motors;
+    Loiter *&loiter;
     RC_Channel *&channel_right;
     RC_Channel *&channel_front;
     RC_Channel *&channel_down;
@@ -304,7 +306,6 @@ protected:
 private:
     Vector3f target_pos;
     float target_yaw;
-    float loop_period;
 };
 
 class ModeLand : public Mode
@@ -346,4 +347,44 @@ protected:
 
 private:
 
+};
+
+class ModeRTL : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return false;
+        //TODO
+    }
+
+protected:
+
+    const char *name() const override
+    {
+        return "RTL";
+    }
+    const char *name4() const override
+    {
+        return "RTL";
+    }
 };
