@@ -110,6 +110,7 @@ public:
         k_param_max_pos_yaw,
         k_param_simple_mode,
         k_param_dis_mask,
+        k_param_pid_dz,
 
         //
         // 90: misc2
@@ -254,6 +255,7 @@ public:
 
     AP_Int8         simple_mode;
     AP_Int16        dis_mask;
+    AP_Float        pid_dz;
 
     AP_Int8         rtl_alt_type;
 

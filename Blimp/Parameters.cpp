@@ -278,6 +278,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Standard
     GSCALAR(dis_mask, "DIS_MASK", 0),
 
+    // @Param: PID_DZ
+    // @DisplayName: Deadzone for the position PIDs
+    // @Description: Output 0 thrust signal when blimp is within this distance (in meters) of the target position. Warning: If this param is greater than MAX_POS_XY param then the blimp won't move at all in the XY plane in Loiter mode as it does not allow more than a second's lag. Same for the other axes.
+    // @Units: m
+    // @Range: 0.1 1
+    // @User: Standard
+    GSCALAR(pid_dz, "PID_DZ", 0),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
