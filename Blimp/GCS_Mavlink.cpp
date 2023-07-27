@@ -469,9 +469,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
-    case MAV_CMD_DO_FOLLOW:
-        return MAV_RESULT_UNSUPPORTED;
-
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
     default:
