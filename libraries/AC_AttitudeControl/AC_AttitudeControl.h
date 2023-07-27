@@ -342,6 +342,9 @@ public:
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
 
+    // set the PID notch sample rates
+    virtual void set_notch_sample_rate(float sample_rate) {}
+
     // return true if the rpy mix is at lowest value
     virtual bool is_throttle_mix_min() const { return true; }
 
