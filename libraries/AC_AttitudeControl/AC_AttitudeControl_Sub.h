@@ -65,6 +65,9 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) override;
+
     // This function ensures that the ROV reaches the target orientation with the desired yaw rate
     void input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
 
