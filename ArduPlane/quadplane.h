@@ -523,6 +523,7 @@ private:
         uint8_t throttle_type = 0;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
         uint16_t throttle_value = 0;  // throttle to be sent to motor, value depends upon it's type
         uint8_t motor_count;          // number of motors to cycle
+        uint8_t order;                // MAVLink enum MOTOR_TEST_ORDER: Sequence that motors are tested when using MAV_CMD_DO_MOTOR_TEST
     } motor_test;
 
     // time of last control log message
@@ -696,7 +697,7 @@ public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                         uint16_t throttle_value, float timeout_sec,
-                                        uint8_t motor_count);
+                                        uint8_t motor_count, uint8_t motor_test_order);
 private:
     void motor_test_stop();
 

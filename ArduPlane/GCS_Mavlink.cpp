@@ -1085,7 +1085,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
                                                         (uint8_t)packet.param2,
                                                         (uint16_t)packet.param3,
                                                         packet.param4,
-                                                        (uint8_t)packet.param5);
+                                                        (uint8_t)packet.param5,
+                                                        (uint8_t)packet.param6);
 
     case MAV_CMD_DO_VTOL_TRANSITION:
         if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
