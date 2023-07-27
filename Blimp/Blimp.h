@@ -111,7 +111,7 @@ private:
     // primary input control channels
     RC_Channel *channel_right;
     RC_Channel *channel_front;
-    RC_Channel *channel_down;
+    RC_Channel *channel_up;
     RC_Channel *channel_yaw;
 
     AP_Logger logger;
