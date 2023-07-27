@@ -19,7 +19,7 @@ Mode::Mode(void) :
     loiter(blimp.loiter),
     channel_right(blimp.channel_right),
     channel_front(blimp.channel_front),
-    channel_down(blimp.channel_down),
+    channel_up(blimp.channel_up),
     channel_yaw(blimp.channel_yaw),
     G_Dt(blimp.G_Dt)
 { };
