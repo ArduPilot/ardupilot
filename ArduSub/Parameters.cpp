@@ -701,26 +701,9 @@ void Sub::load_parameters()
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 
     convert_old_parameters();
-
-    AP_Param::set_default_by_name("BRD_SAFETY_DEFLT", 0);
-    AP_Param::set_default_by_name("ARMING_CHECK",
-            AP_Arming::ARMING_CHECK_RC |
-            AP_Arming::ARMING_CHECK_VOLTAGE |
-            AP_Arming::ARMING_CHECK_BATTERY);
-    AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
-    AP_Param::set_default_by_name("ATC_ACCEL_Y_MAX", 110000.0f);
-    AP_Param::set_default_by_name("RC3_TRIM", 1100);
-    AP_Param::set_default_by_name("COMPASS_OFFS_MAX", 1000);
-    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
-    AP_Param::set_default_by_name("MNT1_TYPE", 1);
-    AP_Param::set_default_by_name("MNT1_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
-    AP_Param::set_default_by_name("MNT1_RC_RATE", 30);
-    AP_Param::set_default_by_name("RC7_OPTION", 214);   // MOUNT1_YAW
-    AP_Param::set_default_by_name("RC8_OPTION", 213);   // MOUNT1_PITCH
+    AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
-    AP_Param::set_default_by_name("MOT_PWM_MIN", 1100);
-    AP_Param::set_default_by_name("MOT_PWM_MAX", 1900);
 
 // PARAMETER_CONVERSION - Added: JAN-2022
 #if AP_AIRSPEED_ENABLED
