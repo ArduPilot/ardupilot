@@ -7,9 +7,7 @@ def build(bld):
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_AttitudeControl',
             'AC_InputManager',
-            'AC_WPNav',
             'AP_InertialNav',
             'AP_RCMapper',
             'AP_Avoidance',
@@ -27,5 +25,4 @@ def build(bld):
         program_name='blimp',
         program_groups=['bin', 'blimp'],
         use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=MULTICOPTER_FRAME'],
         )
