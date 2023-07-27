@@ -69,12 +69,62 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SMAX", 12, AC_HELI_PID, _slew_rate_max, 0),
 
+#if AC_PID_ADVANCED_ENABLED
+    // @Param: ADV
+    // @DisplayName: Advanced parameters enable
+    // @Description: Advanced parameters enable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("ADV", 32, AC_HELI_PID, _adv_enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: D_FF
+    // @DisplayName: PID Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+    AP_GROUPINFO("D_FF", 33, AC_HELI_PID, _kdff, 0),
+
+    // @Param: NTF
+    // @DisplayName: PID Target notch Filter center frequency
+    // @Description: PID Target notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NTF", 34, AC_HELI_PID, _notch_T_center_freq_hz, 0),
+
+    // @Param: NEF
+    // @DisplayName: PID Error notch Filter center frequency
+    // @Description: PID Error notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NEF", 35, AC_HELI_PID, _notch_E_center_freq_hz, 0),
+
+    // @Param: NBW
+    // @DisplayName: PID notch Filter bandwidth
+    // @Description: PID notch Filter bandwidth in Hz.
+    // @Range: 5 250
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NBW", 36, AC_HELI_PID, _notch_bandwidth_hz, 0),
+
+    // @Param: NATT
+    // @DisplayName: PID notch Filter attenuation
+    // @Description: PID notch Filter attenuation in dB.
+    // @Range: 5 50
+    // @Units: dB
+    // @User: Advanced
+    AP_GROUPINFO("NATT", 37, AC_HELI_PID, _notch_attenuation_dB, 40),
+
+#endif
+
     AP_GROUPEND
 };
 
 /// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz) :
-    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz)
+AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dff_val) :
+    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz, dff_val)
 {
     _last_requested_rate = 0;
 }
