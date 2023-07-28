@@ -9,8 +9,6 @@ define WATCHDOG_DISABLED
 define CORE_CM7
 define SMPS_PWR
 
-env AP_PERIPH_HEAVY 1
-
 define HAL_BUILD_AP_PERIPH
 
 # board ID for firmware load
@@ -89,11 +87,9 @@ define HAL_DISABLE_LOOP_DELAY
 #################################
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-define HAL_GCS_ENABLED 1
 env DISABLE_SCRIPTING 1
 define AP_RC_CHANNEL_ENABLED 1
 define AP_INERTIALSENSOR_ENABLED 0
-define HAL_LOGGING_ENABLED TRUE
 
 define AP_NETWORKING_MAX_INSTANCES 4
 
