@@ -169,18 +169,14 @@ void AP_CANManager::init()
         bool can_initialised = false;
         // Check if this interface need hooking up to slcan passthrough
         // instead of a driver
+        can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
 #if AP_CAN_SLCAN_ENABLED
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
-        } else {
-#else
-        if (true) {
+        } 
 #endif
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
-        }
-
+        
         if (!can_initialised) {
             log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
             continue;
@@ -212,7 +208,7 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
-        } else
+        } else 
 #endif
 #if HAL_PICCOLO_CAN_ENABLE
          if (drv_type[drv_num] == AP_CAN::Protocol::PiccoloCAN) {
@@ -240,11 +236,6 @@ void AP_CANManager::init()
 
     for (uint8_t drv_num = 0; drv_num < HAL_MAX_CAN_PROTOCOL_DRIVERS; drv_num++) {
         //initialise all the Drivers
-
-        // Cache the driver type, initialized or not, so we can detect that it is in the params at boot via get_driver_type().
-        // This allows drivers that are initialized by CANSensor instead of CANManager to know if they should init or not
-        _driver_type_cache[drv_num] = drv_type[drv_num];
-
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
@@ -261,6 +252,10 @@ void AP_CANManager::init()
         }
 
         _drivers[drv_num]->init(drv_num, enable_filter);
+
+        // Cache the driver type, initialized or not, so we can detect that it is in the params at boot via get_driver_type().
+        // This allows drivers that are initialized by CANSensor instead of CANManager to know if they should init or not
+        _driver_type_cache[drv_num] = drv_type[drv_num];
     }
 }
 #else
