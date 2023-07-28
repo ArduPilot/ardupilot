@@ -14,3 +14,6 @@ define HAL_SOARING_ENABLED 0
 
 # RunCam control isn't available on smaller boards
 define HAL_RUNCAM_ENABLED 0
+
+# minimized boards don't get configuration via SmartAudio by default:
+define AP_SMARTAUDIO_ENABLED 0
