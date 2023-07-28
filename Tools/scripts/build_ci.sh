@@ -49,8 +49,9 @@ function install_mavproxy() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone https://github.com/ardupilot/MAVProxy --depth 1
+          git clone https://github.com/peterbarker/MAVProxy
           pushd MAVProxy
+            git checkout origin/pr/mission-item-protocol-fence-rally
             python setup.py build install --user --force
           popd
         popd
