@@ -149,7 +149,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
 AP_DroneCAN::AP_DroneCAN(const int driver_index) :
 _driver_index(driver_index),
 canard_iface(driver_index),
-_dna_server(*this)
+_dna_server(*this, canard_iface, driver_index)
 {
     AP_Param::setup_object_defaults(this, var_info);
 

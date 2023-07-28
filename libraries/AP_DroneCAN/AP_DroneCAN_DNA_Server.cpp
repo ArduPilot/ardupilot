@@ -36,12 +36,12 @@ extern const AP_HAL::HAL& hal;
 
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
-AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan) :
+AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardInterface &canard_iface, uint8_t driver_index) :
     _ap_dronecan(ap_dronecan),
-    _canard_iface(ap_dronecan.canard_iface),
+    _canard_iface(canard_iface),
     storage(StorageManager::StorageCANDNA),
-    allocation_sub(allocation_cb, _ap_dronecan.get_driver_index()),
-    node_status_sub(node_status_cb, _ap_dronecan.get_driver_index()),
+    allocation_sub(allocation_cb, driver_index),
+    node_status_sub(node_status_cb, driver_index),
     node_info_client(_canard_iface, node_info_cb)
 {}
 
