@@ -2783,6 +2783,8 @@ class AutoTest(ABC):
                         continue
                     if "#if AC_PRECLAND_ENABLED" in line:
                         continue
+                    if "#if OFFBOARD_GUIDED == ENABLED" in line:
+                        continue
                     if "#end" in line:
                         continue
                     if "LOG_COMMON_STRUCTURES" in line:
