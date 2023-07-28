@@ -26,9 +26,6 @@ define AP_GPS_SIRF_ENABLED 0
 # no moving baseline support:
 define GPS_MOVING_BASELINE 0
 
-# minimized boards don't get configuration via SmartAudio by default:
-define AP_SMARTAUDIO_ENABLED 0
-
 # minimized boards don't get configuration via Tramp by default:
 define AP_TRAMP_ENABLED 0
 
