@@ -384,6 +384,7 @@ void *malloc_eth_safe(size_t size)
 #if defined(STM32H7)
     return malloc_flags(size, MEM_REGION_FLAG_ETH_SAFE);
 #else
+    (void)size;
     return NULL;
 #endif
 }
