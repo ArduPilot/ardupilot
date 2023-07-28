@@ -173,8 +173,8 @@ AP_Networking::AP_Networking(void)
 #ifdef STM32_ETH_BUFFERS_EXTERN
 stm32_eth_rx_descriptor_t *__eth_rd;
 stm32_eth_tx_descriptor_t *__eth_td;
-uint32_t **__eth_rb;
-uint32_t **__eth_tb;
+uint32_t *__eth_rb[STM32_MAC_RECEIVE_BUFFERS];
+uint32_t *__eth_tb[STM32_MAC_TRANSMIT_BUFFERS];
 #endif
 
 
@@ -187,7 +187,7 @@ static bool allocate_buffers()
     const uint32_t eth_td_size = sizeof(stm32_eth_tx_descriptor_t)*STM32_MAC_TRANSMIT_BUFFERS;
     const uint32_t eth_rb_size = sizeof(uint32_t)*STM32_MAC_RECEIVE_BUFFERS*BUFFER_SIZE;
     const uint32_t eth_tb_size = sizeof(uint32_t)*STM32_MAC_TRANSMIT_BUFFERS*BUFFER_SIZE;
-    const uint32_t total_size = eth_rd_size + eth_rd_size + eth_rb_size + eth_tb_size; // == 9240
+    const uint32_t total_size = eth_rd_size + eth_td_size + eth_rb_size + eth_tb_size; // == 9240
 
     // ensure that we allocate 32-bit aligned memory, and mark it non-cacheable
     uint32_t size = 2;
@@ -219,8 +219,14 @@ static bool allocate_buffers()
     // assign buffers
     __eth_rd = (stm32_eth_rx_descriptor_t *)mem;
     __eth_td = (stm32_eth_tx_descriptor_t *)&__eth_rd[STM32_MAC_RECEIVE_BUFFERS];
-    __eth_rb = (uint32_t **)((uint32_t)__eth_td + eth_td_size);
-    __eth_tb = (uint32_t **)((uint32_t)__eth_rb + eth_rb_size);
+    __eth_rb[0] = (uint32_t*)&__eth_td[STM32_MAC_TRANSMIT_BUFFERS];
+    for (uint16_t i = 1; i < STM32_MAC_RECEIVE_BUFFERS; i++) {
+        __eth_rb[i] = &(__eth_rb[i-1][BUFFER_SIZE]);
+    }
+    __eth_tb[0] = &(__eth_rb[STM32_MAC_RECEIVE_BUFFERS-1][BUFFER_SIZE]);
+    for (uint16_t i = 1; i < STM32_MAC_TRANSMIT_BUFFERS; i++) {
+        __eth_tb[i] = &(__eth_tb[i-1][BUFFER_SIZE]);
+    }
 #endif
 
     return true;
