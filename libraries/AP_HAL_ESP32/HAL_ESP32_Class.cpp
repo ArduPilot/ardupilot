@@ -20,7 +20,6 @@
 #include "Scheduler.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
-#include "GPIO.h"
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
 #include "WiFiUdpDriver.h"
