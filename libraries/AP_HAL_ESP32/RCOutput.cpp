@@ -338,7 +338,6 @@ void RCOutput::safety_update(void)
     gpio_set_level((gpio_num_t)HAL_GPIO_PIN_LED_SAFETY, (led_pattern & (1U << led_counter))?0:1);
 #endif
 }
-}
 
 /*
   set PWM to send to a set of channels if the FMU firmware dies
