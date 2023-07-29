@@ -25,6 +25,7 @@
 #include "WiFiUdpDriver.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "GPIO.h"
 #include "Storage.h"
 #include "AnalogIn.h"
 #include "Util.h"
