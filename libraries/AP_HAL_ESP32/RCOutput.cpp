@@ -24,6 +24,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "driver/rtc_io.h"
+#include "driver/gpio.h"
 
 #include <stdio.h>
 
