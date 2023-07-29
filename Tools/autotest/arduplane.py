@@ -25,6 +25,7 @@ from common import Test
 
 from pymavlink.rotmat import Vector3
 from pysim import vehicleinfo
+from pysim import util
 
 import operator
 
@@ -4623,6 +4624,18 @@ class AutoTestPlane(AutoTest):
 
         self.reboot_sitl()
 
+    def RunMissionScript(self):
+        '''Test run_mission.py script'''
+        script = os.path.join('Tools', 'autotest', 'run_mission.py')
+        self.stop_SITL()
+        util.run_cmd([
+            util.reltopdir(script),
+            self.binary,
+            'plane',
+            self.generic_mission_filepath_for_filename("flaps.txt"),
+        ])
+        self.start_SITL()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4702,6 +4715,7 @@ class AutoTestPlane(AutoTest):
             self.EmbeddedParamParser,
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
+            self.RunMissionScript,
             self.WindEstimates,
             self.AltResetBadGPS,
             self.AirspeedCal,

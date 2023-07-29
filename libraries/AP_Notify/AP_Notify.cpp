@@ -436,9 +436,15 @@ void AP_Notify::add_backends(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_ToneAlarm());
     ADD_BACKEND(new Buzzer());
-#ifdef WITH_SITL_RGBLED
+	#ifdef WITH_SITL_RGBLED
     ADD_BACKEND(new SITL_SFML_LED());
 #endif
+
+//ESP32 Noise Maker
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+  #if AP_NOTIFY_TONEALARM_ENABLED
+    ADD_BACKEND(new AP_ToneAlarm());
+  #endif
 #endif // Noise makers
 
 }

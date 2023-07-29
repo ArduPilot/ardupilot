@@ -92,8 +92,13 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
 #define AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
     { "MFT200L4<B#4A#6G#6", false },
+#ifdef CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#define AP_NOTIFY_TONE_STARTUP 29
+    { "MFT240P8L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+#else
 #define AP_NOTIFY_TONE_STARTUP 29
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+#endif 
 #define AP_NOTIFY_TONE_NO_SDCARD 30
     { "MNBGG", false },
 #define AP_NOTIFY_TONE_EKF_ALERT 31
@@ -105,7 +110,14 @@ bool AP_ToneAlarm::init()
     if (pNotify->buzzer_enabled() == false) {
         return false;
     }
-#if AP_NOTIFY_TONEALARM_ENABLED
+#if ((defined(HAL_PWM_ALARM) || defined(HAL_PWM_ALT_ALARM) || HAL_DSHOT_ALARM_ENABLED) && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS)) || \
+    (AP_NOTIFY_TONEALARM_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_ESP32)) || \
+    CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
+    CONFIG_HAL_BOARD == HAL_BOARD_SITL 
+    if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
+        return false;
+    }
+#elif   
     if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
         return false;
     }
@@ -120,7 +132,7 @@ bool AP_ToneAlarm::init()
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
 
-#if (AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_FATFS_ENABLED) && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     // if we don't have a SDcard then play a failure tone instead of
     // normal startup tone. This gives the user a chance to fix it
     // before they try to arm. We don't do this on Linux as Linux
@@ -250,7 +262,7 @@ void AP_ToneAlarm::update()
 
     if (AP_Notify::flags.temp_cal_running != flags.temp_cal_running) {
         if (AP_Notify::flags.temp_cal_running) {
-            play_tone(AP_NOTIFY_TONE_QUIET_CALIBRATING_CTS);
+            play_tone(AP_NOTIFY_TONE_QUIET_CALIBRATING_CTS);             
             play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
         } else {
             if (_cont_tone_playing == AP_NOTIFY_TONE_QUIET_CALIBRATING_CTS) {
@@ -273,7 +285,7 @@ void AP_ToneAlarm::update()
 
     //notify the user when autotune fails
     if (AP_Notify::flags.armed && (AP_Notify::events.autotune_failed)) {
-        play_tone(AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK);
+        play_tone(AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK);   
     }
 
     // notify the user when a waypoint completes
@@ -284,29 +296,29 @@ void AP_ToneAlarm::update()
     // notify the user when their mode change was successful
     if (AP_Notify::events.user_mode_change) {
         if (AP_Notify::flags.armed) {
-            play_tone(AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK);
+            play_tone(AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK);            
         } else {
-            play_tone(AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK);
+            play_tone(AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK);            
         }
     }
 
     // notify the user when their mode change failed
     if (AP_Notify::events.user_mode_change_failed) {
         if (AP_Notify::flags.armed) {
-            play_tone(AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK);
+            play_tone(AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK);           
         } else {
-            play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+            play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);           
         }
     }
 
     // failsafe initiated mode change
     if (AP_Notify::events.failsafe_mode_change) {
-        play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
+        play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);        
     }
 
     // notify the user when arming fails
     if (AP_Notify::events.arming_failed) {
-        play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+        play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);        
     }
 
     // notify the user when RC contact is lost
@@ -315,13 +327,13 @@ void AP_ToneAlarm::update()
         if (flags.failsafe_radio) {
             // armed case handled by events.failsafe_mode_change
             if (!AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);                
             }
         } else {
             if (AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);          
             } else {
-                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);                
             }
         }
     }
@@ -332,13 +344,13 @@ void AP_ToneAlarm::update()
         if (flags.failsafe_gcs) {
             // armed case handled by events.failsafe_mode_change
             if (!AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);                
             }
         } else {
             if (AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);                 
             } else {
-                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);                 
             }
         }
     }
@@ -347,12 +359,12 @@ void AP_ToneAlarm::update()
     if (flags.pre_arm_check != AP_Notify::flags.pre_arm_check) {
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
         if (flags.pre_arm_check) {
-            play_tone(AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED);
+            play_tone(AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED);             
             _have_played_ready_tone = true;
         } else {
             // only play sad tone if we've ever played happy tone:
             if (_have_played_ready_tone) {
-                play_tone(AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
+                play_tone(AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);                 
             }
         }
     }
@@ -365,7 +377,7 @@ void AP_ToneAlarm::update()
             play_tone(AP_NOTIFY_TONE_QUIET_ARMING_WARNING);
         } else {
             // disarming tune
-            play_tone(AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK);
+            play_tone(AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK);            
             if (!flags.leak_detected) {
                 stop_cont_tone();
             }
