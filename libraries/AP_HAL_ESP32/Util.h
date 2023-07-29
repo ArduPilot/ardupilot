@@ -73,11 +73,11 @@ public:
 #endif
 
 private:
-#ifdef HAL_PWM_ALARM
-    struct ToneAlarmPwmGroup {
-        pwmchannel_t chan;
-        PWMConfig pwm_cfg;
-        PWMDriver* pwm_drv;
+#if AP_NOTIFY_TONEALARM_ENABLED
+    struct ToneAlarmPwmGroup 
+    {
+        ledc_timer_config_t timer_config;
+        ledc_channel_config_t channel_config;
     };
 
     static ToneAlarmPwmGroup _toneAlarm_pwm_group;
