@@ -12,539 +12,246 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#include "AP_Notify.h"
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include "AP_Notify_config.h"
 
-#include "AP_BoardLED.h"
-#include "PixRacerLED.h"
-#include "Buzzer.h"
-#include "Display.h"
-#include "ExternalLED.h"
-#include "IS31FL3195.h"
-#include "PCA9685LED_I2C.h"
-#include "NavigatorLED.h"
-#include "NeoPixel.h"
-#include "NCP5623.h"
-#include "OreoLED_I2C.h"
-#include "RCOutputRGBLed.h"
-#include "ToneAlarm.h"
-#include "ToshibaLED_I2C.h"
-#include "LP5562.h"
-#include "VRBoard_LED.h"
-#include "DiscreteRGBLed.h"
-#include "DiscoLED.h"
-#include "Led_Sysfs.h"
-#include "DroneCAN_RGB_LED.h"
-#include "SITL_SFML_LED.h"
-#include <stdio.h>
-#include "AP_BoardLED2.h"
-#include "ProfiLED.h"
-#include "ScriptingLED.h"
-#include "DShotLED.h"
+#include "NotifyDevice.h"
 
-extern const AP_HAL::HAL& hal;
+// Device parameters values
+#define RGB_LED_OFF     0
+#define RGB_LED_LOW     1
+#define RGB_LED_MEDIUM  2
+#define RGB_LED_HIGH    3
+#define BUZZER_ON       1
+#define BUZZER_OFF      0
 
-AP_Notify *AP_Notify::_singleton;
+#define NOTIFY_TEXT_BUFFER_SIZE 51
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define CONFIG_NOTIFY_DEVICES_MAX 12
-#else
-#define CONFIG_NOTIFY_DEVICES_MAX 6
-#endif
+//Type of on-board display
+#define DISPLAY_OFF     0
+#define DISPLAY_SSD1306 1
+#define DISPLAY_SH1106  2
+#define DISPLAY_SITL 10
 
+class AP_Notify
+{
+    friend class RGBLed;            // RGBLed needs access to notify parameters
+    friend class Display;           // Display needs access to notify parameters
+public:
+    AP_Notify();
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_Notify);
+
+    // get singleton instance
+    static AP_Notify *get_singleton(void) {
+        return _singleton;
+    }
+
+    // Oreo LED Themes
+    enum Oreo_LED_Theme {
+        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
+        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
+        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
+    };
+
+    enum Notify_LED_Type {
+        Notify_LED_None                     = 0,        // not enabled
+        Notify_LED_Board                    = (1 << 0), // Built in board LED's
 #if AP_NOTIFY_TOSHIBALED_ENABLED
-#define TOSHIBA_LED_I2C_BUS_INTERNAL    0
-#define TOSHIBA_LED_I2C_BUS_EXTERNAL    1
-#define ALL_TOSHIBALED_I2C (Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
-#else
-#define ALL_TOSHIBALED_I2C 0
-#endif
-
-#if AP_NOTIFY_NCP5623_ENABLED
-#define ALL_NCP5623_I2C (Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
-#else
-#define ALL_NCP5623_I2C 0
-#endif
-
-#if AP_NOTIFY_LP5562_ENABLED
-#define ALL_LP5562_I2C (Notify_LED_LP5562_I2C_Internal | Notify_LED_LP5562_I2C_External)
-#else
-#define ALL_LP5562_I2C 0
-#endif
-
-// all I2C_LEDS
-#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
-
-#if AP_NOTIFY_DRONECAN_LED_ENABLED
-#define DRONECAN_LEDS Notify_LED_DroneCAN
-#else
-#define DRONECAN_LEDS 0
-#endif
-
-#ifndef DEFAULT_NTF_LED_TYPES
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-// Linux boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_PCA9685LED_I2C_External)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    DRONECAN_LEDS)
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
-
-  #else // other linux
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-  #endif
-
-// All other builds
-#else
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-#endif // board selection
-
-#endif // DEFAULT_NTF_LED_TYPES
-
-#ifndef BUZZER_ENABLE_DEFAULT
-#if HAL_CANMANAGER_ENABLED
-// Enable Buzzer messages over UAVCAN
-#define BUZZER_ENABLE_DEFAULT (Notify_Buzz_Builtin | Notify_Buzz_UAVCAN)
-#else
-#define BUZZER_ENABLE_DEFAULT Notify_Buzz_Builtin
-#endif
-#endif
-
-#ifndef BUILD_DEFAULT_BUZZER_TYPE
-#define BUILD_DEFAULT_BUZZER_TYPE BUZZER_ENABLE_DEFAULT
-#endif
-
-#ifndef NOTIFY_LED_BRIGHT_DEFAULT
-#define NOTIFY_LED_BRIGHT_DEFAULT RGB_LED_HIGH
-#endif
-
-#ifndef NOTIFY_LED_OVERRIDE_DEFAULT
-#define NOTIFY_LED_OVERRIDE_DEFAULT 0       // rgb_source_t::standard
-#endif
-
-#ifndef NOTIFY_LED_LEN_DEFAULT
-#define NOTIFY_LED_LEN_DEFAULT 1
-#endif
-
-#ifndef HAL_BUZZER_PIN
-#define HAL_BUZZER_PIN -1
-#endif
-
-#ifndef DEFAULT_BUZZ_ON_LVL
-#define DEFAULT_BUZZ_ON_LVL 1
-#endif
-
-// table of user settable parameters
-const AP_Param::GroupInfo AP_Notify::var_info[] = {
-
-    // @Param: LED_BRIGHT
-    // @DisplayName: LED Brightness
-    // @Description: Select the RGB LED brightness level. When USB is connected brightness will never be higher than low regardless of the setting.
-    // @Values: 0:Off,1:Low,2:Medium,3:High
-    // @User: Advanced
-    AP_GROUPINFO("LED_BRIGHT", 0, AP_Notify, _rgb_led_brightness, NOTIFY_LED_BRIGHT_DEFAULT),
-
-    // @Param: BUZZ_TYPES
-    // @DisplayName: Buzzer Driver Types
-    // @Description: Controls what types of Buzzer will be enabled
-    // @Bitmask: 0:Built-in buzzer, 1:DShot, 2:DroneCAN
-    // @User: Advanced
-    AP_GROUPINFO("BUZZ_TYPES", 1, AP_Notify, _buzzer_type, BUILD_DEFAULT_BUZZER_TYPE),
-
-    // @Param: LED_OVERRIDE
-    // @DisplayName: Specifies colour source for the RGBLed
-    // @Description: Specifies the source for the colours and brightness for the LED.  OutbackChallenge conforms to the MedicalExpress (https://uavchallenge.org/medical-express/) rules, essentially "Green" is disarmed (safe-to-approach), "Red" is armed (not safe-to-approach). Traffic light is a simplified color set, red when armed, yellow when the safety switch is not surpressing outputs (but disarmed), and green when outputs are surpressed and disarmed, the LED will blink faster if disarmed and failing arming checks.
-    // @Values: 0:Standard,1:MAVLink/Scripting/AP_Periph,2:OutbackChallenge,3:TrafficLight
-    // @User: Advanced
-    AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, NOTIFY_LED_OVERRIDE_DEFAULT),
-
-#if HAL_DISPLAY_ENABLED
-    // @Param: DISPLAY_TYPE
-    // @DisplayName: Type of on-board I2C display
-    // @Description: This sets up the type of on-board I2C display. Disabled by default.
-    // @Values: 0:Disable,1:ssd1306,2:sh1106,10:SITL
-    // @User: Advanced
-    AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
-#endif
-
-#if AP_NOTIFY_OREOLED_ENABLED
-    // @Param: OREO_THEME
-    // @DisplayName: OreoLED Theme
-    // @Description: Enable/Disable Solo Oreo LED driver, 0 to disable, 1 for Aircraft theme, 2 for Rover theme
-    // @Values: 0:Disabled,1:Aircraft,2:Rover
-    // @User: Advanced
-    AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
-#endif
-
-    // @Param: BUZZ_PIN
-    // @DisplayName: Buzzer pin
-    // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET! Some the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @Values: -1:Disabled
-    // @User: Advanced
-    AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, HAL_BUZZER_PIN),
-
-    // @Param: LED_TYPES
-    // @DisplayName: LED Driver Types
-    // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
-    // @User: Advanced
-    AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
-
-    // @Param: BUZZ_ON_LVL
-    // @DisplayName: Buzzer-on pin logic level
-    // @Description: Specifies pin level that indicates buzzer should play
-    // @Values: 0:LowIsOn,1:HighIsOn
-    // @User: Advanced
-    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, DEFAULT_BUZZ_ON_LVL),
-
-    // @Param: BUZZ_VOLUME
-    // @DisplayName: Buzzer volume
-    // @Description: Control the volume of the buzzer
-    // @Range: 0 100
-    // @Units: %
-    AP_GROUPINFO("BUZZ_VOLUME", 8, AP_Notify, _buzzer_volume, 100),
-
-    // @Param: LED_LEN
-    // @DisplayName: Serial LED String Length
-    // @Description: The number of Serial LED's to use for notifications (NeoPixel's and ProfiLED)
-    // @Range: 1 32
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, NOTIFY_LED_LEN_DEFAULT),
-
-    AP_GROUPEND
-};
-
-// Default constructor
-AP_Notify::AP_Notify()
-{
-    AP_Param::setup_object_defaults(this, var_info);
-    if (_singleton != nullptr) {
-        AP_HAL::panic("AP_Notify must be singleton");
-    }
-    _singleton = this;
-}
-
-// static flags, to allow for direct class update from device drivers
-struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
-struct AP_Notify::notify_events_type AP_Notify::events;
-
-NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_MAX];
-uint8_t AP_Notify::_num_devices;
-
-void AP_Notify::add_backend_helper(NotifyDevice *backend)
-{
-    _devices[_num_devices] = backend;
-    _devices[_num_devices]->pNotify = this;
-    if(!_devices[_num_devices]->init()) {
-        delete _devices[_num_devices];
-        _devices[_num_devices] = nullptr;
-    } else {
-      _num_devices++;
-    }
-}
-
-#define ADD_BACKEND(backend) do { add_backend_helper(backend); if (_num_devices >= CONFIG_NOTIFY_DEVICES_MAX) return;} while(0)
-
-// add notify backends to _devices array
-void AP_Notify::add_backends(void)
-{
-    if (_num_devices != 0) {
-        return;
-    }
-
-    for (uint32_t i = 1; i < Notify_LED_MAX; i = i << 1) {
-        switch(_led_type & i) {
-            case Notify_LED_None:
-                break;
-            case Notify_LED_Board:
-                // select the most appropriate built in LED driver type
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-                ADD_BACKEND(new Led_Sysfs("rgb_led0", "rgb_led2", "rgb_led1"));
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-                ADD_BACKEND(new RCOutputRGBLedInverted(12, 13, 14));
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-                ADD_BACKEND(new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-                ADD_BACKEND(new DiscoLED());
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-                ADD_BACKEND(new NavigatorLED());
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-            ADD_BACKEND(new AP_BoardLED2());
-  #endif
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
-                ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
-#endif // CONFIG_HAL_BOARD_SUBTYPE == various CHIBIOS-VRBRAINs
-
-#if defined(HAL_HAVE_PIXRACER_LED)
-                ADD_BACKEND(new PixRacerLED());
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
-                ADD_BACKEND(new VRBoard_LED());
-  #else
-                ADD_BACKEND(new AP_BoardLED());
-  #endif
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
-                ADD_BACKEND(new AP_BoardLED2());
-#endif
-                break;
-#if AP_NOTIFY_TOSHIBALED_ENABLED
-            case Notify_LED_ToshibaLED_I2C_Internal:
-                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
-                break;
-            case Notify_LED_ToshibaLED_I2C_External:
-                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
-                break;
-#endif
-#if AP_NOTIFY_NCP5623_ENABLED
-            case Notify_LED_NCP5623_I2C_External:
-                FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new NCP5623(b));
-                }
-                break;
-            case Notify_LED_NCP5623_I2C_Internal:
-                FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new NCP5623(b));
-                }
-                break;
+        Notify_LED_ToshibaLED_I2C_Internal  = (1 << 1), // Internal ToshibaLED_I2C
+        Notify_LED_ToshibaLED_I2C_External  = (1 << 2), // External ToshibaLED_I2C
 #endif
 #if AP_NOTIFY_PCA9685_ENABLED
-            case Notify_LED_PCA9685LED_I2C_External:
-                ADD_BACKEND(new PCA9685LED_I2C());
-                break;
-#endif
-#if AP_NOTIFY_NEOPIXEL_ENABLED
-            case Notify_LED_NeoPixel:
-                ADD_BACKEND(new NeoPixel());
-                break;
-#endif
-#if AP_NOTIFY_PROFILED_ENABLED
-            case Notify_LED_ProfiLED:
-                ADD_BACKEND(new ProfiLED());
-                break;
-#endif
-#if AP_NOTIFY_PROFILED_SPI_ENABLED
-            case Notify_LED_ProfiLED_SPI:
-                ADD_BACKEND(new ProfiLED_SPI());
-                break;
+        Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
 #endif
 #if AP_NOTIFY_OREOLED_ENABLED
-            case Notify_LED_OreoLED:
-                if (_oreo_theme) {
-                    ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
-                }
-                break;
+        Notify_LED_OreoLED                  = (1 << 4), // Oreo
 #endif
 #if AP_NOTIFY_DRONECAN_LED_ENABLED
-            case Notify_LED_DroneCAN:
-                ADD_BACKEND(new DroneCAN_RGB_LED());
-                break;
-#endif // AP_NOTIFY_DRONECAN_LED_ENABLED
+        Notify_LED_DroneCAN                   = (1 << 5), // UAVCAN RGB LED
+#endif
+#if AP_NOTIFY_NCP5623_ENABLED
+        Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
+        Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
+#endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
+        Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
+#endif
+#if AP_NOTIFY_PROFILED_ENABLED
+        Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
+#endif
 #if AP_NOTIFY_SCRIPTING_LED_ENABLED
-            case Notify_LED_Scripting:
-                ADD_BACKEND(new ScriptingLED());
-                break;
+        Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
 #endif
 #if AP_NOTIFY_DSHOT_LED_ENABLED
-            case Notify_LED_DShot:
-                ADD_BACKEND(new DShotLED());
-                break;
+        Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
+#endif
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
+        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED (SPI)
 #endif
 #if AP_NOTIFY_LP5562_ENABLED
-            case Notify_LED_LP5562_I2C_External:
-                FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new LP5562(b, 0x30));
-                }
-                break;
-            case Notify_LED_LP5562_I2C_Internal:
-                FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new LP5562(b, 0x30));
-                }
-                break;
+        Notify_LED_LP5562_I2C_External          = (1 << 13), // LP5562
+        Notify_LED_LP5562_I2C_Internal          = (1 << 14), // LP5562
 #endif
 #if AP_NOTIFY_IS31FL3195_ENABLED
-            case Notify_LED_IS31FL3195_I2C_External:
-                FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new IS31FL3195(b, 0x54));
-                }
-                break;
-            case Notify_LED_IS31FL3195_I2C_Internal:
-                FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new IS31FL3195(b, 0x54));
-                }
-                break;
+        Notify_LED_IS31FL3195_I2C_External          = (1 << 15), // IS31FL3195
+        Notify_LED_IS31FL3195_I2C_Internal          = (1 << 16), // IS31FL3195
 #endif
-        }
-    }
+        Notify_LED_MAX
+    };
 
-#if HAL_DISPLAY_ENABLED
-    // Always try and add a display backend
-    ADD_BACKEND(new Display());
-#endif
+    enum Notify_Buzz_Type {
+        Notify_Buzz_None                    = 0,
+        Notify_Buzz_Builtin                 = (1 << 0), // Built in default Alarm Out
+        Notify_Buzz_DShot                   = (1 << 1), // DShot Alarm
+        Notify_Buzz_UAVCAN                  = (1 << 2), // UAVCAN Alarm
+    };
 
-// ChibiOS noise makers
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    ADD_BACKEND(new Buzzer());
-#if AP_NOTIFY_TONEALARM_ENABLED
-    ADD_BACKEND(new AP_ToneAlarm());
-#endif
+    /// notify_flags_type - bitmask of notification flags
+    struct notify_flags_and_values_type {
+        bool initialising;        // true if initialising and the vehicle should not be moved
+        uint8_t gps_status;       // see the GPS_0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
+        uint8_t gps_num_sats;     // number of sats
+        uint8_t flight_mode;      // flight mode
+        bool armed;               // 0 = disarmed, 1 = armed
+        bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
+        bool pre_arm_check;       // true if passing pre arm checks
+        bool pre_arm_gps_check;   // true if passing pre arm gps checks
+        bool save_trim;           // true if gathering trim data
+        bool esc_calibration;     // true if calibrating escs
+        bool failsafe_radio;      // true if radio failsafe
+        bool failsafe_battery;    // true if battery failsafe
+        bool failsafe_gcs;        // true if GCS failsafe
+        bool failsafe_ekf;        // true if ekf failsafe
+        bool parachute_release;   // true if parachute is being released
+        bool ekf_bad;             // true if ekf is reporting problems
+        bool autopilot_mode;      // true if vehicle is in an autopilot flight mode (only used by OreoLEDs)
+        bool firmware_update;     // true just before vehicle firmware is updated
+        bool compass_cal_running; // true if a compass calibration is running
+        bool leak_detected;       // true if leak detected
+        bool gps_fusion;          // true if the GPS is in use by EKF, usable for flight
+        bool gps_glitching;       // true f the GPS is believed to be glitching is affecting navigation accuracy
+        bool have_pos_abs;        // true if absolute position is available
+        bool vehicle_lost;        // true when lost copter tone is requested (normally only used for copter)
+        bool waiting_for_throw;   // true when copter is in THROW mode and waiting to detect the user hand launch
+        bool powering_off;        // true when the vehicle is powering off
+        bool video_recording;     // true when the vehicle is recording video
+        bool temp_cal_running;    // true if a temperature calibration is running
+        bool gyro_calibrated;     // true if calibrated gyro/acc
+    };
 
-// Linux noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
-    // No noise makers, keep this though to ensure that the final else is safe
+    /// notify_events_type - bitmask of active events.
+    //      Notify library is responsible for setting back to zero after notification has been completed
+    struct notify_events_type {
+        uint32_t arming_failed          : 1;    // 1 if copter failed to arm after user input
+        uint32_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
+        uint32_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
+        uint32_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
+        uint32_t autotune_complete      : 1;    // 1 when autotune has successfully completed
+        uint32_t autotune_failed        : 1;    // 1 when autotune has failed
+        uint32_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint32_t mission_complete       : 1;    // 1 when the mission has completed successfully
+        uint32_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
+        uint32_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
+        uint32_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
+        uint32_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint32_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
+        uint32_t tune_started           : 1;    // tuning a parameter has started
+        uint32_t tune_next              : 3;    // tuning switched to next parameter
+        uint32_t tune_save              : 1;    // tuning saved parameters
+        uint32_t tune_error             : 1;    // tuning controller error
+        uint32_t initiated_temp_cal     : 1;    // 1 when temperature calibration starts
+        uint32_t temp_cal_saved         : 1;    // 1 when temperature calibration was just saved
+        uint32_t temp_cal_failed        : 1;    // 1 when temperature calibration has just failed
+    };
 
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    ADD_BACKEND(new Buzzer());
+    // The notify flags and values are static to allow direct class access
+    // without declaring the object.
+    static struct notify_flags_and_values_type flags;
+    static struct notify_events_type events;
 
-  #else // other linux
-    ADD_BACKEND(new AP_ToneAlarm());
-  #endif
+    // initialisation
+    void init(void);
 
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(new AP_ToneAlarm());
-    ADD_BACKEND(new Buzzer());
-#ifdef WITH_SITL_RGBLED
-    ADD_BACKEND(new SITL_SFML_LED());
-#endif
-
-//ESP32 Noise maker
-#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-  #if AP_NOTIFY_TONEALARM_ENABLED
-    ADD_BACKEND(new AP_ToneAlarm());
-  #endif
-#endif // Noise makers
-
-}
-
-// initialisation
-void AP_Notify::init(void)
-{
-    // add all the backends
-    add_backends();
-}
-
-// main update function, called at 50Hz
-void AP_Notify::update(void)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->update();
-        }
-    }
-
-    //reset the events
-    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
-}
+    /// update - allow updates of leds that cannot be updated during a timed interrupt
+    void update(void);
 
 #if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
-// handle a LED_CONTROL message
-void AP_Notify::handle_led_control(const mavlink_message_t &msg)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->handle_led_control(msg);
-        }
-    }
-}
+    // handle a LED_CONTROL message
+    static void handle_led_control(const mavlink_message_t &msg);
 #endif
 
-// handle RGB from Scripting or AP_Periph
-void AP_Notify::handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->rgb_control(r, g, b, rate_hz);
-        }
-    }
-}
+    // handle RGB from Scripting or AP_Periph
+    static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
 
-// handle RGB Per led from Scripting
-void AP_Notify::handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->rgb_set_id(r, g, b, id);
-        }
-    }
-}
+    // handle RGB from Scripting
+    static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
 
-void AP_Notify::play_tune(const char *tune)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->play_tune(tune);
-        }
-    }
-}
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
+    // handle a PLAY_TUNE message
+    static void handle_play_tune(const mavlink_message_t &msg);
+#endif
 
-// set flight mode string
-void AP_Notify::set_flight_mode_str(const char *str)
-{
-    strncpy(_flight_mode_str, str, sizeof(_flight_mode_str));
-    _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
-}
+    // play a tune string
+    static void play_tune(const char *tune);
 
-void AP_Notify::send_text(const char *str)
-{
-    strncpy(_send_text, str, sizeof(_send_text));
-    _send_text[sizeof(_send_text)-1] = 0;
-    _send_text_updated_millis = AP_HAL::millis();
-}
+    bool buzzer_enabled() const { return _buzzer_type != 0; }
 
-// convert 0-3 to 0-100
-int8_t AP_Notify::get_rgb_led_brightness_percent() const
-{
-    switch (_rgb_led_brightness) {
-    default:
-    case RGB_LED_OFF:
-        return 0;
-    case RGB_LED_LOW:
-        return 33;
-    case RGB_LED_MEDIUM:
-        return 66;
-    case RGB_LED_HIGH:
-        return 100;
-    }
-}
+    uint8_t get_buzzer_types() const { return _buzzer_type; }
+
+    // set flight mode string
+    void set_flight_mode_str(const char *str);
+    const char* get_flight_mode_str() const { return _flight_mode_str; }
+
+    // send text to display
+    void send_text(const char *str);
+    const char* get_text() const { return _send_text; }
+    uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
+
+    static const struct AP_Param::GroupInfo var_info[];
+    int8_t get_buzz_pin() const  { return _buzzer_pin; }
+    uint8_t get_buzz_level() const  { return _buzzer_level; }
+    uint8_t get_buzz_volume() const  { return _buzzer_volume; }
+    uint8_t get_led_len() const { return _led_len; }
+    int8_t get_rgb_led_brightness_percent() const;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    HAL_Semaphore sf_window_mutex;
+#endif
+
+private:
+
+    static AP_Notify *_singleton;
+
+    void add_backend_helper(NotifyDevice *backend);
+
+    // add all backends
+    void add_backends(void);
+
+    // parameters
+    AP_Int8 _rgb_led_brightness;
+    AP_Int8 _rgb_led_override;
+    AP_Int8 _buzzer_type;
+    AP_Int8 _display_type;
+    AP_Int8 _oreo_theme;
+    AP_Int8 _buzzer_pin;
+    AP_Int32 _led_type;
+    AP_Int8 _buzzer_level;
+    AP_Int8 _buzzer_volume;
+    AP_Int8 _led_len;
+
+    char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
+    uint32_t _send_text_updated_millis; // last time text changed
+    char _flight_mode_str[5];
+
+    static NotifyDevice* _devices[];
+    static uint8_t _num_devices;
+};
 
 namespace AP {
-
-AP_Notify &notify()
-{
-    return *AP_Notify::get_singleton();
-}
-
+    AP_Notify &notify();
 };
