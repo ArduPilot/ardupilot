@@ -58,7 +58,7 @@ public:
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
-#if HAL_PWM_ALARM == TRUE
+#if AP_NOTIFY_TONEALARM_ENABLED
     bool toneAlarm_init(uint8_t types) override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
     static uint8_t _toneAlarm_types;
