@@ -144,6 +144,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
 #endif
     FAST_TASK(Log_Video_Stabilisation),
+    // Check the voltage applied to the FC
+    FAST_TASK(check_fc_vcc),
 
     SCHED_TASK(rc_loop,              250,    130,  3),
     SCHED_TASK(throttle_loop,         50,     75,  6),
@@ -747,6 +749,33 @@ void Copter::read_AHRS(void)
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
 }
+
+/**
+ * Check the voltage applied to the FC
+ */
+void Copter::check_fc_vcc(void)
+{
+#if HAL_HAVE_BOARD_VOLTAGE
+    if (motors->armed()) {
+        const float bus_voltage =  hal.analogin->board_voltage();
+        const float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
+        static bool low_voltage;
+        low_voltage |= bus_voltage < vbus_min;
+        static uint32_t lastUpdate;
+        if (low_voltage) {
+            if (AP_HAL::millis() - lastUpdate > 1000) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Board (%1.1fV) out of range %1.1fV", (double)bus_voltage, (double)vbus_min);
+                lastUpdate = AP_HAL::millis();
+                low_voltage = false;
+            }    
+        } else {
+            lastUpdate = AP_HAL::millis();
+        }
+    }
+#endif // HAL_HAVE_BOARD_VOLTAGE
+}
+
+
 
 // read baro and log control tuning
 void Copter::update_altitude()

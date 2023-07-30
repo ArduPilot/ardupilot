@@ -694,6 +694,7 @@ private:
     void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
+    void check_fc_vcc(void);
     void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
