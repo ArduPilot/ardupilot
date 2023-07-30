@@ -744,7 +744,7 @@ void Copter::update_super_simple_bearing(bool force_update)
 
 void Copter::read_AHRS(void)
 {
-    // we tell AHRS to skip INS update as we have already done it in fast_loop()
+    // we tell AHRS to skip INS update as we have already done it in FAST_TASK.
     ahrs.update(true);
 }
 
