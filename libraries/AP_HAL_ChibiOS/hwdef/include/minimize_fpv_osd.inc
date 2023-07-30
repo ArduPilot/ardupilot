@@ -1,3 +1,7 @@
+# this is an include file for low-flash boards typically used in
+# vehicles used for FPV/OSD flight.  These boards are unlikely to need
+# drivers for rare sensors and power systems.
+
 include minimize_common.inc
 
 define AP_OPTICALFLOW_ENABLED 0
