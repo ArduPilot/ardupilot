@@ -1,3 +1,7 @@
+# this is an include file to be used on low-flash boards which are not
+#  generally used for FPV/OSD purposes.  Care must be taken to
+#  preserve existing features on these boards.
+
 include minimize_common.inc
 
 # remove various OSD features by default:

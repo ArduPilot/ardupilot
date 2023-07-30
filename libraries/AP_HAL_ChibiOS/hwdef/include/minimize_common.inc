@@ -1,3 +1,8 @@
+# this include file is used to remove features which will never be
+#  wanted on any low-flash board in our standard builds.  It is to be
+#  included by other minimize_*.inc files and not generally used
+#  otherwise.
+
 # disable emitting nice strings when activating RC channel aux functions:
 define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 0
 
