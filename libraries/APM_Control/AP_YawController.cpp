@@ -150,6 +150,46 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Description: Yaw axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0 1
     // @Increment: 0.01
+
+    // @Param: _RATE_ADV
+    // @DisplayName: Yaw Advanced parameters enable
+    // @Description: Yaw Advanced parameters enable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Yaw Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0.001 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Yaw Target notch Filter center frequency
+    // @Description: Yaw Target notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Yaw Error notch Filter center frequency
+    // @Description: Yaw Error notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: _RATE_NBW
+    // @DisplayName: Yaw notch Filter bandwidth
+    // @Description: Yaw notch Filter bandwidth in Hz.
+    // @Range: 5 250
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: _RATE_NATT
+    // @DisplayName: Yaw notch Filter attenuation
+    // @Description: Yaw notch Filter attenuation in dB.
+    // @Range: 5 50
+    // @Units: dB
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_YawController, AC_PID),
