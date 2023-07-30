@@ -222,6 +222,7 @@ struct PACKED log_AETR {
     float throttle;
     float rudder;
     float flap;
+    float steering;
     float speed_scaler;
 };
 
@@ -235,6 +236,7 @@ void Plane::Log_Write_AETR()
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
         ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
+        ,steering : SRV_Channels::get_output_scaled(SRV_Channel::k_steering)
         ,speed_scaler : get_speed_scaler(),
         };
 
@@ -430,9 +432,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Thr: Pre-mixer value for throttle output (between -100 and 100)
 // @Field: Rudd: Pre-mixer value for rudder output (between -4500 and 4500)
 // @Field: Flap: Pre-mixer value for flaps output (between 0 and 100)
+// @Field: Steer: Pre-mixer value for steering output (between -4500 and 4500)
 // @Field: SS: Surface movement / airspeed scaling value
     { LOG_AETR_MSG, sizeof(log_AETR),
-      "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },
+      "AETR", "Qfffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,Steer,SS", "s-------", "F-------" , true },
 
 #if OFFBOARD_GUIDED == ENABLED
 // @LoggerMessage: OFG
