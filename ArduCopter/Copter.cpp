@@ -614,7 +614,7 @@ void Copter::twentyfive_hz_logging()
 #endif
 }
 
-// three_hz_loop - 3.3hz loop
+// three_hz_loop - 3hz loop
 void Copter::three_hz_loop()
 {
     // check if we've lost contact with the ground station
