@@ -426,10 +426,12 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
 
     if (ret <= 0) {
         if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+#if HAL_LOGGING_ENABLED
             //stop logging
             if (AP_Logger::get_singleton()) {
                 AP::logger().StopLogging();
             }
+#endif
             exit(0);
         }
         lseek(gyro_fd, 0, SEEK_SET);
@@ -492,10 +494,12 @@ void AP_InertialSensor_SITL::read_accel_from_file()
 
     if (ret <= 0) {
         if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+#if HAL_LOGGING_ENABLED
             //stop logging
             if (AP_Logger::get_singleton()) {
                 AP::logger().StopLogging();
             }
+#endif
             exit(0);
         }
         lseek(accel_fd, 0, SEEK_SET);
