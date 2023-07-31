@@ -774,22 +774,31 @@ class sitl(Board):
         # whitelist of compilers which we should build with -Werror
         gcc_whitelist = frozenset([
                 ('11','3','0'),
+                ('12','1','0'),
             ])
 
-        werr_enabled_default = bool('g++' == cfg.env.COMPILER_CXX and cfg.env.CC_VERSION in gcc_whitelist)
+        # initialise werr_enabled from defaults:
+        werr_enabled = bool('g++' in cfg.env.COMPILER_CXX and cfg.env.CC_VERSION in gcc_whitelist)
 
-        if werr_enabled_default or cfg.options.Werror:
-            if not cfg.options.disable_Werror:
-                cfg.msg("Enabling -Werror", "yes")
-                if '-Werror' not in env.CXXFLAGS:
-                    env.CXXFLAGS += [ '-Werror' ]
-            else:
-                cfg.msg("Enabling -Werror", "no")
-                if '-Werror' in env.CXXFLAGS:
-                    env.CXXFLAGS.remove('-Werror')
-        else:
+        # now process overrides to that default:
+        if (cfg.options.Werror is not None and
+                cfg.options.Werror == cfg.options.disable_Werror):
+            cfg.fatal("Asked to both enable and disable Werror")
+
+        if cfg.options.Werror is not None:
+            werr_enabled = cfg.options.Werror
+        elif cfg.options.disable_Werror is not None:
+            werr_enabled = not cfg.options.disable_Werror
+
+        if werr_enabled:
             cfg.msg("Enabling -Werror", "yes")
-        
+            if '-Werror' not in env.CXXFLAGS:
+                env.CXXFLAGS += [ '-Werror' ]
+        else:
+            cfg.msg("Enabling -Werror", "no")
+            if '-Werror' in env.CXXFLAGS:
+                env.CXXFLAGS.remove('-Werror')
+
     def get_name(self):
         return self.__class__.__name__
 
