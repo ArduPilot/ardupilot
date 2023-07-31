@@ -148,3 +148,15 @@
 
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
 
+// uncommenting one or more of these will give more console debug in certain areas.. ... 
+// ...however all teh extra printf's use a lot of stack, so best to limit yourself to only uncommenting one at a time
+//#define STORAGEDEBUG 1
+//#define SCHEDDEBUG 1
+//#define FSDEBUG 1
+//#define BUSDEBUG 1 //ok
+//#define WIFIDEBUG 1 //uses a lot?
+//#define INS_TIMING_DEBUG 1 //define this to see all the imu-resets and temp resets and imu timing info on the console.
+
+// Avoid and fences. Enable to resolve fench breach message
+#define AC_AVOID_ENABLED 1
+#define AP_FENCE_ENABLED 1

@@ -58,28 +58,22 @@ public:
     static void thread_create_trampoline(void *ctx);
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
 
-    /*static const int SPI_PRIORITY = 40; // if your primary imu is spi, this should be above the i2c value, spi is better.
-    static const int MAIN_PRIO = 15;
-    static const int I2C_PRIORITY = 8; // if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
-    static const int TIMER_PRIO = 15;
-    static const int RCIN_PRIO = 15;
-    static const int RCOUT_PRIO = 15;
-    static const int WIFI_PRIO = 10;
-    static const int UART_PRIO = 8;
-    static const int IO_PRIO = 6;
-    static const int STORAGE_PRIO = 6; */
+    // set in DeviceBus
+    static const int SPI_PRIORITY = 22; // cpu0: if your primary imu is spi, this should be above the i2c value, spi is better.
+    static const int I2C_PRIORITY = 5;  // cpu0: if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
 
-    static const int SPI_PRIORITY = 24; //      if your primary imu is spi, this should be above the i2c value, spi is better.
-    static const int MAIN_PRIO    = 22; //	cpu0: we want schuler running at full tilt.
-    static const int I2C_PRIORITY = 5;  //      if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
-    static const int TIMER_PRIO   = 22; //      a low priority mere might cause wifi thruput to suffer
-    static const int RCIN_PRIO    = 15;
-    static const int RCOUT_PRIO   = 10;
-    static const int WIFI_PRIO1   = 20; //cpu1:
-    static const int WIFI_PRIO2   = 12; //cpu1:
-    static const int UART_PRIO    = 24; //cpu1: a low priority mere might cause wifi thruput to suffer, as wifi gets passed its data frim the uart subsustem in _writebuf/_readbuf
-    static const int IO_PRIO      = 5;
-    static const int STORAGE_PRIO = 4;
+    // set in WiFiDriver, WiFiUdpDriver
+    static const int WIFI_PRIO1   = 20; // cpu0: affinity set
+    static const int WIFI_PRIO2   = 12; // cpu0: affinity set
+
+    // set in Scheduler
+    static const int MAIN_PRIO    = 22; // cpu1: we want scheduler running at full tilt.
+    static const int TIMER_PRIO   = 20; // cpu0: a low priority mere might cause wifi thruput to suffer
+    static const int RCIN_PRIO    = 15; // cpu0:
+    static const int RCOUT_PRIO   = 15; // cpu0: 
+    static const int UART_PRIO    = 22; // cpu0: a low priority mere might cause wifi thruput to suffer, as wifi gets passed its data frim the uart subsustem in _writebuf/_readbuf
+    static const int IO_PRIO      = 5;  // not pinned
+    static const int STORAGE_PRIO = 4;  // not pinned
 
     static const int TIMER_SS 	  = 4096;
     static const int MAIN_SS      = 8192;

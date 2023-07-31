@@ -52,8 +52,10 @@ void WiFiUdpDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             return;
         }
 
-	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,0) != pdPASS) {
-            hal.console->printf("FAILED to create task _wifi_thread2\n");
+	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2",
+          Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2,
+          &_wifi_task_handle, 0) != pdPASS) {
+          hal.console->printf("FAILED to create task _wifi_thread2\n");
         } else {
 	    hal.console->printf("OK created task _wifi_thread2\n");
     	}
