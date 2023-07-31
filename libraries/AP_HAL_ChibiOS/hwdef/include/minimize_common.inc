@@ -34,9 +34,6 @@ define GPS_MOVING_BASELINE 0
 # No LTM telemetry on minimized boards:
 define AP_LTM_TELEM_ENABLED 0
 
-# no Spektrum telemetry:
-define HAL_SPEKTRUM_TELEM_ENABLED 0
-
 # various structures increase the flash size when using >16 servos:
 define NUM_SERVO_CHANNELS 16
 

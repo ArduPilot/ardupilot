@@ -23,3 +23,6 @@ define AC_PRECLAND_ENABLED 0
 
 # force Tramp support even in face of normal 1MB limit:
 define AP_TRAMP_ENABLED AP_VIDEOTX_ENABLED && OSD_ENABLED
+
+# force CRSF Telem text support even in face of normal 1MB limit:
+define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED OSD_ENABLED && OSD_PARAM_ENABLED && HAL_CRSF_TELEM_ENABLED
