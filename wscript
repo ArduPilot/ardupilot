@@ -143,12 +143,12 @@ def options(opt):
 
     g.add_option('--Werror',
         action='store_true',
-        default=False,
+        default=None,
         help='build with -Werror.')
 
     g.add_option('--disable-Werror',
         action='store_true',
-        default=True,
+        default=None,
         help='Disable -Werror.')
     
     g.add_option('--toolchain',
