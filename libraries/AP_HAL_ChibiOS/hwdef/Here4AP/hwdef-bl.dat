@@ -58,3 +58,6 @@ define CAN_APP_NODE_NAME "com.cubepilot.here4"
 # order of UARTs
 SERIAL_ORDER
 define HAL_USE_UART FALSE
+
+# setup for blanking LEDs in bootloader
+define AP_BOOTLOADER_CUSTOM_HERE4
