@@ -1908,7 +1908,7 @@ INCLUDE common.ld
                 f.write('''
 #if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
-#define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+#define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
 #endif
 #define DEFAULT_SERIAL%d_PROTOCOL HAL_OTG2_PROTOCOL
 #define DEFAULT_SERIAL%d_BAUD 115200
