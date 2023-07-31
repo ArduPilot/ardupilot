@@ -469,3 +469,4 @@ void port_setbaud(uint32_t baudrate)
 #endif
 }
 #endif // BOOTLOADER_DEV_LIST
+

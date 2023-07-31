@@ -44,6 +44,8 @@ void led_on(unsigned led);
 void led_off(unsigned led);
 void led_toggle(unsigned led);
 
+void custom_startup(void);
+
 // printf to debug uart (or USB)
 extern "C" {
 void uprintf(const char *fmt, ...) FMT_PRINTF(1,2);
