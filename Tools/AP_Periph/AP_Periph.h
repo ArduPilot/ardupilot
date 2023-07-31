@@ -345,7 +345,7 @@ public:
                                  uint16_t payload_len);
 
 #if AP_UART_MONITOR_ENABLED
-    void handle_tunnel_Targetted(CanardInstance* ins, CanardRxTransfer* transfer);
+    void handle_tunnel_Targetted(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 

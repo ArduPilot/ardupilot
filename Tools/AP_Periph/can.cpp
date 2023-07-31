@@ -208,7 +208,7 @@ static void readUniqueID(uint8_t* out_uid)
 /*
   handle a GET_NODE_INFO request
  */
-static void handle_get_node_info(CanardInstance* ins,
+static void handle_get_node_info(CanardInstance* canard_instance,
                                  CanardRxTransfer* transfer)
 {
     uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE] {};
@@ -241,7 +241,7 @@ static void handle_get_node_info(CanardInstance* ins,
 
     uint16_t total_size = uavcan_protocol_GetNodeInfoResponse_encode(&pkt, buffer, !periph.canfdout());
 
-    const int16_t resp_res = canardRequestOrRespond(ins,
+    const int16_t resp_res = canardRequestOrRespond(canard_instance,
                                                     transfer->source_node_id,
                                                     UAVCAN_PROTOCOL_GETNODEINFO_SIGNATURE,
                                                     UAVCAN_PROTOCOL_GETNODEINFO_ID,
@@ -265,7 +265,7 @@ static void handle_get_node_info(CanardInstance* ins,
 /*
   handle parameter GetSet request
  */
-static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_param_getset(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     // param fetch all can take a long time, so pat watchdog
     stm32_watchdog_pat();
@@ -350,7 +350,7 @@ static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
     uint8_t buffer[UAVCAN_PROTOCOL_PARAM_GETSET_RESPONSE_MAX_SIZE] {};
     uint16_t total_size = uavcan_protocol_param_GetSetResponse_encode(&pkt, buffer, !periph.canfdout());
 
-    canardRequestOrRespond(ins,
+    canardRequestOrRespond(canard_instance,
                            transfer->source_node_id,
                            UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE,
                            UAVCAN_PROTOCOL_PARAM_GETSET_ID,
@@ -372,7 +372,7 @@ static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
 /*
   handle parameter executeopcode request
  */
-static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_param_executeopcode(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_protocol_param_ExecuteOpcodeRequest req;
     if (uavcan_protocol_param_ExecuteOpcodeRequest_decode(transfer, &req)) {
@@ -410,7 +410,7 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
     uint8_t buffer[UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_RESPONSE_MAX_SIZE] {};
     uint16_t total_size = uavcan_protocol_param_ExecuteOpcodeResponse_encode(&pkt, buffer, !periph.canfdout());
 
-    canardRequestOrRespond(ins,
+    canardRequestOrRespond(canard_instance,
                            transfer->source_node_id,
                            UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE,
                            UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID,
@@ -431,7 +431,7 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 static void processTx(void);
 static void processRx(void);
 
-static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_begin_firmware_update(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
 #if HAL_RAM_RESERVE_START >= 256
     // setup information on firmware request at start of ram
@@ -449,14 +449,14 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
         comms->server_node_id = transfer->source_node_id;
     }
     memcpy(comms->path, req.image_file_remote_path.path.data, req.image_file_remote_path.path.len);
-    comms->my_node_id = canardGetLocalNodeID(ins);
+    comms->my_node_id = canardGetLocalNodeID(canard_instance);
 
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE] {};
     uavcan_protocol_file_BeginFirmwareUpdateResponse reply {};
     reply.error = UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_ERROR_OK;
 
     uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer, !periph.canfdout());
-    canardRequestOrRespond(ins,
+    canardRequestOrRespond(canard_instance,
                            transfer->source_node_id,
                            UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
                            UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID,
@@ -483,12 +483,12 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     // the node_id
     periph.prepare_reboot();
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    set_fast_reboot((rtc_boot_magic)(RTC_BOOT_CANBL | canardGetLocalNodeID(ins)));
+    set_fast_reboot((rtc_boot_magic)(RTC_BOOT_CANBL | canardGetLocalNodeID(canard_instance)));
     NVIC_SystemReset();
 #endif
 }
 
-static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_allocation_response(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     // Rule C - updating the randomized time interval
     dronecan.send_next_node_id_allocation_request_at_ms =
@@ -526,7 +526,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         printf("Matching allocation response: %d\n", msg.unique_id.len);
     } else {
         // Allocation complete - copying the allocated node ID from the message
-        canardSetLocalNodeID(ins, msg.node_id);
+        canardSetLocalNodeID(canard_instance, msg.node_id);
         printf("IF%d Node ID allocated: %d\n", dronecan.dna_interface, msg.node_id);
 
 #if defined(HAL_PERIPH_ENABLE_GPS) && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
@@ -552,7 +552,7 @@ static uint32_t buzzer_len_ms;
 /*
   handle BeepCommand
  */
-static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_beep_command(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_indication_BeepCommand req;
     if (uavcan_equipment_indication_BeepCommand_decode(transfer, &req)) {
@@ -595,7 +595,7 @@ static uint8_t safety_state;
 /*
   handle SafetyState
  */
-static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_safety_state(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     ardupilot_indication_SafetyState req;
     if (ardupilot_indication_SafetyState_decode(transfer, &req)) {
@@ -611,7 +611,7 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
 /*
   handle ArmingStatus
  */
-static void handle_arming_status(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_arming_status(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_safety_ArmingStatus req;
     if (uavcan_equipment_safety_ArmingStatus_decode(transfer, &req)) {
@@ -624,7 +624,7 @@ static void handle_arming_status(CanardInstance* ins, CanardRxTransfer* transfer
 /*
   handle gnss::RTCMStream
  */
-static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_RTCMStream(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_gnss_RTCMStream req;
     if (uavcan_equipment_gnss_RTCMStream_decode(transfer, &req)) {
@@ -637,7 +637,7 @@ static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
     handle gnss::MovingBaselineData
 */
 #if GPS_MOVING_BASELINE
-static void handle_MovingBaselineData(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_MovingBaselineData(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     ardupilot_gnss_MovingBaselineData msg;
     if (ardupilot_gnss_MovingBaselineData_decode(transfer, &msg)) {
@@ -736,7 +736,7 @@ static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 /*
   handle lightscommand
  */
-static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_indication_LightsCommand req;
     if (uavcan_equipment_indication_LightsCommand_decode(transfer, &req)) {
@@ -766,7 +766,7 @@ static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer
 #endif // AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
-static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_esc_rawcommand(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_esc_RawCommand cmd;
     if (uavcan_equipment_esc_RawCommand_decode(transfer, &cmd)) {
@@ -779,7 +779,7 @@ static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfe
     periph.last_esc_raw_command_ms = AP_HAL::millis();
 }
 
-static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_act_command(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_actuator_ArrayCommand cmd;
     if (uavcan_equipment_actuator_ArrayCommand_decode(transfer, &cmd)) {
@@ -801,7 +801,7 @@ static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
 #endif // HAL_PERIPH_ENABLE_RC_OUT
 
 #if defined(HAL_PERIPH_ENABLE_NOTIFY)
-static void handle_notify_state(CanardInstance* ins, CanardRxTransfer* transfer)
+static void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     ardupilot_indication_NotifyState msg;
     if (ardupilot_indication_NotifyState_decode(transfer, &msg)) {
@@ -890,7 +890,7 @@ static void can_safety_button_update(void)
 /**
  * This callback is invoked by the library when a new message or request or response is received.
  */
-static void onTransferReceived(CanardInstance* ins,
+static void onTransferReceived(CanardInstance* canard_instance,
                                CanardRxTransfer* transfer)
 {
 #ifdef HAL_GPIO_PIN_LED_CAN1
@@ -906,21 +906,21 @@ static void onTransferReceived(CanardInstance* ins,
      * Dynamic node ID allocation protocol.
      * Taking this branch only if we don't have a node ID, ignoring otherwise.
      */
-    if (canardGetLocalNodeID(ins) == CANARD_BROADCAST_NODE_ID) {
+    if (canardGetLocalNodeID(canard_instance) == CANARD_BROADCAST_NODE_ID) {
         if (transfer->transfer_type == CanardTransferTypeBroadcast &&
             transfer->data_type_id == UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID) {
-            handle_allocation_response(ins, transfer);
+            handle_allocation_response(canard_instance, transfer);
         }
         return;
     }
 
     switch (transfer->data_type_id) {
     case UAVCAN_PROTOCOL_GETNODEINFO_ID:
-        handle_get_node_info(ins, transfer);
+        handle_get_node_info(canard_instance, transfer);
         break;
 
     case UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID:
-        handle_begin_firmware_update(ins, transfer);
+        handle_begin_firmware_update(canard_instance, transfer);
         break;
 
     case UAVCAN_PROTOCOL_RESTARTNODE_ID:
@@ -935,66 +935,66 @@ static void onTransferReceived(CanardInstance* ins,
         break;
 
     case UAVCAN_PROTOCOL_PARAM_GETSET_ID:
-        handle_param_getset(ins, transfer);
+        handle_param_getset(canard_instance, transfer);
         break;
 
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
-        handle_param_executeopcode(ins, transfer);
+        handle_param_executeopcode(canard_instance, transfer);
         break;
 
 #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
-        handle_beep_command(ins, transfer);
+        handle_beep_command(canard_instance, transfer);
         break;
 #endif
 
 #if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
-        handle_safety_state(ins, transfer);
+        handle_safety_state(canard_instance, transfer);
         break;
 #endif
 
     case UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_ID:
-        handle_arming_status(ins, transfer);
+        handle_arming_status(canard_instance, transfer);
         break;
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
-        handle_RTCMStream(ins, transfer);
+        handle_RTCMStream(canard_instance, transfer);
         break;
 
 #if GPS_MOVING_BASELINE
     case ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID:
-        handle_MovingBaselineData(ins, transfer);
+        handle_MovingBaselineData(canard_instance, transfer);
         break;
 #endif
 #endif // HAL_PERIPH_ENABLE_GPS
 
 #if AP_UART_MONITOR_ENABLED
     case UAVCAN_TUNNEL_TARGETTED_ID:
-        periph.handle_tunnel_Targetted(ins, transfer);
+        periph.handle_tunnel_Targetted(canard_instance, transfer);
         break;
 #endif
 
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
-        handle_lightscommand(ins, transfer);
+        handle_lightscommand(canard_instance, transfer);
         break;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
-        handle_esc_rawcommand(ins, transfer);
+        handle_esc_rawcommand(canard_instance, transfer);
         break;
 
     case UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID:
-        handle_act_command(ins, transfer);
+        handle_act_command(canard_instance, transfer);
         break;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
-        handle_notify_state(ins, transfer);
+        handle_notify_state(canard_instance, transfer);
         break;
 #endif
     }
@@ -1008,7 +1008,7 @@ static void onTransferReceived(CanardInstance* ins,
  * If the callback returns false, the library will ignore the transfer.
  * All transfers that are addressed to other nodes are always ignored.
  */
-static bool shouldAcceptTransfer(const CanardInstance* ins,
+static bool shouldAcceptTransfer(const CanardInstance* canard_instance,
                                  uint64_t* out_data_type_signature,
                                  uint16_t data_type_id,
                                  CanardTransferType transfer_type,
@@ -1016,7 +1016,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 {
     (void)source_node_id;
 
-    if (canardGetLocalNodeID(ins) == CANARD_BROADCAST_NODE_ID)
+    if (canardGetLocalNodeID(canard_instance) == CANARD_BROADCAST_NODE_ID)
     {
         /*
          * If we're in the process of allocation of dynamic node ID, accept only relevant transfers.
@@ -1205,21 +1205,21 @@ static void processTx(void)
         bool sent = true;
         const uint64_t deadline = AP_HAL::native_micros64() + 1000000;
         // try sending to all interfaces
-        for (auto &ins : instances) {
-            if (ins.iface == NULL) {
+        for (auto &_ins : instances) {
+            if (_ins.iface == NULL) {
                 continue;
             }
     #if CANARD_MULTI_IFACE
-            if (!(txf->iface_mask & (1U<<ins.index))) {
+            if (!(txf->iface_mask & (1U<<_ins.index))) {
                 continue;
             }
     #endif
     #if HAL_NUM_CAN_IFACES >= 2
-            if (periph.can_protocol_cached[ins.index] != AP_CAN::Protocol::DroneCAN) {
+            if (periph.can_protocol_cached[_ins.index] != AP_CAN::Protocol::DroneCAN) {
                 continue;
             }
     #endif
-            if (ins.iface->send(txmsg, deadline, 0) <= 0) {
+            if (_ins.iface->send(txmsg, deadline, 0) <= 0) {
                 sent = false;
             }
         }
