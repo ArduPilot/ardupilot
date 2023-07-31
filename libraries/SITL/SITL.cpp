@@ -437,7 +437,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Param: GPS_TYPE
     // @DisplayName: GPS 1 type
     // @Description: Sets the type of simulation used for GPS 1
-    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF
+    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
