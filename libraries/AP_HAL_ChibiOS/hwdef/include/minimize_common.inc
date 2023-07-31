@@ -31,9 +31,6 @@ define AP_GPS_SIRF_ENABLED 0
 # no moving baseline support:
 define GPS_MOVING_BASELINE 0
 
-# minimized boards don't get configuration via Tramp by default:
-define AP_TRAMP_ENABLED 0
-
 # No LTM telemetry on minimized boards:
 define AP_LTM_TELEM_ENABLED 0
 
