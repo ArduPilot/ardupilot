@@ -1520,18 +1520,12 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 */
 bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 {
-    Location originLLH;
-    Vector3f originNED;
-    if (!get_relative_position_NED_origin(originNED) ||
-        !get_origin(originLLH)) {
+    Location loc;
+    if (!_home_is_set ||
+        !get_location(loc)) {
         return false;
     }
-
-    const Vector3f offset = originLLH.get_distance_NED(_home);
-
-    vec.x = originNED.x - offset.x;
-    vec.y = originNED.y - offset.y;
-    vec.z = originNED.z - offset.z;
+    vec = _home.get_distance_NED(loc);
     return true;
 }
 
@@ -1577,17 +1571,13 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 */
 bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 {
-    Location originLLH;
-    Vector2f originNE;
-    if (!get_relative_position_NE_origin(originNE) ||
-        !get_origin(originLLH)) {
+    Location loc;
+    if (!_home_is_set ||
+        !get_location(loc)) {
         return false;
     }
 
-    const Vector2f offset = originLLH.get_distance_NE(_home);
-
-    posNE.x = originNE.x - offset.x;
-    posNE.y = originNE.y - offset.y;
+    posNE = _home.get_distance_NE(loc);
     return true;
 }
 
