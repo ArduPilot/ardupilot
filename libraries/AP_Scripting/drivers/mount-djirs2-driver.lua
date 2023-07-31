@@ -653,12 +653,12 @@ function parse_byte(b)
           end
 
           -- parse attitude reply message
-          if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= 20) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= 22) then
+            local ret_code = parse_buff[15]
             if ret_code == RETURN_CODE.SUCCESS then
-              local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
-              local pitch_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
-              local roll_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
+              local yaw_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
+              local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
+              local roll_deg = int16_value(parse_buff[22],parse_buff[21]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then
                 gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
@@ -669,16 +669,16 @@ function parse_byte(b)
           end
 
           -- parse position control reply message
-          if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= 13) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= 15) then
+            local ret_code = parse_buff[15]
             if ret_code ~= RETURN_CODE.SUCCESS then
               execute_fails = execute_fails + 1
             end
           end
 
           -- parse speed control reply message
-          if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= 13) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= 15) then
+            local ret_code = parse_buff[15]
             if ret_code ~= RETURN_CODE.SUCCESS then
               execute_fails = execute_fails + 1
             end
