@@ -102,11 +102,21 @@
 #define AP_LANDINGGEAR_ENABLED 0
 
 // disable avoid-fence-follow in copter, these all kinda need each other, so its all or none.
+#ifndef AC_AVOID_ENABLED
 #define AC_AVOID_ENABLED 0
-#define AP_FENCE_ENABLED 0
-#define MODE_FOLLOW_ENABLED 0
-#define AC_OAPATHPLANNER_ENABLED 0
+#endif
 
+#ifndef AP_FENCE_ENABLED
+#define AP_FENCE_ENABLED 0
+#endif
+
+#ifndef MODE_FOLLOW_ENABLED
+#define MODE_FOLLOW_ENABLED 0
+#endif
+
+#ifndef AC_OAPATHPLANNER_ENABLED
+#define AC_OAPATHPLANNER_ENABLED 0
+#endif
 
 // other big things..
 #define HAL_QUADPLANE_ENABLED 0
