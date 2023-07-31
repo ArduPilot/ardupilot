@@ -199,6 +199,7 @@ class ExtractFeatures(object):
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
+            ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
         ]
 
     def progress(self, msg):
