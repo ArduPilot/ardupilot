@@ -59,6 +59,7 @@ public:
 #endif
         NOVA  =  8,
         SBP2  =  9,
+        MSP  =  19,
     };
 
     GPS(uint8_t _instance);
@@ -115,6 +116,7 @@ private:
 
     void update_sbp(const struct gps_data *d);
     void update_sbp2(const struct gps_data *d);
+    void update_msp(const struct gps_data *d);
 
 #if AP_SIM_GPS_FILE_ENABLED
     void update_file();
