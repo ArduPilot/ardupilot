@@ -784,7 +784,7 @@ function HLSatcom()
 
         hl2.temperature_air = math.floor(baro:get_external_temperature())
         
-        if battery:num_instances() > 0 then
+        if battery:num_instances() > 0 and battery:capacity_remaining_pct(0) ~= nil then
             hl2.battery = battery:capacity_remaining_pct(0)
         else
             hl2.battery = 0
