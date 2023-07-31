@@ -30,6 +30,9 @@ I2C_ORDER I2C2 I2C1
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
+# default the 2nd interface to SLCAN
+define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
 

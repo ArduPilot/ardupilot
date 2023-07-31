@@ -30,9 +30,6 @@ env OPTIMIZE -O2
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
-# default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
