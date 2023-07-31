@@ -69,13 +69,13 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
 /*
   handle tunnel data
  */
-void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* ins, CanardRxTransfer* transfer)
+void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxTransfer* transfer)
 {
     uavcan_tunnel_Targetted pkt;
     if (uavcan_tunnel_Targetted_decode(transfer, &pkt)) {
         return;
     }
-    if (pkt.target_node != canardGetLocalNodeID(ins)) {
+    if (pkt.target_node != canardGetLocalNodeID(canard_ins)) {
         return;
     }
     if (uart_monitor.buffer == nullptr) {
