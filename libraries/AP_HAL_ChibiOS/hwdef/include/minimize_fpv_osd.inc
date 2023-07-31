@@ -20,3 +20,6 @@ define AP_ICENGINE_ENABLED 0
 define AP_ADVANCEDFAILSAFE_ENABLED 0
 
 define AC_PRECLAND_ENABLED 0
+
+# force Tramp support even in face of normal 1MB limit:
+define AP_TRAMP_ENABLED AP_VIDEOTX_ENABLED && OSD_ENABLED
