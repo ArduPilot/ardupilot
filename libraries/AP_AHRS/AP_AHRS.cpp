@@ -1462,8 +1462,9 @@ bool AP_AHRS::get_hagl(float &height) const
     return false;
 }
 
-// return a relative ground position to the origin in meters
-// North/East/Down order.
+/*
+  return a relative NED position from the origin in meters
+*/
 bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
@@ -1514,8 +1515,9 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
     return false;
 }
 
-// return a relative ground position to the home in meters
-// North/East/Down order.
+/*
+ return a relative ground position from home in meters
+*/
 bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 {
     Location originLLH;
@@ -1533,8 +1535,9 @@ bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
     return true;
 }
 
-// write a relative ground position estimate to the origin in meters, North/East order
-// return true if estimate is valid
+/*
+  return a relative position estimate from the origin in meters
+*/
 bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
@@ -1569,8 +1572,9 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
     return false;
 }
 
-// return a relative ground position to the home in meters
-// North/East order.
+/*
+ return a relative ground position from home in meters North/East
+*/
 bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 {
     Location originLLH;
@@ -1590,8 +1594,9 @@ bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 // write a relative ground position estimate to the origin in meters, North/East order
 
 
-// write a relative ground position to the origin in meters, Down
-// return true if the estimate is valid
+/*
+  return a relative ground position from the origin in meters, down
+*/
 bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 {
     switch (active_EKF_type()) {
@@ -1625,8 +1630,9 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
     return false;
 }
 
-// write a relative ground position to home in meters, Down
-// will use the barometer if the EKF isn't available
+/*
+  return relative position from home in meters
+*/
 void AP_AHRS::get_relative_position_D_home(float &posD) const
 {
     if (!_home_is_set) {
