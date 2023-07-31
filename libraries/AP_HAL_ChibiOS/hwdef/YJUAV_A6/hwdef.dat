@@ -51,9 +51,6 @@ PE1 UART8_TX UART8
 PE7 UART7_RX UART7 NODMA
 PE8 UART7_TX UART7 NODMA
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
