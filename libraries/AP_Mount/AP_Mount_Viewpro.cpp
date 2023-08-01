@@ -627,14 +627,12 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
     }
 
     // fill in packet
-    const E1Packet e1_packet {
-        .content = {
-            frame_id: FrameId::E1,
-            source: tracking_source,
-            cmd: cmd,
-            param2: value   // normally zero
-        }
-    };
+    // Packet creation is done long-hand here to support g++-7.5.0
+    E1Packet e1_packet {};
+    e1_packet.content.frame_id = FrameId::E1;
+    e1_packet.content.source = tracking_source;
+    e1_packet.content.cmd = cmd;
+    e1_packet.content.param2 = value; // normally zero
 
     // send packet to gimbal
     return send_packet(e1_packet.bytes, sizeof(e1_packet.bytes));
@@ -692,6 +690,7 @@ bool AP_Mount_Viewpro::send_m_ahrs()
         .content = {
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
+            unused2to8 : {0, 0, 0, 0, 0, 0, 0},
             pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
             yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
