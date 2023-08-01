@@ -1,3 +1,22 @@
+Release 4.4.0 beta4
+-------------------
+
+Changes from 4.4.0-beta3
+
+1) flight controller specific changes
+    - Diatone-Mamba-MK4-H743v2 uses SPL06 baro (was DPS280)
+    - DMA for I2C disabled on F7 and H7 boards
+    - Foxeer H743v1 default serial protocol config fixes
+    - HeeWing-F405 and F405v2 support
+    - iFlight BlitzF7 support
+2) Scripts may take action based on VTOL motor loss
+3) Bug fixes
+    - BLHeli returns battery status requested via MSP (avoids hang when using esc-configurator)
+    - CRSFv3 rescans at baudrates to avoid RX loss
+    - EK3_ABIAS_P_NSE param range fix
+    - Scripting restart memory corruption bug fixed
+    - Siyi A8/ZR10 driver fix to avoid crash if serial port not configured
+
 Release 4.4.0 beta3
 -------------------
 
