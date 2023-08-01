@@ -586,7 +586,18 @@ void Plane::update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
+	/*
+	In general when there the pitch and roll exist the formula for the aerodynamic load factor should be as follows:
+	aerodynamic_load_factor = cosf(radians(_ahrs.pitch))/cosf(radians(demanded_roll));
+	which in case of turns (in the horizontal plane) becomes
+	aerodynamic_load_factor = 1.0f/cosf(radians(demanded_roll));
+	formulas can be obtained from equations of balanced spiral:
+	liftForce * cos(roll) = gravityForce * cos(pitch);
+	liftForce * sin(roll) = gravityForce * lateralAcceleration / gravityAcceleration; // as mass = gravityForce/gravityAcceleration
+	see issue #24320 [https://github.com/ArduPilot/ardupilot/issues/24320]. These changes also require changes in ardupilot/libraries/AP_TECS/AP_TECS.cpp
+	Line 418 (according to the comments by Peter Hall): _TASmin *= _load_factor; should be changed to _TASmin *= safe_sqrt(_load_factor);
+	*/
+    aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll));
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available() && quadplane.transition->set_FW_roll_limit(roll_limit_cd)) {
@@ -623,7 +634,12 @@ void Plane::update_load_factor(void)
         // allow at least 25 degrees of roll however, to ensure the
         // aircraft can be maneuvered with a bad airspeed estimate. At
         // 25 degrees the load factor is 1.1 (10%)
-        int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
+		/*
+		formula can be obtained from equations of balanced horizontal turn:
+		liftForce * cos(roll) = gravityForce; 
+		which leads to cos(roll) = 1/(liftForce/gravityForce) = 1/loadFactor;
+		*/
+        int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
         if (roll_limit < 2500) {
             roll_limit = 2500;
         }
