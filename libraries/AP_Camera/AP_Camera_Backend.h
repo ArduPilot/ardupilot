@@ -144,6 +144,9 @@ protected:
     void Write_Trigger();
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
 
+    // get corresponding mount instance for the camera
+    uint8_t get_mount_instance() const;
+
     // internal members
     uint8_t _instance;      // this instance's number
     bool timer_installed;   // true if feedback pin change detected using timer

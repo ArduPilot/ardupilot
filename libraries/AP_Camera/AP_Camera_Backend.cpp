@@ -93,6 +93,16 @@ void AP_Camera_Backend::update()
     take_picture();
 }
 
+// get corresponding mount instance for the camera
+uint8_t AP_Camera_Backend::get_mount_instance() const
+{
+    // instance 0 means default
+    if (_params.mount_instance.get() == 0) {
+        return _instance;
+    }
+    return _params.mount_instance.get() - 1;
+}
+
 // take a picture.  returns true on success
 bool AP_Camera_Backend::take_picture()
 {

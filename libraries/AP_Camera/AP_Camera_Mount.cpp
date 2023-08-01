@@ -10,7 +10,7 @@ bool AP_Camera_Mount::trigger_pic()
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        mount->take_picture(0);
+        mount->take_picture(get_mount_instance());
         return true;
     }
     return false;
@@ -22,7 +22,7 @@ bool AP_Camera_Mount::record_video(bool start_recording)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->record_video(0, start_recording);
+        return mount->record_video(get_mount_instance(), start_recording);
     }
     return false;
 }
@@ -32,7 +32,7 @@ bool AP_Camera_Mount::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_zoom(0, zoom_type, zoom_value);
+        return mount->set_zoom(get_mount_instance(), zoom_type, zoom_value);
     }
     return false;
 }
@@ -43,7 +43,7 @@ SetFocusResult AP_Camera_Mount::set_focus(FocusType focus_type, float focus_valu
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_focus(0, focus_type, focus_value);
+        return mount->set_focus(get_mount_instance(), focus_type, focus_value);
     }
     return SetFocusResult::FAILED;
 }
@@ -55,7 +55,7 @@ bool AP_Camera_Mount::set_tracking(TrackingType tracking_type, const Vector2f& p
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_tracking(0, tracking_type, p1, p2);
+        return mount->set_tracking(get_mount_instance(), tracking_type, p1, p2);
     }
     return false;
 }
@@ -66,7 +66,7 @@ bool AP_Camera_Mount::set_lens(uint8_t lens)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_lens(0, lens);
+        return mount->set_lens(get_mount_instance(), lens);
     }
     return false;
 }
@@ -76,7 +76,7 @@ void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_information(0, chan);
+        return mount->send_camera_information(get_mount_instance(), chan);
     }
 }
 
@@ -85,7 +85,7 @@ void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_settings(0, chan);
+        return mount->send_camera_settings(get_mount_instance(), chan);
     }
 }
 
