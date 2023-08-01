@@ -15,6 +15,10 @@
 #include "esp32nick.h" //Nick K. on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
 #include "esp32s3devkit.h" //Nick K. on discord
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_SITL
+#include "esp32sitl.h" //Nick K. on discord
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3SITL
+#include "esp32s3sitl.h" //Nick K. on discord
 #endif
 
 #define HAL_BOARD_NAME "ESP32"
@@ -37,7 +41,12 @@
 #define HAL_Semaphore ESP32::Semaphore
 #endif
 
-#define HAL_NUM_CAN_IFACES 0
+#ifdef AP_SIM_ENABLED
+    #define HAL_NUM_CAN_IFACES 1
+#else
+    #define HAL_NUM_CAN_IFACES 0
+#endif
+
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
 // disable uncommon stuff that we'd otherwise get 
