@@ -156,6 +156,7 @@ class SizeCompareBranches(object):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
+            'RADIX2HD',
         ])
 
         # blacklist all linux boards for bootloader build:
