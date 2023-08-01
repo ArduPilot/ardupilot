@@ -17,7 +17,7 @@ public:
 
 private:
 
-    uint32_t get_radar_id(uint32_t id) const { return ((id & 0xF0U)/0x10U); }
+    uint32_t get_radar_id(uint32_t id) const { return ((id & 0xF0U) >> 4U); }
 
     static RangeFinder_MultiCAN *multican_NRA24;
 
