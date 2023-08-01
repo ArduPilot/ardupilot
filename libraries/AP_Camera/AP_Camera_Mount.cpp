@@ -76,7 +76,7 @@ void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_information(chan);
+        return mount->send_camera_information(0, chan);
     }
 }
 
@@ -85,7 +85,7 @@ void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_settings(chan);
+        return mount->send_camera_settings(0, chan);
     }
 }
 
