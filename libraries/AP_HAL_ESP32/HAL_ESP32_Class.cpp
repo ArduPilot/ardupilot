@@ -13,10 +13,19 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#define AP_SIM_ENABLED 1 
 #include <AP_HAL/AP_HAL.h>
+#include "HAL_ESP32_Class.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
-#include "HAL_ESP32_Class.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#if AP_SIM_ENABLED
+#include <AP_HAL/SIMState.h>
+#endif
+
 #include "Scheduler.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
@@ -67,6 +76,9 @@ static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 static Empty::Flash flashDriver;
+#if AP_SIM_ENABLED
+static AP_HAL::SIMState xsimstate;
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -95,6 +107,9 @@ HAL_ESP32::HAL_ESP32() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+#if AP_SIM_ENABLED
+        &xsimstate,
+#endif
         &dspDriver,
         nullptr
     )

@@ -19,7 +19,9 @@
 #include "AP_Math/AP_Math.h"
 #include "SdCard.h"
 #include "Profile.h"
-
+#if AP_SIM_ENABLED
+#include <AP_HAL/SIMState.h>
+#endif
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -537,5 +539,8 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 
         sched->print_stats(); // only runs every 60 seconds.
     }
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    hal.simstate->update();
+#endif    
 }
 

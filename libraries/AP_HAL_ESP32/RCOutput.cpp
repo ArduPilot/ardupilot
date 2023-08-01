@@ -23,6 +23,10 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+#if AP_SIM_ENABLED
+#include <AP_HAL/SIMState.h>
+#endif
+
 #include "driver/rtc_io.h"
 
 #include <stdio.h>
@@ -177,6 +181,10 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
         _pending[chan] = period_us;
         _pending_mask |= (1U<<chan);
     } else {
+#if AP_SIM_ENABLED
+        hal.simstate->pwm_output[chan] = period_us;
+        return;
+#endif        
         write_int(chan, period_us);
     }
 
