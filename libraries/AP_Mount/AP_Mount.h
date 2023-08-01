@@ -242,10 +242,10 @@ public:
     bool set_lens(uint8_t instance, uint8_t lens);
 
     // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const;
+    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
 
     // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan) const;
+    void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];

@@ -805,25 +805,23 @@ bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
 }
 
 // send camera information message to GCS
-void AP_Mount::send_camera_information(mavlink_channel_t chan) const
+void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
 {
-    // call send_camera_information for each instance
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_information(chan);
-        }
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
     }
+    _backends[instance]->send_camera_information(chan);
 }
 
 // send camera settings message to GCS
-void AP_Mount::send_camera_settings(mavlink_channel_t chan) const
+void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
 {
-    // call send_camera_settings for each instance
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_settings(chan);
-        }
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
     }
+    _backends[instance]->send_camera_settings(chan);
 }
 
 AP_Mount_Backend *AP_Mount::get_primary() const
