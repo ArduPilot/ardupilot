@@ -81,6 +81,12 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 10, AP_Camera_Params, options, 0),
 
+    // @Param: _MNT_INST
+    // @DisplayName: Camera Mount instance
+    // @Description: Mount instance camera is associated with. 0 means camera and mount have identical instance numbers e.g. camera1 and mount1
+    // @User: Standard
+    AP_GROUPINFO("_MNT_INST", 11, AP_Camera_Params, mount_instance, 0),
+
     AP_GROUPEND
 
 };
