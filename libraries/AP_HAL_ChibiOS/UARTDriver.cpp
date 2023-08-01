@@ -231,6 +231,12 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
 
 void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+    if (b == 0 && txS == 0 && rxS == 0 && _tx_initialised && _rx_initialised) {
+        // just changing port owner
+        _uart_owner_thd = chThdGetSelfX();
+        return;
+    }
+
     thread_rx_init();
 
     if (sdef.serial == nullptr) {
