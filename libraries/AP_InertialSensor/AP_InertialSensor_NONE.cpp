@@ -7,10 +7,12 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 
+#ifndef AP_SIM_ENABLED
 float rand_float(void)
-{
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
-}
+ {
+     return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+ }
+#endif
 
 const extern AP_HAL::HAL& hal;
 
