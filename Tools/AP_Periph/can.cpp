@@ -2400,14 +2400,27 @@ void AP_Periph_FW::can_airspeed_update(void)
     }
 
     uavcan_equipment_air_data_RawAirData pkt {};
-    pkt.differential_pressure = press;
-    pkt.static_air_temperature = temp;
 
     // unfilled elements are NaN
     pkt.static_pressure = nanf("");
     pkt.static_pressure_sensor_temperature = nanf("");
     pkt.differential_pressure_sensor_temperature = nanf("");
     pkt.pitot_temperature = nanf("");
+
+    // populate the elements we have
+    pkt.differential_pressure = press;
+    pkt.static_air_temperature = temp;
+
+    // if a Pitot tube temperature sensor is available, use it
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    for (uint8_t i=0; i<temperature_sensor.num_instances(); i++) {
+        float temp_pitot;
+        if (temperature_sensor.get_source(i) == AP_TemperatureSensor_Params::Source::Pitot_tube && temperature_sensor.get_temperature(temp_pitot, i)) {
+            pkt.pitot_temperature = C_TO_KELVIN(temp_pitot);
+            break;
+        }
+    }
+#endif
 
     uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_MAX_SIZE] {};
     uint16_t total_size = uavcan_equipment_air_data_RawAirData_encode(&pkt, buffer, !periph.canfdout());
