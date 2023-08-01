@@ -455,8 +455,10 @@ void Plane::startup_INS_ground(void)
 
     // read Baro pressure at ground
     //-----------------------------
+#if !((CONFIG_HAL_BOARD == HAL_BOARD_ESP32) && AP_SIM_ENABLED)
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
+#endif 
 }
 
 // sets notify object flight mode information
