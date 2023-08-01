@@ -16,9 +16,12 @@
 //
 //  UAVCAN GPS driver
 //
+#include "AP_GPS_config.h"
+
+#if AP_GPS_DRONECAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
@@ -891,4 +894,4 @@ bool AP_GPS_DroneCAN::instance_exists(const AP_DroneCAN* ap_dronecan)
 }
 #endif // AP_DRONECAN_SEND_GPS
 
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif // AP_GPS_DRONECAN_ENABLED
