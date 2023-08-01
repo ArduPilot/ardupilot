@@ -1,8 +1,8 @@
-#include "AP_RangeFinder_TOFSenseP_CAN.h"
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
 
-#include <GCS_MAVLink/GCS.h>
+#include "AP_RangeFinder_TOFSenseP_CAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_HAL/AP_HAL.h>
@@ -42,7 +42,7 @@ bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    const int32_t dist_cm = (int32_t)(frame.data[0] << 8U | frame.data[1] << 16U | frame.data[2] << 24U) / 2560;
+    const int32_t dist_mm = (int32_t)(frame.data[0] << 8U | frame.data[1] << 16U | frame.data[2] << 24U) >> 8;
     const uint8_t status = frame.data[3];
     const uint16_t snr = le16toh_ptr(&frame.data[4]);
 
@@ -51,7 +51,7 @@ bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    accumulate_distance_m(dist_cm * 0.01);
+    accumulate_distance_m(dist_mm * 0.001);
     return true;
 }
 
