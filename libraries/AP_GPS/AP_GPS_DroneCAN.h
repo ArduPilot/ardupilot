@@ -18,9 +18,12 @@
 //
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_DRONECAN_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
@@ -147,4 +150,5 @@ private:
         ByteBuffer *buf;
     } _rtcm_stream;
 };
-#endif
+
+#endif  // AP_GPS_DRONECAN_ENABLED
