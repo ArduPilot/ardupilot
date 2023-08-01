@@ -119,3 +119,8 @@ define HAL_MSP_ENABLED 0
 define AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED 0
 
 define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
+
+# Plane-specific defines; these defines are only used in the Plane
+#  directory, but are seen across the entire codebase:
+define OFFBOARD_GUIDED 0
+define QAUTOTUNE_ENABLED 0
