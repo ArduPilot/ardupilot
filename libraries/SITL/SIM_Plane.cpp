@@ -86,8 +86,11 @@ Plane::Plane(const char *frame_str) :
         aerobatic = true;
         thrust_scale *= 1.5;
         // setup parameters for plane-3d
+#if !((CONFIG_HAL_BOARD == HAL_BOARD_ESP32) && AP_SIM_ENABLED)
+        //we dont 3d fly on esp32 yet
         AP_Param::load_defaults_file("@ROMFS/models/plane.parm", false);
         AP_Param::load_defaults_file("@ROMFS/models/plane-3d.parm", false);
+#endif
     }
     
     if (strstr(frame_str, "-ice")) {

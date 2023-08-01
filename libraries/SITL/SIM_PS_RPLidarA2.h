@@ -48,7 +48,11 @@ rc 2 1450
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
 
 #include "SIM_PS_RPLidar.h"
+#ifndef HAL_SIM_PS_RPLIDARA2_ENABLED
+#define HAL_SIM_PS_RPLIDARA2_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#endif
 
+#if HAL_SIM_PS_RPLIDARA2_ENABLED
 namespace SITL {
 
 class PS_RPLidarA2 : public PS_RPLidar {
@@ -58,5 +62,5 @@ public:
 };
 
 }
-
-#endif  // HAL_SIM_PS_RPLIDARA2_ENABLED
+#endif
+#endif
