@@ -31,7 +31,7 @@ def run_program(cmd_list):
        global extra_hwdef
        if extra_hwdef is not None:
            extra_hwdef.close()
-           os.unlink(extra_hwdef.name)
+         #  os.unlink(extra_hwdef.name)
        sys.exit(1)
 
 extra_hwdef = tempfile.NamedTemporaryFile(mode='w')

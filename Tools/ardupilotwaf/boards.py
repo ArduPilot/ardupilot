@@ -547,10 +547,17 @@ def add_dynamic_boards_esp32():
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
             mcu_esp32s3 = True if (d[0:7] == "esp32s3") else False
+            sim_enabled = True if (d[0:9] == "esp32sitl") or (d[0:11] == "esp32s3sitl") else False
             if mcu_esp32s3:
-                newclass = type(d, (esp32s3,), {'name': d})
+                if sim_enabled:
+                    newclass = type(d, (esp32s3sim,), {'name': d})
+                else:
+                    newclass = type(d, (esp32s3,), {'name': d})
             else:
-                newclass = type(d, (esp32,), {'name': d})
+                if sim_enabled:
+                    newclass = type(d, (esp32sim,), {'name': d})
+                else:
+                    newclass = type(d, (esp32,), {'name': d})
 
 def get_boards_names():
     add_dynamic_boards_chibios()
@@ -846,6 +853,20 @@ class sitl_periph_gps(sitl):
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
+    def set_defines(self,env):
+   #     print('esp32.set_defines()')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            AP_SIM_ENABLED = 0,
+        )
+
+    def set_libraries(self,env):
+   #     print('esp32.set_libraries()')
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+        ]
+
+    
     def configure_env(self, cfg, env):
         def expand_path(p):
             print("USING EXPRESSIF IDF:"+str(env.idf))
@@ -857,11 +878,9 @@ class esp32(Board):
 
         super(esp32, self).configure_env(cfg, env)
         cfg.load('esp32')
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            AP_SIM_ENABLED = 0,
-        )
-
+        
+        self.set_defines(env)
+        
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
         
         # this makes sure we get the correct subtype
@@ -871,10 +890,7 @@ class esp32(Board):
             HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
 
-        env.AP_LIBRARIES += [
-            'AP_HAL_ESP32',
-        ]
-
+        self.set_libraries(env)
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
@@ -926,6 +942,26 @@ class esp32(Board):
         return self.__class__.__name__
 
 class esp32s3(esp32):
+    abstract = True
+    toolchain = 'xtensa-esp32s3-elf'
+
+class esp32sim(esp32):
+    abstract = True
+    toolchain = 'xtensa-esp32-elf'
+    def set_defines(self,env):
+        env.SIM_ENABLED = 1
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            AP_SIM_ENABLED = 1,
+        )
+
+    def set_libraries(self,env):
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+            'SITL',
+        ]
+
+class esp32s3sim(esp32sim):
     abstract = True
     toolchain = 'xtensa-esp32s3-elf'
 
