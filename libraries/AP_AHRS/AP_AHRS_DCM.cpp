@@ -202,8 +202,10 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
         // the first vector may be invalid as the filter starts up
         while ((initAccVec.length() < 9.0f || initAccVec.length() > 11) && counter++ < 20) {
+            #if !((CONFIG_HAL_BOARD == HAL_BOARD_ESP32) && AP_SIM_ENABLED)
             _ins.wait_for_sample();
             _ins.update();
+            #endif
             initAccVec = _ins.get_accel();
         }
 
