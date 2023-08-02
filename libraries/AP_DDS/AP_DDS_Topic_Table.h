@@ -21,6 +21,7 @@ enum class TopicIndex: uint8_t {
     CLOCK_PUB,
     JOY_SUB,
     DYNAMIC_TRANSFORMS_SUB,
+    VELOCITY_CONTROL_SUB,
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -130,5 +131,15 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "dynamictf__t",
         .dw_profile_label = "",
         .dr_profile_label = "dynamictf__dr",
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::VELOCITY_CONTROL_SUB),
+        .pub_id = to_underlying(TopicIndex::VELOCITY_CONTROL_SUB),
+        .sub_id = to_underlying(TopicIndex::VELOCITY_CONTROL_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::VELOCITY_CONTROL_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::VELOCITY_CONTROL_SUB), .type=UXR_DATAREADER_ID},
+        .topic_profile_label = "velocitycontrol__t",
+        .dw_profile_label = "",
+        .dr_profile_label = "velocitycontrol__dr",
     },
 };
