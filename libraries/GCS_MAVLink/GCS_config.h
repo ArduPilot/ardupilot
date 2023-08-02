@@ -11,6 +11,10 @@
 #define AP_MAVLINK_BATTERY2_ENABLED 1
 #endif
 
+#ifndef HAL_HIGH_LATENCY2_ENABLED
+#define HAL_HIGH_LATENCY2_ENABLED 1
+#endif
+
 // handling of MISSION_SET_CURRENT (the message) is slated to be
 // removed.  It has signficant deficiencies vs MAV_CMD_DO_SET_CURRENT.
 // The command was added to the spec in January 2019 and to MAVLink in

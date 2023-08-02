@@ -28,10 +28,6 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
-#ifndef HAL_HIGH_LATENCY2_ENABLED
-#define HAL_HIGH_LATENCY2_ENABLED 1
-#endif
-
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send(mavlink_channel_t chan);
