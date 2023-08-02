@@ -120,3 +120,16 @@ define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
 #  directory, but are seen across the entire codebase:
 define OFFBOARD_GUIDED 0
 define QAUTOTUNE_ENABLED 0
+
+# Copter-specific defines; these defines are only used in the Copter
+#  directory, but are seen across the entire codebase:
+define MODE_FLOWHOLD_ENABLED 0
+define MODE_TURTLE_ENABLED 0
+define MODE_ZIGZAG_ENABLED 0
+define AC_NAV_GUIDED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define MODE_FOLLOW_ENABLED 0
+define MODE_GUIDED_NOGPS_ENABLED 0
+define MODE_SYSTEMID_ENABLED 0
+define WEATHERVANE_ENABLED 0
+define MODE_AUTOROTATE_ENABLED 0
