@@ -194,6 +194,11 @@ static bool allocate_buffers()
         rasr++;
     }
     void *mem = malloc_eth_safe(size);
+    // ensure our memory is aligned
+    // ref. Cortex-M7 peripherals PM0253, section 4.6.4 MPU region base address register
+    if (((uint32_t)mem) % size) {
+        AP_HAL::panic("Bad alignment of ETH memory");
+    }
     if (mem == nullptr) {
         return false;
     }
