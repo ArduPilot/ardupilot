@@ -507,6 +507,9 @@ private:
 
         // how much correction have we added for terrain data
         float terrain_correction;
+
+        // last home altitude for detecting changes
+        int32_t last_home_alt_cm;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
@@ -1036,6 +1039,7 @@ private:
     void loiter_angle_reset(void);
     void loiter_angle_update(void);
     void navigate();
+    void check_home_alt_change(void);
     void calc_airspeed_errors();
     float mode_auto_target_airspeed_cm();
     void calc_gndspeed_undershoot();
