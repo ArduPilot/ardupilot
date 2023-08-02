@@ -12,7 +12,6 @@ USB_STRING_PRODUCT "%BOARD%"
 define CORE_CM7
 define SMPS_PWR
 
-define WATCHDOG_DISABLED
 
 # crystal frequency
 OSCILLATOR_HZ 25000000
