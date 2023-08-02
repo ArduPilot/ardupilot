@@ -58,12 +58,14 @@ private:
     builtin_interfaces_msg_Time time_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
-    geometry_msgs_msg_TwistStamped local_velocity_topic;
+    geometry_msgs_msg_TwistStamped tx_local_velocity_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     rosgraph_msgs_msg_Clock clock_topic;
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
+    // incoming REP147 velocity control
+    static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     tf2_msgs_msg_TFMessage tx_dynamic_transforms_topic;
@@ -169,7 +171,7 @@ public:
     //! @brief Serialize the current local_pose and publish to the IO stream(s)
     void write_local_pose_topic();
     //! @brief Serialize the current local velocity and publish to the IO stream(s)
-    void write_local_velocity_topic();
+    void write_tx_local_velocity_topic();
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
     void write_geo_pose_topic();
     //! @brief Serialize the current clock and publish to the IO stream(s)
