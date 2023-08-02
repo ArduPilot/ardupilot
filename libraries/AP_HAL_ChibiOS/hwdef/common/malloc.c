@@ -127,7 +127,15 @@ static void *malloc_flags(size_t size, uint32_t flags)
         return NULL;
     }
     const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS | MEM_REGION_FLAG_ETH_SAFE);
-    const uint8_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    size_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    if (flags & MEM_REGION_FLAG_ETH_SAFE) {
+        // alignment needs to same as size
+        alignment = size;
+        // also size needs to be power of 2, if not return NULL
+        if ((size & (size-1)) != 0) {
+            return NULL;
+        }
+    }
     void *p = NULL;
     uint8_t i;
 
