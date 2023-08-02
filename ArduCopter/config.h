@@ -146,8 +146,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
-#ifndef NAV_GUIDED
- # define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
+#ifndef AC_NAV_GUIDED
+ # define AC_NAV_GUIDED    ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -189,7 +189,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_FOLLOW_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -201,7 +201,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_GUIDED_NOGPS_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_SYSTEMID_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -249,19 +249,19 @@
 //////////////////////////////////////////////////////////////////////////////
 // ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
 #ifndef MODE_ZIGZAG_ENABLED
-# define MODE_ZIGZAG_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_ZIGZAG_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Turtle - allow vehicle to be flipped over after a crash
 #ifndef MODE_TURTLE_ENABLED
-# define MODE_TURTLE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(DISABLE_DSHOT) && FRAME_CONFIG != HELI_FRAME
+# define MODE_TURTLE_ENABLED !defined(DISABLE_DSHOT) && FRAME_CONFIG != HELI_FRAME
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Flowhold - use optical flow to hover in place
 #ifndef MODE_FLOWHOLD_ENABLED
-# define MODE_FLOWHOLD_ENABLED !HAL_MINIMIZE_FEATURES && AP_OPTICALFLOW_ENABLED
+# define MODE_FLOWHOLD_ENABLED AP_OPTICALFLOW_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -269,23 +269,25 @@
 //////////////////////////////////////////////////////////////////////////////
 // Weathervane - allow vehicle to yaw into wind
 #ifndef WEATHERVANE_ENABLED
-# define WEATHERVANE_ENABLED !HAL_MINIMIZE_FEATURES
+# define WEATHERVANE_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
+#ifndef MODE_AUTOROTATE_ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #if FRAME_CONFIG == HELI_FRAME
         #ifndef MODE_AUTOROTATE_ENABLED
-        # define MODE_AUTOROTATE_ENABLED !HAL_MINIMIZE_FEATURES
+        # define MODE_AUTOROTATE_ENABLED ENABLED
         #endif
     #else
         # define MODE_AUTOROTATE_ENABLED DISABLED
     #endif
 #else
     # define MODE_AUTOROTATE_ENABLED DISABLED
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -561,7 +563,7 @@
 #endif
 
 #ifndef AC_OAPATHPLANNER_ENABLED
- #define AC_OAPATHPLANNER_ENABLED   !HAL_MINIMIZE_FEATURES
+ #define AC_OAPATHPLANNER_ENABLED   ENABLED
 #endif
 
 #if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED

@@ -136,7 +136,7 @@ void ModeAuto::run()
 
     case SubMode::NAVGUIDED:
     case SubMode::NAV_SCRIPT_TIME:
-#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
+#if AC_NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
         nav_guided_run();
 #endif
         break;
@@ -502,7 +502,7 @@ void ModeAuto::circle_start()
     set_submode(SubMode::CIRCLE);
 }
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::nav_guided_start()
 {
@@ -519,7 +519,7 @@ void ModeAuto::nav_guided_start()
     // set submode
     set_submode(SubMode::NAVGUIDED);
 }
-#endif //NAV_GUIDED
+#endif //AC_NAV_GUIDED
 
 bool ModeAuto::is_landing() const
 {
@@ -647,7 +647,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_spline_wp(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:             // 92  accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
         break;
@@ -719,7 +719,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #endif //AP_FENCE_ENABLED
         break;
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
         do_guided_limits(cmd);
         break;
@@ -892,7 +892,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_spline_wp(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:
         cmd_complete = verify_nav_guided_enable(cmd);
         break;
@@ -1033,7 +1033,7 @@ void ModeAuto::circle_run()
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
-#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
+#if AC_NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
 // auto_nav_guided_run - allows control by external navigation controller
 //      called by auto_run at 100hz or more
 void ModeAuto::nav_guided_run()
@@ -1041,7 +1041,7 @@ void ModeAuto::nav_guided_run()
     // call regular guided flight mode run function
     copter.mode_guided.run();
 }
-#endif  // NAV_GUIDED || AP_SCRIPTING_ENABLED
+#endif  // AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
 
 // auto_loiter_run - loiter in AUTO flight mode
 //      called by auto_run at 100hz or more
@@ -1751,7 +1751,7 @@ void ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
     }
 }
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
 // do_nav_guided_enable - initiate accepting commands from external nav computer
 void ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
@@ -1770,7 +1770,7 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
         cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
         cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
 }
-#endif  // NAV_GUIDED
+#endif  // AC_NAV_GUIDED
 
 // do_nav_delay - Delay the next navigation command
 void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
@@ -2188,7 +2188,7 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
 // verify_nav_guided - check if we have breached any limits
 bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
@@ -2200,7 +2200,7 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
     // check time and position limits
     return copter.mode_guided.limit_check();
 }
-#endif  // NAV_GUIDED
+#endif  // AC_NAV_GUIDED
 
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
