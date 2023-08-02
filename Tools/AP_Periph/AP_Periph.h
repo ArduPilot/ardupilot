@@ -26,6 +26,7 @@
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_Networking/AP_Networking.h>
+#include <AP_RPM/AP_RPM.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 #if HAL_WITH_ESC_TELEM
@@ -157,6 +158,11 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM
+    AP_RPM rpm_sensor;
+    uint32_t rpm_last_update_ms;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY

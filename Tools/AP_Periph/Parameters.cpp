@@ -557,6 +557,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(networking, "NET_", AP_Networking),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RPM
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#endif
+
     AP_VAREND
 };
 
