@@ -1176,12 +1176,10 @@ void Compass::_probe_external_i2c_compasses(void)
     // IST8310 on external and internal bus
     if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5 &&
         AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
-        enum Rotation default_rotation;
+        enum Rotation default_rotation = AP_COMPASS_IST8310_DEFAULT_ROTATION;
 
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
             default_rotation = ROTATION_PITCH_180_YAW_90;
-        } else {
-            default_rotation = ROTATION_PITCH_180;
         }
         // probe all 4 possible addresses
         const uint8_t ist8310_addr[] = { 0x0C, 0x0D, 0x0E, 0x0F };
