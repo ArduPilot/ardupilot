@@ -269,6 +269,10 @@ void AP_Periph_FW::init()
     nmea.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RPM
+    rpm_sensor.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     notify.init();
 #endif
@@ -472,6 +476,13 @@ void AP_Periph_FW::update()
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.update();
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM
+    if (now - rpm_last_update_ms >= 100) {
+        rpm_last_update_ms = now;
+        rpm_sensor.update();
+    }
 #endif
 
 #if HAL_LOGGING_ENABLED
