@@ -70,7 +70,7 @@ void AP_RPM_Pin::update(void)
                     AP_HAL::GPIO::INTERRUPT_RISING)) {
                 interrupt_attached = true;
             } else {
-                gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %d", last_pin);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %d", last_pin);
             }
         }
     }
