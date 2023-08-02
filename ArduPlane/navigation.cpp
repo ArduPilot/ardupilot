@@ -95,6 +95,8 @@ void Plane::navigate()
         return;
     }
 
+    check_home_alt_change();
+
     // waypoint distance from plane
     // ----------------------------
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
