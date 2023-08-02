@@ -4,9 +4,14 @@
 
 #include <AP_EFI/AP_EFI_config.h>
 #include <AP_Generator/AP_Generator_config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifndef AP_RPM_ENABLED
 #define AP_RPM_ENABLED 1
+#endif
+
+#ifndef RPM_MAX_INSTANCES
+#define RPM_MAX_INSTANCES 2
 #endif
 
 #ifndef AP_RPM_BACKEND_DEFAULT_ENABLED
@@ -22,7 +27,7 @@
 #endif
 
 #ifndef AP_RPM_HARMONICNOTCH_ENABLED
-#define AP_RPM_HARMONICNOTCH_ENABLED AP_RPM_BACKEND_DEFAULT_ENABLED
+#define AP_RPM_HARMONICNOTCH_ENABLED AP_RPM_BACKEND_DEFAULT_ENABLED && AP_INERTIALSENSOR_ENABLED
 #endif
 
 #ifndef AP_RPM_PIN_ENABLED
