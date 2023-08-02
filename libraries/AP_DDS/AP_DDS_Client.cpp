@@ -27,6 +27,7 @@ static char BASE_LINK_FRAME_ID[] = "base_link";
 // the AP_DDS_Client::on_topic frame size is exceeded.
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -430,6 +431,7 @@ void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, ui
         if (rx_joy_topic.axes_size >= 4) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
                           rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
+            // TODO implement joystick RC control to AP
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
         }
@@ -445,9 +447,22 @@ void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, ui
         if (rx_dynamic_transforms_topic.transforms_size > 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage of length: %u",
                           static_cast<unsigned>(rx_dynamic_transforms_topic.transforms_size));
+            // TODO implement external odometry to AP
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage: Insufficient size ");
         }
+        break;
+    }
+    case topics[to_underlying(TopicIndex::VELOCITY_CONTROL_SUB)].dr_id.id: {
+        const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_velocity_control_topic);
+        if (success == false) {
+            break;
+        }
+        uint32_t* count_ptr = (uint32_t*) args;
+        (*count_ptr)++;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received geometry_msgs/TwistStamped");
+        // TODO implement the velocity control to AP
+        break;
     }
     }
 
@@ -695,14 +710,14 @@ void AP_DDS_Client::write_local_pose_topic()
     }
 }
 
-void AP_DDS_Client::write_local_velocity_topic()
+void AP_DDS_Client::write_tx_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&local_velocity_topic, 0);
+        const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&tx_local_velocity_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[5].dw_id,&ub,topic_size);
-        const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &local_velocity_topic);
+        const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &tx_local_velocity_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
@@ -770,9 +785,9 @@ void AP_DDS_Client::update()
     }
 
     if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
-        update_topic(local_velocity_topic);
+        update_topic(tx_local_velocity_topic);
         last_local_velocity_time_ms = cur_time_ms;
-        write_local_velocity_topic();
+        write_tx_local_velocity_topic();
     }
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
