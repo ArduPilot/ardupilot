@@ -332,13 +332,6 @@
 #endif
 
 
-// sanity checks for the configuration.  This can't test everything as
-// the libraries can do their own definitions - but we can catch some
-// things:
-#if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#error "2MB board with minimize features?!"
-#endif
-
 #ifndef HAL_ENABLE_SENDING_STATS
 #define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif
