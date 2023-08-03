@@ -212,35 +212,20 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &ms
 void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
 {
     float terrain_height = 0;
-    float home_terrain_height = 0;
     uint16_t spacing = 0;
-    Location current_loc;
-    const AP_AHRS &ahrs = AP::ahrs();
-    if (ahrs.get_location(current_loc) &&
-        height_amsl(ahrs.get_home(), home_terrain_height) &&
-        height_amsl(loc, terrain_height)) {
+    if (height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
     } else if (extrapolate && have_current_loc_height) {
         // show the extrapolated height, so logs show what height is
         // being used for navigation
         terrain_height = last_current_loc_height;
-    } else {
-        // report terrain height if we can, but can't give current_height
-        height_amsl(loc, terrain_height);
     }
     uint16_t pending, loaded;
     get_statistics(pending, loaded);
 
     float current_height = 0.0f;
-    if (spacing == 0 && !(extrapolate && have_current_loc_height)) {
-        current_height = 0;
-    } else if (!current_loc.is_zero()) {
-        int32_t height_above_home_cm = 0;
-        UNUSED_RESULT(current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, height_above_home_cm));
-        current_height = height_above_home_cm * 0.01f;  // cm -> m
-    }
-    current_height += home_terrain_height - terrain_height;
+    height_above_terrain(current_height, extrapolate);
 
     if (HAVE_PAYLOAD_SPACE(chan, TERRAIN_REPORT)) {
         mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, 
