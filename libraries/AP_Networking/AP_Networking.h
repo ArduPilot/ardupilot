@@ -29,8 +29,10 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Networking);
 
+    // initialize the library. This should only be run once
     void init();
 
+    // update task. For most applications this should run as fast as possible. Default is 1000Hz for lowest latency
     void update();
 
     static AP_Networking *get_singleton(void)
@@ -38,39 +40,55 @@ public:
         return _singleton;
     }
 
+    // Networking interface is enabled and initialized
     bool is_healthy() const
     {
         return _param.enabled && _init.done;
     }
+
+    // returns true if DHCP is enabled
     bool get_dhcp_enabled() const
     {
         return _param.dhcp;
     }
+
+    // Sets DHCP to be enabled or disabled
     void set_dhcp_enable(const bool enable)
     {
         _param.dhcp.set(enable);
     }
 
+    // returns the 32bit value of the active IP address that is currently in use
     uint32_t get_ip_active() const
     {
         return _activeSettings.ip;
     }
+
+    // returns the 32bit value of the user-parameter static IP address
     uint32_t get_ip_param() const
     {
         return IP4_ADDR_VALUE_FROM_ARRAY(_param.ipaddr);
     }
-    char*    get_ip_active_str() const
+
+    // returns a null terminated string of the active IP address. Example: "192.168.12.13"
+    const char*    get_ip_active_str() const
     {
         return convert_ip_to_str(get_ip_active());
     }
-    char*    get_ip_param_str() const
+
+    // returns a null terminated string of the user-parameter static IP address. Example: "192.168.12.13"
+    const char*    get_ip_param_str() const
     {
         return convert_ip_to_str(get_ip_param());
     }
+
+    // sets the user-parameter static IP address from a null terminated string.
     void     set_ip_param_str(const char* ip_str)
     {
         set_ip_param(convert_str_to_ip((char*)ip_str));
     }
+
+    // sets the user-parameter static IP address from a 32bit value
     void     set_ip_param(const uint32_t ip)
     {
         //put_le32_ptr(_param.ipaddr->get(), ip);
@@ -80,19 +98,24 @@ public:
         _param.ipaddr[0].set_and_save(ip & 0xff);
     }
 
+    // returns the 32bit value of the active Netmask that is currently in use
     uint32_t get_netmask_active() const
     {
         return _activeSettings.nm;
     }
+
+    // returns the 32bit value of the of the user-parameter static Netmask
     uint32_t get_netmask_param() const
     {
         return convert_netmask_bitcount_to_ip(_param.netmask.get());
     }
-    char*    get_netmask_active_str()
+
+    // returns a null terminated string of the active Netmask address. Example: "192.168.12.13"
+    const char*    get_netmask_active_str()
     {
         return convert_ip_to_str(get_netmask_active());
     }
-    char*    get_netmask_param_str()
+    const char*    get_netmask_param_str()
     {
         return convert_ip_to_str(get_netmask_param());
     }
@@ -113,11 +136,11 @@ public:
     {
         return IP4_ADDR_VALUE_FROM_ARRAY(_param.gwaddr);
     }
-    char*    get_gateway_active_str()
+    const char*    get_gateway_active_str()
     {
         return convert_ip_to_str(get_gateway_active());
     }
-    char*    get_gateway_param_str()
+    const char*    get_gateway_param_str()
     {
         return convert_ip_to_str(get_gateway_param());
     }
@@ -135,10 +158,12 @@ public:
     }
 
 
+    // helper functions to convert between 32bit IP addresses and null terminated strings and back
     static uint32_t convert_str_to_ip(char* ip_str);
-    static char* convert_ip_to_str(const uint8_t ip[4]);
-    static char* convert_ip_to_str(const uint32_t ip);
+    static const char* convert_ip_to_str(const uint8_t ip[4]);
+    static const char* convert_ip_to_str(const uint32_t ip);
 
+    // helper functions to convert between 32bit Netmask and counting consecutive bits and back
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
 
@@ -150,7 +175,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    static int tftp_fd;
     static AP_Networking *_singleton;
 
     uint8_t     _num_instances;         // number of feature instances
