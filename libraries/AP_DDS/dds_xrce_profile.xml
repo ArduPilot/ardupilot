@@ -254,7 +254,7 @@
     </topic>
   </data_reader>
   <topic profile_name="velocitycontrol__t">
-    <name>rt/ap/velocity_control</name>
+    <name>rt/ap/cmd_vel</name>
     <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -264,7 +264,7 @@
   <data_reader profile_name="velocitycontrol__dr">
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ap/velocity_control</name>
+      <name>rt/ap/cmd_vel</name>
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     </topic>
   </data_reader>
