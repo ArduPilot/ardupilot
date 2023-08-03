@@ -32,7 +32,9 @@ public:
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
+#if HAL_GCS_ENABLED
     bool supports_mavlink_gps_rtk_message() const override { return true; }
+#endif
 
     // Methods
     bool read() override;

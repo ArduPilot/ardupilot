@@ -1294,6 +1294,7 @@ void AP_GPS::update_primary(void)
 }
 #endif  // GPS_MAX_RECEIVERS > 1
 
+#if HAL_GCS_ENABLED
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
@@ -1331,6 +1332,7 @@ void AP_GPS::handle_msg(const mavlink_message_t &msg)
     }
     }
 }
+#endif
 
 #if HAL_MSP_GPS_ENABLED
 void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
@@ -1496,6 +1498,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 }
 #endif // GPS_MAX_RECEIVERS
 
+#if HAL_GCS_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
@@ -1505,6 +1508,7 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
         drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
+#endif
 
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
