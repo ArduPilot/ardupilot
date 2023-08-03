@@ -100,7 +100,7 @@ void AP_Periph_FW::init()
 
     can_start();
 
-#if AP_NETWORKING_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
     networking.init();
 #endif
 
@@ -480,7 +480,7 @@ void AP_Periph_FW::update()
 
     can_update();
 
-#if AP_NETWORKING_ENABLED
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
     networking.update();
 #endif
 
