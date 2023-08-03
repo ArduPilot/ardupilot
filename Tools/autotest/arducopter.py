@@ -7687,28 +7687,18 @@ class AutoTestCopter(AutoTest):
 
     def GSF(self):
         '''test the Gaussian Sum filter'''
-        ex = None
         self.context_push()
-        try:
-            self.set_parameter("EK2_ENABLE", 1)
-            self.reboot_sitl()
-            self.takeoff(20, mode='LOITER')
-            self.set_rc(2, 1400)
-            self.delay_sim_time(5)
-            self.set_rc(2, 1500)
-            self.progress("Path: %s" % self.current_onboard_log_filepath())
-            dfreader = self.dfreader_for_current_onboard_log()
-            self.do_RTL()
-        except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
-            ex = e
-
+        self.set_parameter("EK2_ENABLE", 1)
+        self.reboot_sitl()
+        self.takeoff(20, mode='LOITER')
+        self.set_rc(2, 1400)
+        self.delay_sim_time(5)
+        self.set_rc(2, 1500)
+        self.progress("Path: %s" % self.current_onboard_log_filepath())
+        dfreader = self.dfreader_for_current_onboard_log()
+        self.do_RTL()
         self.context_pop()
         self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
 
         # ensure log messages present
         want = set(["XKY0", "XKY1", "NKY0", "NKY1"])
