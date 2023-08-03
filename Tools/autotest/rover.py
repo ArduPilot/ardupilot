@@ -607,6 +607,55 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException(
                 "Pin mask unchanged after relay cmd")
         self.progress("Pin mask changed after relay command")
+        self.do_set_relay(0, 0)
+
+        self.set_message_rate_hz("RELAY_STATUS", 10)
+
+        # default configuration for relays in sim have one relay:
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 3,
+            "on": 0,
+        })
+        self.do_set_relay(0, 1)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 3,
+            "on": 1,
+        })
+        self.do_set_relay(1, 1)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 3,
+            "on": 3,
+        })
+        self.do_set_relay(0, 0)
+        self.do_set_relay(1, 0)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 3,
+            "on": 0,
+        })
+
+        # add another servo:
+        self.set_parameter("RELAY_PIN6", 14)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 35,
+            "on": 0,
+        })
+        self.do_set_relay(5, 1)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 35,
+            "on": 32,
+        })
+        self.do_set_relay(0, 1)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 35,
+            "on": 33,
+        })
+        self.do_set_relay(5, 0)
+        self.assert_received_message_field_values('RELAY_STATUS', {
+            "present": 35,
+            "on": 1,
+        })
+
+        self.set_message_rate_hz("RELAY_STATUS", 0)
 
     def MAVProxy_SetModeUsingSwitch(self):
         """Set modes via mavproxy switch"""
