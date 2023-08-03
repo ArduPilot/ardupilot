@@ -3995,7 +3995,11 @@ class TestSuite(ABC):
                 seq += 1
                 ret.append(item)
                 continue
-            (t, n, e, alt) = item
+            opts = {}
+            try:
+                (t, n, e, alt, opts) = item
+            except ValueError:
+                (t, n, e, alt) = item
             lat = 0
             lng = 0
             if n != 0 or e != 0:
@@ -4005,6 +4009,8 @@ class TestSuite(ABC):
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
             if not self.ardupilot_stores_frame_for_cmd(t):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
+            if opts.get('frame', None) is not None:
+                frame = opts.get('frame')
             ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, x=int(lat*1e7), y=int(lng*1e7), z=alt))
             seq += 1
 
