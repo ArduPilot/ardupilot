@@ -72,6 +72,7 @@ PA1  ETH_RMII_REF_CLK   ETH1
 
 define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
+define HAL_PERIPH_ENABLE_NETWORKING
 
 # ---------------------------------------------------------------------------------------------
 # AP_Periph - boiler-plate configurations that all HW AP-Periph need
@@ -86,7 +87,6 @@ define HAL_DISABLE_LOOP_DELAY
 #################################
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-env DISABLE_SCRIPTING 1
 define AP_RC_CHANNEL_ENABLED 1
 define AP_INERTIALSENSOR_ENABLED 0
 

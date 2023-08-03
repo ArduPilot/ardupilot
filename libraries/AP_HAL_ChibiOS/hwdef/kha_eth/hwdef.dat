@@ -4,8 +4,6 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-AUTOBUILD_TARGETS None
-
 env OPTIMIZE -O2
 
 # USB setup
@@ -100,6 +98,7 @@ define HAL_GPIO_ETH_ENABLE 113
 
 define BOARD_PHY_ID MII_LAN8742A_ID
 define BOARD_PHY_RMII
+define HAL_PERIPH_ENABLE_NETWORKING
 
 ###################
 
@@ -147,8 +146,6 @@ define HAL_LOGGING_ENABLED TRUE
 # AP_Periph - configurations specific to this App
 #################################
 
-env DISABLE_SCRIPTING 1
-
 # listen for reboot command from uploader.py script
 # undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
@@ -157,3 +154,4 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 
 DMA_NOSHARE USART1* USART2* CAN1*
 
+AUTOBUILD_TARGETS None
