@@ -41,7 +41,7 @@ public:
     }
     
     // see if the relay is enabled
-    bool        enabled(uint8_t instance) { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
+    bool        enabled(uint8_t instance) const { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
 
     // toggle the relay status
     void        toggle(uint8_t instance);
@@ -52,6 +52,8 @@ public:
     static AP_Relay *get_singleton(void) {return singleton; }
 
     static const struct AP_Param::GroupInfo        var_info[];
+
+    bool send_relay_status(const class GCS_MAVLINK &link) const;
 
 private:
     static AP_Relay *singleton;
