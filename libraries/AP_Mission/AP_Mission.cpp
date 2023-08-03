@@ -397,7 +397,12 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         set_in_landing_sequence_flag(false);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+    if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+    }
+
     switch (cmd.id) {
     case MAV_CMD_DO_AUX_FUNCTION:
         return start_command_do_aux_function(cmd);
