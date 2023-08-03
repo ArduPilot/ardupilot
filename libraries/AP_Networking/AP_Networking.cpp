@@ -1,8 +1,9 @@
 
-#include "AP_Networking.h"
+#include "AP_Networking_Config.h"
 
 #if AP_NETWORKING_ENABLED
 
+#include "AP_Networking.h"
 #include "AP_Math/definitions.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -20,8 +21,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
 
     // @Param: ENABLED
-    // @DisplayName: Enable Networking
-    // @Description: Enable Networking
+    // @DisplayName: Networking Enable
+    // @Description: Networking Enable
     // @Values: 0:Disable,1:Enable
     // @RebootRequired: True
     // @User: Advanced
@@ -194,13 +195,13 @@ static bool allocate_buffers()
         rasr++;
     }
     void *mem = malloc_eth_safe(size);
+    if (mem == nullptr) {
+        return false;
+    }
     // ensure our memory is aligned
     // ref. Cortex-M7 peripherals PM0253, section 4.6.4 MPU region base address register
     if (((uint32_t)mem) % size) {
         AP_HAL::panic("Bad alignment of ETH memory");
-    }
-    if (mem == nullptr) {
-        return false;
     }
 
     // for total_size == 9240, size should be 16384 and (rasr-1) should be 13 (MPU_RASR_SIZE_16K)
@@ -230,7 +231,7 @@ static bool allocate_buffers()
     }
     return true;
 }
-#endif
+#endif // STM32_ETH_BUFFERS_EXTERN 
 
 void AP_Networking::init()
 {
@@ -324,10 +325,6 @@ void AP_Networking::announce_address_changes()
     const uint32_t ip = lwipGetIp();
     const uint32_t nm = lwipGetNetmask();
     const uint32_t gw = lwipGetGateway();
-    // struct netif thisif = lwipGetNetIf();
-    // const uint32_t ip = thisif.ip_addr.u_addr.ip4.addr;
-    // const uint32_t nm = thisif.netmask.u_addr.ip4.addr;
-    // const uint32_t gw = thisif.gw.u_addr.ip4.addr;
 #else
     const uint32_t ip = 0;
     const uint32_t nm = 0;
@@ -400,7 +397,7 @@ uint32_t AP_Networking::convert_str_to_ip(char* ip_str)
     return ip;
 }
 
-char* AP_Networking::convert_ip_to_str(const uint8_t ip[4])
+const char* AP_Networking::convert_ip_to_str(const uint8_t ip[4])
 {
     static char _str_buffer[20];
     if (hal.util->snprintf(_str_buffer, sizeof(_str_buffer), "%u.%u.%u.%u", (unsigned)ip[0], (unsigned)ip[1], (unsigned)ip[2], (unsigned)ip[3]) == 0) {
@@ -408,7 +405,7 @@ char* AP_Networking::convert_ip_to_str(const uint8_t ip[4])
     }
     return _str_buffer;
 }
-char* AP_Networking::convert_ip_to_str(const uint32_t ip)
+const char* AP_Networking::convert_ip_to_str(const uint32_t ip)
 {
     uint8_t ip_array[4];
     ip_array[3] = ((ip >> 24) & 0xff);
