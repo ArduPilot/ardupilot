@@ -486,7 +486,7 @@ void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_
     if (!isnan(packet.pitch) && !isnan(packet.yaw)) {
         const float pitch_angle_deg = degrees(packet.pitch);
         const float yaw_angle_deg = degrees(packet.yaw);
-        set_angle_target(instance, 0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -494,7 +494,7 @@ void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_
     if (!isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
-        set_rate_target(instance, 0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
