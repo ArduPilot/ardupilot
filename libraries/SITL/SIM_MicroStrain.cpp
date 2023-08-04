@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate LORD Microstrain serial device
+    simulate LORD MicroStrain serial device
 */
-#include "SIM_LORD.h"
+#include "SIM_MicroStrain.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -24,7 +24,7 @@
 
 using namespace SITL;
 
-LORD::LORD() :SerialDevice::SerialDevice()
+MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 {
 }
 
@@ -48,7 +48,7 @@ static void simulation_timeval(struct timeval *tv)
     tv->tv_usec = new_usec % 1000000ULL;
 }
 
-void LORD::generate_checksum(LORD_Packet& packet)
+void MicroStrain::generate_checksum(MicroStrain_Packet& packet)
 {
     uint8_t checksumByte1 = 0;
     uint8_t checksumByte2 = 0;
@@ -67,7 +67,7 @@ void LORD::generate_checksum(LORD_Packet& packet)
     packet.checksum[1] = checksumByte2;
 }
 
-void LORD::send_packet(LORD_Packet packet)
+void MicroStrain::send_packet(MicroStrain_Packet packet)
 {
     generate_checksum(packet);
 
@@ -77,10 +77,10 @@ void LORD::send_packet(LORD_Packet packet)
 }
 
 
-void LORD::send_imu_packet(void)
+void MicroStrain::send_imu_packet(void)
 {
     const auto &fdm = _sitl->state;
-    LORD_Packet packet;
+    MicroStrain_Packet packet;
 
     struct timeval tv;
     simulation_timeval(&tv);
@@ -136,10 +136,10 @@ void LORD::send_imu_packet(void)
 }
 
 
-void LORD::send_gnss_packet(void)
+void MicroStrain::send_gnss_packet(void)
 {
     const auto &fdm = _sitl->state;
-    LORD_Packet packet;
+    MicroStrain_Packet packet;
 
     struct timeval tv;
     simulation_timeval(&tv);
@@ -205,10 +205,10 @@ void LORD::send_gnss_packet(void)
     send_packet(packet);
 }
 
-void LORD::send_filter_packet(void)
+void MicroStrain::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
-    LORD_Packet packet;
+    MicroStrain_Packet packet;
 
     struct timeval tv;
     simulation_timeval(&tv);
@@ -254,9 +254,9 @@ void LORD::send_filter_packet(void)
 }
 
 /*
-  send LORD data
+  send MicroStrain data
  */
-void LORD::update(void)
+void MicroStrain::update(void)
 {
     if (!init_sitl_pointer()) {
         return;
@@ -283,7 +283,7 @@ void LORD::update(void)
     }
 }
 
-void LORD::put_float(LORD_Packet &packet, float f)
+void MicroStrain::put_float(MicroStrain_Packet &packet, float f)
 {
     uint32_t fbits = 0;
     memcpy(&fbits, &f, sizeof(fbits));
@@ -291,7 +291,7 @@ void LORD::put_float(LORD_Packet &packet, float f)
     packet.payload_size += sizeof(float);
 }
 
-void LORD::put_double(LORD_Packet &packet, double d)
+void MicroStrain::put_double(MicroStrain_Packet &packet, double d)
 {
     uint64_t dbits = 0;
     memcpy(&dbits, &d, sizeof(dbits));
@@ -299,7 +299,7 @@ void LORD::put_double(LORD_Packet &packet, double d)
     packet.payload_size += sizeof(double);
 }
 
-void LORD::put_int(LORD_Packet &packet, uint16_t t)
+void MicroStrain::put_int(MicroStrain_Packet &packet, uint16_t t)
 {
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);
