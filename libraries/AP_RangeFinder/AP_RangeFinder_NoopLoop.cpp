@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 #define NOOPLOOP_FRAME_HEADER 0x57
 #define NOOPLOOP_FRAME_HEADER_1 0x00
 #define NOOPLOOP_FRAME_LENGTH 16
-#define NOOPLOOP_DIST_MAX_MM 8000000
+#define NOOPLOOP_DIST_MAX_MM 8000
 
 // format of serial packets received from NoopLoop TOF Sense P and F lidar
 //
