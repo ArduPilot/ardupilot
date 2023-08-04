@@ -29,6 +29,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -72,6 +73,7 @@
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
+#define AP_ARMING_MAGFIELD_ERROR_THRESHOLD 100
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -143,6 +145,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Values: 0:None,1:Disable prearm display
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
+
+    // @Param: MAGTHRESH
+    // @DisplayName: Compass magnetic field strength error threshold vs earth magnetic model
+    // @Description: Compass magnetic field strength error threshold vs earth magnetic model.  X and y axis are compared using this threhold, Z axis uses 2x this threshold.  0 to disable check
+    // @Units: mGauss
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("MAGTHRESH", 10, AP_Arming, magfield_error_threshold,  AP_ARMING_MAGFIELD_ERROR_THRESHOLD),
 
     AP_GROUPEND
 };
@@ -559,6 +569,25 @@ bool AP_Arming::compass_checks(bool report)
         if (!_compass.consistent()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compasses inconsistent");
             return false;
+        }
+
+        // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
+        Location ahrs_loc;
+        AP_AHRS &ahrs = AP::ahrs();
+        if ((magfield_error_threshold > 0) && ahrs.use_compass() && ahrs.get_location(ahrs_loc)) {
+            const Vector3f veh_mag_field_ef = ahrs.get_rotation_body_to_ned() * _compass.get_field();
+            const Vector3f earth_field_mgauss = AP_Declination::get_earth_field_ga(ahrs_loc) * 1000.0;
+            const Vector3f diff_mgauss = veh_mag_field_ef - earth_field_mgauss;
+            if (MAX(fabsf(diff_mgauss.x), fabsf(diff_mgauss.y)) > magfield_error_threshold) {
+                check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (xy diff:%.0f>%d)",
+                             (double)MAX(fabsf(diff_mgauss.x), (double)fabsf(diff_mgauss.y)), (int)magfield_error_threshold);
+                return false;
+            }
+            if (fabsf(diff_mgauss.x) > magfield_error_threshold*2.0) {
+                check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (z diff:%.0f>%d)",
+                             (double)fabsf(diff_mgauss.z), (int)magfield_error_threshold*2);
+                return false;
+            }           
         }
     }
 

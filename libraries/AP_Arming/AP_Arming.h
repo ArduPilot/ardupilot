@@ -157,6 +157,7 @@ protected:
     AP_Int8                 _rudder_arming;
     AP_Int32                _required_mission_items;
     AP_Int32                _arming_options;
+    AP_Int16                magfield_error_threshold;
 
     // internal members
     bool                    armed;
