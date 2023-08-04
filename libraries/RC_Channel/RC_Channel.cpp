@@ -661,6 +661,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::MOUNT2_YAW:
     case AUX_FUNC::LOWEHEISER_STARTER:
     case AUX_FUNC::MAG_CAL:
+    case AUX_FUNC::CAMERA_IMAGE_TRACKING:
         break;
 
     // not really aux functions:
@@ -697,6 +698,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::CAMERA_ZOOM:
     case AUX_FUNC::CAMERA_MANUAL_FOCUS:
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
+    case AUX_FUNC::CAMERA_LENS:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
