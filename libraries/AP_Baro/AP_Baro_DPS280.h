@@ -36,7 +36,7 @@ protected:
 
     void fix_config_bits16(int16_t &v, uint8_t bits) const;
     void fix_config_bits32(int32_t &v, uint8_t bits) const;
-    void set_config_registers(void);
+    bool set_config_registers(void);
     void check_health();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
