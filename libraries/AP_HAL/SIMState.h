@@ -29,7 +29,7 @@
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
-#include <SITL/SIM_LORD.h>
+#include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -190,8 +190,8 @@ private:
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
 
-    // simulated LORD Microstrain system
-    SITL::LORD *lord;
+    // simulated LORD MicroStrain system
+    SITL::MicroStrain *microstrain;
 
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
