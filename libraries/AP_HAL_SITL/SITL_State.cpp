@@ -431,12 +431,12 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         vectornav = new SITL::VectorNav();
         return vectornav;
-    } else if (streq(name, "LORD")) {
-        if (lord != nullptr) {
-            AP_HAL::panic("Only one LORD at a time");
+    } else if (streq(name, "MicroStrain")) {
+        if (microstrain != nullptr) {
+            AP_HAL::panic("Only one MicroStrain at a time");
         }
-        lord = new SITL::LORD();
-        return lord;
+        microstrain = new SITL::MicroStrain();
+        return microstrain;
 #if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
@@ -716,8 +716,8 @@ void SITL_State::_fdm_input_local(void)
         vectornav->update();
     }
 
-    if (lord != nullptr) {
-        lord->update();
+    if (microstrain != nullptr) {
+        microstrain->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
