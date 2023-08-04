@@ -633,7 +633,9 @@ void Plane::update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
+
+    // loadFactor = liftForce / gravityForce, where gravityForce = liftForce * cos(roll) on balanced horizontal turn
+    aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll));
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available() && quadplane.transition->set_FW_roll_limit(roll_limit_cd)) {
@@ -657,7 +659,8 @@ void Plane::update_load_factor(void)
     }
 #endif
 
-    float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
+    float max_load_factor = sq(smoothed_airspeed / MAX(aparm.airspeed_min, 1));
+
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
@@ -670,11 +673,11 @@ void Plane::update_load_factor(void)
         // allow at least 25 degrees of roll however, to ensure the
         // aircraft can be manoeuvred with a bad airspeed estimate. At
         // 25 degrees the load factor is 1.1 (10%)
-        int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
+        int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
         if (roll_limit < 2500) {
             roll_limit = 2500;
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         roll_limit_cd = MIN(roll_limit_cd, roll_limit);
-    }    
+    }
 }
