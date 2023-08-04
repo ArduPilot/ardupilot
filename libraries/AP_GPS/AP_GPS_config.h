@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <GCS_MAVLink/GCS_config.h>
 
 #ifndef AP_GPS_ENABLED
 #define AP_GPS_ENABLED 1
@@ -20,6 +21,10 @@
 
 #ifndef AP_GPS_GSOF_ENABLED
   #define AP_GPS_GSOF_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
+#endif
+
+#ifndef AP_GPS_MAV_ENABLED
+  #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED && HAL_GCS_ENABLED
 #endif
 
 #ifndef AP_GPS_NMEA_ENABLED
