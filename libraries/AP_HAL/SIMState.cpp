@@ -232,8 +232,8 @@ void SIMState::fdm_input_local(void)
         vectornav->update();
     }
 
-    if (lord != nullptr) {
-        lord->update();
+    if (microstrain != nullptr) {
+        microstrain->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
