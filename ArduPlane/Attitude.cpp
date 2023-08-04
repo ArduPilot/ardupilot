@@ -620,8 +620,18 @@ void Plane::update_load_factor(void)
         return;
     }
 #endif
-
-    float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
+	/*
+	To connect loadFactor to airspeed we can use formula of balancing between lift force and gravity force:
+	liftForce = loadFactor * gravityForce; on the other hand lift force can be expressed as
+	liftForce = 0.5 * lifCoefficient * airDensity * sq(airspeed) * referenceArea; minimum airseepd is at loadFactor = 1
+	and lift force only balances the gravit force, so gravity force (which is same as lift force at minimum airspeed) with minimum airspeed can be expressed as
+	gravityForce = 0.5 * lifCoefficient * airDensity * sq(airspeed_min) * referenceArea; substituting gravit force in previous formula gives us
+	0.5 * lifCoefficient * airDensity * sq(airspeed) * referenceArea = loadFactor * 0.5 * lifCoefficient * airDensity * sq(airspeed_min) * referenceArea;
+	from where we get:
+	loadFactor = sq(airspeed / airspeed_min);
+	so the below should be as:
+	*/
+    float max_load_factor = sq(smoothed_airspeed / MAX(aparm.airspeed_min, 1));
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
