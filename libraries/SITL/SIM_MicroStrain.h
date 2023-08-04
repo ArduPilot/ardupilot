@@ -6,7 +6,7 @@
 // param set EAHRS_TYPE 2
 // param set SERIAL4_PROTOCOL 36
 // param set SERIAL4_BAUD 115
-// sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:LORD
+// sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:MicroStrain
 #pragma once
 
 #include "SIM_Aircraft.h"
@@ -17,17 +17,17 @@
 namespace SITL
 {
 
-class LORD : public SerialDevice
+class MicroStrain : public SerialDevice
 {
 public:
 
-    LORD();
+    MicroStrain();
 
     // update state
     void update(void);
 
 private:
-    struct LORD_Packet {
+    struct MicroStrain_Packet {
         uint8_t header[4];
         uint8_t payload[256];
         uint8_t checksum[2];
@@ -39,16 +39,16 @@ private:
     uint32_t last_gnss_pkt_us;
     uint32_t last_filter_pkt_us;
 
-    void generate_checksum(LORD_Packet&);
+    void generate_checksum(MicroStrain_Packet&);
 
-    void send_packet(LORD_Packet);
+    void send_packet(MicroStrain_Packet);
     void send_imu_packet();
     void send_gnss_packet();
     void send_filter_packet();
 
-    void put_float(LORD_Packet&, float);
-    void put_double(LORD_Packet&, double);
-    void put_int(LORD_Packet&, uint16_t);
+    void put_float(MicroStrain_Packet&, float);
+    void put_double(MicroStrain_Packet&, double);
+    void put_int(MicroStrain_Packet&, uint16_t);
 
     uint64_t start_us;
 };
