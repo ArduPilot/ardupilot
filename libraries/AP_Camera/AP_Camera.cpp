@@ -87,6 +87,18 @@ void AP_Camera::take_picture()
     primary->take_picture();
 }
 
+// take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+// total_num is number of pictures to be taken, -1 means capture forever
+void AP_Camera::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    primary->take_multiple_pictures(time_interval_ms, total_num);
+}
+
 // start/stop recording video
 // start_recording should be true to start recording, false to stop recording
 bool AP_Camera::record_video(bool start_recording)
@@ -240,10 +252,13 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         return MAV_RESULT_DENIED;
     case MAV_CMD_IMAGE_START_CAPTURE:
         if (!is_zero(packet.param2) || !is_equal(packet.param3, 1.0f) || !is_zero(packet.param4)) {
-            // time interval is not supported
-            // multiple image capture is not supported
-            // capture sequence number is not supported
-            return MAV_RESULT_UNSUPPORTED;
+            // Its a multiple picture request
+            if (is_equal(packet.param3, 0.0f)) {
+                take_multiple_pictures(packet.param2*1000, -1);
+            } else {
+                take_multiple_pictures(packet.param2*1000, packet.param3);
+            }
+            return MAV_RESULT_ACCEPTED;
         }
         take_picture();
         return MAV_RESULT_ACCEPTED;
