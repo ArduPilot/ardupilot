@@ -121,13 +121,22 @@ bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
     _dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
     DEV_PRINTF("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
 
-    _dev->write_register(MPUREG_FIFO_EN, 0x00);
-    _dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!_dev->write_register(MPUREG_FIFO_EN, 0x00)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+    if (!_dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
 
     // wait for sensor to settle
     hal.scheduler->delay(10);
 
-    _dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+    if (!_dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
 
     _dev->set_address(old_address);
 
@@ -157,22 +166,46 @@ bool AP_Baro_LPS2XH::_init()
 
     //init control registers.
     if (_lps2xh_type == BARO_LPS25H) {
-    	_dev->write_register(LPS25H_CTRL_REG1_ADDR,0x00); // turn off for config
-    	_dev->write_register(LPS25H_CTRL_REG2_ADDR,0x00); //FIFO Disabled
-    	_dev->write_register(LPS25H_FIFO_CTRL, 0x01);
-    	_dev->write_register(LPS25H_CTRL_REG1_ADDR,0xc0);
+    	if (!_dev->write_register(LPS25H_CTRL_REG1_ADDR,0x00)) {  // turn off for config
+            _dev->get_semaphore()->give();
+            return false;
+        }
+    	if (!_dev->write_register(LPS25H_CTRL_REG2_ADDR,0x00)) {  //FIFO Disabled
+            _dev->get_semaphore()->give();
+            return false;
+        }
+    	if (!_dev->write_register(LPS25H_FIFO_CTRL, 0x01)) {
+            _dev->get_semaphore()->give();
+            return false;
+        }
+    	if (!_dev->write_register(LPS25H_CTRL_REG1_ADDR,0xc0)) {
+            _dev->get_semaphore()->give();
+            return false;
+        }
 
     	// request 25Hz update (maximum refresh Rate according to datasheet)
     	CallTime = 40 * AP_USEC_PER_MSEC;
     }
 
     if (_lps2xh_type == BARO_LPS22H) {
-        _dev->write_register(LPS22H_CTRL_REG1, 0x00); // turn off for config
-        _dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|LPS22H_CTRL_REG1_BDU|LPS22H_CTRL_REG1_EN_LPFP|LPS22H_CTRL_REG1_LPFP_CFG);
+        if (!_dev->write_register(LPS22H_CTRL_REG1, 0x00)) {  // turn off for config
+            _dev->get_semaphore()->give();
+            return false;
+        }
+        if (!_dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|LPS22H_CTRL_REG1_BDU|LPS22H_CTRL_REG1_EN_LPFP|LPS22H_CTRL_REG1_LPFP_CFG)) {
+            _dev->get_semaphore()->give();
+            return false;
+        }
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-            _dev->write_register(LPS22H_CTRL_REG2, 0x18);  // disable i2c
+            if (!_dev->write_register(LPS22H_CTRL_REG2, 0x18)) {  // disable i2c
+                _dev->get_semaphore()->give();
+                return false;
+            }
         } else {
-            _dev->write_register(LPS22H_CTRL_REG2, 0x10);
+            if (!_dev->write_register(LPS22H_CTRL_REG2, 0x10)) {
+                _dev->get_semaphore()->give();
+                return false;
+            }
         }
 
         // request 75Hz update
