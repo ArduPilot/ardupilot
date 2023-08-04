@@ -11,16 +11,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for LORD Microstrain CX5/GX5-45 serially connected AHRS Systems
+  suppport for MicroStrain CX5/GX5-45 serially connected AHRS Systems
  */
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_LORD_ENABLED
+#if AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
 
-#include "AP_ExternalAHRS_LORD.h"
+#include "AP_ExternalAHRS_MicroStrain.h"
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -74,7 +74,7 @@ enum class FilterPacketField {
 
 extern const AP_HAL::HAL &hal;
 
-AP_ExternalAHRS_LORD::AP_ExternalAHRS_LORD(AP_ExternalAHRS *_frontend,
+AP_ExternalAHRS_MicroStrain::AP_ExternalAHRS_MicroStrain(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state)
 {
     auto &sm = AP::serialmanager();
@@ -88,15 +88,15 @@ AP_ExternalAHRS_LORD::AP_ExternalAHRS_LORD(AP_ExternalAHRS *_frontend,
         return;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_LORD::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_MicroStrain::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
         AP_BoardConfig::allocation_error("Failed to allocate ExternalAHRS update thread");
     }
 
     hal.scheduler->delay(5000);
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LORD ExternalAHRS initialised");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MicroStrain ExternalAHRS initialised");
 }
 
-void AP_ExternalAHRS_LORD::update_thread(void)
+void AP_ExternalAHRS_MicroStrain::update_thread(void)
 {
     if (!port_open) {
         port_open = true;
@@ -110,7 +110,7 @@ void AP_ExternalAHRS_LORD::update_thread(void)
 }
 
 // Builds packets by looking at each individual byte, once a full packet has been read in it checks the checksum then handles the packet.
-void AP_ExternalAHRS_LORD::build_packet()
+void AP_ExternalAHRS_MicroStrain::build_packet()
 {
     WITH_SEMAPHORE(sem);
     uint32_t nbytes = MIN(uart->available(), 2048u);
@@ -167,7 +167,7 @@ void AP_ExternalAHRS_LORD::build_packet()
 }
 
 // returns true if the fletcher checksum for the packet is valid, else false.
-bool AP_ExternalAHRS_LORD::valid_packet(const LORD_Packet & packet) const
+bool AP_ExternalAHRS_MicroStrain::valid_packet(const MicroStrain_Packet & packet) const
 {
     uint8_t checksum_one = 0;
     uint8_t checksum_two = 0;
@@ -186,7 +186,7 @@ bool AP_ExternalAHRS_LORD::valid_packet(const LORD_Packet & packet) const
 }
 
 // Calls the correct functions based on the packet descriptor of the packet
-void AP_ExternalAHRS_LORD::handle_packet(const LORD_Packet& packet)
+void AP_ExternalAHRS_MicroStrain::handle_packet(const MicroStrain_Packet& packet)
 {
     switch ((DescriptorSet) packet.header[2]) {
     case DescriptorSet::IMUData:
@@ -208,7 +208,7 @@ void AP_ExternalAHRS_LORD::handle_packet(const LORD_Packet& packet)
 }
 
 // Collects data from an imu packet into `imu_data`
-void AP_ExternalAHRS_LORD::handle_imu(const LORD_Packet& packet)
+void AP_ExternalAHRS_MicroStrain::handle_imu(const MicroStrain_Packet& packet)
 {
     last_ins_pkt = AP_HAL::millis();
 
@@ -245,7 +245,7 @@ void AP_ExternalAHRS_LORD::handle_imu(const LORD_Packet& packet)
 }
 
 // Posts data from an imu packet to `state` and `handle_external` methods
-void AP_ExternalAHRS_LORD::post_imu() const
+void AP_ExternalAHRS_MicroStrain::post_imu() const
 {
     {
         WITH_SEMAPHORE(state.sem);
@@ -279,7 +279,7 @@ void AP_ExternalAHRS_LORD::post_imu() const
         const AP_ExternalAHRS::baro_data_message_t baro {
             instance: 0,
             pressure_pa: imu_data.pressure,
-            // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by lord
+            // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by MicroStrain
             temperature: 25,
         };        
         AP::baro().handle_external(baro);
@@ -288,7 +288,7 @@ void AP_ExternalAHRS_LORD::post_imu() const
 }
 
 // Collects data from a gnss packet into `gnss_data`
-void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
+void AP_ExternalAHRS_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
 {
     last_gps_pkt = AP_HAL::millis();
 
@@ -354,7 +354,7 @@ void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
     }
 }
 
-void AP_ExternalAHRS_LORD::handle_filter(const LORD_Packet &packet)
+void AP_ExternalAHRS_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
 {
     last_filter_pkt = AP_HAL::millis();
 
@@ -392,7 +392,7 @@ void AP_ExternalAHRS_LORD::handle_filter(const LORD_Packet &packet)
     }
 }
 
-void AP_ExternalAHRS_LORD::post_filter() const
+void AP_ExternalAHRS_MicroStrain::post_filter() const
 {
     {
         WITH_SEMAPHORE(state.sem);
@@ -437,7 +437,7 @@ void AP_ExternalAHRS_LORD::post_filter() const
     AP::gps().handle_external(gps);
 }
 
-int8_t AP_ExternalAHRS_LORD::get_port(void) const
+int8_t AP_ExternalAHRS_MicroStrain::get_port(void) const
 {
     if (!uart) {
         return -1;
@@ -446,41 +446,41 @@ int8_t AP_ExternalAHRS_LORD::get_port(void) const
 };
 
 // Get model/type name
-const char* AP_ExternalAHRS_LORD::get_name() const
+const char* AP_ExternalAHRS_MicroStrain::get_name() const
 {
-    return "LORD";
+    return "MicroStrain";
 }
 
-bool AP_ExternalAHRS_LORD::healthy(void) const
+bool AP_ExternalAHRS_MicroStrain::healthy(void) const
 {
     uint32_t now = AP_HAL::millis();
     return (now - last_ins_pkt < 40 && now - last_gps_pkt < 500 && now - last_filter_pkt < 500);
 }
 
-bool AP_ExternalAHRS_LORD::initialised(void) const
+bool AP_ExternalAHRS_MicroStrain::initialised(void) const
 {
     return last_ins_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
 }
 
-bool AP_ExternalAHRS_LORD::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+bool AP_ExternalAHRS_MicroStrain::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "LORD unhealthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain unhealthy");
         return false;
     }
     if (gnss_data.fix_type < 3) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "LORD no GPS lock");
+        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain no GPS lock");
         return false;
     }
     if (filter_status.state != 0x02) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "LORD filter not running");
+        hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain filter not running");
         return false;
     }
 
     return true;
 }
 
-void AP_ExternalAHRS_LORD::get_filter_status(nav_filter_status &status) const
+void AP_ExternalAHRS_MicroStrain::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
     if (last_ins_pkt != 0 && last_gps_pkt != 0) {
@@ -502,7 +502,7 @@ void AP_ExternalAHRS_LORD::get_filter_status(nav_filter_status &status) const
     }
 }
 
-void AP_ExternalAHRS_LORD::send_status_report(GCS_MAVLINK &link) const
+void AP_ExternalAHRS_MicroStrain::send_status_report(GCS_MAVLINK &link) const
 {
     // prepare flags
     uint16_t flags = 0;
@@ -553,7 +553,7 @@ void AP_ExternalAHRS_LORD::send_status_report(GCS_MAVLINK &link) const
 
 }
 
-Vector3f AP_ExternalAHRS_LORD::populate_vector3f(const uint8_t *data, uint8_t offset) const
+Vector3f AP_ExternalAHRS_MicroStrain::populate_vector3f(const uint8_t *data, uint8_t offset) const
 {
     return Vector3f {
         be32tofloat_ptr(data, offset),
@@ -562,7 +562,7 @@ Vector3f AP_ExternalAHRS_LORD::populate_vector3f(const uint8_t *data, uint8_t of
     };
 }
 
-Quaternion AP_ExternalAHRS_LORD::populate_quaternion(const uint8_t *data, uint8_t offset) const
+Quaternion AP_ExternalAHRS_MicroStrain::populate_quaternion(const uint8_t *data, uint8_t offset) const
 {
     return Quaternion {
         be32tofloat_ptr(data, offset),
@@ -572,4 +572,4 @@ Quaternion AP_ExternalAHRS_LORD::populate_quaternion(const uint8_t *data, uint8_
     };
 }
 
-#endif // AP_EXTERNAL_AHRS_LORD_ENABLE
+#endif // AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED

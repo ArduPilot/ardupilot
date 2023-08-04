@@ -18,16 +18,16 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_LORD_ENABLED
+#if AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
 #include <AP_GPS/AP_GPS.h>
 
-class AP_ExternalAHRS_LORD: public AP_ExternalAHRS_backend
+class AP_ExternalAHRS_MicroStrain: public AP_ExternalAHRS_backend
 {
 public:
 
-    AP_ExternalAHRS_LORD(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
+    AP_ExternalAHRS_MicroStrain(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
 
     // get serial port number, -1 for not enabled
     int8_t get_port(void) const override;
@@ -74,15 +74,15 @@ private:
     uint32_t last_gps_pkt;
     uint32_t last_filter_pkt;
 
-    // A LORD packet can be a maximum of 261 bytes
-    struct LORD_Packet {
+    // A MicroStrain packet can be a maximum of 261 bytes
+    struct MicroStrain_Packet {
         uint8_t header[4];
         uint8_t payload[255];
         uint8_t checksum[2];
     };
 
     struct {
-        LORD_Packet packet;
+        MicroStrain_Packet packet;
         ParseState state;
         uint8_t index;
     } message_in;
@@ -134,11 +134,11 @@ private:
     } filter_data;
 
     void build_packet();
-    bool valid_packet(const LORD_Packet &packet) const;
-    void handle_packet(const LORD_Packet &packet);
-    void handle_imu(const LORD_Packet &packet);
-    void handle_gnss(const LORD_Packet &packet);
-    void handle_filter(const LORD_Packet &packet);
+    bool valid_packet(const MicroStrain_Packet &packet) const;
+    void handle_packet(const MicroStrain_Packet &packet);
+    void handle_imu(const MicroStrain_Packet &packet);
+    void handle_gnss(const MicroStrain_Packet &packet);
+    void handle_filter(const MicroStrain_Packet &packet);
     void post_imu() const;
     void post_gnss() const;
     void post_filter() const;
@@ -148,4 +148,4 @@ private:
 
 };
 
-#endif // AP_EXTERNAL_AHRS_LORD_ENABLED
+#endif // AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
