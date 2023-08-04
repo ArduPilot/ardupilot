@@ -1709,8 +1709,8 @@ void emit_userdata_fields() {
         emit_userdata_field(node, field);
         field = field->next;
       }
+      end_dependency(source, node->dependency);
     }
-    end_dependency(source, node->dependency);
     node = node->next;
   }
 }
