@@ -26,7 +26,8 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL0 -> USB
  - SERIAL1 -> UART3 (UART1 on casing, DMA-enabled)
  - SERIAL2 -> UART1 (UART2 on casing, DMA-enabled)
- - SERIAL5 -> UART5 (GPS)
+ - SERIAL3 -> UART5 (GPS)
+ - SERIAL5 -> UART6 (VTX, TX-only)
  - SERIAL6 -> UART2 (RCIN RX-only or RX/TX with BRD_ALT_CONFIG=1, DMA-enabled)
 
 ## RC Input
