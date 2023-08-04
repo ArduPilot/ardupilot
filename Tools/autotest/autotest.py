@@ -21,6 +21,7 @@ import sys
 import time
 import traceback
 
+import blimp
 import rover
 import arducopter
 import arduplane
@@ -380,6 +381,7 @@ def find_specific_test_to_run(step):
 
 
 tester_class_map = {
+    "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
     "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
     "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
@@ -811,7 +813,7 @@ def run_tests(steps):
     return passed
 
 
-vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat']
+vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat', 'Blimp']
 
 
 def list_subtests():
@@ -1124,6 +1126,7 @@ if __name__ == "__main__":
 
         'build.Blimp',
         'defaults.Blimp',
+        'test.Blimp',
 
         'build.SITLPeriphGPS',
         'test.CAN',
