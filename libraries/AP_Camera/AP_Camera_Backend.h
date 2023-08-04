@@ -56,6 +56,10 @@ public:
     // take a picture.  returns true on success
     bool take_picture();
 
+    // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+    // total_num is number of pictures to be taken, -1 means capture forever
+    void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 
@@ -128,6 +132,12 @@ protected:
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
 
+    // Picture settings
+    struct {
+        uint32_t time_interval_ms;     // time interval (in miliseconds) between two consecutive pictures
+        int16_t num_remaining;      // number of pictures still to be taken, -1 means take unlimited pictures
+    } time_interval_settings;
+
     // Logging Function
     void log_picture();
     void Write_Camera(uint64_t timestamp_us=0);
@@ -143,7 +153,7 @@ protected:
     uint32_t feedback_trigger_timestamp_us; // system time (in microseconds) that timer detected the feedback pin changed
     uint32_t feedback_trigger_logged_count; // number of times the feedback has been logged
     bool trigger_pending;           // true if a call to take_pic() was delayed due to the minimum time interval time
-    uint32_t last_photo_time_ms;    // system time that photo was last taken
+    uint32_t last_picture_time_ms;    // system time that photo was last taken
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
     bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly

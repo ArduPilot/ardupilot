@@ -32,6 +32,21 @@ void AP_Camera_Backend::update()
     // check feedback pin
     check_feedback();
 
+    // time based triggering
+    // if time and distance triggering both are enabled then we only do time based triggering
+    if (time_interval_settings.num_remaining != 0) {
+        uint32_t delta_ms = AP_HAL::millis() - last_picture_time_ms;
+        if (delta_ms > time_interval_settings.time_interval_ms) {
+            if (take_picture()) {
+                // decrease num_remaining except when its -1 i.e. capture forever
+                if (time_interval_settings.num_remaining > 0) {
+                    time_interval_settings.num_remaining--;
+                }
+            }
+        }
+        return;
+    }
+
     // implement trigger distance
     if (!is_positive(_params.trigg_dist)) {
         last_location.lat = 0;
@@ -86,7 +101,7 @@ bool AP_Camera_Backend::take_picture()
 
     // check minimum time interval since last picture taken
     uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_photo_time_ms < (uint32_t)(_params.interval_min * 1000)) {
+    if (now_ms - last_picture_time_ms < (uint32_t)(_params.interval_min * 1000)) {
         trigger_pending = true;
         return false;
     }
@@ -96,13 +111,20 @@ bool AP_Camera_Backend::take_picture()
     // trigger actually taking picture and update image count
     if (trigger_pic()) {
         image_index++;
-        last_photo_time_ms = now_ms;
+        last_picture_time_ms = now_ms;
         IGNORE_RETURN(AP::ahrs().get_location(last_location));
         log_picture();
         return true;
     }
 
     return false;
+}
+
+// take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+// total_num is number of pictures to be taken, -1 means capture forever
+void AP_Camera_Backend::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num)
+{
+    time_interval_settings = {time_interval_ms, total_num};
 }
 
 // handle camera control
