@@ -10005,10 +10005,11 @@ Also, ignores heartbeats not from our target system'''
         '''
         if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_ALL:
             # recurse
-            if not self.is_tracker() and not self.is_plane():
+            if not self.is_tracker() and not self.is_blimp():
                 self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-            if not self.is_sub() and not self.is_tracker():
+            if not self.is_blimp():
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            if not self.is_sub() and not self.is_tracker() and not self.is_blimp():
                 self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.last_wp_load = time.time()
             return
@@ -10957,6 +10958,9 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
+
+    def is_blimp(self):
+        return False
 
     def is_copter(self):
         return False
