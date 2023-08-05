@@ -18,6 +18,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
 
     // @Param: ENABLED
@@ -28,37 +29,9 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLED",  0, AP_Networking, _param.enabled, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: IPADDR0
-    // @DisplayName: IPv4 Address MSB
-    // @Description: Allows setting static IP address. Example: 192.xxx.xxx.xxx
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("IPADDR0", 1,  AP_Networking,    _param.ipaddr[0],   AP_NETWORKING_DEFAULT_STATIC_IP_ADDR0),
-
-    // @Param: IPADDR1
-    // @DisplayName: IPv4 Address 2nd byte
-    // @Description: Allows setting static IP address. Example: xxx.168.xxx.xxx
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("IPADDR1", 2,  AP_Networking,    _param.ipaddr[1],   AP_NETWORKING_DEFAULT_STATIC_IP_ADDR1),
-
-    // @Param: IPADDR2
-    // @DisplayName: IPv4 Address 3rd byte
-    // @Description: Allows setting static IP address. Example: xxx.xxx.13.xxx
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("IPADDR2", 3,  AP_Networking,    _param.ipaddr[2],   AP_NETWORKING_DEFAULT_STATIC_IP_ADDR2),
-
-    // @Param: IPADDR3
-    // @DisplayName: IPv4 Address LSB
-    // @Description: Allows setting static IP address. Example: xxx.xxx.xxx.14
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("IPADDR3", 4,  AP_Networking,    _param.ipaddr[3],   AP_NETWORKING_DEFAULT_STATIC_IP_ADDR3),
+    // @Group: IPADDR
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(_param.ipaddr, "IPADDR", 1,  AP_Networking, AP_Networking_IPV4),
 
     // @Param: NETMASK
     // @DisplayName: IP Subnet mask
@@ -66,7 +39,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Range: 0 32
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("NETMASK", 5,  AP_Networking,    _param.netmask,   AP_NETWORKING_DEFAULT_NETMASK),
+    AP_GROUPINFO("NETMASK", 2,  AP_Networking,    _param.netmask,   AP_NETWORKING_DEFAULT_NETMASK),
 
     // @Param: DHCP
     // @DisplayName: DHCP client
@@ -74,87 +47,15 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Values: 0:Disable, 1:Enable
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("DHCP", 6,  AP_Networking,    _param.dhcp,   AP_NETWORKING_DEFAULT_DHCP_ENABLE),
+    AP_GROUPINFO("DHCP", 3,  AP_Networking,    _param.dhcp,   AP_NETWORKING_DEFAULT_DHCP_ENABLE),
 
-    // @Param: GWADDR0
-    // @DisplayName: Gateway IP Address MSB
-    // @Description: Allows setting static GW address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("GWADDR0", 7,  AP_Networking,    _param.gwaddr[0],   AP_NETWORKING_DEFAULT_STATIC_GW_ADDR0),
+    // @Group: GWADDR
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(_param.gwaddr, "GWADDR", 4,  AP_Networking, AP_Networking_IPV4),
 
-    // @Param: GWADDR1
-    // @DisplayName: Gateway IP Address 2nd byte
-    // @Description: Allows setting static GW address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("GWADDR1", 8,  AP_Networking,    _param.gwaddr[1],   AP_NETWORKING_DEFAULT_STATIC_GW_ADDR1),
-
-    // @Param: GWADDR2
-    // @DisplayName: Gateway IP Address 3rd byte
-    // @Description: Allows setting static GW address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("GWADDR2", 9,  AP_Networking,    _param.gwaddr[2],   AP_NETWORKING_DEFAULT_STATIC_GW_ADDR2),
-
-    // @Param: GWADDR3
-    // @DisplayName: Gateway IP Address LSB
-    // @Description: Allows setting static GW address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("GWADDR3", 10,  AP_Networking,    _param.gwaddr[3],   AP_NETWORKING_DEFAULT_STATIC_GW_ADDR3),
-
-    // @Param: MACADDR0
-    // @DisplayName: MAC Address MSbyte
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR0", 11,  AP_Networking,    _param.macaddr[0],  AP_NETWORKING_DEFAULT_MAC_ADDR0),
-
-    // @Param: MACADDR1
-    // @DisplayName: MAC Address 2nd byte
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR1", 12,  AP_Networking,    _param.macaddr[1],   AP_NETWORKING_DEFAULT_MAC_ADDR1),
-
-    // @Param: MACADDR2
-    // @DisplayName: MAC Address 3rd byte
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR2", 13,  AP_Networking,    _param.macaddr[2],   AP_NETWORKING_DEFAULT_MAC_ADDR2),
-
-    // @Param: MACADDR3
-    // @DisplayName: MAC Address 4th byte
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR3", 14,  AP_Networking,    _param.macaddr[3],   AP_NETWORKING_DEFAULT_MAC_ADDR3),
-
-    // @Param: MACADDR4
-    // @DisplayName: MAC Address 5th byte
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR4", 15,  AP_Networking,    _param.macaddr[4],   AP_NETWORKING_DEFAULT_MAC_ADDR4),
-
-    // @Param: MACADDR5
-    // @DisplayName: MAC Address LSb
-    // @Description: Allows setting MAC address
-    // @Range: 0 255
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("MACADDR5", 16,  AP_Networking,    _param.macaddr[5],   AP_NETWORKING_DEFAULT_MAC_ADDR5),
+    // @Group: MACADDR
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(_param.macaddr, "MACADDR", 5,  AP_Networking, AP_Networking_MAC),
 
     AP_GROUPEND
 };
@@ -249,9 +150,9 @@ void AP_Networking::init()
     uint8_t uuid_len = sizeof(uuid);
     const bool udid_is_ok = hal.util->get_system_id_unformatted(uuid, uuid_len) && uuid_len >= 3;
     if (udid_is_ok) {
-        _param.macaddr[3].set_default(uuid[uuid_len-2]);
-        _param.macaddr[4].set_default(uuid[uuid_len-1]);
-        _param.macaddr[5].set_default(uuid[uuid_len-0]);
+        for (uint8_t i=0; i<3; i++) {
+            _param.macaddr.set_default_address_byte(i, uuid[uuid_len-3+i]);
+        }
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -266,13 +167,7 @@ void AP_Networking::init()
         return;
     }
 
-    const uint8_t localMACAddress[6] = {(uint8_t)_param.macaddr[0].get(),
-                                        (uint8_t)_param.macaddr[1].get(),
-                                        (uint8_t)_param.macaddr[2].get(),
-                                        (uint8_t)_param.macaddr[3].get(),
-                                        (uint8_t)_param.macaddr[4].get(),
-                                        (uint8_t)_param.macaddr[5].get()
-                                       };
+    _param.macaddr.get_address(_activeSettings.macaddr);
 
 #if !AP_NETWORKING_DHCP_AVAILABLE
     set_dhcp_enable(false);
@@ -292,14 +187,13 @@ void AP_Networking::init()
         addrMode = NET_ADDRESS_STATIC;
     }
 
-    struct lwipthread_opts netOptions = { (uint8_t *) localMACAddress,
-               _activeSettings.ip,
-               _activeSettings.nm,
-               _activeSettings.gw,
-               addrMode
-    };
+    lwip_options.macaddress = _activeSettings.macaddr;
+    lwip_options.address = _activeSettings.ip;
+    lwip_options.netmask = _activeSettings.nm;
+    lwip_options.gateway = _activeSettings.gw;
+    lwip_options.addrMode = addrMode;
 
-    lwipInit(&netOptions);
+    lwipInit(&lwip_options);
 #endif
 
 #if AP_NETWORKING_DHCP_AVAILABLE
@@ -390,7 +284,7 @@ uint8_t AP_Networking::convert_netmask_ip_to_bitcount(const uint32_t netmask_ip)
     return netmask_bitcount;
 }
 
-uint32_t AP_Networking::convert_str_to_ip(char* ip_str)
+uint32_t AP_Networking::convert_str_to_ip(const char* ip_str)
 {
     uint32_t ip = 0;
     inet_pton(AF_INET, ip_str, &ip);
@@ -414,6 +308,33 @@ const char* AP_Networking::convert_ip_to_str(const uint32_t ip)
     ip_array[0] = (ip & 0xff);
 
     return convert_ip_to_str(ip_array);
+}
+
+/*
+  convert a string to an ethernet MAC address
+ */
+bool AP_Networking::convert_str_to_macaddr(const char *mac_str, uint8_t addr[6])
+{
+    if (strlen(mac_str) != 17) {
+        return false;
+    }
+    char s2[18];
+    strncpy(s2, mac_str, sizeof(s2)-1);
+    s2[17] = 0;
+    char *ptr = nullptr;
+    const char *s = strtok_r(s2, ":", &ptr);
+    for (uint8_t i=0; i<6; i++) {
+        if (s == nullptr) {
+            return false;
+        }
+        auto v = strtoul(s, nullptr, 16);
+        if (v > 255) {
+            return false;
+        }
+        addr[i] = v;
+        s = strtok_r(nullptr, ":", &ptr);
+    }
+    return true;
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
