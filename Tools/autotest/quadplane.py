@@ -169,6 +169,10 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_ready_to_arm()
 
         self.start_subtest("Verify that arming with switch does not spin motors in other modes")
+        # disable compass magnetic field arming check that is triggered by the simulated lean of vehicle
+        # this is required because adjusting the AHRS_TRIM values only affects the IMU and not external compasses
+        arming_magthresh = self.get_parameter("ARMING_MAGTHRESH")
+        self.set_parameter("ARMING_MAGTHRESH", 0)
         # introduce a large attitude error to verify that stabilization is not active
         ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
@@ -207,8 +211,9 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to stop")
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
-        # remove attitude error
+        # remove attitude error and reinstance compass arming check
         self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
+        self.set_parameter("ARMING_MAGTHRESH", arming_magthresh)
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
