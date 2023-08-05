@@ -105,8 +105,12 @@ bool AP_Baro_ICP201XX::init()
 
     uint8_t id = 0xFF;
     uint8_t ver = 0xFF;
-    read_reg(REG_DEVICE_ID, &id);
-    read_reg(REG_VERSION, &ver);
+    if (!read_reg(REG_DEVICE_ID, &id)) {
+        goto failed;
+    }
+    if (!read_reg(REG_VERSION, &ver)) {
+        goto failed;
+    }
 
     if (id != ICP201XX_ID) {
         goto failed;
@@ -321,32 +325,58 @@ bool AP_Baro_ICP201XX::boot_sequence()
     hal.scheduler->delay(4);
 
     /* Unlock the main registers */
-    write_reg(REG_MASTER_LOCK, 0x1F);
+    if (!write_reg(REG_MASTER_LOCK, 0x1F)) {
+        return false;
+    }
 
     /* Enable the OTP and the write switch */
-    read_reg(REG_OTP_MTP_OTP_CFG1, &reg_value);
+    if (!read_reg(REG_OTP_MTP_OTP_CFG1, &reg_value)) {
+        return false;
+    }
     reg_value |= 0x03;
-    write_reg(REG_OTP_MTP_OTP_CFG1, reg_value);
+    if (!write_reg(REG_OTP_MTP_OTP_CFG1, reg_value)) {
+        return false;
+    }
     hal.scheduler->delay_microseconds(10);
 
     /* Toggle the OTP reset pin */
-    read_reg(REG_OTP_DEBUG2, &reg_value);
+    if (!read_reg(REG_OTP_DEBUG2, &reg_value)) {
+        return false;
+    }
     reg_value |= 1 << 7;
-    write_reg(REG_OTP_DEBUG2, reg_value);
+    if (!write_reg(REG_OTP_DEBUG2, reg_value)) {
+        return false;
+    }
     hal.scheduler->delay_microseconds(10);
 
-    read_reg(REG_OTP_DEBUG2, &reg_value);
+    if (!read_reg(REG_OTP_DEBUG2, &reg_value)) {
+        return false;
+    }
     reg_value &= ~(1 << 7);
-    write_reg(REG_OTP_DEBUG2, reg_value);
+    if (!write_reg(REG_OTP_DEBUG2, reg_value)) {
+        return false;
+    }
     hal.scheduler->delay_microseconds(10);
 
     /* Program redundant read */
-    write_reg(REG_OTP_MTP_MRA_LSB, 0x04);
-    write_reg(REG_OTP_MTP_MRA_MSB, 0x04);
-    write_reg(REG_OTP_MTP_MRB_LSB, 0x21);
-    write_reg(REG_OTP_MTP_MRB_MSB, 0x20);
-    write_reg(REG_OTP_MTP_MR_LSB, 0x10);
-    write_reg(REG_OTP_MTP_MR_MSB, 0x80);
+    if (!write_reg(REG_OTP_MTP_MRA_LSB, 0x04)) {
+        return false;
+    }
+    if (!write_reg(REG_OTP_MTP_MRA_MSB, 0x04)) {
+        return false;
+    }
+    if (!write_reg(REG_OTP_MTP_MRB_LSB, 0x21)) {
+        return false;
+    }
+    if (!write_reg(REG_OTP_MTP_MRB_MSB, 0x20)) {
+        return false;
+    }
+    if (!write_reg(REG_OTP_MTP_MR_LSB, 0x10)) {
+        return false;
+    }
+    if (!write_reg(REG_OTP_MTP_MR_MSB, 0x80)) {
+        return false;
+    }
 
     /* Read the data from register */
     ret &= read_otp_data(0xF8, 0x10, &offset);
@@ -385,12 +415,18 @@ bool AP_Baro_ICP201XX::boot_sequence()
     }
 
     /* Disable OTP and write switch */
-    read_reg(REG_OTP_MTP_OTP_CFG1, &reg_value);
+    if (!read_reg(REG_OTP_MTP_OTP_CFG1, &reg_value)) {
+        return false;
+    }
     reg_value &= ~0x03;
-    write_reg(REG_OTP_MTP_OTP_CFG1, reg_value);
+    if (!write_reg(REG_OTP_MTP_OTP_CFG1, reg_value)) {
+        return false;
+    }
 
     /* Lock the main register */
-    write_reg(REG_MASTER_LOCK, 0x00);
+    if (!write_reg(REG_MASTER_LOCK, 0x00)) {
+        return false;
+    }
 
     /* Move to standby */
     mode_select(0x00);
