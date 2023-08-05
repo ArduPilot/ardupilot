@@ -19,9 +19,9 @@
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
-#include "hwing_esc.h"
 #include <AP_CANManager/AP_CAN.h>
 #include <AP_CANManager/AP_SLCANIface.h>
+#include "AP_ESCSerialTelem/AP_ESCSerialTelem.h"
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
@@ -230,7 +230,7 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
-    HWESC_Telem hwesc_telem;
+    AP_ESCSerialTelem hwesc_telem;
     void hwesc_telem_update();
 #endif
 

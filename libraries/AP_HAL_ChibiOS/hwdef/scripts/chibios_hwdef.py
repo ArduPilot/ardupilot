@@ -3127,6 +3127,9 @@ INCLUDE common.ld
 #else
 #define NUM_SERVO_CHANNELS 0
 #endif
+
+#ifndef AP_ESC_SERIAL_TELEM_ENABLED
+#define AP_ESC_SERIAL_TELEM_ENABLED defined(HAL_PERIPH_ENABLE_HWESC)
 #endif
 
 #ifndef AP_STATS_ENABLED

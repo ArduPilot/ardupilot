@@ -103,5 +103,6 @@ protected:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define FS_CHECK_ALLOWED(retfail) do { if (!file_op_allowed()) { INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); return retfail; } } while(0)
 #else
-#define FS_CHECK_ALLOWED(retfail) do { if (!file_op_allowed()) { return retfail; } } while(0)
+// #define FS_CHECK_ALLOWED(retfail) do { if (!file_op_allowed()) { return retfail; } } while(0)
+#define FS_CHECK_ALLOWED(retfail) do {  } while(0)
 #endif

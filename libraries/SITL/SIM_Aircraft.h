@@ -36,6 +36,7 @@
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
+#include "SIM_HWingESC.h"
 
 #ifndef USE_PICOJSON
 #define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
@@ -151,6 +152,8 @@ public:
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
 #endif
     float get_battery_voltage() const { return battery_voltage; }
+
+    HWingESCs hwing_escs;
 
 protected:
     SIM *sitl;
