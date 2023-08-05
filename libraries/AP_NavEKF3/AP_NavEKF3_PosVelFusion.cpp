@@ -489,7 +489,8 @@ void NavEKF3_core::SelectVelPosFusion()
     readGpsYawData();
 
     // get data that has now fallen behind the fusion time horizon
-    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms) && !waitingForGpsChecks;
+
     if (gpsDataToFuse) {
         CorrectGPSForAntennaOffset(gpsDataDelayed);
         // calculate innovations and variances for reporting purposes only
@@ -777,7 +778,9 @@ void NavEKF3_core::FuseVelPosNED()
             // from the measurement un-opposed if test threshold is exceeded.
             if (posCheckPassed || posTimeout || badIMUdata) {
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
-                if (posTimeout || ((P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax)))) {
+                // if velocity drift is being constrained, dont reset until gps passes quality checks
+                const bool posVarianceIsTooLarge = (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
+                if ((posTimeout || posVarianceIsTooLarge) && (!velAiding || gpsGoodToAlign)) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
 

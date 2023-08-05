@@ -258,6 +258,8 @@ void NavEKF3_core::InitialiseVariables()
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
     velTimeout = true;
+    velAiding = false;
+    waitingForGpsChecks = false;
     memset(&faultStatus, 0, sizeof(faultStatus));
     hgtRate = 0.0f;
     onGround = true;
@@ -266,6 +268,9 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
+    windStateLastObs.zero();
+    windStateIsObservable = false;
+    windStateLastObsIsValid = false;
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;

@@ -548,6 +548,24 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
+    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+        // The GPS has dropped lock so force quality checks to restart
+        gpsGoodToAlign = false;
+        lastGpsVelFail_ms = imuSampleTime_ms;
+        lastGpsVelPass_ms = 0;
+        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
+        const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
+        const bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip());
+        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingBodyVelNav);
+        if (canDeadReckon) {
+            // If we can do dead reckoning with a data source other than GPS there is time to wait
+            // for GPS alignment checks to pass before using GPS inside the EKF.
+            waitingForGpsChecks = true;
+        } else {
+            waitingForGpsChecks = false;
+        }
+    }
+
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
@@ -851,18 +869,29 @@ void NavEKF3_core::readAirSpdData()
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 
-    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
-    // Allow use of a default value if enabled
-    if (!useAirspeed() &&
-        imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200 &&
-        is_positive(defaultAirSpeed)) {
-        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-        tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
-        tasDataDelayed.allowFusion = true;
-        tasDataDelayed.time_ms = 0;
-        usingDefaultAirspeed = true;
-    } else {
-        usingDefaultAirspeed = false;
+    // Allow use of a default value or a value synthesised from a stored wind velocity vector
+    if (!useAirspeed()) {
+        if (is_positive(defaultAirSpeed)) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+                tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
+                tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
+                tasDataToFuse = true;
+                tasDataDelayed.allowFusion = true;
+            } else {
+                tasDataToFuse = false;
+            }
+        } else if (windStateLastObsIsValid && !windStateIsObservable) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+                // use stored wind state to synthesise an airspeed measurement
+                const Vector3F windRelVel = stateStruct.velocity - Vector3F(windStateLastObs.x, windStateLastObs.y, 0.0F);
+                tasDataDelayed.tas = windRelVel.length();
+                tasDataDelayed.tasVariance = sq(MAX(frontend->_easNoise, 0.5f));
+                tasDataToFuse = true;
+                tasDataDelayed.allowFusion = true;
+            } else {
+                tasDataToFuse = false;
+            }
+        }
     }
 }
 
