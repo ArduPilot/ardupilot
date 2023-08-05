@@ -78,7 +78,10 @@ bool AP_Baro_ICP101XX::init()
     dev->get_semaphore()->take_blocking();
 
     uint16_t id = 0;
-    read_response(CMD_READ_ID, (uint8_t *)&id, 2);
+    if (!read_response(CMD_READ_ID, (uint8_t *)&id, 2)) {
+        dev->get_semaphore()->give();
+        return false;
+    }
     uint8_t whoami = (id >> 8) & 0x3f; // Product ID Bits 5:0
     if (whoami != ICP101XX_ID) {
         goto failed;
@@ -180,7 +183,9 @@ bool AP_Baro_ICP101XX::read_calibration_data(void)
     for (uint8_t i = 0; i < 4; i++) {
         uint8_t d[3];
         uint8_t crc = 0xff;
-        read_response(CMD_READ_OTP, d, 3);
+        if (!read_response(CMD_READ_OTP, d, 3)) {
+            return false;
+        }
         for (int j = 0; j < 2; j++) {
             crc = (uint8_t)cal_crc(crc, d[j]);
         }
