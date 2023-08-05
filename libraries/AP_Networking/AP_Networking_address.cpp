@@ -92,8 +92,6 @@ const AP_Param::GroupInfo AP_Networking_MAC::var_info[] = {
     AP_GROUPEND
 };
 
-
-
 /*
   IPV4 address parameter class
  */
@@ -107,8 +105,8 @@ uint32_t AP_Networking_IPV4::get_uint32(void) const
 {
     uint32_t v = 0;
     uint8_t *b = (uint8_t*)&v;
-    for (uint8_t i=0; i<ARRAY_SIZE(addr); i++) {
-        b[i] = uint8_t(addr[i].get());
+    for (uint8_t i=0; i<4; i++) {
+        b[3-i] = uint8_t(addr[i].get());
     }
     return v;
 }
@@ -117,7 +115,7 @@ void AP_Networking_IPV4::set_default_uint32(uint32_t v)
 {
     uint8_t *b = (uint8_t*)&v;
     for (uint8_t i=0; i<ARRAY_SIZE(addr); i++) {
-        addr[i].set_default(b[i]);
+        addr[3-i].set_default(b[i]);
     }
 }
 

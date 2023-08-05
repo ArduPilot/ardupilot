@@ -11,7 +11,7 @@
 #include "AP_Networking_backend.h"
 
 /*
-  Note! all uint32_t IPv4 addresses are in network byte order (big-endian)
+  Note! all uint32_t IPv4 addresses are in host byte order
 */
 
 class AP_Networking
@@ -145,8 +145,7 @@ public:
 
     // helper functions to convert between 32bit IP addresses and null terminated strings and back
     static uint32_t convert_str_to_ip(const char* ip_str);
-    static const char* convert_ip_to_str(const uint8_t ip[4]);
-    static const char* convert_ip_to_str(const uint32_t ip);
+    static const char* convert_ip_to_str(uint32_t ip);
 
     // convert string to ethernet mac address
     static bool convert_str_to_macaddr(const char *mac_str, uint8_t addr[6]);
