@@ -142,14 +142,10 @@ void AP_Networking::update()
 
 uint32_t AP_Networking::convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount)
 {
-    if (netmask_bitcount > 32) {
-        return 0;
+    if (netmask_bitcount >= 32) {
+        return 0xFFFFFFFFU;
     }
-    uint32_t netmask_ip = 0;
-    for (uint32_t i=0; i<netmask_bitcount; i++) {
-        netmask_ip |= (1UL << i);
-    }
-    return netmask_ip;
+    return ~((1U<<(32U-netmask_bitcount))-1U);
 }
 
 uint8_t AP_Networking::convert_netmask_ip_to_bitcount(const uint32_t netmask_ip)
@@ -169,27 +165,15 @@ uint32_t AP_Networking::convert_str_to_ip(const char* ip_str)
 {
     uint32_t ip = 0;
     inet_pton(AF_INET, ip_str, &ip);
-    return ip;
+    return ntohl(ip);
 }
 
-const char* AP_Networking::convert_ip_to_str(const uint8_t ip[4])
+const char* AP_Networking::convert_ip_to_str(uint32_t ip)
 {
+    ip = htonl(ip);
     static char _str_buffer[20];
-    if (hal.util->snprintf(_str_buffer, sizeof(_str_buffer), "%u.%u.%u.%u", (unsigned)ip[0], (unsigned)ip[1], (unsigned)ip[2], (unsigned)ip[3]) == 0) {
-        _str_buffer[0] = '\0';
-    }
+    inet_ntop(AF_INET, &ip, _str_buffer, sizeof(_str_buffer));
     return _str_buffer;
-}
-
-const char* AP_Networking::convert_ip_to_str(const uint32_t ip)
-{
-    uint8_t ip_array[4];
-    ip_array[3] = ((ip >> 24) & 0xff);
-    ip_array[2] = ((ip >> 16) & 0xff);
-    ip_array[1] = ((ip >> 8) & 0xff);
-    ip_array[0] = (ip & 0xff);
-
-    return convert_ip_to_str(ip_array);
 }
 
 /*

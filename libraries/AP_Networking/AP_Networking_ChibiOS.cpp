@@ -114,9 +114,9 @@ bool AP_Networking_ChibiOS::init()
         lwip_options->addrMode = NET_ADDRESS_DHCP;
     } else {
         lwip_options->addrMode = NET_ADDRESS_STATIC;
-        lwip_options->address = frontend.get_ip_param();
-        lwip_options->netmask = frontend.get_netmask_param();
-        lwip_options->gateway = frontend.get_gateway_param();
+        lwip_options->address = htonl(frontend.get_ip_param());
+        lwip_options->netmask = htonl(frontend.get_netmask_param());
+        lwip_options->gateway = htonl(frontend.get_gateway_param());
     }
     frontend.param.macaddr.get_address(macaddr);
     lwip_options->macaddress = macaddr;
@@ -131,9 +131,9 @@ bool AP_Networking_ChibiOS::init()
  */
 void AP_Networking_ChibiOS::update()
 {
-    const uint32_t ip = lwipGetIp();
-    const uint32_t nm = lwipGetNetmask();
-    const uint32_t gw = lwipGetGateway();
+    const uint32_t ip = ntohl(lwipGetIp());
+    const uint32_t nm = ntohl(lwipGetNetmask());
+    const uint32_t gw = ntohl(lwipGetGateway());
 
     if (ip != activeSettings.ip ||
         nm != activeSettings.nm ||
