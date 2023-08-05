@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: DDFP_SPIN_MIN
     // @DisplayName: DDFP Tail Rotor Motor Spin minimum
-    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
     // @User: Standard
 
