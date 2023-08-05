@@ -496,7 +496,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_OpenDroneID, &vehicle.opendroneid,  update,                   10,  50, 236),
 #endif
 #if AP_NETWORKING_ENABLED
-    SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                 1000,  50, 238),
+    SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
