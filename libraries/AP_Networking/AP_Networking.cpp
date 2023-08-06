@@ -106,7 +106,7 @@ void AP_Networking::init()
 
     announce_address_changes();
 
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"NET: Initialized");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"NET: Initialized");
 }
 
 /*
