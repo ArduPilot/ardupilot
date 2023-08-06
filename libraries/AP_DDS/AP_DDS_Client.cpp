@@ -19,10 +19,10 @@
 #include "AP_DDS_Client.h"
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
+#include "AP_DDS_External_Odom.h"
 
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
-
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
@@ -461,9 +461,10 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
         subscribe_sample_count++;
         if (rx_dynamic_transforms_topic.transforms_size > 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage of length: %u",
-                          static_cast<unsigned>(rx_dynamic_transforms_topic.transforms_size));
-            // TODO implement external odometry to AP
+#if AP_DDS_VISUALODOM_ENABLED
+            AP_DDS_External_Odom::handle_external_odom(rx_dynamic_transforms_topic);
+#endif // AP_DDS_VISUALODOM_ENABLED
+
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage: Insufficient size ");
         }
@@ -935,7 +936,7 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
     ts->tv_nsec = (utc_usec % 1000000ULL) * 1000UL;
     return 0;
 }
-#endif // CONFIG_HAL_BOARD
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 
 #endif // AP_DDS_ENABLED
 
