@@ -79,6 +79,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    // @Param: BATT_VOLTAGE
+    // @DisplayName: Simulated battery voltage
+    // @Description: Simulated battery (constant) voltage
+    // @Units: V
+    // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
