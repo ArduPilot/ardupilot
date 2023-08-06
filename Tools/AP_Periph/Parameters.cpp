@@ -20,6 +20,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_RC1_PORT_DEFAULT -1
 #endif
 
+#ifndef AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT
+#define AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT 0
+#endif
+
 #ifndef HAL_PERIPH_GPS_PORT_DEFAULT
 #define HAL_PERIPH_GPS_PORT_DEFAULT 3
 #endif
@@ -594,6 +598,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(rcin1_port, "RC1_PORT", AP_PERIPH_RC1_PORT_DEFAULT),
+
+    // @Param: RC1_PORT_OPTIONS
+    // @DisplayName: RC input port serial options
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input.
+    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
+    GSCALAR(rcin1_port_options, "RC1_PORT_OPTIONS", AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT),
+    // @RebootRequired: True
 #endif  // HAL_PERIPH_ENABLE_RCIN
 
     AP_VAREND
