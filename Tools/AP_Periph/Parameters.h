@@ -81,6 +81,7 @@ public:
         k_param_rcin_protocols,
         k_param_rcin_rate_hz,
         k_param_rcin1_port,
+        k_param_rcin1_port_options,
     };
 
     AP_Int16 format_version;
@@ -118,6 +119,7 @@ public:
     AP_Int32 rcin_protocols;
     AP_Int8 rcin_rate_hz;
     AP_Int8 rcin1_port;
+    AP_Int16 rcin1_port_options;
 #endif
 
 #if HAL_PROXIMITY_ENABLED

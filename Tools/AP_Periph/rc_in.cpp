@@ -35,6 +35,8 @@ void AP_Periph_FW::rcin_init()
         return;
     }
 
+    uart->set_options(g.rcin1_port_options);
+
     serial_manager.set_protocol_and_baud(
         g.rcin1_port,
         AP_SerialManager::SerialProtocol_RCIN,
