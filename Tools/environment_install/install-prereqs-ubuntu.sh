@@ -336,6 +336,7 @@ if $IS_DOCKER; then
 fi
 
 PIP_USER_ARGUMENT="--user"
+
 # create a Python venv on more recent releases:
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     $APT_GET install python3.11-venv
@@ -363,6 +364,10 @@ fi
 
 # try update setuptools and wheel before installing pip package that may need compilation
 $PIP install $PIP_USER_ARGUMENT -U setuptools wheel
+
+if [ "$GITHUB_ACTIONS" == "true" ]; then
+    PIP_USER_ARGUMENT+=" --progress-bar off"
+fi
 
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     # must do this ahead of wxPython pip3 run :-/
