@@ -30,8 +30,8 @@ public:
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
-    // consume vision position estimate data and send to EKF. distances in meters
-    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) = 0;
+    // consume vision pose estimate data and send to EKF. distances in meters
+    virtual void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) = 0;
 
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) = 0;
