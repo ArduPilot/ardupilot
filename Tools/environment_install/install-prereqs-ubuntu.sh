@@ -82,8 +82,8 @@ PIP=pip3
 if [ ${RELEASE_CODENAME} == 'bionic' ] ; then
     SITLFML_VERSION="2.4"
     SITLCFML_VERSION="2.4"
-    PYTHON_V="python"
-    PIP=pip2
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
