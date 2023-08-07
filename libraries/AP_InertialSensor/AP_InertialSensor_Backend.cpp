@@ -229,11 +229,10 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #endif
         if (inactive) {
             // while inactive we reset the filter so when it activates the first output
-            // will be the first input sample
+            // will be the current input sample
             notch.filter[instance].reset();
-        } else {
-            gyro_filtered = notch.filter[instance].apply(gyro_filtered);
         }
+        gyro_filtered = notch.filter[instance].apply(gyro_filtered);
         save_gyro_window(instance, gyro_filtered, filter_phase++);
     }
 
@@ -248,6 +247,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #endif
         for (auto &notch : _imu.harmonic_notches) {
             notch.filter[instance].reset();
+            notch.filter[instance].apply(gyro);
         }
     } else {
         _imu._gyro_filtered[instance] = gyro_filtered;
