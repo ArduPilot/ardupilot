@@ -91,7 +91,7 @@ bool AP_Networking_ChibiOS::init()
 {
 #ifdef HAL_GPIO_ETH_ENABLE
     hal.gpio->pinMode(HAL_GPIO_ETH_ENABLE, HAL_GPIO_OUTPUT);
-    hal.gpio->write(HAL_GPIO_ETH_ENABLE, _param.enabled ? 1 : 0);
+    hal.gpio->write(HAL_GPIO_ETH_ENABLE, frontend.param.enabled ? 1 : 0);
 #endif
 
     if (!allocate_buffers()) {
