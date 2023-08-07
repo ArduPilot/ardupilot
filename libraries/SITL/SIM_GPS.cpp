@@ -289,7 +289,7 @@ void GPS::update_ubx(const struct gps_data *d)
         uint32_t headVeh;
         uint8_t reserved2[4]; 
     } pvt {};
-    const uint8_t SV_COUNT = 10;
+    const uint8_t SV_COUNT = 13;
     struct PACKED ubx_nav_svinfo {
         uint32_t itow;
         uint8_t numCh;
