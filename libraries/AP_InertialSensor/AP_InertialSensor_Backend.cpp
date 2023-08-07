@@ -211,9 +211,10 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     save_gyro_window(instance, gyro, filter_phase++);
 
     Vector3f gyro_filtered = gyro;
+#ifndef HAL_BUILD_AP_PERIPH
     // small chance of a lane switch in the middle of the loop, so get the index at the start
     const uint8_t primary_instance = AP::ahrs().get_primary_gyro_index();
-
+#endif
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
         if (!notch.params.enabled()) {
