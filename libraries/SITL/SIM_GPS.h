@@ -92,7 +92,16 @@ private:
         double roll_deg;
         double pitch_deg;
         bool have_lock;
+
+        // Get heading [rad], where 0 = North in WGS-84 coordinate system
+        float heading() const WARN_IF_UNUSED;
+
+        // Get 2D speed [m/s] in WGS-84 coordinate system
+        float speed_2d() const WARN_IF_UNUSED;
     };
+
+
+
     // last 20 samples, allowing for up to 20 samples of delay
     gps_data _gps_history[20];
 
