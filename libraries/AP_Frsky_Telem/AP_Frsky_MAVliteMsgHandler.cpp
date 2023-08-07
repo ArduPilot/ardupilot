@@ -54,8 +54,10 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command(const mavlink_command_long
         case MAV_CMD_DO_SET_MODE:
             return handle_command_do_set_mode(mav_command_long);
         //case MAV_CMD_DO_SET_HOME:
+#if AP_FENCE_ENABLED
         case MAV_CMD_DO_FENCE_ENABLE:
             return handle_command_do_fence_enable(mav_command_long);
+#endif
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             return handle_command_preflight_reboot(mav_command_long);
         //case MAV_CMD_DO_START_MAG_CAL:
@@ -141,9 +143,9 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_FENCE_ENABLED
 MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavlink_command_long_t &mav_command_long)
 {
-#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -159,10 +161,8 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavl
         default:
             return MAV_RESULT_FAILED;
     }
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif // AP_FENCE_ENABLED
 }
+#endif // AP_FENCE_ENABLED
 
 /*
  * Handle the PARAM_REQUEST_READ mavlite message
