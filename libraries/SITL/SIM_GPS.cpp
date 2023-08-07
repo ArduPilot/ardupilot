@@ -550,19 +550,16 @@ void GPS::update_nmea(const struct gps_data *d)
                      d->have_lock?_sitl->gps_numsats[instance]:3,
                      1.2,
                      d->altitude);
-    const float speed_mps = norm(d->speedN, d->speedE);
+                     
+    const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
-
-    float heading = ToDeg(atan2f(d->speedE, d->speedN));
-    if (heading < 0) {
-        heading += 360.0f;
-    }
+    const auto heading_rad = d->heading();
 
     //$GPVTG,133.18,T,120.79,M,0.11,N,0.20,K,A*24
     nmea_printf("$GPVTG,%.2f,T,%.2f,M,%.2f,N,%.2f,K,A",
                      tstring,
-                     heading,
-                     heading,
+                     heading_rad,
+                     heading_rad,
                      speed_knots,
                      speed_knots * KNOTS_TO_METERS_PER_SECOND * 3.6);
 
@@ -572,7 +569,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lat_string,
                      lng_string,
                      speed_knots,
-                     heading,
+                     heading_rad,
                      dstring);
 
     if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
@@ -589,7 +586,7 @@ void GPS::update_nmea(const struct gps_data *d)
                     d->altitude,
                     wrap_360(d->yaw_deg),
                     d->pitch_deg,
-                    heading,
+                    heading_rad,
                     speed_mps,
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
@@ -1342,6 +1339,18 @@ GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
     }
     // delay is too long, use last sample
     return _gps_history[N-1];
+}
+
+float GPS::gps_data::heading() const
+{
+    const auto velocity = Vector2d{speedE, speedN};
+    return velocity.angle();
+}
+
+float GPS::gps_data::speed_2d() const
+{
+    const auto velocity = Vector2d{speedN, speedE};
+    return velocity.length();
 }
 
 #endif  // HAL_SIM_GPS_ENABLED
