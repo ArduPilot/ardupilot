@@ -3917,10 +3917,12 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_command_int(msg);
         break;
 
+#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     case MAVLINK_MSG_ID_FENCE_POINT:
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
         handle_fence_message(msg);
         break;
+#endif
 
 #if HAL_MOUNT_ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
@@ -4685,9 +4687,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_do_send_banner(packet);
         break;
 
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
         result = handle_command_do_fence_enable(packet);
         break;
+#endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     case MAV_CMD_CONTROL_HIGH_LATENCY:
@@ -5706,10 +5710,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_meminfo();
         break;
 
+#if AP_FENCE_ENABLED
     case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         send_fence_status();
         break;
+#endif
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
