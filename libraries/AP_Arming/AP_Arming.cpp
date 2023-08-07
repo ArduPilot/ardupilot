@@ -1516,16 +1516,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
-#if AP_FENCE_ENABLED
-    AC_Fence *fence = AP::fence();
-    if (fence != nullptr) {
-        // If a fence is set to auto-enable, turn on the fence
-        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
-            fence->enable(true);
-        }
-    }
-#endif
-
     // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
 
@@ -1599,6 +1589,19 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         auto *terrain = AP::terrain();
         if (terrain != nullptr) {
             terrain->set_reference_location();
+        }
+    }
+#endif
+
+#if AP_FENCE_ENABLED
+    if (armed) {
+        auto *fence = AP::fence();
+        if (fence != nullptr) {
+            // If a fence is set to auto-enable, turn on the fence
+            if (fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+                fence->enable(true);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence: auto-enabled");
+            }
         }
     }
 #endif
