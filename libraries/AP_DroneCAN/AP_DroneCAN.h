@@ -153,6 +153,9 @@ private:
     // send notify vehicle state
     void notify_state_send();
 
+    // check for parameter get/set response timeout
+    void check_parameter_callback_timeout();
+
     // send queued parameter get/set request. called from loop
     void send_parameter_request();
     
@@ -166,6 +169,7 @@ private:
     ParamGetSetIntCb *param_int_cb;         // latest get param request callback function (for integers)
     ParamGetSetFloatCb *param_float_cb;     // latest get param request callback function (for floats)
     bool param_request_sent = true;         // true after a param request has been sent, false when queued to be sent
+    uint32_t param_request_sent_ms;         // system time that get param request was sent
     HAL_Semaphore _param_sem;               // semaphore protecting this block of variables
     uint8_t param_request_node_id;          // node id of most recent get param request
 
