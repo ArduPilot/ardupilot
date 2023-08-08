@@ -60,6 +60,10 @@
 #define AP_FETTEC_ONEWIRE_ENABLED 0
 #endif
 
+#ifndef HAL_TORQEEDO_ENABLED
+#define HAL_TORQEEDO_ENABLED 0
+#endif
+
 #ifndef AP_KDECAN_ENABLED
 #define AP_KDECAN_ENABLED 0
 #endif
