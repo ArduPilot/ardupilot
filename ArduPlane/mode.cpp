@@ -89,6 +89,9 @@ bool Mode::enter()
 
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
+    
+    // clear postponed long failsafe if mode change (from GCS) occurs before recall of long failsafe
+    plane.long_failsafe_pending = false;
 
 #if HAL_QUADPLANE_ENABLED
     quadplane.mode_enter();

@@ -218,6 +218,9 @@ private:
     // external failsafe boards during baro and airspeed calibration
     bool in_calibration;
 
+    // are we currently in long failsafe but have postponed it in MODE TAKEOFF until min level alt is reached
+    bool long_failsafe_pending;
+
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()
     GCS_Plane &gcs() { return _gcs; }
