@@ -65,4 +65,3 @@ module sensor_msgs {
     };
   };
 };
-

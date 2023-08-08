@@ -20,4 +20,3 @@ module geometry_msgs {
     };
   };
 };
-

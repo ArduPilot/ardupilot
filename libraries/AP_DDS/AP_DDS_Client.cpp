@@ -810,5 +810,3 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
 #endif // CONFIG_HAL_BOARD
 
 #endif // AP_DDS_ENABLED
-
-

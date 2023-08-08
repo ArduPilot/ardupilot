@@ -40,4 +40,3 @@ module sensor_msgs {
     };
   };
 };
-
