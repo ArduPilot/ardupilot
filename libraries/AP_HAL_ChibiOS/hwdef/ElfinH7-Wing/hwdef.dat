@@ -1,0 +1,260 @@
+# hw definition file for processing by chibios_pins.py
+# for SP/Racing Extreme H7 hardware.
+# thanks to betaflight for pin information
+
+#################################################
+###             MCU CONFIGURATION             ###
+#################################################
+
+# MCU class and specific type
+MCU STM32H7xx STM32H750xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1125
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+MCU_CLOCKRATE_MHZ 480
+
+env OPTIMIZE -O2
+
+define HAL_WITH_EKF_DOUBLE 0
+
+STM32_ST_USE_TIMER 2
+
+# internal flash is off limits
+FLASH_SIZE_KB 2048
+#FLASH_SIZE_KB 128
+FLASH_RESERVE_START_KB 0
+
+EXT_FLASH_SIZE_MB 8
+EXT_FLASH_RESERVE_START_KB 1024
+EXT_FLASH_RESERVE_END_KB 448
+
+# only one I2C bus
+I2C_ORDER I2C1 I2C4
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7 UART8
+
+#################################################
+###            Debug DEFINITIONS              ###
+#################################################
+
+# Debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# USB OTG1
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+#################################################
+###            UART DEFINITIONS               ###
+#################################################
+
+# USART1 serial1 telem1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# USART2 serial2 telem2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 serial3 GPS
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# UART4 serial4 GPS
+PD1 UART4_TX UART4
+PD0 UART4_RX UART4
+
+# UART6 serial5 RCIN
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6 ALT(1)
+
+# UART7 serial6
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# UART8 serial7
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# default to timer for RC input
+PC7 TIM8_CH2 TIM8 RCININT PULLDOWN LOW
+
+#################################################
+###             SPI DEFINITIONS               ###
+#################################################
+
+# SPI1 ICM42688
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI2 - external
+PD3 SPI2_SCK SPI2
+PC2 SPI2_MISO SPI2
+PC3 SPI2_MOSI SPI2
+
+# SPI4 for OSD
+PE12 SPI4_SCK SPI4
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+
+PC13 ICM42688_CS CS
+PB3 ICM20608_CS CS
+PE11 AT7456E_CS CS
+# external CS pins
+PC15 EXT_CS1 CS
+PC14 EXT_CS2 CS
+PA4 ICM42688_DRDY INPUT
+PA15 ICM20608_DRDY INPUT
+
+#################################################
+###             CAN DEFINITIONS               ###
+#################################################
+# CAN2 
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+
+#################################################
+###             I2C DEFINITIONS               ###
+#################################################
+
+# I2C1
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# I2C4
+PB8 I2C4_SCL I2C4
+PB9 I2C4_SDA I2C4
+
+#################################################
+###             ADC DEFINITIONS               ###
+#################################################
+
+# Internal current sensor
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC0 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+PC4 RSSI_IN ADC1
+define BOARD_RSSI_ANA_PIN 0
+
+PC5 PRESSURE_SENS ADC1 SCALE(1)
+define HAL_DEFAULT_AIRSPEED_PIN 4
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_CURR_PIN 10
+define HAL_BATT_VOLT_SCALE 10.9
+define HAL_BATT_CURR_SCALE 28.5
+define HAL_BATT_MONITOR_DEFAULT 4
+
+#################################################
+###           Storage DEFINITIONS             ###
+#################################################
+
+# Now setup the pins for the microSD card, if available.
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# QuadSPI Flash
+PD11 QUADSPI_BK1_IO0 QUADSPI1 SPEED_HIGH
+PD12 QUADSPI_BK1_IO1 QUADSPI1 SPEED_HIGH
+PE2 QUADSPI_BK1_IO2 QUADSPI1 SPEED_HIGH
+PD13 QUADSPI_BK1_IO3 QUADSPI1 SPEED_HIGH
+PB10 QUADSPI_BK1_NCS QUADSPI1 SPEED_HIGH
+PB2 QUADSPI_CLK QUADSPI1 SPEED_HIGH
+
+#################################################
+###             PWM DEFINITIONS               ###
+#################################################
+
+# PWM AUX channels
+PA0  TIM5_CH1 TIM5 PWM(1) GPIO(50) BIDIR    # M1
+PA1  TIM5_CH2 TIM5 PWM(2) GPIO(51)          # M2
+PA2  TIM5_CH3 TIM5 PWM(3) GPIO(52) BIDIR    # M3
+PA3  TIM5_CH4 TIM5 PWM(4) GPIO(53)          # M4
+
+PB0  TIM3_CH3 TIM3 PWM(5) GPIO(54)          # M5
+PB1  TIM3_CH4 TIM3 PWM(6) GPIO(55)          # M6
+PB4  TIM3_CH1 TIM3 PWM(7) GPIO(56)          # M7
+PB5  TIM3_CH2 TIM3 PWM(8) GPIO(57)          # M8
+
+PD14 TIM4_CH3 TIM4 PWM(9) GPIO(58)          # M9
+PD15 TIM4_CH4 TIM4 PWM(10) GPIO(59)         # M10
+
+PE9  TIM1_CH1  TIM1 PWM(11) GPIO(60)        # M11
+PE10 TIM1_CH2N TIM1 PWM(12) GPIO(61)        # M12
+
+PB14 TIM12_CH1 TIM12 PWM(13) GPIO(62) NODMA # led strip
+
+# buzzer
+PD7 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+define AP_NOTIFY_TONEALARM_ENABLED 1
+
+#################################################
+###             LED DEFINITIONS               ###
+#################################################
+# LED
+# green LED1 marked as B/E
+# blue LED0 marked as ACT
+PE3 LED_BLUE OUTPUT LOW GPIO(0) # blue
+PE4 LED_GREEN OUTPUT LOW GPIO(1) # green
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_LED_OFF 1
+
+# GPIOs 81:CAM SELECT, 82:5/9V(12V) Vsw SWITCH
+PD10  PINIO1 OUTPUT GPIO(81) LOW # Camera switch
+PB15  PINIO2 OUTPUT GPIO(82) LOW # Vsw pad power switch
+
+# SPI2 external connections
+SPIDEV pixartflow   SPI2 DEVID1  EXT_CS1  MODE3   2*MHZ  2*MHZ
+
+# spi devices
+SPIDEV icm42688 SPI1 DEVID1 ICM42688_CS MODE3  2*MHZ  8*MHZ
+SPIDEV icm42605 SPI1 DEVID2 ICM20608_CS MODE3  2*MHZ  8*MHZ
+SPIDEV icm20608 SPI1 DEVID2 ICM20608_CS MODE3  2*MHZ  4*MHZ
+SPIDEV osd      SPI4 DEVID4 AT7456E_CS  MODE0 10*MHZ 10*MHZ
+
+DMA_PRIORITY SPI1* SPI4* TIM5*
+
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+
+# two IMUs
+IMU Invensensev3 SPI:icm42688 ROTATION_YAW_270
+IMU Invensensev3 SPI:icm42605 ROTATION_YAW_270
+IMU Invensense   SPI:icm20608 ROTATION_ROLL_180
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# one BARO
+# SPL06 integrated on I2C1 bus, multiple possible choices for external barometer
+BARO SPL06 I2C:0:0x76
+
+# setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+define HAL_OS_FATFS_IO 1
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+define BOARD_PWM_COUNT_DEFAULT 13
+define STM32_PWM_USE_ADVANCED TRUE
+
+define HAL_STORAGE_SIZE 16384
+
+define DEFAULT_NTF_LED_TYPES 257
