@@ -8,10 +8,10 @@
 
 // define for enabling MSP sensor drivers
 #ifndef HAL_MSP_SENSORS_ENABLED
-#define HAL_MSP_SENSORS_ENABLED HAL_MSP_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+#define HAL_MSP_SENSORS_ENABLED HAL_MSP_ENABLED
 #endif
 
 // define for enabling MSP DisplayPort
 #ifndef HAL_WITH_MSP_DISPLAYPORT
-#define HAL_WITH_MSP_DISPLAYPORT HAL_MSP_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+#define HAL_WITH_MSP_DISPLAYPORT HAL_MSP_ENABLED
 #endif
