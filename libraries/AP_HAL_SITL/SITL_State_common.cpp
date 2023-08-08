@@ -233,6 +233,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
 #endif // HAL_BUILD_AP_PERIPH
+    } else if (streq(name, "jre")) {
+        if (jre != nullptr) {
+            AP_HAL::panic("Only one jre at a time");
+        }
+        jre = new SITL::RF_JRE();
+        return jre;
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 != nullptr) {
             AP_HAL::panic("Only one gyus42v2 at a time");
@@ -314,6 +320,9 @@ void SITL_State_Common::sim_update(void)
     }
     if (benewake_tfmini != nullptr) {
         benewake_tfmini->update(sitl_model->rangefinder_range());
+    }
+    if (jre != nullptr) {
+        jre->update(sitl_model->rangefinder_range());
     }
     if (nooploop != nullptr) {
         nooploop->update(sitl_model->rangefinder_range());
