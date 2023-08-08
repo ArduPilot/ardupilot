@@ -2,12 +2,7 @@
 #include "AP_RangeFinder.h"
 
 #ifndef AP_RANGEFINDER_DEFAULT_ORIENTATION
-#ifndef HAL_BUILD_AP_PERIPH
 #define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_PITCH_270
-#else
-// AP_Periph expects ROTATION_NONE
-#define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_NONE
-#endif
 #endif
 
 // table of user settable parameters
