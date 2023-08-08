@@ -352,11 +352,25 @@ def process_library(vehicle, library, pathprefix=None):
                     # applicable for this vehicle.
                     continue
 
-            p.path = path # Add path. Later deleted - only used for duplicates
-            if library.check_duplicates and library.has_param(p.name):
-                error("Duplicate parameter %s in %s" % (p.name, library.name))
-                continue
-            library.params.append(p)
+            if getattr(p, 'Vector3Parameter', None) is not None:
+                params_to_add = []
+                for axis in 'X', 'Y', 'Z':
+                    new_p = copy.copy(p)
+                    new_p.change_name(p.name + "_" + axis)
+                    for a in ["Description"]:
+                        if hasattr(new_p, a):
+                            current = getattr(new_p, a)
+                            setattr(new_p, a, current + " (%s-axis)" % axis)
+                    params_to_add.append(new_p)
+            else:
+                params_to_add = [p]
+
+            for p in params_to_add:
+                p.path = path # Add path. Later deleted - only used for duplicates
+                if library.check_duplicates and library.has_param(p.name):
+                    error("Duplicate parameter %s in %s" % (p.name, library.name))
+                    continue
+                library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))
@@ -434,6 +448,9 @@ def clean_param(param):
             new_valueList.append(":".join([start, end]))
         param.Values = ",".join(new_valueList)
 
+    if hasattr(param, "Vector3Parameter"):
+        delattr(param, "Vector3Parameter")
+
 
 def do_copy_values(vehicle_params, libraries, param):
     if not hasattr(param, "CopyValuesFrom"):
@@ -441,6 +458,10 @@ def do_copy_values(vehicle_params, libraries, param):
 
     # so go and find the values...
     wanted_name = param.CopyValuesFrom
+    if hasattr(param, 'Vector3Parameter'):
+        suffix = param.name[-2:]
+        wanted_name += suffix
+
     del param.CopyValuesFrom
     for x in vehicle_params:
         name = x.name
@@ -470,6 +491,11 @@ def do_copy_fields(vehicle_params, libraries, param):
     # so go and find the values...
     wanted_name = param.CopyFieldsFrom
     del param.CopyFieldsFrom
+
+    if hasattr(param, 'Vector3Parameter'):
+        suffix = param.name[-2:]
+        wanted_name += suffix
+
     for x in vehicle_params:
         name = x.name
         (v, name) = name.split(":")
