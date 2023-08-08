@@ -19,7 +19,8 @@ repos:
       rev: v4.2.0
       hooks:
         #-   id: trailing-whitespace
-        #-   id: end-of-file-fixer
+        -   id: end-of-file-fixer
+            files: libraries\/AP_DDS\/.*$
         -   id: mixed-line-ending
             name: Check line ending character (LF)
             args: ["--fix=lf"]
