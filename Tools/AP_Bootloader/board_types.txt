@@ -243,6 +243,8 @@ AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
+AP_HW_PIXHAWK1_PERIPH                1404
+AP_HW_PIXHAWK1-1M_PERIPH             1405
 
 # IDs 5000-5100 reserved for Carbonix
 
