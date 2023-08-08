@@ -1003,12 +1003,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
     }
 
-    // pause or resume an auto mission
-    case MAV_CMD_DO_PAUSE_CONTINUE: {
-        mavlink_command_int_t packet_int;
-        GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-        return handle_command_pause_continue(packet_int);
-    }
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
