@@ -71,7 +71,7 @@ class Board:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
         # configurations for XRCE-DDS
-        if cfg.options.enable_dds:
+        if cfg.options.enable_dds or "humble" == os.environ.get("ROS_DISTRO"):
             cfg.recurse('libraries/AP_DDS')
             env.ENABLE_DDS = True
             env.AP_LIBRARIES += [
@@ -79,7 +79,7 @@ class Board:
             ]
             env.DEFINES.update(AP_DDS_ENABLED = 1)
             # check for microxrceddsgen
-            cfg.find_program('microxrceddsgen',mandatory=True)
+            microxrceddsgen = cfg.find_program('microxrceddsgen',mandatory=True)
         else:
             env.ENABLE_DDS = False
             env.DEFINES.update(AP_DDS_ENABLED = 0)
