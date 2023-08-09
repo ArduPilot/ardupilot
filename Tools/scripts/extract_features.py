@@ -306,6 +306,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_LOCATIONDB_ENABLED', r'AP_LocationDB::init',),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
             ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),

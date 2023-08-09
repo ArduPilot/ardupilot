@@ -434,6 +434,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'Logging', 'HAL_LOGGING_ENABLED', 'Enable Logging', 0, None),
     Feature('Other', 'CUSTOM_ROTATIONS', 'AP_CUSTOMROTATIONS_ENABLED', 'Enable Custom  sensor rotations', 0, None),
     Feature('Other', 'PID_FILTERING', 'AP_FILTER_ENABLED', 'Enable PID filtering', 0, None),
+    Feature('Other', 'LocationDB', 'AP_LOCATIONDB_ENABLED', 'Enable Location Database', 0, None),
     Feature('Other', 'POLYFENCE_CIRCLE_INT_SUPPORT', 'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED', 'Fence circle compatability', 0, None),  # NOQA: E501
     Feature('Other', 'AP_AVOIDANCE', 'AP_ADSB_AVOIDANCE_ENABLED', 'Enable "ADSB" Avoidance', 0, 'ADSB'),
     Feature('Other', 'CPU_IDLE_STATS', 'AP_CPU_IDLE_STATS_ENABLED', 'Enable CPU idle stats', 0, None), # NOQA: E501
@@ -505,6 +506,7 @@ BUILD_OPTIONS = [
 
     #    Feature('Filesystem', 'FILESYSTEM_ESP32_ENABLED', 'AP_FILESYSTEM_ESP32_ENABLED', 'Enable ESP32 Filesystem', 0, None),
     # Feature('Filesystem', 'FILESYSTEM_FATFS', 'AP_FILESYSTEM_FATFS_ENABLED', 'Enable FATFS Filesystem', 0, None),
+    Feature('Filesystem', 'FILESYSTEM_LOCATIONDB', 'AP_FILESYSTEM_LOCATIONDB_ENABLED', 'Enable @LOCDB/ filesystem', 0, 'LocationDB'),  # noqa
     Feature('Filesystem', 'FILESYSTEM_MISSION', 'AP_FILESYSTEM_MISSION_ENABLED', 'Enable @MISSION/ filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_PARAM', 'AP_FILESYSTEM_PARAM_ENABLED', 'Enable @PARAM/ filesystem', 0, None),
     #    Feature('Filesystem', 'FILESYSTEM_POSIX', 'AP_FILESYSTEM_POSIX_ENABLED', 'Enable POSIX filesystem', 0, None),
