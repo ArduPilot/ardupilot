@@ -350,18 +350,6 @@ private:
                                    Vector2f *&next_storage_point,
                                    Vector2l *&next_storage_point_lla) WARN_IF_UNUSED;
 
-    /*
-     * Upgrade functions - attempt to keep user's fences when
-     * upgrading to new firmware
-     */
-    // convert_to_new_storage - will attempt to change a pre-existing
-    // stored fence to the new storage format (so people don't lose
-    // their fences when upgrading)
-    bool convert_to_new_storage() WARN_IF_UNUSED;
-    // load boundary point from eeprom, returns true on successful load
-    bool load_point_from_eeprom(uint16_t i, Vector2l& point) const WARN_IF_UNUSED;
-
-
 #if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     /*
      * FENCE_POINT protocol compatability
