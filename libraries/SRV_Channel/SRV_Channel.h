@@ -507,8 +507,8 @@ public:
     static AP_HAL::RCOutput::DshotEscType get_dshot_esc_type() { return AP_HAL::RCOutput::DshotEscType(_singleton->dshot_esc_type.get()); }
 
     static uint8_t get_dshot_rate() { return _singleton->dshot_rate.get(); }
-    
-    static uint8_t get_rc_fs_mask() { return _singleton->rc_fs_mask.get(); }
+
+    static uint32_t get_rc_fs_mask() { return _singleton->rc_fs_mask.get(); }
 
     static SRV_Channel *srv_channel(uint8_t i) {
 #if NUM_SERVO_CHANNELS > 0
