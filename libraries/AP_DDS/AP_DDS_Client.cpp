@@ -10,6 +10,11 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include "AP_DDS_ExternalControl.h"
+#endif
+#include "AP_DDS_Frames.h"
 
 #include "AP_DDS_Client.h"
 #include "AP_DDS_Topic_Table.h"
@@ -24,10 +29,6 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
-static char WGS_84_FRAME_ID[] = "WGS-84";
-
-// https://www.ros.org/reps/rep-0105.html#base-link
-static char BASE_LINK_FRAME_ID[] = "base_link";
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -475,8 +476,11 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
         subscribe_sample_count++;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received geometry_msgs/TwistStamped");
-        // TODO implement the velocity control to AP
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
+            // TODO #23430 handle velocity control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
     }
