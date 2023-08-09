@@ -394,8 +394,8 @@ public:
     // purposes
     void set_angle_P_scale_mult(const Vector3f &angle_P_scale) { _angle_P_scale *= angle_P_scale; }
 
-    // get the value of the angle P scale that was used in the last loop, for logging
-    const Vector3f &get_angle_P_scale_logging(void) const { return _angle_P_scale_used; }
+    // get the value of the angle P scale that was used in the last loop
+    const Vector3f &get_last_angle_P_scale(void) const { return _angle_P_scale_used; }
     
     // setup a one loop PD scale multiplier, multiplying by any
     // previously applied scale from this loop. This allows for more
@@ -530,7 +530,7 @@ protected:
     // angle P scaling vector for roll, pitch, yaw
     Vector3f            _angle_P_scale{1,1,1};
 
-    // angle scale used for last loop, used for logging
+    // angle scale used for last loop, used for logging and quadplane angle P scaling
     Vector3f            _angle_P_scale_used;
 
     // PD scaling vector for roll, pitch, yaw
