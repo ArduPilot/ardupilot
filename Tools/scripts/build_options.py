@@ -289,6 +289,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'SCRIPTING', 'AP_SCRIPTING_ENABLED', 'Enable LUA Scripting', 0, None),
     Feature('Other', 'SLCAN', 'AP_CAN_SLCAN_ENABLED', 'Enable SLCAN serial protocol', 0, None),
     Feature('Other', 'SDCARD_MISSION', 'AP_SDCARD_STORAGE_ENABLED', 'Enable storing mission on microSD cards', 0, None),
+    Feature('Other', 'LocationDB', 'AP_LOCATIONDB_ENABLED', 'Enable Location Database', 0, None),
 
     # MAVLink section for mavlink features and/or message handling,
     # rather than for e.g. mavlink-based sensor drivers
@@ -347,6 +348,7 @@ BUILD_OPTIONS = [
     #    Feature('Filesystem', 'FILESYSTEM_POSIX', 'AP_FILESYSTEM_POSIX_ENABLED', 'Enable POSIX filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_ROMFS', 'AP_FILESYSTEM_ROMFS_ENABLED', 'Enable @ROMFS/ filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_SYS', 'AP_FILESYSTEM_SYS_ENABLED', 'Enable @SYS/ filesystem', 0, None),
+    Feature('Filesystem', 'FILESYSTEM_LOCATIONDB', 'AP_FILESYSTEM_LOCATIONDB_ENABLED', 'Enable @LOCDB/ filesystem', 0, 'LocationDB'),  # noqa
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
