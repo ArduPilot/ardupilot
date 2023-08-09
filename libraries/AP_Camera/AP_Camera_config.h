@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Mount/AP_Mount_config.h>
+#include <AP_Relay/AP_Relay_config.h>
 
 #ifndef AP_CAMERA_ENABLED
 #define AP_CAMERA_ENABLED 1
@@ -24,7 +25,7 @@
 #endif
 
 #ifndef AP_CAMERA_RELAY_ENABLED
-#define AP_CAMERA_RELAY_ENABLED AP_CAMERA_BACKEND_DEFAULT_ENABLED
+#define AP_CAMERA_RELAY_ENABLED AP_CAMERA_BACKEND_DEFAULT_ENABLED && AP_RELAY_ENABLED
 #endif
 
 #ifndef AP_CAMERA_SERVO_ENABLED

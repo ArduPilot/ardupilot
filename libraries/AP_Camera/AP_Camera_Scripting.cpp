@@ -30,11 +30,11 @@ bool AP_Camera_Scripting::set_zoom(ZoomType zoom_type, float zoom_value)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera_Scripting::set_focus(FocusType focus_type, float focus_value)
+SetFocusResult AP_Camera_Scripting::set_focus(FocusType focus_type, float focus_value)
 {
     _cam_state.focus_type = (uint8_t)focus_type;
     _cam_state.focus_value = focus_value;
-    return true;
+    return SetFocusResult::ACCEPTED;
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)

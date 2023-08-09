@@ -159,3 +159,4 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+include ../include/no_bootloader_DFU.inc

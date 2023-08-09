@@ -23,6 +23,7 @@
 
 #if HAL_MOUNT_ENABLED
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -43,6 +44,8 @@ class AP_Mount_SToRM32_serial;
 class AP_Mount_Gremsy;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
+class AP_Mount_Xacti;
+class AP_Mount_Viewpro;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -61,6 +64,8 @@ class AP_Mount
     friend class AP_Mount_Gremsy;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
+    friend class AP_Mount_Xacti;
+    friend class AP_Mount_Viewpro;
 
 public:
     AP_Mount();
@@ -102,6 +107,12 @@ public:
 #endif
 #if HAL_MOUNT_SCRIPTING_ENABLED
         Scripting = 9,       /// Scripting gimbal driver
+#endif
+#if HAL_MOUNT_XACTI_ENABLED
+        Xacti = 10,          /// Xacti DroneCAN gimbal driver
+#endif
+#if HAL_MOUNT_VIEWPRO_ENABLED
+        Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
 #endif
     };
 
@@ -188,11 +199,21 @@ public:
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
-    // accessors for scripting backends
+    // get target rate in deg/sec. returns true on success
     bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+
+    // get target angle in deg. returns true on success
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+
+    // accessors for scripting backends and logging
     bool get_location_target(uint8_t instance, Location& target_loc);
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+
+    // write mount log packet for all backends
+    void write_log();
+
+    // write mount log packet for a single backend (called by camera library)
+    void write_log(uint8_t instance, uint64_t timestamp_us);
 
     //
     // camera controls for gimbals that include a camera
@@ -210,7 +231,21 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+
+    // set camera lens as a value from 0 to 5
+    bool set_lens(uint8_t instance, uint8_t lens);
+
+    // send camera information message to GCS
+    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];

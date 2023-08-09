@@ -9,7 +9,7 @@
 *                   RESET FUNCTIONS                     *
 ********************************************************/
 
-// Reset velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
+// Reset XY velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
 {
@@ -22,7 +22,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     zeroCols(P,4,5);
 
     if (PV_AidingMode != AID_ABSOLUTE) {
-        stateStruct.velocity.zero();
+        stateStruct.velocity.xy().zero();
         // set the variances using the measurement noise parameter
         P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
@@ -172,7 +172,7 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     const uint32_t timeStampConstrained_ms = MAX(MIN(timestamp_ms, imuSampleTime_ms), imuSampleTime_ms - 5000);
     const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);
     const ftype delaySec = 1E-3F * ftype(delta_ms);
-    const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) - stateStruct.velocity.xy() * delaySec;
+    const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) + stateStruct.velocity.xy() * delaySec;
     ResetPositionNE(newPosNE.x,newPosNE.y);
 
     return true;

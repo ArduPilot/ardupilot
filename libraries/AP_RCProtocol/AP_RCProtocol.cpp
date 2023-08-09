@@ -93,7 +93,7 @@ AP_RCProtocol::~AP_RCProtocol()
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
+    if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
     }
 #else
@@ -293,8 +293,12 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
+    // CRSFv3 can negotiate higher rates which are sticky on soft reboot
+    { 2000000, 0,   1, false },
+#endif
 };
 
 static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");

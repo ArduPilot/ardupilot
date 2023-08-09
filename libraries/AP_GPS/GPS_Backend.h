@@ -19,6 +19,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS_config.h>
 #include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
 #include "AP_GPS_config.h"
@@ -55,13 +56,15 @@ public:
 
     virtual void inject_data(const uint8_t *data, uint16_t len);
 
+#if HAL_GCS_ENABLED
     //MAVLink methods
     virtual bool supports_mavlink_gps_rtk_message() const { return false; }
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
+    virtual void handle_msg(const mavlink_message_t &msg) { return ; }
+#endif
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
-    virtual void handle_msg(const mavlink_message_t &msg) { return ; }
 #if HAL_MSP_GPS_ENABLED
     virtual void handle_msp(const MSP::msp_gps_data_message_t &pkt) { return; }
 #endif

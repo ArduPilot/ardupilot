@@ -1,7 +1,3 @@
-# for now we make this define, but we should migrate from this to much
-#  more specific defines - added below.
-define HAL_MINIMIZE_FEATURES 1
-
 # disable emitting nice strings when activating RC channel aux functions:
 define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 0
 
@@ -111,3 +107,32 @@ define HAL_DISPLAY_ENABLED 0
 
 # remove support for killing IMUs at runtime - a developer feature:
 define AP_INERTIALSENSOR_KILL_IMU_ENABLED 0
+
+# no MSP:
+define HAL_MSP_ENABLED 0
+
+# shortened names in @SYS/taskinfo.txt
+define AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED 0
+
+define AP_LANDINGGEAR_ENABLED APM_BUILD_COPTER_OR_HELI
+
+# Plane-specific defines; these defines are only used in the Plane
+#  directory, but are seen across the entire codebase:
+define OFFBOARD_GUIDED 0
+define QAUTOTUNE_ENABLED 0
+
+# Copter-specific defines; these defines are only used in the Copter
+#  directory, but are seen across the entire codebase:
+define MODE_FLOWHOLD_ENABLED 0
+define MODE_TURTLE_ENABLED 0
+define MODE_ZIGZAG_ENABLED 0
+define AC_NAV_GUIDED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define MODE_FOLLOW_ENABLED 0
+define MODE_GUIDED_NOGPS_ENABLED 0
+define MODE_SYSTEMID_ENABLED 0
+define WEATHERVANE_ENABLED 0
+define MODE_AUTOROTATE_ENABLED 0
+
+# don't send RELAY_STATUS messages:
+define AP_MAVLINK_MSG_RELAY_STATUS_ENABLED 0

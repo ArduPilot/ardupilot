@@ -25,6 +25,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
+#include <AP_Networking/AP_Networking.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 #if HAL_WITH_ESC_TELEM
@@ -76,6 +77,9 @@ extern const app_descriptor_t app_descriptor;
 extern "C" {
 void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
+
+struct CanardInstance;
+struct CanardRxTransfer;
 
 class AP_Periph_FW {
 public:
@@ -209,7 +213,7 @@ public:
     uint32_t last_sample_ms;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
@@ -300,6 +304,10 @@ public:
     AP_Logger logger;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+    AP_Networking networking;
+#endif
+
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
@@ -318,16 +326,45 @@ public:
 
     static AP_Periph_FW *_singleton;
 
-    enum {
-        DEBUG_SHOW_STACK,
-        DEBUG_AUTOREBOOT
+    enum class DebugOptions {
+        SHOW_STACK = 0,
+        AUTOREBOOT = 1,
+        ENABLE_STATS = 2,
     };
 
+    // check if an option is set
+    bool debug_option_is_set(const DebugOptions option) const {
+        return (uint8_t(g.debug.get()) & (1U<<uint8_t(option))) != 0;
+    }
+    
     // show stack as DEBUG msgs
     void show_stack_free();
 
     static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
+
+    static bool canard_broadcast(uint64_t data_type_signature,
+                                 uint16_t data_type_id,
+                                 uint8_t priority,
+                                 const void* payload,
+                                 uint16_t payload_len);
+
+#if AP_UART_MONITOR_ENABLED
+    void handle_tunnel_Targetted(CanardInstance* canard_instance, CanardRxTransfer* transfer);
+    void send_serial_monitor_data();
+    int8_t get_default_tunnel_serial_port(void) const;
+
+    struct {
+        ByteBuffer *buffer;
+        uint32_t last_request_ms;
+        AP_HAL::UARTDriver *uart;
+        int8_t uart_num;
+        uint8_t node_id;
+        uint8_t protocol;
+        uint32_t baudrate;
+        bool locked;
+    } uart_monitor;
+#endif
 };
 
 namespace AP

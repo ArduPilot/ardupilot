@@ -145,6 +145,9 @@ void SIMState::fdm_input_local(void)
     if (benewake_tfmini != nullptr) {
         benewake_tfmini->update(sitl_model->rangefinder_range());
     }
+    if (nooploop != nullptr) {
+        nooploop->update(sitl_model->rangefinder_range());
+    }
     if (teraranger_serial != nullptr) {
         teraranger_serial->update(sitl_model->rangefinder_range());
     }
@@ -229,8 +232,8 @@ void SIMState::fdm_input_local(void)
         vectornav->update();
     }
 
-    if (lord != nullptr) {
-        lord->update();
+    if (microstrain != nullptr) {
+        microstrain->update();
     }
 
 #if HAL_SIM_AIS_ENABLED

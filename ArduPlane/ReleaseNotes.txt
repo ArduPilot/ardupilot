@@ -1,3 +1,93 @@
+Release 4.4.0 beta4
+-------------------
+
+Changes from 4.4.0-beta3
+
+1) flight controller specific changes
+    - Diatone-Mamba-MK4-H743v2 uses SPL06 baro (was DPS280)
+    - DMA for I2C disabled on F7 and H7 boards
+    - Foxeer H743v1 default serial protocol config fixes
+    - HeeWing-F405 and F405v2 support
+    - iFlight BlitzF7 support
+2) Scripts may take action based on VTOL motor loss
+3) Bug fixes
+    - BLHeli returns battery status requested via MSP (avoids hang when using esc-configurator)
+    - CRSFv3 rescans at baudrates to avoid RX loss
+    - EK3_ABIAS_P_NSE param range fix
+    - Scripting restart memory corruption bug fixed
+    - Siyi A8/ZR10 driver fix to avoid crash if serial port not configured
+
+Release 4.4.0 beta3
+-------------------
+
+This is the third beta of plane 4.4.0. This includes some important
+fixes since beta2
+
+1) flight controller specific changes
+ - Holybro KakuteH7-Wing support
+ - JFB100 external watchdog GPIO support added
+ - Pixhawk1-bdshot support
+ - Pixhawk6X-bdshot support
+ - SpeedyBeeF4 loses bdshot support
+
+3) Camera and Gimbal related changes
+ - DO_SET_ROI_NONE command support added
+
+4) Bug fixes
+ - ADSB sensor loss of transceiver message less spammy
+ - AutoTune Yaw rate max fixed
+ - EKF vertical velocity reset fixed on loss of GPS
+ - GPS pre-arm failure message clarified
+ - SERVOx_PROTOCOL "SToRM32 Gimbal Serial" value renamed to "Gimbal" because also used by Siyi
+ - SERIALx_OPTION "Swap" renamed to "SwapTXRX" for clarity
+ - SBF GPS ellipsoid height fixed
+ - Ublox M10S GPS auto configuration fixed
+ - ZigZag mode user takeoff fixed (users could not takeoff in ZigZag mode previously)
+ - fixed memory corruption bug with scripting restart
+
+5) Device drivers
+ - added LP5562 I2C LED driver
+ - added IS31FL3195 LED driver
+
+6) Applet changes
+ - added QUIK_MAX_REDUCE parameter to VTOL quicktune lua applet
+
+7) Plane specific changes
+ - fixed takeoff mode to ensure climb to takeoff alt before turning
+ - fixed error in quadplane wait for rudder neutral
+ - improved handling of forward throttle during VTOL landing
+ - fixed TECS state reset in VTOL auto modes
+ - fixed early exit from loiter to alt
+ - fixed display of started airspeed wait on forward transition
+
+
+Release 4.4.0 beta2
+-------------------
+
+This is the second beta of plane 4.4.0. This includes some important
+fixes since beta1.
+
+The full list of changes is:
+
+ - added SpeedyBeeF405WING, JSB100 and FoxeerH743
+ - added LOG_DISARMED=3 support and LOG_DARM_RATEMAX
+ - fixed error handling for being out of memory in EKF initialisation
+ - fixed a bug in RC input handling on the IOMCU
+ - fixed a bug handling ICE engine start after altitude reached
+ - adjust EKF3 accel bias process noise for greater robustness
+ - fixed an EKF3 bug in accel bias calculations
+ - cope with compassmot impacting GSF yaw numerical stability
+ - fixed an AUTOTUNE/QAUTOTUNE bug in yaw tuning
+ - support INA228 and INA238 I2C battery monitors
+ - always log rate PID slew limiters even when slew limit is zero
+ - added MambaF4050v2 for new IMU, bdshot and DMA on UART1
+ - update for FoxeerH743v1 GA release
+ - reduced IMU init speed on MatekH743
+ - move LED serial processing to its own thread
+ - fixed parameter documentation for BRD_SAFETYOPTION
+ - don't reject airspeed using EKF innovation if dead-reckoning
+ - fixed USB pass-thru on 2nd USB endpoint
+
 Release 4.3.7 31st May 2023
 ---------------------------
 

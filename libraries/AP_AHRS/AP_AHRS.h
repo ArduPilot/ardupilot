@@ -210,19 +210,21 @@ public:
 
     bool have_inertial_nav() const;
 
+    // return a ground velocity in meters/second, North/East/Down
+    // order. Must only be called if have_inertial_nav() is true
     bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NED to either home or origin
+    // return the relative position NED from either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
     bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NE to either home or origin
+    // return the relative position NE from home or origin
     // return true if the estimate is valid
     bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
     bool get_relative_position_NE_origin(Vector2f &posNE) const WARN_IF_UNUSED;
 
-    // return the relative position down to either home or origin
+    // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
@@ -670,6 +672,8 @@ private:
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
+    // convenience method for setting error string:
+    void set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const;
 
     /*
      * Attitude-related private methods and attributes:

@@ -19,7 +19,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH']
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -919,7 +919,6 @@ class ChibiOSHWDef(object):
         else:
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
-            self.env_vars['DISABLE_SCRIPTING'] = True
         if 'OTG1' in self.bytype:
             if self.get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None:
                 f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
@@ -931,6 +930,20 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_USE_SERIAL_USB TRUE\n')
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+
+        if 'ETH1' in self.bytype:
+            f.write('// Configure for Ethernet support\n')
+            f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
+            f.write('#define HAL_USE_MAC                         TRUE\n')
+            f.write('#define MAC_USE_EVENTS                      TRUE\n')
+            f.write('#define STM32_ETH_BUFFERS_EXTERN\n')
+            f.write('#define AP_NETWORKING_ENABLED               TRUE\n')
+            self.build_flags.append('USE_LWIP=yes')
+            self.env_vars['WITH_NETWORKING'] = True
+        else:
+            f.write('#define AP_NETWORKING_ENABLED               FALSE\n')
+            self.build_flags.append('USE_LWIP=no')
+            self.env_vars['WITH_NETWORKING'] = False
 
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
@@ -1035,13 +1048,12 @@ class ChibiOSHWDef(object):
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
 
-        if flash_size >= 2048 and not args.bootloader:
-            # lets pick a flash sector for Crash log
-            f.write('#define AP_CRASHDUMP_ENABLED 1\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 1
-        else:
-            f.write('#define AP_CRASHDUMP_ENABLED 0\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 0
+        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not args.bootloader)))
+        # lets pick a flash sector for Crash log
+        f.write('#ifndef AP_CRASHDUMP_ENABLED\n')
+        f.write('#define AP_CRASHDUMP_ENABLED %u\n' % crashdump_enabled)
+        f.write('#endif\n')
+        self.env_vars['ENABLE_CRASHDUMP'] = crashdump_enabled
 
         if args.bootloader:
             if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
@@ -1380,6 +1392,7 @@ INCLUDE common.ld
            ram0_start, ram0_len,
            ram1_start, ram1_len,
            ram2_start, ram2_len))
+        f.close()
 
     def copy_common_linkerscript(self, outdir):
         dirpath = os.path.dirname(os.path.realpath(__file__))
@@ -1910,7 +1923,7 @@ INCLUDE common.ld
                 f.write('''
 #if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
-#define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+#define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
 #endif
 #define DEFAULT_SERIAL%d_PROTOCOL HAL_OTG2_PROTOCOL
 #define DEFAULT_SERIAL%d_BAUD 115200
@@ -2738,24 +2751,60 @@ INCLUDE common.ld
             done.add(type)
         return peripherals
 
+    def get_processed_defaults_file(self, defaults_filepath, depth=0):
+        '''reads defaults_filepath, expanding any @include lines to include
+        the contents of the so-references file - recursively.'''
+        if depth > 10:
+            raise Exception("include loop")
+        ret = ""
+        with open(defaults_filepath, 'r') as defaults_fh:
+            while True:
+                line = defaults_fh.readline()
+                if line == "":
+                    break
+                m = re.match("^@include\s*([^\s]+)", line)
+                if m is None:
+                    ret += line
+                    continue
+                # we've found an include; do that...
+                include_filepath = os.path.join(os.path.dirname(defaults_filepath), m.group(1))
+                try:
+#                    ret += "# Begin included file (%s)" % include_filepath
+                    ret += self.get_processed_defaults_file(include_filepath, depth=depth+1)
+#                    ret += "# End included file (%s)" % include_filepath
+                except FileNotFoundError:
+                    raise Exception("%s includes %s but that filepath was not found" %
+                                    (defaults_filepath, include_filepath))
+        return ret
 
-    def write_env_py(self, filename):
-        '''write out env.py for environment variables to control the build process'''
 
+    def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
         defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
         defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
-        if not args.bootloader:
-            if os.path.exists(defaults_path):
-                self.env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(self.default_params_filepath)
-                print("Default parameters path from command line: %s" % self.default_params_filepath)
-            elif os.path.exists(defaults_filename):
-                self.env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(defaults_filename)
-                print("Default parameters path from hwdef: %s" % defaults_filename)
-            else:
-                print("No default parameter file found")
+        defaults_abspath = None
+        if os.path.exists(defaults_path):
+            defaults_abspath = os.path.abspath(self.default_params_filepath)
+            print("Default parameters path from command line: %s" % self.default_params_filepath)
+        elif os.path.exists(defaults_filename):
+            defaults_abspath = os.path.abspath(defaults_filename)
+            print("Default parameters path from hwdef: %s" % defaults_filename)
 
+        if defaults_abspath is None:
+            print("No default parameter file found")
+            return
+
+        content = self.get_processed_defaults_file(defaults_abspath)
+
+        with open(filepath, "w") as processed_defaults_fh:
+            processed_defaults_fh.write(content)
+
+        self.env_vars['DEFAULT_PARAMETERS'] = filepath
+
+
+    def write_env_py(self, filename):
+        '''write out env.py for environment variables to control the build process'''
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
         pickle.dump(self.env_vars, open(filename, "wb"))
@@ -2792,7 +2841,7 @@ INCLUDE common.ld
         '''check type of a pin line is valid'''
         patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
                     'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
-                    'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d'  ]
+                    'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d', 'ETH\d'  ]
         matches = False
         for p in patterns:
             if re.match(p, ptype):
@@ -2982,335 +3031,29 @@ INCLUDE common.ld
             # not AP_Periph
             return
 
-        print("Setting up as AP_Periph")
-        f.write('''
-// AP_Periph defaults
-
-#ifndef AP_SCHEDULER_ENABLED
-#define AP_SCHEDULER_ENABLED 0
-#endif
-
-#ifndef HAL_LOGGING_ENABLED
-#define HAL_LOGGING_ENABLED 0
-#endif
-
-#ifndef HAL_GCS_ENABLED
-#define HAL_GCS_ENABLED 0
-#endif
-
-/*
-  AP_Periph doesn't include the SERIAL parameter tree, instead each
-  supported serial device type has it's own parameter within AP_Periph
-  for which port is used.
- */
-#define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
-
-#ifndef HAL_LOGGING_MAVLINK_ENABLED
-#define HAL_LOGGING_MAVLINK_ENABLED 0
-#endif
-
-#ifndef AP_MISSION_ENABLED
-#define AP_MISSION_ENABLED 0
-#endif
-
-#ifndef HAL_RALLY_ENABLED
-#define HAL_RALLY_ENABLED 0
-#endif
-
-#ifndef HAL_NMEA_OUTPUT_ENABLED
-#define HAL_NMEA_OUTPUT_ENABLED 0
-#endif
-
-#ifndef HAL_CAN_DEFAULT_NODE_ID
-#define HAL_CAN_DEFAULT_NODE_ID 0
-#endif
-
-#define PERIPH_FW TRUE
-#define HAL_BUILD_AP_PERIPH
-
-#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
-#define HAL_WATCHDOG_ENABLED_DEFAULT true
-#endif
-
-#ifndef AP_FETTEC_ONEWIRE_ENABLED
-#define AP_FETTEC_ONEWIRE_ENABLED 0
-#endif
-
-#ifndef AP_KDECAN_ENABLED
-#define AP_KDECAN_ENABLED 0
-#endif
-
-#ifndef HAL_GENERATOR_ENABLED
-#define HAL_GENERATOR_ENABLED 0
-#endif
-
-#ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED 0
-#endif
-
-#ifndef HAL_UART_STATS_ENABLED
-#define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
-#endif
-
-#ifndef HAL_SUPPORT_RCOUT_SERIAL
-#define HAL_SUPPORT_RCOUT_SERIAL 0
-#endif
-
-#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
-#define AP_AIRSPEED_AUTOCAL_ENABLE 0
-#endif
-
-#ifndef AP_STATS_ENABLED
-#define AP_STATS_ENABLED 0
-#endif
-
-#ifndef AP_VOLZ_ENABLED
-#define AP_VOLZ_ENABLED 0
-#endif
-
-#ifndef AP_ROBOTISSERVO_ENABLED
-#define AP_ROBOTISSERVO_ENABLED 0
-#endif
-
-// by default an AP_Periph defines as many servo output channels as
-// there are PWM outputs:
-#ifndef NUM_SERVO_CHANNELS
-#ifdef HAL_PWM_COUNT
-#define NUM_SERVO_CHANNELS HAL_PWM_COUNT
-#else
-#define NUM_SERVO_CHANNELS 0
-#endif
-#endif
-
-#ifndef AP_STATS_ENABLED
-#define AP_STATS_ENABLED 0
-#endif
-
-#ifndef AP_BATTERY_ESC_ENABLED
-#define AP_BATTERY_ESC_ENABLED 0
-#endif
-
-// disable compass calibrations on periphs; cal is done on the autopilot
-#ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED 0
-#endif
-#ifndef COMPASS_MOT_ENABLED
-#define COMPASS_MOT_ENABLED 0
-#endif
-#ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED 0
-#endif
-
-#ifndef HAL_EXTERNAL_AHRS_ENABLED
-#define HAL_EXTERNAL_AHRS_ENABLED 0
-#endif
-
-// disable RC_Channels library:
-#ifndef AP_RC_CHANNEL_ENABLED
-#define AP_RC_CHANNEL_ENABLED 0
-#endif
-
-#ifndef AP_RCPROTOCOL_ENABLED
-#define AP_RCPROTOCOL_ENABLED 0
-#endif
-
-#define HAL_CRSF_TELEM_ENABLED 0
-
-/*
- * GPS Backends - we selectively turn backends on.
- *   Note also that f103-GPS explicitly disables some of these backends.
- */
-#define AP_GPS_BACKEND_DEFAULT_ENABLED 0
-
-#ifndef AP_GPS_ERB_ENABLED
-#define AP_GPS_ERB_ENABLED 0
-#endif
-
-#ifndef AP_GPS_GSOF_ENABLED
-#define AP_GPS_GSOF_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
-#endif
-
-#ifndef AP_GPS_NMEA_ENABLED
-#define AP_GPS_NMEA_ENABLED 0
-#endif
-
-#ifndef AP_GPS_SBF_ENABLED
-#define AP_GPS_SBF_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
-#endif
-
-#ifndef AP_GPS_SBP_ENABLED
-#define AP_GPS_SBP_ENABLED 0
-#endif
-
-#ifndef AP_GPS_SBP2_ENABLED
-#define AP_GPS_SBP2_ENABLED 0
-#endif
-
-#ifndef AP_GPS_SIRF_ENABLED
-#define AP_GPS_SIRF_ENABLED 0
-#endif
-
-#ifndef AP_GPS_MAV_ENABLED
-#define AP_GPS_MAV_ENABLED 0
-#endif
-
-#ifndef AP_GPS_NOVA_ENABLED
-#define AP_GPS_NOVA_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
-#endif
-
-#ifndef HAL_SIM_GPS_ENABLED
-#define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
-#endif
-
-/*
- * Airspeed Backends - we selectively turn backends *off*
- */
-#ifndef AP_AIRSPEED_ANALOG_ENABLED
-#define AP_AIRSPEED_ANALOG_ENABLED 0
-#endif
-
-// disable various rangefinder backends
-#define AP_RANGEFINDER_ANALOG_ENABLED 0
-#define AP_RANGEFINDER_HC_SR04_ENABLED 0
-#define AP_RANGEFINDER_PWM_ENABLED 0
-
-// no CAN manager in AP_Periph:
-#define HAL_CANMANAGER_ENABLED 0
-
-// SLCAN is off by default:
-#ifndef AP_CAN_SLCAN_ENABLED
-#define AP_CAN_SLCAN_ENABLED 0
-#endif
-
-// Periphs don't use the FFT library:
-#ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED 0
-#endif
-
-// MSP parsing is off by default in AP_Periph:
-#ifndef HAL_MSP_ENABLED
-#define HAL_MSP_ENABLED 0
-#endif
-
-// periph does not make use of compass scaling or diagonals
-#ifndef AP_COMPASS_DIAGONALS_ENABLED
-#define AP_COMPASS_DIAGONALS_ENABLED 0
-#endif
-
-// disable various battery monitor backends:
-#ifndef AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
-#define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
-#endif
-
-#ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES 1
-#endif
-
-#ifndef RANGEFINDER_MAX_INSTANCES
-#define RANGEFINDER_MAX_INSTANCES 1
-#endif
-
-// by default AP_Periphs don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
-#endif
-
-// no fence by default in AP_Periph:
-#ifndef AP_FENCE_ENABLED
-#define AP_FENCE_ENABLED 0
-#endif
-
-// periph does not save temperature cals etc:
-#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
-#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
-#endif
-
-#ifndef AP_WINCH_ENABLED
-#define AP_WINCH_ENABLED 0
-#endif
-
-#ifndef AP_VIDEOTX_ENABLED
-#define AP_VIDEOTX_ENABLED 0
-#endif
-
-#ifndef AP_FRSKY_TELEM_ENABLED
-#define AP_FRSKY_TELEM_ENABLED 0
-#endif
-
-#ifndef HAL_SPEKTRUM_TELEM_ENABLED
-#define HAL_SPEKTRUM_TELEM_ENABLED 0
-#endif
-
-#ifndef AP_FILESYSTEM_ROMFS_ENABLED
-#define AP_FILESYSTEM_ROMFS_ENABLED 0
-#endif
-
-#ifndef NOTIFY_LED_OVERRIDE_DEFAULT
-#define NOTIFY_LED_OVERRIDE_DEFAULT 1       // rgb_source_t::mavlink
-#endif
-
-// end AP_Periph defaults
-''')
+        self.add_firmware_defaults_from_file(f, "defaults_periph.h", "AP_Periph")
 
     def add_bootloader_defaults(self, f):
         '''add default defines for peripherals'''
         if not args.bootloader:
             return
 
-        print("Setting up as Bootloader")
+        self.add_firmware_defaults_from_file(f, "defaults_bootloader.h", "bootloader")
+
+    def add_firmware_defaults_from_file(self, f, filename, description):
+        print("Setting up as %s" % description)
+
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(dirpath, filename)
+
+        content = open(filepath, 'r').read()
         f.write('''
-// AP_Bootloader defaults
+// %s defaults
 
-#define HAL_DSHOT_ALARM_ENABLED 0
-#define HAL_LOGGING_ENABLED 0
-#define HAL_SCHEDULER_ENABLED 0
+%s
 
-// bootloaders *definitely* don't use the FFT library:
-#ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED 0
-#endif
-
-// bootloaders don't talk to the GCS:
-#ifndef HAL_GCS_ENABLED
-#define HAL_GCS_ENABLED 0
-#endif
-
-// by default bootloaders don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
-#endif
-
-#define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
-
-// bootloader does not save temperature cals etc:
-#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
-#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
-#endif
-
-#ifndef HAL_GCS_ENABLED
-#define HAL_GCS_ENABLED 0
-#endif
-
-// make diagnosing Faults (e.g. HardFault) harder, but save bytes:
-#ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
-#define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
-#endif
-
-#ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
-#define AP_WATCHDOG_SAVE_FAULT_ENABLED 0
-#endif
-
-// end AP_Bootloader defaults
-''')
+// end %s defaults
+''' % (description, content, description))
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3318,49 +3061,7 @@ INCLUDE common.ld
             # not IOMCU firmware
             return
 
-        print("Setting up as IO firmware")
-        f.write('''
-// IOMCU Firmware defaults
-
-#define HAL_DSHOT_ALARM_ENABLED 0
-
-#define HAL_LOGGING_ENABLED 0
-
-// IOMCUs *definitely* don't use the FFT library:
-#ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED 0
-#endif
-
-// by default IOMCUs don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
-#endif
-
-// no RC_Channels library:
-#ifndef AP_RC_CHANNEL_ENABLED
-#define AP_RC_CHANNEL_ENABLED 0
-#endif
-
-#ifndef AP_VIDEOTX_ENABLED
-#define AP_VIDEOTX_ENABLED 0
-#endif
-
-// make diagnosing Faults (e.g. HardFault) harder, but save bytes:
-#ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
-#define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
-#endif
-
-// disable some protocols on iomcu:
-#define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
-
-// no crossfire telemetry from iomcu!
-#define HAL_CRSF_TELEM_ENABLED 0
-
-// allow the IOMCU to have its allowed protocols to be set:
-#define AP_RCPROTOCOL_ENABLE_SET_RC_PROTOCOLS 1
-
-// end IOMCU Firmware defaults
-''')
+        self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
     def is_periph_fw(self):
         return self.env_vars.get('AP_PERIPH', 0) != 0
@@ -3377,16 +3078,7 @@ INCLUDE common.ld
             # guess
             return
 
-        print("Setting up as normal firmware")
-        f.write('''
-// firmware defaults
-
-#ifndef HAL_DSHOT_ALARM_ENABLED
-#define HAL_DSHOT_ALARM_ENABLED (HAL_PWM_COUNT>0)
-#endif
-
-// end firmware defaults
-''')
+        self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
 
     def run(self):
 
@@ -3420,6 +3112,9 @@ INCLUDE common.ld
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
+
+        if not args.bootloader:
+            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 

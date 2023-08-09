@@ -11,3 +11,6 @@ PB1 TIM3_CH4  TIM3 PWM(2) GPIO(51) BIDIR
 PA3 TIM2_CH4  TIM2 PWM(3) GPIO(52) BIDIR
 PA2 TIM2_CH3  TIM2 PWM(4) GPIO(53)
 # PWM 5 is disabled as it shares a timer with PWM 3&4
+
+# no space for bootloader:
+include ../include/no_bootloader_DFU.inc

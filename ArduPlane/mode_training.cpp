@@ -63,5 +63,7 @@ void ModeTraining::run()
         }
     }
 
-    plane.stabilize_yaw();
+    // Always manual rudder control
+    output_rudder_and_steering(plane.rudder_in_expo(false));
+
 }

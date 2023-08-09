@@ -26,68 +26,73 @@ void AP_Mount_Gremsy::update()
         // move mount to a "retracted" position.  We disable motors
         case MAV_MOUNT_MODE_RETRACT:
             // handled below
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
             send_gimbal_device_retract();
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            send_gimbal_device_set_attitude(ToRad(angle_bf_target.x), ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
-            }
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             break;
+        }
 
-        // use angle or rate targets provided by a mavlink message or mission command
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            switch (mavt_target.target_type) {
-            case MountTargetType::ANGLE:
-                send_gimbal_device_set_attitude(mavt_target.angle_rad.roll, mavt_target.angle_rad.pitch, mavt_target.angle_rad.yaw, mavt_target.angle_rad.yaw_is_ef);
-                break;
-            case MountTargetType::RATE:
-                send_gimbal_device_set_rate(mavt_target.rate_rads.roll, mavt_target.rate_rads.pitch, mavt_target.rate_rads.yaw, mavt_target.rate_rads.yaw_is_ef);
-                break;
-            }
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
+            // mavlink targets are stored while handling the incoming message set_angle_target() or set_rate_target()
             break;
+        }
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's rc inputs
-            MountTarget rc_target {};
-            if (get_rc_rate_target(rc_target)) {
-                send_gimbal_device_set_rate(rc_target.roll, rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
-            } else if (get_rc_angle_target(rc_target)) {
-                send_gimbal_device_set_attitude(rc_target.roll, rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
+            // update targets using pilot's RC inputs
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
+            case MountTargetType::ANGLE:
+                mnt_target.angle_rad = rc_target;
+                break;
+            case MountTargetType::RATE:
+                mnt_target.rate_rads = rc_target;
+                break;
             }
             break;
         }
 
         // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_roi(angle_target_rad)) {
-                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        case MAV_MOUNT_MODE_GPS_POINT:
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        // point mount to home
-        case MAV_MOUNT_MODE_HOME_LOCATION: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_home(angle_target_rad)) {
-                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to Home location
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            if (get_angle_target_to_home(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        case MAV_MOUNT_MODE_SYSID_TARGET: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_sysid(angle_target_rad)) {
-                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to another vehicle
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
         default:
             // unknown mode so do nothing
+            break;
+    }
+
+    // send target angles or rates depending on the target type
+    switch (mnt_target.target_type) {
+        case MountTargetType::ANGLE:
+            send_gimbal_device_set_attitude(mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
+            break;
+        case MountTargetType::RATE:
+            send_gimbal_device_set_rate(mnt_target.rate_rads.roll, mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
             break;
     }
 }
@@ -123,12 +128,6 @@ bool AP_Mount_Gremsy::healthy() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Gremsy::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // check we have received an updated message
-    if (_gimbal_device_attitude_status.time_boot_ms == _sent_gimbal_device_attitude_status_ms) {
-        return false;
-    }
-    _sent_gimbal_device_attitude_status_ms = _gimbal_device_attitude_status.time_boot_ms;
-
     att_quat = _gimbal_device_attitude_status.q;
     return true;
 }

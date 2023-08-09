@@ -17,7 +17,7 @@
 #include "GPS_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 #include <time.h>
-#include <AP_RTC/AP_RTC.h>
+#include <AP_Common/time.h>
 #include <AP_InternalError/AP_InternalError.h>
 
 #define GPS_BACKEND_DEBUGGING 0
@@ -96,7 +96,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     tm.tm_hour = v % 100U;
 
     // convert from time structure to unix time
-    time_t unix_time = AP::rtc().mktime(&tm);
+    time_t unix_time = ap_mktime(&tm);
 
     // convert to time since GPS epoch
     const uint32_t unix_to_GPS_secs = 315964800UL;
@@ -197,9 +197,9 @@ bool AP_GPS_Backend::should_log() const
 }
 
 
+#if HAL_GCS_ENABLED
 void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
-#if HAL_GCS_ENABLED
     const uint8_t instance = state.instance;
     // send status
     switch (instance) {
@@ -236,8 +236,8 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
                                  state.rtk_iar_num_hypotheses);
             break;
     }
-#endif
 }
+#endif
 
 
 /*
@@ -397,7 +397,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             goto bad_yaw;
         }
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_AHRS_ENABLED
         {
             // get lag
             float lag = 0.1;
@@ -425,7 +425,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
                 goto bad_yaw;
             }
         }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_AHRS_ENABLED
 
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading

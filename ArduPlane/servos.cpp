@@ -376,32 +376,6 @@ void Plane::set_servos_idle(void)
     SRV_Channels::output_ch_all();
 }
 
-/*
-  pass through channels in manual mode
- */
-void Plane::set_servos_manual_passthrough(void)
-{
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_in_expo(false));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_in_expo(false));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_in_expo(false));
-    float throttle = get_throttle_input(true);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-
-#if HAL_QUADPLANE_ENABLED
-    if (quadplane.available() && quadplane.option_is_set(QuadPlane::OPTION::IDLE_GOV_MANUAL)) {
-        // for quadplanes it can be useful to run the idle governor in MANUAL mode
-        // as it prevents the VTOL motors from running
-        int8_t min_throttle = aparm.throttle_min.get();
-
-        // apply idle governor
-#if AP_ICENGINE_ENABLED
-        g2.ice_control.update_idle_governor(min_throttle);
-#endif
-        throttle = MAX(throttle, min_throttle);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-    }
-#endif
-}
 
 /*
   Scale the throttle to conpensate for battery voltage drop
@@ -572,7 +546,7 @@ void Plane::set_servos_controlled(void)
                control_mode == &mode_autotune) {
         // a manual throttle mode
         if (!rc().has_valid_input()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_passthru_stabilize ? 0.0 : MAX(min_throttle,0));
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
@@ -845,34 +819,7 @@ void Plane::set_servos(void)
         return;
     }
 
-    /*
-      see if we are doing ground steering.
-     */
-    if (!steering_control.ground_steering) {
-        // we are not at an altitude for ground steering. Set the nose
-        // wheel to the rudder just in case the barometer has drifted
-        // a lot
-        steering_control.steering = steering_control.rudder;
-    } else if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-        // we are within the ground steering altitude but don't have a
-        // dedicated steering channel. Set the rudder to the ground
-        // steering output
-        steering_control.rudder = steering_control.steering;
-    }
-
-    // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
-    steering_control.ground_steering = false;
-
-    if (control_mode == &mode_training) {
-        steering_control.rudder = rudder_in_expo(false);
-    }
-    
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_control.rudder);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_control.steering);
-
-    if (control_mode == &mode_manual) {
-        set_servos_manual_passthrough();
-    } else {
+    if (control_mode != &mode_manual) {
         set_servos_controlled();
     }
 

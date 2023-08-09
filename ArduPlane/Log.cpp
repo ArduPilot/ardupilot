@@ -62,6 +62,9 @@ void Plane::Log_Write_FullRate(void)
     if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
+    if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
+        AP::ins().write_notch_log_messages();
+    }
 }
 
 
@@ -110,6 +113,7 @@ void Plane::Log_Write_Control_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+#if OFFBOARD_GUIDED == ENABLED
 struct PACKED log_OFG_Guided {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -125,7 +129,6 @@ struct PACKED log_OFG_Guided {
 // Write a OFG Guided packet.
 void Plane::Log_Write_OFG_Guided()
 {
-#if OFFBOARD_GUIDED == ENABLED
     struct log_OFG_Guided pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OFG_MSG),
         time_us                : AP_HAL::micros64(),
@@ -138,8 +141,8 @@ void Plane::Log_Write_OFG_Guided()
         target_heading_limit   : guided_state.target_heading_accel_limit
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
-#endif
 }
+#endif
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
@@ -219,6 +222,7 @@ struct PACKED log_AETR {
     float throttle;
     float rudder;
     float flap;
+    float steering;
     float speed_scaler;
 };
 
@@ -232,6 +236,7 @@ void Plane::Log_Write_AETR()
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
         ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
+        ,steering : SRV_Channels::get_output_scaled(SRV_Channel::k_steering)
         ,speed_scaler : get_speed_scaler(),
         };
 
@@ -374,8 +379,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
 // @Field: Sscl: speed scalar for tailsitter control surfaces
-// @Field: Trn: Transistion state
-// @Field: Ast: Q assist active state
+// @Field: Trn: Transition state: 0-AirspeedWait,1-Timer,2-Done / TailSitter: 0-FW Wait,1-VTOL Wait,2-Done
+// @Field: Ast: Q assist active
 #if HAL_QUADPLANE_ENABLED
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "QffffffeccffBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trn,Ast", "s----mmmnn----", "F----00000-0--" , true },
@@ -427,10 +432,12 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Thr: Pre-mixer value for throttle output (between -100 and 100)
 // @Field: Rudd: Pre-mixer value for rudder output (between -4500 and 4500)
 // @Field: Flap: Pre-mixer value for flaps output (between 0 and 100)
+// @Field: Steer: Pre-mixer value for steering output (between -4500 and 4500)
 // @Field: SS: Surface movement / airspeed scaling value
     { LOG_AETR_MSG, sizeof(log_AETR),
-      "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },
+      "AETR", "Qfffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,Steer,SS", "s-------", "F-------" , true },
 
+#if OFFBOARD_GUIDED == ENABLED
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
 // @Field: TimeUS: Time since system startup
@@ -443,6 +450,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: HdgA: target heading lim
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
+#endif
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()

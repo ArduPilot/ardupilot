@@ -79,6 +79,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    // @Param: BATT_VOLTAGE
+    // @DisplayName: Simulated battery voltage
+    // @Description: Simulated battery (constant) voltage
+    // @Units: V
+    // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
@@ -240,7 +245,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
-    AP_GROUPINFO("SAFETY_STATE",    59, SIM,  _safety_switch_state, 0),
+    // 59 was SAFETY_STATE
 
     // motor harmonics
     AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
@@ -437,7 +442,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Param: GPS_TYPE
     // @DisplayName: GPS 1 type
     // @Description: Sets the type of simulation used for GPS 1
-    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF
+    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),

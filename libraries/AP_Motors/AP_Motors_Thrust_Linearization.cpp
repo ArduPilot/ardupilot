@@ -16,6 +16,71 @@
     #endif
 #endif
 
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    #define THRST_LIN_THST_EXPO_DEFAULT     0.55f   // set to 0 for linear and 1 for second order approximation
+    #define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+    #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+#else
+    #define THRST_LIN_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
+    #define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+    #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+#endif
+
+
+extern const AP_HAL::HAL& hal;
+
+const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
+
+    // @Param: THST_EXPO
+    // @DisplayName: Thrust Curve Expo
+    // @Description: motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)
+    // @Range: -1 1
+    // @User: Standard
+    AP_GROUPINFO("THST_EXPO", 1, Thrust_Linearization,  curve_expo, THRST_LIN_THST_EXPO_DEFAULT),
+
+    // @Param: SPIN_MIN
+    // @DisplayName: Motor Spin minimum
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
+    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @User: Standard
+    AP_GROUPINFO("SPIN_MIN", 2, Thrust_Linearization,  spin_min, THRST_LIN_SPIN_MIN_DEFAULT),
+
+    // @Param: SPIN_MAX
+    // @DisplayName: Motor Spin maximum
+    // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @User: Standard
+    AP_GROUPINFO("SPIN_MAX", 3, Thrust_Linearization,  spin_max, THRST_LIN_SPIN_MAX_DEFAULT),
+
+    // @Param: BAT_IDX
+    // @DisplayName: Battery compensation index
+    // @Description: Which battery monitor should be used for doing compensation
+    // @Values: 0:First battery, 1:Second battery
+    // @User: Standard
+    AP_GROUPINFO("BAT_IDX", 4, Thrust_Linearization, batt_idx, 0),
+
+    // @Param: BAT_V_MAX
+    // @DisplayName: Battery voltage compensation maximum voltage
+    // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
+    // @Range: 6 53
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("BAT_V_MAX", 5, Thrust_Linearization, batt_voltage_max, THRST_LIN_BAT_VOLT_MAX_DEFAULT),
+
+    // @Param: BAT_V_MIN
+    // @DisplayName: Battery voltage compensation minimum voltage
+    // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
+    // @Range: 6 42
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("BAT_V_MIN", 6, Thrust_Linearization, batt_voltage_min, THRST_LIN_BAT_VOLT_MIN_DEFAULT),
+
+    AP_GROUPEND
+};
 
 Thrust_Linearization::Thrust_Linearization(AP_Motors& _motors) :
     motors(_motors),
@@ -24,6 +89,10 @@ Thrust_Linearization::Thrust_Linearization(AP_Motors& _motors) :
     // setup battery voltage filtering
     batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     batt_voltage_filt.reset(1.0);
+
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    AP_Param::setup_object_defaults(this, var_info);
+#endif
 }
 
 // converts desired thrust to linearized actuator output in a range of 0~1

@@ -46,9 +46,6 @@ public:
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
@@ -67,8 +64,8 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
-    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const override;
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -76,7 +73,7 @@ public:
 protected:
 
     // init_outputs
-    bool init_outputs () override;
+    void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
@@ -90,8 +87,8 @@ protected:
     const char* _get_frame_string() const override { return "HELI_DUAL"; }
 
     //  objects we depend upon
-    AP_MotorsHeli_Swash        _swashplate1;        // swashplate1
-    AP_MotorsHeli_Swash        _swashplate2;        // swashplate2
+    AP_MotorsHeli_Swash _swashplate1 { CH_1, CH_2, CH_3, CH_7 }; // swashplate1
+    AP_MotorsHeli_Swash _swashplate2 { CH_4, CH_5, CH_6, CH_8 }; // swashplate2
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function

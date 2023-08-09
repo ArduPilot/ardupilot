@@ -5,8 +5,14 @@
  *      Author: Amilcar Lucas
  */
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Relay_config.h"
+
+#if AP_RELAY_ENABLED
+
 #include "AP_Relay.h"
+
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -187,6 +193,40 @@ bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+
+#if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
+// this method may only return false if there is no space in the
+// supplied link for the message.
+bool AP_Relay::send_relay_status(const GCS_MAVLINK &link) const
+{
+    if (!HAVE_PAYLOAD_SPACE(link.get_chan(), RELAY_STATUS)) {
+        return false;
+    }
+
+    uint16_t present_mask = 0;
+    uint16_t on_mask = 0;
+    for (auto i=0; i<AP_RELAY_NUM_RELAYS; i++) {
+        if (!enabled(i)) {
+            continue;
+        }
+        const uint16_t relay_bit_mask = 1U << i;
+        present_mask |= relay_bit_mask;
+
+        if (_pin_states & relay_bit_mask) {
+            on_mask |= relay_bit_mask;
+        }
+    }
+
+    mavlink_msg_relay_status_send(
+        link.get_chan(),
+        AP_HAL::millis(),
+        on_mask,
+        present_mask
+        );
+    return true;
+}
+#endif  // AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
+
 namespace AP {
 
 AP_Relay *relay()
@@ -195,3 +235,5 @@ AP_Relay *relay()
 }
 
 }
+
+#endif  // AP_RELAY_ENABLED

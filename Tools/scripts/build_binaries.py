@@ -538,8 +538,9 @@ is bob we will attempt to checkout bob-AVR'''
                                 self.mkpath(ddir)
                             self.addfwversion(ddir, vehicle)
                             features_filepath = os.path.join(ddir, "features.txt",)
-                            self.progress("Writing (%s)" % features_filepath)
-                            self.write_string_to_filepath(features_text, features_filepath)
+                            if features_text is not None:
+                                self.progress("Writing (%s)" % features_filepath)
+                                self.write_string_to_filepath(features_text, features_filepath)
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
@@ -550,8 +551,9 @@ is bob we will attempt to checkout bob-AVR'''
                         # exists as we re-use the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
-                        self.progress("Writing (%s)" % features_filepath)
-                        self.write_string_to_filepath(features_text, features_filepath)
+                        if features_text is not None:
+                            self.progress("Writing (%s)" % features_filepath)
+                            self.write_string_to_filepath(features_text, features_filepath)
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)

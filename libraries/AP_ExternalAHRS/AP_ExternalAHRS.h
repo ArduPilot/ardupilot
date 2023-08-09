@@ -46,8 +46,8 @@ public:
 #if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
         VecNav = 1,
 #endif
-#if AP_EXTERNAL_AHRS_LORD_ENABLED
-        LORD = 2,
+#if AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
+        MicroStrain = 2,
 #endif
     };
 

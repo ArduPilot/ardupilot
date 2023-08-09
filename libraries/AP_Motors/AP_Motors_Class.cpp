@@ -293,6 +293,14 @@ bool AP_Motors::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+bool AP_Motors::motor_test_checks(size_t buflen, char *buffer) const
+{
+    // Must pass base class arming checks (the function above)
+    // Do not run frame specific arming checks as motor test is less strict
+    // For example not all the outputs have to be assigned
+    return AP_Motors::arming_checks(buflen, buffer);
+}
+
 namespace AP {
     AP_Motors *motors()
     {

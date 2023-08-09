@@ -258,6 +258,7 @@ private:
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
+    bool get_steering_and_throttle(float& steering, float& throttle) override;
     // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
     bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
     bool set_desired_speed(float speed) override;
@@ -360,6 +361,7 @@ private:
     void init_ardupilot() override;
     void startup_ground(void);
     void update_ahrs_flyforward();
+    bool gcs_mode_enabled(const Mode::Number mode_num) const;
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }

@@ -90,10 +90,10 @@ void AP::PerfInfo::TaskInfo::print(const char* task_name, uint32_t total_time, E
         pct = elapsed_time_us * 100.0f / total_time;
         avg = MIN(uint16_t(elapsed_time_us / tick_count), 9999);
     }
-#if HAL_MINIMIZE_FEATURES
-    const char* fmt = "%-16.16s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
-#else
+#if AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED
     const char* fmt = "%-32.32s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
+#else
+    const char* fmt = "%-16.16s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #endif
     str.printf(fmt, task_name,
                 unsigned(MIN(min_time_us, 9999)), unsigned(MIN(max_time_us, 9999)), unsigned(avg),

@@ -449,9 +449,11 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
+#if AP_RELAY_ENABLED
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
+#endif
 
 #if PARACHUTE == ENABLED
     // @Group: CHUTE_
@@ -1038,6 +1040,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: set which surface to track in surface tracking
     // @Values: 0:Do not track, 1:Ground, 2:Ceiling
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("SURFTRAK_MODE", 51, ParametersG2, surftrak_mode, (uint8_t)Copter::SurfaceTracking::Surface::GROUND),
 
     // @Param: FS_DR_ENABLE

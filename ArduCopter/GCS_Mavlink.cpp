@@ -739,15 +739,15 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch(packet.command) {
-    case MAV_CMD_DO_FOLLOW:
 #if MODE_FOLLOW_ENABLED == ENABLED
+    case MAV_CMD_DO_FOLLOW:
         // param1: sysid of target to follow
         if ((packet.param1 > 0) && (packet.param1 <= 255)) {
             copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
             return MAV_RESULT_ACCEPTED;
         }
+        return MAV_RESULT_DENIED;
 #endif
-        return MAV_RESULT_UNSUPPORTED;
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
@@ -825,16 +825,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
-
-#if MODE_FOLLOW_ENABLED == ENABLED
-    case MAV_CMD_DO_FOLLOW:
-        // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-            copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_FAILED;
-#endif
 
     case MAV_CMD_CONDITION_YAW:
         // param1 : target angle [0-360]
@@ -946,23 +936,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
-#if AP_LANDINGGEAR_ENABLED
-        case MAV_CMD_AIRFRAME_CONFIGURATION: {
-            // Param 1: Select which gear, not used in ArduPilot
-            // Param 2: 0 = Deploy, 1 = Retract
-            // For safety, anything other than 1 will deploy
-            switch ((uint8_t)packet.param2) {
-                case 1:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
-                    return MAV_RESULT_ACCEPTED;
-                default:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
-                    return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
-        }
-#endif
-
         /* Solo user presses Fly button */
     case MAV_CMD_SOLO_BTN_FLY_CLICK: {
         if (copter.failsafe.radio) {
@@ -1030,12 +1003,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
     }
 
-    // pause or resume an auto mission
-    case MAV_CMD_DO_PAUSE_CONTINUE: {
-        mavlink_command_int_t packet_int;
-        GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-        return handle_command_pause_continue(packet_int);
-    }
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }

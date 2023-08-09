@@ -62,9 +62,14 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
 }
 
 
+bool RC_Channels_Rover::in_rc_failsafe() const
+{
+    return rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE;
+}
+
 bool RC_Channels_Rover::has_valid_input() const
 {
-    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+    if (in_rc_failsafe()) {
         return false;
     }
     return true;

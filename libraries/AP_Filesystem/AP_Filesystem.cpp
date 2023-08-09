@@ -17,6 +17,7 @@
 
 #include "AP_Filesystem_config.h"
 #include <AP_HAL/HAL.h>
+#include <AP_HAL/Util.h>
 
 static AP_Filesystem fs;
 

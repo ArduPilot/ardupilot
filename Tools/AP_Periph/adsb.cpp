@@ -23,6 +23,7 @@
 #ifdef HAL_PERIPH_ENABLE_ADSB
 
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <dronecan_msgs.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -52,6 +53,15 @@ void AP_Periph_FW::adsb_init(void)
     }
 }
 
+static mavlink_message_t chan_buffer;
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
+    return &chan_buffer;
+}
+
+static mavlink_status_t chan_status;
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
+    return &chan_status;
+}
 
 /*
   update ADSB subsystem
@@ -82,6 +92,64 @@ void AP_Periph_FW::adsb_update(void)
             }
         }
     }
+}
+
+/*
+  map an ADSB_VEHICLE MAVLink message to a UAVCAN TrafficReport message
+ */
+void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
+{
+    ardupilot_equipment_trafficmonitor_TrafficReport pkt {};
+    pkt.timestamp.usec = 0;
+    pkt.icao_address = msg.ICAO_address;
+    pkt.tslc = msg.tslc;
+    pkt.latitude_deg_1e7 = msg.lat;
+    pkt.longitude_deg_1e7 = msg.lon;
+    pkt.alt_m = msg.altitude * 1e-3;
+
+    pkt.heading = radians(msg.heading * 1e-2);
+
+    pkt.velocity[0] = cosf(pkt.heading) * msg.hor_velocity * 1e-2;
+    pkt.velocity[1] = sinf(pkt.heading) * msg.hor_velocity * 1e-2;
+    pkt.velocity[2] = -msg.ver_velocity * 1e-2;
+
+    pkt.squawk = msg.squawk;
+    memcpy(pkt.callsign, msg.callsign, MIN(sizeof(msg.callsign),sizeof(pkt.callsign)));
+    if (msg.flags & 0x8000) {
+        pkt.source = ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_SOURCE_ADSB_UAT;
+    } else {
+        pkt.source = ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_SOURCE_ADSB;
+    }
+
+    pkt.traffic_type = msg.emitter_type;
+
+    if ((msg.flags & ADSB_FLAGS_VALID_ALTITUDE) != 0 && msg.altitude_type == 0) {
+        pkt.alt_type = ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ALT_TYPE_PRESSURE_AMSL;
+    } else if ((msg.flags & ADSB_FLAGS_VALID_ALTITUDE) != 0 && msg.altitude_type == 1) {
+        pkt.alt_type = ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ALT_TYPE_WGS84;
+    } else {
+        pkt.alt_type = ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ALT_TYPE_ALT_UNKNOWN;
+    }
+
+    pkt.lat_lon_valid = (msg.flags & ADSB_FLAGS_VALID_COORDS) != 0;
+    pkt.heading_valid = (msg.flags & ADSB_FLAGS_VALID_HEADING) != 0;
+    pkt.velocity_valid = (msg.flags & ADSB_FLAGS_VALID_VELOCITY) != 0;
+    pkt.callsign_valid = (msg.flags & ADSB_FLAGS_VALID_CALLSIGN) != 0;
+    pkt.ident_valid = (msg.flags & ADSB_FLAGS_VALID_SQUAWK) != 0;
+    pkt.simulated_report = (msg.flags & ADSB_FLAGS_SIMULATED) != 0;
+
+    // these flags are not in common.xml
+    pkt.vertical_velocity_valid = (msg.flags & 0x0080) != 0;
+    pkt.baro_valid = (msg.flags & 0x0100) != 0;
+
+    uint8_t buffer[ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_MAX_SIZE] {};
+    uint16_t total_size = ardupilot_equipment_trafficmonitor_TrafficReport_encode(&pkt, buffer, !periph.canfdout());
+
+    canard_broadcast(ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_SIGNATURE,
+                    ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ID,
+                    CANARD_TRANSFER_PRIORITY_LOWEST,
+                    &buffer[0],
+                    total_size);
 }
 
 #endif // HAL_PERIPH_ENABLE_ADSB

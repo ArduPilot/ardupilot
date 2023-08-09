@@ -31,6 +31,7 @@
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
+#include <SITL/SIM_RF_NoopLoop.h>
 #include <SITL/SIM_RF_TeraRanger_Serial.h>
 #include <SITL/SIM_RF_LightWareSerial.h>
 #include <SITL/SIM_RF_LightWareSerialBinary.h>
@@ -46,7 +47,7 @@
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
-#include <SITL/SIM_LORD.h>
+#include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -215,6 +216,8 @@ private:
     SITL::RF_Benewake_TF03 *benewake_tf03;
     // simulated Benewake tfmini rangefinder:
     SITL::RF_Benewake_TFmini *benewake_tfmini;
+    //simulated NoopLoop TOFSense rangefinder:
+    SITL::RF_Nooploop *nooploop;
     // simulated TeraRanger Serial:
     SITL::RF_TeraRanger_Serial *teraranger_serial;
 
@@ -278,8 +281,8 @@ private:
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
 
-    // simulated LORD Microstrain system
-    SITL::LORD *lord;
+    // simulated LORD MicroStrain system
+    SITL::MicroStrain *microstrain;
 
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend

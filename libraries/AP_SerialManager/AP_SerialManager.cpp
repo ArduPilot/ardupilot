@@ -35,6 +35,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef DEFAULT_SERIAL0_BAUD
 #define DEFAULT_SERIAL0_BAUD AP_SERIALMANAGER_CONSOLE_BAUD
 #endif
+#ifdef HAL_SERIAL0_PROTOCOL
+#error "Please use DEFAULT_SERIAL0_PROTOCOL"
+#endif
 
 #ifndef DEFAULT_SERIAL1_PROTOCOL
 #define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MAVLink2
@@ -44,6 +47,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef DEFAULT_SERIAL1_OPTIONS
 #define DEFAULT_SERIAL1_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL1_PROTOCOL
+#error "Please use DEFAULT_SERIAL1_PROTOCOL"
 #endif
 
 #ifndef DEFAULT_SERIAL2_PROTOCOL
@@ -55,6 +61,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef DEFAULT_SERIAL2_OPTIONS
 #define DEFAULT_SERIAL2_OPTIONS 0
 #endif
+#ifdef HAL_SERIAL2_PROTOCOL
+#error "Please use DEFAULT_SERIAL2_PROTOCOL"
+#endif
 
 #ifndef DEFAULT_SERIAL3_PROTOCOL
 #define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
@@ -64,6 +73,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef DEFAULT_SERIAL3_OPTIONS
 #define DEFAULT_SERIAL3_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL3_PROTOCOL
+#error "Please use DEFAULT_SERIAL3_PROTOCOL"
 #endif
 
 #ifndef DEFAULT_SERIAL4_PROTOCOL
@@ -75,6 +87,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef DEFAULT_SERIAL4_OPTIONS
 #define DEFAULT_SERIAL4_OPTIONS 0
 #endif
+#ifdef HAL_SERIAL4_PROTOCOL
+#error "Please use DEFAULT_SERIAL4_PROTOCOL"
+#endif
 
 #ifndef DEFAULT_SERIAL5_PROTOCOL
 #define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
@@ -84,6 +99,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef DEFAULT_SERIAL5_OPTIONS
 #define DEFAULT_SERIAL5_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL5_PROTOCOL
+#error "Please use DEFAULT_SERIAL5_PROTOCOL"
 #endif
 
 #ifndef DEFAULT_SERIAL6_PROTOCOL
@@ -95,6 +113,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef DEFAULT_SERIAL6_OPTIONS
 #define DEFAULT_SERIAL6_OPTIONS 0
 #endif
+#ifdef HAL_SERIAL6_PROTOCOL
+#error "Please use DEFAULT_SERIAL6_PROTOCOL"
+#endif
 
 #ifndef DEFAULT_SERIAL7_PROTOCOL
 #define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
@@ -104,6 +125,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef DEFAULT_SERIAL7_OPTIONS
 #define DEFAULT_SERIAL7_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL7_PROTOCOL
+#error "Please use DEFAULT_SERIAL7_PROTOCOL"
 #endif
 
 #ifndef DEFAULT_SERIAL8_PROTOCOL
@@ -115,6 +139,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef DEFAULT_SERIAL8_OPTIONS
 #define DEFAULT_SERIAL8_OPTIONS 0
 #endif
+#ifdef HAL_SERIAL8_PROTOCOL
+#error "Please use DEFAULT_SERIAL8_PROTOCOL"
+#endif
 
 #ifndef DEFAULT_SERIAL9_PROTOCOL
 #define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
@@ -124,6 +151,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef DEFAULT_SERIAL9_OPTIONS
 #define DEFAULT_SERIAL9_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL9_PROTOCOL
+#error "Please use DEFAULT_SERIAL9_PROTOCOL"
 #endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
@@ -617,18 +647,6 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
         return hal.serial(id);
     }
     return nullptr;
-}
-
-// set_blocking_writes_all - sets block_writes on or off for all serial channels
-void AP_SerialManager::set_blocking_writes_all(bool blocking)
-{
-    // set block_writes for all initialised serial ports
-    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        auto *uart = hal.serial(i);
-        if (uart != nullptr) {
-            uart->set_blocking_writes(blocking);
-        }
-    }
 }
 
 /*

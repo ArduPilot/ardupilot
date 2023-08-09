@@ -8,6 +8,10 @@
 #define HAL_BARO_WIND_COMP_ENABLED 1
 #endif
 
+#ifndef AP_BARO_ENABLED
+#define AP_BARO_ENABLED 1
+#endif
+
 // backend support:
 #ifndef AP_BARO_BACKEND_DEFAULT_ENABLED
 #define AP_BARO_BACKEND_DEFAULT_ENABLED 1

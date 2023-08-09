@@ -9,6 +9,7 @@
 
 -- set and get for field types share function names
 ---@diagnostic disable: duplicate-set-field
+---@diagnostic disable: missing-return
 
 -- manual bindings
 
@@ -58,6 +59,9 @@ logger = {}
 ---@param data1 integer|number|uint32_t_ud|string -- data to be logged, type to match format string
 function logger:write(name, labels, format, units, multipliers, data1, ...) end
 
+-- log a files content to onboard log
+---@param filename string -- file name
+function logger:log_file_content(filename) end
 
 -- i2c bus interaction
 ---@class i2c
@@ -1524,6 +1528,13 @@ function MotorsMatrix:add_motor_raw(motor_num, roll_factor, pitch_factor, yaw_fa
 ---@return boolean
 function MotorsMatrix:init(expected_num_motors) end
 
+-- desc get index (starting at 0) of lost motor
+---@return integer
+function MotorsMatrix:get_lost_motor() end
+
+-- desc return true if we are in thrust boost due to possible lost motor
+---@return boolean
+function MotorsMatrix:get_thrust_boost() end
 
 -- desc
 ---@class quadplane
@@ -1984,6 +1995,11 @@ function vehicle:get_wp_distance_m() end
 function vehicle:set_steering_and_throttle(steering, throttle) end
 
 -- desc
+---@return number|nil
+---@return number|nil
+function vehicle:get_steering_and_throttle() end
+
+-- desc
 ---@param rate_dps number
 ---@return boolean
 function vehicle:set_circle_rate(rate_dps) end
@@ -2251,7 +2267,6 @@ function gcs:get_hud_throttle() end
 
 -- set high latency control state. Analogous to MAV_CMD_CONTROL_HIGH_LATENCY
 ---@param enabled boolean -- true to enable or false to disable
----@return void
 function gcs:enable_high_latency_connections(enabled) end
 
 -- get the the current state of high latency control
@@ -2407,10 +2422,46 @@ function rangefinder:has_orientation(orientation) end
 ---@return integer
 function rangefinder:num_sensors() end
 
+-- Proximity backend methods
+---@class AP_Proximity_Backend_ud
+local AP_Proximity_Backend_ud = {}
+
+-- Push virtual proximity boundary into actual boundary
+---@return boolean
+function AP_Proximity_Backend_ud:update_virtual_boundary() end
+
+-- Set sensor min and max. Only need to do it once
+---@param min number
+---@param max number
+---@return boolean
+function AP_Proximity_Backend_ud:set_distance_min_max(min, max) end
+
+-- type of backend
+---@return integer
+function AP_Proximity_Backend_ud:type() end
+
+-- send 3d object as 3d vector
+---@param vector_3d Vector3f_ud
+---@param update_boundary boolean
+---@return boolean
+function AP_Proximity_Backend_ud:handle_script_3d_msg(vector_3d, update_boundary) end
+
+-- send 3d object as angles
+---@param dist_m number
+---@param yaw_deg number
+---@param pitch_deg number
+---@param update_boundary boolean
+---@return boolean
+function AP_Proximity_Backend_ud:handle_script_distance_msg(dist_m, yaw_deg, pitch_deg, update_boundary) end
 
 -- desc
 ---@class proximity
 proximity = {}
+
+-- get backend based on proximity instance provided
+---@param instance integer
+---@return AP_Proximity_Backend_ud
+function proximity:get_backend(instance) end
 
 -- desc
 ---@param object_number integer
@@ -2825,6 +2876,23 @@ AC_AttitudeControl = {}
 function AC_AttitudeControl:get_rpy_srate() end
 
 -- desc
+---@class AR_AttitudeControl
+AR_AttitudeControl = {}
+
+-- return attitude controller slew rates for rovers
+---@return number -- steering slew rate
+---@return number -- spees slew rate
+function AR_AttitudeControl:get_srate() end
+
+-- desc
+---@class AR_PosControl
+AR_PosControl = {}
+
+-- return position controller slew rates for rovers
+---@return number -- velocity slew rate
+function AR_PosControl:get_srate() end
+
+-- desc
 ---@class follow
 follow = {}
 
@@ -2858,12 +2926,12 @@ scripting = {}
 function scripting:restart_all() end
 
 -- desc
---@param directoryname
---@return list of filenames
+---@param directoryname string
+---@return table -- table of filenames
 function dirlist(directoryname) end
 
 --desc
---@param filename
+---@param filename string
 function remove(filename) end
 
 -- desc
@@ -2871,23 +2939,27 @@ function remove(filename) end
 mavlink = {}
 
 -- initializes mavlink
---@param num_rx_msgid number
---@param msg_queue_length
+---@param num_rx_msgid uint32_t_ud|integer
+---@param msg_queue_length uint32_t_ud|integer
 function mavlink:init(num_rx_msgid, msg_queue_length) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
---@param msg_id number
+---@param msg_id number
 function mavlink:register_rx_msgid(msg_id) end
 
 -- receives mavlink message marked for receive using mavlink:register_rx_msgid
---@return mavlink_message bytes
---@return mavlink_channel number
---@return receive_timestamp number
+---@return string -- bytes
+---@return number -- mavlink channel
+---@return uint32_t_ud -- receive_timestamp
 function mavlink:receive_chan() end
 
 -- sends mavlink message, to use this function the call should be like this:
 -- mavlink:send(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}})
---@param mavlink_channel integer
---@param mavlink_message_id integer
---@param encoded_message_packet bytes
+---@param chan integer
+---@param msgid integer
+---@param message string
 function mavlink:send_chan(chan, msgid, message) end
+
+-- Block a given MAV_CMD from being procceced by ArduPilot
+---@param comand_id integer
+function mavlink:block_command(comand_id) end

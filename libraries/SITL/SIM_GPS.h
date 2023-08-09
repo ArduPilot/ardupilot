@@ -59,6 +59,8 @@ public:
 #endif
         NOVA  =  8,
         SBP2  =  9,
+        GSOF  = 11, // matches GPS_TYPE
+        MSP   = 19,
     };
 
     GPS(uint8_t _instance);
@@ -91,7 +93,16 @@ private:
         double roll_deg;
         double pitch_deg;
         bool have_lock;
+
+        // Get heading [rad], where 0 = North in WGS-84 coordinate system
+        float heading() const WARN_IF_UNUSED;
+
+        // Get 2D speed [m/s] in WGS-84 coordinate system
+        float speed_2d() const WARN_IF_UNUSED;
     };
+
+
+
     // last 20 samples, allowing for up to 20 samples of delay
     gps_data _gps_history[20];
 
@@ -115,6 +126,7 @@ private:
 
     void update_sbp(const struct gps_data *d);
     void update_sbp2(const struct gps_data *d);
+    void update_msp(const struct gps_data *d);
 
 #if AP_SIM_GPS_FILE_ENABLED
     void update_file();
@@ -124,6 +136,14 @@ private:
     void nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
+
+    // If gsof gets data in, handle it. 
+    // Simply, it should respond to this: https://receiverhelp.trimble.com/oem-gnss/index.html#API_TestingComms.html
+    void on_data_gsof();
+    void update_gsof(const struct gps_data *d);
+    void send_gsof(const uint8_t *buf, const uint16_t size);
+    uint64_t pack_double_into_gsof_packet(const double& src) WARN_IF_UNUSED;
+    uint32_t pack_float_into_gsof_packet(const float& src) WARN_IF_UNUSED;
 
     // get delayed data
     gps_data interpolate_data(const gps_data &d, uint32_t delay_ms);

@@ -180,3 +180,5 @@ define HAL_SPRAYER_ENABLED 0
 define AP_BATTERY_SMBUS_ENABLED 0
 
 define DEFAULT_NTF_LED_TYPES 257
+
+include ../include/no_bootloader_DFU.inc

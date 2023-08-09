@@ -22,6 +22,7 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         temperature         : (int16_t) ( has_temperature() ? _state.temperature * 100 : 0),
         resistance          : _state.resistance,
         rem_percent         : percent,
+        health              : _state.healthy
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

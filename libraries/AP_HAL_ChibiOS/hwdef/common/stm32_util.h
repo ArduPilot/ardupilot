@@ -41,6 +41,7 @@ size_t mem_available(void);
 void *malloc_dma(size_t size);
 void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
+void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
 
 struct memory_region {
@@ -176,6 +177,9 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
 bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
+
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
 
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);

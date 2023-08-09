@@ -167,7 +167,6 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```bash
-  # assuming we are using /dev/pts/1 for Ardupilot SITL
   sim_vehicle.py -v ArduPlane -DG --console --enable-dds
   ```
 
@@ -213,7 +212,9 @@ Next, follow the associated section for your chosen transport, and finally you c
   * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
-
+  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
+  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
 
   $ ros2 topic hz /ap/time
   average rate: 50.115

@@ -146,7 +146,7 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
 if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy ptyprocess configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"

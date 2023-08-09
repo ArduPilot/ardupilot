@@ -41,10 +41,6 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
-#ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
-#endif
-
 class AP_RangeFinder_Backend;
 
 class RangeFinder
@@ -97,6 +93,7 @@ public:
         Benewake_CAN = 34,
         TeraRanger_Serial = 35,
         Lua_Scripting = 36,
+        NoopLoop_P = 37,
         SIM = 100,
     };
 

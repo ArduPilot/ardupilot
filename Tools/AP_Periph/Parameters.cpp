@@ -171,7 +171,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec
+    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec, 3:Enable sending stats
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
@@ -475,7 +475,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -507,7 +507,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif
+#endif  // HAL_PROXIMITY_ENABLED
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
@@ -549,6 +549,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GARRAY(esc_serial_port, 1, "ESC_APD_SERIAL_2", APD_ESC_SERIAL_1),
   #endif
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+    // @Group: NET_
+    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
+    GOBJECT(networking, "NET_", AP_Networking),
 #endif
 
     AP_VAREND

@@ -316,12 +316,12 @@ public:
     AP_Beacon beacon;
 #endif
 
-    // Motor library
-    AP_MotorsUGV motors;
-
     // wheel encoders
     AP_WheelEncoder wheel_encoder;
     AP_WheelRateControl wheel_rate_control;
+
+    // Motor library
+    AP_MotorsUGV motors;
 
     // steering and throttle controller
     AR_AttitudeControl attitude_control;

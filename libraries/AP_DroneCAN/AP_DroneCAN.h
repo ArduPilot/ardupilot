@@ -114,6 +114,7 @@ public:
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
         USE_HOBBYWING_ESC         = (1U<<7),
+        ENABLE_STATS              = (1U<<8),
     };
 
     // check if a option is set
@@ -130,6 +131,11 @@ public:
     Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
     Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
     Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
+
+    // xacti specific publishers
+    Canard::Publisher<com_xacti_CopterAttStatus> xacti_copter_att_status{canard_iface};
+    Canard::Publisher<com_xacti_GimbalControlData> xacti_gimbal_control_data{canard_iface};
+    Canard::Publisher<com_xacti_GnssStatus> xacti_gnss_status{canard_iface};
 
 private:
     void loop(void);
@@ -196,7 +202,8 @@ private:
     uint32_t _srv_send_count;
     uint32_t _fail_send_count;
 
-    uint8_t _SRV_armed;
+    uint32_t _SRV_armed_mask; // mask of servo outputs that are active
+    uint32_t _ESC_armed_mask; // mask of ESC outputs that are active
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
 
@@ -215,8 +222,6 @@ private:
         uint32_t last_lib_yaw_time_ms;
     } _gnss;
 #endif
-    
-    static HAL_Semaphore _telem_sem;
 
     // node status send
     uint32_t _node_status_last_send_ms;
@@ -231,6 +236,8 @@ private:
     CanardInterface canard_iface;
 
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
+    Canard::Publisher<dronecan_protocol_CanStats> can_stats{canard_iface};
+    Canard::Publisher<dronecan_protocol_Stats> protocol_stats{canard_iface};
     Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
     Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};

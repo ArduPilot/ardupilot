@@ -1,5 +1,10 @@
 #include "Copter.h"
 
+#pragma GCC diagnostic push
+#if defined(__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
+
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
@@ -18,11 +23,12 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
     // check if motor interlock and either Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
+    bool passed = true;
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
         (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
         rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
-        return false;
+        passed = false;
     }
 
     // check if motor interlock aux switch is in use
@@ -30,17 +36,22 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // otherwise exit immediately.
     if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
         check_failed(display_failure, "Motor Interlock Enabled");
-        return false;
+        passed = false;
     }
 
     if (!disarm_switch_checks(display_failure)) {
-        return false;
+        passed = false;
     }
 
     // always check motors
     char failure_msg[50] {};
     if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         check_failed(display_failure, "Motors: %s", failure_msg);
+        passed = false;
+    }
+
+    // If not passed all checks return false
+    if (!passed) {
         return false;
     }
 
@@ -49,6 +60,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
+    // bitwise & ensures all checks are run
     return parameter_checks(display_failure)
         & oa_checks(display_failure)
         & gcs_failsafe_check(display_failure)
@@ -212,19 +224,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 
         #if FRAME_CONFIG == HELI_FRAME
-        if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
-            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
-            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid Heli FRAME_CLASS");
-            return false;
-        }
-
-        // check helicopter parameters
-        if (!copter.motors->parameter_check(display_failure)) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Heli motors checks failed");
-            return false;
-        }
-
         char fail_msg[50];
         // check input manager parameters
         if (!copter.input_manager.parameter_check(fail_msg, ARRAY_SIZE(fail_msg))) {
@@ -332,6 +331,7 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
         copter.channel_yaw
     };
 
+    // bitwise & ensures all checks are run
     copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels)
         & AP_Arming::rc_calibration_checks(display_failure);
 
@@ -845,3 +845,5 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 
     return true;
 }
+
+#pragma GCC diagnostic pop
