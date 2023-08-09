@@ -3988,7 +3988,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_RALLY_ENABLED
+#if AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
     case MAVLINK_MSG_ID_RALLY_POINT:
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
         handle_common_rally_message(msg);
