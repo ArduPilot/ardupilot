@@ -945,6 +945,7 @@ class sitl_periph(sitl):
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_TERRAIN_AVAILABLE = 0,
             AP_CUSTOMROTATIONS_ENABLED = 0,
+            AP_LOCATIONDB_ENABLED = 0,
             AP_PERIPH_BATTERY_ENABLED = 0,
             AP_PERIPH_DEVICE_TEMPERATURE_ENABLED = 0,
             AP_PERIPH_SERIAL_OPTIONS_ENABLED = 0,
