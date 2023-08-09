@@ -295,6 +295,7 @@ class ExtractFeatures(object):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_LOCATIONDB_ENABLED', r'AP_LocationDB::init',),
         ]
 
     def progress(self, msg):
