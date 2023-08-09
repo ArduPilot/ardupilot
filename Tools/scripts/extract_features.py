@@ -201,6 +201,7 @@ class ExtractFeatures(object):
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
             ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
+            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
         ]
 
     def progress(self, msg):
