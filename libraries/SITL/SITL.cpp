@@ -473,7 +473,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @DisplayName: Original Position (Altitude)
     // @Description: Specifies vehicle's startup altitude (AMSL)
     // @User: Advanced
-    AP_GROUPINFO("OPOS_ALT",    53, SIM,  opos.alt, 584.0f),
+    AP_GROUPINFO("OPOS_ALT",    53, SIM,  opos.alt, 586.3f),
     // @Param: OPOS_HDG
     // @DisplayName: Original Position (Heading)
     // @Description: Specifies vehicle's startup heading (0-360)
