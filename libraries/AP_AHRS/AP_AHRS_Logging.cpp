@@ -168,7 +168,7 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
     /*
       log P/PD gain scale if not == 1.0
      */
-    const Vector3f &scale = attitude_control.get_angle_P_scale_logging();
+    const Vector3f &scale = attitude_control.get_last_angle_P_scale();
     const Vector3f &pd_scale = attitude_control.get_PD_scale_logging();
     if (scale != AC_AttitudeControl::VECTORF_111 || pd_scale != AC_AttitudeControl::VECTORF_111) {
         const struct log_ATSC pkt_ATSC {
