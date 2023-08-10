@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 '''
 setup board.h for chibios
+
 '''
 
 import argparse
@@ -13,6 +14,7 @@ import pickle
 import re
 import shutil
 import filecmp
+
 
 class ChibiOSHWDef(object):
 
@@ -29,7 +31,6 @@ class ChibiOSHWDef(object):
         self.default_params_filepath = default_params_filepath
 
         self.default_gpio = ['INPUT', 'FLOATING']
-
 
         self.vtypes = []
 
@@ -128,12 +129,10 @@ class ChibiOSHWDef(object):
             return False
         return True
 
-
     def error(self, str):
         '''show an error and exit'''
         print("Error: " + str)
         sys.exit(1)
-
 
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
@@ -157,7 +156,7 @@ class ChibiOSHWDef(object):
         for port in self.ports:
             self.portmap[port] = []
             for pin in range(self.pincount[port]):
-                self.portmap[port].append(self.generic_pin(port, pin, None, self.default_gpio[0], self.default_gpio[1:], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels))
+                self.portmap[port].append(self.generic_pin(port, pin, None, self.default_gpio[0], self.default_gpio[1:], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels))  # noqa
 
         if self.mcu_series.startswith("STM32H7") or self.mcu_series.startswith("STM32F7"):
             # default DMA off on I2C for H7, we're much better off reducing DMA sharing
@@ -175,8 +174,8 @@ class ChibiOSHWDef(object):
             alt_map = lib.AltFunction_map
         else:
             # just check if Alt Func is available or not
-            for l in self.af_labels:
-                if function.startswith(l):
+            for label in self.af_labels:
+                if function.startswith(label):
                     return 0
             return None
 
@@ -185,14 +184,13 @@ class ChibiOSHWDef(object):
             # we do software RTS
             return None
 
-        for l in self.af_labels:
-            if function.startswith(l):
+        for label in self.af_labels:
+            if function.startswith(label):
                 s = pin + ":" + function
                 if s not in alt_map:
                     self.error("Unknown pin function %s for MCU %s" % (s, mcu))
                 return alt_map[s]
         return None
-
 
     def have_type_prefix(self, ptype):
         '''return True if we have a peripheral starting with the given peripheral type'''
@@ -200,7 +198,6 @@ class ChibiOSHWDef(object):
             if t.startswith(ptype):
                 return True
         return False
-
 
     def get_ADC1_chan(self, mcu, pin):
         '''return ADC1 channel for an analog pin'''
@@ -241,11 +238,22 @@ class ChibiOSHWDef(object):
             self.error("Unable to find ADC3 channel for pin %s" % pin)
         return ADC3_map[pin]
 
-
     class generic_pin(object):
         '''class to hold pin definition'''
 
-        def __init__(self, port, pin, label, type, extra, mcu_type, mcu_series, get_ADC1_chan, get_ADC2_chan, get_ADC3_chan, af_labels):
+        def __init__(self,
+                     port,
+                     pin,
+                     label,
+                     type,
+                     extra,
+                     mcu_type,
+                     mcu_series,
+                     get_ADC1_chan,
+                     get_ADC2_chan,
+                     get_ADC3_chan,
+                     af_labels
+                     ):
             self.portpin = "P%s%u" % (port, pin)
             self.port = port
             self.pin = pin
@@ -406,11 +414,11 @@ class ChibiOSHWDef(object):
                 v = "PULLUP"
 
             if (self.type.startswith('SWD') and
-                'SWDIO' in self.label):
+                    'SWDIO' in self.label):
                 v = "PULLUP"
 
             if (self.type.startswith('SWD') and
-                'SWCLK' in self.label):
+                    'SWCLK' in self.label):
                 v = "PULLDOWN"
 
             # generate pullups for SDIO and SDMMC
@@ -626,7 +634,6 @@ class ChibiOSHWDef(object):
             return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type,
                                       str)
 
-
     def get_config(self, name, column=0, required=True, default=None, type=None, spaces=False, aslist=False):
         '''get a value from config dictionary'''
         if name not in self.config:
@@ -638,8 +645,8 @@ class ChibiOSHWDef(object):
         if len(self.config[name]) < column + 1:
             if not required:
                 return None
-            self.error("missing required value %s in hwdef.dat (column %u)" % (name,
-                                                                          column))
+            self.error("missing required value %s in hwdef.dat (column %u)" %
+                       (name, column))
         if spaces:
             ret = ' '.join(self.config[name][column:])
         else:
@@ -658,7 +665,6 @@ class ChibiOSHWDef(object):
                     self.error("Badly formed config value %s (got %s)" % (name, ret))
         return ret
 
-
     def get_mcu_config(self, name, required=False):
         '''get a value from the mcu dictionary'''
         lib = self.get_mcu_lib(self.mcu_type)
@@ -670,14 +676,12 @@ class ChibiOSHWDef(object):
             return None
         return lib.mcu[name]
 
-
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
         if ram_reserve_start == 0 and self.is_periph_fw():
             ram_reserve_start = 256
         return ram_reserve_start
-
 
     def make_line(self, label):
         '''return a line for a label'''
@@ -687,7 +691,6 @@ class ChibiOSHWDef(object):
         else:
             line = "0"
         return line
-
 
     def enable_can(self, f):
         '''setup for a CAN enabled board'''
@@ -704,7 +707,7 @@ class ChibiOSHWDef(object):
             can_order = [int(s) for s in can_order_str]
         else:
             can_order = []
-            for i in range(1,3):
+            for i in range(1, 3):
                 if 'CAN%u' % i in self.bytype or (i == 1 and 'CAN' in self.bytype):
                     can_order.append(i)
 
@@ -742,7 +745,6 @@ class ChibiOSHWDef(object):
                 return True
         return False
 
-
     def get_ram_map(self):
         '''get RAM_MAP. May be different for bootloader'''
         self.env_vars['APP_RAM_START'] = None
@@ -760,7 +762,7 @@ class ChibiOSHWDef(object):
             ram_map = self.get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
             if ram_map is not None:
                 return ram_map
-        elif int(self.env_vars.get('USE_ALT_RAM_MAP',0)) == 1:
+        elif int(self.env_vars.get('USE_ALT_RAM_MAP', 0)) == 1:
             print("Using ALT_RAM_MAP")
             return self.get_mcu_config('ALT_RAM_MAP', True)
         return self.get_mcu_config('RAM_MAP', True)
@@ -769,47 +771,49 @@ class ChibiOSHWDef(object):
         mcu_series = self.mcu_series
         if mcu_series.startswith('STM32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
-                return [ 16, 16, 16, 16, 64, 128, 128, 128 ]
+                return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
-                return [ 16, 16, 16, 16, 64, 128, 128, 128,
-                         128, 128, 128, 128 ]
+                return [16, 16, 16, 16, 64, 128, 128, 128, 128, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 2048:
-                return [ 16, 16, 16, 16, 64, 128, 128, 128,
-                         128, 128, 128, 128,
-                         128, 128, 128, 128,
-                         128, 128, 128, 128,
-                         128, 128, 128, 128 ]
+                return [
+                    16, 16, 16, 16,
+                    64, 128, 128, 128,
+                    128, 128, 128, 128,
+                    128, 128, 128, 128,
+                    128, 128, 128, 128,
+                    128, 128, 128, 128
+                ]
             else:
                 raise Exception("Unsupported flash size %u" % self.get_config('FLASH_SIZE_KB', type=int))
         elif mcu_series.startswith('STM32F7'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
-                return [ 16, 16, 16, 16, 64, 128, 128, 128 ]
+                return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
-                return [ 32, 32, 32, 32, 128, 256, 256, 256 ]
+                return [32, 32, 32, 32, 128, 256, 256, 256]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 2048:
-                return [ 32, 32, 32, 32, 128, 256, 256, 256,
-                         256, 256, 256, 256]
+                return [32, 32, 32, 32, 128, 256, 256, 256,
+                        256, 256, 256, 256]
             else:
                 raise Exception("Unsupported flash size %u" % self.get_config('FLASH_SIZE_KB', type=int))
         elif mcu_series.startswith('STM32H7'):
-            return [ 128 ] * (self.get_config('FLASH_SIZE_KB', type=int)//128)
+            return [128] * (self.get_config('FLASH_SIZE_KB', type=int)//128)
         elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
-            return [ 1 ] * self.get_config('FLASH_SIZE_KB', type=int)
+            return [1] * self.get_config('FLASH_SIZE_KB', type=int)
         elif mcu_series.startswith('STM32L4') and self.mcu_type.startswith('STM32L4R'):
             # STM32L4PLUS
-            return [ 4 ] * (self.get_config('FLASH_SIZE_KB', type=int)//4)
+            return [4] * (self.get_config('FLASH_SIZE_KB', type=int)//4)
         elif (mcu_series.startswith('STM32F105') or
               mcu_series.startswith('STM32F3') or
               mcu_series.startswith('STM32G4') or
               mcu_series.startswith('STM32L4')):
-            return [ 2 ] * (self.get_config('FLASH_SIZE_KB', type=int)//2)
+            return [2] * (self.get_config('FLASH_SIZE_KB', type=int)//2)
         else:
             raise Exception("Unsupported flash size MCU %s" % mcu_series)
 
     def get_flash_npages(self):
         page_sizes = self.get_flash_pages_sizes()
         total_size = sum(pages)
-        if total_size != self.get_config('FLASH_SIZE_KB',type=int):
+        if total_size != self.get_config('FLASH_SIZE_KB', type=int):
             raise Exception("Invalid flash size MCU %s" % self.mcu_series)
         return len(pages)
 
@@ -823,7 +827,7 @@ class ChibiOSHWDef(object):
 
     def load_file_with_include(self, fname):
         '''load a file as an array of lines, processing any include lines'''
-        lines = open(fname,'r').readlines()
+        lines = open(fname, 'r').readlines()
         ret = []
         for line in lines:
             if line.startswith("include"):
@@ -856,7 +860,7 @@ class ChibiOSHWDef(object):
 
     def validate_flash_storage_size(self):
         '''check there is room for storage with HAL_STORAGE_SIZE'''
-        if self.intdefines.get('HAL_WITH_RAMTRON',0) == 1:
+        if self.intdefines.get('HAL_WITH_RAMTRON', 0) == 1:
             # no check for RAMTRON storage
             return
         storage_flash_page = self.get_storage_flash_page()
@@ -996,7 +1000,7 @@ class ChibiOSHWDef(object):
                 if result:
                     self.intdefines[result.group(1)] = int(result.group(2))
 
-        if self.intdefines.get('HAL_USE_USB_MSD',0) == 1:
+        if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
             self.build_flags.append('USE_USB_MSD=yes')
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
@@ -1028,8 +1032,8 @@ class ChibiOSHWDef(object):
             f.write('#define CRT0_AREAS_NUMBER 1\n')
 
         if self.env_vars['INT_FLASH_PRIMARY']:
-             # this will put methods with low latency requirements into external flash
-             # and save internal flash space
+            # this will put methods with low latency requirements into external flash
+            # and save internal flash space
             f.write('#define __EXTFLASHFUNC__ __attribute__ ((__section__(".extflash")))\n')
         else:
             f.write('#define __EXTFLASHFUNC__\n')
@@ -1040,7 +1044,7 @@ class ChibiOSHWDef(object):
             if not args.bootloader:
                 f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
                 self.validate_flash_storage_size()
-            elif self.get_config('FLASH_RESERVE_END_KB', type=int, required = False) is None:
+            elif self.get_config('FLASH_RESERVE_END_KB', type=int, required=False) is None:
                 # ensure the flash page leaves room for bootloader
                 offset = self.get_flash_page_offset_kb(storage_flash_page)
                 bl_offset = self.get_config('FLASH_BOOTLOADER_LOAD_KB', type=int)
@@ -1387,11 +1391,7 @@ MEMORY
 }
 
 INCLUDE common.ld
-''' % (ext_flash_base, ext_flash_length,
-           instruction_ram_base, instruction_ram_length,
-           ram0_start, ram0_len,
-           ram1_start, ram1_len,
-           ram2_start, ram2_len))
+''' % (ext_flash_base, ext_flash_length, instruction_ram_base, instruction_ram_length, ram0_start, ram0_len, ram1_start, ram1_len, ram2_start, ram2_len))  # noqa
         f.close()
 
     def copy_common_linkerscript(self, outdir):
@@ -1421,7 +1421,8 @@ INCLUDE common.ld
         else:
             default_vid = 0x1209
             default_pid = 0x5741
-        return (self.get_config('USB_VENDOR', type=int, default=default_vid), self.get_config('USB_PRODUCT', type=int, default=default_pid))
+        return (self.get_config('USB_VENDOR', type=int, default=default_vid),
+                self.get_config('USB_PRODUCT', type=int, default=default_pid))
 
     def write_USB_config(self, f):
         '''write USB config defines'''
@@ -1431,11 +1432,12 @@ INCLUDE common.ld
         (USB_VID, USB_PID) = self.get_USB_IDs()
         f.write('#define HAL_USB_VENDOR_ID 0x%04x\n' % int(USB_VID))
         f.write('#define HAL_USB_PRODUCT_ID 0x%04x\n' % int(USB_PID))
-        f.write('#define HAL_USB_STRING_MANUFACTURER %s\n' % self.get_config("USB_STRING_MANUFACTURER", default="\"ArduPilot\""))
+        f.write('#define HAL_USB_STRING_MANUFACTURER %s\n' %
+                self.get_config("USB_STRING_MANUFACTURER", default="\"ArduPilot\""))
         default_product = "%BOARD%"
         if args.bootloader:
             default_product += "-BL"
-        product_string = self.get_config("USB_STRING_PRODUCT", default="\"%s\""%default_product)
+        product_string = self.get_config("USB_STRING_PRODUCT", default="\"%s\"" % default_product)
         if args.bootloader and args.signed_fw:
             product_string = product_string.replace("-BL", "-Secure-BL-v10")
         f.write('#define HAL_USB_STRING_PRODUCT %s\n' % product_string)
@@ -1443,7 +1445,6 @@ INCLUDE common.ld
         f.write('#define HAL_USB_STRING_SERIAL %s\n' % self.get_config("USB_STRING_SERIAL", default="\"%SERIAL%\""))
 
         f.write('\n\n')
-
 
     def write_SPI_table(self, f):
         '''write SPI device table'''
@@ -1470,8 +1471,8 @@ INCLUDE common.ld
             if not lowspeed.endswith('*MHZ') and not lowspeed.endswith('*KHZ'):
                 self.error("Bad lowspeed value %s in SPIDEV line %s" % (lowspeed, dev))
             if not highspeed.endswith('*MHZ') and not highspeed.endswith('*KHZ'):
-                self.error("Bad highspeed value %s in SPIDEV line %s" % (highspeed,
-                                                                    dev))
+                self.error("Bad highspeed value %s in SPIDEV line %s" %
+                           (highspeed, dev))
             cs_pin = self.bylabel[cs]
             pal_line = 'PAL_LINE(GPIO%s,%uU)' % (cs_pin.port, cs_pin.pin)
             devidx = len(devlist)
@@ -1482,9 +1483,8 @@ INCLUDE common.ld
             devlist.append('HAL_SPI_DEVICE%u' % devidx)
         f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
         for dev in self.spidev:
-            f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-","_"))
+            f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-", "_"))
         f.write("\n")
-
 
     def write_SPI_config(self, f):
         '''write SPI config defines'''
@@ -1504,7 +1504,6 @@ INCLUDE common.ld
                 % (n, n, n, n))
         f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
         self.write_SPI_table(f)
-
 
     def write_WSPI_table(self, f):
         '''write SPI device table'''
@@ -1540,7 +1539,6 @@ INCLUDE common.ld
                 f.write("#define HAL_OSPI%d_CLK (%s)" % (int(bus[7:]), speed))
         f.write("\n")
 
-
     def write_WSPI_config(self, f):
         '''write SPI config defines'''
         # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
@@ -1574,7 +1572,7 @@ INCLUDE common.ld
 
     def write_check_firmware(self, f):
         '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
-        if self.is_periph_fw() or self.intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
+        if self.is_periph_fw() or self.intdefines.get('AP_OPENDRONEID_ENABLED', 0) == 1:
             f.write('''
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED 1
@@ -1587,7 +1585,6 @@ INCLUDE common.ld
         if len(a) != 2:
             self.error("Bad SPI device: %s" % dev)
         return 'hal.spi->get_device("%s")' % a[1]
-
 
     def parse_i2c_device(self, dev):
         '''parse a I2C:xxx:xxx device item'''
@@ -1603,7 +1600,6 @@ INCLUDE common.ld
             return ('FOREACH_I2C(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
         busnum = int(a[1])
         return ('', 'GET_I2C_DEVICE(%u,0x%02x)' % (busnum, busaddr))
-
 
     def seen_str(self, dev):
         '''return string representation of device for checking for duplicates'''
@@ -1639,13 +1635,11 @@ INCLUDE common.ld
             n = len(devlist)+1
             devlist.append('HAL_INS_PROBE%u' % n)
             if aux_devid != -1:
-                f.write(
-                '#define HAL_INS_PROBE%u %s ADD_BACKEND_AUX(AP_InertialSensor_%s::probe(*this,%s),%d)\n'
-                % (n, wrapper, driver, ','.join(dev[1:]), aux_devid))
+                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_AUX(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
+                        (n, wrapper, driver, ','.join(dev[1:]), aux_devid))
             elif instance != -1:
-                f.write(
-                '#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n'
-                % (n, wrapper, driver, ','.join(dev[1:]), instance))
+                f.write('#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n' %
+                        (n, wrapper, driver, ','.join(dev[1:]), instance))
             elif dev[-1].startswith("BOARD_MATCH("):
                 f.write(
                     '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
@@ -1658,7 +1652,6 @@ INCLUDE common.ld
             if len(devlist) < 3:
                 f.write('#define INS_MAX_INSTANCES %u\n' % len(devlist))
             f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
 
     def write_MAG_config(self, f):
         '''write MAG config defines'''
@@ -1687,7 +1680,6 @@ INCLUDE common.ld
                 % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
 
     def write_BARO_config(self, f):
         '''write barometer config defines'''
@@ -1770,7 +1762,7 @@ INCLUDE common.ld
             for check_name in sorted(validate_dict.keys()):
                 validate_string += "!" + validate_dict[check_name] + "?" + "\"" + check_name + "\"" + ":"
             validate_string += "nullptr"
-            f.write('#define HAL_VALIDATE_BOARD (%s)\n\n' % validate_string) 
+            f.write('#define HAL_VALIDATE_BOARD (%s)\n\n' % validate_string)
 
     def get_gpio_bylabel(self, label):
         '''get GPIO(n) setting on a pin label, or -1'''
@@ -1778,7 +1770,6 @@ INCLUDE common.ld
         if p is None:
             return -1
         return p.extra_value('GPIO', type=int, default=-1)
-
 
     def get_extra_bylabel(self, label, name, default=None):
         '''get extra setting for a label by name'''
@@ -1797,7 +1788,7 @@ INCLUDE common.ld
         if args.bootloader:
             # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
             return serial_order
-        map = [ 0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
+        map = [0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         while len(serial_order) < 4:
             serial_order += ['EMPTY']
         uart_order = []
@@ -1833,7 +1824,7 @@ INCLUDE common.ld
                     (devnames[idx], devnames[idx]))
 
         if 'IOMCU_UART' in self.config:
-            if not 'io_firmware.bin' in self.romfs:
+            if 'io_firmware.bin' not in self.romfs:
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             f.write('#define HAL_WITH_IO_MCU 1\n')
@@ -1890,14 +1881,12 @@ INCLUDE common.ld
 
             if dev.startswith('OTG2'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n'
-                    % dev)
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n' % dev)  # noqa
                 OTG2_index = uart_list.index(dev)
                 self.dual_USB_enabled = True
             elif dev.startswith('OTG'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}\n'
-                    % dev)
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}\n' % dev)  # noqa
             else:
                 need_uart_driver = True
                 f.write(
@@ -1944,7 +1933,6 @@ INCLUDE common.ld
             self.error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
         f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
-
     def write_UART_config_bootloader(self, f):
         '''write UART config defines'''
         uart_list = self.get_UART_ORDER()
@@ -1974,7 +1962,6 @@ INCLUDE common.ld
 #define HAL_USE_SERIAL FALSE
 #endif
 ''')
-
 
     def write_I2C_config(self, f):
         '''write I2C config defines'''
@@ -2012,7 +1999,6 @@ INCLUDE common.ld
                     % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
         f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
-
     def parse_timer(self, str):
         '''parse timer channel string, i.e TIM8_CH2N'''
         result = re.match(r'TIM([0-9]*)_CH([1234])(N?)', str)
@@ -2026,7 +2012,6 @@ INCLUDE common.ld
         else:
             self.error("Bad timer definition %s" % str)
 
-
     def write_PWM_config(self, f, ordered_timers):
         '''write PWM config defines'''
         rc_in = None
@@ -2037,8 +2022,8 @@ INCLUDE common.ld
         # start with the ordered list from the dma resolver
         pwm_timers = ordered_timers
         has_bidir = False
-        for l in self.bylabel.keys():
-            p = self.bylabel[l]
+        for label in self.bylabel.keys():
+            p = self.bylabel[label]
             if p.type.startswith('TIM'):
                 if p.has_extra('RCIN'):
                     rc_in = p
@@ -2053,7 +2038,6 @@ INCLUDE common.ld
                         bidir = p
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
-
 
         f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
         if not pwm_out and not alarm:
@@ -2185,16 +2169,15 @@ INCLUDE common.ld
             if bidir is not None:
                 hal_icu_cfg = '\n          {'
                 hal_icu_def = '\n'
-                for i in range(1,5):
+                for i in range(1, 5):
                     hal_icu_cfg += '{HAL_IC%u_CH%u_DMA_CONFIG},' % (n, i)
-                    hal_icu_def +='''#if defined(STM32_TIM_TIM%u_CH%u_DMA_STREAM) && defined(STM32_TIM_TIM%u_CH%u_DMA_CHAN)
+                    hal_icu_def += '''#if defined(STM32_TIM_TIM%u_CH%u_DMA_STREAM) && defined(STM32_TIM_TIM%u_CH%u_DMA_CHAN)
 # define HAL_IC%u_CH%u_DMA_CONFIG true, STM32_TIM_TIM%u_CH%u_DMA_STREAM, STM32_TIM_TIM%u_CH%u_DMA_CHAN
 #else
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
 #endif
 ''' % (n, i, n, i, n, i, n, i, n, i, n, i)
                 hal_icu_cfg += '},  \\'
-
 
             f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
@@ -2229,14 +2212,13 @@ INCLUDE common.ld
         if need_advanced:
             f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
 
-
     def write_ADC_config(self, f):
         '''write ADC config defines'''
         f.write('// ADC config\n')
         adc_chans = [[], [], []]
         analogset = {252, 253, 254} # reserved values for VSENSE, VREF and VBAT in H7
-        for l in self.bylabel:
-            p = self.bylabel[l]
+        for label in self.bylabel:
+            p = self.bylabel[label]
             if not p.type.startswith('ADC'):
                 continue
             if p.type.startswith('ADC1'):
@@ -2297,8 +2279,8 @@ INCLUDE common.ld
             scale_str = '%.2f/4096' % vdd
             if scale is not None and scale != '1':
                 scale_str = scale + '*' + scale_str
-            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str,  portpin,
-                                                         label))
+            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
+                    (chan, analog, scale_str,  portpin, label))
         f.write('\n\n')
         if len(adc_chans[1]) > 0:
             f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
@@ -2309,18 +2291,18 @@ INCLUDE common.ld
                 scale_str = '%.2f/4096' % vdd
                 if scale is not None and scale != '1':
                     scale_str = scale + '*' + scale_str
-                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str, portpin,
-                                                            label))
+                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
+                        (chan, analog, scale_str, portpin, label))
             f.write('\n\n')
         if len(adc_chans[2]) > 0:
-            f.write('#define STM32_ADC_USE_ADC3 TRUE\n')    
+            f.write('#define STM32_ADC_USE_ADC3 TRUE\n')
             f.write('#define HAL_ANALOG3_PINS \\\n')
             for (chan, analog, scale, label, portpin) in adc_chans[2]:
                 scale_str = '%.2f/4096' % vdd
                 if scale is not None and scale != '1':
                     scale_str = scale + '*' + scale_str
-                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str, portpin,
-                                                            label))
+                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
+                        (chan, analog, scale_str, portpin, label))
             f.write('\n\n')
 
     def write_GPIO_config(self, f):
@@ -2328,8 +2310,8 @@ INCLUDE common.ld
         f.write('// GPIO config\n')
         gpios = []
         gpioset = set()
-        for l in self.bylabel:
-            p = self.bylabel[l]
+        for label in self.bylabel:
+            p = self.bylabel[label]
             gpio = p.extra_value('GPIO', type=int)
             if gpio is None:
                 continue
@@ -2351,7 +2333,7 @@ INCLUDE common.ld
                 if gpio in gpioset:
                     # check existing entry
                     existing_gpio = [item for item in gpios if item[0] == gpio]
-                    if (existing_gpio[0][4].label == p.label) and (existing_gpio[0][3] == p.pin) and (existing_gpio[0][2] == p.port):
+                    if (existing_gpio[0][4].label == p.label) and (existing_gpio[0][3] == p.pin) and (existing_gpio[0][2] == p.port):  # noqa
                         # alt item is identical to exiting, do not add again
                         continue
                     self.error("Duplicate GPIO value %u, %s != %s" % (gpio, p, existing_gpio[0][4]))
@@ -2374,8 +2356,8 @@ INCLUDE common.ld
         f.write('}\n\n')
         f.write('// full pin define list\n')
         last_label = None
-        for l in sorted(list(set(self.bylabel.keys()))):
-            p = self.bylabel[l]
+        for label in sorted(list(set(self.bylabel.keys()))):
+            p = self.bylabel[label]
             label = p.label
             label = label.replace('-', '_')
             if label == last_label:
@@ -2384,7 +2366,6 @@ INCLUDE common.ld
             f.write('#define HAL_GPIO_PIN_%-20s PAL_LINE(GPIO%s,%uU)\n' %
                     (label, p.port, p.pin))
         f.write('\n')
-
 
     def bootloader_path(self):
         # always embed a bootloader if it is available
@@ -2397,7 +2378,6 @@ INCLUDE common.ld
                                        "bootloaders",
                                        bootloader_filename)
         return bootloader_path
-
 
     def embed_bootloader(self, f):
         '''added bootloader to ROMFS'''
@@ -2414,7 +2394,6 @@ INCLUDE common.ld
         self.romfs["bootloader.bin"] = bp
         f.write("#define AP_BOOTLOADER_FLASHING_ENABLED 1\n")
 
-
     def write_ROMFS(self, outdir):
         '''create ROMFS embedded header'''
         romfs_list = []
@@ -2422,14 +2401,12 @@ INCLUDE common.ld
             romfs_list.append((k, self.romfs[k]))
         self.env_vars['ROMFS_FILES'] = romfs_list
 
-
     def setup_apj_IDs(self):
         '''setup the APJ board IDs'''
         self.env_vars['APJ_BOARD_ID'] = self.get_config('APJ_BOARD_ID')
         self.env_vars['APJ_BOARD_TYPE'] = self.get_config('APJ_BOARD_TYPE', default=self.mcu_type)
         (USB_VID, USB_PID) = self.get_USB_IDs()
         self.env_vars['USBID'] = '0x%04x/0x%04x' % (USB_VID, USB_PID)
-
 
     def write_peripheral_enable(self, f):
         '''write peripheral enable lines'''
@@ -2448,7 +2425,6 @@ INCLUDE common.ld
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
             if type.startswith('OCTOSPI'):
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
-
 
     def get_dma_exclude(self, periph_list):
         '''return list of DMA devices to exclude from DMA'''
@@ -2469,7 +2445,6 @@ INCLUDE common.ld
                     dma_exclude.add(periph)
         return list(dma_exclude)
 
-
     def write_alt_config(self, f):
         '''write out alternate config settings'''
         if len(self.altmap.keys()) == 0:
@@ -2485,7 +2460,8 @@ INCLUDE common.ld
         for alt in sorted(self.altmap.keys()):
             for pp in sorted(self.altmap[alt].keys()):
                 p = self.altmap[alt][pp]
-                f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU), %s, %u}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, p.periph_type(), p.periph_instance(), str(p)))
+                f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU), %s, %u}, /* %s */ \\\n" %
+                        (alt, p.pal_modeline(), p.port, p.pin, p.periph_type(), p.periph_instance(), str(p)))
         f.write('}\n\n')
 
     def write_all_lines(self, hwdat):
@@ -2561,10 +2537,14 @@ INCLUDE common.ld
             # add in ADC3 on H7 to get MCU temperature and reference voltage
             self.periph_list.append('ADC3')
 
-        dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, self.periph_list, self.mcu_type,
-                                                       dma_exclude=self.get_dma_exclude(self.periph_list),
-                                                       dma_priority=self.get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
-                                                       dma_noshare=self.dma_noshare)
+        dma_unassigned, ordered_timers = dma_resolver.write_dma_header(
+            f,
+            self.periph_list,
+            self.mcu_type,
+            dma_exclude=self.get_dma_exclude(self.periph_list),
+            dma_priority=self.get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
+            dma_noshare=self.dma_noshare
+        )
 
         if not args.bootloader:
             self.write_PWM_config(f, ordered_timers)
@@ -2694,7 +2674,6 @@ INCLUDE common.ld
             pass
         os.rename(tmpfile, outfilename)
 
-
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
@@ -2762,21 +2741,20 @@ INCLUDE common.ld
                 line = defaults_fh.readline()
                 if line == "":
                     break
-                m = re.match("^@include\s*([^\s]+)", line)
+                m = re.match(r"^@include\s*([^\s]+)", line)
                 if m is None:
                     ret += line
                     continue
                 # we've found an include; do that...
                 include_filepath = os.path.join(os.path.dirname(defaults_filepath), m.group(1))
                 try:
-#                    ret += "# Begin included file (%s)" % include_filepath
+                    # ret += "# Begin included file (%s)" % include_filepath
                     ret += self.get_processed_defaults_file(include_filepath, depth=depth+1)
 #                    ret += "# End included file (%s)" % include_filepath
                 except FileNotFoundError:
                     raise Exception("%s includes %s but that filepath was not found" %
                                     (defaults_filepath, include_filepath))
         return ret
-
 
     def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
@@ -2802,18 +2780,15 @@ INCLUDE common.ld
 
         self.env_vars['DEFAULT_PARAMETERS'] = filepath
 
-
     def write_env_py(self, filename):
         '''write out env.py for environment variables to control the build process'''
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
         pickle.dump(self.env_vars, open(filename, "wb"))
 
-
     def romfs_add(self, romfs_filename, filename):
         '''add a file to ROMFS'''
         self.romfs[romfs_filename] = filename
-
 
     def romfs_wildcard(self, pattern):
         '''add a set of files to ROMFS by wildcard'''
@@ -2839,9 +2814,11 @@ INCLUDE common.ld
 
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
-        patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
-                    'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
-                    'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d', 'ETH\d'  ]
+        patterns = [
+            r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
+            r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
+            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d'
+        ]
         matches = False
         for p in patterns:
             if re.match(p, ptype):
@@ -2850,25 +2827,25 @@ INCLUDE common.ld
         if not matches:
             return False
         # special checks for common errors
-        m1 = re.match('TIM(\d+)', ptype)
-        m2 = re.match('TIM(\d+)_CH\d+', label)
+        m1 = re.match(r'TIM(\d+)', ptype)
+        m2 = re.match(r'TIM(\d+)_CH\d+', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''timer numbers need to match'''
             return False
-        m1 = re.match('CAN(\d+)', ptype)
-        m2 = re.match('CAN(\d+)_(RX|TX)', label)
+        m1 = re.match(r'CAN(\d+)', ptype)
+        m2 = re.match(r'CAN(\d+)_(RX|TX)', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''CAN numbers need to match'''
             return False
-        if ptype == 'OUTPUT' and re.match('US?ART\d+_(TXINV|RXINV)', label):
+        if ptype == 'OUTPUT' and re.match(r'US?ART\d+_(TXINV|RXINV)', label):
             return True
-        m1 = re.match('USART(\d+)', ptype)
-        m2 = re.match('USART(\d+)_(RX|TX|CTS|RTS)', label)
+        m1 = re.match(r'USART(\d+)', ptype)
+        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS)', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''usart numbers need to match'''
             return False
-        m1 = re.match('UART(\d+)', ptype)
-        m2 = re.match('UART(\d+)_(RX|TX|CTS|RTS)', label)
+        m1 = re.match(r'UART(\d+)', ptype)
+        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS)', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''uart numbers need to match'''
             return False
@@ -2897,7 +2874,7 @@ INCLUDE common.ld
             if not self.valid_type(type, label):
                 self.error("bad type on line: %s" % a)
 
-            p = self.generic_pin(port, pin, label, type, extra, self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)
+            p = self.generic_pin(port, pin, label, type, extra, self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)  # noqa
             af = self.get_alt_function(self.mcu_type, a[0], label)
             if af is not None:
                 p.af = af
@@ -2983,7 +2960,7 @@ INCLUDE common.ld
                     if pin.type == u or pin.label == u or pin.portpin == u:
                         if pin.label is not None:
                             self.bylabel.pop(pin.label, '')
-                        self.portmap[pin.port][pin.pin] = self.generic_pin(pin.port, pin.pin, None, 'INPUT', [], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)
+                        self.portmap[pin.port][pin.pin] = self.generic_pin(pin.port, pin.pin, None, 'INPUT', [], self.mcu_type, self.mcu_series, self.get_ADC1_chan, self.get_ADC2_chan, self.get_ADC3_chan, self.af_labels)  # noqa
                         continue
                     newpins.append(pin)
                 self.allpins = newpins
@@ -3000,7 +2977,6 @@ INCLUDE common.ld
             if len(a[1:]) < 2:
                 self.error("Bad env line for %s" % a[0])
             self.env_vars[a[1]] = ' '.join(a[2:])
-
 
     def process_file(self, filename):
         '''process a hwdef.dat file'''
@@ -3117,6 +3093,7 @@ INCLUDE common.ld
             self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
+
 
 if __name__ == '__main__':
 
