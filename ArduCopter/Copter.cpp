@@ -446,6 +446,13 @@ bool Copter::has_ekf_failsafed() const
     return failsafe.ekf;
 }
 
+bool Copter::set_velocity_match(const Vector2f &velocity)
+{
+    velocity_match = velocity;
+    velocity_match_time_ms = AP_HAL::millis();
+    return true;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // returns true if vehicle is landing. Only used by Lua scripts
