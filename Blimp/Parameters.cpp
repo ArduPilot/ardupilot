@@ -729,6 +729,48 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Increment: 10
     // @Units: d%
     // @User: Advanced
+
+    // @Param: POSYAW_ADV
+    // @DisplayName: Advanced Yaw parameters enable
+    // @Description: Advanced Yaw parameters enable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: POSYAW_D_FF
+    // @DisplayName: Position (yaw) Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSYAW_NTF
+    // @DisplayName: Position (yaw) Target notch Filter center frequency
+    // @Description: Position (yaw) Target notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSYAW_NEF
+    // @DisplayName: Position (yaw) Error notch Filter center frequency
+    // @Description: Position (yaw) Error notch Filter center frequency in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSYAW_NBW
+    // @DisplayName: Position (yaw) notch Filter bandwidth
+    // @Description: Position (yaw) notch Filter bandwidth in Hz.
+    // @Range: 5 250
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSYAW_NATT
+    // @DisplayName: Position (yaw) notch Filter attenuation
+    // @Description: Position (yaw) notch Filter attenuation in dB.
+    // @Range: 5 50
+    // @Units: dB
+    // @User: Advanced
+
     GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
 
     // @Group:
