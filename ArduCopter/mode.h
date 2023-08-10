@@ -988,6 +988,7 @@ public:
     //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
     void set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust);
 
+    bool set_target_location(const Location& dest_loc) override { return set_destination(dest_loc); }
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
@@ -1191,6 +1192,7 @@ public:
 
 #if AC_PRECLAND_ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+    bool set_target_location(const Location& location) override;
 #endif
 
 protected:
