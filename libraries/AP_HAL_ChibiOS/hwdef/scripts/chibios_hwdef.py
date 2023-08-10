@@ -2,6 +2,8 @@
 '''
 setup board.h for chibios
 
+AP_FLAKE8_CLEAN
+
 '''
 
 import argparse
@@ -811,7 +813,7 @@ class ChibiOSHWDef(object):
             raise Exception("Unsupported flash size MCU %s" % mcu_series)
 
     def get_flash_npages(self):
-        page_sizes = self.get_flash_pages_sizes()
+        pages = self.get_flash_pages_sizes()
         total_size = sum(pages)
         if total_size != self.get_config('FLASH_SIZE_KB', type=int):
             raise Exception("Invalid flash size MCU %s" % self.mcu_series)
@@ -2021,7 +2023,6 @@ INCLUDE common.ld
         pwm_out = []
         # start with the ordered list from the dma resolver
         pwm_timers = ordered_timers
-        has_bidir = False
         for label in self.bylabel.keys():
             p = self.bylabel[label]
             if p.type.startswith('TIM'):
@@ -2231,7 +2232,7 @@ INCLUDE common.ld
                 index = 2
                 chan = self.get_ADC3_chan(self.mcu_type, p.portpin)
             else:
-                raise ValueSelf.Error("Unknown ADC type %s" % p.type)
+                self.error("Unknown ADC type %s" % p.type)
             scale = p.extra_value('SCALE', default=None)
             analog = p.extra_value('ANALOG', type=int, default=chan) # default to ADC channel if not specified
             if analog in analogset:
