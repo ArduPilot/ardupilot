@@ -189,3 +189,6 @@ BARO MS56XX SPI:ms5611_int
 define DMA_RESERVE_SIZE 32768
 
 # .env DEFAULT_PARAMETERS 'Tools/Frame_params/LuminousBee4_outdoor.param'
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

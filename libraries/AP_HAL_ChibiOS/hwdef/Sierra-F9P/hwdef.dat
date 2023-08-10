@@ -152,3 +152,6 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 #Sensors Enable & ESP Enable
 PB0 VDD_3V3_SENSORS_EN OUTPUT HIGH
 PC2 ESP_PWR_EN OUTPUT LOW
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

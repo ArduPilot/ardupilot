@@ -134,3 +134,5 @@ PC7 M9SB INPUT
 
 define DEFAULT_NTF_LED_TYPES 455
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

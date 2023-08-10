@@ -109,3 +109,5 @@ define HAL_I2C_INTERNAL_MASK 0
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_AIRSPEED
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

@@ -142,3 +142,6 @@ IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 
 # compass as part of ICM20948 on newer cubes
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
