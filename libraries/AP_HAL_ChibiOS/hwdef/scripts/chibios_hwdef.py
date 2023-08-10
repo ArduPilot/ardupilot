@@ -2386,9 +2386,16 @@ INCLUDE common.ld
             # or, you know, not...
             return
 
+        if self.is_bootloader_fw():
+            return
+
+        if self.is_io_fw():
+            return
+
         bp = self.bootloader_path()
         if not os.path.exists(bp):
-            return
+            self.error("Bootloader (%s) does not exist and AP_BOOTLOADER_FLASHING_ENABLED" %
+                       (bp,))
 
         bp = os.path.realpath(bp)
 
@@ -3014,9 +3021,12 @@ INCLUDE common.ld
 
         self.add_firmware_defaults_from_file(f, "defaults_periph.h", "AP_Periph")
 
+    def is_bootloader_fw(self):
+        return args.bootloader
+
     def add_bootloader_defaults(self, f):
         '''add default defines for peripherals'''
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             return
 
         self.add_firmware_defaults_from_file(f, "defaults_bootloader.h", "bootloader")
@@ -3036,9 +3046,12 @@ INCLUDE common.ld
 // end %s defaults
 ''' % (description, content, description))
 
+    def is_io_fw(self):
+        return self.env_vars.get('IOMCU_FW', 0) != 0
+
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
-        if self.env_vars.get('IOMCU_FW', 0) == 0:
+        if not self.is_io_fw():
             # not IOMCU firmware
             return
 
@@ -3047,16 +3060,21 @@ INCLUDE common.ld
     def is_periph_fw(self):
         return self.env_vars.get('AP_PERIPH', 0) != 0
 
-    def add_normal_firmware_defaults(self, f):
-        '''add default defines to builds with are not bootloader, periph or IOMCU'''
+    def is_normal_fw(self):
         if self.env_vars.get('IOMCU_FW', 0) != 0:
             # IOMCU firmware
-            return
+            return False
         if self.is_periph_fw():
             # Periph firmware
-            return
+            return False
         if args.bootloader:
             # guess
+            return False
+        return True
+
+    def add_normal_firmware_defaults(self, f):
+        '''add default defines to builds with are not bootloader, periph or IOMCU'''
+        if not self.is_normal_fw():
             return
 
         self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
