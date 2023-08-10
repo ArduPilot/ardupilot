@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     AP_SUBGROUPINFO(param.gwaddr, "GWADDR", 5,  AP_Networking, AP_Networking_IPV4),
 
     // @Group: MACADDR
-    // @Path: AP_Networking_address.cpp
+    // @Path: AP_Networking_macaddr.cpp
     AP_SUBGROUPINFO(param.macaddr, "MACADDR", 6,  AP_Networking, AP_Networking_MAC),
 
     AP_GROUPEND
