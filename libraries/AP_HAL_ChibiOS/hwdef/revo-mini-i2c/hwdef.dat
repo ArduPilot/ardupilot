@@ -150,3 +150,6 @@ SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 define HAL_GYROFFT_ENABLED 0
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

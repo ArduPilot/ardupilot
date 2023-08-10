@@ -38,3 +38,6 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 FLASH_SIZE_KB 1024
 include ../include/minimize_features.inc
 undef STORAGE_FLASH_PAGE
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
