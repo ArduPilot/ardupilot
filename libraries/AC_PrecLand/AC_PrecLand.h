@@ -143,6 +143,9 @@ private:
 #if AC_PRECLAND_SITL_ENABLED
         SITL = 4,
 #endif
+#if AC_PRECLAND_SCRIPT_ENABLED
+        SCRIPT = 5,
+#endif
     };
 
     enum PLndOptions {
