@@ -496,6 +496,10 @@ void AP_BattMonitor::read()
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
+#endif
+
 #if HAL_LOGGING_ENABLED
             if (logger != nullptr && logger->should_log(_log_battery_bit)) {
                 const uint64_t time_us = AP_HAL::micros64();
