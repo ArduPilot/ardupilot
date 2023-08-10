@@ -115,3 +115,6 @@ BARO MS56XX SPI:ms5611
 BARO BMP388 I2C:0:0x76
 
 # define HAL_SPI_CHECK_CLOCK_FREQ
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

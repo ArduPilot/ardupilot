@@ -60,3 +60,6 @@ MAIN_STACK 0x2000
 PROCESS_STACK 0x6000
 
 define HAL_CAN_DRIVER_DEFAULT 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
