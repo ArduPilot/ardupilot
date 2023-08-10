@@ -189,6 +189,12 @@ void Mode::auto_takeoff_run()
     } else {
         Vector2f vel;
         Vector2f accel;
+
+        // If velocity mactch is recent, use it
+        if (AP_HAL::millis()-copter.velocity_match_time_ms <= 1000) {
+            vel = copter.velocity_match * 100;
+        }
+
         pos_control->input_vel_accel_xy(vel, accel);
     }
     pos_control->update_xy_controller();
