@@ -483,6 +483,16 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
     }
 }
 
+// Allow setting target location from script if scripted backend is active
+bool AC_PrecLand::set_target_location(const Location &location)
+{
+    if (_backend != nullptr) {
+        return _backend->set_target_location(location);
+    } else {
+        return false;
+    }
+}
+
 //
 // Private methods
 //

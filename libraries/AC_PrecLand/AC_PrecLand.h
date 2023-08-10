@@ -6,6 +6,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/Location.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
@@ -86,6 +87,9 @@ public:
 
     // process a LANDING_TARGET mavlink message
     void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms);
+
+    // Allow setting target location from script if scripted backend is active
+    bool set_target_location(const Location &location);
 
     // State of the Landing Target Location
     enum class TargetState: uint8_t {
