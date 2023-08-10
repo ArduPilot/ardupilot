@@ -811,7 +811,7 @@ void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan)
     if (backend == nullptr) {
         return;
     }
-    _backends[instance]->send_camera_information(chan);
+    backend->send_camera_information(chan);
 }
 
 // send camera settings message to GCS
@@ -821,7 +821,7 @@ void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) co
     if (backend == nullptr) {
         return;
     }
-    _backends[instance]->send_camera_settings(chan);
+    backend->send_camera_settings(chan);
 }
 
 AP_Mount_Backend *AP_Mount::get_primary() const
