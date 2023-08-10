@@ -18,6 +18,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SITL/SITL.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/NMEA.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
