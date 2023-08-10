@@ -86,8 +86,11 @@ AP_GPS_NOVA::read(void)
     }
 
     bool ret = false;
-    while (port->available() > 0) {
-        uint8_t temp = port->read();
+    for (uint16_t i=0; i<8192; i++) {
+        uint8_t temp;
+        if (!port->read(temp)) {
+            break;
+        }
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
