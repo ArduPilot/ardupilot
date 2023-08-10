@@ -160,8 +160,8 @@ public:
     void inertial_frame_reset();
 
     // Command a Quaternion attitude with feedforward and smoothing
-    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
-    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target);
+    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the body frame angular velocity
+    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
