@@ -16,8 +16,6 @@
   parent class for aircraft simulators
 */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
-
 #include "SIM_Aircraft.h"
 
 #include <stdio.h>
