@@ -4613,6 +4613,7 @@ class AutoTestCopter(AutoTest):
 
         except Exception as e:
             self.print_exception_caught(e)
+            self.disarm_vehicle(force=True)
             ex = e
 
         self.context_pop()
