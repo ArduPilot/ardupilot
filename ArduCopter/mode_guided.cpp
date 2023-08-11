@@ -1087,7 +1087,6 @@ uint32_t ModeGuided::wp_distance() const
         return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_xy_cm();
-        break;
     default:
         return 0;
     }
@@ -1102,7 +1101,6 @@ int32_t ModeGuided::wp_bearing() const
         return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
-        break;
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:
