@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.4.0-beta4 27-July-2023
+Copter 4.4.0 11-Aug-2023 / 4.4.0-beta4 27-July-2023
 Changes from 4.4.0-beta3
 1) Autopilots specific changes
     - Diatone-Mamba-MK4-H743v2 uses SPL06 baro (was DPS280)
