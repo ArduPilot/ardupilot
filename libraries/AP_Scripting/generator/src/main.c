@@ -1227,6 +1227,7 @@ void emit_userdata_allocators(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
     start_dependency(source, node->dependency);
+    // New method used internally
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
@@ -1235,6 +1236,22 @@ void emit_userdata_allocators(void) {
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
     fprintf(source, "}\n");
+
+    // New method used externally, includes argcheck, overridden by custom creation function if provided
+    if (node->creation == NULL) {
+      fprintf(source, "\n");
+      fprintf(source, "int lua_new_%s(lua_State *L) {\n", node->sanatized_name);
+
+      // emit one time warning if augments are parsed
+      fprintf(source, "    static bool warned = false;\n");
+      fprintf(source, "    if (!warned && userdata_zero_arg_check(L)) {\n");
+      fprintf(source, "        warned = true;\n");
+      fprintf(source, "    }\n");
+
+      fprintf(source, "    return new_%s(L);\n", node->sanatized_name);
+      fprintf(source, "}\n");
+    }
+
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
     node = node->next;
@@ -1312,6 +1329,9 @@ void emit_userdata_declarations(void) {
   while (node) {
     start_dependency(header, node->dependency);
     fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
+    if (node->creation == NULL) {
+      fprintf(header, "int lua_new_%s(lua_State *L);\n", node->sanatized_name);
+    }
     fprintf(header, "%s * check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
     end_dependency(header, node->dependency);
     node = node->next;
@@ -2364,7 +2384,7 @@ void emit_sandbox(void) {
         // expose custom creation function to user (not used internally)
         fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
       } else {
-        fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+        fprintf(source, "    {\"%s\", lua_new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
       }
       end_dependency(source, data->dependency);
     }
@@ -2412,6 +2432,40 @@ void emit_argcheck_helper(void) {
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n");
   fprintf(source, "    return 0;\n");
+  fprintf(source, "}\n\n");
+
+  // emit warning if augments are parsed
+  fprintf(source, "bool userdata_zero_arg_check(lua_State *L) {\n");
+  fprintf(source, "    if (lua_gettop(L) == 0) {\n");
+  fprintf(source, "        return false;\n");
+  fprintf(source, "    }\n");
+
+  // Try and get debug info
+  fprintf(source, "    lua_Debug ar;\n");
+
+  // Line number and file name
+  fprintf(source, "    if (lua_getstack(L, 1, &ar)) {\n");
+  fprintf(source, "        lua_getinfo(L, \"Sl\", &ar);\n");
+  fprintf(source, "        if (ar.currentline != 0) {\n");
+
+  // Function name
+  fprintf(source, "            if (lua_getstack(L, 0, &ar)) {\n");
+  fprintf(source, "                lua_getinfo(L, \"n\", &ar);\n");
+  fprintf(source, "                if (ar.name != NULL) {\n");
+
+  // Print warning with debug info
+  fprintf(source, "                    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"%%s:%%d Warning: %%s does not take arguments, will be fatal in future\", ar.short_src, ar.currentline, ar.name);\n");
+  fprintf(source, "                    return true;\n");
+
+  fprintf(source, "                }\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+
+  // Print generic warning
+  fprintf(source, "    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"Warning: userdate creation does not take arguments, will be fatal in future\");\n");
+
+  fprintf(source, "    return true;\n");
   fprintf(source, "}\n\n");
 
   fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val) {\n");
@@ -2894,6 +2948,7 @@ int main(int argc, char **argv) {
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
   fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
+  fprintf(header, "bool userdata_zero_arg_check(lua_State *L);\n");
   fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
   fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
   fprintf(header, "int16_t get_int16_t(lua_State *L, int arg_num);\n");
