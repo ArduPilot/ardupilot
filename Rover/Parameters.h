@@ -360,8 +360,10 @@ public:
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
 
+#if AP_FOLLOW_ENABLED
     // follow mode library
     AP_Follow follow;
+#endif
 
     // frame type for vehicle (used for vectored motor vehicles and custom motor configs)
     AP_Int8 frame_type;
