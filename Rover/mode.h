@@ -789,6 +789,7 @@ protected:
     bool _enter() override { return false; };
 };
 
+#if MODE_FOLLOW_ENABLED == ENABLED
 class ModeFollow : public Mode
 {
 public:
@@ -823,6 +824,7 @@ protected:
 
     float _desired_speed;       // desired speed in m/s
 };
+#endif
 
 class ModeSimple : public Mode
 {
