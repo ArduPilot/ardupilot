@@ -637,7 +637,6 @@ MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
     return MISSION_STATE_UNKNOWN;
 }
 
-#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t seq)
 {
     auto num_commands = mission.num_commands();
@@ -656,6 +655,7 @@ void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t
         mission_mode);  // mission_mode
 }
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 /*
   handle a MISSION_SET_CURRENT mavlink packet
 
