@@ -15,6 +15,9 @@
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
 
+// Enable DDS at runtime by default
+static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
+
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
@@ -42,7 +45,7 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_ENABLE", 1, AP_DDS_Client, enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_ENABLE", 1, AP_DDS_Client, enabled, ENABLED_BY_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
 #if AP_DDS_UDP_ENABLED
     // @Param: _UDP_PORT
