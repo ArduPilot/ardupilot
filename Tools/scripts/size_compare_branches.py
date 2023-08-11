@@ -30,6 +30,11 @@ import threading
 import time
 import board_list
 
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
+
 if sys.version_info[0] < 3:
     running_python3 = False
 else:
@@ -409,7 +414,21 @@ class SizeCompareBranches(object):
                 jobs = int(self.jobs / self.num_threads_remaining)
                 if jobs <= 0:
                     jobs = 1
-            self.run_build_task(task, source_dir=my_source_dir, jobs=jobs)
+            try:
+                self.run_build_task(task, source_dir=my_source_dir, jobs=jobs)
+            except Exception as ex:
+                self.thread_exit_result_queue.put(f"{task}")
+                raise ex
+
+    def check_result_queue(self):
+        while True:
+            try:
+                result = self.thread_exit_result_queue.get_nowait()
+            except Queue.Empty:
+                break
+            if result is None:
+                continue
+            self.failure_exceptions.append(result)
 
     def run_build_tasks_in_parallel(self, tasks):
         n_threads = self.parallel_copies
@@ -420,6 +439,7 @@ class SizeCompareBranches(object):
         # shared list for the threads:
         self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
         threads = []
+        self.thread_exit_result_queue = Queue.Queue()
         for i in range(0, n_threads):
             t = threading.Thread(
                 target=self.parallel_thread_main,
@@ -429,7 +449,12 @@ class SizeCompareBranches(object):
             t.start()
             threads.append(t)
         tstart = time.time()
+        self.failure_exceptions = []
+
         while len(threads):
+
+            self.check_result_queue()
+
             new_threads = []
             for thread in threads:
                 thread.join(0)
@@ -437,7 +462,9 @@ class SizeCompareBranches(object):
                     new_threads.append(thread)
             threads = new_threads
             self.num_threads_remaining = len(threads)
-            self.progress(f"remaining-tasks={len(self.parallel_tasks)} remaining-threads={len(threads)} elapsed={int(time.time() - tstart)}s")  # noqa
+            self.progress(
+                f"remaining-tasks={len(self.parallel_tasks)} " +
+                f"remaining-threads={len(threads)} failed-threads={len(self.failure_exceptions)} elapsed={int(time.time() - tstart)}s")  # noqa
 
             # write out a progress CSV:
             task_results = []
@@ -449,6 +476,13 @@ class SizeCompareBranches(object):
 
             time.sleep(1)
         self.progress("All threads returned")
+
+        self.check_result_queue()
+
+        if len(self.failure_exceptions):
+            self.progress("Some threads failed:")
+        for ex in self.failure_exceptions:
+            print("Thread failure: %s" % str(ex))
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
