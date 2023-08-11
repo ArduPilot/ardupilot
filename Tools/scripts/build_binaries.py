@@ -664,6 +664,7 @@ is bob we will attempt to checkout bob-AVR'''
         generator.run()
 
         generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
+        generator.write_features_json(os.path.join(self.binaries, "features.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")
