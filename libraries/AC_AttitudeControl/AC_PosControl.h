@@ -43,6 +43,11 @@ public:
 
 
 
+    // do not allow copying
+    CLASS_NO_COPY(AC_PosControl);
+
+    static AC_PosControl *get_singleton() { return _singleton; }
+
     /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
     ///   _dt should be set based on the time of the last IMU read used by these controllers
     ///   the position controller should run updates for active controllers on each loop to ensure normal operation
@@ -424,6 +429,8 @@ protected:
     const AP_InertialNav&   _inav;
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
+
+    static AC_PosControl *_singleton;
 
     // parameters
     AP_Float        _lean_angle_max;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
