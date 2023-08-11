@@ -1718,6 +1718,7 @@ private:
 
 };
 
+#if AP_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
 
 public:
@@ -1747,6 +1748,7 @@ protected:
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+#endif
 
 class ModeZigZag : public Mode {        
 
