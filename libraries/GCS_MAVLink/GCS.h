@@ -191,6 +191,11 @@ public:
     GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
 
+    // do not allow copying
+    CLASS_NO_COPY(GCS_MAVLINK);
+
+    static GCS_MAVLINK *get_singleton() { return _singleton; }
+
     // accessors used to retrieve objects used for parsing incoming messages:
     mavlink_message_t *channel_buffer() { return &_channel_buffer; }
     mavlink_status_t *channel_status() { return &_channel_status; }
@@ -1088,6 +1093,8 @@ private:
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
     bool _locked;
+
+    static GCS_MAVLINK *_singleton;
 };
 
 /// @class GCS

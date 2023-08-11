@@ -102,6 +102,7 @@ uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 uint8_t GCS_MAVLINK::mavlink_private = 0;
 
 GCS *GCS::_singleton = nullptr;
+GCS_MAVLINK *GCS_MAVLINK::_singleton = nullptr;
 
 GCS_MAVLINK_InProgress GCS_MAVLINK_InProgress::in_progress_tasks[1];
 uint32_t GCS_MAVLINK_InProgress::last_check_ms;
@@ -112,6 +113,7 @@ GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
     _port = &uart;
 
     streamRates = parameters.streamRates;
+    _singleton = this;
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)
