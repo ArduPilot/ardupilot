@@ -35,6 +35,10 @@ COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
+# only include UBLOX and NMEA GPS drivers
+define AP_GPS_NMEA_ENABLED 1
+include ../include/minimal_GPS.inc
+
 FLASH_SIZE_KB 1024
 include ../include/minimize_features.inc
 undef STORAGE_FLASH_PAGE
