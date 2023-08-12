@@ -11,6 +11,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AC_Avoid_config.h"
+
+#if AP_OAPATHPLANNER_ENABLED
+
 #include "AP_OADatabase.h"
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -480,3 +484,5 @@ AP_OADatabase *oadatabase()
 }
 
 }
+
+#endif // AP_OAPATHPLANNER_ENABLED

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Avoid_config.h"
+
+#if AP_OAPATHPLANNER_DIJKSTRA_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
@@ -200,3 +204,5 @@ private:
     // refernce to AP_OAPathPlanner options param
     AP_Int16 &_options;
 };
+
+#endif // AP_OAPATHPLANNER_DIJKSTRA_ENABLED
