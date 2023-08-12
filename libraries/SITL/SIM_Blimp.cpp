@@ -16,8 +16,6 @@
   Blimp simulator class
 */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
-
 #include "SIM_Blimp.h"
 
 #include <stdio.h>
