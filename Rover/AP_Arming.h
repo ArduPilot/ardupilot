@@ -2,6 +2,7 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AC_Avoidance/AC_Avoid_config.h>
 
 /*
   a rover-specific arming class
@@ -27,7 +28,9 @@ public:
 
 protected:
     // the following check functions do not call into AP_Arming
+#if AC_AVOID_ENABLED
     bool oa_check(bool report);
+#endif
     bool parameter_checks(bool report);
     bool mode_checks(bool report);
     bool motor_checks(bool report);

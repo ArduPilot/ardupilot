@@ -351,8 +351,10 @@ public:
     class ModeDock *mode_dock_ptr;
 #endif
 
+#if AC_AVOID_ENABLED
     // avoidance library
     AC_Avoid avoid;
+#endif
 
     // pitch angle at 100% throttle
     AP_Float bal_pitch_max;
@@ -411,8 +413,10 @@ public:
     // Sailboat functions
     Sailboat sailboat;
 
+#if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
     AP_OAPathPlanner oa;
+#endif
 
     // maximum speed for vehicle
     AP_Float speed_max;
