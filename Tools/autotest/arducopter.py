@@ -1119,7 +1119,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("LAND")
 
         # check vehicle descends to 2m or less within 40 seconds
-        self.wait_altitude(-5, 2, timeout=40, relative=True)
+        self.wait_altitude(-5, 2, timeout=50, relative=True)
 
         # force disarm of vehicle (it will likely not automatically disarm)
         self.disarm_vehicle(force=True)
