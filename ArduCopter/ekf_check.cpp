@@ -249,26 +249,20 @@ void Copter::check_vibration()
 {
     uint32_t now = AP_HAL::millis();
 
-    // assume checks will succeed
-    bool innovation_checks_valid = true;
-
     // check if vertical velocity and position innovations are positive (NKF3.IVD & NKF3.IPD are both positive)
     Vector3f vel_innovation;
     Vector3f pos_innovation;
     Vector3f mag_innovation;
     float tas_innovation;
     float yaw_innovation;
-    if (!ahrs.get_innovations(vel_innovation, pos_innovation, mag_innovation, tas_innovation, yaw_innovation)) {
-        innovation_checks_valid = false;
-    }
+    // assume checks will succeed
+    bool innovation_checks_valid = ahrs.get_innovations(vel_innovation, pos_innovation, mag_innovation, tas_innovation, yaw_innovation);
     const bool innov_velD_posD_positive = is_positive(vel_innovation.z) && is_positive(pos_innovation.z);
 
     // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
-        innovation_checks_valid = false;
-    }
+    innovation_checks_valid &= ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
 
     const bool is_vibration_affected = ahrs.is_vibration_affected();
     const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance > 1.0f)) || is_vibration_affected;
