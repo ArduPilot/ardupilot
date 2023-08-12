@@ -1,2 +1,2 @@
 def configure(cfg):
-    cfg.env.DOUBLE_PRECISION_SOURCES['SITL'] = ['SIM_Aircraft.cpp']
+    cfg.env.DOUBLE_PRECISION_LIBRARIES['SITL'] = True
