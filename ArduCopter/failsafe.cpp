@@ -18,7 +18,7 @@ static bool in_failsafe;
 void Copter::failsafe_enable()
 {
     failsafe_enabled = true;
-    failsafe_last_timestamp = micros();
+    failsafe_last_timestamp = AP_HAL::micros();
 }
 
 //
