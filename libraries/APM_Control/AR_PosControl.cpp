@@ -151,6 +151,7 @@ void AR_PosControl::update(float dt)
 
     // Limit the velocity to prevent fence violations
     bool backing_up = false;
+#if AC_AVOID_ENABLED
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid != nullptr) {
         Vector3f vel_3d_cms{_vel_target.x * 100.0f, _vel_target.y * 100.0f, 0.0f};
@@ -159,6 +160,7 @@ void AR_PosControl::update(float dt)
         _vel_target.x = vel_3d_cms.x * 0.01;
         _vel_target.y = vel_3d_cms.y * 0.01;
     }
+#endif
 
     // calculate limit vector based on steering limits
     Vector2f steering_limit_vec;
