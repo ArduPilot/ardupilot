@@ -10,7 +10,7 @@ VTOL modes.
 
 # Parameters
 
-The script adds 7 parameters to control it's behaviour. The parameters
+The script adds 14 parameters to control it's behaviour. The parameters
 are:
 
 ## QUIK_ENABLE
@@ -27,6 +27,7 @@ Default RCz_OPTIONS binding is 300 (scripting1).
 This is the set of axes that the tune will run on. The default is 7,
 which means roll, pitch and yaw. It is a bitmask, so if you want just
 roll and pitch then set this to 3. For just yaw you would set it to 4.
+For just ACCZ you would set it to 8 (only for quadplanes).
 
 ## QUIK_DOUBLE_TIME
 
@@ -110,6 +111,14 @@ happening if quicktune gets a false positive oscillation at a low
 gain, which can result in very low rate gains and a dangerous angle P
 oscillation.
 
+## QUIK_Z_PI_MAX
+This is the maximum ratio for P to I in the ACCZ axis. This should be
+between 1.5 and 10. Typically a value of 10 will result in safe margins.
+
+If the value is 0 it will not be used.
+
+This is only for quadplanes.
+
 # Operation
 
 First you should setup harmonic notch filtering using the guide in the
@@ -166,3 +175,14 @@ values. Parameters will also be reverted if you disarm before saving.
 
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
+
+## ACCZ Tuning
+For the vertical axis, with ACCZ tuning enabled, the script will attempt to raise the P gain until
+an oscillation is detected.
+
+After tuning the P gain, the script attempts to use the same method to tune the I gain. This usually
+results in the maximum PI ratio which should be set conservatively.
+
+THe objective of this tune is to result with a large P gain for error tracking and a low I gain to
+remove the steady-state error without causing oscillations where there is large overshoot with the
+setpoint and a long settling time.
