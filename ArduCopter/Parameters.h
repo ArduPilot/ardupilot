@@ -384,6 +384,9 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_terming_time = 258,  // Terminating Time
+        k_param_termed_time  = 259,  // Terminated Time
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -477,6 +480,9 @@ public:
     // Acro parameters
     AP_Int8                 acro_trainer;
 #endif
+
+    AP_Int16                terming_time;  // Terminating Time
+    AP_Int16                termed_time;   // Terminated Time
 
     // Note: keep initializers here in the same order as they are declared
     // above.

@@ -48,7 +48,7 @@ void Copter::failsafe_check()
         return;
     }
 
-    if (!in_failsafe && failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
+    if (!in_failsafe && failsafe_enabled && tnow - failsafe_last_timestamp > uint32_t(g.terming_time * 1000)) {
         // motors are running but we have gone 2 second since the
         // main loop ran. That means we're in trouble and should
         // disarm the motors->
@@ -61,7 +61,7 @@ void Copter::failsafe_check()
         AP::logger().Write_Error(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
     }
 
-    if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
+    if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > uint32_t(g.termed_time * 1000)) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
         if(motors->armed()) {

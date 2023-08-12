@@ -441,6 +441,24 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     (uint8_t)ModeAcro::Trainer::LIMITED),
 #endif
 
+    // @Param: TERMING_TIME
+    // @DisplayName: Terminating Time
+    // @Description: Terminating time to minimize motor rotation
+    // @Units: ms
+    // @Range: 100 10000
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(terming_time,   "TERMING_TIME",     2000),
+
+    // @Param: TERMED_TIME
+    // @DisplayName: Terminated Time
+    // @Description: terminated Time to motor rotation
+    // @Units: ms
+    // @Range: 0 10000
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(termed_time,   "TERMED_TIME",     1000),
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if AP_CAMERA_ENABLED
