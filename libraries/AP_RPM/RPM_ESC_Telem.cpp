@@ -33,13 +33,11 @@ AP_RPM_ESC_Telem::AP_RPM_ESC_Telem(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::R
 
 void AP_RPM_ESC_Telem::update(void)
 {
-#if HAL_WITH_ESC_TELEM
     AP_ESC_Telem &esc_telem = AP::esc_telem();
     float esc_rpm = esc_telem.get_average_motor_rpm(ap_rpm._params[state.instance].esc_mask);
     state.rate_rpm = esc_rpm * ap_rpm._params[state.instance].scaling;
     state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
-#endif
 }
 
 #endif  // AP_RPM_ESC_TELEM_ENABLED
