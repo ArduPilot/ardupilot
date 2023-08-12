@@ -9857,6 +9857,18 @@ class AutoTestCopter(AutoTest):
 
         self.test_rplidar("rplidara1", expected_distances)
 
+    def BrakeZ(self):
+        '''check jerk limit correct in Brake mode'''
+        self.set_parameter('PSC_JERK_Z', 3)
+        self.takeoff(50, mode='GUIDED')
+        vx, vy, vz_up = (0, 0, -1)
+        self.test_guided_local_velocity_target(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
+
+        self.wait_for_local_velocity(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
+        self.change_mode('BRAKE')
+        self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
+        self.land_and_disarm()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -9917,6 +9929,7 @@ class AutoTestCopter(AutoTest):
             self.RPLidarA1,
             self.RPLidarA2,
             self.SafetySwitch,
+            self.BrakeZ,
         ])
         return ret
 
