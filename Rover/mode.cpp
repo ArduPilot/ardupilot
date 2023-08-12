@@ -289,6 +289,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
 
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
+#if AC_AVOID_ENABLED
     if (avoidance_enabled) {
         g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
         if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
@@ -298,6 +299,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             }
         }
     }
+#endif
 
     // call throttle controller and convert output to -100 to +100 range
     float throttle_out = 0.0f;
@@ -432,11 +434,13 @@ void Mode::navigate_to_waypoint()
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
+#if AC_AVOID_ENABLED
     // sailboats trigger tack if simple avoidance becomes active
     if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
         // we are a sailboat trying to avoid fence, try a tack
         rover.control_mode->handle_tack_request();
     }
+#endif
 
     // pass desired speed to throttle controller
     // do not do simple avoidance because this is already handled in the position controller
@@ -453,10 +457,12 @@ void Mode::navigate_to_waypoint()
         // retrieve turn rate from waypoint controller
         float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
 
+#if AC_AVOID_ENABLED
         // if simple avoidance is active at very low speed do not attempt to turn
         if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
             desired_turn_rate_rads = 0.0f;
         }
+#endif
 
         // call turn rate steering controller
         calc_steering_from_turn_rate(desired_turn_rate_rads);
