@@ -1,5 +1,13 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta14 12-Aug-2023
+Changes from 4.3.0-beta13
+1) Bug fixes
+    - DroneCAN GPS RTK injection fix
+    - INAxxx battery monitors allow for battery reset remaining
+    - Notch filter gyro glitch caused by race condition fixed
+    - Scripting restart memory corruption bug fixed
+------------------------------------------------------------------
 Rover 4.3.0-beta13 27-Mar-2023
 Changes from 4.3.0-beta12
 1) Bug fixes
