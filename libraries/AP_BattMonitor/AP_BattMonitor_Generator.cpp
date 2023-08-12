@@ -38,12 +38,8 @@ bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
     // Get pointer to generator singleton
     AP_Generator *generator = AP::generator();
 
-    if (generator == nullptr) {
-        return false;
-    }
-
     // Use consumed_mAh in BattMonitor to display fuel remaining
-    return generator->has_fuel_remaining();
+    return generator != nullptr && generator->has_fuel_remaining();
 }
 
 void AP_BattMonitor_Generator_FuelLevel::init()
@@ -65,11 +61,7 @@ void AP_BattMonitor_Generator_FuelLevel::read()
     AP_Generator *generator = AP::generator();
 
     // Not healthy if we can't find a generator
-    if (generator == nullptr) {
-        return;
-    }
-
-    if (!generator->healthy()) {
+    if (generator == nullptr || !generator->has_fuel_remaining()) {
         return;
     }
 
@@ -93,11 +85,7 @@ bool AP_BattMonitor_Generator_Elec::has_current(void) const
     // Get pointer to generator singleton
     AP_Generator *generator = AP::generator();
 
-    if (generator == nullptr) {
-        return false;
-    }
-
-    return generator->has_current();
+    return generator != nullptr && generator->has_current();
 }
 
 bool AP_BattMonitor_Generator_Elec::has_consumed_energy(void) const
@@ -105,11 +93,7 @@ bool AP_BattMonitor_Generator_Elec::has_consumed_energy(void) const
     // Get pointer to generator singleton
     AP_Generator *generator = AP::generator();
 
-    if (generator == nullptr) {
-        return false;
-    }
-
-    return generator->has_consumed_energy();
+    return generator != nullptr && generator->has_consumed_energy();
 }
 
 // Read the electrical measurements from the generator
@@ -121,11 +105,7 @@ void AP_BattMonitor_Generator_Elec::read()
     AP_Generator *generator = AP::generator();
 
     // Not healthy if we can't find a generator
-    if (generator == nullptr) {
-        return;
-    }
-
-    if (!generator->healthy()) {
+    if (generator == nullptr || !generator->healthy()) {
         return;
     }
 
