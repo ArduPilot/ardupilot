@@ -1,5 +1,14 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.4.0-beta5 12-Aug-2023
+Changes from 4.4.0-beta4
+1) Autopilots specific changes
+    - SIYI N7 support
+2) Bug fixes
+    - DroneCAN airspeed sensor fix to handle missing packets
+    - DroneCAN GPS RTK injection fix
+    - Notch filter gyro glitch caused by race condition fixed
+------------------------------------------------------------------
 Rover 4.4.0-beta4 27-July-2023
 Changes from 4.4.0-beta3
 1) Autopilots specific changes
