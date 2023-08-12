@@ -102,7 +102,9 @@ void ModeFollow::run()
 
         // slow down horizontally as we approach target (use 1/2 of maximum deceleration for gentle slow down)
         const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
+#if AC_AVOID_ENABLED
         copter.avoid.limit_velocity_2D(pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
+#endif // AC_AVOID_ENABLED
         // copy horizontal velocity limits back to 3d vector
         desired_velocity_neu_cms.x = desired_velocity_xy_cms.x;
         desired_velocity_neu_cms.y = desired_velocity_xy_cms.y;
@@ -111,8 +113,10 @@ void ModeFollow::run()
         const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
 
+#if AC_AVOID_ENABLED
         // limit the velocity for obstacle/fence avoidance
         copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss(), G_Dt);
+#endif
 
         // calculate vehicle heading
         switch (g2.follow.get_yaw_behave()) {
