@@ -258,21 +258,25 @@ void Tiltrotor::continuous_update(void)
 
     /*
       we are in a VTOL mode. We need to work out how much tilt is
-      needed. There are 4 strategies we will use:
+      needed. There are 5 strategies we will use:
 
-      1) without manual forward throttle control, the angle will be set to zero
-         in QAUTOTUNE QACRO, QSTABILIZE and QHOVER. This
-         enables these modes to be used as a safe recovery mode.
+      1) With use of a forward throttle controlled by Q_FWD_THR_GAIN in all
+         VTOL modes except Q_AUTOTUNE, we set the angle based on a calculated
+         forward throttle.
 
-      2) with manual forward throttle control we will set the angle based on
-         the demanded forward throttle via RC input.
+      2) With manual forward throttle control we set the angle based on the
+         RC input demanded forward throttle for QACRO, QSTABILIZE and QHOVER.
 
-      3) in fixed wing assisted flight or velocity controlled modes we
-         will set the angle based on the demanded forward throttle,
-         with a maximum tilt given by Q_TILT_MAX. This relies on
-         Q_VFWD_GAIN being set.
+      3) Without a RC input or calculated forward throttle value, the angle
+         will be set to zero in QAUTOTUNE, QACRO, QSTABILIZE and QHOVER.
+         This enables these modes to be used as a safe recovery mode.
 
-      4) if we are in TRANSITION_TIMER mode then we are transitioning
+      4) In fixed wing assisted flight or velocity controlled modes we will
+         set the angle based on the demanded forward throttle, with a maximum
+         tilt given by Q_TILT_MAX. This relies on Q_FWD_THR_GAIN or Q_VFWD_GAIN
+         being set.
+
+      5) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
 
@@ -283,11 +287,23 @@ void Tiltrotor::continuous_update(void)
     }
 #endif
 
-    // if not in assisted flight and in QACRO, QSTABILIZE or QHOVER mode
     if (!quadplane.assisted_flight &&
-        (plane.control_mode == &plane.mode_qacro ||
-         plane.control_mode == &plane.mode_qstabilize ||
-         plane.control_mode == &plane.mode_qhover)) {
+        is_positive(plane.quadplane.q_fwd_thr_gain) &&
+        quadplane.is_flying_vtol())
+    {
+        // We are using the rotor tilt functionality controlled by Q_FWD_THR_GAIN which can
+        // operate in all VTOL modes except Q_AUTOTUNE. Forward rotor tilt is used to produce
+        // forward thrust equivalent to what would have been produced by a forward thrust motor
+        // set to quadplane.forward_throttle_pct()
+        const float fwd_g_demand = 0.01f * quadplane.forward_throttle_pct() / plane.quadplane.q_fwd_thr_gain;
+        const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
+        slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
+        return;
+    } else if (!quadplane.assisted_flight &&
+               (plane.control_mode == &plane.mode_qacro ||
+               plane.control_mode == &plane.mode_qstabilize ||
+               plane.control_mode == &plane.mode_qhover))
+    {
         if (quadplane.rc_fwd_thr_ch == nullptr) {
             // no manual throttle control, set angle to zero
             slew(0);

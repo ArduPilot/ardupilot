@@ -5,6 +5,9 @@
 
 bool ModeQStabilize::_enter()
 {
+    // always zero forward throttle demand on entry into VTOL modes
+    quadplane.q_fwd_throttle = 0.0f;
+
     quadplane.throttle_wait = false;
     return true;
 }
@@ -35,6 +38,8 @@ void ModeQStabilize::update()
         plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
         plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
     }
+
+    plane.quadplane.assign_tilt_to_fwd_thr();
 }
 
 // quadplane stabilize mode

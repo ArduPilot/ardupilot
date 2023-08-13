@@ -5,6 +5,9 @@
 
 bool ModeQHover::_enter()
 {
+    // always zero forward throttle demand on entry into VTOL modes
+    quadplane.q_fwd_throttle = 0.0f;
+
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);

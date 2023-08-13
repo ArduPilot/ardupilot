@@ -5,6 +5,9 @@
 
 bool ModeQRTL::_enter()
 {
+    // always zero forward throttle demand on entry into VTOL modes
+    plane.quadplane.q_fwd_throttle = 0.0f;
+
     // treat QRTL as QLAND if we are in guided wait takeoff state, to cope
     // with failsafes during GUIDED->AUTO takeoff sequence
     if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
@@ -103,6 +106,9 @@ void ModeQRTL::run()
             // nav roll and pitch are controller by position controller
             plane.nav_roll_cd = pos_control->get_roll_cd();
             plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+            plane.quadplane.assign_tilt_to_fwd_thr();
+
             if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
                 pos_control->set_externally_limited_xy();
             }
