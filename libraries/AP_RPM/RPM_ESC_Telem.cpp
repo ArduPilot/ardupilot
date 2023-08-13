@@ -13,23 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_ESC_Telem/AP_ESC_Telem.h>
-
-#include "RPM_ESC_Telem.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_ESC_TELEM_ENABLED
 
-extern const AP_HAL::HAL& hal;
-
-/*
-   open the sensor in constructor
-*/
-AP_RPM_ESC_Telem::AP_RPM_ESC_Telem(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
-    AP_RPM_Backend(_ap_rpm, _instance, _state)
-{
-}
-
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include "RPM_ESC_Telem.h"
+#include <AP_HAL/AP_HAL.h>
 
 void AP_RPM_ESC_Telem::update(void)
 {
