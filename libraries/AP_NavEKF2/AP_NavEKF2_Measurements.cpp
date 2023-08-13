@@ -16,10 +16,6 @@ extern const AP_HAL::HAL& hal;
 // Apply a median filter
 void NavEKF2_core::readRangeFinder(void)
 {
-    uint8_t midIndex;
-    uint8_t maxIndex;
-    uint8_t minIndex;
-
     // get theoretical correct range when the vehicle is on the ground
     // don't allow range to go below 5cm because this can cause problems with optical flow processing
     const auto *_rng = dal.rangefinder();
@@ -38,6 +34,10 @@ void NavEKF2_core::readRangeFinder(void)
 
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
+
+        uint8_t midIndex;
+        uint8_t maxIndex;
+        uint8_t minIndex;
 
         for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             auto *sensor = _rng->get_backend(sensorIndex);
