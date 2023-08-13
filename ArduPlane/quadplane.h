@@ -395,6 +395,12 @@ private:
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
 
+    // gain from forward acceleration to forward throttle
+    AP_Float q_fwd_thr_gain;
+
+    // limit applied to forward pitch to prevent wing producing negative lift
+    AP_Float q_fwd_tilt_lim;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
@@ -410,6 +416,9 @@ private:
     bool initialised;
 
     Location last_auto_target;
+
+    float q_fwd_throttle; // forward throttle used in q modes
+    int32_t q_fwd_nav_pitch_lim_cd; // forward tilt limit used in q modes in centi-degrees
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -682,6 +691,11 @@ private:
       change spool state, providing easy hook for catching changes in debug
      */
     void set_desired_spool_state(AP_Motors::DesiredSpoolState state);
+
+    /*
+      limit forward pitch demand if using rotor tilt or forward flight motor to provide forward acceleration.
+     */
+    void assign_tilt_to_fwd_thr(void);
 
     /*
       get a scaled Q_WP_SPEED based on direction of movement

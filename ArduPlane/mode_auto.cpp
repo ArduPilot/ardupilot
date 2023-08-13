@@ -17,6 +17,8 @@ bool ModeAuto::_enter()
     
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
+        // always zero forward throttle demand on entry into VTOL modes
+        quadplane.q_fwd_throttle = 0.0f;
     } else {
         plane.auto_state.vtol_mode = false;
     }

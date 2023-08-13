@@ -5,6 +5,9 @@
 
 bool ModeQLand::_enter()
 {
+    // always zero forward throttle demand on entry into VTOL modes
+    quadplane.q_fwd_throttle = 0.0f;
+
     plane.mode_qloiter._enter();
     quadplane.throttle_wait = false;
     quadplane.setup_target_position();
