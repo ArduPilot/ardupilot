@@ -5,6 +5,9 @@
 
 bool ModeQLoiter::_enter()
 {
+    // always zero forward throttle demand on entry into VTOL modes
+    quadplane.q_fwd_throttle = 0.0f;
+
     // initialise loiter
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
@@ -82,6 +85,8 @@ void ModeQLoiter::run()
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
+
+    plane.quadplane.assign_tilt_to_fwd_thr();
 
     if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
         pos_control->set_externally_limited_xy();

@@ -167,7 +167,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: VFWD_GAIN
     // @DisplayName: Forward velocity hold gain
-    // @Description: Controls use of forward motor in vtol modes. If this is zero then the forward motor will not be used for position control in VTOL modes. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor.
+    // @Description: The use of this parameter is no longer recommended and has been superseded by a method that works in all VTOL  modes with the exception of autotune which is controlled by the Q_FWD_THR_GAIN parameter. This Q_VFD_GAIN parameter controls use of the forward motor in VTOL modes that use the velocity controller. Set to 0 to disable this function. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor. 
     // @Range: 0 0.5
     // @Increment: 0.01
     // @User: Standard
@@ -505,6 +505,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_ALT_MIN", 34, QuadPlane, qrtl_alt_min, 10),
 
+    // @Param: FWD_THR_GAIN
+    // @DisplayName: Q mode fwd throttle gain
+    // @Description: Gain from forward accel/tilt to forward throttle that is used in all VTOL modes except autotune. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors). Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximnated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter and the Q_VFWD_GAIN parameter should be set to 0 to disable the alternative method that works through the velocity controller. Set Q_FWD_THR_GAIN to 0 to disable this function. Do not use this parameter with tail sitters.
+    // @Range: 0.0 5.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FWD_THR_GAIN", 35, QuadPlane, q_fwd_thr_gain, 2.0f),
+
+    // @Param: FWD_PIT_LIM
+    // @DisplayName: Q mode forward pitch limit
+    // @Description: When forward throttle is being controlled by the Q_FWD_THR_GAIN parameter in Q modes, the vehicle forward (nose down) pitch rotation will be limited to the value specified by this parameter and the any additional forward acceleration required will be produced by use of the forward thrust motor(s) or tilting of moveable rotors. Larger values allow the vehicle to pitch more nose down. Set initially to the amount of nose down pitch required to remove wing lift.
+    // @Units: degrees
+    // @Range: 0.0 5.0
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("FWD_PIT_LIM", 36, QuadPlane, q_fwd_tilt_lim, 3.0f),
     AP_GROUPEND
 };
 
@@ -637,6 +653,9 @@ bool QuadPlane::setup(void)
     if (!enable || hal.util->get_soft_armed()) {
         return false;
     }
+
+    q_fwd_throttle = 0.0f;
+    q_fwd_nav_pitch_lim_cd = -aparm.angle_max;
 
     /*
       cope with upgrade from old AP_Motors values for frame_class
@@ -2069,6 +2088,8 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
             gcs().send_text(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
+        // always zero forward throttle demand on entry into VTOL modes
+        plane.quadplane.q_fwd_throttle = 0.0f;
         return true;
         
     case MAV_VTOL_STATE_FW:
@@ -2539,7 +2560,6 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
 
-        
         if (poscontrol.get_state() == QPOS_APPROACH) {
             poscontrol_init_approach();
         }
@@ -2676,6 +2696,8 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        assign_tilt_to_fwd_thr();
+
         if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
             pos_control->set_externally_limited_xy();
         }
@@ -2729,6 +2751,8 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        assign_tilt_to_fwd_thr();
+
         if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
             pos_control->set_externally_limited_xy();
         }
@@ -2772,6 +2796,8 @@ void QuadPlane::vtol_position_controller(void)
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+        assign_tilt_to_fwd_thr();
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
@@ -2896,6 +2922,39 @@ void QuadPlane::vtol_position_controller(void)
     }
 }
 
+void QuadPlane::assign_tilt_to_fwd_thr(void) {
+#if QAUTOTUNE_ENABLED
+    if (plane.control_mode == &plane.mode_qautotune) {
+        // limiting forward pitch and using forward throttle or rotor tilt is incompatible with auto-tune
+        q_fwd_throttle = 0.0f;
+        q_fwd_nav_pitch_lim_cd = -aparm.angle_max;
+        return;
+    }
+#endif
+    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_tilt_lim)) {
+        // Handle the case where we are limiting the forward pitch angle to prevent negative wing lift
+        // and are using the forward thrust motor or tilting rotors to provide the forward acceleration
+        float fwd_tilt_rad = radians(constrain_float(-0.01f * (float)plane.nav_pitch_cd, 0.0f, 45.0f));
+        q_fwd_nav_pitch_lim_cd = (int32_t)MIN(-100.0f * q_fwd_tilt_lim, 0.0f);
+        plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, q_fwd_nav_pitch_lim_cd);
+        q_fwd_throttle = MIN(q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
+
+        // To prevent forward motor prop strike, reduce throttle to zero when close to ground
+        // When we are doing horizontal positioning in a VTOL land
+        // we always allow the fwd motor to run. Otherwise a bad
+        // lidar could cause the aircraft not to be able to
+        // approach the landing point when landing below the takeoff point
+        if (!in_vtol_land_approach()) {
+            float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+            float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+            float fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
+            q_fwd_throttle *= fwd_thr_scaler;
+        }
+
+    } else {
+        q_fwd_throttle = 0.0f;
+    }
+}
 
 /*
   we want to limit WP speed to a lower speed when more than 20 degrees
@@ -3021,6 +3080,8 @@ void QuadPlane::takeoff_controller(void)
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+        assign_tilt_to_fwd_thr();
     }
 
     run_xy_controller();
@@ -3077,6 +3138,8 @@ void QuadPlane::waypoint_controller(void)
     // nav roll and pitch are controller by waypoint controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
+
+    assign_tilt_to_fwd_thr();
 
     if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
         pos_control->set_externally_limited_xy();
@@ -3536,6 +3599,17 @@ void QuadPlane::Log_Write_QControl_Tuning()
  */
 float QuadPlane::forward_throttle_pct()
 {
+    // handle special case where forward thrust motor is used instead of forward pitch.
+    // but not in autotune as it will upset the results
+#if QAUTOTUNE_ENABLED
+    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_tilt_lim) && plane.control_mode != &plane.mode_qautotune) {
+#else
+    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_thr_gain)) {
+#endif
+        // handle special case where we are using forward throttle instead of forward tilt in Q modes
+        return 100.0f * q_fwd_throttle;
+    }
+
     /*
       Unless an RC channel is assigned for manual forward throttle control,
       we don't use forward throttle in QHOVER or QSTABILIZE as they are the primary
