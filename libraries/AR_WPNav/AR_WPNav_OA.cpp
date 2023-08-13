@@ -44,6 +44,7 @@ void AR_WPNav_OA::update(float dt)
         _destination_oabak = _destination;
     }
 
+#if AP_OAPATHPLANNER_ENABLED
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
         Location oa_origin_new, oa_destination_new;
@@ -119,6 +120,7 @@ void AR_WPNav_OA::update(float dt)
             } // switch (path_planner_used) {
         } // switch (oa_retstate) {
     } // if (oa != nullptr) {
+#endif // AP_OAPATHPLANNER_ENABLED
 
     update_oa_distance_and_bearing_to_destination();
 

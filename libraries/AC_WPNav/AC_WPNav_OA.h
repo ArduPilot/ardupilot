@@ -1,8 +1,8 @@
 #pragma once
 
-#include <AC_Avoidance/AC_Avoid_config.h>
+#include "AC_WPNav_config.h"
 
-#if AP_OAPATHPLANNER_ENABLED
+#if AC_WPNAV_OA_ENABLED
 
 #include <AC_WPNav/AC_WPNav.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
@@ -48,4 +48,4 @@ protected:
     Location    _oa_destination;        // intermediate destination during avoidance
 };
 
-#endif // AP_OAPATHPLANNER_ENABLED
+#endif // AC_WPNAV_OA_ENABLED
