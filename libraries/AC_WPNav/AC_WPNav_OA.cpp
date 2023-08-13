@@ -1,6 +1,6 @@
-#include <AC_Avoidance/AC_Avoid_config.h>
+#include "AC_WPNav_config.h"
 
-#if AP_OAPATHPLANNER_ENABLED
+#if AC_WPNAV_OA_ENABLED
 
 #include <AP_Math/control.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -207,4 +207,4 @@ bool AC_WPNav_OA::update_wpnav()
     return AC_WPNav::update_wpnav();
 }
 
-#endif // AP_OAPATHPLANNER_ENABLED
+#endif // AC_WPNAV_OA_ENABLED
