@@ -169,7 +169,7 @@ void GCS_MAVLINK::ftp_worker(void) {
         }
 
         // if it's a rerequest and we still have the last response then send it
-        if ((request.sysid == reply.sysid) && (request.compid = reply.compid) &&
+        if ((request.sysid == reply.sysid) && (request.compid == reply.compid) &&
             (request.session == reply.session) && (request.seq_number + 1 == reply.seq_number)) {
             ftp_push_replies(reply);
             continue;
