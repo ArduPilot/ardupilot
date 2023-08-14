@@ -266,7 +266,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         const size_t file_size = st.st_size;
 
                         // actually open the file
-                        ftp.fd = AP::FS().open((char *)request.data, 0);
+                        ftp.fd = AP::FS().open((char *)request.data, O_RDONLY);
                         if (ftp.fd == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
