@@ -1,10 +1,11 @@
 # Sierra-F1 Autopilot by Sierra Aerospace
+https://www.sierraaerospace.in/
 
 ## Features
 # Main Board:
  - STM32H743 microcontroller
  - 32MB QSPI flash
- - BMI088+ICM42688 IMUs 
+ - BMI088+ICM42688 IMUs
  - DPS310 barometer on SPI 
  - SDMMC support
  - 4 UARTs- 2 with HW flow control
@@ -12,6 +13,7 @@
  - Dual FDCAN
  - RCIN port
  - Dual power input with 2xI2C
+ - No co-processor
 
 # Daughter board:
  -Ethernet PHY

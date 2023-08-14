@@ -141,7 +141,7 @@ PA9 VBUS INPUT OPENDRAIN
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-# Power input status pin
+# PowerMux input status pin
 PC2 VDD_BRICK_nVALID INPUT PULLUP
 
 # Sensors LDO Enable and ETH LDO enable
@@ -198,3 +198,5 @@ define HAL_BATT_MONITOR_DEFAULT 21
 
 # enable DFU by default
 ENABLE_DFU_BOOT 1
+
+DMA_PRIORITY SDMMC* USART6* UART* USART* SPI* TIM* ADC*
