@@ -246,7 +246,7 @@ void AP_IOMCU::thread_main(void)
 
         if (mask & EVENT_MASK(IOEVENT_SET_OUTPUT_MODE)) {
             if (!write_registers(PAGE_SETUP, PAGE_REG_SETUP_OUTPUT_MODE, sizeof(mode_out)/2, (const uint16_t *)&mode_out)) {
-                event_failed(IOEVENT_SET_OUTPUT_MODE);
+                event_failed(mask);
                 continue;
             }
         }
@@ -831,7 +831,9 @@ void AP_IOMCU::set_brushed_mode(void)
 }
 
 #if HAL_DSHOT_ENABLED
-// set output mode
+// directly set the dshot rate - period_us is the dshot tick period_us and drate is the number
+// of dshot ticks per main loop cycle. These values are calculated by RCOutput::set_dshot_rate()
+// if the backend is free running then then period_us is fixed at 1000us and drate is 0
 void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
 {
     dshot_rate.period_us = period_us;
@@ -880,15 +882,15 @@ AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
 // setup channels
 void  AP_IOMCU::enable_ch(uint8_t ch)
 {
-    if (!(pwm_out.channel_mask & 1U << ch)) {
-        pwm_out.channel_mask |= 1U << ch;
+    if (!(pwm_out.channel_mask & (1U << ch))) {
+        pwm_out.channel_mask |= (1U << ch);
         trigger_event(IOEVENT_SET_CHANNEL_MASK);
     }
 }
 
 void  AP_IOMCU::disable_ch(uint8_t ch)
 {
-    if (pwm_out.channel_mask & 1U << ch) {
+    if (pwm_out.channel_mask & (1U << ch)) {
         pwm_out.channel_mask &= ~(1U << ch);
         trigger_event(IOEVENT_SET_CHANNEL_MASK);
     }
@@ -941,14 +943,12 @@ bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
 	const uint32_t flash_size = 0x10000 - 0x1000;
+    const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
-    if (!AP_BoardConfig::io_dshot()) {
-        fw = AP_ROMFS::find_decompress(fw_name, fw_size);
-    } else {
-        fw = AP_ROMFS::find_decompress(dshot_fw_name, fw_size);
-    }
+    fw = AP_ROMFS::find_decompress(path, fw_size);
+
     if (!fw) {
-        DEV_PRINTF("failed to find %s\n", AP_BoardConfig::io_dshot()?dshot_fw_name:fw_name);
+        DEV_PRINTF("failed to find %s\n", path);
         return false;
     }
     uint32_t crc = crc32_small(0, fw, fw_size);
