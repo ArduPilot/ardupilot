@@ -607,17 +607,7 @@ void Plane::update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-	/*
-	In general when there the pitch and roll exist the formula for the aerodynamic load factor should be as follows:
-	aerodynamic_load_factor = cosf(radians(_ahrs.pitch))/cosf(radians(demanded_roll));
-	which in case of turns (in the horizontal plane) becomes
-	aerodynamic_load_factor = 1.0f/cosf(radians(demanded_roll));
-	formulas can be obtained from equations of balanced spiral:
-	liftForce * cos(roll) = gravityForce * cos(pitch);
-	liftForce * sin(roll) = gravityForce * lateralAcceleration / gravityAcceleration; // as mass = gravityForce/gravityAcceleration
-	see issue #24320 [https://github.com/ArduPilot/ardupilot/issues/24320]. These changes also require changes in ardupilot/libraries/AP_TECS/AP_TECS.cpp
-	Line 418 (according to the comments by Peter Hall): _TASmin *= _load_factor; should be changed to _TASmin *= safe_sqrt(_load_factor);
-	*/
+	// loadFactor = liftForce / gravityForce, where gravityForce = liftForce * cos(roll) on balanced horizontal turn
     aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll));
 
 #if HAL_QUADPLANE_ENABLED
@@ -641,18 +631,9 @@ void Plane::update_load_factor(void)
         return;
     }
 #endif
-	/*
-	To connect loadFactor to airspeed we can use formula of balancing between lift force and gravity force:
-	liftForce = loadFactor * gravityForce; on the other hand lift force can be expressed as
-	liftForce = 0.5 * lifCoefficient * airDensity * sq(airspeed) * referenceArea; minimum airseepd is at loadFactor = 1
-	and lift force only balances the gravit force, so gravity force (which is same as lift force at minimum airspeed) with minimum airspeed can be expressed as
-	gravityForce = 0.5 * lifCoefficient * airDensity * sq(airspeed_min) * referenceArea; substituting gravit force in previous formula gives us
-	0.5 * lifCoefficient * airDensity * sq(airspeed) * referenceArea = loadFactor * 0.5 * lifCoefficient * airDensity * sq(airspeed_min) * referenceArea;
-	from where we get:
-	loadFactor = sq(airspeed / airspeed_min);
-	so the below should be as:
-	*/
+	
     float max_load_factor = sq(smoothed_airspeed / MAX(aparm.airspeed_min, 1));
+	
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
@@ -665,11 +646,7 @@ void Plane::update_load_factor(void)
         // allow at least 25 degrees of roll however, to ensure the
         // aircraft can be maneuvered with a bad airspeed estimate. At
         // 25 degrees the load factor is 1.1 (10%)
-		/*
-		formula can be obtained from equations of balanced horizontal turn:
-		liftForce * cos(roll) = gravityForce; 
-		which leads to cos(roll) = 1/(liftForce/gravityForce) = 1/loadFactor;
-		*/
+		
         int32_t roll_limit = degrees(acosf(1.0f / max_load_factor))*100;
         if (roll_limit < 2500) {
             roll_limit = 2500;
