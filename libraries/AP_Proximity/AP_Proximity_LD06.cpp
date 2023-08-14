@@ -23,9 +23,41 @@
  *
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_LD06_ENABLED
 #include "AP_Proximity_LD06.h"
 
-#if HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LD06_ENABLED
+#define LD_START_CHAR       0x54
+#define PROXIMITY_LD06_TIMEOUT_MS 50
+
+// Indices in data array where each value starts being recorded
+// See comment below about data payload for more info about formatting
+#define START_BEGIN_CHARACTER       0
+#define START_DATA_LENGTH           1
+#define START_RADAR_SPEED           2
+#define START_BEGIN_ANGLE           4
+#define START_PAYLOAD               6
+#define START_END_ANGLE             42
+#define START_CHECK_SUM             46
+#define MEASUREMENT_PAYLOAD_LENGTH  3
+#define PAYLOAD_COUNT               12
+
+ /* ------------------------------------------
+    Data Packet Structure:
+    Start Character : 1 Byte
+    Data Length : 1 Byte
+    Radar Speed : 2 Bytes
+    Start Angle : 2 Bytes
+    Data Measurements : 36 Bytes
+        Contains 12 measurements of 3 Bytes each
+        Each measurement has 2 Bytes for distance to closest object
+        Each measurement has the 3rd Byte as measurement Confidence
+    End Angle : 2 Bytes
+    Timestamp : 2 Bytes
+    Checksum : 1 Byte
+    ------------------------------------------ */
+// ----> 47 data bytes in total for one packet
 
 // Update the sensor readings
 void AP_Proximity_LD06::update(void)
@@ -74,21 +106,18 @@ void AP_Proximity_LD06::get_readings()
             _byte_count++;
 
             if (_byte_count == _response[START_DATA_LENGTH] + 3) {
-
-                set_status(AP_Proximity::Status::Good);
-
-                uint32_t current_ms = AP_HAL::millis();
+                
+                const uint32_t current_ms = AP_HAL::millis();
 
                 // Stores the last distance taken, used to reduce number of readings taken
                 if (_last_distance_received_ms != current_ms) {
                     _last_distance_received_ms =  current_ms;
                 }
-                    
+
                 // Updates the temporary boundary and passes off the completed data
                 parse_response_data();
                 _temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
                 _temp_boundary.reset();
-                
 
                 // Resets the bytes read and whether or not we are reading data to accept a new payload
                 _byte_count = 0;
@@ -100,7 +129,7 @@ void AP_Proximity_LD06::get_readings()
 
 // Parses the data packet received from the LiDAR
 void AP_Proximity_LD06::parse_response_data()
-{ 
+{
 
     // Data interpretation based on:
     // http://wiki.inno-maker.com/display/HOMEPAGE/LD06?preview=/6949506/6949511/LDROBOT_LD06_Development%20manual_v1.0_en.pdf
@@ -154,7 +183,7 @@ void AP_Proximity_LD06::parse_response_data()
     }
 
     // Convert angle to appropriate face and adds to database
-    // Since angle increments are only about 3 degrees, ignore readings if there were only 1 or 2 measurements 
+    // Since angle increments are only about 3 degrees, ignore readings if there were only 1 or 2 measurements
     //    (likely outliers) recorded in the range
     if (sampled_counts > 2) {
         // Gets the average distance read
@@ -166,4 +195,4 @@ void AP_Proximity_LD06::parse_response_data()
         database_push(push_angle, distance_avg);
     }
 }
-#endif // HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LD06_ENABLED
+#endif // AP_PROXIMITY_LD06_ENABLED
