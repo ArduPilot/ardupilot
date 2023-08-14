@@ -65,13 +65,13 @@ void AP_Generator::init()
             // Not using a generator
             return;
 
-#if AP_GENERATOR_IE650_800_ENABLED
+#if AP_GENERATOR_IE_650_800_ENABLED
         case Type::IE_650_800:
             _driver_ptr = new AP_Generator_IE_650_800(*this);
             break;
 #endif
 
-#if AP_GENERATOR_IE2400_ENABLED
+#if AP_GENERATOR_IE_2400_ENABLED
         case Type::IE_2400:
             _driver_ptr = new AP_Generator_IE_2400(*this);
             break;
