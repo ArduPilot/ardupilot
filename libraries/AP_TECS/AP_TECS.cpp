@@ -415,12 +415,7 @@ void AP_TECS::_update_speed(float DT)
     if (aparm.stall_prevention) {
         // when stall prevention is active we raise the minimum
         // airspeed based on aerodynamic load factor
-		/*
-		As load factor formula fixed in ArduPlane Plane::update_load_factor,
-		here also should be changes done according to comments by Peter Hall
-		see issue #24320 [https://github.com/ArduPilot/ardupilot/issues/24320].
-		*/
-		
+				
         _TASmin *= safe_sqrt(_load_factor);
     }
 
