@@ -27,13 +27,21 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     mavlink_distance_sensor_t packet;
     mavlink_msg_distance_sensor_decode(&msg, &packet);
 
-    // only accept distances for the configured orentation
+    // only accept distances for the configured orientation
     if (packet.orientation == orientation()) {
         state.last_reading_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
         _max_distance_cm = packet.max_distance;
         _min_distance_cm = packet.min_distance;
         sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
+        signal_quality = packet.signal_quality;
+        if (signal_quality == 0) {
+            // MAVLink's 0 means invalid/unset, so we map it to -1
+            signal_quality = -1;
+        } else if (signal_quality == 1) {
+            // Map 1 to 0 as that is what ardupilot uses as the worst signal quality
+            signal_quality = 0;
+        }
     }
 }
 
@@ -75,6 +83,15 @@ void AP_RangeFinder_MAVLink::update(void)
         state.distance_m = distance_cm * 0.01f;
         update_status();
     }
+}
+
+bool AP_RangeFinder_MAVLink::get_signal_quality_pct(int8_t &quality_pct) const
+{
+    if (status() != RangeFinder::Status::Good) {
+        return false;
+    }
+    quality_pct = signal_quality;
+    return true;
 }
 
 #endif
