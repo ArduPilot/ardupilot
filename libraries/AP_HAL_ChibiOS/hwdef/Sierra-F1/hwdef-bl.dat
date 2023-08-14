@@ -34,6 +34,7 @@ PA14 JTCK-SWCLK SWD
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2
@@ -62,7 +63,7 @@ QSPIDEV     w25q-dtr       QUADSPI1      MODE1         100*MHZ      31          
 
 # disable peripheral and sensor power in the bootloader
 PC14 VDD_3V3_SENSORS_EN OUTPUT LOW
-#PC15 ETH_PWR_EN OUTPUT LOW
+PC15 EXT_LDO_EN OUTPUT LOW
 
 # enable DFU by default
 ENABLE_DFU_BOOT 1
