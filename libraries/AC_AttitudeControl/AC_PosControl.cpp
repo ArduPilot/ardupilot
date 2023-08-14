@@ -1023,6 +1023,12 @@ void AC_PosControl::set_pos_vel_accel_xy(const Vector2p& pos, const Vector2f& ve
     _accel_desired.xy() = accel;
 }
 
+// get the acceleration z slew rate for scripting
+void AC_PosControl::get_accel_z_slew_rate(float &accel_z_slew_rate)
+{
+    accel_z_slew_rate = get_accel_z_pid().get_pid_info().slew_rate;
+}
+
 // get_lean_angles_to_accel - convert roll, pitch lean target angles to lat/lon frame accelerations in cm/s/s
 Vector3f AC_PosControl::lean_angles_to_accel(const Vector3f& att_target_euler) const
 {

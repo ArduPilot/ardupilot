@@ -365,6 +365,7 @@ public:
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
     AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
     AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    void get_accel_z_slew_rate(float &acc_z_slew_rate);
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
