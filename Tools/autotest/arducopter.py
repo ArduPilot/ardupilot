@@ -9324,8 +9324,8 @@ class AutoTestCopter(AutoTest):
         # before the motors will spin:
         self.wait_esc_telem_rpm(
             esc=mot,
-            rpm_min=17626,
-            rpm_max=17626,
+            rpm_min=17640,
+            rpm_max=17640,
             minimum_duration=2,
             timeout=5,
         )
@@ -9334,8 +9334,8 @@ class AutoTestCopter(AutoTest):
         self.set_safetyswitch_off()
         self.wait_esc_telem_rpm(
             esc=mot,
-            rpm_min=17626,
-            rpm_max=17626,
+            rpm_min=17640,
+            rpm_max=17640,
             minimum_duration=2,
             timeout=5,
         )
