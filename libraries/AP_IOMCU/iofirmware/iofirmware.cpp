@@ -50,9 +50,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  a value of 2 means test with reboot
 */
 #define IOMCU_ENABLE_RESET_TEST 0
-#ifndef IOMCU_SEND_TX_FROM_RX
-#define IOMCU_SEND_TX_FROM_RX 1
-#endif
+
 // enable timing GPIO pings
 #ifdef IOMCU_LOOP_TIMING_DEBUG
 #undef TOGGLE_PIN_DEBUG
@@ -494,6 +492,7 @@ void AP_IOMCU_FW::update()
     if (now_us - last_fast_loop_us >= 1000)
     {
         last_fast_loop_us = now_us;
+        heater_update();
         rcin_update();
         rcin_serial_update();
     }
@@ -503,7 +502,6 @@ void AP_IOMCU_FW::update()
     // so there is no way they can effectively be run faster than 100Hz
     if (now - last_slow_loop_ms > 10) {
         last_slow_loop_ms = now;
-        heater_update();
         safety_update();
         rcout_config_update();
         hal.rcout->timer_tick();
