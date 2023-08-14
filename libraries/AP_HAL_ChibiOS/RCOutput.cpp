@@ -513,16 +513,15 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
  */
 void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot()) {
-        iomcu.set_dshot_period(1000UL, 0);
-    }
-#endif
-
     // for low loop rates simply output at 1Khz on a timer
     if (loop_rate_hz <= 100 || dshot_rate == 0) {
         _dshot_period_us = 1000UL;
         _dshot_rate = 0;
+#if HAL_WITH_IO_MCU
+        if (AP_BoardConfig::io_dshot()) {
+            iomcu.set_dshot_period(1000UL, 0);
+        }
+#endif
         return;
     }
     // if there are non-dshot channels then do likewise
@@ -532,6 +531,13 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
             group.current_mode == MODE_PWM_BRUSHED) {
             _dshot_period_us = 1000UL;
             _dshot_rate = 0;
+#if HAL_WITH_IO_MCU
+            // this is not strictly neccessary since the iomcu could run at a different rate,
+            // but there is only one parameter to control this
+            if (AP_BoardConfig::io_dshot()) {
+                iomcu.set_dshot_period(1000UL, 0);
+            }
+#endif
             return;
         }
     }
