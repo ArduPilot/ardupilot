@@ -199,6 +199,10 @@ void AP_RPM::update(void)
             }
 
             drivers[i]->update();
+
+#if AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
+#endif
         }
     }
 
