@@ -235,7 +235,7 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_z_controller();
 
-
+    void use_z_control(bool val);
 
     ///
     /// Accessors
@@ -394,6 +394,8 @@ public:
     // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
     float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f; }
 
+    void update_throttle(float thr);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -476,6 +478,10 @@ protected:
 
     // angle max override, if zero then use ANGLE_MAX parameter
     float       _angle_max_override_cd;
+
+    bool        use_z;                 //Use z pos control or not
+
+    float       rc_throttle;
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;

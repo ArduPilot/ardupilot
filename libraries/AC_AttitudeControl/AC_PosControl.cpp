@@ -908,6 +908,16 @@ bool AC_PosControl::is_active_z() const
     return dt_ticks <= 1;
 }
 
+void AC_PosControl::use_z_control(bool val)
+{
+    use_z = val;
+}
+
+void AC_PosControl::update_throttle(float thr)
+{
+    rc_throttle = thr;
+}
+
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
@@ -926,44 +936,50 @@ void AC_PosControl::update_z_controller()
         }
     }
     _last_update_z_ticks = AP::scheduler().ticks32();
-
-    // calculate the target velocity correction
-    float pos_target_zf = _pos_target.z;
-
-    _vel_target.z = _p_pos_z.update_all(pos_target_zf, _inav.get_position_z_up_cm());
-    _vel_target.z *= AP::ahrs().getControlScaleZ();
-
-    _pos_target.z = pos_target_zf;
-
-    // add feed forward component
-    _vel_target.z += _vel_desired.z;
-
-    // Velocity Controller
-
-    const float curr_vel_z = _inav.get_velocity_z_up_cms();
-    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target.z *= AP::ahrs().getControlScaleZ();
-
-    // add feed forward component
-    _accel_target.z += _accel_desired.z;
-
-    // Acceleration Controller
-
-    // Calculate vertical acceleration
-    const float z_accel_meas = get_z_accel_cmss();
-
-    // ensure imax is always large enough to overpower hover throttle
-    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
-        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
-    }
     float thr_out;
-    if (_vibe_comp_enabled) {
-        thr_out = get_throttle_with_vibration_override();
+    if (use_z) {
+        // calculate the target velocity correction
+        float pos_target_zf = _pos_target.z;
+
+        _vel_target.z = _p_pos_z.update_all(pos_target_zf, _inav.get_position_z_up_cm());
+        _vel_target.z *= AP::ahrs().getControlScaleZ();
+
+        _pos_target.z = pos_target_zf;
+
+        // add feed forward component
+        _vel_target.z += _vel_desired.z;
+
+        // Velocity Controller
+
+        const float curr_vel_z = _inav.get_velocity_z_up_cms();
+        _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+        _accel_target.z *= AP::ahrs().getControlScaleZ();
+
+        // add feed forward component
+        _accel_target.z += _accel_desired.z;
+
+        // Acceleration Controller
+
+        // Calculate vertical acceleration
+        const float z_accel_meas = get_z_accel_cmss();
+
+        // ensure imax is always large enough to overpower hover throttle
+        if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+            _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+        }
+
+        if (_vibe_comp_enabled) {
+            thr_out = get_throttle_with_vibration_override();
+        } else {
+            thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
+            thr_out += _pid_accel_z.get_ff() * 0.001f;
+        }
+        thr_out += _motors.get_throttle_hover();
     } else {
-        thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
-        thr_out += _pid_accel_z.get_ff() * 0.001f;
+        thr_out = rc_throttle / 1000.0f;
     }
-    thr_out += _motors.get_throttle_hover();
+    use_z_control(true);
+    // throttle control?
 
     // Actuator commands
 
@@ -971,19 +987,20 @@ void AC_PosControl::update_z_controller()
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
 
     // Check for vertical controller health
+    if (use_z) {
+        // _speed_down_cms is checked to be non-zero when set
+        float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
+        _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
+        _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 
-    // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
-    _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
-    _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
-
-    // set vertical component of the limit vector
-    if (_motors.limit.throttle_upper) {
-        _limit_vector.z = 1.0f;
-    } else if (_motors.limit.throttle_lower) {
-        _limit_vector.z = -1.0f;
-    } else {
-        _limit_vector.z = 0.0f;
+        // set vertical component of the limit vector
+        if (_motors.limit.throttle_upper) {
+            _limit_vector.z = 1.0f;
+        } else if (_motors.limit.throttle_lower) {
+            _limit_vector.z = -1.0f;
+        } else {
+            _limit_vector.z = 0.0f;
+        }
     }
 }
 
