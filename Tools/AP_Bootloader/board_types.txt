@@ -237,6 +237,7 @@ AP_HW_SIYI_N7                        1123
 AP_HW_mRoCZOEM_revG                  1124
 AP_HW_BETAFPV_F405                   1125
 AP_HW_QioTekAdeptH743                1126
+AP_HW_YJUAV_A6SE                     1127
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
