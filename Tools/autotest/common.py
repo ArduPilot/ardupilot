@@ -12687,8 +12687,8 @@ switch value'''
         # grab a battery-remaining percentage
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=255,  # battery mask
-            p2=96,   # percentage
+            p1=65535,   # battery mask
+            p2=96,      # percentage
         )
         m = self.assert_receive_message('BATTERY_STATUS', timeout=1)
         want_battery_remaining_pct = m.battery_remaining
