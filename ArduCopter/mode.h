@@ -39,6 +39,10 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        RCCAR =        29,
+        TWODPOSHOLD =  30,
+        RCCAR_UNLIMITED_THROTTLE = 31,
+        ACRO_WITH_TRAINER_SPROUT = 32,
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -73,6 +77,7 @@ public:
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
+    // virtual char *sprout_name() {return (char *)(name()); }
 
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     virtual bool is_taking_off() const;
@@ -800,7 +805,6 @@ private:
     bool speed_changing = false;     // true when the roll stick is being held to facilitate stopping at 0 rate
 };
 
-
 class ModeDrift : public Mode {
 
 public:
@@ -1164,6 +1168,49 @@ private:
     bool land_pause;
 };
 
+class Mode2DPos : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::TWODPOSHOLD; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
+protected:
+
+    const char *name() const override { return "2DPOS"; }
+    const char *name4() const override { return "2PHD"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return pos_control->crosstrack_error();}
+
+#if PRECISION_LANDING == ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
+
+private:
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+    bool _precision_loiter_active; // true if user has switched on prec loiter
+#endif
+
+};
 
 class ModeLoiter : public Mode {
 
@@ -1919,3 +1966,173 @@ private:
 
 };
 #endif
+class ModeRCCar : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::RCCAR; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+    bool requires_GPS() const override { return false; };
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    const char *name() const override { return "RC CAR"; }
+    const char *name4() const override { return "RCAR"; }
+    // char *sprout_name() override;
+    
+
+// private:
+
+    void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
+    float mix_controls(float mix_ratio, float first_control, float second_control);
+    void update_brake_angle_from_velocity(float &brake_angle, float velocity);
+    void init_wind_comp_estimate();
+    void update_wind_comp_estimate();
+    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
+    void roll_controller_to_pilot_override();
+    void pitch_controller_to_pilot_override();
+
+    enum class RPMode {
+        PILOT_OVERRIDE=0,            // pilot is controlling this axis (i.e. roll or pitch)
+        BRAKE,                       // this axis is braking towards zero
+        BRAKE_READY_TO_LOITER,       // this axis has completed braking and is ready to enter loiter mode (both modes must be this value before moving to next stage)
+        BRAKE_TO_LOITER,             // both vehicle's axis (roll and pitch) are transitioning from braking to loiter mode (braking and loiter controls are mixed)
+        LOITER,                      // both vehicle axis are holding position
+        CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
+    };
+
+    RPMode roll_mode;
+    RPMode pitch_mode;
+
+    // pilot input related variables
+    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
+    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
+
+    // braking related variables
+    struct {
+        uint8_t time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+
+        float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
+        float roll;                         // target roll angle during braking periods
+        float pitch;                        // target pitch angle during braking periods
+        int16_t timeout_roll;               // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        int16_t timeout_pitch;              // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        float angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        int16_t to_loiter_timer;            // cycles to mix brake and loiter controls in POSHOLD_TO_LOITER
+    } brake;
+
+    // loiter related variables
+    int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+
+    // wind compensation related variables
+    Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
+    float wind_comp_roll;                       // roll angle to compensate for wind
+    float wind_comp_pitch;                      // pitch angle to compensate for wind
+    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+
+    // final output
+    float roll;   // final roll angle sent to attitude controller
+    float pitch;  // final pitch angle sent to attitude controller
+
+    enum FlowHoldModeState {
+        FlowHold_MotorStopped,
+        FlowHold_Takeoff,
+        FlowHold_Flying,
+        FlowHold_Landed
+    };
+    void flow_to_angle(Vector2f &bf_angle);
+
+    LowPassFilterVector2f flow_filter;
+    void flowhold_flow_to_angle(Vector2f &angle, bool stick_input);
+    void update_height_estimate(void);
+    // minimum assumed height
+    const float height_min = 0.1f;
+
+    // maximum scaling height
+    const float height_max = 3.0f;
+
+    // AP_Float flow_max;
+    // AC_PI_2D flow_pi_xy{0.2f, 0.3f, 3000, 5, 0.0025f};
+    // AP_Float flow_filter_hz;
+    // AP_Int8  flow_min_quality;
+    // AP_Int8  brake_rate_dps;
+    float flow_max = 0.6;
+    AC_PI_2D flow_pi_xy{0.2f, 0.3f, 3000, 5, 0.0025f};
+    float flow_filter_hz = 5;
+    int8_t  flow_min_quality = 10;
+    int8_t  brake_rate_dps = 8;
+
+    float quality_filtered;
+
+    uint8_t log_counter;
+    bool limited;
+    Vector2f xy_I;
+
+    // accumulated INS delta velocity in north-east form since last flow update
+    Vector2f delta_velocity_ne;
+
+    // last flow rate in radians/sec in north-east axis
+    Vector2f last_flow_rate_rps;
+
+    // timestamp of last flow data
+    uint32_t last_flow_ms;
+
+    float last_ins_height;
+    float height_offset;
+
+    // are we braking after pilot input?
+    bool braking;
+
+    // last time there was significant stick input
+    uint32_t last_stick_input_ms;
+};
+
+// class ModeRCar : public Mode {
+// public:
+//    // inherit constructor
+//    using Mode::Mode;
+//    bool init(bool ignore_checks) override;
+//    void run() override;
+//    bool requires_GPS() const override { return false; }
+//    bool has_manual_throttle() const override { return true; }
+//    bool allows_arming(bool from_gcs) const override { return true; };
+//    bool is_autopilot() const override { return false; }
+
+// protected:
+//    const char *name() const override { return "RCCAR"; }
+//    const char *name4() const override { return "RCAR"; }
+// private:
+//     float get_throttle_assist(float velz, float pilot_throttle_scaled);
+
+// }
+
+// class Mode2DPos : public Mode {
+// public:
+//    // inherit constructor
+//    using Mode::Mode;
+//    bool init(bool ignore_checks) override;
+//    void run() override;
+//    bool requires_GPS() const override { return false; }
+//    bool has_manual_throttle() const override { return true; }
+//    bool allows_arming(bool from_gcs) const override { return true; };
+//    bool is_autopilot() const override { return false; }
+
+// protected:
+//    const char *name() const override { return "2DPOSHOLD"; }
+//    const char *name4() const override { return "2POS"; }
+// }

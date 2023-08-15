@@ -121,6 +121,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::AIRMODE:
     case AUX_FUNC::FORCEFLYING:
     case AUX_FUNC::CUSTOM_CONTROLLER:
+    case AUX_FUNC::RCCAR_UNLIMITED_HEIGHT:
     case AUX_FUNC::WEATHER_VANE_ENABLE:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
@@ -283,6 +284,22 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
                     break;
             }
 #endif
+            break;
+            case AUX_FUNC::RCCAR_UNLIMITED_HEIGHT:
+            switch(ch_flag) {
+                case AuxSwitchPos::LOW:
+                    copter.g.rccar_unlimited_height.set(0);
+                    // AP::logger().Write_Event(LogEvent::ACRO_TRAINER_OFF);
+                    break;
+                 case AuxSwitchPos::MIDDLE:
+                    copter.g.rccar_unlimited_height.set(0);
+                    // AP::logger().Write_Event(LogEvent::ACRO_TRAINER_OFF);
+                    break;
+                case AuxSwitchPos::HIGH:
+                    copter.g.rccar_unlimited_height.set(1);
+                    // AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LEVELING);
+                    break;
+            }
             break;
 
         case AUX_FUNC::AUTOTUNE:

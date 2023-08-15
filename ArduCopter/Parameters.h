@@ -477,6 +477,7 @@ public:
     // Acro parameters
     AP_Int8                 acro_trainer;
 #endif
+    AP_Int8         rccar_unlimited_height;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

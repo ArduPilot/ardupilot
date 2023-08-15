@@ -174,6 +174,11 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             ret = &mode_turtle;
             break;
 #endif
+        case Mode::Number::RCCAR:
+            ret = &mode_rccar;
+            break;
+        case Mode::Number::TWODPOSHOLD:
+            ret = &mode_2dposhold;
 
         default:
             break;
@@ -295,6 +300,12 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         mode_change_failed(new_flightmode, "init failed");
         return false;
     }
+    if ((uint8_t)(new_flightmode->mode_number()) == 30 && copter.arming.armed) {
+        // mode_change_failed(new_flightmode, "land to use throttle trainer");
+        gcs().send_text(MAV_SEVERITY_INFO, "LAND TO USE THROTTLE TRAINER");
+        // new_flightmode = flightmode;
+        return true;
+    }
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
@@ -408,6 +419,15 @@ void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
     AP_Notify::flags.flight_mode = (uint8_t)flightmode->mode_number();
     notify.set_flight_mode_str(flightmode->name4());
+    uint8_t mode_number = (uint8_t)flightmode->mode_number();
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "booty %d", g.rccar_unlimited_height.get());
+    if (mode_number == 29 && g.rccar_unlimited_height.get() != 0) {
+        mode_number = 31;
+    } else if (mode_number == 1 && g.acro_trainer.get() != 0) {
+        mode_number = 32;
+    }
+    notify.set_flight_mode_number(mode_number);
+    // notify.set_sprout_flight_mode_str(flightmode->sprout_name());
 }
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
