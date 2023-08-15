@@ -5,6 +5,7 @@
 #include <AP_EFI/AP_EFI_config.h>
 #include <AP_Generator/AP_Generator_config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 
 #ifndef AP_RPM_ENABLED
 #define AP_RPM_ENABLED 1
@@ -40,4 +41,8 @@
 
 #ifndef AP_RPM_GENERATOR_ENABLED
 #define AP_RPM_GENERATOR_ENABLED AP_RPM_BACKEND_DEFAULT_ENABLED && HAL_GENERATOR_ENABLED
+#endif
+
+#ifndef AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
+#define AP_RPM_ESC_TELEM_OUTBOUND_ENABLED AP_RPM_BACKEND_DEFAULT_ENABLED && HAL_WITH_ESC_TELEM
 #endif
