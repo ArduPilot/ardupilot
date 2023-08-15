@@ -520,7 +520,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         if (!_compass.healthy()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass not healthy");
+            check_failed(ARMING_CHECK_COMPASS, report, "Compass not healthy"); //unhealthy compass
             return false;
         }
         // check compass learning is on or offsets have been set
@@ -554,6 +554,95 @@ bool AP_Arming::compass_checks(bool report)
         // check all compasses point in roughly same direction
         if (!_compass.consistent()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compasses inconsistent");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool AP_Arming::gps_checks_indoor_mode(bool report)
+{
+    const AP_GPS &gps = AP::gps();
+    if (true) {
+
+        // Any failure messages from GPS backends
+        char failure_msg[50] = {};
+        if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+            if (failure_msg[0] != '\0') {
+                check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
+            }
+            return false;
+        }
+
+        for (uint8_t i = 0; i < gps.num_sensors(); i++) {
+#if defined(GPS_BLENDED_INSTANCE)
+            if ((i != GPS_BLENDED_INSTANCE) &&
+#else
+            if (
+#endif
+                    (gps.get_type(i) == AP_GPS::GPS_Type::GPS_TYPE_NONE)) {
+                if (gps.primary_sensor() == i) {
+                    check_failed(ARMING_CHECK_GPS, report, "GPS %i: primary but TYPE 0", i+1);
+                    return false;
+                }
+                continue;
+            }
+
+            //GPS OK?
+            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+                check_failed(ARMING_CHECK_GPS, report, "GPS %i: Bad fix", i+1);
+                return false;
+            }
+
+            //GPS update rate acceptable
+            if (!gps.is_healthy(i)) {
+                check_failed(ARMING_CHECK_GPS, report, "GPS %i: not healthy", i+1);
+                return false;
+            }
+        }
+
+        if (!AP::ahrs().home_is_set()) {
+            check_failed(ARMING_CHECK_GPS, report, "AHRS: waiting for home");
+            return false;
+        }
+
+        // check GPSs are within 50m of each other and that blending is healthy
+        float distance_m;
+        if (!gps.all_consistent(distance_m)) {
+            check_failed(ARMING_CHECK_GPS, report, "GPS positions differ by %4.1fm",
+                         (double)distance_m);
+            return false;
+        }
+        if (!gps.blend_health_check()) {
+            check_failed(ARMING_CHECK_GPS, report, "GPS blending unhealthy");
+            return false;
+        }
+
+        // check AHRS and GPS are within 10m of each other
+        if (gps.num_sensors() > 0) {
+            const Location gps_loc = gps.location();
+            Location ahrs_loc;
+            if (AP::ahrs().get_location(ahrs_loc)) {
+                const float distance = gps_loc.get_distance(ahrs_loc);
+                if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
+                    check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (true) {
+        uint8_t first_unconfigured;
+        if (gps.first_unconfigured_gps(first_unconfigured)) {
+            check_failed(ARMING_CHECK_GPS_CONFIG,
+                         report,
+                         "GPS %d failing configuration checks",
+                         first_unconfigured + 1);
+            if (report) {
+                gps.broadcast_first_configuration_failure_reason();
+            }
             return false;
         }
     }
