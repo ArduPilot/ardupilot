@@ -1,6 +1,12 @@
+#include "AP_InternalError_config.h"
+
+#if AP_INTERNALERROR_ENABLED
+
 #include "AP_InternalError.h"
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/HAL.h>
+#include <AP_HAL/Util.h>
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
@@ -137,3 +143,5 @@ void AP_memory_guard_error(uint32_t size)
         AP_HAL::panic("memory guard size=%u\n", unsigned(size));
     }
 }
+
+#endif  // AP_INTERNALERROR_ENABLED
