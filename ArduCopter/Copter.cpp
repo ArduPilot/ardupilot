@@ -217,6 +217,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_InertialSensor,    &copter.ins,                 periodic,       400,  50, 123),
 
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75, 126),
+#if AP_FOLLOW_ENABLED
+    SCHED_TASK_CLASS(AP_Follow,            &copter.g2.follow,           update,           50, 50, 128),
+#endif
 #if AP_RPM_ENABLED
     SCHED_TASK_CLASS(AP_RPM,               &copter.rpm_sensor,          update,          40, 200, 129),
 #endif
