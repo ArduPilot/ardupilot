@@ -346,6 +346,9 @@ public:
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void set_posvelyaw_source_set(uint8_t source_set_idx);
 
+    void set_option_90_active(bool in);
+    bool get_option_90_active(void);
+
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
 
@@ -630,6 +633,8 @@ private:
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
+
+    bool option_90_active = false;
 
     enum class EKFType {
         NONE = 0,

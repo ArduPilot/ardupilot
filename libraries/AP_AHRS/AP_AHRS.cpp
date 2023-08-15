@@ -3009,6 +3009,15 @@ void AP_AHRS::set_posvelyaw_source_set(uint8_t source_set_idx)
 #endif
 }
 
+void AP_AHRS::set_option_90_active(bool in)
+{
+    option_90_active = in;
+}
+bool AP_AHRS::get_option_90_active(void) 
+{
+    return option_90_active;
+}
+
 //returns active source set used, 0=primary, 1=secondary, 2=tertiary
 uint8_t AP_AHRS::get_posvelyaw_source_set() const
 {
