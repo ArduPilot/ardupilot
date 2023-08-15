@@ -829,14 +829,18 @@ void Scheduler::check_stack_free(void)
 
     if (stack_free(&__main_stack_base__) < min_stack) {
         // use "line number" of 0xFFFF for ISR stack low
+#if AP_INTERNALERROR_ENABLED
         AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
+#endif
     }
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (stack_free(tp->wabase) < min_stack) {
             // use task priority for line number. This allows us to
             // identify the task fairly reliably
+#if AP_INTERNALERROR_ENABLED
             AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->realprio);
+#endif
         }
     }
 }
