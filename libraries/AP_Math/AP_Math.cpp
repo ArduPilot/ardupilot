@@ -270,7 +270,7 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-#if !defined(IOMCU_FW)
+#if AP_INTERNALERROR_ENABLED
         AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
 #endif
         return (low + high) / 2;
