@@ -62,8 +62,8 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     AP_GROUPINFO("PIN", 6, AP_RPM_Params, pin, -1),
 
     // @Param: ESC_MASK
-    // @DisplayName: Bitmask of ESC telemetry channels
-    // @Description: Mask of channels to use with ESC rpm telemetry. When TYPE = 5, this will fetch and average the RPM telemetry from all the selected ESC telemetry channels. For all other TYPE values, the ESC telemetry will set the RPM on the selected channel(s).
+    // @DisplayName: Bitmask of ESC telemetry channels to average
+    // @Description: Mask of channels which support ESC rpm telemetry. RPM telemetry of the selected channels will be averaged
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
     // @User: Advanced
     AP_GROUPINFO("ESC_MASK", 7, AP_RPM_Params, esc_mask, 0),
