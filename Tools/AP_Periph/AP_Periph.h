@@ -33,6 +33,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #endif
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
+#include "rc_in.h"
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -286,6 +287,7 @@ public:
     bool rcin_initialised;
     uint32_t rcin_last_sent_RCInput_ms;
     const char *rcin_rc_protocol;  // protocol currently being decoded
+    Parameters_RCIN g_rcin;
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
