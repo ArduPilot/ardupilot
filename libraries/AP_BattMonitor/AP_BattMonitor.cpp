@@ -237,6 +237,164 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_var_info[8]),
 #endif
 
+#if AP_BATT_MONITOR_MAX_INSTANCES > 9
+    // @Group: A_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[9], "A_", 32, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: A_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[9], "A_", 50, AP_BattMonitor, backend_var_info[9]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 10
+    // @Group: B_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[10], "B_", 33, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: B_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[10], "B_", 51, AP_BattMonitor, backend_var_info[10]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 11
+    // @Group: C_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[11], "C_", 34, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: C_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[11], "C_", 52, AP_BattMonitor, backend_var_info[11]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 12
+    // @Group: D_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[12], "D_", 35, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: D_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[12], "D_", 53, AP_BattMonitor, backend_var_info[12]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 13
+    // @Group: E_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[13], "E_", 36, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: E_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[13], "E_", 54, AP_BattMonitor, backend_var_info[13]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 14
+    // @Group: F_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[14], "F_", 37, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: F_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[14], "F_", 55, AP_BattMonitor, backend_var_info[14]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 15
+    // @Group: G_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[15], "G_", 38, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: G_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[15], "G_", 56, AP_BattMonitor, backend_var_info[15]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 16
+    #error "AP_BATT_MONITOR_MAX_INSTANCES too large, reset_remaining_mask() will cause an assert above 16"
+#endif
+
     AP_GROUPEND
 };
 
