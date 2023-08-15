@@ -168,6 +168,10 @@ PA1  ETH_RMII_REF_CLK   ETH1
 define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
 
+# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
+# Note, lower 3 bytes (ADDR3,4,5) will be replaced with the platform UUID
+define AP_NETWORKING_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
+
 # RCIN
 PB7  TIM4_CH2 TIM4 RCININT  PULLDOWN
 
