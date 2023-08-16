@@ -213,6 +213,7 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'AP_Mount::handle_mount_control'),
             ('AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'AP_Mount::handle_mount_configure'),
             ('AP_LOCATIONDB_ENABLED', r'AP_LocationDB::init',),
+            ('AP_FOLLOW_ENABLED', r'AP_Follow::update',),
         ]
 
     def progress(self, msg):
