@@ -377,8 +377,8 @@ class AutoTestSub(AutoTest):
         # and wait for it to go above 50.
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=65535,   # battery mask
-            p2=10,      # percentage
+            p1=-1,   # battery mask
+            p2=10,   # percentage
         )
         self.run_cmd_reboot()
         tstart = time.time()
