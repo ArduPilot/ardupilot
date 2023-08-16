@@ -249,6 +249,7 @@ AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
 
 # IDs 5000-5100 reserved for Carbonix
+# IDs 6000-6100 reserved for SpektreWorks
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
