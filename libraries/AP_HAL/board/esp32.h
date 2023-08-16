@@ -104,6 +104,7 @@
 // disable avoid-fence-follow in copter, these all kinda need each other, so its all or none.
 #define AC_AVOID_ENABLED 0
 #define AP_FENCE_ENABLED 0
+#define AP_FOLLOW_ENABLED 0
 #define MODE_FOLLOW_ENABLED 0
 #define AP_OAPATHPLANNER_ENABLED 0
 
