@@ -111,7 +111,9 @@ void ModeRCCar::run()
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);	
     float target_yaw_rate = pilot_yaw_rate;
     // if (fabsf(pitch_vel) > 20 && fabsf(target_pitch) > 1000) { //greater than 20 cm/s
+    if (copter.arming.is_armed()) {
         target_yaw_rate += (pitch_vel/fabsf(pitch_vel)) * target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_acro_y.get_rate() / 45.0;	
+    }
     // }
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
