@@ -288,6 +288,14 @@ Changes from 4.3.6
     - Webots 2023a simulator support
     - XPlane support for wider range of aircraft
 ------------------------------------------------------------------
+Copter 4.3.8-beta1 12-Aug-2023
+Changes from 4.3.7
+1) Bug fixes
+    - DroneCAN GPS RTK injection fix
+    - INAxxx battery monitors allow for battery reset remaining
+    - Notch filter gyro glitch caused by race condition fixed
+    - Scripting restart memory corruption bug fixed
+------------------------------------------------------------------
 Copter 4.3.7 31-May-2023 / 4.3.7-beta1 24-May-2023
 Changes from 4.3.6
 1) Bug fixes
