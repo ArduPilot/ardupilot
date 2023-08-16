@@ -175,18 +175,18 @@ bool AC_PolyFence_loader::write_type_to_storage(uint16_t &offset, const AC_PolyF
 bool AC_PolyFence_loader::write_latlon_to_storage(uint16_t &offset, const Vector2l &latlon)
 {
     fence_storage.write_uint32(offset, latlon.x);
-    offset += 4;
+    offset += sizeof(latlon.x);
     fence_storage.write_uint32(offset, latlon.y);
-    offset += 4;
+    offset += sizeof(latlon.y);
     return true;
 }
 
 bool AC_PolyFence_loader::read_latlon_from_storage(uint16_t &read_offset, Vector2l &ret) const
 {
     ret.x = fence_storage.read_uint32(read_offset);
-    read_offset += 4;
+    read_offset += sizeof(ret.x);
     ret.y = fence_storage.read_uint32(read_offset);
-    read_offset += 4;
+    read_offset += sizeof(ret.y);
     return true;
 }
 
