@@ -876,6 +876,27 @@ class ChibiOSHWDef(object):
         if page_size == 16384 and storage_size > 15360:
             self.error("HAL_STORAGE_SIZE invalid, needs to be 15360")
 
+    def get_numeric_board_id(self):
+        '''return a numeric board ID, which may require mapping a string to a
+        number via board_list.txt'''
+        some_id = self.get_config('APJ_BOARD_ID')
+        if some_id.isnumeric():
+            return some_id
+
+        board_types_filename = "board_types.txt"
+        topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../..')
+        board_types_dirpath = os.path.join(topdir, "Tools", "AP_Bootloader")
+        board_types_filepath = os.path.join(board_types_dirpath, board_types_filename)
+        for line in open(board_types_filepath, 'r'):
+            m = re.match(r"(?P<name>[-\w]+)\s+(?P<board_id>\d+)", line)
+            if m is None:
+                continue
+            if m.group('name') == some_id:
+                return m.group('board_id')
+
+        raise ValueError("Unable to map (%s) to a board ID using %s" %
+                         (some_id, board_types_filepath))
+
     def write_mcu_config(self, f):
         '''write MCU config defines'''
         f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(args.hwdef[0])))
@@ -1105,7 +1126,7 @@ class ChibiOSHWDef(object):
             f.write('#define UDID_START 0x%08x\n\n' % udid_start)
 
         f.write('\n// APJ board ID (for bootloaders)\n')
-        f.write('#define APJ_BOARD_ID %s\n' % self.get_config('APJ_BOARD_ID'))
+        f.write('#define APJ_BOARD_ID %s\n' % self.get_numeric_board_id())
 
         # support ALT_BOARD_ID for px4 firmware
         alt_id = self.get_config('ALT_BOARD_ID', required=False)
@@ -2411,7 +2432,7 @@ INCLUDE common.ld
 
     def setup_apj_IDs(self):
         '''setup the APJ board IDs'''
-        self.env_vars['APJ_BOARD_ID'] = self.get_config('APJ_BOARD_ID')
+        self.env_vars['APJ_BOARD_ID'] = self.get_numeric_board_id()
         self.env_vars['APJ_BOARD_TYPE'] = self.get_config('APJ_BOARD_TYPE', default=self.mcu_type)
         (USB_VID, USB_PID) = self.get_USB_IDs()
         self.env_vars['USBID'] = '0x%04x/0x%04x' % (USB_VID, USB_PID)
@@ -2965,7 +2986,7 @@ INCLUDE common.ld
                         self.spidev.remove(dev)
                 # also remove all occurences of defines in previous lines if any
                 for line in self.alllines[:]:
-                    if line.startswith('define') and u == line.split()[1] or line.startswith('STM32_') and u == line.split()[0]:
+                    if line.startswith('define') and u == line.split()[1] or line.startswith('STM32_') and u == line.split()[0]:  # noqa
                         self.alllines.remove(line)
                 newpins = []
                 for pin in self.allpins:
