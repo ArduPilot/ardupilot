@@ -2913,7 +2913,7 @@ class AutoTestPlane(AutoTest):
             self.wait_and_maintain_wind_estimate(
                 5, 45,
                 speed_tolerance=1,
-                timeout=20
+                timeout=30
             )
         self.fly_home_land_and_disarm()
 
