@@ -108,7 +108,7 @@ uint32_t AP_ESC_Telem::get_active_esc_mask() const {
             continue;
         }
         if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS
-            && rpm_data_within_timeout(_rpm_data[i], now_us, ESC_RPM_DATA_TIMEOUT_US)) {
+            && !rpm_data_within_timeout(_rpm_data[i], now_us, ESC_RPM_DATA_TIMEOUT_US)) {
             continue;
         }
         ret |= (1U << i);
