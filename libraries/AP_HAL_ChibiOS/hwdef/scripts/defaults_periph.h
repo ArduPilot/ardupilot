@@ -328,3 +328,10 @@
 #ifndef HAL_BOARD_TERRAIN_DIRECTORY
 #define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 #endif
+
+// for boards other than AP_Periph we are always expecting delays when
+// not initialised.  We can't afford that on AP_Periph as you may end
+// up with a bricked node if you write a bad firmware to it.
+#ifndef AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED
+#define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 0
+#endif
