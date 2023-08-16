@@ -1,5 +1,6 @@
 #include "GCS_Plane.h"
 #include "Plane.h"
+#include <AP_Compass/AP_Compass.h>
 
 uint8_t GCS_Plane::sysid_this_mav() const
 {
@@ -8,6 +9,11 @@ uint8_t GCS_Plane::sysid_this_mav() const
 
 void GCS_Plane::update_vehicle_sensor_status_flags(void)
 {
+    // Compass-less plane force reporting AHRS healthy while on ground after arming
+    const auto &compass = AP::compass();
+    if (!plane.is_flying() && !compass.use_for_yaw(compass.get_first_usable())) {
+        control_sensors_health |= MAV_SYS_STATUS_AHRS;
+    }
     // reverse thrust
     if (plane.have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
