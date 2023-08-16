@@ -125,7 +125,7 @@
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if AP_FOLLOW_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
 #if AP_TERRAIN_AVAILABLE

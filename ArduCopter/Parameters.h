@@ -10,7 +10,7 @@
 #if AP_GRIPPER_ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if AP_FOLLOW_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
 #if WEATHERVANE_ENABLED == ENABLED
@@ -584,7 +584,7 @@ public:
     void *mode_flowhold_ptr;
 #endif
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if AP_FOLLOW_ENABLED
     // follow
     AP_Follow follow;
 #endif
