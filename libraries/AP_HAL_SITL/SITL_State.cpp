@@ -548,44 +548,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         _sitl->throttle = throttle;
     }
 
-    float voltage = 0;
-    _current = 0;
-    
-    if (_sitl != nullptr) {
-        if (_sitl->state.battery_voltage <= 0) {
-            if (_vehicle == ArduSub) {
-                voltage = _sitl->batt_voltage;
-                for (uint8_t i=0; i<6; i++) {
-                    float pwm = input.servos[i];
-                    //printf("i: %d, pwm: %.2f\n", i, pwm);
-                    float fraction = fabsf((pwm - 1500) / 500.0f);
-
-                    voltage -= fraction * 0.5f;
-
-                    float draw = fraction * 15;
-                    _current += draw;
-                }
-            } else {
-                // simulate simple battery setup
-                // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f * throttle;
-
-                // assume 50A at full throttle
-                _current = 50.0f * throttle;
-            }
-        } else {
-            // FDM provides voltage and current
-            voltage = _sitl->state.battery_voltage;
-            _current = _sitl->state.battery_current;
-        }
-    }
-
-    // assume 3DR power brick
-    voltage_pin_voltage = (voltage / 10.1f);
-    current_pin_voltage = _current/17.0f;
-    // fake battery2 as just a 25% gain on the first one
-    voltage2_pin_voltage = voltage_pin_voltage * .25f;
-    current2_pin_voltage = current_pin_voltage * .25f;
+    update_voltage_current(input, throttle);
 }
 
 void SITL_State::init(int argc, char * const argv[])

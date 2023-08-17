@@ -614,14 +614,15 @@ bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHan
         return true;
     }
 
-    while (duration_us > 0) {
+    const uint32_t start_us = AP_HAL::micros();
+    do {
         uint16_t wait_us = MIN(100, duration_us);
         // Timeout conversion
         auto ts = timespec();
         ts.tv_sec = 0;
         ts.tv_nsec = wait_us * 1000UL;
 
-        // Blocking here
+        // check FD for input
         const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
 
         if (res < 0) {
@@ -633,8 +634,7 @@ bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHan
         
         // ensure simulator runs
         hal.scheduler->delay_microseconds(wait_us);
-        duration_us -= wait_us;
-    }
+    } while (AP_HAL::micros() - start_us < duration_us);
 
 
     // Handling poll output
