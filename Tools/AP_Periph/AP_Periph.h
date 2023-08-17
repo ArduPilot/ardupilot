@@ -383,6 +383,13 @@ public:
         bool locked;
     } uart_monitor;
 #endif
+
+#if AP_SIM_ENABLED
+    SITL::SIM sitl;
+#if AP_AHRS_ENABLED
+    AP_AHRS ahrs;
+#endif
+#endif
 };
 
 namespace AP
