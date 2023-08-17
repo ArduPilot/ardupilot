@@ -2456,7 +2456,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     uint32_t now = AP_HAL::millis();
     static uint32_t last_update_ms;
     if (g.rangefinder_max_rate > 0 &&
-        now - last_update_ms < 1000/g.rangefinder_max_rate) {
+        now - last_update_ms < uint32_t(1000/g.rangefinder_max_rate)) {
         // limit to max rate
         return;
     }

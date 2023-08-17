@@ -73,6 +73,9 @@ def build(bld):
                      'AP_RPM',
                      'AP_Proximity',
                      'AP_RCProtocol',
+                     'AP_AHRS',
+                     'AP_Terrain',
+                     'AP_Torqeedo',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',
