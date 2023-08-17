@@ -19,14 +19,6 @@ class HALSITL::SITL_State : public SITL_State_Common {
 public:
     void init(int argc, char * const argv[]);
 
-    enum vehicle_type {
-        ArduCopter,
-        Rover,
-        ArduPlane,
-        ArduSub,
-        Blimp
-    };
-
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool output_ready = false;
@@ -90,7 +82,6 @@ private:
     void wait_clock(uint64_t wait_time_usec);
 
     // internal state
-    enum vehicle_type _vehicle;
     uint8_t _instance;
     uint16_t _base_port;
     pid_t _parent_pid;
@@ -102,7 +93,6 @@ private:
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
-    float _current;
 
     bool _synthetic_clock_mode;
 

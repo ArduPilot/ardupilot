@@ -75,6 +75,7 @@ public:
     void init(int argc, char * const argv[]);
 
     enum vehicle_type {
+        NONE,
         ArduCopter,
         Rover,
         ArduPlane,
@@ -217,12 +218,16 @@ public:
     void multicast_state_send(void);
 
 protected:
+    enum vehicle_type _vehicle;
+
     void sim_update(void);
 
     // internal SITL model
     SITL::Aircraft *sitl_model;
 
     SITL::SIM *_sitl;
+
+    void update_voltage_current(struct sitl_input &input, float throttle);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
