@@ -106,9 +106,9 @@ void AP_AHRS::write_video_stabilisation() const
     const struct log_Video_Stabilisation pkt {
         LOG_PACKET_HEADER_INIT(LOG_VIDEO_STABILISATION_MSG),
         time_us         : AP_HAL::micros64(),
-        gyro_x          : _gyro_estimate.x,
-        gyro_y          : _gyro_estimate.y,
-        gyro_z          : _gyro_estimate.z,
+        gyro_x          : state.gyro_estimate.x,
+        gyro_y          : state.gyro_estimate.y,
+        gyro_z          : state.gyro_estimate.z,
         accel_x         : accel.x,
         accel_y         : accel.y,
         accel_z         : accel.z,
