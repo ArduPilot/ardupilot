@@ -1131,10 +1131,10 @@ group_sim.add_option("-T", "--tracker",
 group_sim.add_option("", "--enable-onvif",
                      action="store_true",
                      help="enable onvif camera control sim using AntennaTracker")
-group_sim.add_option("", "--can-gps",
+group_sim.add_option("", "--can-peripherals",
                      action='store_true',
                      default=False,
-                     help="start a DroneCAN GPS instance (use Tools/scripts/CAN/can_sitl_nodev.sh first)")
+                     help="start a DroneCAN peripheral instance (use Tools/scripts/CAN/can_sitl_nodev.sh first)")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
                      default=None,
@@ -1472,7 +1472,7 @@ if cmd_opts.instance == 0:
 if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
-if cmd_opts.can_gps:
+if cmd_opts.can_peripherals:
     start_CAN_GPS(cmd_opts)
 
 if cmd_opts.custom_location:
