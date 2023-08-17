@@ -119,6 +119,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
         struct sitl_input input {};
         sitl_model->update(input);
         sim_update();
+        update_voltage_current(input, 0);
         usleep(100);
     }
 }
