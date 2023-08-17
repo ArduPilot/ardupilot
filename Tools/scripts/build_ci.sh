@@ -415,7 +415,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "astyle-cleanliness" ]; then
         echo "Checking AStyle code cleanliness"
-        ./Tools/scripts/run_astyle.py
+        ./Tools/scripts/run_astyle.py --dry-run
         continue
     fi
 
