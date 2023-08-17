@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Increment: 1
     // @Range: 0 127
     // @User: Advanced
-    AP_GROUPINFO("DISARMDELAY", 10, AP_Landing, disarm_delay, 20),
+    AP_GROUPINFO("DISARMDELAY", 10, AP_Landing, disarm_delay, AP_LANDING_PARAM_LAND_DISARMDELAY_DEFAULT),
 
     // @Param: THEN_NEUTRL
     // @DisplayName: Set servos to neutral after landing
