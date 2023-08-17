@@ -59,16 +59,22 @@ public:
     CANIface(int index)
       : _self_index(index)
       , _frames_in_socket_tx_queue(0)
-    { }
-
-    static uint8_t next_interface;
-    CANIface() : CANIface(next_interface++) {}
+    {
+        _num_interfaces++;
+    }
+    CANIface() : CANIface(_num_interfaces) {}
+    static uint8_t _num_interfaces;
 
     ~CANIface() { }
 
     // Initialise CAN Peripheral
     bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
     bool init(const uint32_t bitrate, const OperatingMode mode) override;
+
+    // number of enabled interfaces
+    static uint8_t num_interfaces(void) {
+        return _num_interfaces;
+    }
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO

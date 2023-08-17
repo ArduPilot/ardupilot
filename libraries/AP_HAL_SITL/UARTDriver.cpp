@@ -120,17 +120,6 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
             _uart_start_connection();
-        } else if (strcmp(devtype, "fifo") == 0) {
-            if(strcmp(args1, "gps") == 0) {
-                UNUSED_RESULT(asprintf(&args1, "/tmp/gps_fifo%d", (int)_sitlState->get_instance()));
-            }
-            ::printf("Reading FIFO file @ %s\n", args1);
-            _fd = ::open(args1, O_RDONLY | O_NONBLOCK);
-            if (_fd >= 0) {
-                _connected = true;
-            } else {
-                ::printf("Failed Reading FIFO file @ %s\n", args1);       
-            }
         } else if (strcmp(devtype, "sim") == 0) {
             if (!_connected) {
                 ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
