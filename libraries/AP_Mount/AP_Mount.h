@@ -178,7 +178,7 @@ public:
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
-    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    MAV_RESULT handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
@@ -278,10 +278,10 @@ private:
     void handle_mount_configure(const mavlink_message_t &msg);
     void handle_mount_control(const mavlink_message_t &msg);
 
-    MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
     void handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
