@@ -392,6 +392,7 @@ void AP_AHRS::update(bool skip_ins_update)
     // update AOA and SSA
     update_AOA_SSA();
 
+#if HAL_GCS_ENABLED
     EKFType active = active_EKF_type();
     if (active != last_active_ekf_type) {
         last_active_ekf_type = active;
@@ -423,6 +424,7 @@ void AP_AHRS::update(bool skip_ins_update)
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
+#endif // HAL_GCS_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     /*
