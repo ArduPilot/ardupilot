@@ -19,6 +19,7 @@
 #include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/getopt_cpp.h>
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -106,18 +107,115 @@ void SITL_State::init(int argc, char * const argv[]) {
     }
 
     printf("Running Instance: %d\n", _instance);
+
+    sitl_model = new SimMCast("");
+
+    _sitl = AP::sitl();
 }
 
-void SITL_State::wait_clock(uint64_t wait_time_usec) {
+void SITL_State::wait_clock(uint64_t wait_time_usec)
+{
     while (AP_HAL::micros64() < wait_time_usec) {
-        usleep(1000);
+        struct sitl_input input {};
+        sitl_model->update(input);
+        sim_update();
+        usleep(100);
     }
 }
 
-// when Periph can use SITL simulated devices we should remove these
-// stubs:
-ssize_t SITL::SerialDevice::read_from_device(char*, size_t) const { return -1; }
+/*
+  open multicast input from main simulator
+ */
+void SimMCast::multicast_open(void)
+{
+    struct sockaddr_in sockaddr {};
+    int ret;
 
-ssize_t SITL::SerialDevice::write_to_device(char const*, size_t) const { return -1; }
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(SITL_MCAST_PORT);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
+
+    mc_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (mc_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(mc_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+    int one = 1;
+    if (setsockopt(mc_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+        fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    // close on exec, to allow reboot
+    fcntl(mc_fd, F_SETFD, FD_CLOEXEC);
+
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+    /*
+      on cygwin you need to bind to INADDR_ANY then use the multicast
+      IP_ADD_MEMBERSHIP to get on the right address
+     */
+    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
+    
+    ret = bind(mc_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "multicast bind failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    struct ip_mreq mreq {};
+    mreq.imr_multiaddr.s_addr = inet_addr(SITL_MCAST_IP);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    ret = setsockopt(mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    if (ret == -1) {
+        fprintf(stderr, "multicast membership add failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+}
+
+/*
+  read state from multicast
+ */
+void SimMCast::multicast_read(void)
+{
+    auto *_sitl = AP::sitl();
+    if (_sitl == nullptr) {
+        return;
+    }
+    struct SITL::sitl_fdm state;
+    if (recv(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL) == sizeof(state)) {
+        if (state.timestamp_us < _sitl->state.timestamp_us) {
+            // main process has rebooted
+            base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
+        }
+        _sitl->state = state;
+        hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
+        HALSITL::Scheduler::timer_event();
+    }
+}
+
+SimMCast::SimMCast(const char *frame_str) :
+    Aircraft(frame_str)
+{
+    multicast_open();
+}
+
+void SimMCast::update(const struct sitl_input &input)
+{
+    multicast_read();
+}
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_BUILD_AP_PERIPH)
