@@ -22,6 +22,7 @@ class AStyleChecker(object):
         self.retcode = 0
         self.directories_to_check = [
             'libraries/AP_DDS',
+            'libraries/AP_ExternalControl'
         ]
         self.files_to_check = []
         self.dry_run = dry_run
