@@ -79,6 +79,8 @@ public:
         k_param_networking,
         k_param_rpm_sensor,
         k_param_g_rcin,
+        k_param_sitl,
+        k_param_ahrs,
     };
 
     AP_Int16 format_version;
