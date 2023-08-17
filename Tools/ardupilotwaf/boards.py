@@ -706,10 +706,9 @@ class sitl(Board):
             'AP_CSVReader',
         ]
 
-        if not cfg.env.AP_PERIPH:
-            env.AP_LIBRARIES += [
-                'SITL',
-            ]
+        env.AP_LIBRARIES += [
+            'SITL',
+        ]
 
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
@@ -815,9 +814,18 @@ class sitl_periph_gps(sitl):
         env.DEFINES.update(
             HAL_BUILD_AP_PERIPH = 1,
             PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
-            AP_AIRSPEED_ENABLED = 0,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph"',
             HAL_PERIPH_ENABLE_GPS = 1,
+            HAL_PERIPH_ENABLE_AIRSPEED = 1,
+            HAL_PERIPH_ENABLE_MAG = 1,
+            HAL_PERIPH_ENABLE_BARO = 1,
+            HAL_PERIPH_ENABLE_RANGEFINDER = 1,
+            HAL_PERIPH_ENABLE_BATTERY = 1,
+            HAL_PERIPH_ENABLE_EFI = 1,
+            HAL_PERIPH_ENABLE_RPM = 1,
+            AP_AIRSPEED_ENABLED = 1,
+            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
+            AP_AHRS_ENABLED = 1,
             AP_UART_MONITOR_ENABLED = 1,
             HAL_CAN_DEFAULT_NODE_ID = 0,
             HAL_RAM_RESERVE_START = 0,
@@ -844,7 +852,8 @@ class sitl_periph_gps(sitl):
             AP_CAN_SLCAN_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
             AP_SCRIPTING_ENABLED = 0,
-            AP_AHRS_ENABLED = 0,
+            HAL_NAVEKF2_AVAILABLE = 0,
+            HAL_NAVEKF3_AVAILABLE = 0,
         )
 
 
