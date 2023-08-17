@@ -120,13 +120,7 @@ void AP_CANManager::init()
     WITH_SEMAPHORE(_sem);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (AP::sitl() != nullptr) {
-        if (AP::sitl()->speedup > 1) {
-            log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "CAN is not supported under speedup.");
-
-            return;
-        }
-    } else {
+    if (AP::sitl() == nullptr) {
         AP_HAL::panic("CANManager: SITL not initialised!");
     }
 #endif
