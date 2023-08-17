@@ -20,15 +20,6 @@
 #include <AP_Common/NMEA.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
-// simulated CAN GPS devices get fed from our SITL estimates:
-#if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-extern const HAL_SITL& hal_sitl;
-#endif
-
 // the number of GPS leap seconds - copied from AP_GPS.h
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
@@ -77,22 +68,6 @@ GPS::GPS(uint8_t _instance) :
     SerialDevice(8192, 2048),
     instance{_instance}
 {
-
-#if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-    const uint8_t num_gps = 2;
-    // pipe number is SITL instance number (e.g. -I argument to
-    // sim_vehicle.py) times the max number of GPSs + the gps instance
-    // number:
-    const uint8_t num = num_gps * hal_sitl.get_instance() + instance;
-    if (asprintf(&_gps_fifo, "/tmp/gps_fifo%u", (unsigned)num) == -1) {  // FIXME - needs to work with simulated periph-gps
-        AP_BoardConfig::allocation_error("gps_fifo filepath");
-    }
-    if (mkfifo(_gps_fifo, 0666) < 0) {
-        if (errno != EEXIST) {
-            printf("MKFIFO failed with %m\n");
-        }
-    }
-#endif
 }
 
 uint32_t GPS::device_baud() const
@@ -115,15 +90,6 @@ ssize_t GPS::write_to_autopilot(const char *p, size_t size) const
     if (instance == 1 && _sitl->gps_disable[instance]) {
         return -1;
     }
-
-#if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-    // also write to external fifo
-    int fd = open(_gps_fifo, O_WRONLY | O_NONBLOCK);
-    if (fd >= 0) {
-        UNUSED_RESULT(write(fd, p, size));
-        close(fd);
-    }
-#endif
 
     const float byteloss = _sitl->gps_byteloss[instance];
 

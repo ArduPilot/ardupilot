@@ -26,14 +26,10 @@ param set SERIAL5_PROTOCOL 5
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_SIM_GPS_ENABLED
-#define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+#define HAL_SIM_GPS_ENABLED AP_SIM_ENABLED
 #endif
 
 #if HAL_SIM_GPS_ENABLED
-
-#ifndef HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-#define HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && !defined(CYGWIN_BUILD)
-#endif
 
 #ifndef AP_SIM_GPS_FILE_ENABLED
 // really need to use AP_FileSystem for this.
@@ -245,11 +241,6 @@ private:
 
     // last 20 samples, allowing for up to 20 samples of delay
     GPS_Data _gps_history[20];
-
-#if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-    // this will be allocated if needed:
-    char *_gps_fifo;
-#endif
 
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
