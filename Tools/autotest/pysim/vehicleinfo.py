@@ -419,6 +419,7 @@ class VehicleInfo(object):
             "gps": {
                 "configure_target": "sitl_periph_gps",
                 "waf_target": "bin/AP_Periph",
+                "default_params_filename": "default_params/periph.parm",
                 },
             }
     },
