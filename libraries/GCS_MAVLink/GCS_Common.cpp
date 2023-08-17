@@ -4621,18 +4621,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_comman
 }
 #endif  // HAL_INS_ACCELCAL_ENABLED
 
+#if HAL_MOUNT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
-#if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
     return mount->handle_command_long(packet, msg);
-#else
     return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
@@ -4662,7 +4661,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
     return MAV_RESULT_UNSUPPORTED;
 }
 
-MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     if (command_long_stores_location((MAV_CMD)packet.command)) {
@@ -4696,10 +4695,10 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
     mavlink_command_int_t command_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
 
-    return handle_command_int_packet(command_int);
+    return handle_command_int_packet(command_int, msg);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
@@ -4856,8 +4855,30 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
             break;
 #endif
 
+    case MAV_CMD_CAN_FORWARD:
+        result = handle_can_forward(packet, msg);
+        break;
+
+    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+        result = handle_preflight_reboot(packet, msg);
+        break;
+
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        result = handle_command_preflight_calibration(packet, msg);
+        break;
+
+#if HAL_MOUNT_ENABLED
+    case MAV_CMD_DO_MOUNT_CONFIGURE:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
+        // some mount commands require the source sysid and compid
+        result = handle_command_mount(packet, msg);
+        break;
+#endif
+
     default:
-        result = try_command_long_as_command_int(packet);
+        result = try_command_long_as_command_int(packet, msg);
         break;
     }
 
@@ -4952,34 +4973,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
-    MAV_RESULT result;
-
-    // special handling of messages that need the mavlink_message_t
-    switch (packet.command) {
-    case MAV_CMD_CAN_FORWARD:
-        result = handle_can_forward(packet, msg);
-        break;
-
-    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-        result = handle_preflight_reboot(packet, msg);
-        break;
-
-    case MAV_CMD_PREFLIGHT_CALIBRATION:
-        result = handle_command_preflight_calibration(packet, msg);
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONFIGURE:
-    case MAV_CMD_DO_MOUNT_CONTROL:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-    case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
-        // some mount commands require the source sysid and compid
-        result = handle_command_mount(packet, msg);
-        break;
-
-    default:
-         result = handle_command_long_packet(packet);
-         break;
-    }
+    const MAV_RESULT result = handle_command_long_packet(packet, msg);
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
@@ -5152,7 +5146,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 }
 #endif
 
-MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
     case MAV_CMD_DO_SET_ROI:
@@ -5192,7 +5186,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
             return scripting->handle_command_int_packet(packet);
         }
 #endif // AP_SCRIPTING_ENABLED
+
+#if AP_FILESYSTEM_FORMAT_ENABLED
+    case MAV_CMD_STORAGE_FORMAT:
+        return handle_command_storage_format(packet, msg);
+#endif
     }
+
     return MAV_RESULT_UNSUPPORTED;
 }
 
@@ -5212,19 +5212,7 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
-    MAV_RESULT result;
-
-    // special handling of messages that need the mavlink_message_t
-    switch (packet.command) {
-#if AP_FILESYSTEM_FORMAT_ENABLED
-    case MAV_CMD_STORAGE_FORMAT:
-        result = handle_command_storage_format(packet, msg);
-        break;
-#endif
-    default:
-        result = handle_command_int_packet(packet);
-        break;
-    }
+    const MAV_RESULT result = handle_command_int_packet(packet, msg);
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
