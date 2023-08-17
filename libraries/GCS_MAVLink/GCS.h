@@ -645,7 +645,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi_none();
 
 #if HAL_MOUNT_ENABLED
-    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #endif
 
     MAV_RESULT handle_command_mag_cal(const mavlink_command_int_t &packet);
