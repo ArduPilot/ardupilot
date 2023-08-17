@@ -107,6 +107,7 @@ void AP_Networking::init()
 
     if (!backend->init()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
+        delete backend;
         backend = nullptr;
     }
 
