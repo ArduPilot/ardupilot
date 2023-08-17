@@ -10,7 +10,7 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
  - BEC output: 5V, 2A@4V
  - Barometer: BMP280
  - OSD: AT7456E
- - 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
+ - 3 UARTS: (UART1, UART3, UART4)
  - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
  - Integrated 4-in-1 BlueJay ESC
 
@@ -28,16 +28,15 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL1|RX1/TX1|UART1 (GPS, DMA-enabled)|
 |SERIAL3|TX3/RX3|UART3 (ELRS, internal)
 |SERIAL4|TX4/RX4|UART4 (DJI)|
-|SERIAL5|RX5|UART5 (RX-only)|
-|SERIAL6|RX6|UART6 (SBUS, RX-only, inverted, DMA-enabled)|
+
 
 ## RC Input
 
-RC input is configured on the on-board ELRS on UART3 or through (UART6_RX/UART6_TX) pins. It supports all serial RC protocols.
+RC input is configured on the on-board ELRS on UART3 or through SBUS pins. SBUS pin supports all serial digital RC protocols.
 
 ## OSD Support
 
-The BETAFPV F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The BETAFPV F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver). UART4 defaults to DJI OSD telemetry
 
 ## PWM Output
 
@@ -48,8 +47,6 @@ The PWM are in in two groups:
  - PWM 1-2 in group1
  - PWM 3-4 in group2
  - PWM 5 in group3
- - PWM 6 in group4
- - PWM 7 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -72,18 +69,18 @@ These are set by default in the firmware and shouldn't need to be adjusted
 
 ## Compass
 
-The BETAFPV F405 AIO does not have a builtin compass.
+The BETAFPV F405 AIO does not have a builtin compass nor does it have a port to connect one so is limited to using GSF for yaw with its limitations, see wiki
 
 ## NeoPixel LED
 
-The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. This is the seventh PWM output.
+The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. This is the fifth PWM output.
 
 ## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
-bootloader button pressed. Then you should load the "with_bl.hex"
+bootloader button pressed. Then you should load the "BETAFPV-F405_with_bl.hex"
 firmware, using your favourite DFU loading tool.
 
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
-*.apj firmware files.
+"BETAFPV-F405.apj" firmware files.
