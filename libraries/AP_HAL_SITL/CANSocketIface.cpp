@@ -53,7 +53,7 @@ using namespace HALSITL;
 
 CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
-uint8_t CANIface::next_interface;
+uint8_t CANIface::_num_interfaces;
 
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
@@ -614,17 +614,28 @@ bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHan
         return true;
     }
 
-    // Timeout conversion
-    auto ts = timespec();
-    ts.tv_sec = 0;
-    ts.tv_nsec = duration_us * 1000UL;
+    while (duration_us > 0) {
+        uint16_t wait_us = MIN(100, duration_us);
+        // Timeout conversion
+        auto ts = timespec();
+        ts.tv_sec = 0;
+        ts.tv_nsec = wait_us * 1000UL;
 
-    // Blocking here
-    const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
+        // Blocking here
+        const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
 
-    if (res < 0) {
-        return false;
+        if (res < 0) {
+            return false;
+        }
+        if (res > 0) {
+            break;
+        }
+        
+        // ensure simulator runs
+        hal.scheduler->delay_microseconds(wait_us);
+        duration_us -= wait_us;
     }
+
 
     // Handling poll output
     for (unsigned i = 0; i < num_pollfds; i++) {
