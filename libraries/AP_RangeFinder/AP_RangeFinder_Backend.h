@@ -74,7 +74,7 @@ public:
 
     // 0 is no return value, 100 is perfect.  false means signal
     // quality is not available
-    virtual bool get_signal_quality_pct(uint8_t &quality_pct) const { return false; }
+    virtual bool get_signal_quality_pct(int8_t &quality_pct) const { return false; }
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
