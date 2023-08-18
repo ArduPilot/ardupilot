@@ -394,7 +394,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         return;
     }
 
-    uint8_t quality_pct = 0;
+    int8_t quality_pct;
     uint8_t quality;
     if (sensor->get_signal_quality_pct(quality_pct)) {
         // mavlink defines this field as 0 is unknown, 1 is invalid, 100 is perfect
