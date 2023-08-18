@@ -17,6 +17,7 @@
 
 #if AP_RPM_ENABLED
 
+#include "RPM_Backend.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
