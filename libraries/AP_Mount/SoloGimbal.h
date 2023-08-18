@@ -6,16 +6,18 @@
 ************************************************************/
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-#include "AP_Mount.h"
+#include "AP_Mount_config.h"
+
 #if HAL_SOLO_GIMBAL_ENABLED
-#include "SoloGimbalEKF.h"
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #include <AP_AccelCal/AP_AccelCal.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include "SoloGimbal_Parameters.h"
+#include "SoloGimbalEKF.h"
 
 enum gimbal_state_t {
     GIMBAL_STATE_NOT_PRESENT = 0,

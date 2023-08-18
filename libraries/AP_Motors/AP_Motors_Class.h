@@ -111,6 +111,7 @@ public:
 
     // check initialisation succeeded
     virtual bool        arming_checks(size_t buflen, char *buffer) const;
+    virtual bool        motor_test_checks(size_t buflen, char *buffer) const;
     bool                initialised_ok() const { return _initialised_ok; }
     void                set_initialised_ok(bool val) { _initialised_ok = val; }
 

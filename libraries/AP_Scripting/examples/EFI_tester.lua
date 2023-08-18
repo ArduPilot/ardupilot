@@ -236,11 +236,40 @@ function send_HFE(driver)
 
 end
 
+--[[
+   send Halo6000 data. Called at 100Hz
+--]]
+function send_Halo6K(driver)
+
+   --local msg = CANFrame()
+   local t = get_time_sec()
+
+   local RPM = 1200 + math.floor(1000*math.sin(t))
+   rev_counter = rev_counter + (RPM/60.0)*0.01
+
+   -- fast telem1
+   local msg = CANFrame()
+   msg:id(0x1c1)
+   put_u16_LE(msg,0,RPM)
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+
+   -- fast telem2
+   msg = CANFrame()
+   msg:id(0x1c2)
+   put_u16_LE(msg,0,math.floor(30.2*5))
+   put_u16_LE(msg,2,math.floor(3.2*5)+200)
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+end
+
 function update()
    if EFISIM_TYPE:get() == 1 then
       send_SkyPower(driver2)
    elseif EFISIM_TYPE:get() == 2 then
       send_HFE(driver2)
+   elseif EFISIM_TYPE:get() == 3 then
+      send_Halo6K(driver2)
    end
    return update, math.floor(1000/EFISIM_RATE_HZ:get())
 end

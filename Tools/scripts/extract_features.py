@@ -36,6 +36,7 @@ class ExtractFeatures(object):
         # the substitutions will be upper-cased
         self.features = [
             ('AP_ADVANCEDFAILSAFE_ENABLED', 'AP::advancedfailsafe',),
+            ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 
@@ -132,7 +133,7 @@ class ExtractFeatures(object):
             ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
             ('AP_EFI_CURRAWONG_ECU_ENABLED', r'AP_EFI_Currawong_ECU::update\b',),
             ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
-            ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::update',),
+            ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::init',),
 
             ('OSD_ENABLED', 'AP_OSD::update_osd',),
             ('HAL_PLUSCODE_ENABLE', 'AP_OSD_Screen::draw_pluscode',),
@@ -152,6 +153,8 @@ class ExtractFeatures(object):
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
+            ('AP_RELAY_ENABLED', 'AP_Relay::init',),
+            ('AP_SERVORELAYEVENTS_ENABLED', 'AP_ServoRelayEvents::update_events',),
 
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
@@ -161,6 +164,7 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
+            ('AP_SBUSOUTPUT_ENABLED', 'AP_SBusOut::sbus_format_frame',),
             ('AP_KDECAN_ENABLED', r'AP_KDECAN::update\b',),
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
@@ -180,6 +184,7 @@ class ExtractFeatures(object):
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
+            ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
 
             ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
             ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::handle_play_tune'),
@@ -188,6 +193,15 @@ class ExtractFeatures(object):
             ('AP_NOTIFY_PROFILED_ENABLED', r'ProfiLED::init_ports'),
             ('AP_NOTIFY_PROFILED_SPI_ENABLED', r'ProfiLED_SPI::rgb_set_id'),
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
+            ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
+
+            ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+
+            ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
+            ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
+            ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
+            ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
+            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
         ]
 
     def progress(self, msg):
@@ -200,6 +214,7 @@ class ExtractFeatures(object):
         # a list of problematic defines we don't have fixes for ATM:
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
+            'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:
@@ -366,11 +381,20 @@ class ExtractFeatures(object):
 
         ret = ""
 
-        for compiled_in_feature_define in sorted(compiled_in_feature_defines):
-            ret += compiled_in_feature_define + "\n"
-        for remaining in sorted(not_compiled_in_feature_defines):
-            ret += "!" + remaining + "\n"
+        combined = {}
+        for define in sorted(compiled_in_feature_defines):
+            combined[define] = True
+        for define in sorted(not_compiled_in_feature_defines):
+            combined[define] = False
 
+        def squash_hal_to_ap(a):
+            return re.sub("^HAL_", "AP_", a)
+
+        for define in sorted(combined.keys(), key=squash_hal_to_ap):
+            bang = ""
+            if not combined[define]:
+                bang = "!"
+            ret += bang + define + "\n"
         return ret
 
     def run(self):

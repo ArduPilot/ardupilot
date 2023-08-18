@@ -238,7 +238,7 @@
 #endif
 
 #ifndef OFFBOARD_GUIDED
- #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
+ #define OFFBOARD_GUIDED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

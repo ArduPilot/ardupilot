@@ -107,6 +107,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
+
     // This is how to handle a long loss of control signal failsafe.
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
@@ -124,6 +125,14 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::CIRCLE:
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
+    case Mode::Number::TAKEOFF:
+        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
+            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
+            // long failsafe will be re-called if still in fs after initial climb
+            long_failsafe_pending = true;
+            break;
+        }
+
         if(plane.emergency_landing) {
             set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
             break;
@@ -131,6 +140,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
+            //stop motors to avoide parachute tangling
+            plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
@@ -168,9 +179,12 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
+
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
+            //stop motors to avoide parachute tangling
+            plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
@@ -191,7 +205,6 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::QRTL:
     case Mode::Number::LOITER_ALT_QLAND:
 #endif
-    case Mode::Number::TAKEOFF:
     case Mode::Number::INITIALISING:
         break;
     }
@@ -212,6 +225,7 @@ void Plane::failsafe_short_off_event(ModeReason reason)
 
 void Plane::failsafe_long_off_event(ModeReason reason)
 {
+    long_failsafe_pending = false;
     // We're back in radio contact with RC or GCS
     if (reason == ModeReason:: GCS_FAILSAFE) {
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Off");

@@ -1,6 +1,10 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the HolybroV6C hardware
 
+
+# default to all pins low to avoid ESD issues
+#DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -32,12 +36,6 @@ env OPTIMIZE -O2
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 USART3 OTG2
 
-# default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
-
 # USB
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -50,13 +48,13 @@ PA14 JTCK-SWCLK SWD
 # telem1
 PE8  UART7_TX UART7
 PE7  UART7_RX UART7
-PE9  UART7_RTS UART7
+PE9  UART7_RTS UART7 LOW PULLDOWN
 PE10 UART7_CTS UART7
 
 # telem2
 PC12 UART5_TX UART5
 PD2 UART5_RX UART5
-PC8 UART5_RTS UART5
+PC8 UART5_RTS UART5 LOW PULLDOWN
 PC9 UART5_CTS UART5
 
 # GPS1
@@ -256,7 +254,7 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1

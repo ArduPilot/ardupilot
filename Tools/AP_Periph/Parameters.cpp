@@ -57,6 +57,14 @@ extern const AP_HAL::HAL &hal;
 #define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
 #endif
 
+#ifndef APD_ESC_SERIAL_0
+  #define APD_ESC_SERIAL_0 -1
+#endif
+
+#ifndef APD_ESC_SERIAL_1
+  #define APD_ESC_SERIAL_1 -1
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -163,7 +171,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec
+    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec, 3:Enable sending stats
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
@@ -327,13 +335,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
     // @Param: ESC_NUMBER
     // @DisplayName: ESC number
     // @Description: This is the ESC number to report as in UAVCAN ESC telemetry feedback packets.
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(esc_number, "ESC_NUMBER", 0),
+    GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -467,7 +475,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -499,7 +507,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif
+#endif  // HAL_PROXIMITY_ENABLED
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
@@ -511,6 +519,48 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: KDE_
     // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
     GOBJECT(kdecan, "KDE_",   AP_KDECAN),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    GARRAY(pole_count, 0, "ESC_NUM_POLES", 22),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    // @Param: ESC_APD_SERIAL_1
+    // @DisplayName: ESC APD Serial 1
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 0, "ESC_APD_SERIAL_1", APD_ESC_SERIAL_0),
+
+  #if APD_ESC_INSTANCES > 1
+    GARRAY(esc_number, 1, "ESC_NUMBER2", 1),
+
+    GARRAY(pole_count, 1, "ESC_NUM_POLES2", 22),
+
+    // @Param: ESC_APD_SERIAL_2
+    // @DisplayName: ESC APD Serial 2
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 1, "ESC_APD_SERIAL_2", APD_ESC_SERIAL_1),
+  #endif
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+    // @Group: NET_
+    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
+    GOBJECT(networking, "NET_", AP_Networking),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
     AP_VAREND

@@ -41,8 +41,12 @@ extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol::init()
 {
-    backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
 #endif
@@ -50,7 +54,9 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+#if AP_RCPROTOCOL_SUMD_ENABLED
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #endif
@@ -66,7 +72,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 #endif
@@ -85,7 +93,7 @@ AP_RCProtocol::~AP_RCProtocol()
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
+    if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
     }
 #else
@@ -235,7 +243,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 }
                 // stop decoding pulses to save CPU
                 hal.rcin->pulse_input_enable(false);
-                break;
+                return true;
             }
         }
     }
@@ -285,8 +293,12 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
+    // CRSFv3 can negotiate higher rates which are sticky on soft reboot
+    { 2000000, 0,   1, false },
+#endif
 };
 
 static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
@@ -419,10 +431,14 @@ void AP_RCProtocol::start_bind(void)
 const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 {
     switch (protocol) {
-    case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    case PPMSUM:
         return "PPM";
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     case IBUS:
         return "IBUS";
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     case SBUS:
         return "SBUS";
@@ -437,8 +453,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #endif
     case DSM:
         return "DSM";
+#if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
     case SRXL:
         return "SRXL";
@@ -451,8 +469,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case CRSF:
         return "CRSF";
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     case ST24:
         return "ST24";
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     case FPORT:
         return "FPORT";

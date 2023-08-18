@@ -45,7 +45,9 @@ uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
 // https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
 uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc);
 
-uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
+uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len);
+
+uint16_t crc_fletcher16(const uint8_t * buffer, uint32_t len);
 
 // generate 64bit FNV1a hash from buffer
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
@@ -53,3 +55,7 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
 
 // CRC-64-WE using the polynomial of 0x42F0E1EBA9EA3693
 uint64_t crc_crc64(const uint32_t *data, uint16_t num_words);
+
+// return the parity of byte - "1" if there is an odd number of bits
+// set, "0" if there is an even number of bits set
+uint8_t parity(uint8_t byte);

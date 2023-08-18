@@ -373,6 +373,7 @@ void AP_RobotisServo::update()
     if (detection_count < DETECT_SERVO_COUNT) {
         detection_count++;
         detect_servos();
+        return;
     }
 
     if (servo_mask == 0) {

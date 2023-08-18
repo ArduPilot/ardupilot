@@ -14,7 +14,6 @@ USB_STRING_PRODUCT "%BOARD%"
 define CORE_CM7
 define SMPS_PWR
 
-define WATCHDOG_DISABLED
 
 # crystal frequency
 OSCILLATOR_HZ 25000000
@@ -85,3 +84,6 @@ PB2 QUADSPI_CLK QUADSPI1
 define CAN_APP_NODE_NAME "org.cubepilot.H757"
 
 # EXT_FLASH_SIZE_MB 32
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

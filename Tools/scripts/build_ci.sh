@@ -366,9 +366,11 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
+        
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
+        
         $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue

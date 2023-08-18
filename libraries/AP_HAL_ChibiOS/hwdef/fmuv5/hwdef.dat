@@ -25,9 +25,6 @@ env OPTIMIZE -O2
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -303,10 +300,10 @@ DMA_PRIORITY SDMMC* UART8* ADC* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
 
 # uncomment block below to enable a 2nd MS5611 baro on SPI5
 #PF7 SPI5_SCK SPI5

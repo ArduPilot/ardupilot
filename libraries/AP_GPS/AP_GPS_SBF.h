@@ -45,7 +45,9 @@ public:
 
     void broadcast_configuration_failure_reason(void) const override;
 
+#if HAL_GCS_ENABLED
     bool supports_mavlink_gps_rtk_message(void) const override { return true; };
+#endif
 
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override { lag_sec = 0.08f; return true; } ;

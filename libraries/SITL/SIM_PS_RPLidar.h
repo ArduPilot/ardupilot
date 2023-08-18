@@ -45,13 +45,11 @@ rc 2 1450
 
 #pragma once
 
-#include "SIM_SerialProximitySensor.h"
-
-#ifndef HAL_SIM_PS_RPLIDARA2_ENABLED
-#define HAL_SIM_PS_RPLIDARA2_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
-#endif
+#include "SIM_config.h"
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED || HAL_SIM_PS_RPLIDARA1_ENABLED
+
+#include "SIM_SerialProximitySensor.h"
 
 #include <stdio.h>
 

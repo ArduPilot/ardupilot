@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <setjmp.h>
@@ -132,3 +136,5 @@ public:
     static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
 
 };
+
+#endif  // AP_SCRIPTING_ENABLED

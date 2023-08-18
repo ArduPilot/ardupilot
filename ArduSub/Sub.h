@@ -71,6 +71,7 @@
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
+#include "mode.h"
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
@@ -108,6 +109,17 @@ public:
     friend class ParametersG2;
     friend class AP_Arming_Sub;
     friend class RC_Channels_Sub;
+    friend class Mode;
+    friend class ModeManual;
+    friend class ModeStabilize;
+    friend class ModeAcro;
+    friend class ModeAlthold;
+    friend class ModeGuided;
+    friend class ModePoshold;
+    friend class ModeAuto;
+    friend class ModeCircle;
+    friend class ModeSurface;
+    friend class ModeMotordetect;
 
     Sub(void);
 
@@ -190,9 +202,9 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    control_mode_t control_mode;
+    Mode::Number control_mode;
 
-    control_mode_t prev_control_mode;
+    Mode::Number prev_control_mode;
 
 #if RCMAP_ENABLED == ENABLED
     RCMapper rcmap;
@@ -233,12 +245,6 @@ private:
     uint8_t depth_sensor_idx;
 
     AP_Motors6DOF motors;
-
-    // Auto
-    AutoMode auto_mode;   // controls which auto controller is run
-
-    // Guided
-    GuidedMode guided_mode;  // controls which controller is run (pos or vel)
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -289,6 +295,9 @@ private:
     // Navigation Yaw control
     // auto flight mode's yaw mode
     uint8_t auto_yaw_mode;
+    
+    // Parameter to set yaw rate only
+    bool yaw_rate_only;
 
     // Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
     Vector3f roi_WP;
@@ -416,61 +425,7 @@ private:
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
-    bool acro_init(void);
-    void acro_run();
-    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    bool althold_init(void);
-    void althold_run();
-    bool auto_init(void);
-    void auto_run();
-    void auto_wp_start(const Vector3f& destination);
-    void auto_wp_start(const Location& dest_loc);
-    void auto_wp_run();
-    void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
-    void auto_circle_start();
-    void auto_circle_run();
-    void auto_nav_guided_start();
-    void auto_nav_guided_run();
-    bool auto_loiter_start();
-    void auto_loiter_run();
-    uint8_t get_default_auto_yaw_mode(bool rtl) const;
-    void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
-    void set_auto_yaw_roi(const Location &roi_location);
-    float get_auto_heading(void);
-    bool circle_init(void);
-    void circle_run();
-    bool guided_init(bool ignore_checks = false);
-    void guided_pos_control_start();
-    void guided_vel_control_start();
-    void guided_posvel_control_start();
-    void guided_angle_control_start();
-    bool guided_set_destination(const Vector3f& destination);
-    bool guided_set_destination(const Location& dest_loc);
-    void guided_set_velocity(const Vector3f& velocity);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    void guided_set_angle(const Quaternion &q, float climb_rate_cms);
-    void guided_run();
-    void guided_pos_control_run();
-    void guided_vel_control_run();
-    void guided_posvel_control_run();
-    void guided_angle_control_run();
-    void guided_limit_clear();
-    void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    void guided_limit_init_time_and_pos();
-    bool guided_limit_check();
 
-    bool poshold_init(void);
-    void poshold_run();
-
-    bool motordetect_init();
-    void motordetect_run();
-
-    bool stabilize_init(void);
-    void stabilize_run();
-    void control_depth();
-    bool manual_init(void);
-    void manual_run();
     void failsafe_sensors_check(void);
     void failsafe_crash_check();
     void failsafe_ekf_check(void);
@@ -484,15 +439,12 @@ private:
     void mainloop_failsafe_enable();
     void mainloop_failsafe_disable();
     void fence_check();
-    bool set_mode(control_mode_t mode, ModeReason reason);
-    bool set_mode(const uint8_t mode, const ModeReason reason) override;
+    bool set_mode(Mode::Number mode, ModeReason reason);
+    bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode; }
     void update_flight_mode();
-    void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
-    bool mode_requires_GPS(control_mode_t mode);
-    bool mode_has_manual_throttle(control_mode_t mode);
-    bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
-    void notify_flight_mode(control_mode_t mode);
+    void exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode);
+    void notify_flight_mode();
     void read_inertia();
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
@@ -563,8 +515,7 @@ private:
     void failsafe_internal_temperature_check();
 
     void failsafe_terrain_act(void);
-    bool auto_terrain_recover_start(void);
-    void auto_terrain_recover_run(void);
+
 
     void translate_wpnav_rp(float &lateral_out, float &forward_out);
     void translate_circle_nav_rp(float &lateral_out, float &forward_out);
@@ -572,6 +523,8 @@ private:
 
     bool surface_init(void);
     void surface_run();
+
+    void stats_update();
 
     uint16_t get_pilot_speed_dn() const;
 
@@ -608,6 +561,24 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    Mode *mode_from_mode_num(const Mode::Number num);
+    void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
+
+    Mode *flightmode;
+    ModeManual mode_manual;
+    ModeStabilize mode_stabilize;
+    ModeAcro mode_acro;
+    ModeAlthold mode_althold;
+    ModeAuto mode_auto;
+    ModeGuided mode_guided;
+    ModePoshold mode_poshold;
+    ModeCircle mode_circle;
+    ModeSurface mode_surface;
+    ModeMotordetect mode_motordetect;
+
+    // Auto
+    AutoSubMode auto_mode;   // controls which auto controller is run
+    GuidedSubMode guided_mode;
 
 public:
     void mainloop_failsafe_check();

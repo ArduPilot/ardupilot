@@ -62,9 +62,14 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
 }
 
 
+bool RC_Channels_Rover::in_rc_failsafe() const
+{
+    return rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE;
+}
+
 bool RC_Channels_Rover::has_valid_input() const
 {
-    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+    if (in_rc_failsafe()) {
         return false;
     }
     return true;
@@ -209,10 +214,12 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_change_mode(rover.mode_loiter, ch_flag);
         break;
 
+#if MODE_FOLLOW_ENABLED == ENABLED
     // Set mode to Follow
     case AUX_FUNC::FOLLOW:
         do_aux_function_change_mode(rover.mode_follow, ch_flag);
         break;
+#endif
 
     // set mode to Simple
     case AUX_FUNC::SIMPLE:

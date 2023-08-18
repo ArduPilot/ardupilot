@@ -397,7 +397,10 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         pending_tx_[index].pushed         = false;
     }
 
-    return AP_HAL::CANIface::send(frame, tx_deadline, flags);
+    // also send on MAVCAN, but don't consider it an error if we can't get the MAVCAN out
+    AP_HAL::CANIface::send(frame, tx_deadline, flags);
+
+    return 1;
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us, CanIOFlags& out_flags)
@@ -718,7 +721,9 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
 #endif
     can_->ILE = 0x3;
 
+#if HAL_CANFD_SUPPORTED
     can_->CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE; // enable sending CAN FD frames, and Bitrate switching
+#endif
 
     // If mode is Filtered then we finish the initialisation in configureFilter method
     // otherwise we finish here

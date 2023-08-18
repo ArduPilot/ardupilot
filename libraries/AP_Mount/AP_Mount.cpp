@@ -13,6 +13,8 @@
 #include "AP_Mount_Gremsy.h"
 #include "AP_Mount_Siyi.h"
 #include "AP_Mount_Scripting.h"
+#include "AP_Mount_Xacti.h"
+#include "AP_Mount_Viewpro.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -61,71 +63,92 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        MountType mount_type = get_mount_type(instance);
-
-        // check for servo mounts
-        if (mount_type == Mount_Type_Servo) {
+        switch (get_mount_type(instance)) {
+        case Type::None:
+            break;
 #if HAL_MOUNT_SERVO_ENABLED
+        case Type::Servo:
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
+            break;
 #endif
-
 #if HAL_SOLO_GIMBAL_ENABLED
-        // check for Solo mounts
-        } else if (mount_type == Mount_Type_SoloGimbal) {
+        case Type::SoloGimbal:
             _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
-        // check for Alexmos mounts
-        } else if (mount_type == Mount_Type_Alexmos) {
+        case Type::Alexmos:
             _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
-        } else if (mount_type == Mount_Type_SToRM32) {
+        case Type::SToRM32:
             _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
-        } else if (mount_type == Mount_Type_SToRM32_serial) {
+        case Type::SToRM32_serial:
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
-        } else if (mount_type == Mount_Type_Gremsy) {
+        case Type::Gremsy:
             _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_GREMSY_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
-        } else if (mount_type == Mount_Type_BrushlessPWM) {
+        case Type::BrushlessPWM:
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
-        } else if (mount_type == Mount_Type_Siyi) {
+        case Type::Siyi:
             _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
 #if HAL_MOUNT_SCRIPTING_ENABLED
         // check for Scripting gimbal
-        } else if (mount_type == Mount_Type_Scripting) {
+        case Type::Scripting:
             _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
 
+#if HAL_MOUNT_XACTI_ENABLED
+        // check for Xacti gimbal
+        case Type::Xacti:
+            _backends[instance] = new AP_Mount_Xacti(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_XACTI_ENABLED
+
+#if HAL_MOUNT_VIEWPRO_ENABLED
+        // check for Xacti gimbal
+        case Type::Viewpro:
+            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_VIEWPRO_ENABLED
         }
 
         // init new instance
@@ -169,13 +192,13 @@ void AP_Mount::update_fast()
 }
 
 // get_mount_type - returns the type of mount
-AP_Mount::MountType AP_Mount::get_mount_type(uint8_t instance) const
+AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES) {
-        return Mount_Type_None;
+        return Type::None;
     }
 
-    return (MountType)_params[instance].type.get();
+    return (Type)_params[instance].type.get();
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)
@@ -422,6 +445,60 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     }
 }
 
+void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
+{
+    mavlink_gimbal_manager_set_pitchyaw_t packet;
+    mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
+
+    AP_Mount_Backend *backend;
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
+    // 2nd gimbal, etc
+    const uint8_t instance = packet.gimbal_device_id;
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    if (backend == nullptr) {
+        return;
+    }
+
+    // check flags for change to RETRACT
+    uint32_t flags = (uint32_t)packet.flags;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return;
+    }
+
+    // Do not allow both angle and rate to be specified at the same time
+    if (!isnan(packet.pitch) && !isnan(packet.yaw) && !isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
+        return;
+    }
+
+    // pitch and yaw from packet are in radians
+    if (!isnan(packet.pitch) && !isnan(packet.yaw)) {
+        const float pitch_angle_deg = degrees(packet.pitch);
+        const float yaw_angle_deg = degrees(packet.yaw);
+        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    // pitch_rate and yaw_rate from packet are in rad/s
+    if (!isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
+        const float pitch_rate_degs = degrees(packet.pitch_rate);
+        const float yaw_rate_degs = degrees(packet.yaw_rate);
+        backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+}
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -547,7 +624,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
     // check type parameters
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        if ((_params[i].type != Mount_Type_None) && (_backends[i] == nullptr)) {
+        if ((get_mount_type(i) != Type::None) && (_backends[i] == nullptr)) {
             strncpy(failure_msg, "check TYPE", failure_msg_len);
             return false;
         }
@@ -569,7 +646,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
-// accessors for scripting backends
+// get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
     auto *backend = get_instance(instance);
@@ -579,6 +656,7 @@ bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_
     return backend->get_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame);
 }
 
+// get target angle in deg. returns true on success
 bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
     auto *backend = get_instance(instance);
@@ -588,6 +666,7 @@ bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_
     return backend->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
+// accessors for scripting backends and logging
 bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 {
     auto *backend = get_instance(instance);
@@ -604,6 +683,26 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
         return;
     }
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
+}
+
+// write mount log packet for all backends
+void AP_Mount::write_log()
+{
+    // each instance writes log
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->write_log(0);
+        }
+    }
+}
+
+void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->write_log(timestamp_us);
 }
 
 // point at system ID sysid
@@ -674,13 +773,55 @@ bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return SetFocusResult::FAILED;
+    }
+    return backend->set_focus(focus_type, focus_value);
+}
+
+// set tracking to none, point or rectangle (see TrackingType enum)
+// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_focus(focus_type, focus_value);
+    return backend->set_tracking(tracking_type, p1, p2);
+}
+
+// set camera lens as a value from 0 to 5
+bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_lens(lens);
+}
+
+// send camera information message to GCS
+void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_information(chan);
+}
+
+// send camera settings message to GCS
+void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_settings(chan);
 }
 
 AP_Mount_Backend *AP_Mount::get_primary() const
@@ -723,6 +864,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         break;
     case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE:
         handle_gimbal_manager_set_attitude(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW:
+        handle_command_gimbal_manager_set_pitchyaw(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);
@@ -789,7 +933,8 @@ void AP_Mount::convert_params()
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 5, AP_PARAM_INT8, &stab_pitch));
         if (mnt_type == 1 && stab_roll == 0 && stab_pitch == 0)  {
             // Servo type without stabilization is changed to BrushlessPWM
-            mnt_type = (int8_t)Mount_Type_BrushlessPWM;
+            // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
+            mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
         }
     }
     _params[0].type.set_and_save(mnt_type);

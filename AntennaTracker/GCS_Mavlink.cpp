@@ -412,7 +412,7 @@ MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro(const
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
     if (is_equal(packet.param1,1.0f)) {
         tracker.arm_servos();

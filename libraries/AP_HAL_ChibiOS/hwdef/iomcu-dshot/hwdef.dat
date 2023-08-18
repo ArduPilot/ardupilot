@@ -1,0 +1,6 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F100 STM32F100xB
+
+include ../iomcu-dshot/hwdef.inc

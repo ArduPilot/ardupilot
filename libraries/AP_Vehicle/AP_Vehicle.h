@@ -44,6 +44,7 @@
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_Networking/AP_Networking.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
@@ -175,8 +176,9 @@ public:
     virtual bool get_circle_radius(float &radius_m) { return false; }
     virtual bool set_circle_rate(float rate_dps) { return false; }
 
-    // set steering and throttle (-1 to +1) (for use by scripting with Rover)
+    // get or set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+    virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
 
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
     virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
@@ -215,6 +217,12 @@ public:
     virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
 
 #endif // AP_SCRIPTING_ENABLED
+
+    // returns true if vehicle is in the process of landing
+    virtual bool is_landing() const { return false; }
+
+    // returns true if vehicle is in the process of taking off
+    virtual bool is_taking_off() const { return false; }
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
@@ -301,9 +309,13 @@ protected:
 #endif
     AP_SerialManager serial_manager;
 
+#if AP_RELAY_ENABLED
     AP_Relay relay;
+#endif
 
+#if AP_SERVORELAYEVENTS_ENABLED
     AP_ServoRelayEvents ServoRelayEvents;
+#endif
 
     // notification object for LEDs, buzzers etc (parameter set to
     // false disables external leds)
@@ -346,6 +358,10 @@ protected:
 
 #if AP_TRAMP_ENABLED
     AP_Tramp tramp;
+#endif
+
+#if AP_NETWORKING_ENABLED
+    AP_Networking networking;
 #endif
 
 #if HAL_EFI_ENABLED
@@ -408,6 +424,9 @@ protected:
     bool init_dds_client() WARN_IF_UNUSED;
 #endif
 
+    // Check if this mode can be entered from the GCS
+    bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
+
 private:
 
     // delay() callback that processing MAVLink packets
@@ -447,6 +466,9 @@ private:
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
     AP_CustomRotations custom_rotations;
+
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {

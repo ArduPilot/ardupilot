@@ -36,6 +36,11 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Camera_Backend);
 
+    enum CAMOPTIONS {
+        NONE = 0,
+        REC_ARM_DISARM = 1, // Recording start/stop on Arm/Disarm
+    };
+
     // init - performs any required initialisation
     virtual void init() {};
 
@@ -51,6 +56,10 @@ public:
     // take a picture.  returns true on success
     bool take_picture();
 
+    // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+    // total_num is number of pictures to be taken, -1 means capture forever
+    void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 
@@ -63,12 +72,15 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
+
+    // set camera lens as a value from 0 to 5
+    virtual bool set_lens(uint8_t lens) { return false; }
 
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -84,6 +96,12 @@ public:
 
     // send camera feedback message to GCS
     void send_camera_feedback(mavlink_channel_t chan);
+
+    // send camera information message to GCS
+    virtual void send_camera_information(mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    virtual void send_camera_settings(mavlink_channel_t chan) const;
 
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
@@ -114,11 +132,23 @@ protected:
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
 
+    // Picture settings
+    struct {
+        uint32_t time_interval_ms;     // time interval (in miliseconds) between two consecutive pictures
+        int16_t num_remaining;      // number of pictures still to be taken, -1 means take unlimited pictures
+    } time_interval_settings;
+
     // Logging Function
     void log_picture();
     void Write_Camera(uint64_t timestamp_us=0);
     void Write_Trigger();
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
+
+    // get corresponding mount instance for the camera
+    uint8_t get_mount_instance() const;
+
+    // get mavlink gimbal device id which is normally mount_instance+1
+    uint8_t get_gimbal_device_id() const;
 
     // internal members
     uint8_t _instance;      // this instance's number
@@ -129,9 +159,10 @@ protected:
     uint32_t feedback_trigger_timestamp_us; // system time (in microseconds) that timer detected the feedback pin changed
     uint32_t feedback_trigger_logged_count; // number of times the feedback has been logged
     bool trigger_pending;           // true if a call to take_pic() was delayed due to the minimum time interval time
-    uint32_t last_photo_time_ms;    // system time that photo was last taken
+    uint32_t last_picture_time_ms;    // system time that photo was last taken
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
+    bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
 };
 
 #endif // AP_CAMERA_ENABLED

@@ -24,8 +24,6 @@ undef AP_FEATURE_RTSCTS
 undef HAL_WITH_RAMTRON
 undef IOMCU_UART
 undef SDIO
-undef HAL_BOARD_LOG_DIRECTORY
-undef HAL_BOARD_TERRAIN_DIRECTORY
 
 # short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
 define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
@@ -74,7 +72,6 @@ define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_FRSKY_TELEM_ENABLED 0
 define AP_BEACON_ENABLED 0
-define GPS_MOVING_BASELINE 0
 define HAL_ADSB_SAGETECH_ENABLED 0
 define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0
 define AP_AIS_ENABLED 0
@@ -115,6 +112,8 @@ define AP_BARO_ICM20789_ENABLED 1
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0
 define AP_GPS_UBLOX_ENABLED 1
 define AP_GPS_MAV_ENABLED 1
+define GPS_MOVING_BASELINE 0
+define GPS_MAX_RECEIVERS 1  # removes blended support
 
 # enable only the QUAD frame
 define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
@@ -204,5 +203,18 @@ define AP_LTM_TELEM_ENABLED 0
 
 // no buttons on SkyViper:
 define HAL_BUTTON_ENABLED 0
+
+// disable scripting on SkyViper (should we enable this?)
+define AP_SCRIPTING_ENABLED 0
+
+// SkyViper does not have a second battery....
+define AP_BATT_MONITOR_MAX_INSTANCES 1
+define AP_MAVLINK_BATTERY2_ENABLED 0
+
+# SkyViper doesn't use the Plane landing library:
+define HAL_LANDING_DEEPSTALL_ENABLED 0
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
 
 AUTOBUILD_TARGETS Copter

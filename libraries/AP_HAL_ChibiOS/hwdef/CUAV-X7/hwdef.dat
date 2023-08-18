@@ -23,9 +23,6 @@ FLASH_RESERVE_START_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART6 USART1 UART4 UART8 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -309,9 +306,6 @@ PE10 SAFETY_IN INPUT PULLDOWN
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 DMA_PRIORITY  ADC* SPI1* TIM*UP*
 DMA_NOSHARE  SPI1* TIM*UP* 

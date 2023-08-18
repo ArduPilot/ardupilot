@@ -2551,7 +2551,7 @@ AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_t
     return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
 /*
   update IMU kill mask, used for testing IMU failover
  */
@@ -2574,7 +2574,7 @@ void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
         imu_kill_mask &= ~(1U<<imu_idx);
     }
 }
-#endif // HAL_MINIMIZE_FEATURES
+#endif // AP_INERTIALSENSOR_KILL_IMU_ENABLED
 
 
 #if HAL_EXTERNAL_AHRS_ENABLED

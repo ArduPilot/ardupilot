@@ -43,7 +43,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # removing this line causes "A box must be specified." error
   # and this is the default box that will be booted if no name is specified
-  config.vm.box = "ubuntu/bionic64"
   config.vm.boot_timeout = 1500
 
   # LTS, EOL April, 2019:
@@ -114,7 +113,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 18.04 LTS EOL April 2023
-  config.vm.define "bionic64", primary: true do |bionic64|
+  config.vm.define "bionic64", autostart: false do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     bionic64.vm.provider "virtualbox" do |vb|
@@ -228,7 +227,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #   end
 
   # 22.04 LTS EOL Apr 2032
-  config.vm.define "jammy", autostart: false do |jammy|
+  config.vm.define "jammy", primary: true do |jammy|
     jammy.vm.box = "ubuntu/jammy64"
     jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     jammy.vm.provider "virtualbox" do |vb|

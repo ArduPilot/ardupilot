@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Follow_config.h"
+
+#if AP_FOLLOW_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Follow.h"
 #include <ctype.h>
@@ -129,6 +133,13 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
+
+    // @Param: _OPTIONS
+    // @DisplayName: Follow options
+    // @Description: Follow options bitmask
+    // @Values: 0:None,1: Mount Follows lead vehicle on mode enter
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
     AP_GROUPEND
 };
@@ -527,3 +538,5 @@ AP_Follow &follow()
 }
 
 }
+
+#endif

@@ -31,6 +31,7 @@
 
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
+#include "AP_AHRS_External.h"
 
 // forward declare view class
 class AP_AHRS_View;
@@ -193,31 +194,44 @@ public:
     // from which to decide the origin on its own
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+    // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
+    // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
+    // correct the position. If the EKF is is still using data from a postion sensor such as GPS, the position set
+    // will not be performed.
+    // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
+    // The altitude element of the location is not used.
+    // Returns true if the set was successful.
+    bool handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_);
+#endif
+
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
 
     bool have_inertial_nav() const;
 
+    // return a ground velocity in meters/second, North/East/Down
+    // order. Must only be called if have_inertial_nav() is true
     bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NED to either home or origin
+    // return the relative position NED from either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
     bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NE to either home or origin
+    // return the relative position NE from home or origin
     // return true if the estimate is valid
     bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
     bool get_relative_position_NE_origin(Vector2f &posNE) const WARN_IF_UNUSED;
 
-    // return the relative position down to either home or origin
+    // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate(float &velocity) const;
+    bool get_vert_pos_rate_D(float &velocity) const;
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, const float heightOverride);
@@ -658,6 +672,8 @@ private:
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
+    // convenience method for setting error string:
+    void set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const;
 
     /*
      * Attitude-related private methods and attributes:
@@ -809,6 +825,11 @@ private:
     AP_AHRS_SIM sim;
 #endif
     struct AP_AHRS_Backend::Estimates sim_estimates;
+#endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_AHRS_External external;
+    struct AP_AHRS_Backend::Estimates external_estimates;
 #endif
 
     /*

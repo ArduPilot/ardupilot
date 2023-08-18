@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_MotorsHeli_Swash.h"
 
@@ -86,130 +87,157 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     AP_GROUPEND
 };
 
+AP_MotorsHeli_Swash::AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3)
+{
+    _motor_num[0] = mot_0;
+    _motor_num[1] = mot_1;
+    _motor_num[2] = mot_2;
+    _motor_num[3] = mot_3;
+
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // configure - configure the swashplate settings for any updated parameters
 void AP_MotorsHeli_Swash::configure()
 {
 
     _swash_type = static_cast<SwashPlateType>(_swashplate_type.get());
     _collective_direction = static_cast<CollectiveDirection>(_swash_coll_dir.get());
-    _make_servo_linear = _linear_swash_servo;
-    if (_swash_type == SWASHPLATE_TYPE_H3) {
-        enable.set(1);
-    } else {
-        enable.set(0);
-    }
+    _make_servo_linear = _linear_swash_servo != 0;
+    enable.set(_swash_type == SWASHPLATE_TYPE_H3);
+
+    calculate_roll_pitch_collective_factors();
 }
 
 // CCPM Mixers - calculate mixing scale factors by swashplate type
 void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
 {
-    if (_swash_type == SWASHPLATE_TYPE_H1) {
-        // CCPM mixing not used
-        _collectiveFactor[CH_1] = 0;
-        _collectiveFactor[CH_2] = 0;
-        _collectiveFactor[CH_3] = 1;
-    } else if ((_swash_type == SWASHPLATE_TYPE_H4_90) || (_swash_type == SWASHPLATE_TYPE_H4_45)) {
-        // collective mixer for four-servo CCPM
-        _collectiveFactor[CH_1] = 1;
-        _collectiveFactor[CH_2] = 1;
-        _collectiveFactor[CH_3] = 1;
-        _collectiveFactor[CH_4] = 1;
-    } else {
-        // collective mixer for three-servo CCPM
-        _collectiveFactor[CH_1] = 1;
-        _collectiveFactor[CH_2] = 1;
-        _collectiveFactor[CH_3] = 1;
+    // Clear existing setup
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        _enabled[i] = false;
+        _rollFactor[i] = 0.0;
+        _pitchFactor[i] = 0.0;
+        _collectiveFactor[i] = 0.0;
     }
 
-    if (_swash_type == SWASHPLATE_TYPE_H3) {
-        // Three-servo roll/pitch mixer for adjustable servo position
-        // can be any style swashplate, phase angle is adjustable
-        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
-        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
-        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
-        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
-        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
-        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
-        
-        // defined swashplates, servo1 is always left, servo2 is right,
-        // servo3 is elevator
-    } else if (_swash_type == SWASHPLATE_TYPE_H3_140) {    //
-        // Three-servo roll/pitch mixer for H3-140
-        // HR3-140 uses reversed servo and collective direction in heli setup
-        // 1:1 pure input style, phase angle not adjustable
-        _rollFactor[CH_1] = 1;
-        _rollFactor[CH_2] = -1;
-        _rollFactor[CH_3] = 0;
-        _pitchFactor[CH_1] = 1;
-        _pitchFactor[CH_2] = 1;
-        _pitchFactor[CH_3] = -1;
-    } else if (_swash_type == SWASHPLATE_TYPE_H3_120) {
-        // three-servo roll/pitch mixer for H3-120
-        // HR3-120 uses reversed servo and collective direction in heli setup
-        // not a pure mixing swashplate, phase angle is adjustable
-        _rollFactor[CH_1] = 0.866025f;
-        _rollFactor[CH_2] = -0.866025f;
-        _rollFactor[CH_3] = 0;
-        _pitchFactor[CH_1] = 0.5f;
-        _pitchFactor[CH_2] = 0.5f;
-        _pitchFactor[CH_3] = -1;
-    } else if (_swash_type == SWASHPLATE_TYPE_H4_90) {
-        // four-servo roll/pitch mixer for H4-90
-        // 1:1 pure input style, phase angle not adjustable
-        // servos 3 & 7 are elevator
-        // can also be used for all versions of 90 deg three-servo swashplates
-        _rollFactor[CH_1] = 1; 
-        _rollFactor[CH_2] = -1;
-        _rollFactor[CH_3] = 0;
-        _rollFactor[CH_4] = 0;
-        _pitchFactor[CH_1] = 0;
-        _pitchFactor[CH_2] = 0;
-        _pitchFactor[CH_3] = -1;
-        _pitchFactor[CH_4] = 1;
-    } else if (_swash_type == SWASHPLATE_TYPE_H4_45) {
-        // four-servo roll/pitch mixer for H4-45
-        // 1:1 pure input style, phase angle not adjustable
-        // for 45 deg plates servos 1&2 are LF&RF, 3&7 are LR&RR.
-        _rollFactor[CH_1] = 0.707107f; 
-        _rollFactor[CH_2] = -0.707107f;
-        _rollFactor[CH_3] = 0.707107f;
-        _rollFactor[CH_4] = -0.707107f;
-        _pitchFactor[CH_1] = 0.707107f;
-        _pitchFactor[CH_2] = 0.707107f;
-        _pitchFactor[CH_3] = -0.707f;
-        _pitchFactor[CH_4] = -0.707f;
-    } else {
-        // CCPM mixing not being used, so H1 straight outputs
-        _rollFactor[CH_1] = 1;
-        _rollFactor[CH_2] = 0;
-        _rollFactor[CH_3] = 0;
-        _pitchFactor[CH_1] = 0;
-        _pitchFactor[CH_2] = 1;
-        _pitchFactor[CH_3] = 0;
+    switch (_swash_type) {
+        case SWASHPLATE_TYPE_H3:
+            // Three-servo roll/pitch mixer for adjustable servo position
+            // can be any style swashplate, phase angle is adjustable
+            add_servo_angle(CH_1, _servo1_pos - _phase_angle, 1.0);
+            add_servo_angle(CH_2, _servo2_pos - _phase_angle, 1.0);
+            add_servo_angle(CH_3, _servo3_pos - _phase_angle, 1.0);
+            break;
+
+        case SWASHPLATE_TYPE_H1:
+            // CCPM mixing not being used, so H1 straight outputs
+            add_servo_raw(CH_1, 1.0, 0.0, 0.0);
+            add_servo_raw(CH_2, 0.0, 1.0, 0.0);
+            add_servo_raw(CH_3, 0.0, 0.0, 1.0);
+            break;
+
+
+        case SWASHPLATE_TYPE_H3_140:
+            // Three-servo roll/pitch mixer for H3-140
+            // HR3-140 uses reversed servo and collective direction in heli setup
+            // 1:1 pure input style, phase angle not adjustable
+            add_servo_raw(CH_1,  1.0,  1.0, 1.0);
+            add_servo_raw(CH_2, -1.0,  1.0, 1.0);
+            add_servo_raw(CH_3,  0.0, -1.0, 1.0);
+            break;
+
+        case SWASHPLATE_TYPE_H3_120:
+            // three-servo roll/pitch mixer for H3-120
+            // HR3-120 uses reversed servo and collective direction in heli setup
+            // not a pure mixing swashplate, phase angle is adjustable
+            add_servo_angle(CH_1, -60.0, 1.0);
+            add_servo_angle(CH_2,  60.0, 1.0);
+            add_servo_angle(CH_3, 180.0, 1.0);
+            break;
+
+        case SWASHPLATE_TYPE_H4_90:
+            // four-servo roll/pitch mixer for H4-90
+            // 1:1 pure input style, phase angle not adjustable
+            // servos 3 & 7 are elevator
+            // can also be used for all versions of 90 deg three-servo swashplates
+            add_servo_angle(CH_1, -90.0, 1.0);
+            add_servo_angle(CH_2,  90.0, 1.0);
+            add_servo_angle(CH_3, 180.0, 1.0);
+            add_servo_angle(CH_4,   0.0, 1.0);
+            break;
+
+        case SWASHPLATE_TYPE_H4_45:
+            // four-servo roll/pitch mixer for H4-45
+            // 1:1 pure input style, phase angle not adjustable
+            // for 45 deg plates servos 1&2 are LF&RF, 3&7 are LR&RR.
+            add_servo_angle(CH_1,  -45.0, 1.0);
+            add_servo_angle(CH_2,   45.0, 1.0);
+            add_servo_angle(CH_3, -135.0, 1.0);
+            add_servo_angle(CH_4,  135.0, 1.0);
+            break;
     }
+
 }
 
-// get_servo_out - calculates servo output
-float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll, float collective) const
+void AP_MotorsHeli_Swash::add_servo_angle(uint8_t num, float angle, float collective)
+{
+    add_servo_raw(num,
+                  cosf(radians(angle + 90)),
+                  cosf(radians(angle)),
+                  collective);
+}
+
+void AP_MotorsHeli_Swash::add_servo_raw(uint8_t num, float roll, float pitch, float collective)
+{
+    if (num >= _max_num_servos) {
+        // Indexing problem should never happen
+        return;
+    }
+
+    _enabled[num] = true;
+    _rollFactor[num] = roll * 0.45;
+    _pitchFactor[num] = pitch * 0.45;
+    _collectiveFactor[num] = collective;
+
+    // Setup output function
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(_motor_num[num]);
+    SRV_Channels::set_aux_channel_default(function, _motor_num[num]);
+
+    // outputs are defined on a -500 to 500 range for swash servos
+    SRV_Channels::set_range(function, 1000);
+
+    // swash servos always use full endpoints as restricting them would lead to scaling errors
+    SRV_Channels::set_output_min_max(function, 1000, 2000);
+
+}
+
+// calculates servo output
+void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
 {
     // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
     if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED){
         collective = 1 - collective;
     }
 
-    float servo = ((_rollFactor[ch_num] * roll) + (_pitchFactor[ch_num] * pitch))*0.45f + _collectiveFactor[ch_num] * collective;
-    if (_swash_type == SWASHPLATE_TYPE_H1 && (ch_num == CH_1 || ch_num == CH_2)) {
-        servo += 0.5f;
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (!_enabled[i]) {
+            // This servo is not enabled
+            continue;
+        }
+
+        _output[i] = (_rollFactor[i] * roll) + (_pitchFactor[i] * pitch) + _collectiveFactor[i] * collective;
+        if (_swash_type == SWASHPLATE_TYPE_H1 && (i == CH_1 || i == CH_2)) {
+            _output[i] += 0.5f;
+        }
+
+        // rescale from -1..1, so we can use the pwm calc that includes trim
+        _output[i] = 2.0f * _output[i] - 1.0f;
+
+        if (_make_servo_linear) {
+            _output[i] = get_linear_servo_output(_output[i]);
+        }
+
     }
-
-    // rescale from -1..1, so we can use the pwm calc that includes trim
-    servo = 2.0f * servo - 1.0f;
-
-    if (_make_servo_linear == 1) {
-        servo = get_linear_servo_output(servo);
-    }
-
-    return servo;
 }
 
 // set_linear_servo_out - sets swashplate servo output to be linear
@@ -223,3 +251,35 @@ float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 
 }
 
+// Output calculated values to servos
+void AP_MotorsHeli_Swash::output()
+{
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (_enabled[i]) {
+            rc_write(_motor_num[i], _output[i]);
+        }
+    }
+}
+
+// convert input in -1 to +1 range to pwm output for swashplate servo.
+// The value 0 corresponds to the trim value of the servo. Swashplate
+// servo travel range is fixed to 1000 pwm and therefore the input is
+// multiplied by 500 to get PWM output.
+void AP_MotorsHeli_Swash::rc_write(uint8_t chan, float swash_in)
+{
+    uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_pwm_trimmed(function, pwm);
+}
+
+// Get function output mask
+uint32_t AP_MotorsHeli_Swash::get_output_mask() const
+{
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (_enabled[i]) {
+            mask |= 1U < _motor_num[i];
+        }
+    }
+    return mask;
+}

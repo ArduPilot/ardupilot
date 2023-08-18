@@ -49,7 +49,7 @@ define HAL_USE_RTC FALSE
 define HAL_NO_RCIN_THREAD
 
 
-env DISABLE_SCRIPTING 1
+define AP_SCRIPTING_ENABLED 0
 
 MAIN_STACK 0x2000
 PROCESS_STACK 0x6000
@@ -62,3 +62,6 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 
 # setup for MSP
 define HAL_MSP_ENABLED 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

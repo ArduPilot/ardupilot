@@ -12,12 +12,13 @@
 
 #include <time.h>
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
-
+#include <assert.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SITL/SITL.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/NMEA.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 // simulated CAN GPS devices get fed from our SITL estimates:
 #if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
@@ -34,6 +35,43 @@ extern const HAL_SITL& hal_sitl;
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
+
+struct GPS_TOW {
+    // Number of weeks since midnight 5-6 January 1980
+    uint16_t week;
+    // Time since start of the GPS week [mS]
+    uint32_t ms;
+};
+
+// ensure the backend we have allocated matches the one that's configured:
+GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance)
+    : front{_front},
+      instance{_instance}
+{
+}
+
+ssize_t GPS_Backend::write_to_autopilot(const char *p, size_t size) const
+{
+    return front.write_to_autopilot(p, size);
+}
+
+ssize_t GPS_Backend::read_from_autopilot(char *buffer, size_t size) const
+{
+    return front.read_from_autopilot(buffer, size);
+}
+
+void GPS_Backend::update(const GPS_Data &d)
+{
+    if (_sitl == nullptr) {
+        _sitl = AP::sitl();
+        if (_sitl == nullptr) {
+            return;
+        }
+    }
+
+    update_read(&d);
+    update_write(&d);
+}
 
 GPS::GPS(uint8_t _instance) :
     SerialDevice(8192, 2048),
@@ -59,23 +97,10 @@ GPS::GPS(uint8_t _instance) :
 
 uint32_t GPS::device_baud() const
 {
-    if (_sitl == nullptr) {
+    if (backend == nullptr) {
         return 0;
     }
-    switch ((Type)_sitl->gps_type[instance].get()) {
-        case Type::NOVA:
-            return 19200;
-        case Type::NONE:
-        case Type::UBLOX:
-        case Type::NMEA:
-        case Type::SBP:
-        case Type::SBP2:
-#if AP_SIM_GPS_FILE_ENABLED
-        case Type::FILE:
-#endif
-            return 0;  // 0 meaning unset
-    }
-    return 0;  // 0 meaning unset
+    return backend->device_baud();
 }
 
 /*
@@ -154,7 +179,7 @@ static void simulation_timeval(struct timeval *tv)
 /*
   send a UBLOX GPS message
  */
-void GPS::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
+void GPS_UBlox::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 {
     const uint8_t PREAMBLE1 = 0xb5;
     const uint8_t PREAMBLE2 = 0x62;
@@ -179,24 +204,26 @@ void GPS::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 }
 
 /*
-  return GPS time of week in milliseconds
+  return GPS time of week
  */
-static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
+static GPS_TOW gps_time()
 {
+    GPS_TOW gps_tow;
     struct timeval tv;
     simulation_timeval(&tv);
     const uint32_t epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - (GPS_LEAPSECONDS_MILLIS / 1000ULL);
     uint32_t epoch_seconds = tv.tv_sec - epoch;
-    *time_week = epoch_seconds / AP_SEC_PER_WEEK;
+    gps_tow.week = epoch_seconds / AP_SEC_PER_WEEK;
     uint32_t t_ms = tv.tv_usec / 1000;
     // round time to nearest 200ms
-    *time_week_ms = (epoch_seconds % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC + ((t_ms/200) * 200);
+    gps_tow.ms = (epoch_seconds % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC + ((t_ms/200) * 200);
+    return gps_tow;
 }
 
 /*
   send a new set of GPS UBLOX packets
  */
-void GPS::update_ubx(const struct gps_data *d)
+void GPS_UBlox::update_write(const GPS_Data *d)
 {
     struct PACKED ubx_nav_posllh {
         uint32_t    time; // GPS msToW
@@ -346,12 +373,9 @@ void GPS::update_ubx(const struct gps_data *d)
 
     uint32_t _next_nav_sv_info_time = 0;
 
-    uint16_t time_week;
-    uint32_t time_week_ms;
+    const auto gps_tow = gps_time();
 
-    gps_time(&time_week, &time_week_ms);
-
-    pos.time = time_week_ms;
+    pos.time = gps_tow.ms;
     pos.longitude = d->longitude * 1.0e7;
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
@@ -359,7 +383,7 @@ void GPS::update_ubx(const struct gps_data *d)
     pos.horizontal_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
 
-    status.time = time_week_ms;
+    status.time = gps_tow.ms;
     status.fix_type = d->have_lock?3:0;
     status.fix_status = d->have_lock?1:0;
     status.differential_status = 0;
@@ -367,7 +391,7 @@ void GPS::update_ubx(const struct gps_data *d)
     status.time_to_first_fix = 0;
     status.uptime = AP_HAL::millis();
 
-    velned.time = time_week_ms;
+    velned.time = gps_tow.ms;
     velned.ned_north = 100.0f * d->speedN;
     velned.ned_east  = 100.0f * d->speedE;
     velned.ned_down  = 100.0f * d->speedD;
@@ -383,11 +407,11 @@ void GPS::update_ubx(const struct gps_data *d)
     memset(&sol, 0, sizeof(sol));
     sol.fix_type = d->have_lock?3:0;
     sol.fix_status = 221;
-    sol.satellites = d->have_lock?_sitl->gps_numsats[instance]:3;
-    sol.time = time_week_ms;
-    sol.week = time_week;
+    sol.satellites = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    sol.time = gps_tow.ms;
+    sol.week = gps_tow.week;
 
-    dop.time = time_week_ms;
+    dop.time = gps_tow.ms;
     dop.gDOP = 65535;
     dop.pDOP = 65535;
     dop.tDOP = 65535;
@@ -396,7 +420,7 @@ void GPS::update_ubx(const struct gps_data *d)
     dop.nDOP = 65535;
     dop.eDOP = 65535;
     
-    pvt.itow = time_week_ms;
+    pvt.itow = gps_tow.ms;
     pvt.year = 0; 
     pvt.month = 0;
     pvt.day = 0;
@@ -409,7 +433,7 @@ void GPS::update_ubx(const struct gps_data *d)
     pvt.fix_type = d->have_lock? 0x3 : 0;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
-    pvt.num_sv = d->have_lock?_sitl->gps_numsats[instance]:3;
+    pvt.num_sv = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
@@ -442,7 +466,7 @@ void GPS::update_ubx(const struct gps_data *d)
         rot.rotate(gyro * (-lag));
         rel_antenna_pos = rot * rel_antenna_pos;
         relposned.version = 1;
-        relposned.iTOW = time_week_ms;
+        relposned.iTOW = gps_tow.ms;
         relposned.relPosN = rel_antenna_pos.x * 100;
         relposned.relPosE = rel_antenna_pos.y * 100;
         relposned.relPosD = rel_antenna_pos.z * 100;
@@ -461,8 +485,8 @@ void GPS::update_ubx(const struct gps_data *d)
         send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned));
     }
 
-    if (time_week_ms > _next_nav_sv_info_time) {
-        svinfo.itow = time_week_ms;
+    if (gps_tow.ms > _next_nav_sv_info_time) {
+        svinfo.itow = gps_tow.ms;
         svinfo.numCh = 32;
         svinfo.globalFlags = 4; // u-blox 8/M8
         // fill in the SV's with some data even though firmware does not currently use it
@@ -478,14 +502,14 @@ void GPS::update_ubx(const struct gps_data *d)
             // not bothering to fill in prRes
         }
         send_ubx(MSG_SVINFO, (uint8_t*)&svinfo, sizeof(svinfo));
-        _next_nav_sv_info_time = time_week_ms + 10000; // 10 second delay
+        _next_nav_sv_info_time = gps_tow.ms + 10000; // 10 second delay
     }
 }
 
 /*
   formatted print of NMEA message, with checksum appended
  */
-void GPS::nmea_printf(const char *fmt, ...)
+void GPS_NMEA::nmea_printf(const char *fmt, ...)
 {
     va_list ap;
 
@@ -502,7 +526,7 @@ void GPS::nmea_printf(const char *fmt, ...)
 /*
   send a new GPS NMEA packet
  */
-void GPS::update_nmea(const struct gps_data *d)
+void GPS_NMEA::update_write(const GPS_Data *d)
 {
     struct timeval tv;
     struct tm *tm;
@@ -543,19 +567,16 @@ void GPS::update_nmea(const struct gps_data *d)
                      d->have_lock?_sitl->gps_numsats[instance]:3,
                      1.2,
                      d->altitude);
-    const float speed_mps = norm(d->speedN, d->speedE);
+                     
+    const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
-
-    float heading = ToDeg(atan2f(d->speedE, d->speedN));
-    if (heading < 0) {
-        heading += 360.0f;
-    }
+    const auto heading_rad = d->heading();
 
     //$GPVTG,133.18,T,120.79,M,0.11,N,0.20,K,A*24
     nmea_printf("$GPVTG,%.2f,T,%.2f,M,%.2f,N,%.2f,K,A",
                      tstring,
-                     heading,
-                     heading,
+                     heading_rad,
+                     heading_rad,
                      speed_knots,
                      speed_knots * KNOTS_TO_METERS_PER_SECOND * 3.6);
 
@@ -565,7 +586,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lat_string,
                      lng_string,
                      speed_knots,
-                     heading,
+                     heading_rad,
                      dstring);
 
     if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
@@ -582,7 +603,7 @@ void GPS::update_nmea(const struct gps_data *d)
                     d->altitude,
                     wrap_360(d->yaw_deg),
                     d->pitch_deg,
-                    heading,
+                    heading_rad,
                     speed_mps,
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
@@ -595,7 +616,7 @@ void GPS::update_nmea(const struct gps_data *d)
     }
 }
 
-void GPS::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload)
+void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload)
 {
     if (len != 0 && payload == 0) {
         return; //SBP_NULL_ERROR;
@@ -618,7 +639,7 @@ void GPS::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, u
     write_to_autopilot((char*)&crc, 2);
 }
 
-void GPS::update_sbp(const struct gps_data *d)
+void GPS_SBP::update_write(const GPS_Data *d)
 {
     struct sbp_heartbeat_t {
         bool sys_error : 1;
@@ -672,13 +693,11 @@ void GPS::update_sbp(const struct gps_data *d)
     static const uint16_t SBP_DOPS_MSGTYPE = 0x0206;
     static const uint16_t SBP_POS_LLH_MSGTYPE = 0x0201;
     static const uint16_t SBP_VEL_NED_MSGTYPE = 0x0205;
-    uint16_t time_week;
-    uint32_t time_week_ms;
 
-    gps_time(&time_week, &time_week_ms);
+    const auto gps_tow = gps_time();
 
-    t.wn = time_week;
-    t.tow = time_week_ms;
+    t.wn = gps_tow.week;
+    t.tow = gps_tow.ms;
     t.ns = 0;
     t.flags = 0;
     sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t);
@@ -687,13 +706,13 @@ void GPS::update_sbp(const struct gps_data *d)
         return;
     }
 
-    pos.tow = time_week_ms;
+    pos.tow = gps_tow.ms;
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
     pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.n_sats = _sitl->gps_numsats[instance];
+    pos.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
 
     // Send single point position solution
     pos.flags = 0;
@@ -702,20 +721,20 @@ void GPS::update_sbp(const struct gps_data *d)
     pos.flags = 1;
     sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
 
-    velned.tow = time_week_ms;
+    velned.tow = gps_tow.ms;
     velned.n = 1e3 * d->speedN;
     velned.e = 1e3 * d->speedE;
     velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 5e3;
     velned.v_accuracy = 5e3;
-    velned.n_sats = _sitl->gps_numsats[instance];
+    velned.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     velned.flags = 0;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 
     static uint32_t do_every_count = 0;
     if (do_every_count % 5 == 0) {
 
-        dops.tow = time_week_ms;
+        dops.tow = gps_tow.ms;
         dops.gdop = 1;
         dops.pdop = 1;
         dops.tdop = 1;
@@ -734,7 +753,7 @@ void GPS::update_sbp(const struct gps_data *d)
 }
 
 
-void GPS::update_sbp2(const struct gps_data *d)
+void GPS_SBP2::update_write(const GPS_Data *d)
 {
     struct sbp_heartbeat_t {
         bool sys_error : 1;
@@ -789,13 +808,10 @@ void GPS::update_sbp2(const struct gps_data *d)
     static const uint16_t SBP_POS_LLH_MSGTYPE = 0x020A;
     static const uint16_t SBP_VEL_NED_MSGTYPE = 0x020E;
 
-    uint16_t time_week;
-    uint32_t time_week_ms;
+    const auto gps_tow = gps_time();
 
-    gps_time(&time_week, &time_week_ms);
-
-    t.wn = time_week;
-    t.tow = time_week_ms;
+    t.wn = gps_tow.week;
+    t.tow = gps_tow.ms;
     t.ns = 0;
     t.flags = 1;
     sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t);
@@ -804,13 +820,13 @@ void GPS::update_sbp2(const struct gps_data *d)
         return;
     }
 
-    pos.tow = time_week_ms;
+    pos.tow = gps_tow.ms;
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
     pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.n_sats = _sitl->gps_numsats[instance];
+    pos.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
 
     // Send single point position solution
     pos.flags = 1;
@@ -819,20 +835,20 @@ void GPS::update_sbp2(const struct gps_data *d)
     pos.flags = 4;
     sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
 
-    velned.tow = time_week_ms;
+    velned.tow = gps_tow.ms;
     velned.n = 1e3 * d->speedN;
     velned.e = 1e3 * d->speedE;
     velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 5e3;
     velned.v_accuracy = 5e3;
-    velned.n_sats = _sitl->gps_numsats[instance];
+    velned.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     velned.flags = 1;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 
     static uint32_t do_every_count = 0;
     if (do_every_count % 5 == 0) {
 
-        dops.tow = time_week_ms;
+        dops.tow = gps_tow.ms;
         dops.gdop = 1;
         dops.pdop = 1;
         dops.tdop = 1;
@@ -849,7 +865,7 @@ void GPS::update_sbp2(const struct gps_data *d)
     do_every_count++;
 }
 
-void GPS::update_nova(const struct gps_data *d)
+void GPS_NOVA::update_write(const GPS_Data *d)
 {
     static struct PACKED nova_header
     {
@@ -934,17 +950,14 @@ void GPS::update_nova(const struct gps_data *d)
         float resv;
     } bestvel {};
     
-    uint16_t time_week;
-    uint32_t time_week_ms;
-    
-    gps_time(&time_week, &time_week_ms);
+    const auto gps_tow = gps_time();
     
     header.preamble[0] = 0xaa;
     header.preamble[1] = 0x44;
     header.preamble[2] = 0x12;
     header.headerlength = sizeof(header);
-    header.week = time_week;
-    header.tow = time_week_ms;
+    header.week = gps_tow.week;
+    header.tow = gps_tow.ms;
     
     header.messageid = 174;
     header.messagelength = sizeof(psrdop);
@@ -973,7 +986,7 @@ void GPS::update_nova(const struct gps_data *d)
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
     bestpos.hgt = d->altitude;
-    bestpos.svsused = _sitl->gps_numsats[instance];
+    bestpos.svsused = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     bestpos.latsdev=0.2;
     bestpos.lngsdev=0.2;
     bestpos.hgtsdev=0.2;
@@ -983,7 +996,7 @@ void GPS::update_nova(const struct gps_data *d)
     nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&bestpos, sizeof(bestpos));
 }
 
-void GPS::nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen)
+void GPS_NOVA::nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen)
 {
     write_to_autopilot((char*)header, headerlength);
 write_to_autopilot((char*)payload, payloadlen);
@@ -995,7 +1008,7 @@ write_to_autopilot((char*)payload, payloadlen);
 }
 
 #define CRC32_POLYNOMIAL 0xEDB88320L
-uint32_t GPS::CRC32Value(uint32_t icrc)
+uint32_t GPS_NOVA::CRC32Value(uint32_t icrc)
 {
     int i;
     uint32_t crc = icrc;
@@ -1009,7 +1022,7 @@ uint32_t GPS::CRC32Value(uint32_t icrc)
     return crc;
 }
 
-uint32_t GPS::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
+uint32_t GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
 {
     while ( length-- != 0 )
     {
@@ -1018,11 +1031,382 @@ uint32_t GPS::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc
     return( crc );
 }
 
+void GPS_GSOF::update_write(const GPS_Data *d)
+{
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
+    constexpr uint8_t GSOF_POS_TIME_TYPE { 0x01 };
+    constexpr uint8_t GSOF_POS_TIME_LEN { 0x0A };
+     // TODO magic number until SITL supports GPS bootcount based on GPSN_ENABLE
+    const uint8_t bootcount = 17;
+
+    // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%201
+    enum class POS_FLAGS_1 : uint8_t {
+        NEW_POSITION = 1U << 0,
+        CLOCK_FIX_CALULATED = 1U << 1,
+        HORIZ_FROM_THIS_POS = 1U << 2,
+        HEIGHT_FROM_THIS_POS = 1U << 3,
+        RESERVED_4 = 1U << 4,
+        LEAST_SQ_POSITION = 1U << 5,
+        RESERVED_6 = 1U << 6,
+        POSITION_L1_PSEUDORANGES = 1U << 7
+    };
+    const uint8_t pos_flags_1 {
+        uint8_t(POS_FLAGS_1::NEW_POSITION) |
+        uint8_t(POS_FLAGS_1::CLOCK_FIX_CALULATED) |
+        uint8_t(POS_FLAGS_1::HORIZ_FROM_THIS_POS) |
+        uint8_t(POS_FLAGS_1::HEIGHT_FROM_THIS_POS) |
+        uint8_t(POS_FLAGS_1::RESERVED_4) |
+        uint8_t(POS_FLAGS_1::LEAST_SQ_POSITION) |
+        uint8_t(POS_FLAGS_1::POSITION_L1_PSEUDORANGES)
+    };
+
+    // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%202
+    enum class POS_FLAGS_2 : uint8_t {
+        DIFFERENTIAL_POS = 1U << 0,
+        DIFFERENTIAL_POS_PHASE_RTK = 1U << 1,
+        POSITION_METHOD_FIXED_PHASE = 1U << 2,
+        OMNISTAR_ACTIVE = 1U << 3,
+        DETERMINED_WITH_STATIC_CONSTRAINT = 1U << 4,
+        NETWORK_RTK = 1U << 5,
+        DITHERED_RTK = 1U << 6,
+        BEACON_DGNSS = 1U << 7,
+    };
+
+    // Simulate a GPS without RTK in SIM since there is no RTK SIM params.
+    // This means these flags are unset:
+    // NETWORK_RTK, DITHERED_RTK, BEACON_DGNSS
+    uint8_t pos_flags_2 {0};
+    if(d->have_lock) {
+        pos_flags_2 |= uint8_t(POS_FLAGS_2::DIFFERENTIAL_POS);
+        pos_flags_2 |= uint8_t(POS_FLAGS_2::DIFFERENTIAL_POS_PHASE_RTK);
+        pos_flags_2 |= uint8_t(POS_FLAGS_2::POSITION_METHOD_FIXED_PHASE);
+        pos_flags_2 |= uint8_t(POS_FLAGS_2::OMNISTAR_ACTIVE);
+        pos_flags_2 |= uint8_t(POS_FLAGS_2::DETERMINED_WITH_STATIC_CONSTRAINT);
+    }
+
+    const auto gps_tow = gps_time();
+    const struct PACKED gsof_pos_time {
+        const uint8_t OUTPUT_RECORD_TYPE;
+        const uint8_t RECORD_LEN;
+        uint32_t time_week_ms;
+        uint16_t time_week;
+        uint8_t num_sats;
+        // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%201
+        uint8_t pos_flags_1;
+        // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%202
+        uint8_t pos_flags_2;
+        uint8_t initialized_num;
+    } pos_time {
+        GSOF_POS_TIME_TYPE,
+        GSOF_POS_TIME_LEN,
+        htobe32(gps_tow.ms),
+        htobe16(gps_tow.week),
+        d->have_lock ? _sitl->gps_numsats[instance] : uint8_t(3),
+        pos_flags_1,
+        pos_flags_2,
+        bootcount
+    };
+    static_assert(sizeof(gsof_pos_time) - (sizeof(gsof_pos_time::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_time::RECORD_LEN)) == GSOF_POS_TIME_LEN);
+
+    constexpr uint8_t GSOF_POS_TYPE = 0x02;
+    constexpr uint8_t GSOF_POS_LEN = 0x18;
+
+    const struct PACKED gsof_pos {
+        const uint8_t OUTPUT_RECORD_TYPE;
+        const uint8_t RECORD_LEN;
+        uint64_t lat;
+        uint64_t lng;
+        uint64_t alt;
+    } pos {
+        GSOF_POS_TYPE,
+        GSOF_POS_LEN,
+        pack_double_into_gsof_packet(d->latitude * DEG_TO_RAD_DOUBLE),
+        pack_double_into_gsof_packet(d->longitude * DEG_TO_RAD_DOUBLE),
+        pack_double_into_gsof_packet(static_cast<double>(d->altitude))
+    };
+    static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN); 
+    
+    // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Velocity.html
+    constexpr uint8_t GSOF_VEL_TYPE = 0x08;
+     // use the smaller packet by ignoring local coordinate system
+    constexpr uint8_t GSOF_VEL_LEN = 0x0D;
+
+    // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Velocity%20flags
+    enum class VEL_FIELDS : uint8_t {
+        VALID = 1U << 0,
+        CONSECUTIVE_MEASUREMENTS = 1U << 1,
+        HEADING_VALID = 1U << 2,
+        RESERVED_3 = 1U << 3,
+        RESERVED_4 = 1U << 4,
+        RESERVED_5 = 1U << 5,
+        RESERVED_6 = 1U << 6,
+        RESERVED_7 = 1U << 7,
+    };
+    uint8_t vel_flags {0};   
+    if(d->have_lock) {
+        vel_flags |= uint8_t(VEL_FIELDS::VALID);
+        vel_flags |= uint8_t(VEL_FIELDS::CONSECUTIVE_MEASUREMENTS);
+        vel_flags |= uint8_t(VEL_FIELDS::HEADING_VALID);
+    }
+
+    const struct PACKED gsof_vel {
+        const uint8_t OUTPUT_RECORD_TYPE; 
+        const uint8_t RECORD_LEN;
+        // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Velocity%20flags
+        uint8_t flags;
+        uint32_t horiz_m_p_s;
+        uint32_t heading_rad;
+        uint32_t vertical_m_p_s;
+    } vel {
+        GSOF_VEL_TYPE,
+        GSOF_VEL_LEN,
+        vel_flags,
+        pack_float_into_gsof_packet(d->speed_2d()),
+        pack_float_into_gsof_packet(d->heading()),
+        // Trimble API has ambiguous direction here.
+        // Intentionally narrow from double.
+        pack_float_into_gsof_packet(static_cast<float>(d->speedD))
+    };
+    static_assert(sizeof(gsof_vel) - (sizeof(gsof_vel::OUTPUT_RECORD_TYPE) + sizeof(gsof_vel::RECORD_LEN)) == GSOF_VEL_LEN);
+
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_PDOP.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____12
+    constexpr uint8_t GSOF_DOP_TYPE = 0x09;
+    constexpr uint8_t GSOF_DOP_LEN = 0x10;
+    const struct PACKED gsof_dop {
+        const uint8_t OUTPUT_RECORD_TYPE { GSOF_DOP_TYPE }; 
+        const uint8_t RECORD_LEN { GSOF_DOP_LEN };
+        uint32_t pdop = htobe32(1);
+        uint32_t hdop = htobe32(1);
+        uint32_t vdop = htobe32(1);
+        uint32_t tdop = htobe32(1);
+    } dop {};
+    // Check the payload size calculation in the compiler
+    constexpr auto dop_size = sizeof(gsof_dop);
+    static_assert(dop_size == 18);
+    constexpr auto dop_record_type_size = sizeof(gsof_dop::OUTPUT_RECORD_TYPE);
+    static_assert(dop_record_type_size == 1);
+    constexpr auto len_size = sizeof(gsof_dop::RECORD_LEN);
+    static_assert(len_size == 1);
+    constexpr auto dop_payload_size = dop_size - (dop_record_type_size + len_size);
+    static_assert(dop_payload_size == GSOF_DOP_LEN);
+
+    constexpr uint8_t GSOF_POS_SIGMA_TYPE = 0x0C;
+    constexpr uint8_t GSOF_POS_SIGMA_LEN = 0x26;
+    const struct PACKED gsof_pos_sigma {
+        const uint8_t OUTPUT_RECORD_TYPE { GSOF_POS_SIGMA_TYPE }; 
+        const uint8_t RECORD_LEN { GSOF_POS_SIGMA_LEN };
+        uint32_t pos_rms = htobe32(0);
+        uint32_t sigma_e = htobe32(0);
+        uint32_t sigma_n = htobe32(0);
+        uint32_t cov_en = htobe32(0);
+        uint32_t sigma_up = htobe32(0);
+        uint32_t semi_major_axis = htobe32(0);
+        uint32_t semi_minor_axis = htobe32(0);
+        uint32_t orientation = htobe32(0);
+        uint32_t unit_variance = htobe32(0);
+        uint16_t n_epocs = htobe32(1); // Always 1 for kinematic.
+    } pos_sigma {};
+    static_assert(sizeof(gsof_pos_sigma) - (sizeof(gsof_pos_sigma::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_sigma::RECORD_LEN)) == GSOF_POS_SIGMA_LEN);
+    
+    // TODO add GSOF49
+    const uint8_t payload_sz = sizeof(pos_time) + sizeof(pos) + sizeof(vel) + sizeof(dop) + sizeof(pos_sigma);
+    uint8_t buf[payload_sz] = {};
+    uint8_t offset = 0;
+    memcpy(&buf[offset], &pos_time, sizeof(pos_time));
+    offset += sizeof(pos_time);
+    memcpy(&buf[offset], &pos, sizeof(pos));
+    offset += sizeof(pos);
+    memcpy(&buf[offset], &vel, sizeof(vel));
+    offset += sizeof(vel);
+    memcpy(&buf[offset], &dop, sizeof(dop));
+    offset += sizeof(dop);
+    memcpy(&buf[offset], &pos_sigma, sizeof(pos_sigma));
+    offset += sizeof(pos_sigma);
+    assert(offset == payload_sz);
+    send_gsof(buf, sizeof(buf));
+}
+
+
+void GPS_GSOF::send_gsof(const uint8_t *buf, const uint16_t size)
+{
+    // All Trimble "Data Collector" packets, including GSOF, are comprised of three fields:
+    // * A fixed-length packet header (dcol_header)
+    // * A variable-length data frame (buf)
+    // * A fixed-length packet trailer (dcol_trailer)
+    // Reference: // https://receiverhelp.trimble.com/oem-gnss/index.html#API_DataCollectorFormatPacketStructure.html?TocPath=API%2520Documentation%257CData%2520collector%2520format%2520packets%257CData%2520collector%2520format%253A%2520packet%2520structure%257C_____0
+
+    const uint8_t STX = 0x02;
+    // status bitfield
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#API_ReceiverStatusByte.html?TocPath=API%2520Documentation%257CData%2520collector%2520format%2520packets%257CData%2520collector%2520format%253A%2520packet%2520structure%257C_____1
+    const uint8_t STATUS = 0xa8;
+    const uint8_t PACKET_TYPE = 0x40; // Report Packet 40h (GENOUT)
+
+    // Before writing the GSOF data buffer, the GSOF header needs added between the DCOL header and the payload data frame.
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_GSOF.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____2
+
+    static uint8_t TRANSMISSION_NUMBER = 0; // Functionally, this is a sequence number
+    // Most messages, even GSOF49, only take one page. For SIM, assume it.
+    assert(size < 0xFA); // GPS SIM doesn't yet support paging
+    constexpr uint8_t PAGE_INDEX = 0; 
+    constexpr uint8_t MAX_PAGE_INDEX = 0;
+    const uint8_t gsof_header[3] = {
+        TRANSMISSION_NUMBER,
+        PAGE_INDEX,
+        MAX_PAGE_INDEX,
+
+    };
+    ++TRANSMISSION_NUMBER;
+
+    // A captured GSOF49 packet from BD940  has LENGTH field set to 0x6d = 109 bytes.
+    // A captured GSOF49 packet from BD940  has total bytes of 115 bytes.
+    // Thus, the following 5 bytes are not counted.
+    // 1) STX
+    // 2) STATUS
+    // 3) PACKET TYPE
+    // 4) LENGTH
+    // 5) CHECKSUM
+    // 6) ETX
+    // This aligns with manual's idea of data bytes:
+    // "Each message begins with a 4-byte header, followed by the bytes of data in each packet. The packet ends with a 2-byte trailer."
+    // Thus, for this implementation with single-page single-record per DCOL packet,
+    // the length is simply the sum of data packet size, the gsof_header size.    
+    const uint8_t length = size + sizeof(gsof_header);
+    const uint8_t dcol_header[4] {
+        STX,
+        STATUS,
+        PACKET_TYPE,
+        length
+    };
+
+
+
+    // Sum bytes (status + type + length + data bytes) and modulo 256 the summation
+    // Because it's a uint8, use natural overflow
+    uint8_t csum = STATUS + PACKET_TYPE + length;
+    for (size_t i = 0; i < ARRAY_SIZE(gsof_header); i++) {
+        csum += gsof_header[i];
+    }
+    for (size_t i = 0; i < size; i++) {
+        csum += buf[i];
+    }
+
+    constexpr uint8_t ETX = 0x03;
+    const uint8_t dcol_trailer[2] = {
+        csum,
+        ETX
+    };
+
+    write_to_autopilot((char*)dcol_header, sizeof(dcol_header));
+    write_to_autopilot((char*)gsof_header, sizeof(gsof_header));
+    write_to_autopilot((char*)buf, size);
+    write_to_autopilot((char*)dcol_trailer, sizeof(dcol_trailer));
+    const uint8_t total_size = sizeof(dcol_header) + sizeof(gsof_header) + size + sizeof(dcol_trailer);
+     // Validate length based on everything but DCOL h
+    if(dcol_header[3] != total_size - (sizeof(dcol_header) +  sizeof(dcol_trailer))) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
+}
+
+uint64_t GPS_GSOF::pack_double_into_gsof_packet(const double& src)
+{
+    uint64_t dst;
+    static_assert(sizeof(src) == sizeof(dst));
+    memcpy(&dst, &src, sizeof(dst));
+    dst = htobe64(dst);
+    return dst;
+}
+
+uint32_t GPS_GSOF::pack_float_into_gsof_packet(const float& src)
+{
+    uint32_t dst;
+    static_assert(sizeof(src) == sizeof(dst));
+    memcpy(&dst, &src, sizeof(dst));
+    dst = htobe32(dst);
+    return dst;
+}
+
+/*
+  send MSP GPS data
+ */
+void GPS_MSP::update_write(const GPS_Data *d)
+{
+    struct PACKED {
+        // header
+        struct PACKED {
+            uint8_t dollar = '$';
+            uint8_t magic = 'X';
+            uint8_t code = '<';
+            uint8_t  flags;
+            uint16_t cmd = 0x1F03; // GPS
+            uint16_t size = 52;
+        } hdr;
+        uint8_t  instance;
+        uint16_t gps_week;
+        uint32_t ms_tow;
+        uint8_t  fix_type;
+        uint8_t  satellites_in_view;
+        uint16_t horizontal_pos_accuracy;     // [cm]
+        uint16_t vertical_pos_accuracy;       // [cm]
+        uint16_t horizontal_vel_accuracy;     // [cm/s]
+        uint16_t hdop;
+        int32_t  longitude;
+        int32_t  latitude;
+        int32_t  msl_altitude;       // cm
+        int32_t  ned_vel_north;       // cm/s
+        int32_t  ned_vel_east;
+        int32_t  ned_vel_down;
+        uint16_t ground_course;      // deg * 100, 0..36000
+        uint16_t true_yaw;           // deg * 100, values of 0..36000 are valid. 65535 = no data available
+        uint16_t year;
+        uint8_t  month;
+        uint8_t  day;
+        uint8_t  hour;
+        uint8_t  min;
+        uint8_t  sec;
+
+        // footer CRC
+        uint8_t crc;
+    } msp_gps {};
+
+    auto t = gps_time();
+    struct timeval tv;
+    simulation_timeval(&tv);
+    auto *tm = gmtime(&tv.tv_sec);
+
+    msp_gps.gps_week = t.week;
+    msp_gps.ms_tow = t.ms;
+    msp_gps.fix_type = d->have_lock?3:0;
+    msp_gps.satellites_in_view = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    msp_gps.horizontal_pos_accuracy = _sitl->gps_accuracy[instance]*100;
+    msp_gps.vertical_pos_accuracy = _sitl->gps_accuracy[instance]*100;
+    msp_gps.horizontal_vel_accuracy = 30;
+    msp_gps.hdop = 100;
+    msp_gps.longitude = d->longitude * 1.0e7;
+    msp_gps.latitude  = d->latitude * 1.0e7;
+    msp_gps.msl_altitude = d->altitude * 100;
+    msp_gps.ned_vel_north = 100 * d->speedN;
+    msp_gps.ned_vel_east = 100 * d->speedE;
+    msp_gps.ned_vel_down = 100 * d->speedD;
+    msp_gps.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100;
+    msp_gps.true_yaw = wrap_360(d->yaw_deg)*100U; // can send 65535 for no yaw
+    msp_gps.year = tm->tm_year;
+    msp_gps.month = tm->tm_mon;
+    msp_gps.day = tm->tm_mday;
+    msp_gps.hour = tm->tm_hour;
+    msp_gps.min = tm->tm_min;
+    msp_gps.sec = tm->tm_sec;
+
+    // CRC is over packet without first 3 bytes and trailing CRC byte
+    msp_gps.crc = crc8_dvb_s2_update(0, (uint8_t *)&msp_gps.hdr.flags, sizeof(msp_gps)-4);
+
+    write_to_autopilot((const char *)&msp_gps, sizeof(msp_gps));
+}
+
 /*
   read file data logged from AP_GPS_DEBUG_LOGGING_ENABLED
  */
 #if AP_SIM_GPS_FILE_ENABLED
-void GPS::update_file()
+void GPS_FILE::update_write(const GPS_Data *d)
 {
     static int fd[2] = {-1,-1};
     static uint32_t base_time[2];
@@ -1073,12 +1457,74 @@ rewind_file:
 }
 #endif  // AP_SIM_GPS_FILE_ENABLED
 
+void GPS::check_backend_allocation()
+{
+    const Type configured_type = Type(_sitl->gps_type[instance].get());
+    if (allocated_type == configured_type) {
+        return;
+    }
+
+    // mismatch; delete any already-allocated backend:
+    if (backend != nullptr) {
+        delete backend;
+        backend = nullptr;
+    }
+
+    // attempt to allocate backend
+    switch (configured_type) {
+    case Type::NONE:
+        // no GPS attached
+        break;
+
+    case Type::UBLOX:
+        backend = new GPS_UBlox(*this, instance);
+        break;
+
+    case Type::NMEA:
+        backend = new GPS_NMEA(*this, instance);
+        break;
+
+    case Type::SBP:
+        backend = new GPS_SBP(*this, instance);
+        break;
+
+    case Type::SBP2:
+        backend = new GPS_SBP2(*this, instance);
+        break;
+
+    case Type::NOVA:
+        backend = new GPS_NOVA(*this, instance);
+        break;
+
+    case Type::MSP:
+        backend = new GPS_MSP(*this, instance);
+        break;
+
+    case Type::GSOF:
+        backend = new GPS_GSOF(*this, instance);
+        break;
+
+#if AP_SIM_GPS_FILE_ENABLED
+    case Type::FILE:
+        backend = new GPS_FILE(*this, instance);
+        break;
+#endif
+    };
+
+    allocated_type = configured_type;
+}
+
 /*
   possibly send a new GPS packet
  */
 void GPS::update()
 {
     if (!init_sitl_pointer()) {
+        return;
+    }
+
+    check_backend_allocation();
+    if (backend == nullptr) {
         return;
     }
 
@@ -1113,7 +1559,7 @@ void GPS::update()
 
     const uint8_t idx = instance;  // alias to avoid code churn
 
-        struct gps_data d;
+        struct GPS_Data d {};
 
         // simulate delayed lock times
         bool have_lock = (!_sitl->gps_disable[idx] && now_ms >= _sitl->gps_lock_time[idx]*1000UL);
@@ -1123,11 +1569,7 @@ void GPS::update()
             return;
         }
 
-        // swallow any config bytes
-        char c;
-        read_from_autopilot(&c, 1);
-
-        last_update = now_ms;
+    last_update = now_ms;
 
         d.latitude = latitude;
         d.longitude = longitude;
@@ -1193,45 +1635,20 @@ void GPS::update()
         d.longitude += glitch_offsets.y;
         d.altitude += glitch_offsets.z;
 
+    backend->update(d);   // i.e. reading configuration etc from autopilot
+}
 
-    // do GPS-type-dependent updates:
-    switch ((Type)_sitl->gps_type[instance].get()) {
-        case Type::NONE:
-            // no GPS attached
-            break;
-
-        case Type::UBLOX:
-            update_ubx(&d);
-            break;
-
-        case Type::NMEA:
-            update_nmea(&d);
-            break;
-
-        case Type::SBP:
-            update_sbp(&d);
-            break;
-
-        case Type::SBP2:
-            update_sbp2(&d);
-            break;
-
-        case Type::NOVA:
-            update_nova(&d);
-            break;
-
-#if AP_SIM_GPS_FILE_ENABLED
-        case Type::FILE:
-            update_file();
-            break;
-#endif
-    }
+void GPS_Backend::update_read(const GPS_Data *d)
+{
+        // swallow any config bytes
+        char c;
+        read_from_autopilot(&c, 1);
 }
 
 /*
   get delayed data by interpolation
 */
-GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
+GPS_Data GPS::interpolate_data(const GPS_Data &d, uint32_t delay_ms)
 {
     const uint8_t N = ARRAY_SIZE(_gps_history);
     const uint32_t now_ms = d.timestamp_ms;
@@ -1246,9 +1663,9 @@ GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
         if (delay_ms >= dt1 && delay_ms <= dt2) {
             // we will interpolate this pair of samples. Start with
             // the older sample
-            const gps_data &s1 = _gps_history[i+1];
-            const gps_data &s2 = _gps_history[i];
-            gps_data d2 = s1;
+            const GPS_Data &s1 = _gps_history[i+1];
+            const GPS_Data &s2 = _gps_history[i];
+            GPS_Data d2 = s1;
             const float p = (dt2 - delay_ms) / MAX(1,float(dt2 - dt1));
             d2.latitude += p * (s2.latitude - s1.latitude);
             d2.longitude += p * (s2.longitude - s1.longitude);
@@ -1256,12 +1673,24 @@ GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
             d2.speedN += p * (s2.speedN - s1.speedN);
             d2.speedE += p * (s2.speedE - s1.speedE);
             d2.speedD += p * (s2.speedD - s1.speedD);
-            d2.yaw_deg += p * (s2.yaw_deg - s1.yaw_deg);
+            d2.yaw_deg += p * wrap_180(s2.yaw_deg - s1.yaw_deg);
             return d2;
         }
     }
     // delay is too long, use last sample
     return _gps_history[N-1];
+}
+
+float GPS_Data::heading() const
+{
+    const auto velocity = Vector2d{speedE, speedN};
+    return velocity.angle();
+}
+
+float GPS_Data::speed_2d() const
+{
+    const auto velocity = Vector2d{speedN, speedE};
+    return velocity.length();
 }
 
 #endif  // HAL_SIM_GPS_ENABLED

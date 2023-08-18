@@ -87,8 +87,8 @@ if [ ${RELEASE_CODENAME} == 'bionic' ] ; then
 elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    PYTHON_V="python"
-    PIP=pip2
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -146,12 +146,13 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
+PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy ptyprocess dronecan"
 if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
+    PYTHON_PKGS="$PYTHON_PKGS flake8==3.7.9 requests==2.27.1 monotonic==1.6 configparser==4.0.2 click==7.1.2 decorator==4.4.2"
 else
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
+    PYTHON_PKGS="$PYTHON_PKGS flake8"
 fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -167,7 +168,7 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     # on Lunar (and presumably later releases), we install in venv, below
-    PYTHON_PKGS+=" setuptools numpy pyparsing psutil"
+    PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
 SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
@@ -176,7 +177,7 @@ fi
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'lunar' ]; then
-        PYTHON_PKGS+=" matplotlib serial scipy opencv-python pyyaml"
+        PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
   else
   SITL_PKGS="$SITL_PKGS xterm ${PYTHON_V}-matplotlib ${PYTHON_V}-serial ${PYTHON_V}-scipy ${PYTHON_V}-opencv libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION} ${PYTHON_V}-yaml"
@@ -264,13 +265,16 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif [ ${RELEASE_CODENAME} == 'buster' ]; then
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
   SITL_PKGS+=" python-argparse"
 fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+  if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
   elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
            [ ${RELEASE_CODENAME} == 'focal' ]; then
@@ -289,10 +293,12 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   fi
 
   if [ ${RELEASE_CODENAME} == 'lunar' ]; then
-      PYTHON_PKGS+=" wxPython opencv-python"
+      PYTHON_PKGS+=" opencv-python"
+      SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'buster' ] ||
          [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
@@ -354,6 +360,9 @@ if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     $PIP install --user -U pip==20.3 setuptools==44.0.0
 fi
+
+# try update setuptools and wheel before installing pip package that may need compilation
+$PIP install $PIP_USER_ARGUMENT -U setuptools wheel
 
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     # must do this ahead of wxPython pip3 run :-/

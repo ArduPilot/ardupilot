@@ -68,6 +68,10 @@ ifeq ($(USE_FATFS),yes)
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
+ifeq ($(USE_LWIP),yes)
+include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
+endif
+
 #
 # Build global options
 ##############################################################################
@@ -143,6 +147,10 @@ CSRC += $(HWDEF)/common/stubs.c \
 ifeq ($(USE_USB_MSD),yes)
 CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
         $(CHIBIOS)/os/hal/src/hal_usb_msd.c
+endif
+
+ifeq ($(USE_LWIP),yes)
+CSRC += $(CHIBIOS)/os/various/evtimer.c
 endif
 
 #	   $(TESTSRC) \
@@ -263,6 +271,10 @@ endif
 
 # Define ASM defines here
 UADEFS =
+
+ifeq ($(COPY_VECTORS_TO_RAM),yes)
+ UADEFS += -DCRT0_INIT_VECTORS=1
+endif
 
 # List all user directories here
 UINCDIR =

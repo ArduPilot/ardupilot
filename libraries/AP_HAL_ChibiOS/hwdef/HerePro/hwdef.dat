@@ -64,7 +64,6 @@ FLASH_RESERVE_START_KB 256
 define GPS_UBLOX_MOVING_BASELINE TRUE
 define HAL_GCS_ENABLED 1
 define HAL_LOGGING_ENABLED TRUE
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_NO_MONITOR_THREAD
 
 
@@ -198,8 +197,6 @@ PB2 BOOT1 INPUT
 
 define CAN_APP_NODE_NAME "com.cubepilot.herepro"
 
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # disabled compass cal as it doesn't work for now
 # define COMPASS_CAL_ENABLED 1
 
@@ -210,8 +207,15 @@ define HAL_DEFAULT_CPORT 1
 define CONFIGURE_PPS_PIN TRUE
 define AP_PERIPH_HAVE_LED TRUE
 
+define AP_SCRIPTING_ENABLED 1
 define SCRIPTING_HEAP_SIZE (64*1024)
 
 define GPS_MOVING_BASELINE 1
 
 define AP_RC_CHANNEL_ENABLED 1
+
+define AP_RELAY_ENABLED 1
+define AP_SERVORELAYEVENTS_ENABLED 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

@@ -4,6 +4,7 @@
   For bootstrapping this will initially implement the px4io protocol,
   but will later move to an ArduPilot specific protocol
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -11,6 +12,7 @@
 
 #include "iofirmware/ioprotocol.h"
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <AP_HAL/RCOutput.h>
 
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
@@ -97,11 +99,39 @@ public:
     // set to brushed mode
     void set_brushed_mode(void);
 
+    // set output mode
+    void set_output_mode(uint16_t mask, uint16_t mode);
+
+    // get output mode
+    AP_HAL::RCOutput::output_mode get_output_mode(uint8_t& mask) const;
+
+    // MCUID
+    uint32_t get_mcu_id() const { return config.mcuid; }
+
+    // CPUID
+    uint32_t get_cpu_id() const { return config.cpuid; }
+
+#if HAL_DSHOT_ENABLED
+    // set dshot output period
+    void set_dshot_period(uint16_t period_us, uint8_t drate);
+
+    // set telem request mask
+    void set_telem_request_mask(uint32_t mask);
+
+    // send a dshot command
+    void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority);
+#endif
+    // setup channels
+    void     enable_ch(uint8_t ch);
+    void     disable_ch(uint8_t ch);
+
     // check if IO is healthy
     bool healthy(void);
 
     // shutdown IO protocol (for reboot)
     void shutdown();
+
+    void soft_reboot();
 
     // setup for FMU failsafe mixing
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
@@ -203,6 +233,7 @@ private:
         uint16_t failsafe_pwm[IOMCU_MAX_CHANNELS];
         uint8_t failsafe_pwm_set;
         uint8_t failsafe_pwm_sent;
+        uint16_t channel_mask;
     } pwm_out;
 
     // read back pwm values
@@ -220,7 +251,20 @@ private:
         bool brushed_enabled;
     } rate;
 
+    struct {
+        uint16_t period_us;
+        uint16_t rate;
+    } dshot_rate;
+
+    // queue of dshot commands that need sending
+    ObjectBuffer<page_dshot> dshot_command_queue{8};
+
     struct page_GPIO GPIO;
+    // output mode values
+    struct {
+        uint16_t mask;
+        uint16_t mode;
+    } mode_out;
 
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;
@@ -247,6 +291,7 @@ private:
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
+    const char *dshot_fw_name = "io_firmware_dshot.bin";
     const uint8_t *fw;
     uint32_t fw_size;
 

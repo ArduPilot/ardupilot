@@ -44,6 +44,7 @@ def build(bld):
                      'AP_FlashStorage',
                      'AP_RAMTRON',
                      'AP_GPS',
+                     'AP_Networking',
                      'AP_SerialManager',
                      'AP_RTC',
                      'AP_Compass',
@@ -69,6 +70,7 @@ def build(bld):
                      'AP_Stats',
                      'AP_EFI',
                      'AP_CheckFirmware',
+                     'AP_RPM',
                      'AP_Proximity',
                      ]
     bld.ap_stlib(

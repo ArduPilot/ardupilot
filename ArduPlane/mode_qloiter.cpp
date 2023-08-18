@@ -28,6 +28,13 @@ void ModeQLoiter::update()
 // run quadplane loiter controller
 void ModeQLoiter::run()
 {
+    const uint32_t now = AP_HAL::millis();
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
+        // Tailsitters in FW pull up phase of VTOL transition run FW controllers
+        Mode::run();
+        return;
+    }
+
     if (quadplane.throttle_wait) {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
@@ -35,6 +42,10 @@ void ModeQLoiter::run()
         pos_control->relax_z_controller(0);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
+
+        // Stabilize with fixed wing surfaces
+        plane.stabilize_roll();
+        plane.stabilize_pitch();
         return;
     }
     if (!quadplane.motors->armed()) {
@@ -45,7 +56,6 @@ void ModeQLoiter::run()
         loiter_nav->soften_for_landing();
     }
 
-    const uint32_t now = AP_HAL::millis();
     if (now - quadplane.last_loiter_ms > 500) {
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -112,6 +122,10 @@ void ModeQLoiter::run()
         quadplane.set_climb_rate_cms(quadplane.get_pilot_desired_climb_rate_cms());
     }
     quadplane.run_z_controller();
+
+    // Stabilize with fixed wing surfaces
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
 }
 
 #endif

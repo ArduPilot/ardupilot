@@ -2,7 +2,30 @@
 
 ## Architecture
 
-Ardupilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS2 node, an EProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial, which is the only supported protocol in Ardupilot MicroXCE DDS at this time.
+Ardupilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS2 node, an EProsima Integration Service, and the MicroXRCE Agent. The two systems communicate can communicate over serial or UDP.
+
+```mermaid
+---
+title: UDP Loopback
+---
+graph LR
+
+  subgraph Linux Computer
+
+    subgraph Ardupilot SITL
+      veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
+      xrceClient <--> port1[udp:2019]
+    end
+
+    subgraph DDS Application
+      ros[ROS2 Node] <--> agent[Micro ROS Agent]
+      agent <-->port1[udp:2019]
+    end
+
+    loopback
+
+  end
+```
 
 ```mermaid
 ---
@@ -27,7 +50,6 @@ graph LR
   end
 ```
 
-Currently, serial is the only supported transport, but there are plans to add IP-based transport over ethernet. 
 
 ## Installing Build Dependencies
 
@@ -45,7 +67,7 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ./gradlew assemble
   ```
 
-- Add the generator directory to $PATH. 
+- Add the generator directory to $PATH.
   ```console
   # Add this to ~/.bashrc
 
@@ -68,7 +90,7 @@ For now, avoid having simultaneous local and global installs.
 If you followed the [global install](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#global-installation)
 section, you should remove it and switch to local install.
 
-## Setup serial for SITL with DDS
+### Serial Only: Set up serial for SITL with DDS
 
 On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
 
@@ -80,23 +102,30 @@ sudo apt-get install socat
 ## Setup ardupilot for SITL with DDS
 
 Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command. Take note how three parameters need adjusting from default to use DDS.
-| Name | Description |
-| - | - |
-| DDS_ENABLE | Set to 1 to enable DDS |
-| SERIAL1_BAUD | The serial baud rate for DDS |
-| SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
+Run the simulator with the following command. If using UDP, the only parameter you need to set it `DDS_ENABLE`.
+
+| Name | Description | Default |
+| - | - | - |
+| DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
+| SERIAL1_BAUD | The serial baud rate for DDS | 57 |
+| SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
 ```bash
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --enable-dds
+sim_vehicle.py -w -v ArduPlane --console -DG --enable-dds
 
-# Set params
-param set DDS_ENABLE 1
+# Only set this for Serial, which means 115200 baud
 param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
 ```
+
+DDS is currently enabled by default, if it's part of the build. To disable it, run the following and reboot the simulator.
+```
+param set DDS_ENABLE 0
+REBOOT
+```
+
 ## Setup ROS 2 and micro-ROS
 
 Follow the steps to use the microROS Agent
@@ -125,11 +154,27 @@ Until this [PR](https://github.com/micro-ROS/micro-ROS.github.io/pull/401) is me
 ## Using the ROS2 CLI to Read Ardupilot Data
 
 After your setups are complete, do the following:
-
 - Source the ros2 installation
   ```bash
   source /opt/ros/humble/setup.bash
   ```
+
+Next, follow the associated section for your chosen transport, and finally you can use the ROS 2 CLI.
+
+### UDP (recommended for SITL)
+
+- Run the microROS agent
+  ```bash
+  cd ardupilot/libraries/AP_DDS
+  ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019 -r dds_xrce_profile.xml
+  ```
+- Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
+  ```bash
+  sim_vehicle.py -v ArduPlane -DG --console --enable-dds
+  ```
+
+### Serial
+
 - Start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
   ```bash
   socat -d -d pty,raw,echo=0 pty,raw,echo=0
@@ -140,12 +185,17 @@ After your setups are complete, do the following:
 - Run the microROS agent
   ```bash
   cd ardupilot/libraries/AP_DDS
-  ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_xrce_profile.xml # (assuming we are using tty/pts/2 for DDS Application)
+  # assuming we are using tty/pts/2 for DDS Application
+  ros2 run micro_ros_agent micro_ros_agent serial -b 115200  -r dds_xrce_profile.xml -D /dev/pts/2
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```bash
-  sim_vehicle.py -v ArduPlane -D --console --enable-dds -A "--uartC=uart:/dev/pts/1" # (assuming we are using /dev/pts/1 for Ardupilot SITL)
+  # assuming we are using /dev/pts/1 for Ardupilot SITL
+  sim_vehicle.py -v ArduPlane -DG --console --enable-dds -A "--uartC=uart:/dev/pts/1"
   ```
+
+## Use ROS 2 CLI
+
 - You should be able to see the agent here and view the data output.
   ```bash
   $ ros2 node list
@@ -165,15 +215,20 @@ After your setups are complete, do the following:
   * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
-
+  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
+  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
 
   $ ros2 topic hz /ap/time
   average rate: 50.115
           min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-  $ ros2 topic echo /ap/time 
+  $ ros2 topic echo /ap/time
   sec: 1678668735
   nanosec: 729410000
+
+  $ ros2 service list
+  /arm_motors
   ---
   ```
 
@@ -181,16 +236,43 @@ After your setups are complete, do the following:
   ```console
   ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
   ```
-  In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
+  In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials).
 
+## Using ROS 2 services (with Integration Services)
 
+### Prerequisites
+- Install and setup [Micro-XRCE Agent](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-agent-standalone)
+- Install and setup [Integration Services](https://integration-service.docs.eprosima.com/en/latest/installation_manual/installation.html) (it would be good to have a separate workspace for this)
+  - Get System Handles for [ROS 2](https://github.com/eProsima/ROS2-SH)
+  - Get System Handles for [Fast-DDS](https://github.com/eProsima/FastDDS-SH)
+- Once the above-mentioned System Handles have been cloned, build the Integration Services with the following command : 
+`colcon build --cmake-args -DMIX_ROS_PACKAGES="example_interfaces ardupilot_msgs"`
+
+### Setup
+- The necessary ROS 2 messages and service defintions (especially for the Arming/Disarming Services) are already defined in the `ardupilot_msgs` folder in the `Tools` directory.
+
+### Terminal 1 (XRCE Agent)
+- Move to the **AP_DDS** folder and run the XRCE Agent as follows `MicroXRCEAgent udp4 -p 2019 -r dds_xrce_profile.xml`
+
+### Terminal 2 (Integration Service)
+- Source ROS 2 installation
+- Source Integration Service installation
+- Move to the **AP_DDS** folder and run the following command `integration-service Is-Config/Arm_Motors_DDS_IS_config.yaml`
+
+### Terminal 3 (Ardupilot)
+- Make sure you have successfully setup Ardupilot and the `DDS_ENABLE` param is set to 1
+- Run SITL with the following command `sim_vehicle.py -v ArduPlane -DG --console --enable-dds`
+
+### Terminal 4 (ROS 2 Client)
+- Run the following command : `ros2 service call /arm_motors ardupilot_msgs/srv/ArmMotors "{arm: True}"`
+ 
 ## Contributing to AP_DDS library
 ### Adding DDS messages to Ardupilot
 
 Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions.
 
-Over time, these restrictions will ideally go away. 
+Over time, these restrictions will ideally go away.
 
 To get a new IDL file from ROS2, follow this process:
 ```console
@@ -202,7 +284,7 @@ find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
 mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
 cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
-# Build the code again with the `--enable-dds` flag as described above 
+# Build the code again with the `--enable-dds` flag as described above
 ```
 
 ### Development Requirements
@@ -214,7 +296,7 @@ See [Tools/CodeStyle/ardupilot-astyle.sh](../../Tools/CodeStyle/ardupilot-astyle
 ./Tools/CodeStyle/ardupilot-astyle.sh libraries/AP_DDS/*.h libraries/AP_DDS/*.cpp
 ```
 
-Pre-commit is used for other things like formatting python and XML code. 
+Pre-commit is used for other things like formatting python and XML code.
 This will run the tools automatically when you commit. If there are changes, just add them back your staging index and commit again.
 
 1. Install [pre-commit](https://pre-commit.com/#installation) python package.

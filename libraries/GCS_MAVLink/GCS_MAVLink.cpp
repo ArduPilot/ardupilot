@@ -56,6 +56,22 @@ GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t c
     return gcs().chan(channel);
 }
 
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_buffer();
+}
+
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_status();
+}
+
 // set a channel as private. Private channels get sent heartbeats, but
 // don't get broadcast packets or forwarded packets
 void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)

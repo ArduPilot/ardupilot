@@ -1,5 +1,92 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.4.0-beta5 12-Aug-2023
+Changes from 4.4.0-beta4
+1) Autopilots specific changes
+    - SIYI N7 support
+2) Bug fixes
+    - DroneCAN airspeed sensor fix to handle missing packets
+    - DroneCAN GPS RTK injection fix
+    - Notch filter gyro glitch caused by race condition fixed
+------------------------------------------------------------------
+Rover 4.4.0-beta4 27-July-2023
+Changes from 4.4.0-beta3
+1) Autopilots specific changes
+    - Diatone-Mamba-MK4-H743v2 uses SPL06 baro (was DPS280)
+    - DMA for I2C disabled on F7 and H7 boards
+    - Foxeer H743v1 default serial protocol config fixes
+    - HeeWing-F405 and F405v2 support
+    - iFlight BlitzF7 support
+2) Rover specific enhancements
+    - QuikTune Lua script
+    - Circle mode safety improvements including handling when CIRC_SPEED set too high
+    - Velocity controller I-term build-up avoided when steering reaches limits
+3) Bug fixes
+    - BLHeli returns battery status requested via MSP (avoids hang when using esc-configurator)
+    - CRSFv3 rescans at baudrates to avoid RX loss
+    - EK3_ABIAS_P_NSE param range fix
+    - Scripting restart memory corruption bug fixed
+    - Siyi A8/ZR10 driver fix to avoid crash if serial port not configured
+------------------------------------------------------------------
+Rover 4.4.0-beta3 03-July-2023
+Changes from 4.4.0-beta2
+1) Autopilots specific changes
+    - Holybro KakuteH7-Wing support
+    - JFB100 external watchdog GPIO support added
+    - Pixhawk1-bdshot support
+    - Pixhawk6X-bdshot support
+    - SpeedyBeeF4 loses bdshot support
+2) Device drivers
+    - added LP5562 I2C LED driver
+    - added IS31FL3195 LED driver
+3) Circle mode accuracy improvement
+4) Camera and Gimbal related changes
+    - DO_SET_ROI_NONE command support added
+5) Bug fixes
+    - ADSB sensor loss of transceiver message less spammy 
+    - EKF vertical velocity reset fixed on loss of GPS
+    - GPS pre-arm failure message clarified
+    - SERVOx_PROTOCOL "SToRM32 Gimbal Serial" value renamed to "Gimbal" because also used by Siyi
+    - SERIALx_OPTION "Swap" renamed to "SwapTXRX" for clarity
+    - SBF GPS ellipsoid height fixed
+    - Ublox M10S GPS auto configuration fixed
+------------------------------------------------------------------
+Rover 4.4.0-beta2 05-Jun-2023
+Changes from 4.4.0-beta1
+1) Autopilots specific changes
+    - FlywooF745 update to motor pin output mapping and baro
+    - FoxeerH743 support
+    - JFB100 support
+    - Mamba-F405v2 supports ICM42688
+    - Matek-F405-TE/VTOL support
+    - Matek-H743 IMU SPI slowed to 1Mhz to avoid init issues
+    - SpeedyBee-405-Wing support
+2) Rover specific changes
+    - Circle mode and Auto mode LOITER_TURNS support
+    - Dock mode added to INITIAL_MODE and MODE1 parameter list
+3) AHRS/EKF related fixes and Enhancements
+    - EKF allocation failure handled to avoid watchdog
+    - EKF3 accel bias calculation fix and tuning for greater robustness
+    - Airspeed sensor remains enabled during dead-reckoning (few copters have airspeed sensors)
+    - Wind speed estimates updates reduced while dead-reckoning
+4) Other Enhancements
+    - Attitude control slew limits always calculated (helps tuning reporting and analysis)
+    - INA228 and INA238 I2C battery monitor support
+    - LOG_DISARMED=3 logs while disarmed but discards log if never eventually armed
+    - LOG_DARM_RATEMAX reduces logging while disarmed
+    - Serial LEDs threading enhancement to support longer lengths without dshot interference
+4) Bug fixes
+    - Analog battery monitor2 current parameter default fixed
+    - AutoTune fix for loading Yaw Rate D gains
+    - BRD_SAFETYOPTION parameter documentation fix (ActiveForSafetyEnable and Disable were reversed)
+    - Compassmot fix to protect against bad gyro biases from GSF yaw
+    - ICE engine fix for starting after reaching a specified altitude
+    - LED thread locking fix to avoid watchdog
+    - Logging rotation on disarm disabled if Replay logging active (avoids gaps in logs)
+    - RC input on IOMCU bug fix (RC might not be regained if lost)
+    - Serial passthrough fixed
+5) Custom build server fix to which features are included/excluded
+------------------------------------------------------------------
 Rover 4.4.0-beta1 19-Apr-2023
 Changes from 4.3.0-beta12
 1) New autopilots supported
@@ -166,6 +253,24 @@ Changes from 4.3.0-beta12
     - SITL parameter definitions added (some, not all)
     - Webots 2023a simulator support
     - XPlane support for wider range of aircraft
+------------------------------------------------------------------
+Rover 4.3.0-beta14 12-Aug-2023
+Changes from 4.3.0-beta13
+1) Bug fixes
+    - DroneCAN GPS RTK injection fix
+    - INAxxx battery monitors allow for battery reset remaining
+    - Notch filter gyro glitch caused by race condition fixed
+    - Scripting restart memory corruption bug fixed
+------------------------------------------------------------------
+Rover 4.3.0-beta13 27-Mar-2023
+Changes from 4.3.0-beta12
+1) Bug fixes
+    a) EKF3 accel bias calculations bug fix
+    b) EKF3 accel bias process noise adjusted for greater robustness
+    c) GSF yaw numerical stability fix caused by compassmot
+    d) INS batch sampler fix to avoid watchdog if INS_LOG_BAT_CNT changed without rebooting
+    e) Memory corruption bug in the STM32H757 (very rare)
+    f) RC input on IOMCU bug fix (RC might not be regained if lost)
 ------------------------------------------------------------------
 Rover 4.3.0-beta11/beta12 27-Mar-2023
 Changes from 4.3.0-beta10

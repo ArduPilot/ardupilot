@@ -42,8 +42,9 @@ extern const AP_HAL::HAL& hal;
 #define REG_238_MANUFACT_ID   0x3e
 #define REG_238_DEVICE_ID     0x3f
 
-// this should become a parameter in future
-#define MAX_AMPS 90.0
+#ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
+#define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
+#endif
 
 #ifndef HAL_BATTMON_INA2XX_BUS
 #define HAL_BATTMON_INA2XX_BUS 0
@@ -73,6 +74,15 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, i2c_address, HAL_BATTMON_INA2XX_ADDR),
 
+    // @Param: MAX_AMPS
+    // @DisplayName: Battery monitor max current
+    // @Description: This controls the maximum current the INS2XX sensor will work with.
+    // @Range: 1 400
+    // @Units: A
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("MAX_AMPS", 27, AP_BattMonitor_INA2XX, max_amps, DEFAULT_BATTMON_INA2XX_MAX_AMPS),
+    
     AP_GROUPEND
 };
 
@@ -105,7 +115,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         // configure for MAX_AMPS
         const uint16_t conf = (0x2<<9) | (0x5<<6) | (0x5<<3) | 0x7; // 2ms conv time, 16x sampling
         const float rShunt = 0.0005;
-        current_LSB = MAX_AMPS / 32768.0;
+        current_LSB = max_amps / 32768.0;
         voltage_LSB = 0.00125; // 1.25mV/bit
         const uint16_t cal = uint16_t(0.00512 / (current_LSB * rShunt));
         if (write_word(REG_226_CONFIG, REG_226_CONFIG_RESET) && // reset
@@ -121,7 +131,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         // configure for MAX_AMPS
         voltage_LSB = 195.3125e-6; // 195.3125 uV/LSB
         const float rShunt = 0.0005;
-        current_LSB = MAX_AMPS / (1<<19);
+        current_LSB = max_amps / (1<<19);
         const uint16_t shunt_cal = uint16_t(13107.2e6 * current_LSB * rShunt) & 0x7FFF;
         if (write_word(REG_228_CONFIG, REG_228_CONFIG_RESET) && // reset
             write_word(REG_228_CONFIG, 0) &&
@@ -136,7 +146,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         // configure for MAX_AMPS
         voltage_LSB = 3.125e-3; // 3.125mV/LSB
         const float rShunt = 0.0005;
-        current_LSB = MAX_AMPS / (1<<15);
+        current_LSB = max_amps / (1<<15);
         const uint16_t shunt_cal = uint16_t(819.2e6 * current_LSB * rShunt) & 0x7FFF;
         if (write_word(REG_238_CONFIG, REG_238_CONFIG_RESET) && // reset
             write_word(REG_238_CONFIG, 0) &&

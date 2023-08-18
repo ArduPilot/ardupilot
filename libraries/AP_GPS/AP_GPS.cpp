@@ -470,8 +470,10 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     }
     _last_instance_swap_ms = 0;
 
+#if defined(GPS_BLENDED_INSTANCE)
     // Initialise class variables used to do GPS blending
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
+#endif
 
     // prep the state instance fields
     for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
@@ -491,11 +493,12 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
 // GPS solution is treated as an additional sensor.
 uint8_t AP_GPS::num_sensors(void) const
 {
-    if (!_output_is_blended) {
-        return num_instances;
-    } else {
+#if defined(GPS_BLENDED_INSTANCE)
+    if (_output_is_blended) {
         return num_instances+1;
     }
+#endif
+    return num_instances;
 }
 
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
@@ -763,7 +766,14 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             dstate->current_baud = 0;
         }
         uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
+        uint16_t rx_size=0, tx_size=0;
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            tx_size = 2048;
+        }
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+            rx_size = 2048;
+        }
+        _port[instance]->begin(baudrate, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
@@ -1284,6 +1294,7 @@ void AP_GPS::update_primary(void)
 }
 #endif  // GPS_MAX_RECEIVERS > 1
 
+#if HAL_GCS_ENABLED
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
@@ -1321,6 +1332,7 @@ void AP_GPS::handle_msg(const mavlink_message_t &msg)
     }
     }
 }
+#endif
 
 #if HAL_MSP_GPS_ENABLED
 void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
@@ -1486,6 +1498,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 }
 #endif // GPS_MAX_RECEIVERS
 
+#if HAL_GCS_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
@@ -1495,6 +1508,7 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
         drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
+#endif
 
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
@@ -1535,11 +1549,13 @@ bool AP_GPS::all_consistent(float &distance) const
     return (distance < 50);
 }
 
+#if defined(GPS_BLENDED_INSTANCE)
 // pre-arm check of GPS blending.  True means healthy or that blending is not being used
 bool AP_GPS::blend_health_check() const
 {
     return (_blend_health_counter < 50);
 }
+#endif
 
 /*
    re-assemble fragmented RTCM data
@@ -1584,6 +1600,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         rtcm_buffer->fragment_count = 0;
+        rtcm_stats.fragments_discarded += rtcm_buffer->fragments_received;
         rtcm_buffer->fragments_received = 0;
     }
 
@@ -1612,6 +1629,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     if (rtcm_buffer->fragment_count != 0 &&
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
+        rtcm_stats.fragments_used += rtcm_buffer->fragments_received;
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
         rtcm_buffer->fragment_count = 0;
         rtcm_buffer->fragments_received = 0;
@@ -2095,13 +2113,11 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         return false;
     }
 
-#ifdef HAL_BUILD_AP_PERIPH
+#ifndef HAL_BUILD_AP_PERIPH
     /*
       on AP_Periph handling of timing is done by the flight controller
       receiving the DroneCAN messages
      */
-    return drivers[instance] != nullptr && drivers[instance]->is_healthy();
-#else
     /*
       allow two lost frames before declaring the GPS unhealthy, but
       require the average frame rate to be close to 5Hz. We allow for
@@ -2114,16 +2130,19 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
+    if (!delay_ok) {
+        return false;
+    }
+#endif // HAL_BUILD_AP_PERIPH
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
-        return delay_ok && blend_health_check();
+        return blend_health_check();
     }
 #endif
 
-    return delay_ok && drivers[instance] != nullptr &&
+    return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
-#endif // HAL_BUILD_AP_PERIPH
 }
 
 bool AP_GPS::prepare_for_arming(void) {
@@ -2252,6 +2271,8 @@ void AP_GPS::Write_GPS(uint8_t i)
         sample_ms     : last_message_time_ms(i),
         delta_ms      : last_message_delta_time_ms(i),
         undulation    : undulation,
+        rtcm_fragments_used: rtcm_stats.fragments_used,
+        rtcm_fragments_discarded: rtcm_stats.fragments_discarded
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }

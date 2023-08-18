@@ -19,16 +19,22 @@
  */
 #pragma once
 
-#include "AP_Mount.h"
+#include "AP_Mount_config.h"
+
 #if HAL_MOUNT_ENABLED
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Camera/AP_Camera_shareddefs.h>
+#include "AP_Mount.h"
 
 class AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Backend(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
         _params(params),
         _instance(instance)
@@ -36,6 +42,9 @@ public:
 
     // init - performs any required initialisation for this instance
     virtual void init();
+
+    // set device id of this instance, for MNTx_DEVID parameter
+    void set_dev_id(uint32_t id);
 
     // update mount position - should be called periodically
     virtual void update() = 0;
@@ -124,11 +133,18 @@ public:
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
 
+    // get target rate in deg/sec. returns true on success
+    bool get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+
+    // get target angle in deg. returns true on success
+    bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+
     // accessors for scripting backends
-    virtual bool get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame) { return false; }
-    virtual bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame) { return false; }
     virtual bool get_location_target(Location &target_loc) { return false; }
     virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
+
+    // write mount log packet
+    void write_log(uint64_t timestamp_us);
 
     //
     // camera controls for gimbals that include a camera
@@ -146,7 +162,21 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
+
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
+
+    // set camera lens as a value from 0 to 5
+    virtual bool set_lens(uint8_t lens) { return false; }
+
+    // send camera information message to GCS
+    virtual void send_camera_information(mavlink_channel_t chan) const {}
+
+    // send camera settings message to GCS
+    virtual void send_camera_settings(mavlink_channel_t chan) const {}
 
 protected:
 
@@ -155,12 +185,22 @@ protected:
         RATE,
     };
 
-    // structure for a single angle or rate target
-    struct MountTarget {
+    // class for a single angle or rate target
+    class MountTarget {
+    public:
         float roll;
         float pitch;
         float yaw;
         bool yaw_is_ef;
+
+        // return body-frame yaw angle from a mount target (in radians)
+        float get_bf_yaw() const;
+
+        // return earth-frame yaw angle from a mount target (in radians)
+        float get_ef_yaw() const;
+
+        // set roll, pitch, yaw and yaw_is_ef from Vector3f
+        void set(const Vector3f& rpy, bool yaw_is_ef_in);
     };
 
     // returns true if user has configured a valid yaw angle range
@@ -173,13 +213,9 @@ protected:
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
 
-    // get rate targets (in rad/s) from pilot RC
-    // returns true on success (RC is providing rate targets), false on failure (RC is providing angle targets)
-    bool get_rc_rate_target(MountTarget& rate_rads) const WARN_IF_UNUSED;
-
-    // get angle targets (in radians) from pilot RC
-    // returns true on success (RC is providing angle targets), false on failure (RC is providing rate targets)
-    bool get_rc_angle_target(MountTarget& angle_rad) const WARN_IF_UNUSED;
+    // get angle or rate targets from pilot RC
+    // target_type will be either ANGLE or RATE, rpy will be the target angle in deg or rate in deg/s
+    void get_rc_target(MountTargetType& target_type, MountTarget& rpy) const;
 
     // get angle targets (in radians) to a Location
     // returns true on success, false on failure
@@ -196,12 +232,6 @@ protected:
     // get angle targets (in radians) to a vehicle with sysid of _target_sysid
     // returns true on success, false on failure
     bool get_angle_target_to_sysid(MountTarget& angle_rad) const WARN_IF_UNUSED;
-
-    // return body-frame yaw angle from a mount target
-    float get_bf_yaw_angle(const MountTarget& angle_rad) const;
-
-    // return earth-frame yaw angle from a mount target
-    float get_ef_yaw_angle(const MountTarget& angle_rad) const;
 
     // update angle targets using a given rate target
     // the resulting angle_rad yaw frame will match the rate_rad yaw frame
@@ -226,7 +256,7 @@ protected:
         MountTargetType target_type;// MAVLink targeting mode's current target type (e.g. angle or rate)
         MountTarget angle_rad;      // angle target in radians
         MountTarget rate_rads;      // rate target in rad/s
-    } mavt_target;
+    } mnt_target;
 
     Location _roi_target;           // roi target location
     bool _roi_target_set;           // true if the roi target has been set

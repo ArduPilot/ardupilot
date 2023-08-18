@@ -9,6 +9,7 @@
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -396,7 +397,12 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         set_in_landing_sequence_flag(false);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+    if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+    }
+
     switch (cmd.id) {
     case MAV_CMD_DO_AUX_FUNCTION:
         return start_command_do_aux_function(cmd);
@@ -404,11 +410,13 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
 #endif
+#if AP_SERVORELAYEVENTS_ENABLED
     case MAV_CMD_DO_SET_SERVO:
     case MAV_CMD_DO_SET_RELAY:
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_REPEAT_RELAY:
         return start_command_do_servorelayevents(cmd);
+#endif
 #if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:

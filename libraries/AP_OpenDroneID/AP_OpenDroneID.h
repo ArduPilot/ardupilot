@@ -92,6 +92,12 @@ public:
 
     void set_arm_status(mavlink_open_drone_id_arm_status_t &status);
 
+    void set_basic_id();
+
+    void get_persistent_params(ExpandingString &str) const;
+
+    void load_UAS_ID_from_persistent_memory();
+
     // get singleton instance
     static AP_OpenDroneID *get_singleton()
     {
@@ -99,7 +105,7 @@ public:
     }
 private:
     static AP_OpenDroneID *_singleton;
-
+    bool _initialised;
     // parameters
     AP_Int8  _enable;
     AP_Float _baro_accuracy;    // Vertical accuracy of the barometer when installed
@@ -107,9 +113,15 @@ private:
     AP_Int8  _mav_port;
     AP_Int8  _can_driver;
 
+    char ua_type[3];
+    char id_type[3];
+    size_t id_len;
+    char id_str[21];
+
     enum Options : int16_t {
         EnforceArming     = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
+        LockUASIDOnFirstBasicIDRx = (1U << 2U),
     };
 
     // check if an option is set
@@ -185,6 +197,7 @@ private:
 
     // mask of what UAVCAN drivers need to send each packet
     const uint8_t dronecan_send_all = (1U<<HAL_MAX_CAN_PROTOCOL_DRIVERS)-1;
+    uint8_t driver_mask;
     uint8_t need_send_location;
     uint8_t need_send_basic_id;
     uint8_t need_send_system;

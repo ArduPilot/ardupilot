@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
-#include <time.h>
+#include <AP_Common/time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -205,47 +205,28 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
     return static_cast<uint32_t>(total_delay_ms);
 }
 
-
-/*
-  mktime replacement from Samba
- */
-time_t AP_RTC::mktime(const struct tm *t)
+// get date and time.  Returns true on success and fills in year, month, day, hour, min, sec and ms
+// year is the regular Gregorian year, month is 0~11, day is 1~31, hour is 0~23, minute is 0~59, second is 0~60 (1 leap second), ms is 0~999
+bool AP_RTC::get_date_and_time_utc(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const
 {
-    time_t epoch = 0;
-    int n;
-    int mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, y, m, i;
-    const unsigned MINUTE = 60;
-    const unsigned HOUR = 60*MINUTE;
-    const unsigned DAY = 24*HOUR;
-    const unsigned YEAR = 365*DAY;
-
-    if (t->tm_year < 70) {
-        return (time_t)-1;
+    // get local time of day in ms
+    uint64_t time_us = 0;
+    if (!get_utc_usec(time_us)) {
+        return false;
     }
-
-    n = t->tm_year + 1900 - 1;
-    epoch = (t->tm_year - 70) * YEAR +
-            ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
-
-    y = t->tm_year + 1900;
-    m = 0;
-
-    for (i = 0; i < t->tm_mon; i++) {
-        epoch += mon [m] * DAY;
-        if (m == 1 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
-            epoch += DAY;
-        }
-
-        if (++m > 11) {
-            m = 0;
-            y++;
-        }
+    time_t utc_sec = time_us / (1000U * 1000U);
+    struct tm* tm = gmtime(&utc_sec);
+    if (tm == nullptr) {
+        return false;
     }
-
-    epoch += (t->tm_mday - 1) * DAY;
-    epoch += t->tm_hour * HOUR + t->tm_min * MINUTE + t->tm_sec;
-
-    return epoch;
+    year = tm->tm_year+1900;    /* Year	- 1900.  */
+    month = tm->tm_mon;         /* Month.	[0-11] */
+    day = tm->tm_mday;          /* Day.		[1-31] */
+    hour = tm->tm_hour;         /* Hours.	[0-23] */
+    min = tm->tm_min;           /* Minutes.	[0-59] */
+    sec = tm->tm_sec;           /* Seconds.	[0-60] (1 leap second) */
+    ms = time_us / 1000U;       /* milliseconds [0-999] */
+    return true;
 }
 
 // singleton instance

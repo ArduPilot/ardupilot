@@ -16,6 +16,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -113,9 +114,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller) :
-        _relayEvents(relayEvents),
-        _rate_controller(rate_controller)
+AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
+    _rate_controller(rate_controller)
 {
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
@@ -846,7 +846,10 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     throttle = get_rate_controlled_throttle(function, throttle, dt);
 
     // set relay if necessary
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+        auto &_relayEvents { *AP::servorelayevents() };
+
         // find the output channel, if not found return
         const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
         if (out_chan == nullptr) {
@@ -878,6 +881,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         // invert the output to always have positive value calculated by calc_pwm
         throttle = reverse_multiplier * fabsf(throttle);
     }
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
     // output to servo channel
     switch (function) {

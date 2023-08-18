@@ -26,9 +26,6 @@ FLASH_RESERVE_START_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 define HAL_STORAGE_SIZE 32768
 
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5
@@ -322,9 +319,6 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 
 # don't share IOMCU DMA
@@ -353,3 +347,7 @@ define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
 # note that if firmware is build with --secure-bl then DFU is
 # disabled
 ENABLE_DFU_BOOT 1
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1

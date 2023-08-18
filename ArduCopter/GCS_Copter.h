@@ -28,9 +28,10 @@ public:
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
 
+    uint8_t sysid_this_mav() const override;
+
 protected:
 
-    uint8_t sysid_this_mav() const override;
 
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any

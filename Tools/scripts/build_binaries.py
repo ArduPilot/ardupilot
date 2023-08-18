@@ -538,8 +538,9 @@ is bob we will attempt to checkout bob-AVR'''
                                 self.mkpath(ddir)
                             self.addfwversion(ddir, vehicle)
                             features_filepath = os.path.join(ddir, "features.txt",)
-                            self.progress("Writing (%s)" % features_filepath)
-                            self.write_string_to_filepath(features_text, features_filepath)
+                            if features_text is not None:
+                                self.progress("Writing (%s)" % features_filepath)
+                                self.write_string_to_filepath(features_text, features_filepath)
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
@@ -550,8 +551,9 @@ is bob we will attempt to checkout bob-AVR'''
                         # exists as we re-use the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
-                        self.progress("Writing (%s)" % features_filepath)
-                        self.write_string_to_filepath(features_text, features_filepath)
+                        if features_text is not None:
+                            self.progress("Writing (%s)" % features_filepath)
+                            self.write_string_to_filepath(features_text, features_filepath)
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
@@ -565,7 +567,7 @@ is bob we will attempt to checkout bob-AVR'''
 
         self.checkout(vehicle, "latest")
 
-    def get_exception_stacktrace(self, e):
+    def _get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
             ret = "%s\n" % e
             ret += ''.join(traceback.format_exception(type(e),
@@ -575,6 +577,12 @@ is bob we will attempt to checkout bob-AVR'''
 
         # Python2:
         return traceback.format_exc(e)
+
+    def get_exception_stacktrace(self, e):
+        try:
+            return self._get_exception_stacktrace(e)
+        except Exception:
+            return "FAILED TO GET EXCEPTION STACKTRACE"
 
     def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
@@ -656,6 +664,7 @@ is bob we will attempt to checkout bob-AVR'''
         generator.run()
 
         generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
+        generator.write_features_json(os.path.join(self.binaries, "features.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")
@@ -758,7 +767,7 @@ if __name__ == '__main__':
     tags = cmd_opts.tags
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
-        tags = ["stable", "beta", "latest"]
+        tags = ["stable", "beta-4.3", "beta", "latest"]
 
     bb = build_binaries(tags)
     bb.run()

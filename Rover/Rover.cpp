@@ -96,7 +96,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_mode_switch,        7,    200,  57),
     SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_aux_all,           10,    200,  60),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300,  63),
+#if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
+#endif
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
 #endif
@@ -116,7 +118,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(fence_check,            10,    200,  84),
     SCHED_TASK(ekf_check,              10,    100,  87),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
-    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300,  93),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
@@ -203,6 +204,14 @@ bool Rover::set_steering_and_throttle(float steering, float throttle)
 
     // set steering and throttle
     mode_guided.set_steering_and_throttle(steering, throttle);
+    return true;
+}
+
+// get steering and throttle (-1 to +1) (for use by scripting)
+bool Rover::get_steering_and_throttle(float& steering, float& throttle)
+{
+    steering = g2.motors.get_steering() / 4500.0;
+    throttle = g2.motors.get_throttle() * 0.01;
     return true;
 }
 
@@ -420,6 +429,11 @@ void Rover::update_logging2(void)
         gyro_fft.write_log_messages();
 #endif
     }
+#if HAL_MOUNT_ENABLED
+    if (should_log(MASK_LOG_CAMERA)) {
+        camera_mount.write_log();
+    }
+#endif
 }
 
 

@@ -13,25 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RPM_Pin.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_PIN_ENABLED
 
-#include <AP_HAL/AP_HAL.h>
+#include "RPM_Pin.h"
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/GPIO.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
-
-/* 
-   open the sensor in constructor
-*/
-AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, instance, _state)
-{
-}
 
 /*
   handle interrupt on an instance
@@ -70,27 +64,26 @@ void AP_RPM_Pin::update(void)
                     AP_HAL::GPIO::INTERRUPT_RISING)) {
                 interrupt_attached = true;
             } else {
-                gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %d", last_pin);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %d", last_pin);
             }
         }
     }
 
     if (irq_state[state.instance].dt_count > 0) {
-        float dt_avg;
 
         // disable interrupts to prevent race with irq_handler
         void *irqstate = hal.scheduler->disable_interrupts_save();
-        dt_avg = irq_state[state.instance].dt_sum / irq_state[state.instance].dt_count;
+        const float dt_avg = static_cast<float>(irq_state[state.instance].dt_sum) / irq_state[state.instance].dt_count;
         irq_state[state.instance].dt_count = 0;
         irq_state[state.instance].dt_sum = 0;
         hal.scheduler->restore_interrupts(irqstate);
 
         const float scaling = ap_rpm._params[state.instance].scaling;
-        float maximum = ap_rpm._params[state.instance].maximum;
-        float minimum = ap_rpm._params[state.instance].minimum;
-        float quality = 0;
-        float rpm = scaling * (1.0e6 / dt_avg) * 60;
-        float filter_value = signal_quality_filter.get();
+        const float maximum = ap_rpm._params[state.instance].maximum;
+        const float minimum = ap_rpm._params[state.instance].minimum;
+        float quality;
+        const float rpm = scaling * (1.0e6 / dt_avg) * 60;
+        const float filter_value = signal_quality_filter.get();
 
         state.rate_rpm = signal_quality_filter.apply(rpm);
 

@@ -111,7 +111,8 @@ GRTAGS
 GTAGS
 *.apj
 .gdbinit
-/.vscode
+.vscode/*
+!.vscode/extensions.json
 /.history
 Parameters.html
 Parameters.md
@@ -125,6 +126,7 @@ parameters.edn
 LogMessages.html
 LogMessages.rst
 LogMessages.xml
+LogMessages.md
 # JetBrains IDE files
 .idea/*
 # CMake

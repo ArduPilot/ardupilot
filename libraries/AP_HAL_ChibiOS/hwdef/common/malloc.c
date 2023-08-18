@@ -39,6 +39,7 @@
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
 #define MEM_REGION_FLAG_AXI_BUS 4
+#define MEM_REGION_FLAG_ETH_SAFE 8
 
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
@@ -125,8 +126,16 @@ static void *malloc_flags(size_t size, uint32_t flags)
     if (size == 0) {
         return NULL;
     }
-    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS);
-    const uint8_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS | MEM_REGION_FLAG_ETH_SAFE);
+    size_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    if (flags & MEM_REGION_FLAG_ETH_SAFE) {
+        // alignment needs to same as size
+        alignment = size;
+        // also size needs to be power of 2, if not return NULL
+        if ((size & (size-1)) != 0) {
+            return NULL;
+        }
+    }
     void *p = NULL;
     uint8_t i;
 
@@ -157,6 +166,10 @@ static void *malloc_flags(size_t size, uint32_t flags)
         }
         if ((flags & MEM_REGION_FLAG_FAST) &&
             !(memory_regions[i].flags & MEM_REGION_FLAG_FAST)) {
+            continue;
+        }
+        if ((flags & MEM_REGION_FLAG_ETH_SAFE) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_ETH_SAFE)) {
             continue;
         }
         p = chHeapAllocAligned(&heaps[i], size, alignment);
@@ -372,6 +385,19 @@ void *malloc_axi_sram(size_t size)
 }
 
 /*
+  allocate memory for ethernet DMA
+*/
+void *malloc_eth_safe(size_t size)
+{
+#if defined(STM32H7)
+    return malloc_flags(size, MEM_REGION_FLAG_ETH_SAFE);
+#else
+    (void)size;
+    return NULL;
+#endif
+}
+
+/*
   allocate fast memory
  */
 void *malloc_fastmem(size_t size)
@@ -536,3 +562,57 @@ void* get_addr_mem_region_end_addr(void *addr)
     }
     return 0;
 }
+
+/*
+  alloction functions for newlib
+ */
+void *__wrap__calloc_r(void *rptr, size_t nmemb, size_t size)
+{
+    (void)rptr;
+    return calloc(nmemb, size);
+}
+
+void *__wrap__malloc_r(void *rptr, size_t size)
+{
+    (void)rptr;
+    // we want consistent zero memory
+    return calloc(1, size);
+}
+
+void __wrap__free_r(void *rptr, void *ptr)
+{
+    (void)rptr;
+    return free(ptr);
+}
+
+#ifdef USE_POSIX
+/*
+  allocation functions for FATFS
+ */
+void *ff_memalloc(unsigned msize)
+{
+    if (msize > 4096) {
+        // refuse large sizes. FATFS tries for 32k blocks for creating
+        // directories which ends up trying to allocate 64k with the
+        // DMA bouncebuffer, and this can cause filesystem operation
+        // failures. We want FATFS to limit itself to 4k blocks, which
+        // it does when the allocation of the larger size fails
+        return NULL;
+    }
+    // try to get DMA capable memory which results in less copying so
+    // faster access
+    void *ret = malloc_axi_sram(msize);
+    if (ret != NULL) {
+        return ret;
+    }
+    // fallback to any memory, which means we will use the
+    // preallocated bouncebuffer on systems where general purpose
+    // memory cannot be used for microSD access
+    return malloc(msize);
+}
+
+void ff_memfree(void* mblock)
+{
+    free(mblock);
+}
+#endif // USE_POSIX

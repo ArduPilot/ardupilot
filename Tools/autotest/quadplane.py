@@ -388,17 +388,20 @@ class AutoTestQuadPlane(AutoTest):
             break
         self.wait_disarmed()
 
-    def takeoff(self, height, mode):
+    def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        if mode == 'GUIDED':
+            self.user_takeoff(alt_min=height, timeout=timeout)
+            return
         self.set_rc(3, 1800)
         self.wait_altitude(height,
                            height+5,
                            relative=True,
-                           timeout=30)
+                           timeout=timeout)
         self.set_rc(3, 1500)
 
     def do_RTL(self):
@@ -894,6 +897,19 @@ class AutoTestQuadPlane(AutoTest):
         self.reset_SITL_commandline()
         self.context_pop()
 
+    def GUIDEDToAUTO(self):
+        '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.load_mission("mission.txt")
+        self.takeoff(30, mode='GUIDED')
+
+        # extra checks would go here
+        self.assert_not_receiving_message('CAMERA_FEEDBACK')
+
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(3)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=240)
+
     def Tailsitter(self):
         '''tailsitter test'''
         self.set_parameter('Q_FRAME_CLASS', 10)
@@ -1227,6 +1243,7 @@ class AutoTestQuadPlane(AutoTest):
             self.ICEngine,
             self.ICEngineMission,
             self.MidAirDisarmDisallowed,
+            self.GUIDEDToAUTO,
             self.BootInAUTO,
             self.Ship,
             self.MAV_CMD_NAV_LOITER_TO_ALT,

@@ -16,6 +16,10 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include "AP_Airspeed.h"
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -605,6 +609,14 @@ void AP_Airspeed::read(uint8_t i)
         return;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
+    /*
+      get the healthy state before we call get_pressure() as
+      get_pressure() overwrites the healthy state
+     */
+    bool prev_healthy = state[i].healthy;
+#endif
+
     float raw_pressure = get_pressure(i);
     float airspeed_pressure = raw_pressure - get_offset(i);
 
@@ -612,7 +624,6 @@ void AP_Airspeed::read(uint8_t i)
     state[i].corrected_pressure = airspeed_pressure;
 
 #ifndef HAL_BUILD_AP_PERIPH
-    bool prev_healthy = state[i].healthy;
     if (state[i].cal.start_ms != 0) {
         update_calibration(i, raw_pressure);
     }
@@ -921,3 +932,5 @@ AP_Airspeed *airspeed()
 }
 
 };
+
+#endif  // AP_AIRSPEED_ENABLED

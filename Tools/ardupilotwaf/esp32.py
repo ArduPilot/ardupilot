@@ -18,7 +18,8 @@ import pickle
 import subprocess
 
 def configure(cfg):
-
+    mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
+    target = "esp32s3" if mcu_esp32s3 else "esp32"
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
@@ -30,13 +31,13 @@ def configure(cfg):
 
     #define env and location for the cmake esp32 file
     env = cfg.env
-    env.AP_HAL_ESP32 = srcpath('libraries/AP_HAL_ESP32/targets/esp-idf')
+    env.AP_HAL_ESP32 = srcpath('libraries/AP_HAL_ESP32/targets/'+target+'/esp-idf')
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
 
     env.ESP_IDF_PREFIX_REL = 'esp-idf'
 
     prefix_node = bldnode.make_node(env.ESP_IDF_PREFIX_REL)
-
+    env.ESP32_TARGET = target
     env.BUILDROOT = bldpath('')
     env.SRCROOT = srcpath('')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
@@ -63,10 +64,11 @@ def pre_build(self):
     lib_vars['ARDUPILOT_CMD'] = self.cmd
     lib_vars['ARDUPILOT_LIB'] = self.bldnode.find_or_declare('lib/').abspath()
     lib_vars['ARDUPILOT_BIN'] = self.bldnode.find_or_declare('lib/bin').abspath()
+    target = self.env.ESP32_TARGET
     esp_idf = self.cmake(
             name='esp-idf',
             cmake_vars=lib_vars,
-            cmake_src='libraries/AP_HAL_ESP32/targets/esp-idf',
+            cmake_src='libraries/AP_HAL_ESP32/targets/'+target+'/esp-idf',
             cmake_bld='esp-idf_build',
             )
 

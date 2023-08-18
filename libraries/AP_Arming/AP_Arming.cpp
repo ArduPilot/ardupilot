@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param{Plane, Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and sends the minimum throttle PWM value to the throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS the motor will get THR_MIN when disarmed.
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will occur using either rudder stick arming (if enabled) or GCS command when all mandatory and ARMING_CHECK items are satisfied. Note, when setting this parameter to 0, a reboot is required to immediately arm the plane.
     // @Values: 0:Disabled,1:minimum PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require, float(Required::YES_MIN_PWM),
@@ -150,6 +150,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
+#endif
+
+#pragma GCC diagnostic push
+#if defined (__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
 #endif
 
 AP_Arming::AP_Arming()
@@ -326,6 +331,7 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+#if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t accel_count = ins.get_accel_count();
@@ -488,6 +494,7 @@ bool AP_Arming::ins_checks(bool report)
 
     return true;
 }
+#endif // AP_INERTIALSENSOR_ENABLED
 
 bool AP_Arming::compass_checks(bool report)
 {
@@ -611,10 +618,12 @@ bool AP_Arming::gps_checks(bool report)
                          (double)distance_m);
             return false;
         }
+#if defined(GPS_BLENDED_INSTANCE)
         if (!gps.blend_health_check()) {
             check_failed(ARMING_CHECK_GPS, report, "GPS blending unhealthy");
             return false;
         }
+#endif
 
         // check AHRS and GPS are within 10m of each other
         if (gps.num_sensors() > 0) {
@@ -635,7 +644,7 @@ bool AP_Arming::gps_checks(bool report)
         if (gps.first_unconfigured_gps(first_unconfigured)) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
-                         "GPS %d failing configuration checks",
+                         "GPS %d still configuring this GPS",
                          first_unconfigured + 1);
             if (report) {
                 gps.broadcast_first_configuration_failure_reason();
@@ -700,7 +709,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
     }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
-        if (!rc().arming_skip_checks_rpy()) {
+        if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const char *names[3] = {"Roll", "Pitch", "Yaw"};
             const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
             for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
@@ -1047,11 +1056,13 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+#if AP_RELAY_ENABLED
         auto *relay = AP::relay();
         if (relay && !relay->arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }
+#endif
 #if HAL_PARACHUTE_ENABLED
         auto *chute = AP::parachute();
         if (chute && !chute->arming_checks(sizeof(buffer), buffer)) {
@@ -1244,20 +1255,20 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_PARAM_ENABLED && OSD_ENABLED 
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
+#if OSD_ENABLED 
+    if (check_enabled(ARMING_CHECK_OSD)) {
+        // if no OSD then pass
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
             return true;
         }
-
-        // check camera is ready
+        // do osd checks for configuration
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
             return false;
         }
-    }
+   }
 #endif
     return true;
 }
@@ -1493,7 +1504,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  heater_min_temperature_checks(report)
 #endif
         &  barometer_checks(report)
+#if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)
+#endif
         &  compass_checks(report)
         &  gps_checks(report)
         &  battery_checks(report)
@@ -1537,16 +1550,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
-
-#if AP_FENCE_ENABLED
-    AC_Fence *fence = AP::fence();
-    if (fence != nullptr) {
-        // If a fence is set to auto-enable, turn on the fence
-        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
-            fence->enable(true);
-        }
-    }
-#endif
 
     // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
@@ -1621,6 +1624,19 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         auto *terrain = AP::terrain();
         if (terrain != nullptr) {
             terrain->set_reference_location();
+        }
+    }
+#endif
+
+#if AP_FENCE_ENABLED
+    if (armed) {
+        auto *fence = AP::fence();
+        if (fence != nullptr) {
+            // If a fence is set to auto-enable, turn on the fence
+            if (fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+                fence->enable(true);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence: auto-enabled");
+            }
         }
     }
 #endif
@@ -1796,6 +1812,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::GCS_FAILSAFE_HOLDFAILED:
         case Method::PILOT_INPUT_FAILSAFE:
         case Method::DEADRECKON_FAILSAFE:
+        case Method::BLACKBOX:
             // keep logging for longer if disarmed for a bad reason
             AP::logger().set_long_log_persist(true);
             return;
@@ -1815,6 +1832,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::TOYMODELANDTHROTTLE:
         case Method::TOYMODELANDFORCE:
         case Method::LANDING:
+        case Method::DDS:
         case Method::UNKNOWN:
             AP::logger().set_long_log_persist(false);
             return;
@@ -1824,7 +1842,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*
- * Get the AP_InertialSensor singleton
+ * Get the AP_Arming singleton
  */
 AP_Arming *AP_Arming::get_singleton()
 {
@@ -1839,3 +1857,5 @@ AP_Arming &arming()
 }
 
 };
+
+#pragma GCC diagnostic pop

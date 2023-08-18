@@ -66,6 +66,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_EMPTY           6004
 #define HAL_BOARD_SUBTYPE_ESP32_TOMTE76         6005
 #define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
+#define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -168,6 +169,10 @@
 #define HAL_WITH_IO_MCU 0
 #endif
 
+#ifndef HAL_WITH_IO_MCU_DSHOT
+#define HAL_WITH_IO_MCU_DSHOT 0
+#endif
+
 // this is used as a general mechanism to make a 'small' build by
 // dropping little used features. We use this to allow us to keep
 // FMUv2 going for as long as possible
@@ -222,10 +227,6 @@
 
 #ifndef AP_TEST_DRONECAN_DRIVERS
 #define AP_TEST_DRONECAN_DRIVERS 0
-#endif
-
-#ifndef AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 1
 #endif
 
 #ifdef HAVE_LIBDL
@@ -286,6 +287,22 @@
 #define HAL_DSHOT_ALARM_ENABLED 0
 #endif
 
+#ifndef HAL_DSHOT_ENABLED
+#define HAL_DSHOT_ENABLED 1
+#endif
+
+#ifndef HAL_SERIALLED_ENABLED
+#define HAL_SERIALLED_ENABLED HAL_DSHOT_ENABLED
+#endif
+
+#ifndef HAL_SERIAL_ESC_COMM_ENABLED
+#ifdef DISABLE_SERIAL_ESC_COMM
+#define HAL_SERIAL_ESC_COMM_ENABLED 0
+#else
+#define HAL_SERIAL_ESC_COMM_ENABLED 1
+#endif
+#endif
+
 #ifndef HAL_HNF_MAX_FILTERS
 // On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
@@ -314,6 +331,7 @@
 #ifndef HAL_USE_QUADSPI
 #define HAL_USE_QUADSPI 0
 #endif
+
 #ifndef HAL_USE_OCTOSPI
 #define HAL_USE_OCTOSPI 0
 #endif
@@ -335,9 +353,6 @@
 #endif
 
 
-// sanity checks for the configuration.  This can't test everything as
-// the libraries can do their own definitions - but we can catch some
-// things:
-#if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#error "2MB board with minimize features?!"
+#ifndef HAL_ENABLE_SENDING_STATS
+#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif

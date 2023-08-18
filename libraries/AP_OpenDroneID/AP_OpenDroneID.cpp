@@ -38,6 +38,9 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
+#include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -64,7 +67,7 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: OpenDroneID options
     // @Description: Options for OpenDroneID subsystem
-    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition
+    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx
     AP_GROUPINFO("OPTIONS", 4, AP_OpenDroneID, _options, 0),
 
     // @Param: BARO_ACC
@@ -76,6 +79,13 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
 
     AP_GROUPEND
 };
+
+#if defined(OPENDRONEID_UA_TYPE)
+// ensure the type is within the allowed range
+#if OPENDRONEID_UA_TYPE < 0 || OPENDRONEID_UA_TYPE > 15
+#error "OPENDRONEID_UA_TYPE must be between 0 and 15"
+#endif
+#endif
 
 // constructor
 AP_OpenDroneID::AP_OpenDroneID()
@@ -95,7 +105,57 @@ void AP_OpenDroneID::init()
         return;
     }
 
+    load_UAS_ID_from_persistent_memory();
     _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
+    _initialised = true;
+}
+
+void AP_OpenDroneID::load_UAS_ID_from_persistent_memory()
+{
+    id_len = sizeof(id_str);
+    size_t id_type_len = sizeof(id_type);
+    size_t ua_type_len = sizeof(ua_type);
+    if (hal.util->get_persistent_param_by_name("DID_UAS_ID", id_str, id_len) &&
+        hal.util->get_persistent_param_by_name("DID_UAS_ID_TYPE", id_type, id_type_len) &&
+        hal.util->get_persistent_param_by_name("DID_UA_TYPE", ua_type, ua_type_len)) {
+        if (id_len && id_type_len && ua_type_len) {
+            _options.set_and_save(_options.get() & ~LockUASIDOnFirstBasicIDRx);
+            _options.notify();
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OpenDroneID: Locked UAS_ID: %s", id_str);
+        }
+    } else {
+        id_len = 0;
+    }
+}
+
+void AP_OpenDroneID::set_basic_id() {
+    if (pkt_basic_id.id_type != MAV_ODID_ID_TYPE_NONE) {
+        return;
+    }
+    if (id_len == 0) {
+        load_UAS_ID_from_persistent_memory();
+    }
+    if (id_len > 0) {
+        // prepare basic id pkt
+        uint8_t val = gcs().sysid_this_mav();
+        pkt_basic_id.target_system = val;
+        pkt_basic_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
+        pkt_basic_id.id_type = atoi(id_type);
+        pkt_basic_id.ua_type = atoi(ua_type);
+        char buffer[21];
+        snprintf(buffer, sizeof(buffer), "%s", id_str);
+        memcpy(pkt_basic_id.uas_id, buffer, sizeof(pkt_basic_id.uas_id));
+    }
+}
+
+void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
+{
+    if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
+        && (_options & LockUASIDOnFirstBasicIDRx)
+        && id_len == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", pkt_basic_id.uas_id);
+        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", pkt_basic_id.uas_id, pkt_basic_id.id_type, pkt_basic_id.ua_type);
+    }
 }
 
 // Perform the pre-arm checks and prevent arming if they are not satisifed
@@ -147,6 +207,16 @@ void AP_OpenDroneID::update()
         return;
     }
 
+    if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
+        && (_options & LockUASIDOnFirstBasicIDRx)
+        && id_len == 0) {
+        hal.util->flash_bootloader();
+        // reset the basic id on next set_basic_id call
+        pkt_basic_id.id_type = MAV_ODID_ID_TYPE_NONE;
+    }
+
+    set_basic_id();
+
     const bool armed = hal.util->get_soft_armed();
     if (armed && !_was_armed) {
         // use arm location as takeoff location
@@ -156,6 +226,20 @@ void AP_OpenDroneID::update()
 
     send_dynamic_out();
     send_static_out();
+#if HAL_ENABLE_DRONECAN_DRIVERS
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_DroneCAN *dronecan = AP_DroneCAN::get_dronecan(i);
+        if (dronecan == nullptr) {
+            continue;
+        }
+        if (dronecan->get_driver_index()+1 != _can_driver) {
+            continue;
+        }
+        // send messages
+        dronecan_send(dronecan);
+    }
+#endif
 }
 
 // local payload space check which treats invalid channel as having space
@@ -655,6 +739,9 @@ float AP_OpenDroneID::create_location_timestamp(float timestamp) const
 // handle a message from the GCS
 void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
+    if (!_initialised) {
+        return;
+    }
     WITH_SEMAPHORE(_sem);
 
     switch (msg.msgid) {
@@ -674,7 +761,9 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
-        mavlink_msg_open_drone_id_basic_id_decode(&msg, &pkt_basic_id);
+        if (id_len == 0) {
+            mavlink_msg_open_drone_id_basic_id_decode(&msg, &pkt_basic_id);
+        }
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);

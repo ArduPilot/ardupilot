@@ -366,7 +366,7 @@ float fixedwing_turn_rate(float bank_angle_deg, float airspeed);
 float degF_to_Kelvin(float temp_f);
 
 /*
-  conversion functions to prevent undefined behaviour
+  constraining conversion functions to prevent undefined behaviour
  */
 int16_t float_to_int16(const float v);
 uint16_t float_to_uint16(const float v);
@@ -375,3 +375,17 @@ uint32_t float_to_uint32(const float v);
 uint32_t double_to_uint32(const double v);
 int32_t double_to_int32(const double v);
 
+/*
+  Convert from float to int32_t without breaking Wstrict-aliasing due to type punning
+*/
+int32_t float_to_int32_le(const float& value) WARN_IF_UNUSED;
+
+/*
+  Convert from uint32_t to float without breaking Wstrict-aliasing due to type punning
+*/
+float int32_to_float_le(const uint32_t& value) WARN_IF_UNUSED;
+
+/*
+  Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
+*/
+double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;

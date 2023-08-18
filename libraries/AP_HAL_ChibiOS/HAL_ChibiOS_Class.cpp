@@ -267,7 +267,7 @@ static void main_loop()
 #if !defined(DISABLE_WATCHDOG)
 #ifdef IOMCU_FW
     stm32_watchdog_init();
-#else
+#elif !defined(HAL_BOOTLOADER_BUILD)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();

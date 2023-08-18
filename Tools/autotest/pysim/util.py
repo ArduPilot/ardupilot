@@ -400,6 +400,34 @@ class FakeMacOSXSpawn(object):
         return True
 
 
+class PSpawnStdPrettyPrinter(object):
+    '''a fake filehandle-like object which prefixes a string to all lines
+    before printing to stdout/stderr.  To be used to pass to
+    pexpect.spawn's logfile argument
+    '''
+    def __init__(self, output=sys.stdout, prefix="stdout"):
+        self.output = output
+        self.prefix = prefix
+        self.buffer = ""
+
+    def close(self):
+        self.print_prefixed_line(self.buffer)
+
+    def write(self, data):
+        self.buffer += data
+        lines = self.buffer.split("\n")
+        self.buffer = lines[-1]
+        lines.pop()
+        for line in lines:
+            self.print_prefixed_line(line)
+
+    def print_prefixed_line(self, line):
+        print("%s: %s" % (self.prefix, line), file=self.output)
+
+    def flush(self):
+        pass
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -410,6 +438,7 @@ def start_SITL(binary,
                home=None,
                model=None,
                speedup=1,
+               sim_rate_hz=None,
                defaults_filepath=None,
                unhide_parameters=False,
                gdbserver=False,
@@ -418,7 +447,8 @@ def start_SITL(binary,
                customisations=[],
                lldb=False,
                enable_fgview_output=False,
-               supplementary=False):
+               supplementary=False,
+               stdout_prefix=None):
 
     if model is None and not supplementary:
         raise ValueError("model must not be None")
@@ -476,7 +506,7 @@ def start_SITL(binary,
                         '-d',
                         '-m',
                         '-S', 'ardupilot-gdb',
-                        'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
+                        'gdb', '--cd', os.getcwd(), '-x', '/tmp/x.gdb', binary, '--args'])
     elif lldb:
         f = open("/tmp/x.lldb", "w")
         for breakingpoint in breakpoints:
@@ -502,8 +532,10 @@ def start_SITL(binary,
         if home is not None:
             cmd.extend(['--home', home])
         cmd.extend(['--model', model])
-        if speedup != 1:
+        if speedup is not None and speedup != 1:
             cmd.extend(['--speedup', str(speedup)])
+        if sim_rate_hz is not None:
+            cmd.extend(['--rate', str(sim_rate_hz)])
         if defaults_filepath is not None:
             if type(defaults_filepath) == list:
                 defaults = [reltopdir(path) for path in defaults_filepath]
@@ -519,6 +551,11 @@ def start_SITL(binary,
             cmd.append("--disable-fgview")
 
     cmd.extend(customisations)
+
+    pexpect_logfile_prefix = stdout_prefix
+    if pexpect_logfile_prefix is None:
+        pexpect_logfile_prefix = os.path.basename(binary)
+    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         global windowID
@@ -557,7 +594,7 @@ def start_SITL(binary,
         # AP gets a redirect-stdout-to-filehandle option.  So, in the
         # meantime, return a dummy:
         return pexpect.spawn("true", ["true"],
-                             logfile=sys.stdout,
+                             logfile=pexpect_logfile,
                              encoding=ENCODING,
                              timeout=5)
     else:
@@ -565,10 +602,8 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
+        child = pexpect.spawn(first, rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5)
         pexpect_autoclose(child)
-    # give time for parameters to properly setup
-    time.sleep(3)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
         # connection" is never going to appear on xterm's output.
@@ -600,11 +635,15 @@ def MAVProxy_version():
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
-                        master='tcp:127.0.0.1:5762',
+                        master=None,
                         options=[],
+                        sitl_rcin_port=5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
+    if master is None:
+        raise ValueError("Expected a master")
+
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
@@ -617,6 +656,7 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
+    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
     if setup:
         cmd.append('--setup')
     if aircraft is None:

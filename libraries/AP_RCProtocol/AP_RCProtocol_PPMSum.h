@@ -18,7 +18,7 @@
 
 #include "AP_RCProtocol_config.h"
 
-#if AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
 
 #include "AP_RCProtocol_Backend.h"
 
@@ -34,4 +34,4 @@ private:
     } ppm_state;
 };
 
-#endif  // AP_RCPROTOCOL_ENABLED
+#endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

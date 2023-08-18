@@ -1,3 +1,7 @@
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -10,6 +14,8 @@
 
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
+
+extern const AP_HAL::HAL& hal;
 
 extern "C" {
 #include "lua/src/lmem.h"
@@ -34,6 +40,176 @@ int lua_micros(lua_State *L) {
     new_uint32_t(L);
     *check_uint32_t(L, -1) = AP_HAL::micros();
 
+    return 1;
+}
+
+int lua_mavlink_init(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 2+arg_offset);
+    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
+    // get the depth of receive queue
+    const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
+    // get number of msgs to accept
+    const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+    if (data.rx_buffer == nullptr) {
+        data.rx_buffer = new ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+        if (data.rx_buffer == nullptr) {
+            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+        }
+    }
+    if (data.accept_msg_ids == nullptr) {
+        data.accept_msg_ids = new uint32_t[num_msgs];
+        if (data.accept_msg_ids == nullptr) {
+            return luaL_error(L, "Failed to allocate mavlink rx registry");
+        }
+        data.accept_msg_ids_size = num_msgs;
+        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+    }
+    return 0;
+}
+
+int lua_mavlink_receive_chan(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, arg_offset);
+
+    struct AP_Scripting::mavlink_msg msg;
+    ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
+
+    if (rx_buffer == nullptr) {
+        return luaL_error(L, "Never subscribed to a message");
+    }
+
+    if (rx_buffer->pop(msg)) {
+        luaL_Buffer b;
+        luaL_buffinit(L, &b);
+        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
+        luaL_pushresult(&b);
+        lua_pushinteger(L, msg.chan);
+        new_uint32_t(L);
+        *check_uint32_t(L, -1) = msg.timestamp_ms;
+        return 3;
+    } else {
+        // no MAVLink to handle, just return no results
+        return 0;
+    }
+}
+
+int lua_mavlink_register_rx_msgid(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint32_t msgid = get_uint32(L, 1+arg_offset, 0, (1 << 24) - 1);
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+
+    // check that we aren't currently watching this ID
+    for (uint8_t i = 0; i < data.accept_msg_ids_size; i++) {
+        if (data.accept_msg_ids[i] == msgid) {
+            lua_pushboolean(L, false);
+            return 1;
+        }
+    }
+
+    int i = 0;
+    for (i = 0; i < data.accept_msg_ids_size; i++) {
+        if (data.accept_msg_ids[i] == UINT32_MAX) {
+            break;
+        }
+    }
+
+    if (i >= data.accept_msg_ids_size) {
+        return luaL_error(L, "Out of MAVLink ID's to monitor");
+    }
+
+    {
+        WITH_SEMAPHORE(data.sem);
+        data.accept_msg_ids[i] = msgid;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+int lua_mavlink_send_chan(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 3+arg_offset);
+    
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+
+    const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
+
+    const char *packet = luaL_checkstring(L, 3+arg_offset);
+
+    // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
+    //        sending entirely new messages as outputs. At the moment we can only encode messages that
+    //        are known at compile time. This is fine as a starting point as this is symmetrical to the
+    //        decoding side of the scripting support
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    if (entry == nullptr) {
+        return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
+    }
+
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
+        _mav_finalize_message_chan_send(chan,
+                                        entry->msgid,
+                                        packet,
+                                        entry->min_msg_len,
+                                        entry->max_msg_len,
+                                        entry->crc_extra);
+
+        lua_pushboolean(L, true);
+    } else {
+        lua_pushboolean(L, false);
+    }
+
+    return 1;
+}
+
+int lua_mavlink_block_command(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint16_t id = get_uint16_t(L, 1+arg_offset);
+
+    // Check if ID is already registered
+    if (AP::scripting()->is_handling_command(id)) {
+        lua_pushboolean(L, true);
+        return 1;
+    }
+
+    // Add new list item
+    AP_Scripting::command_block_list *new_item = new AP_Scripting::command_block_list;
+    if (new_item == nullptr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    new_item->id = id;
+
+    {
+        WITH_SEMAPHORE(AP::scripting()->mavlink_command_block_list_sem);
+        new_item->next = AP::scripting()->mavlink_command_block_list;
+        AP::scripting()->mavlink_command_block_list = new_item;
+    }
+
+    lua_pushboolean(L, true);
     return 1;
 }
 
@@ -578,3 +754,5 @@ int lua_get_current_ref()
     auto *scripting = AP::scripting();
     return scripting->get_current_ref();
 }
+
+#endif  // AP_SCRIPTING_ENABLED

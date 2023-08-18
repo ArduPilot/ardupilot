@@ -17,25 +17,10 @@ public:
         return static_cast<UARTDriver*>(uart);
     }
 
-    /* Linux implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
-    /* Linux implementations of Stream virtual methods */
-    uint32_t available() override;
     uint32_t txspace() override;
-    bool read(uint8_t &b) override WARN_IF_UNUSED;
-
-    bool discard_input() override;
-
-    /* Linux implementations of Print virtual methods */
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
 
     void set_device_path(const char *path);
 
@@ -71,7 +56,6 @@ public:
 
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
-    bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
     uint16_t _base_port;
@@ -103,6 +87,14 @@ protected:
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
     Linux::Semaphore _write_mutex;
+
+    bool _discard_input() override;
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    uint32_t _available() override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override WARN_IF_UNUSED;
 };
 
 }

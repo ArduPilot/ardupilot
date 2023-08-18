@@ -177,7 +177,7 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    virtual bool get_vert_pos_rate(float &velocity) const = 0;
+    virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
 
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {

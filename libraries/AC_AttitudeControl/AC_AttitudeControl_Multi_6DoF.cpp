@@ -1,3 +1,5 @@
+#include <AP_Scripting/AP_Scripting_config.h>
+
 #if AP_SCRIPTING_ENABLED
 
 #include "AC_AttitudeControl_Multi_6DoF.h"

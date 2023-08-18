@@ -658,6 +658,9 @@ bool SLCAN::CANIface::select(bool &read, bool &write, const AP_HAL::CANFrame* co
         return ret;
     }
 
+    // ensure we own the UART. Locking is handled at the CAN interface level
+    _port->begin_locked(0, 0, 0, _serial_lock_key);
+    
     // if under passthrough, we only do send when can_iface also allows it
     if (_port->available_locked(_serial_lock_key) || rx_queue_.available()) {
         // allow for receiving messages over slcan
@@ -722,7 +725,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         // flush bytes from port
         while (num_bytes--) {
             uint8_t b;
-            if (!_port->read_locked(_serial_lock_key, b)) {
+            if (_port->read_locked(&b, 1, _serial_lock_key) != 1) {
                 break;
             }
             addByte(b);

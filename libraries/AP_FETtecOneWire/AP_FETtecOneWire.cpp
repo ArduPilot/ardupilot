@@ -95,7 +95,6 @@ void AP_FETtecOneWire::init_uart()
     }
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_unbuffered_writes(true);
-    _uart->set_blocking_writes(false);
 
     uint32_t uart_baud { FULL_DUPLEX_BAUDRATE };
 #if HAL_AP_FETTEC_HALF_DUPLEX

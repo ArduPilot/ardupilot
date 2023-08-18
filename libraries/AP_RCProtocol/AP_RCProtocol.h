@@ -30,8 +30,12 @@ class AP_RCProtocol {
 public:
 
     enum rcprotocol_t {
-        PPM        =  0,
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        PPMSUM     =  0,
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
         IBUS       =  1,
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
 #endif
@@ -39,7 +43,9 @@ public:
         SBUS_NI    =  3,
 #endif
         DSM        =  4,
+#if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
 #endif
@@ -49,7 +55,9 @@ public:
 #if AP_RCPROTOCOL_CRSF_ENABLED
         CRSF       =  8,
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
 #endif
@@ -107,7 +115,9 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
 #endif
-        case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        case PPMSUM:
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
 #endif
@@ -118,15 +128,21 @@ public:
         case CRSF:
 #endif
             return true;
+#if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
+#endif
+#if AP_RCPROTOCOL_SUMD_ENABLED
         case SUMD:
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
         case SRXL2:
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:
+#endif
         case NONE:
             return false;
         }
@@ -153,12 +169,10 @@ public:
     void add_uart(AP_HAL::UARTDriver* uart);
     bool has_uart() const { return added.uart != nullptr; }
 
-#ifdef IOMCU_FW
     // set allowed RC protocols
     void set_rc_protocols(uint32_t mask) {
         rc_protocols_mask = mask;
     }
-#endif
 
     class SerialConfig {
     public:

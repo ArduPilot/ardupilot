@@ -12,6 +12,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <AP_Scripting/AP_Scripting_config.h>
+
 #if AP_SCRIPTING_ENABLED
 
 // This allows motor roll, pitch, yaw and throttle factors to be changed in flight, allowing vehicle geometry to be changed

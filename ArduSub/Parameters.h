@@ -5,6 +5,8 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_Stats/AP_Stats.h>
+#include <AP_Arming/AP_Arming.h>
 
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
@@ -318,6 +320,10 @@ public:
 class ParametersG2 {
 public:
     ParametersG2(void);
+#if STATS_ENABLED == ENABLED
+    // vehicle statistics
+    AP_Stats stats;
+#endif
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -344,3 +350,22 @@ public:
 
 extern const AP_Param::Info        var_info[];
 
+// Sub-specific default parameters
+static const struct AP_Param::defaults_table_struct defaults_table[] = {
+    { "BRD_SAFETY_DEFLT",    0 },
+    { "ARMING_CHECK",        AP_Arming::ARMING_CHECK_RC |
+                             AP_Arming::ARMING_CHECK_VOLTAGE |
+                             AP_Arming::ARMING_CHECK_BATTERY},
+    { "CIRCLE_RATE",         2.0f},
+    { "ATC_ACCEL_Y_MAX",     110000.0f},
+    { "RC3_TRIM",            1100},
+    { "COMPASS_OFFS_MAX",    1000},
+    { "INS_GYR_CAL",         0},
+    { "MNT1_TYPE",           1},
+    { "MNT1_DEFLT_MODE",     MAV_MOUNT_MODE_RC_TARGETING},
+    { "MNT1_RC_RATE",        30},
+    { "RC7_OPTION",          214},   // MOUNT1_YAW
+    { "RC8_OPTION",          213},   // MOUNT1_PITCH
+    { "MOT_PWM_MIN",         1100},
+    { "MOT_PWM_MAX",         1900},
+};

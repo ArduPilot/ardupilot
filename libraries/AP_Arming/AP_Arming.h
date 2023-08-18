@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 
 #include "AP_Arming_config.h"
+#include "AP_InertialSensor/AP_InertialSensor_config.h"
 
 class AP_Arming {
 public:
@@ -38,6 +39,7 @@ public:
         ARMING_CHECK_AUX_AUTH    = (1U << 17),
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
+        ARMING_CHECK_OSD         = (1U << 20),
     };
 
     enum class Method {
@@ -75,6 +77,8 @@ public:
         TOYMODELANDFORCE = 31, // only disarm uses this...
         LANDING = 32, // only disarm uses this...
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
+        BLACKBOX = 34,
+        DDS = 35,
         UNKNOWN = 100,
     };
 
@@ -141,6 +145,9 @@ public:
         return (_arming_options & uint32_t(option)) != 0;
     }
 
+    static bool method_is_GCS(Method method) {
+        return (method == Method::MAVLINK || method == Method::DDS);
+    }
 protected:
 
     // Parameters
@@ -162,7 +169,9 @@ protected:
 
     bool logging_checks(bool report);
 
+#if AP_INERTIALSENSOR_ENABLED
     virtual bool ins_checks(bool report);
+#endif
 
     bool compass_checks(bool report);
 
@@ -248,8 +257,10 @@ private:
 
     static AP_Arming *_singleton;
 
+#if AP_INERTIALSENSOR_ENABLED
     bool ins_accels_consistent(const class AP_InertialSensor &ins);
     bool ins_gyros_consistent(const class AP_InertialSensor &ins);
+#endif
 
     // check if we should keep logging after disarming
     void check_forced_logging(const AP_Arming::Method method);

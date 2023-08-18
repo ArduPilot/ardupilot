@@ -450,6 +450,18 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 
+    case MSP_BATTERY_STATE: {
+        debug("MSP_BATTERY_STATE");
+        uint8_t buf[8];
+        buf[0] = 4; // cell count
+        putU16(&buf[1], 1500); // mAh
+        buf[3] = 16; // V
+        putU16(&buf[4], 1500); // mAh
+        putU16(&buf[6], 1); // A
+        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
+        break;
+    }
+
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
         uint8_t buf[10];
@@ -1448,7 +1460,14 @@ void AP_BLHeli::read_telemetry_packet(void)
     const uint8_t motor_idx = motor_map[last_telem_esc];
     // we have received valid data, mark the ESC as now active
     hal.rcout->set_active_escs_mask(1<<motor_idx);
-    update_rpm(motor_idx - chan_offset, new_rpm);
+
+    uint8_t normalized_motor_idx = motor_idx - chan_offset;
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_dshot()) {
+        normalized_motor_idx = motor_idx;
+    }
+#endif
+    update_rpm(normalized_motor_idx, new_rpm);
 
     TelemetryData t {
         .temperature_cdeg = int16_t(buf[0] * 100),
@@ -1457,7 +1476,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
     };
 
-    update_telem_data(motor_idx - chan_offset, t,
+    update_telem_data(normalized_motor_idx, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
             | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION

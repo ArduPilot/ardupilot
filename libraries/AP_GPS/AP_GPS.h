@@ -56,7 +56,7 @@
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 #ifndef GPS_MOVING_BASELINE
-#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
 #endif
 
 #ifndef HAL_MSP_GPS_ENABLED
@@ -717,6 +717,11 @@ private:
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
 
+    struct {
+        uint16_t fragments_used;
+        uint16_t fragments_discarded;
+    } rtcm_stats;
+
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
@@ -725,6 +730,7 @@ private:
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
+#if defined(GPS_BLENDED_INSTANCE)
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
@@ -738,6 +744,7 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
+#endif
 
     bool should_log() const;
 

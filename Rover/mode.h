@@ -22,6 +22,7 @@ public:
 #if MODE_DOCK_ENABLED == ENABLED
         DOCK         = 8,
 #endif
+        CIRCLE       = 9,
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
@@ -252,6 +253,12 @@ public:
     // return if external control is allowed in this mode (Guided or Guided-within-Auto)
     bool in_guided_mode() const override { return _submode == Auto_Guided || _submode == Auto_NavScriptTime; }
 
+    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override;
+    float nav_bearing() const override;
+    float crosstrack_error() const override;
+    float get_desired_lat_accel() const override;
+
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
 
@@ -295,6 +302,7 @@ protected:
         Auto_Guided,            // handover control to external navigation system from within auto mode
         Auto_Stop,              // stop the vehicle as quickly as possible
         Auto_NavScriptTime,     // accept targets from lua scripts while NAV_SCRIPT_TIME commands are executing
+        Auto_Circle,            // circle a given location
     } _submode;
 
 private:
@@ -322,6 +330,8 @@ private:
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_set_yaw_speed();
+    bool do_circle(const AP_Mission::Mission_Command& cmd);
+    bool verify_circle(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     bool verify_wait_delay();
@@ -385,6 +395,95 @@ private:
     AP_Mission_ChangeDetector mis_change_detector;
 };
 
+class ModeCircle : public Mode
+{
+public:
+
+    // need a constructor for parameters
+    ModeCircle();
+
+    // Does not allow copies
+    CLASS_NO_COPY(ModeCircle);
+
+    uint32_t mode_number() const override { return CIRCLE; }
+    const char *name4() const override { return "CIRC"; }
+
+    // initialise with specific center location, radius (in meters) and direction
+    // replaces use of _enter when initialised from within Auto mode
+    bool set_center(const Location& center_loc, float radius_m, bool dir_ccw);
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override;
+    float nav_bearing() const override;
+    float crosstrack_error() const override { return dist_to_edge_m; }
+    float get_desired_lat_accel() const override;
+
+    // set desired speed in m/s
+    bool set_desired_speed(float speed_ms) override;
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+    // get or set desired location
+    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+
+    // return total angle in radians that vehicle has circled
+    // fabsf is used so that full rotations in either direction are counted
+    float get_angle_total_rad() const { return fabsf(angle_total_rad); }
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    AP_Float radius;        // circle radius in meters
+    AP_Float speed;         // vehicle speed in m/s.  If zero uses WP_SPEED
+    AP_Int8 direction;      // direction 0:clockwise, 1:counter-clockwise
+
+    // initialise mode
+    bool _enter() override;
+
+    // initialise target_yaw_rad using the vehicle's position and yaw
+    // if there is no current position estimate target_yaw_rad is set to vehicle yaw
+    void init_target_yaw_rad();
+
+    // limit config speed so that lateral acceleration is within limits
+    // outputs warning to user if speed is reduced
+    void check_config_speed();
+
+    // ensure config radius is no smaller then vehicle's TURN_RADIUS
+    // radius is increased if necessary and warning is output to the user
+    void check_config_radius();
+
+    // enum for Direction parameter
+    enum class Direction {
+        CW = 0,
+        CCW = 1
+    };
+
+    // local members
+    struct {
+        Location center_loc;    // circle center as a Location
+        Vector2f center_pos;    // circle center as an offset (in meters) from the EKF origin
+        float radius;   // circle radius
+        float speed;    // desired speed around circle in m/s
+        Direction dir;  // direction, 0:clockwise, 1:counter-clockwise
+    } config;
+    struct {
+        float speed;    // vehicle's target speed around circle in m/s
+        float yaw_rad;  // earth-frame angle of tarrget point on the circle
+        Vector2p pos;   // latest position target sent to position controller
+        Vector2f vel;   // latest velocity target sent to position controller
+        Vector2f accel; // latest accel target sent to position controller
+    } target;
+    float angle_total_rad;  // total angle in radians that vehicle has circled
+    bool reached_edge;      // true once vehicle has reached edge of circle
+    float dist_to_edge_m;   // distance to edge of circle in meters (equivalent to crosstrack error)
+};
 
 class ModeGuided : public Mode
 {
@@ -690,6 +789,7 @@ protected:
     bool _enter() override { return false; };
 };
 
+#if MODE_FOLLOW_ENABLED == ENABLED
 class ModeFollow : public Mode
 {
 public:
@@ -724,6 +824,7 @@ protected:
 
     float _desired_speed;       // desired speed in m/s
 };
+#endif
 
 class ModeSimple : public Mode
 {

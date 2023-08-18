@@ -19,7 +19,6 @@ public:
     bool has_cell_voltages() const override { return false; }
     bool has_temperature() const override { return false; }
     bool has_current() const override { return true; }
-    bool reset_remaining(float percentage) override { return false; }
     bool get_cycle_count(uint16_t &cycles) const override { return false; }
 
     void init(void) override;
@@ -52,7 +51,7 @@ private:
 
     AP_Int8 i2c_bus;
     AP_Int8 i2c_address;
-    bool callback_registered;
+    AP_Float max_amps;
     uint32_t failed_reads;
 
     struct {
