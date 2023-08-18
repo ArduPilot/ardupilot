@@ -36,6 +36,7 @@ using namespace HALSITL;
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
         CMDLINE_SERIAL9,
+        CMDLINE_DEFAULTS,
     };
 
 void SITL_State::init(int argc, char * const argv[]) {
@@ -54,6 +55,7 @@ void SITL_State::init(int argc, char * const argv[]) {
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
         {"serial9",         true,   0, CMDLINE_SERIAL9},
+        {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {0, false, 0, 0}
     };
 
@@ -86,11 +88,15 @@ void SITL_State::init(int argc, char * const argv[]) {
             _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
             break;
         }
+        case CMDLINE_DEFAULTS:
+            defaults_path = strdup(gopt.optarg);
+            break;
         default:
             printf("Options:\n"
                    "\t--help|-h                display this help information\n"
                    "\t--instance|-I N          set instance of SITL Periph\n"
                    "\t--maintenance|-M         run in maintenance mode\n"
+                   "\t--defaults path          set param defaults file\n"
                    "\t--serial0 device         set device string for SERIAL0\n"
                    "\t--serial1 device         set device string for SERIAL1\n"
                    "\t--serial2 device         set device string for SERIAL2\n"
