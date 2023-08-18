@@ -942,6 +942,13 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_VTOL_LAND:
         nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
         break;
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:    // Special case for MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: replicates sanity check in AP_MOUNT library
+        if ((!isnan(packet.param1) != !isnan(packet.param2)) ||             // Reject if only one angle is NaN
+            (!isnan(packet.param3) != !isnan(packet.param4)) ||             // Reject if only one turn rate is NaN
+            (isnan(packet.param1) && isnan(packet.param2) && isnan(packet.param3) && isnan(packet.param4)))       // Reject if all are NaN
+            return MAV_MISSION_INVALID;
+        else
+            return MAV_MISSION_ACCEPTED;
     default:
         nan_mask = 0xff;
         break;
@@ -1303,10 +1310,20 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = packet.param1;
-        cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = packet.param2;
-        cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs = packet.param3;
-        cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs = packet.param4;
+        if (!isnan(packet.param1)) {
+            cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = packet.param1;
+        }
+        else                                                            // Sets the angles out of range, 
+            cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = 100;  // causes start_command_do_gimbal_manager_pitchyaw to skip setting angles
+        if (!isnan(packet.param2)) {
+            cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = packet.param2;
+        }        
+        if (!isnan(packet.param3)) {
+            cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs = packet.param3;
+        }
+        if (!isnan(packet.param4)) {
+            cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs = packet.param4;
+        }
         cmd.content.gimbal_manager_pitchyaw.flags = packet.x;
         cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
         break;
