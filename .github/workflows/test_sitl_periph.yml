@@ -159,7 +159,7 @@ concurrency:
 
 jobs:
   build-gcc-ap_periph:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container: ardupilot/ardupilot-dev-periph:v0.0.29
     steps:
       # git checkout the PR
@@ -199,7 +199,7 @@ jobs:
 
   autotest-can:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container: 
       image: ardupilot/ardupilot-dev-periph:v0.0.29
       options: --privileged
