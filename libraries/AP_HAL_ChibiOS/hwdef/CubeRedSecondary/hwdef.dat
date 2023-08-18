@@ -152,8 +152,6 @@ define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Sbus1
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
 
-define AP_SCRIPTING_ENABLED 0
-
 # only use pulse input for PPM, other protocols
 # are on serial
 define HAL_RCIN_PULSE_PPM_ONLY
