@@ -581,8 +581,10 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
                                 Location::AltFrame::ABSOLUTE};
         state.have_origin = true;
     }
-
-    AP::gps().handle_external(gps);
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
 }
 
 /*
