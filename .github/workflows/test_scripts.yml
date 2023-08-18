@@ -30,6 +30,4 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
-          sudo apt update
-          sudo apt-get install -y astyle
           Tools/scripts/build_ci.sh
