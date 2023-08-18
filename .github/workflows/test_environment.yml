@@ -6,12 +6,12 @@ on:
   push:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
   pull_request:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
 
 concurrency:
