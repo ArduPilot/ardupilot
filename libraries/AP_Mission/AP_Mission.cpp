@@ -379,6 +379,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -423,6 +424,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -1320,6 +1322,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.image_start_capture.start_seq_number = packet.param4;
         break;
 
+    case MAV_CMD_IMAGE_STOP_CAPTURE:        // Does nothing as current ArduPilot codebase has not implemented this command
+        break;
+
     case MAV_CMD_SET_CAMERA_ZOOM:
         cmd.content.set_camera_zoom.zoom_type = packet.param1;
         cmd.content.set_camera_zoom.zoom_value = packet.param2;
@@ -1834,6 +1839,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.image_start_capture.interval_s;
         packet.param3 = cmd.content.image_start_capture.total_num_images;
         packet.param4 = cmd.content.image_start_capture.start_seq_number;
+        break;
+
+    case MAV_CMD_IMAGE_STOP_CAPTURE:        // Does nothing as current ArduPilot codebase has not implemented this command
         break;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
@@ -2664,6 +2672,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "GimbalConfigure";
     case MAV_CMD_IMAGE_START_CAPTURE:
         return "ImageStartCapture";
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        return "ImageStopCapture";
     case MAV_CMD_SET_CAMERA_ZOOM:
         return "SetCameraZoom";
     case MAV_CMD_SET_CAMERA_FOCUS:

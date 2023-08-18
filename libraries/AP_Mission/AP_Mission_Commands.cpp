@@ -166,6 +166,9 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         camera->take_picture();
         return true;
 
+    case MAV_CMD_IMAGE_STOP_CAPTURE:        // Does nothing as current ArduPilot codebase has not implemented this command
+        return true;
+        
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
     {
