@@ -722,6 +722,7 @@ private:
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
+    void rotate_target_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
     void run_rate_controller();
 

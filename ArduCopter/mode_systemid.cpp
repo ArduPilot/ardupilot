@@ -81,13 +81,49 @@ bool ModeSystemId::init(bool ignore_checks)
     }
 
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors->armed() && copter.ap.land_complete && !copter.flightmode->has_manual_throttle()) {
+    if (motors->armed() && copter.ap.land_complete && (!copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::LOITER)) {
         return false;
     }
 
+    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
+         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
+         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
+
 #if FRAME_CONFIG == HELI_FRAME
-    copter.input_manager.set_use_stab_col(true);
+        copter.input_manager.set_use_stab_col(true);
 #endif
+
+    } else {
+
+        if (!copter.failsafe.radio) {
+            float target_roll, target_pitch;
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+
+            // process pilot's roll and pitch input
+            loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        } else {
+            // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+            loiter_nav->clear_pilot_desired_acceleration();
+        }
+        loiter_nav->init_target();
+
+        // initialise the vertical position controller
+        if (!pos_control->is_active_z()) {
+            pos_control->init_z_controller();
+        }
+
+        // set vertical speed and acceleration limits
+        pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+        pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+
+// #if AC_PRECLAND_ENABLED
+//        _precision_loiter_active = false;
+// #endif
+    }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
     waveform_time = 0.0f;
@@ -117,64 +153,94 @@ void ModeSystemId::exit()
 // should be called at 100hz or more
 void ModeSystemId::run()
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
-    // convert pilot input to lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+    float target_yaw_rate = 0.0f;
+    float pilot_throttle_scaled = 0.0f;
+    float target_climb_rate = 0.0f;
+    Vector2f input_vel;
+    Vector2f pilot_vel;
 
-    // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
+         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
+         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
 
-    if (!motors->armed()) {
-        // Motors should be Stopped
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    // Tradheli doesn't set spool state to ground idle when throttle stick is zero.  Ground idle only set when
-    // motor interlock is disabled.
-    } else if (copter.ap.throttle_zero && !copter.is_tradheli()) {
-        // Attempting to Land
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-    } else {
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    }
+        // apply simple mode transform to pilot inputs
+        update_simple_mode();
 
-    switch (motors->get_spool_state()) {
-    case AP_Motors::SpoolState::SHUT_DOWN:
-        // Motors Stopped
-        attitude_control->reset_yaw_target_and_rate();
-        attitude_control->reset_rate_controller_I_terms();
-        break;
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
-    case AP_Motors::SpoolState::GROUND_IDLE:
-        // Landed
-        // Tradheli initializes targets when going from disarmed to armed state. 
-        // init_targets_on_arming is always set true for multicopter.
-        if (motors->init_targets_on_arming()) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+
+        if (!motors->armed()) {
+            // Motors should be Stopped
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        // Tradheli doesn't set spool state to ground idle when throttle stick is zero.  Ground idle only set when
+        // motor interlock is disabled.
+        } else if (copter.ap.throttle_zero && !copter.is_tradheli()) {
+            // Attempting to Land
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        } else {
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        }
+
+        switch (motors->get_spool_state()) {
+        case AP_Motors::SpoolState::SHUT_DOWN:
+            // Motors Stopped
             attitude_control->reset_yaw_target_and_rate();
-            attitude_control->reset_rate_controller_I_terms_smoothly();
+            attitude_control->reset_rate_controller_I_terms();
+            break;
+
+        case AP_Motors::SpoolState::GROUND_IDLE:
+            // Landed
+            // Tradheli initializes targets when going from disarmed to armed state. 
+            // init_targets_on_arming is always set true for multicopter.
+            if (motors->init_targets_on_arming()) {
+                attitude_control->reset_yaw_target_and_rate();
+                attitude_control->reset_rate_controller_I_terms_smoothly();
+            }
+            break;
+
+        case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+            // clear landing flag above zero throttle
+            if (!motors->limit.throttle_lower) {
+                set_land_complete(false);
+            }
+            break;
+
+        case AP_Motors::SpoolState::SPOOLING_UP:
+        case AP_Motors::SpoolState::SPOOLING_DOWN:
+            // do nothing
+            break;
         }
-        break;
 
-    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
-        // clear landing flag above zero throttle
-        if (!motors->limit.throttle_lower) {
-            set_land_complete(false);
-        }
-        break;
-
-    case AP_Motors::SpoolState::SPOOLING_UP:
-    case AP_Motors::SpoolState::SPOOLING_DOWN:
-        // do nothing
-        break;
-    }
-
-    // get pilot's desired throttle
+        // get pilot's desired throttle
 #if FRAME_CONFIG == HELI_FRAME
-    float pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+        pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 #else
-    float pilot_throttle_scaled = get_pilot_desired_throttle();
+        pilot_throttle_scaled = get_pilot_desired_throttle();
 #endif
+
+    } else {
+        // set xy speed and acceleration limits
+        pos_control->set_max_speed_accel_xy(500.0f, 250.0f);
+        pos_control->set_correction_speed_accel_xy(500.0f, 250.0f);
+
+        // set vertical speed and acceleration limits
+        pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+
+        // process pilot inputs unless we are in radio failsafe
+        // this was split into two parts to allow pilot input to accomplish closed loop sweeps
+        if (!copter.failsafe.radio) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            pilot_vel = get_pilot_desired_velocity(250.0f);
+
+        }
+
+    }
 
     if ((systemid_state == SystemIDModeState::SYSTEMID_STATE_TESTING) &&
         (!is_positive(frequency_start) || !is_positive(frequency_stop) || is_negative(time_fade_in) || !is_positive(time_record) || is_negative(time_fade_out) || (time_record <= time_const_freq))) {
@@ -185,7 +251,7 @@ void ModeSystemId::run()
     waveform_time += G_Dt;
     waveform_sample = chirp_input.update(waveform_time - SYSTEM_ID_DELAY, waveform_magnitude);
     waveform_freq_rads = chirp_input.get_frequency_rads();
-
+    Vector2f disturb_state;
     switch (systemid_state) {
         case SystemIDModeState::SYSTEMID_STATE_STOPPED:
             attitude_control->bf_feedforward(att_bf_feedforward);
@@ -255,15 +321,152 @@ void ModeSystemId::run()
                 case AxisType::MIX_THROTTLE:
                     pilot_throttle_scaled += waveform_sample;
                     break;
+                case AxisType::DISTURB_POS_LAT:
+                    disturb_state.x = 0.0f;
+                    disturb_state.y = waveform_sample * 100.0f;
+                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    pos_control->set_disturb_pos_cm(disturb_state);
+                    break;
+                case AxisType::DISTURB_POS_LONG:
+                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.y = 0.0f;
+                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    pos_control->set_disturb_pos_cm(disturb_state);
+                    break;
+                case AxisType::DISTURB_VEL_LAT:
+                    disturb_state.x = 0.0f;
+                    disturb_state.y = waveform_sample * 100.0f;
+                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    pos_control->set_disturb_vel_cms(disturb_state);
+                    break;
+                case AxisType::DISTURB_VEL_LONG:
+                    disturb_state.x = waveform_sample * 100.0f;
+                    disturb_state.y = 0.0f;
+                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    pos_control->set_disturb_vel_cms(disturb_state);
+                    break;
+                case AxisType::INPUT_LOITER_LAT:
+                    input_vel.x = 0.0f;
+                    input_vel.y = waveform_sample * 100.0f;
+                    copter.rotate_target_body_frame_to_NE(input_vel.x, input_vel.y);
+                    break;
+                case AxisType::INPUT_LOITER_LONG:
+                    input_vel.x = waveform_sample * 100.0f;
+                    input_vel.y = 0.0f;
+                    copter.rotate_target_body_frame_to_NE(input_vel.x, input_vel.y);
+                    break;
             }
             break;
     }
 
-    // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
+         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
+         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
 
-    // output pilot's throttle
-    attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+
+        // output pilot's throttle
+        attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
+        
+    } else {
+
+        // process pilot inputs unless we are in radio failsafe
+        // this was split into two parts to allow pilot input to accomplish closed loop sweeps
+        if (!copter.failsafe.radio) {
+
+            // Set pilot's roll and pitch input to zero
+            loiter_nav->set_pilot_desired_acceleration(0.0f, 0.0f);
+
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+
+            // get pilot desired climb rate
+            target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+            target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+        } else {
+            // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+            loiter_nav->clear_pilot_desired_acceleration();
+        }
+
+        // relax loiter target if we might be landed
+        if (copter.ap.land_complete_maybe) {
+            pos_control->soften_for_landing_xy();
+        }
+
+        // Loiter State Machine Determination
+        AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
+
+        // Loiter State Machine
+        switch (althold_state) {
+
+        case AltHold_MotorStopped:
+            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->reset_yaw_target_and_rate();
+            pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+            pos_control->init_xy_controller();
+            attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+            break;
+
+        case AltHold_Landed_Ground_Idle:
+            attitude_control->reset_yaw_target_and_rate();
+            FALLTHROUGH;
+
+        case AltHold_Landed_Pre_Takeoff:
+            attitude_control->reset_rate_controller_I_terms_smoothly();
+            pos_control->init_xy_controller();
+            attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+            pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+            break;
+
+        case AltHold_Takeoff:
+            // initiate take-off
+            if (!takeoff.running()) {
+                takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            }
+
+            // get avoidance adjusted climb rate
+            target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+            // set position controller targets adjusted for pilot input
+            takeoff.do_pilot_takeoff(target_climb_rate);
+
+            // run loiter controller
+            pos_control->update_xy_controller();
+
+            // call attitude controller
+            attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate, false);
+            break;
+
+        case AltHold_Flying:
+            // set motors to full range
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+            input_vel += pilot_vel;
+            Vector2f accel = Vector2f((input_vel.x - target_vel.x) / G_Dt, (input_vel.y - target_vel.y) / G_Dt);
+
+            target_vel = input_vel;
+            pos_control->input_vel_accel_xy(target_vel, accel);
+            pos_control->update_xy_controller();
+
+            // call attitude controller
+            attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate, false);
+
+            // get avoidance adjusted climb rate
+            target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+            // update the vertical offset based on the surface measurement
+            copter.surface_tracking.update_surface_offset();
+
+            // Send the commanded climb rate to the position controller
+            pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+            break;
+        }
+
+        // run the vertical position controller and set output throttle
+        pos_control->update_z_controller();
+
+    }
 
     if (log_subsample <= 0) {
         log_data();
@@ -298,6 +501,15 @@ void ModeSystemId::log_data() const
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
     copter.Log_Write_PIDS();
+
+    if ((AxisType)axis.get() == AxisType::DISTURB_POS_LAT || (AxisType)axis.get() == AxisType::DISTURB_POS_LONG 
+         || (AxisType)axis.get() == AxisType::DISTURB_VEL_LAT || (AxisType)axis.get() == AxisType::DISTURB_VEL_LONG
+         || (AxisType)axis.get() == AxisType::INPUT_LOITER_LAT || (AxisType)axis.get() == AxisType::INPUT_LOITER_LONG) {
+        pos_control->write_log();
+        copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
+        copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
+
+    }
 }
 
 #endif

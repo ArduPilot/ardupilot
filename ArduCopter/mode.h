@@ -1647,6 +1647,12 @@ private:
         MIX_PITCH = 11,     // mixer pitch axis is being excited
         MIX_YAW = 12,       // mixer pitch axis is being excited
         MIX_THROTTLE = 13,  // mixer throttle axis is being excited
+        DISTURB_POS_LAT = 14,
+        DISTURB_POS_LONG = 15,
+        DISTURB_VEL_LAT = 16,
+        DISTURB_VEL_LONG = 17,
+        INPUT_LOITER_LAT = 18,
+        INPUT_LOITER_LONG = 19,
     };
 
     AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
@@ -1663,7 +1669,8 @@ private:
     float waveform_freq_rads;   // Instantaneous waveform frequency
     float time_const_freq;      // Time at constant frequency before chirp starts
     int8_t log_subsample;       // Subsample multiple for logging.
-
+    Vector2f target_vel;        // target velocity for position controller modes
+    
     // System ID states
     enum class SystemIDModeState {
         SYSTEMID_STATE_STOPPED,
