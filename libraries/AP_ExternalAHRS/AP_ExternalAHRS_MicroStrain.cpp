@@ -434,7 +434,10 @@ void AP_ExternalAHRS_MicroStrain::post_filter() const
         state.have_origin = true;
     }
 
-    AP::gps().handle_external(gps);
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
 }
 
 int8_t AP_ExternalAHRS_MicroStrain::get_port(void) const
