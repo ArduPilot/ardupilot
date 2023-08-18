@@ -116,11 +116,6 @@ private:
     uint32_t delayed_time_wind;
     uint32_t wind_start_delay_micros;
 
-    // output socket for flightgear viewing
-    SocketAPM fg_socket{true};
-    
-    const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
-
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
 
