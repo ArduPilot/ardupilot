@@ -942,6 +942,15 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_VTOL_LAND:
         nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
         break;
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        nan_mask = ~((1 << 1) | (1 << 2) | (1 << 3)); // param 2, 3 and 4 can be nan
+        break;
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+        break;
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        nan_mask = ~((1 << 1) | (1 << 2) | (1 << 3)); // param 2, 3 and 4 can be nan
+        break;
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:    // Special case for MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: replicates sanity check in AP_MOUNT library
         if ((!isnan(packet.param1) != !isnan(packet.param2)) ||             // Reject if only one angle is NaN
             (!isnan(packet.param3) != !isnan(packet.param4)) ||             // Reject if only one turn rate is NaN
