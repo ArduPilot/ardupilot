@@ -1,4 +1,5 @@
 #!/bin/bash
+
 echo "---------- $0 start ----------"
 set -e
 set -x
