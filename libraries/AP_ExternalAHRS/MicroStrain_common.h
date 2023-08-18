@@ -11,43 +11,25 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for serial connected AHRS systems
+  suppport for MicroStrain MIP parsing
  */
 
 #pragma once
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
+#if AP_MICROSTRAIN_ENABLED
 
-#include "AP_ExternalAHRS_backend.h"
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Math/vector3.h>
+#include <AP_Math/quaternion.h>
 
-class AP_ExternalAHRS_MicroStrain: public AP_ExternalAHRS_backend
+class AP_MicroStrain
 {
 public:
 
-    AP_ExternalAHRS_MicroStrain(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
 
-    // get serial port number, -1 for not enabled
-    int8_t get_port(void) const override;
-
-    // Get model/type name
-    const char* get_name() const override;
-
-    // accessors for AP_AHRS
-    bool healthy(void) const override;
-    bool initialised(void) const override;
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
-    void get_filter_status(nav_filter_status &status) const override;
-    void send_status_report(class GCS_MAVLINK &link) const override;
-
-    // check for new data
-    void update() override {
-        build_packet();
-    };
-
-private:
+protected:
 
     enum class ParseState {
         WaitingFor_SyncOne,
@@ -58,23 +40,7 @@ private:
         WaitingFor_Checksum
     };
 
-    void update_thread();
-
-    AP_HAL::UARTDriver *uart;
-    HAL_Semaphore sem;
-
-    uint32_t baudrate;
-    int8_t port_num;
-    bool port_open = false;
-
-    const uint8_t SYNC_ONE = 0x75;
-    const uint8_t SYNC_TWO = 0x65;
-
-    uint32_t last_ins_pkt;
-    uint32_t last_gps_pkt;
-    uint32_t last_filter_pkt;
-
-    // A MicroStrain packet can be a maximum of 261 bytes
+        // A MicroStrain packet can be a maximum of 261 bytes
     struct MicroStrain_Packet {
         uint8_t header[4];
         uint8_t payload[255];
@@ -83,7 +49,7 @@ private:
 
     struct {
         MicroStrain_Packet packet;
-        ParseState state;
+        AP_MicroStrain::ParseState state;
         uint8_t index;
     } message_in;
 
@@ -133,19 +99,36 @@ private:
         float speed_accuracy;
     } filter_data;
 
-    void build_packet();
-    bool valid_packet(const MicroStrain_Packet &packet) const;
-    void handle_packet(const MicroStrain_Packet &packet);
+    enum class DescriptorSet {
+        BaseCommand = 0x01,
+        DMCommand = 0x0C,
+        SystemCommand = 0x7F,
+        IMUData = 0x80,
+        GNSSData = 0x81,
+        EstimationData = 0x82
+    };
+
+    const uint8_t SYNC_ONE = 0x75;
+    const uint8_t SYNC_TWO = 0x65;
+
+    uint32_t last_ins_pkt;
+    uint32_t last_gps_pkt;
+    uint32_t last_filter_pkt;
+
+    // Handle a single byte.
+    // If the byte matches a descriptor, it returns true and that type should be handled.
+    bool handle_byte(const uint8_t b, DescriptorSet& descriptor);
+    // Returns true if the fletcher checksum for the packet is valid, else false.
+    static bool valid_packet(const MicroStrain_Packet &packet);
+    // Calls the correct functions based on the packet descriptor of the packet
+    DescriptorSet handle_packet(const MicroStrain_Packet &packet);
+    // Collects data from an imu packet into `imu_data`
     void handle_imu(const MicroStrain_Packet &packet);
+    // Collects data from a gnss packet into `gnss_data`
     void handle_gnss(const MicroStrain_Packet &packet);
     void handle_filter(const MicroStrain_Packet &packet);
-    void post_imu() const;
-    void post_gnss() const;
-    void post_filter() const;
-
-    Vector3f populate_vector3f(const uint8_t* data, uint8_t offset) const;
-    Quaternion populate_quaternion(const uint8_t* data, uint8_t offset) const;
-
+    static Vector3f populate_vector3f(const uint8_t* data, uint8_t offset);
+    static Quaternion populate_quaternion(const uint8_t* data, uint8_t offset);
 };
 
-#endif // AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
+#endif // AP_MICROSTRAIN_ENABLED
