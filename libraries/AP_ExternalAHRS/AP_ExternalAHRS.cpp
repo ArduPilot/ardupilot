@@ -23,7 +23,7 @@
 #include "AP_ExternalAHRS.h"
 #include "AP_ExternalAHRS_backend.h"
 #include "AP_ExternalAHRS_VectorNav.h"
-#include "AP_ExternalAHRS_MicroStrain.h"
+#include "AP_ExternalAHRS_MicroStrain5.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -98,9 +98,9 @@ void AP_ExternalAHRS::init(void)
         backend = new AP_ExternalAHRS_VectorNav(this, state);
         break;
 #endif
-#if AP_EXTERNAL_AHRS_MICROSTRAIN_ENABLED
-    case DevType::MicroStrain:
-        backend = new AP_ExternalAHRS_MicroStrain(this, state);
+#if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
+    case DevType::MicroStrain5:
+        backend = new AP_ExternalAHRS_MicroStrain5(this, state);
         break;
     default:
 #endif
