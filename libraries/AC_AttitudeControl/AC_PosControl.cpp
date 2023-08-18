@@ -643,7 +643,10 @@ void AC_PosControl::update_xy_controller()
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos);
+    Vector3f comb_pos = curr_pos;
+    comb_pos.x += _disturb_pos.x;
+    comb_pos.y += _disturb_pos.y;
+    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos);
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
@@ -653,7 +656,10 @@ void AC_PosControl::update_xy_controller()
     // Velocity Controller
 
     const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
-    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), curr_vel, _dt, _limit_vector.xy());
+    Vector2f comb_vel = curr_vel;
+    comb_vel.x += _disturb_vel.x;
+    comb_vel.y += _disturb_vel.y;
+    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy());
     
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;
@@ -686,6 +692,9 @@ void AC_PosControl::update_xy_controller()
     // update angle targets that will be passed to stabilize controller
     accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
     calculate_yaw_and_rate_yaw();
+
+    _disturb_pos.zero();
+    _disturb_vel.zero();
 }
 
 
