@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   test-scripting:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container: ardupilot/ardupilot-dev-base:v0.0.29
     steps:
       # git checkout the PR
