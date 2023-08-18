@@ -381,8 +381,10 @@ public:
     AP_Gripper gripper;
 #endif
 
+#if HAL_RALLY_ENABLED
     // Rally point library
     AP_Rally_Rover rally;
+#endif
 
     // Simple mode types
     AP_Int8 simple_type;
