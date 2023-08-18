@@ -666,6 +666,7 @@ def start_CAN_GPS(opts):
     global can_uarta
     progress("Preparing sitl_periph_gps")
     options = vinfo.options["sitl_periph_gps"]['frames']['gps']
+    defaults_path = options.get('default_params_filename', None)
     do_build(opts, options)
     exe = os.path.join(root_dir, 'build/sitl_periph_gps', 'bin/AP_Periph')
     cmd = ["nice"]
@@ -689,6 +690,9 @@ def start_CAN_GPS(opts):
         cmd.extend(["-x", gdb_commands_file.name])
         cmd.append("--args")
     cmd.append(exe)
+    if defaults_path is not None:
+        cmd.append("--defaults")
+        cmd.append(util.relcurdir(os.path.join(autotest_dir, defaults_path)))
     run_in_terminal_window(cmd_name, cmd)
 
 
