@@ -114,3 +114,11 @@ uint32_t AP_HAL::RCOutput::calculate_bitrate_prescaler(uint32_t timer_clock, uin
     return prescaler;
 }
 
+/*
+  returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
+*/
+float AP_HAL::RCOutput::scale_esc_to_unity(uint16_t pwm) const
+{
+    return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
+}
+
