@@ -4,5 +4,5 @@
 # Set true to arm motors, false to disarm motors.
 bool arm
 ---
-# True if the vehicle is armed.
+# True if arming/disarming request for motors was successful , false otherwise. 
 bool result
