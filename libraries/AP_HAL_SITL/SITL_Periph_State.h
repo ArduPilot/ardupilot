@@ -30,13 +30,18 @@ public:
     void update(const struct sitl_input &input) override;
 
 private:
-    int mc_fd;
+    int mc_fd = -1;
+    int servo_fd = -1;
+    struct sockaddr_in in_addr;
 
     // offset between multicast timestamp and local timestamp
     uint64_t base_time_us;
 
     void multicast_open();
     void multicast_read();
+
+    void servo_send(void);
+    void servo_fd_open(void);
 };
 
 class HAL_SITL;

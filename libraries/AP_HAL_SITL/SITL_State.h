@@ -19,9 +19,7 @@ class HALSITL::SITL_State : public SITL_State_Common {
 public:
     void init(int argc, char * const argv[]);
 
-    uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
-    bool output_ready = false;
     bool new_rc_input;
     void loop_hook(void);
     uint16_t base_port(void) const {
@@ -125,10 +123,16 @@ private:
 
     // multicast state
     int mc_out_fd = -1;
-    
+    int servo_in_fd = -1;
+
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
+    void multicast_servo_update(struct sitl_input &input);
+
+    uint32_t servo_active_mask;
+    uint16_t mc_servo[SITL_NUM_CHANNELS];
+    void check_servo_input(void);
 };
 
 #endif // defined(HAL_BUILD_AP_PERIPH)
