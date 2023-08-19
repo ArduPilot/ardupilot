@@ -845,7 +845,7 @@ class sitl_periph_gps(sitl):
             COMPASS_CAL_ENABLED = 0,
             COMPASS_MOT_ENABLED = 0,
             COMPASS_LEARN_ENABLED = 0,
-            AP_BATTERY_ESC_ENABLED = 0,
+            AP_BATTERY_ESC_ENABLED = 1,
             HAL_EXTERNAL_AHRS_ENABLED = 0,
             HAL_GENERATOR_ENABLED = 0,
             AP_STATS_ENABLED = 0,
@@ -856,6 +856,7 @@ class sitl_periph_gps(sitl):
             HAL_NAVEKF2_AVAILABLE = 0,
             HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
+            HAL_WITH_ESC_TELEM = 1,
         )
 
 
