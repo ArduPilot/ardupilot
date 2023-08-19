@@ -96,6 +96,8 @@ public:
     float voltage2_pin_voltage;  // pin 15
     float current2_pin_voltage;  // pin 14
 
+    uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
+    bool new_rc_input;
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     bool output_ready = false;
     
