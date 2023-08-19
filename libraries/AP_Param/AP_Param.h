@@ -723,7 +723,7 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
-    static bool read_param_defaults_file(const char *filename, bool last_pass);
+    static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx);
 
     /*
       load defaults from embedded parameters
@@ -774,6 +774,7 @@ private:
     };
     static struct param_override *param_overrides;
     static uint16_t num_param_overrides;
+    static uint16_t param_overrides_len;
     static uint16_t num_read_only;
 
     // values filled into the EEPROM header
