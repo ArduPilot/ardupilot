@@ -238,6 +238,7 @@ nanosec: 729410000
 ```bash
 $ ros2 service list
 /ap/arm_motors
+/ap/mode_switch
 ---
 ```
 
@@ -262,6 +263,7 @@ List the available services:
 ```bash
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
+/ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
 ```
 
 Call the arm motors service:
@@ -272,6 +274,16 @@ requester: making request: ardupilot_msgs.srv.ArmMotors_Request(arm=True)
 
 response:
 ardupilot_msgs.srv.ArmMotors_Response(result=True)
+```
+
+Call the mode switch service:
+
+```bash
+$ ros2 service call /ap/mode_switch ardupilot_msgs/srv/ModeSwitch "{mode: 4}"
+requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
+
+response:
+ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
 ```
  
 ## Contributing to `AP_DDS` library

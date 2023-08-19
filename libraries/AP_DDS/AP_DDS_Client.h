@@ -87,14 +87,10 @@ private:
     // subscription callback function
     static void on_topic_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
     void on_topic(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length);
-    // count of subscribed samples
-    uint32_t subscribe_sample_count;
 
     // service replier callback function
     static void on_request_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, SampleIdentity* sample_id, ucdrBuffer* ub, uint16_t length, void* args);
     void on_request(uxrSession* session, uxrObjectId object_id, uint16_t request_id, SampleIdentity* sample_id, ucdrBuffer* ub, uint16_t length);
-    // count of request samples
-    uint32_t request_sample_count;
 
     // delivery control parameters
     uxrDeliveryControl delivery_control {
@@ -206,9 +202,6 @@ public:
 
         //! @brief Reply ID for the service
         const uint8_t rep_id;
-
-        //! @brief Profile Label for the service
-        const char* srv_profile_label;
 
         //! @brief Profile Label for the service requester
         const char* req_profile_label;
