@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_HAL_SITL.h"
 #include <AP_ESC_Telem/AP_ESC_Telem_SITL.h>
 

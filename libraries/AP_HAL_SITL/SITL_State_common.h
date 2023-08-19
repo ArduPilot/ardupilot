@@ -6,6 +6,7 @@
 
 #define SITL_MCAST_IP "239.255.145.51"
 #define SITL_MCAST_PORT 20721
+#define SITL_SERVO_PORT 20722
 
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
@@ -95,6 +96,9 @@ public:
     float voltage2_pin_voltage;  // pin 15
     float current2_pin_voltage;  // pin 14
 
+    uint16_t pwm_output[SITL_NUM_CHANNELS];
+    bool output_ready = false;
+    
 #if HAL_SIM_GIMBAL_ENABLED
     // simulated gimbal
     bool enable_gimbal;

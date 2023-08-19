@@ -161,9 +161,6 @@ void SimMCast::multicast_open(void)
         exit(1);
     }
 
-    // close on exec, to allow reboot
-    fcntl(mc_fd, F_SETFD, FD_CLOEXEC);
-
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
     /*
       on cygwin you need to bind to INADDR_ANY then use the multicast
@@ -194,6 +191,46 @@ void SimMCast::multicast_open(void)
 }
 
 /*
+  open UDP socket back to master for servo output
+ */
+void SimMCast::servo_fd_open(void)
+{
+    servo_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (servo_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    int ret = fcntl(servo_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+    int one = 1;
+    if (setsockopt(servo_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+        fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    in_addr.sin_port = htons(SITL_SERVO_PORT);
+
+    ret = connect(servo_fd, (struct sockaddr *)&in_addr, sizeof(in_addr));
+    if (ret == -1) {
+        fprintf(stderr, "multicast servo connect failed\n");
+        exit(1);
+    }
+}
+
+/*
+  send servo outputs back to master
+ */
+void SimMCast::servo_send(void)
+{
+    uint16_t out[SITL_NUM_CHANNELS] {};
+    hal.rcout->read(out, SITL_NUM_CHANNELS);
+    send(servo_fd, (void*)out, sizeof(out), 0);
+}
+
+/*
   read state from multicast
  */
 void SimMCast::multicast_read(void)
@@ -206,7 +243,8 @@ void SimMCast::multicast_read(void)
         printf("Waiting for multicast state\n");
     }
     struct SITL::sitl_fdm state;
-    if (recv(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL) == sizeof(state)) {
+    socklen_t len = sizeof(in_addr);
+    if (recvfrom(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL, (sockaddr *)&in_addr, &len) == sizeof(state)) {
         if (state.timestamp_us < _sitl->state.timestamp_us) {
             // main process has rebooted
             base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
@@ -214,6 +252,11 @@ void SimMCast::multicast_read(void)
         _sitl->state = state;
         hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
         HALSITL::Scheduler::timer_event();
+        if (servo_fd == -1) {
+            servo_fd_open();
+        } else {
+            servo_send();
+        }
     }
 }
 
