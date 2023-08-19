@@ -76,6 +76,10 @@ def build(bld):
                      'AP_AHRS',
                      'AP_Terrain',
                      'AP_Torqeedo',
+                     'AP_Volz_Protocol',
+                     'AP_SBusOut',
+                     'AP_RobotisServo',
+                     'AP_FETtecOneWire',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',
