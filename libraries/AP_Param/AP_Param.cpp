@@ -94,9 +94,10 @@ HAL_Semaphore AP_Param::_count_sem;
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
-struct AP_Param::param_override *AP_Param::param_overrides = nullptr;
-uint16_t AP_Param::num_param_overrides = 0;
-uint16_t AP_Param::num_read_only = 0;
+struct AP_Param::param_override *AP_Param::param_overrides;
+uint16_t AP_Param::param_overrides_len;
+uint16_t AP_Param::num_param_overrides;
+uint16_t AP_Param::num_read_only;
 
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
@@ -2169,7 +2170,7 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     return true;
 }
 
-bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
+bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx)
 {
     // try opening the file both in the posix filesystem and using AP::FS
     int file_apfs = AP::FS().open(filename, O_RDONLY, true);
@@ -2178,7 +2179,6 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
         return false;
     }
 
-    uint16_t idx = 0;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
         char *pname;
@@ -2200,6 +2200,10 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
 #endif
             }
             continue;
+        }
+        if (idx >= param_overrides_len) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
         }
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
@@ -2244,6 +2248,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     free(mutable_filename);
 
     delete[] param_overrides;
+    param_overrides_len = 0;
     num_param_overrides = 0;
     num_read_only = 0;
 
@@ -2252,6 +2257,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
         AP_HAL::panic("AP_Param: Failed to allocate overrides");
         return false;
     }
+    param_overrides_len = num_defaults;
 
     if (num_defaults == 0) {
         return true;
@@ -2262,10 +2268,11 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     if (mutable_filename == nullptr) {
         AP_HAL::panic("AP_Param: Failed to allocate mutable string");
     }
+    uint16_t idx = 0;
     for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
          pname != nullptr;
          pname = strtok_r(nullptr, ",", &saveptr)) {
-        if (!read_param_defaults_file(pname, last_pass)) {
+        if (!read_param_defaults_file(pname, last_pass, idx)) {
             free(mutable_filename);
             return false;
         }
@@ -2336,6 +2343,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
 {
     delete[] param_overrides;
     param_overrides = nullptr;
+    param_overrides_len = 0;
     num_param_overrides = 0;
     num_read_only = 0;
 
@@ -2349,6 +2357,8 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         AP_HAL::panic("AP_Param: Failed to allocate overrides");
         return;
     }
+
+    param_overrides_len = num_defaults;
 
     const volatile char *ptr = param_defaults_data.data;
     int32_t length = param_defaults_data.length;
