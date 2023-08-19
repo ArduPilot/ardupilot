@@ -188,6 +188,7 @@ void SimMCast::multicast_open(void)
                 strerror(errno));
         exit(1);
     }
+    ::printf("multicast receiver initialised\n");
 }
 
 /*
@@ -247,7 +248,11 @@ void SimMCast::multicast_read(void)
     while (recvfrom(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL, (sockaddr *)&in_addr, &len) != sizeof(state)) {
         // nop
     }
+    if (_sitl->state.timestamp_us == 0) {
+        printf("Got multicast state input\n");
+    }
     if (state.timestamp_us < _sitl->state.timestamp_us) {
+        printf("multicast state time reset\n");
         // main process has rebooted
         base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
     }
