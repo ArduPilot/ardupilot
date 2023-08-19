@@ -52,15 +52,7 @@ public:
     void     read(uint16_t* period_us, uint8_t len) override;
     uint16_t read_last_sent(uint8_t ch) override;
     void     read_last_sent(uint16_t* period_us, uint8_t len) override;
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
-        _esc_pwm_min = min_pwm;
-        _esc_pwm_max = max_pwm;
-    }
-    bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) override {
-        min_pwm = _esc_pwm_min;
-        max_pwm = _esc_pwm_max;
-        return true;
-    }
+
     // surface dshot telemetry for use by the harmonic notch and status information
 #ifdef HAL_WITH_BIDIR_DSHOT
     uint16_t get_erpm(uint8_t chan) const override { return _bdshot.erpm[chan]; }
@@ -76,10 +68,6 @@ public:
      * return mask of channels that must be disabled because they share a group with a digital channel
      */
     uint32_t get_disabled_channels(uint32_t digital_mask) override;
-
-    float scale_esc_to_unity(uint16_t pwm) override {
-        return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
-    }
 
     void     cork(void) override;
     void     push(void) override;
@@ -510,8 +498,6 @@ private:
 
     static pwm_group pwm_group_list[];
     static const uint8_t NUM_GROUPS;
-    uint16_t _esc_pwm_min;
-    uint16_t _esc_pwm_max;
 
     // offset of first local channel
     uint8_t chan_offset;
