@@ -139,17 +139,15 @@ public:
       microseconds, and represent minimum and maximum PWM values which
       will be used to convert channel writes into a percentage
      */
-    virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
+    void set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {
+        _esc_pwm_min = min_pwm;
+        _esc_pwm_max = max_pwm;
+    }
 
-    /*
-      return ESC scaling value from set_esc_scaling()
-     */
-    virtual bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) { return false; }
-    
     /*
       returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
      */
-    virtual float    scale_esc_to_unity(uint16_t pwm) { return 0; }
+    float scale_esc_to_unity(uint16_t pwm) const;
 
     /*
       return the erpm and error rate for a channel if available
@@ -415,4 +413,7 @@ protected:
     // helper functions for implementation of get_output_mode_banner
     void append_to_banner(char banner_msg[], uint8_t banner_msg_len, output_mode out_mode, uint8_t low_ch, uint8_t high_ch) const;
     const char* get_output_mode_string(enum output_mode out_mode) const;
+
+    uint16_t _esc_pwm_min;
+    uint16_t _esc_pwm_max;
 };
