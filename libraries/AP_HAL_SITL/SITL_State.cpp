@@ -704,12 +704,8 @@ void SITL_State::multicast_servo_update(struct sitl_input &input)
 {
     for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
         const uint32_t mask = (1U<<i);
-        if (mc_servo[i] != 0) {
-            // we consider an output active if it has ever seen
-            // a non-zero value
-            servo_active_mask |= mask;
-        }
-        if (servo_active_mask & mask) {
+        const uint32_t can_mask = uint32_t(_sitl->can_servo_mask.get());
+        if (can_mask & mask) {
             input.servos[i] = mc_servo[i];
         }
     }
