@@ -244,19 +244,20 @@ void SimMCast::multicast_read(void)
     }
     struct SITL::sitl_fdm state;
     socklen_t len = sizeof(in_addr);
-    if (recvfrom(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL, (sockaddr *)&in_addr, &len) == sizeof(state)) {
-        if (state.timestamp_us < _sitl->state.timestamp_us) {
-            // main process has rebooted
-            base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
-        }
-        _sitl->state = state;
-        hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
-        HALSITL::Scheduler::timer_event();
-        if (servo_fd == -1) {
-            servo_fd_open();
-        } else {
-            servo_send();
-        }
+    while (recvfrom(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL, (sockaddr *)&in_addr, &len) != sizeof(state)) {
+        // nop
+    }
+    if (state.timestamp_us < _sitl->state.timestamp_us) {
+        // main process has rebooted
+        base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
+    }
+    _sitl->state = state;
+    hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
+    HALSITL::Scheduler::timer_event();
+    if (servo_fd == -1) {
+        servo_fd_open();
+    } else {
+        servo_send();
     }
 }
 
