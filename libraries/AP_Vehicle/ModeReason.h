@@ -69,4 +69,5 @@ enum class ModeReason : uint8_t {
   QLAND_INSTEAD_OF_RTL = 49,
   DEADRECKON_FAILSAFE = 50,
   MODE_TAKEOFF_FAILSAFE = 51,
+  DDS_COMMAND = 52,
 };
