@@ -660,14 +660,24 @@ def start_antenna_tracker(opts):
     os.chdir(oldpwd)
 
 
-def start_CAN_GPS(opts):
-    """Compile and run the sitl_periph_gps"""
+def start_CAN_Periph(opts, frame_info):
+    """Compile and run the sitl_periph"""
 
     global can_uarta
     progress("Preparing sitl_periph_gps")
     options = vinfo.options["sitl_periph_gps"]['frames']['gps']
-    defaults_path = options.get('default_params_filename', None)
-    do_build(opts, options)
+    defaults_path = frame_info.get('periph_params_filename', None)
+    if defaults_path is None:
+        defaults_path = options.get('default_params_filename', None)
+
+    if not isinstance(defaults_path, list):
+        defaults_path = [defaults_path]
+
+    # add in path and make a comma separated list
+    defaults_path = ','.join([util.relcurdir(os.path.join(autotest_dir, p)) for p in defaults_path])
+
+    if not cmd_opts.no_rebuild:
+        do_build(opts, options)
     exe = os.path.join(root_dir, 'build/sitl_periph_gps', 'bin/AP_Periph')
     cmd = ["nice"]
     cmd_name = "sitl_periph_gps"
@@ -692,7 +702,7 @@ def start_CAN_GPS(opts):
     cmd.append(exe)
     if defaults_path is not None:
         cmd.append("--defaults")
-        cmd.append(util.relcurdir(os.path.join(autotest_dir, defaults_path)))
+        cmd.append(defaults_path)
     run_in_terminal_window(cmd_name, cmd)
 
 
@@ -1476,8 +1486,8 @@ if cmd_opts.instance == 0:
 if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
-if cmd_opts.can_peripherals:
-    start_CAN_GPS(cmd_opts)
+if cmd_opts.can_peripherals or frame_infos.get('periph_params_filename', None) is not None:
+    start_CAN_Periph(cmd_opts, frame_infos)
 
 if cmd_opts.custom_location:
     location = [(float)(x) for x in cmd_opts.custom_location.split(",")]
