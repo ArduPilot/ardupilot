@@ -202,6 +202,9 @@ void SimMCast::multicast_read(void)
     if (_sitl == nullptr) {
         return;
     }
+    if (_sitl->state.timestamp_us == 0) {
+        printf("Waiting for multicast state\n");
+    }
     struct SITL::sitl_fdm state;
     if (recv(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL) == sizeof(state)) {
         if (state.timestamp_us < _sitl->state.timestamp_us) {
