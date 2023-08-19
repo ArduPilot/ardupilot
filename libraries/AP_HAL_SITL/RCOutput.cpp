@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if !defined(HAL_BUILD_AP_PERIPH)
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -157,5 +155,3 @@ void RCOutput::serial_led_send(const uint16_t chan)
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#endif //!defined(HAL_BUILD_AP_PERIPH)

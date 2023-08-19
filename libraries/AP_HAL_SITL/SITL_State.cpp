@@ -342,6 +342,9 @@ void SITL_State::_fdm_input_local(void)
     ride_along.receive(input);
 #endif
 
+    // replace outputs from multicast
+    multicast_servo_update(input);
+
     // update the model
     sitl_model->update_model(input);
 
@@ -640,6 +643,29 @@ void SITL_State::multicast_state_open(void)
                 strerror(errno));
         exit(1);
     }
+
+    /*
+      open servo input socket
+     */
+    servo_in_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (servo_in_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(servo_in_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+
+    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    sockaddr.sin_port = htons(SITL_SERVO_PORT);
+
+    ret = bind(servo_in_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "udp servo connect failed\n");
+        exit(1);
+    }
 }
 
 /*
@@ -655,6 +681,36 @@ void SITL_State::multicast_state_send(void)
     }
     const auto &sfdm = _sitl->state;
     send(mc_out_fd, (void*)&sfdm, sizeof(sfdm), 0);
+
+    check_servo_input();
 }
 
+/*
+  check for servo data from peripheral
+ */
+void SITL_State::check_servo_input(void)
+{
+    // drain any pending packets
+    while (recv(servo_in_fd, (void*)mc_servo, sizeof(mc_servo), MSG_DONTWAIT) == sizeof(mc_servo)) {
+        // noop
+    }
+}
+
+/*
+  overwrite input structure with multicast values
+ */
+void SITL_State::multicast_servo_update(struct sitl_input &input)
+{
+    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+        const uint32_t mask = (1U<<i);
+        if (mc_servo[i] != 0) {
+            // we consider an output active if it has ever seen
+            // a non-zero value
+            servo_active_mask |= mask;
+        }
+        if (servo_active_mask & mask) {
+            input.servos[i] = mc_servo[i];
+        }
+    }
+}
 #endif
