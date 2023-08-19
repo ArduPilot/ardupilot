@@ -666,6 +666,7 @@ void SITL_State::multicast_state_open(void)
         fprintf(stderr, "udp servo connect failed\n");
         exit(1);
     }
+    ::printf("multicast initialised\n");
 }
 
 /*
