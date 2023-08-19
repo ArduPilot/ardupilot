@@ -97,6 +97,14 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: If set, if a numerical error occurs SITL will die with a floating point exception.
     // @User: Advanced
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
+
+    // @Param: CAN_SRV_MSK
+    // @DisplayName: Mask of CAN servos/ESCs
+    // @Description: The set of actuators controlled externally by CAN SITL AP_Periph
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
+    // @User: Advanced
+    AP_GROUPINFO("CAN_SRV_MSK",   29, SIM,  can_servo_mask, 0),
+
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
