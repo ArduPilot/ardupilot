@@ -5,9 +5,6 @@
 
 bool ModeQLoiter::_enter()
 {
-    // always zero forward throttle demand on entry into VTOL modes
-    quadplane.q_fwd_throttle = 0.0f;
-
     // initialise loiter
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
