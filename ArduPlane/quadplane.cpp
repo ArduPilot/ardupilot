@@ -2923,14 +2923,6 @@ void QuadPlane::vtol_position_controller(void)
 }
 
 void QuadPlane::assign_tilt_to_fwd_thr(void) {
-#if QAUTOTUNE_ENABLED
-    if (plane.control_mode == &plane.mode_qautotune) {
-        // limiting forward pitch and using forward throttle or rotor tilt is incompatible with auto-tune
-        q_fwd_throttle = 0.0f;
-        q_fwd_nav_pitch_lim_cd = -aparm.angle_max;
-        return;
-    }
-#endif
     if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_tilt_lim)) {
         // Handle the case where we are limiting the forward pitch angle to prevent negative wing lift
         // and are using the forward thrust motor or tilting rotors to provide the forward acceleration
