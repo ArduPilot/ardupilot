@@ -1151,7 +1151,10 @@ void NavEKF3_core::selectHeightForFusion()
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
 #endif
     // select height source
-    if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
+    if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::NONE)) {
+        // user has specified no height sensor
+        activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
+    } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
@@ -1305,6 +1308,18 @@ void NavEKF3_core::selectHeightForFusion()
             posDownObsNoise *= frontend->gndEffectBaroScaler;
         }
         velPosObs[5] = -hgtMea;
+    } else if ((activeHgtSource == AP_NavEKF_Source::SourceZ::NONE && imuSampleTime_ms - lastHgtPassTime_ms > 70)) {
+        // fuse a constant height of 0 at 14 Hz
+        hgtMea = 0.0f;
+        fuseHgtData = true;
+        velPosObs[5] = -hgtMea;
+        if (onGround) {
+            // use a typical vertical positoin observation noise when not flying for faster IMU delta velocity bias estimation
+            posDownObsNoise = sq(2.0f);
+        } else {
+            // alow a larger value when flying to accomodate vertical maneouvres
+            posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 2.0f, 100.0f));
+        }
     } else {
         fuseHgtData = false;
     }
