@@ -399,7 +399,7 @@ private:
     AP_Float q_fwd_thr_gain;
 
     // limit applied to forward pitch to prevent wing producing negative lift
-    AP_Float q_fwd_tilt_lim;
+    AP_Float q_fwd_pitch_lim;
 
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
