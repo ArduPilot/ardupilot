@@ -2923,11 +2923,11 @@ void QuadPlane::vtol_position_controller(void)
 }
 
 void QuadPlane::assign_tilt_to_fwd_thr(void) {
-    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_pitch_lim)) {
+    if (is_positive(q_fwd_thr_gain)) {
         // Handle the case where we are limiting the forward pitch angle to prevent negative wing lift
         // and are using the forward thrust motor or tilting rotors to provide the forward acceleration
         float fwd_tilt_rad = radians(constrain_float(-0.01f * (float)plane.nav_pitch_cd, 0.0f, 45.0f));
-        q_fwd_nav_pitch_lim_cd = (int32_t)MIN(-100.0f * q_fwd_pitch_lim, 0.0f);
+        q_fwd_nav_pitch_lim_cd = (int32_t)(-100.0f * q_fwd_pitch_lim);
         plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, q_fwd_nav_pitch_lim_cd);
         q_fwd_throttle = MIN(q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
 
@@ -3594,7 +3594,7 @@ float QuadPlane::forward_throttle_pct()
     // handle special case where forward thrust motor is used instead of forward pitch.
     // but not in autotune as it will upset the results
 #if QAUTOTUNE_ENABLED
-    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_pitch_lim) && plane.control_mode != &plane.mode_qautotune) {
+    if (is_positive(q_fwd_thr_gain) && plane.control_mode != &plane.mode_qautotune) {
 #else
     if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_thr_gain)) {
 #endif
