@@ -5,9 +5,6 @@
 
 bool ModeQAcro::_enter()
 {
-    // always zero forward throttle demand on entry into VTOL modes
-    quadplane.q_fwd_throttle = 0.0f;
-
     quadplane.throttle_wait = false;
     quadplane.transition->force_transition_complete();
     attitude_control->relax_attitude_controllers();

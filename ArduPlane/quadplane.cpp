@@ -2088,7 +2088,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
             gcs().send_text(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
-        // always zero forward throttle demand on entry into VTOL modes
+        // This is a precaustion. It should be looked after by the call to QuadPlane::mode_enter(void) on mode entry.
         plane.quadplane.q_fwd_throttle = 0.0f;
         return true;
         
@@ -4511,6 +4511,8 @@ void QuadPlane::mode_enter(void)
     // state for special behaviour
     guided_wait_takeoff_on_mode_enter = guided_wait_takeoff;
     guided_wait_takeoff = false;
+
+    q_fwd_throttle = 0.0f;
 }
 
 // Set attitude control yaw rate time constant to pilot input command model value
