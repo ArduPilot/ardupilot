@@ -385,6 +385,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 visualodom_required = true;
                 break;
             case SourceZ::NONE:
+                break;
             default:
                 // invalid posz value
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
