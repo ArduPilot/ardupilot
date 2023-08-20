@@ -2941,6 +2941,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
             float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
             float fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
             q_fwd_throttle *= fwd_thr_scaler;
+            q_fwd_nav_pitch_lim_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + 100.0f * q_fwd_pitch_lim * fwd_thr_scaler);
         }
 
     } else {
