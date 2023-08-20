@@ -5,9 +5,6 @@
 
 bool ModeQRTL::_enter()
 {
-    // always zero forward throttle demand on entry into VTOL modes
-    plane.quadplane.q_fwd_throttle = 0.0f;
-
     // treat QRTL as QLAND if we are in guided wait takeoff state, to cope
     // with failsafes during GUIDED->AUTO takeoff sequence
     if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
