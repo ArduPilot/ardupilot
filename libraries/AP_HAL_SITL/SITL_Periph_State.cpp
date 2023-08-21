@@ -226,9 +226,19 @@ void SimMCast::servo_fd_open(void)
  */
 void SimMCast::servo_send(void)
 {
+    const auto *_sitl = AP::sitl();
+    if (_sitl == nullptr) {
+        return;
+    }
     uint16_t out[SITL_NUM_CHANNELS] {};
     hal.rcout->read(out, SITL_NUM_CHANNELS);
-    send(servo_fd, (void*)out, sizeof(out), 0);
+
+    float out_float[SITL_NUM_CHANNELS];
+    const uint32_t mask = uint32_t(_sitl->can_servo_mask.get());
+    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+        out_float[i] = (mask & (1U<<i)) ? out[i] : nanf("");
+    }
+    send(servo_fd, (void*)out_float, sizeof(out_float), 0);
 }
 
 /*
