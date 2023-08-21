@@ -71,7 +71,7 @@ protected:
 
     int8_t              _num_added;
 
-//MIR This should probably become private in future.
+    //MIR This should probably become private in future.
 public:
     float               right_out;                  //input right movement, negative for left, +1 to -1
     float               front_out;                  //input front/forwards movement, negative for backwards, +1 to -1

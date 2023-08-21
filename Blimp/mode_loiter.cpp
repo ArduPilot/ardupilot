@@ -32,10 +32,18 @@ void ModeLoiter::run()
         blimp.rotate_BF_to_NE(pilot.xy());
     }
 
-    if(fabsf(target_pos.x-blimp.pos_ned.x) < (g.max_pos_xy*POS_LAG)) target_pos.x += pilot.x;
-    if(fabsf(target_pos.y-blimp.pos_ned.y) < (g.max_pos_xy*POS_LAG)) target_pos.y += pilot.y;
-    if(fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_z*POS_LAG)) target_pos.z += pilot.z;
-    if(fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (g.max_pos_yaw*POS_LAG)) target_yaw = wrap_PI(target_yaw + pilot_yaw);
+    if (fabsf(target_pos.x-blimp.pos_ned.x) < (g.max_pos_xy*POS_LAG)) {
+        target_pos.x += pilot.x;
+    }
+    if (fabsf(target_pos.y-blimp.pos_ned.y) < (g.max_pos_xy*POS_LAG)) {
+        target_pos.y += pilot.y;
+    }
+    if (fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_z*POS_LAG)) {
+        target_pos.z += pilot.z;
+    }
+    if (fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (g.max_pos_yaw*POS_LAG)) {
+        target_yaw = wrap_PI(target_yaw + pilot_yaw);
+    }
 
     blimp.loiter->run(target_pos, target_yaw, Vector4b{false,false,false,false});
 }

@@ -53,7 +53,7 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK_CLASS(AP_InertialSensor, &blimp.ins, update),
     // send outputs to the motors library immediately
     FAST_TASK(motors_output),
-     // run EKF state estimator (expensive)
+    // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
     // Inertial Nav
     FAST_TASK(read_inertia),
