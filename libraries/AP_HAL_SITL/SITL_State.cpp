@@ -692,8 +692,15 @@ void SITL_State::multicast_state_send(void)
 void SITL_State::check_servo_input(void)
 {
     // drain any pending packets
-    while (recv(servo_in_fd, (void*)mc_servo, sizeof(mc_servo), MSG_DONTWAIT) == sizeof(mc_servo)) {
-        // noop
+    float mc_servo_float[SITL_NUM_CHANNELS];
+    // we loop to ensure we drain all packets from all nodes
+    while (recv(servo_in_fd, (void*)mc_servo_float, sizeof(mc_servo_float), MSG_DONTWAIT) == sizeof(mc_servo_float)) {
+        for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+            // nan means that node is not outputting this channel
+            if (!isnan(mc_servo_float[i])) {
+                mc_servo[i] = uint16_t(mc_servo_float[i]);
+            }
+        }
     }
 }
 
