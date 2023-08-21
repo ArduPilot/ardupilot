@@ -71,9 +71,9 @@ Aircraft::Aircraft(const char *frame_str) :
         sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     }
 
-    // init rangefinder array to -1 to signify no data
+    // init rangefinder array to NaN to signify no data
     for (uint8_t i = 0; i < ARRAY_SIZE(rangefinder_m); i++){
-        rangefinder_m[i] = -1.0f;
+        rangefinder_m[i] = nanf("");
     }
 }
 
