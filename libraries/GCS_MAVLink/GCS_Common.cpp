@@ -2760,20 +2760,24 @@ void GCS_MAVLINK::send_home_position() const
     const Location &home = AP::ahrs().get_home();
 
     // get home position from origin
-    Vector3f home_pos_neu_cm;
-    if (!home.get_vector_from_origin_NEU(home_pos_neu_cm)) {
-        return;
+    Vector3f home_pos_ned;
+    if (home.get_vector_from_origin_NEU(home_pos_ned)) {
+        // convert NEU in cm to NED in meters
+        home_pos_ned *= 0.01f;
+        home_pos_ned.z *= -1;
+    } else {
+        home_pos_ned = Vector3f{NAN, NAN, NAN};
     }
 
-    const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    const float q[4] {NAN, NAN, NAN, NAN};
     mavlink_msg_home_position_send(
         chan,
         home.lat,
         home.lng,
         home.alt * 10,
-        home_pos_neu_cm.x * 0.01f, // position of home on x-axis in meters
-        home_pos_neu_cm.y * 0.01f, // position of home on y-axis in meters
-        home_pos_neu_cm.z * -0.01f, // position of home on z-axis in meters in NED frame
+        home_pos_ned.x,
+        home_pos_ned.y,
+        home_pos_ned.z,
         q,
         0.0f, 0.0f, 0.0f,
         AP_HAL::micros64());
