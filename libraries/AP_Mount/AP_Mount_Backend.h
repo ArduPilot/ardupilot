@@ -178,6 +178,13 @@ public:
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}
 
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    virtual bool get_rangefinder_distance(float& distance_m) const { return false; }
+
 protected:
 
     enum class MountTargetType {
