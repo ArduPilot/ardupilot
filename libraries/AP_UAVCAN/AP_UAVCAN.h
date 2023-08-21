@@ -53,6 +53,7 @@ class ButtonCb;
 class TrafficReportCb;
 class ActuatorStatusCb;
 class ActuatorStatusVolzCb;
+class HimarkServoInfoCb;
 class ESCStatusCb;
 class DebugCb;
 class ParamGetSetCb;
@@ -210,6 +211,7 @@ public:
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
+        USE_HIMARK_SERVO          = (1U<<6),
     };
 
     // check if a option is set
@@ -231,6 +233,7 @@ private:
     ///// SRV output /////
     void SRV_send_actuator();
     void SRV_send_esc();
+    void SRV_send_himark();
 
     ///// LED /////
     void led_out_send();
@@ -366,6 +369,7 @@ private:
     static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
     static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
     static void handle_actuator_status_Volz(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusVolzCb &cb);
+    static void handle_himark_servoinfo(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HimarkServoInfoCb &cb);
     static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
     static bool is_esc_data_index_valid(const uint8_t index);
     static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
