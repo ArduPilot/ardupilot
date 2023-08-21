@@ -103,6 +103,8 @@ AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
 AP_HW_H757I_EVAL                      146
 AP_HW_F4BY                             20 # value due to previous release by vendor
+AP_HW_MAZZYSTARDRONE                  188
+
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152
 AP_HW_VRBRAIN_V54                    1154
