@@ -1,5 +1,7 @@
 # extra parameters for SITL peripheral quadplane
 
+SIM_CAN_SRV_MSK 0xff
+
 # control surfaces
 OUT1_FUNCTION 51
 OUT2_FUNCTION 52
