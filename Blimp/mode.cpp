@@ -140,7 +140,7 @@ void Blimp::update_flight_mode()
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
 void Blimp::exit_mode(Mode *&old_flightmode,
-                      Mode *&new_flightmode){}
+                      Mode *&new_flightmode) {}
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Blimp::notify_flight_mode()

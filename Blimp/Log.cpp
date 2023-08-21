@@ -30,7 +30,7 @@ struct PACKED log_FINO {
 //Write a fin input packet
 void Blimp::Write_FINI(float right, float front, float down, float yaw)
 {
-    const struct log_FINI pkt{
+    const struct log_FINI pkt {
         LOG_PACKET_HEADER_INIT(LOG_FINI_MSG),
         time_us       : AP_HAL::micros64(),
         Right         : right,
@@ -44,7 +44,7 @@ void Blimp::Write_FINI(float right, float front, float down, float yaw)
 //Write a fin output packet
 void Blimp::Write_FINO(float *amp, float *off)
 {
-    const struct log_FINO pkt{
+    const struct log_FINO pkt {
         LOG_PACKET_HEADER_INIT(LOG_FINO_MSG),
         time_us       : AP_HAL::micros64(),
         Fin1_Amp      : amp[0],
@@ -248,8 +248,10 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: D: Down
     // @Field: Y: Yaw
 
-    { LOG_FINI_MSG, sizeof(log_FINI),
-      "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"  },
+    {
+        LOG_FINI_MSG, sizeof(log_FINI),
+        "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"
+    },
 
     // @LoggerMessage: FINO
     // @Description: Fin output
@@ -263,8 +265,10 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: F4A: Fin 4 Amplitude
     // @Field: F4O: Fin 4 Offset
 
-    { LOG_FINO_MSG, sizeof(log_FINO),
-      "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"  },
+    {
+        LOG_FINO_MSG, sizeof(log_FINO),
+        "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"
+    },
 
     // @LoggerMessage: PIDD,PIVN,PIVE,PIVD,PIVY
     // @Description: Proportional/Integral/Derivative gain values
@@ -279,16 +283,26 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: Dmod: scaler applied to D gain to reduce limit cycling
     // @Field: SRate: slew rate
     // @Field: Limit: 1 if I term is limited due to output saturation
-    { LOG_PIDD_MSG, sizeof(log_PID),
-      "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVN_MSG, sizeof(log_PID),
-      "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVE_MSG, sizeof(log_PID),
-      "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVD_MSG, sizeof(log_PID),
-      "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVY_MSG, sizeof(log_PID),
-      "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    {
+        LOG_PIDD_MSG, sizeof(log_PID),
+        "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVN_MSG, sizeof(log_PID),
+        "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVE_MSG, sizeof(log_PID),
+        "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVD_MSG, sizeof(log_PID),
+        "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVY_MSG, sizeof(log_PID),
+        "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
 
     // @LoggerMessage: PTUN
     // @Description: Parameter Tuning information
