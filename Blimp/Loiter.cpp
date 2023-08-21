@@ -9,14 +9,20 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
 
     float scaler_xz_n;
     float xz_out = fabsf(blimp.motors->front_out) + fabsf(blimp.motors->down_out);
-    if (xz_out > 1) scaler_xz_n = 1 / xz_out;
-    else scaler_xz_n = 1;
+    if (xz_out > 1) {
+        scaler_xz_n = 1 / xz_out;
+    } else {
+        scaler_xz_n = 1;
+    }
     scaler_xz = scaler_xz*MA + scaler_xz_n*MO;
 
     float scaler_yyaw_n;
     float yyaw_out = fabsf(blimp.motors->right_out) + fabsf(blimp.motors->yaw_out);
-    if (yyaw_out > 1) scaler_yyaw_n = 1 / yyaw_out;
-    else scaler_yyaw_n = 1;
+    if (yyaw_out > 1) {
+        scaler_yyaw_n = 1 / yyaw_out;
+    } else {
+        scaler_yyaw_n = 1;
+    }
     scaler_yyaw = scaler_yyaw*MA + scaler_yyaw_n*MO;
 
     AP::logger().WriteStreaming("BSC", "TimeUS,xz,yyaw,xzn,yyawn",
@@ -29,17 +35,27 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
     float err_yaw = wrap_PI(target_yaw - yaw_ef);
 
     Vector4b zero;
-    if((fabsf(err_xyz.x) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(2-1)))) zero.x = true;
-    if((fabsf(err_xyz.y) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(1-1)))) zero.y = true;
-    if((fabsf(err_xyz.z) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(3-1)))) zero.z = true;
-    if((fabsf(err_yaw)   < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(4-1)))) zero.yaw = true;
+    if ((fabsf(err_xyz.x) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(2-1)))) {
+        zero.x = true;
+    }
+    if ((fabsf(err_xyz.y) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(1-1)))) {
+        zero.y = true;
+    }
+    if ((fabsf(err_xyz.z) < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(3-1)))) {
+        zero.z = true;
+    }
+    if ((fabsf(err_yaw)   < blimp.g.pid_dz) || !blimp.motors->_armed || (blimp.g.dis_mask & (1<<(4-1)))) {
+        zero.yaw = true;
+    }
 
     //Disabled means "don't update PIDs or output anything at all". Zero means actually output zero thrust. I term is limited in either case."
     Vector4b limit = zero || axes_disabled;
 
     Vector3f target_vel_ef;
-    if(!axes_disabled.x && !axes_disabled.y) target_vel_ef = {blimp.pid_pos_xy.update_all(target_pos, blimp.pos_ned, dt, {(float)limit.x, (float)limit.y, (float)limit.z}), 0};
-    if(!axes_disabled.z) target_vel_ef.z = blimp.pid_pos_z.update_all(target_pos.z, blimp.pos_ned.z, dt, limit.z);
+    if (!axes_disabled.x && !axes_disabled.y) target_vel_ef = {blimp.pid_pos_xy.update_all(target_pos, blimp.pos_ned, dt, {(float)limit.x, (float)limit.y, (float)limit.z}), 0};
+    if (!axes_disabled.z) {
+        target_vel_ef.z = blimp.pid_pos_z.update_all(target_pos.z, blimp.pos_ned.z, dt, limit.z);
+    }
 
     float target_vel_yaw = 0;
     if (!axes_disabled.yaw) {
@@ -59,10 +75,14 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
     Vector2f actuator;
     if (!axes_disabled.x && !axes_disabled.y) actuator = blimp.pid_vel_xy.update_all(target_vel_ef_c_scaled_xy, vel_ned_filtd_scaled_xy, dt, {(float)limit.x, (float)limit.y});
     float act_down = 0;
-    if(!axes_disabled.z) act_down = blimp.pid_vel_z.update_all(target_vel_ef_c.z * scaler_xz, blimp.vel_ned_filtd.z * scaler_xz, dt, limit.z);
+    if (!axes_disabled.z) {
+        act_down = blimp.pid_vel_z.update_all(target_vel_ef_c.z * scaler_xz, blimp.vel_ned_filtd.z * scaler_xz, dt, limit.z);
+    }
     blimp.rotate_NE_to_BF(actuator);
     float act_yaw = 0;
-    if(!axes_disabled.yaw) act_yaw = blimp.pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yyaw, blimp.vel_yaw_filtd * scaler_yyaw, dt, limit.yaw);
+    if (!axes_disabled.yaw) {
+        act_yaw = blimp.pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yyaw, blimp.vel_yaw_filtd * scaler_yyaw, dt, limit.yaw);
+    }
 
     if (!blimp.motors->armed()) {
         blimp.pid_pos_xy.set_integrator(Vector2f(0,0));
@@ -110,10 +130,18 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     const float dt = blimp.scheduler.get_last_loop_time_s();
 
     Vector4b zero;
-    if(!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(2-1)))) zero.x = true;
-    if(!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(1-1)))) zero.y = true;
-    if(!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(3-1)))) zero.z = true;
-    if(!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(4-1)))) zero.yaw = true;
+    if (!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(2-1)))) {
+        zero.x = true;
+    }
+    if (!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(1-1)))) {
+        zero.y = true;
+    }
+    if (!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(3-1)))) {
+        zero.z = true;
+    }
+    if (!blimp.motors->_armed || (blimp.g.dis_mask & (1<<(4-1)))) {
+        zero.yaw = true;
+    }
     //Disabled means "don't update PIDs or output anything at all". Zero means actually output zero thrust. I term is limited in either case."
     Vector4b limit = zero || axes_disabled;
 
@@ -128,10 +156,14 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     Vector2f actuator;
     if (!axes_disabled.x && !axes_disabled.y) actuator = blimp.pid_vel_xy.update_all(target_vel_ef_c_scaled_xy, vel_ned_filtd_scaled_xy, dt, {(float)limit.x, (float)limit.y});
     float act_down = 0;
-    if(!axes_disabled.z) act_down = blimp.pid_vel_z.update_all(target_vel_ef_c.z * scaler_xz, blimp.vel_ned_filtd.z * scaler_xz, dt, limit.z);
+    if (!axes_disabled.z) {
+        act_down = blimp.pid_vel_z.update_all(target_vel_ef_c.z * scaler_xz, blimp.vel_ned_filtd.z * scaler_xz, dt, limit.z);
+    }
     blimp.rotate_NE_to_BF(actuator);
     float act_yaw = 0;
-    if(!axes_disabled.yaw) act_yaw = blimp.pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yyaw, blimp.vel_yaw_filtd * scaler_yyaw, dt, limit.yaw);
+    if (!axes_disabled.yaw) {
+        act_yaw = blimp.pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yyaw, blimp.vel_yaw_filtd * scaler_yyaw, dt, limit.yaw);
+    }
 
     if (!blimp.motors->armed()) {
         blimp.pid_vel_xy.set_integrator(Vector2f(0,0));
