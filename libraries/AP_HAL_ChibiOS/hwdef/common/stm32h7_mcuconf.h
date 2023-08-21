@@ -408,7 +408,9 @@
 #define STM32_ADC_SAMPLES_SIZE              16
 #endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
+#ifndef STM32_ADC_USE_ADC12
 #define STM32_ADC_USE_ADC12                 TRUE
+#endif
 #if !defined(STM32H750xx)
 #ifndef STM32_ADC_USE_ADC3
 #define STM32_ADC_USE_ADC3                  TRUE
