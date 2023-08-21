@@ -111,7 +111,7 @@ AP_HW_VRUBRAIN_V51                   1351
 AP_HW_F103_PERIPH                    1000
 AP_HW_CUAV_GPS                       1001
 AP_HW_OMNIBUSF4                      1002
-AP_HW_CUBEBLACK+                     1003
+AP_HW_CUBEBLACKPLUS                  1003
 AP_HW_F303_PERIPH                    1004
 AP_HW_ZUBAXGNSS                      1005
 AP_HW_NIGHTCRAWLER                   1006
@@ -200,7 +200,7 @@ AP_HW_HolybroCompass                 1088
 AP_HW_FOXEERH743_V1                  1089
 AP_HW_PixFlamingoL4R5_V1             1090
 
-AP_HW_Sierra-TrueNav Pro             1091
+AP_HW_Sierra-TrueNavPro              1091
 AP_HW_Sierra-TrueNav                 1092
 AP_HW_Sierra-TrueNorth               1093
 AP_HW_Sierra-TrueSpeed               1094
