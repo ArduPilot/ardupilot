@@ -1021,7 +1021,7 @@ float SIM::get_rangefinder(uint8_t instance) {
     if (instance < ARRAY_SIZE(state.rangefinder_m)) {
         return state.rangefinder_m[instance];
     }
-    return -1;
+    return nanf("");
 };
 
 float SIM::measure_distance_at_angle_bf(const Location &location, float angle) const
