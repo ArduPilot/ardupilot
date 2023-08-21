@@ -24,7 +24,7 @@ APP_START_OFFSET_KB 8
 FLASH_SIZE_KB 512
 
 # board ID for firmware load
-APJ_BOARD_ID 1098
+APJ_BOARD_ID AP_HW_mRoCANPWM
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

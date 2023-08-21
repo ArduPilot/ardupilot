@@ -7,7 +7,7 @@ define BOARD_TYPE_DEFAULT 14
 MCU STM32F4xx STM32F469xx
 
 # board ID for firmware load
-APJ_BOARD_ID 13
+APJ_BOARD_ID TARGET_HW_PX4_PIO_V3
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

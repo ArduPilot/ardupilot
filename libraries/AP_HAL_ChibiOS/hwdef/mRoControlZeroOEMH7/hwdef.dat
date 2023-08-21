@@ -19,7 +19,7 @@
 MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1024
+APJ_BOARD_ID AP_HW_MRO_CTRL_ZERO_OEM_H7
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

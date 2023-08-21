@@ -17,7 +17,7 @@ STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
 # board ID for firmware load
-APJ_BOARD_ID 1050
+APJ_BOARD_ID AP_HW_SierraL431
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

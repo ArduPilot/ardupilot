@@ -3,7 +3,7 @@
 MCU STM32L4xx STM32L4R5xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1090
+APJ_BOARD_ID AP_HW_PixFlamingoL4R5_V1
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

@@ -8,7 +8,7 @@ MCU STM32H7xx STM32H743xx
 OSCILLATOR_HZ 16000000
 
 # board ID for firmware load
-APJ_BOARD_ID 57
+APJ_BOARD_ID TARGET_HW_ARK_FMU_V6X
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0

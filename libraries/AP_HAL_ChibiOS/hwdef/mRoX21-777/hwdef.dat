@@ -28,7 +28,7 @@ define BOARD_TYPE_DEFAULT 20
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 136
+APJ_BOARD_ID AP_HW_MRO_X2V1_777
 
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism

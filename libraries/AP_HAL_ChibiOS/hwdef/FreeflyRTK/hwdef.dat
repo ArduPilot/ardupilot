@@ -12,7 +12,7 @@ STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
 # board ID for firmware load
-APJ_BOARD_ID 1028
+APJ_BOARD_ID AP_HW_FreeflyRTK
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

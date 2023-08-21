@@ -9,7 +9,7 @@ MCU STM32F4xx STM32F405xx
 define HAL_FRAME_TYPE_DEFAULT 12
 
 # board ID for firmware load
-APJ_BOARD_ID 122
+APJ_BOARD_ID AP_HW_KAKUTEF4
 
 # crystal frequency
 OSCILLATOR_HZ 8000000

@@ -7,7 +7,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1099
+APJ_BOARD_ID AP_HW_FlywooF405S_AIO
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000

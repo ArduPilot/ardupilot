@@ -11,7 +11,7 @@ STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
-APJ_BOARD_ID 1046
+APJ_BOARD_ID AP_HW_HITEC_AIRSPEED
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

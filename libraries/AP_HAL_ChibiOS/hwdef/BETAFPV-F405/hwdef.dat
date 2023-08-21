@@ -6,7 +6,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1125
+APJ_BOARD_ID AP_HW_BETAFPV_F405
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
