@@ -11,7 +11,7 @@ define SMPS_PWR
 env AP_PERIPH 1
 
 FLASH_SIZE_KB 2048
-APJ_BOARD_ID 1043
+APJ_BOARD_ID AP_HW_HERE3PLUS
 
 
 # the location where the bootloader will put the firmware

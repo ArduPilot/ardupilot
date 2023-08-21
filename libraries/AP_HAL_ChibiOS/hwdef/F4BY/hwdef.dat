@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F407xx
 
 # board ID for firmware load
-APJ_BOARD_ID 20
+APJ_BOARD_ID AP_HW_F4BY
 
 # USB setup
 USB_VENDOR 0x27AC # Swift-Flyer

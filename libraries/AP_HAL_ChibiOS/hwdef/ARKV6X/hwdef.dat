@@ -11,7 +11,7 @@ OSCILLATOR_HZ 16000000
 STM32_ST_USE_TIMER 2
 
 # board ID for firmware load
-APJ_BOARD_ID 57
+APJ_BOARD_ID TARGET_HW_ARK_FMU_V6X
 
 # Enable all IMUs to be used and therefore three active EKF Lanes
 define HAL_EKF_IMU_MASK_DEFAULT 7

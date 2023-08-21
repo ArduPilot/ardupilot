@@ -9,7 +9,7 @@ undef OSD_ENABLED
 undef SDMMC1
 
 # board ID for firmware load
-APJ_BOARD_ID 1013
+APJ_BOARD_ID AP_HW_MATEKH743
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

@@ -6,7 +6,7 @@ FLASH_BOOTLOADER_LOAD_KB 64
 FLASH_SIZE_KB 512
 
 # board ID for firmware load
-APJ_BOARD_ID 6000
+APJ_BOARD_ID AP_HW_sw-spar-f407
 
 env AP_PERIPH 1
 

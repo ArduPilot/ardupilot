@@ -2,7 +2,7 @@
 MCU STM32F4xx STM32F427xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1096
+APJ_BOARD_ID AP_HW_PixPilot-V3
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
