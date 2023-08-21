@@ -1,5 +1,7 @@
 # extra parameters for SITL peripheral quadplane
 
+SIM_CAN_SRV_MSK 0x0f
+
 # ESCs
 OUT1_FUNCTION 33
 OUT1_MIN 1000

@@ -402,7 +402,8 @@ tester_class_map = {
 }
 
 supplementary_test_binary_map = {
-    "test.CAN": ["sitl_periph_gps.AP_Periph", "sitl_periph_gps.AP_Periph.1"],
+    "test.CAN": ["sitl_periph_gps:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+                 "sitl_periph_gps:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
 }
 
 
@@ -513,16 +514,19 @@ def run_step(step):
         if step.startswith(k):
             # this test needs to use supplementary binaries
             for supplementary_test_binary in supplementary_test_binary_map[k]:
-                config_name = supplementary_test_binary.split('.')[0]
-                binary_name = supplementary_test_binary.split('.')[1]
-                instance_num = 0
-                if len(supplementary_test_binary.split('.')) >= 3:
-                    instance_num = int(supplementary_test_binary.split('.')[2])
-                supplementary_binaries.append([util.reltopdir(os.path.join('build',
-                                                                           config_name,
-                                                                           'bin',
-                                                                           binary_name)),
-                                              '-I {}'.format(instance_num)])
+                a = supplementary_test_binary.split(':')
+                if len(a) != 4:
+                    raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
+                config_name = a[0]
+                binary_name = a[1]
+                instance_num = int(a[2])
+                param_file = a[3].split(",")
+                bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
+                customisation = '-I {}'.format(instance_num)
+                sup_binary = {"binary" : bin_path,
+                              "customisation" : customisation,
+                              "param_file" : param_file}
+                supplementary_binaries.append(sup_binary)
             # we are running in conjunction with a supplementary app
             # can't have speedup
             opts.speedup = 1.0
