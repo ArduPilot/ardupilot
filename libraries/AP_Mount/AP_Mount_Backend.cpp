@@ -387,6 +387,10 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     bool target_yaw_is_ef = false;
     IGNORE_RETURN(get_angle_target(target_roll, target_pitch, target_yaw, target_yaw_is_ef));
 
+    // get rangefinder distance
+    float rangefinder_dist = nanf;
+    IGNORE_RETURN(get_rangefinder_distance(rangefinder_dist));
+
     const struct log_Mount pkt {
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(LOG_MOUNT_MSG)),
         time_us       : (timestamp_us > 0) ? timestamp_us : AP_HAL::micros64(),
@@ -399,6 +403,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
         actual_yaw_bf : yaw_bf,
         desired_yaw_ef: target_yaw_is_ef ? target_yaw : nanf,
         actual_yaw_ef : yaw_ef,
+        rangefinder_dist : rangefinder_dist,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
