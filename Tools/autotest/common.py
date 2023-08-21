@@ -8061,10 +8061,11 @@ Also, ignores heartbeats not from our target system'''
         count = 0
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
-            start_sitl_args["customisations"] = [sup_binary[1]]
+            start_sitl_args["customisations"] = [sup_binary['customisation']]
             start_sitl_args["supplementary"] = True
-            start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary[0]), count)
-            sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
+            start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary['binary']), count)
+            start_sitl_args["defaults_filepath"] = sup_binary['param_file']
+            sup_prog_link = util.start_SITL(sup_binary['binary'], **start_sitl_args)
             self.sup_prog.append(sup_prog_link)
             self.expect_list_add(sup_prog_link)
             count += 1
@@ -8107,25 +8108,18 @@ Also, ignores heartbeats not from our target system'''
             "callgrind": self.callgrind,
             "wipe": True,
         }
-        if instance is None:
-            for sup_binary in self.sup_binaries:
-                start_sitl_args["customisations"] = [sup_binary[1]]
-                if args is not None:
-                    start_sitl_args["customisations"] = [sup_binary[1], args]
-                start_sitl_args["supplementary"] = True
-                sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
-                time.sleep(3)
-                self.sup_prog.append(sup_prog_link) # add to list
-                self.expect_list_add(sup_prog_link) # add to expect list
-        else:
-            # start only the instance passed
-            start_sitl_args["customisations"] = [self.sup_binaries[instance][1]]
+        for i in range(len(self.sup_binaries)):
+            if instance is not None and instance != i:
+                continue
+            sup_binary = self.sup_binaries[i]
+            start_sitl_args["customisations"] = [sup_binary['customisation']]
             if args is not None:
-                start_sitl_args["customisations"] = [self.sup_binaries[instance][1], args]
+                start_sitl_args["customisations"] = [sup_binary['customisation'], args]
             start_sitl_args["supplementary"] = True
-            sup_prog_link = util.start_SITL(self.sup_binaries[instance][0], **start_sitl_args)
-            time.sleep(3)
-            self.sup_prog[instance] = sup_prog_link # add to list
+            start_sitl_args["defaults_filepath"] = sup_binary['param_file']
+            sup_prog_link = util.start_SITL(sup_binary['binary'], **start_sitl_args)
+            time.sleep(1)
+            self.sup_prog[i] = sup_prog_link # add to list
             self.expect_list_add(sup_prog_link) # add to expect list
 
     def sitl_is_running(self):
