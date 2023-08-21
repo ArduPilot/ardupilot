@@ -50,6 +50,8 @@
 #endif
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
+#include <com/himark/servo/ServoCmd.hpp>
+#include <com/himark/servo/ServoInfo.hpp>
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
@@ -139,7 +141,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
@@ -174,6 +176,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<com::himark::servo::ServoCmd>* himark_out[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL_MAX_CAN_PROTOCOL_DRIVERS];
@@ -220,6 +223,10 @@ static uavcan::Subscriber<com::volz::servo::ActuatorStatus, ActuatorStatusVolzCb
 // handler ESC status
 UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
 static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// handler himark ServoInfo
+UC_REGISTRY_BINDER(HimarkServoInfoCb, com::himark::servo::ServoInfo);
+static uavcan::Subscriber<com::himark::servo::ServoInfo, HimarkServoInfoCb> *himark_servoinfo_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // handler DEBUG
 UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
@@ -393,6 +400,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
+    himark_out[driver_index] = new uavcan::Publisher<com::himark::servo::ServoCmd>(*_node);
+    himark_out[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    himark_out[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+    
     esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*_node);
     esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
@@ -470,6 +481,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         esc_status_listener[driver_index]->start(ESCStatusCb(this, &handle_ESC_status));
     }
 
+    himark_servoinfo_listener[driver_index] = new uavcan::Subscriber<com::himark::servo::ServoInfo, HimarkServoInfoCb>(*_node);
+    if (himark_servoinfo_listener[driver_index]) {
+        himark_servoinfo_listener[driver_index]->start(HimarkServoInfoCb(this, &handle_himark_servoinfo));
+    }
+    
     debug_listener[driver_index] = new uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb>(*_node);
     if (debug_listener[driver_index]) {
         debug_listener[driver_index]->start(DebugCb(this, &handle_debug));
@@ -523,7 +539,11 @@ void AP_UAVCAN::loop(void)
                 const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
                 if (now - _SRV_last_send_us >= servo_period_us) {
                     _SRV_last_send_us = now;
-                    SRV_send_actuator();
+                    if (option_is_set(Options::USE_HIMARK_SERVO)) {
+                        SRV_send_himark();
+                    } else {
+                        SRV_send_actuator();
+                    }
                     sent_servos = true;
                     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
                         _SRV_conf[i].servo_pending = false;
@@ -622,6 +642,34 @@ void AP_UAVCAN::SRV_send_actuator(void)
             }
         }
     } while (repeat_send);
+}
+
+/*
+  Himark servo output. This uses com.himark.servo.ServoCmd packets
+ */
+void AP_UAVCAN::SRV_send_himark(void)
+{
+    WITH_SEMAPHORE(SRV_sem);
+
+    // ServoCmd can hold maximum of 17 commands. First find the highest pending servo < 17
+    int8_t highest_to_send = -1;
+    for (int8_t i = 16; i >= 0; i--) {
+        if (_SRV_conf[i].servo_pending && ((1U<<i) & _servo_bm) != 0) {
+            highest_to_send = i;
+            break;
+        }
+    }
+    if (highest_to_send == -1) {
+        // nothing to send
+        return;
+    }
+    com::himark::servo::ServoCmd msg {};
+
+    for (uint8_t i = 0; i <= highest_to_send; i++) {
+        const uint16_t pulse = constrain_int16(_SRV_conf[i].pulse - 1000, 0, 1000);
+        msg.cmd.push_back(pulse);
+    }
+    himark_out[_driver_index]->broadcast(msg);
 }
 
 void AP_UAVCAN::SRV_send_esc(void)
@@ -1201,7 +1249,28 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
                                    cb.msg->position,
                                    cb.msg->force,
                                    cb.msg->speed,
-                                   cb.msg->power_rating_pct);
+                                   cb.msg->power_rating_pct,
+                                   0, 0, 0, 0, 0, 0);
+}
+
+/*
+  handle himark ServoInfo message
+ */
+void AP_UAVCAN::handle_himark_servoinfo(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HimarkServoInfoCb &cb)
+{
+    // log as CSRV message
+    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
+                                   cb.msg->servo_id,
+                                   cb.msg->pos_sensor*0.01,
+                                   0,
+                                   0,
+                                   0,
+                                   cb.msg->pos_cmd*0.01,
+                                   cb.msg->voltage*0.01,
+                                   cb.msg->current*0.01,
+                                   cb.msg->motor_temp*0.2-40,
+                                   cb.msg->pcb_temp*0.2-40,
+                                   cb.msg->error_status);
 }
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
