@@ -287,6 +287,8 @@ AP_HW_FlywooF405HD_AIOv2             1180
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
+AP_HW_KHA_ETH                        1315
+
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
