@@ -699,14 +699,16 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
 // set zoom specified as a rate or percentage
 bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 {
-    if (zoom_type == ZoomType::RATE) {
-        // disable absolute zoom target
-        _zoom_mult_target = 0;
-        return send_zoom_rate(zoom_value);
-    }
-
-    // absolute zoom
-    if (zoom_type == ZoomType::PCT) {
+    switch (zoom_type) {
+    case ZoomType::RATE:
+        if (send_zoom_rate(zoom_value)) {
+            _zoom_type = zoom_type;
+            _zoom_rate_target = zoom_value;
+            return true;
+        }
+        return false;
+    case ZoomType::PCT: {
+        // absolute zoom
         float zoom_mult_max = get_zoom_mult_max();
         if (is_positive(zoom_mult_max)) {
             // convert zoom percentage (0~100) to target zoom multiple (e.g. 0~6x or 0~30x)
@@ -717,45 +719,63 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
                 return false;
             case HardwareModel::A8:
                 // set internal zoom control target
+                _zoom_type = zoom_type;
                 _zoom_mult_target = zoom_mult;
                 return true;
             case HardwareModel::ZR10:
-                return send_zoom_mult(zoom_mult);
+                if (send_zoom_mult(zoom_mult)) {
+                    _zoom_type = zoom_type;
+                    _zoom_mult_target = 0;
+                    return true;
+                }
+                return false;
             }
         }
+        return false;
+    }
     }
 
     // unsupported zoom type
     return false;
 }
 
-// update absolute zoom controller
-// only used for A8 that does not support abs zoom control
+// update zoom controller
 void AP_Mount_Siyi::update_zoom_control()
 {
-    // exit immediately if no target
-    if (!is_positive(_zoom_mult_target)) {
-        return;
-    }
-
-    // limit update rate to 20hz
     const uint32_t now_ms = AP_HAL::millis();
-    if ((now_ms - _last_zoom_control_ms) <= 50) {
+    const uint32_t update_diff_ms = now_ms - _last_zoom_control_ms;
+
+    switch (_zoom_type) {
+    case ZoomType::RATE:
+        // limit updates to 1hz
+        if (update_diff_ms < 1000) {
+            return;
+        }
+        // only send zoom rate target if it's non-zero because if zero it has already been sent
+        // and sending zero rate also triggers autofocus
+        if (!is_zero(_zoom_rate_target)) {
+            send_zoom_rate(_zoom_rate_target);
+        }
+        _last_zoom_control_ms = now_ms;
         return;
+    case ZoomType::PCT:
+        // limit updates to 20hz and only when we have a zoom target
+        if (!is_positive(_zoom_mult_target) || (update_diff_ms < 50)) {
+            return;
+        }
+        // zoom towards target zoom multiple
+        if (_zoom_mult_target > _zoom_mult + 0.1f) {
+            send_zoom_rate(1);
+        } else if (_zoom_mult_target < _zoom_mult - 0.1f) {
+            send_zoom_rate(-1);
+        } else {
+            send_zoom_rate(0);
+            _zoom_mult_target = 0;
+        }
+        _last_zoom_control_ms = now_ms;
+        debug("Siyi zoom targ:%f act:%f", (double)_zoom_mult_target, (double)_zoom_mult);
+        break;
     }
-    _last_zoom_control_ms = now_ms;
-
-    // zoom towards target zoom multiple
-    if (_zoom_mult_target > _zoom_mult + 0.1f) {
-        send_zoom_rate(1);
-    } else if (_zoom_mult_target < _zoom_mult - 0.1f) {
-        send_zoom_rate(-1);
-    } else {
-        send_zoom_rate(0);
-        _zoom_mult_target = 0;
-    }
-
-    debug("Siyi zoom targ:%f act:%f", (double)_zoom_mult_target, (double)_zoom_mult);
 }
 
 // set focus specified as rate, percentage or auto
