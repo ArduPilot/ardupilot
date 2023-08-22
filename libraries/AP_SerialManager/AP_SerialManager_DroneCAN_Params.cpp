@@ -38,6 +38,23 @@ const AP_Param::GroupInfo AP_SerialManager::SerialExtState::DroneCAN_Params::var
     // @Range: 0 255
     // @User: Standard
     AP_GROUPINFO("CHAN_ID",  3, AP_SerialManager::SerialExtState::DroneCAN_Params, chan_id, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: USART options
+    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("OPTIONS",  4, AP_SerialManager::SerialExtState::DroneCAN_Params, options, 0),
+
+    // @Param: BUF_US
+    // @DisplayName: UAVCAN Tunnel Buffer Time
+    // @Description: This is the buffer time for which the message is in the buffer before forwarding to the physical port. This allows data frames to be fully read before sending.
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("BUF_US", 5, AP_SerialManager::SerialExtState::DroneCAN_Params, buffer_us, 1000),
+
     AP_GROUPEND
 };
 #endif

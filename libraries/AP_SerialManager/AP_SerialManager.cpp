@@ -393,7 +393,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialA physical type
     // @Description: This allows for selection of physical type for serial port A
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("A_PHY_TYPE", 33, AP_SerialManager, ext_state[0].phy_type, HAL_SERIALA_PHY_TYPE),    
 
     // @Group: A_
@@ -404,7 +404,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialB physical type
     // @Description: This allows for selection of physical type for serial port B
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("B_PHY_TYPE", 35, AP_SerialManager, ext_state[1].phy_type, HAL_SERIALB_PHY_TYPE),
 
     // @Group: B_
@@ -415,7 +415,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialC physical type
     // @Description: This allows for selection of physical type for serial port C
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("C_PHY_TYPE", 37, AP_SerialManager, ext_state[2].phy_type, HAL_SERIALC_PHY_TYPE),
 
     // @Group: C_
@@ -426,7 +426,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialD physical type
     // @Description: This allows for selection of physical type for serial port D
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("D_PHY_TYPE", 39, AP_SerialManager, ext_state[3].phy_type, HAL_SERIALD_PHY_TYPE),
 
     // @Group: D_
@@ -437,7 +437,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialE physical type
     // @Description: This allows for selection of physical type for serial port E
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("E_PHY_TYPE", 41, AP_SerialManager, ext_state[4].phy_type, HAL_SERIALE_PHY_TYPE),
 
     // @Group: E_
@@ -448,7 +448,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialF physical type
     // @Description: This allows for selection of physical type for serial port F
     // @User: Advanced
-    // @Values: -1:Disable, 0:USART, 1:IP, 3:UAVCAN
+    // @Values: -1:Disable, 0:USART, 1:IP, 2:UAVCAN
     AP_GROUPINFO("F_PHY_TYPE", 43, AP_SerialManager, ext_state[5].phy_type, HAL_SERIALF_PHY_TYPE),
 
     // @Group: F_
@@ -945,7 +945,7 @@ void AP_SerialManager::dronecan_loop()
             } else {
                 protocol = (enum SerialProtocol)ext_state[i].dronecan_params().protocol.get();
             }
-            dronecan_serial->dronecan_loop(protocol);
+            dronecan_serial->dronecan_loop(protocol, ext_state[i].dronecan_params().buffer_us.get());
         }
     }
 }

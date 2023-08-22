@@ -318,7 +318,9 @@ public:
 #if HAL_NUM_CAN_IFACES
         struct DroneCAN_Params : Params {
             AP_Int32 baud;
+            AP_Int16 options;
             AP_Int16 chan_id;
+            AP_Int32 buffer_us;
             static const struct AP_Param::GroupInfo var_info[];
             DroneCAN_Params() {
                 AP_Param::setup_object_defaults(this, var_info);
