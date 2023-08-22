@@ -400,7 +400,7 @@ void AP_DroneCAN::loop(void)
 #endif
         if (_SRV_armed_mask != 0) {
             // we have active servos
-            uint32_t now = AP_HAL::native_micros();
+            uint32_t now = AP_HAL::micros();
             const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
             if (now - _SRV_last_send_us >= servo_period_us) {
                 _SRV_last_send_us = now;
@@ -494,7 +494,7 @@ void AP_DroneCAN::handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, 
 
 void AP_DroneCAN::send_node_status(void)
 {
-    const uint32_t now = AP_HAL::native_millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _node_status_last_send_ms < 1000) {
         return;
     }
@@ -542,7 +542,7 @@ void AP_DroneCAN::send_node_status(void)
 void AP_DroneCAN::handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req)
 {
     node_info_rsp.status = node_status_msg;
-    node_info_rsp.status.uptime_sec = AP_HAL::native_millis() / 1000;
+    node_info_rsp.status.uptime_sec = AP_HAL::millis() / 1000;
 
     node_info_server.respond(transfer, node_info_rsp);
 }
@@ -797,7 +797,7 @@ void AP_DroneCAN::SRV_push_servos()
 // notify state send
 void AP_DroneCAN::notify_state_send()
 {
-    uint32_t now = AP_HAL::native_millis();
+    uint32_t now = AP_HAL::millis();
 
     if (_notify_state_hz == 0 || (now - _last_notify_state_ms) < uint32_t(1000 / _notify_state_hz)) {
         return;
@@ -892,7 +892,7 @@ void AP_DroneCAN::notify_state_send()
     }
     msg.aux_data.len = 2;
     notify_state.broadcast(msg);
-    _last_notify_state_ms = AP_HAL::native_millis();
+    _last_notify_state_ms = AP_HAL::millis();
 }
 
 #if AP_DRONECAN_SEND_GPS
@@ -914,7 +914,7 @@ void AP_DroneCAN::gnss_send_fix()
     const Location &loc = gps.location();
     const Vector3f &vel = gps.velocity();
 
-    pkt.timestamp.usec = AP_HAL::native_micros64();
+    pkt.timestamp.usec = AP_HAL::micros64();
     pkt.gnss_timestamp.usec = gps.time_epoch_usec();
     if (pkt.gnss_timestamp.usec == 0) {
         pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX2_GNSS_TIME_STANDARD_NONE;
@@ -982,7 +982,7 @@ void AP_DroneCAN::gnss_send_fix()
 
 
 
-    const uint32_t now_ms = AP_HAL::native_millis();
+    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _gnss.last_send_status_ms >= 1000) {
         _gnss.last_send_status_ms = now_ms;
 
@@ -1047,7 +1047,7 @@ void AP_DroneCAN::gnss_send_yaw()
 // SafetyState send
 void AP_DroneCAN::safety_state_send()
 {
-    uint32_t now = AP_HAL::native_millis();
+    uint32_t now = AP_HAL::millis();
     if (now - _last_safety_state_ms < 500) {
         // update at 2Hz
         return;
@@ -1170,7 +1170,7 @@ void AP_DroneCAN::handle_traffic_report(const CanardRxTransfer& transfer, const 
         pkt.flags |= ADSB_FLAGS_BARO_VALID;
     }
 
-    vehicle.last_update_ms = AP_HAL::native_millis() - (vehicle.info.tslc * 1000);
+    vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
     adsb->handle_adsb_vehicle(vehicle);
 #endif
 }
@@ -1181,7 +1181,7 @@ void AP_DroneCAN::handle_traffic_report(const CanardRxTransfer& transfer, const 
 void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg)
 {
     // log as CSRV message
-    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
+    AP::logger().Write_ServoStatus(AP_HAL::micros64(),
                                    msg.actuator_id,
                                    msg.position,
                                    msg.force,
@@ -1196,7 +1196,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg)
 {
     // log as CSRV message
-    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
+    AP::logger().Write_ServoStatus(AP_HAL::micros64(),
                                    msg.servo_id,
                                    msg.pos_sensor*0.01,
                                    0,
@@ -1219,7 +1219,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         "s#dAv%O",
         "F-00000",
         "QBfffBh",
-        AP_HAL::native_micros64(),
+        AP_HAL::micros64(),
         msg.actuator_id,
         ToDeg(msg.actual_position),
         msg.current * 0.025f,
