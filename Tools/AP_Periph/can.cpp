@@ -387,7 +387,7 @@ static void handle_param_executeopcode(CanardInstance* canard_instance, CanardRx
         AP_Param::setup_object_defaults(&periph.gps, periph.gps.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_BATTERY
-        AP_Param::setup_object_defaults(&periph.battery, periph.battery.lib.var_info);
+        AP_Param::setup_object_defaults(&periph.battery, periph.battery_lib.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
         AP_Param::setup_object_defaults(&periph.compass, periph.compass.var_info);
@@ -1977,26 +1977,26 @@ void AP_Periph_FW::can_battery_update(void)
     }
     battery.last_can_send_ms = now_ms;
 
-    const uint8_t battery_instances = battery.lib.num_instances();
+    const uint8_t battery_instances = battery_lib.num_instances();
     for (uint8_t i=0; i<battery_instances; i++) {
-        if (!battery.lib.healthy(i)) {
+        if (!battery_lib.healthy(i)) {
             continue;
         }
 
         uavcan_equipment_power_BatteryInfo pkt {};
 
         // if a battery serial number is assigned, use that as the ID. Else, use the index.
-        const int32_t serial_number = battery.lib.get_serial_number(i);
+        const int32_t serial_number = battery_lib.get_serial_number(i);
         pkt.battery_id = (serial_number >= 0) ? serial_number : i+1;
 
-        pkt.voltage = battery.lib.voltage(i);
+        pkt.voltage = battery_lib.voltage(i);
 
         float current;
-        if (battery.lib.current_amps(current, i)) {
+        if (battery_lib.current_amps(current, i)) {
             pkt.current = current;
         }
         float temperature;
-        if (battery.lib.get_temperature(temperature, i)) {
+        if (battery_lib.get_temperature(temperature, i)) {
             // Battery lib reports temperature in Celsius.
             // Convert Celsius to Kelvin for transmission on CAN.
             pkt.temperature = C_TO_KELVIN(temperature);
@@ -2004,7 +2004,7 @@ void AP_Periph_FW::can_battery_update(void)
 
         pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
         uint8_t percentage = 0;
-        if (battery.lib.capacity_remaining_pct(percentage, i)) {
+        if (battery_lib.capacity_remaining_pct(percentage, i)) {
             pkt.state_of_charge_pct = percentage;
         }
         pkt.model_instance_id = i+1;
