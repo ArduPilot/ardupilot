@@ -953,7 +953,7 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         break;
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:    // Special case for MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: replicates sanity check in AP_MOUNT library
         if ((!isnan(packet.param1) != !isnan(packet.param2)) ||             // Reject if only one angle is NaN
-            (!isnan(packet.param3) != !isnan(packet.param4)) ||             // Reject if only one turn rate is NaN
+            (isnan(packet.param3) != isnan(packet.param4)) ||             // Reject if only one turn rate is NaN
             (isnan(packet.param1) && isnan(packet.param2) && isnan(packet.param3) && isnan(packet.param4)))       // Reject if all are NaN
             return MAV_MISSION_INVALID;
         else
