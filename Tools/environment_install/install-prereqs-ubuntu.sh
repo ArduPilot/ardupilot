@@ -148,20 +148,11 @@ fi
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
 PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy ptyprocess dronecan"
-if [ ${RELEASE_CODENAME} == 'bionic' ]; then
-    # use fixed version for package that drop python2 support
-    PYTHON_PKGS="$PYTHON_PKGS flake8==3.7.9 requests==2.27.1 monotonic==1.6 configparser==4.0.2 click==7.1.2 decorator==4.4.2"
-else
-    PYTHON_PKGS="$PYTHON_PKGS flake8"
-fi
+PYTHON_PKGS="$PYTHON_PKGS flake8"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    if [ ${RELEASE_CODENAME} == 'bionic' ]; then
-        PYTHON_PKGS="$PYTHON_PKGS pygame==2.0.3 intelhex"
-    else
-        PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
-    fi
+    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
@@ -354,12 +345,6 @@ if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/$SHELL_LOGIN
     fi
-fi
-
-# Update Pip and Setuptools on old distro
-if [ ${RELEASE_CODENAME} == 'bionic' ]; then
-    # use fixed version for package that drop python2 support
-    $PIP install --user -U pip==20.3 setuptools==44.0.0
 fi
 
 # try update setuptools and wheel before installing pip package that may need compilation
