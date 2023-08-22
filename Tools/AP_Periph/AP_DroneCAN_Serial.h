@@ -32,10 +32,11 @@ public:
         return _writebuf.available() > 0;
     }
 
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
     /* Implementations of Stream virtual methods */
-    uint32_t available() override {
-        return _readbuf.available();
-    }
+    uint32_t available() override;
+
     uint32_t txspace() override {
         return _writebuf.space();
     }
@@ -51,11 +52,14 @@ public:
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
     bool handle_tunnel_broadcast(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_Broadcast &msg);
+    bool handle_tunnel_config(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_SerialConfig &msg);
 
     uint8_t get_channel_id() { return _channel_id; }
     void set_channel_id(uint8_t channel_id) {  _channel_id = channel_id; }
-    uint32_t get_passthrough_baud() const override { return baudrate; }
-    uint32_t set_passthrough_baud(uint32_t baud) { return baudrate = baud; }
+
+    uint16_t get_tx_buffer_size(void) const override { return _writebuf.get_size(); }
+    uint16_t get_rx_buffer_size(void) const override { return _readbuf.get_size(); }
+
     static AP_SerialManager::SerialProtocol tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol);
 
     void set_buffer_time_us(const uint32_t buffer_time_us) {
@@ -72,8 +76,9 @@ private:
 
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    uint32_t baudrate;
+    uint32_t _baudrate;
     uint64_t last_write_us;
+    uint64_t last_read_us;
     HAL_Semaphore send_sem;
 };
 #endif

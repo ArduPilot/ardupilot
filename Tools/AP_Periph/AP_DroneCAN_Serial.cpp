@@ -48,6 +48,10 @@ void AP_DroneCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     _readbuf.set_size(rxS);
     _writebuf.set_size(txS);
+
+    if (b > 0) {
+        _baudrate = b;
+    }
     _initialized = true;
 }
 
@@ -72,6 +76,20 @@ ssize_t AP_DroneCAN_Serial::read(uint8_t *buffer, uint16_t count)
 {
     debug("read %d bytes", count);
     return _readbuf.read(buffer, count);
+}
+
+/* Implementations of Stream virtual methods */
+uint32_t AP_DroneCAN_Serial::available()
+{
+    const uint32_t avail = _readbuf.available();
+
+    // don't allow the UART to read any data from us until we have seen
+    // at least a _buffer_time_us gap
+    if (avail > 0 && (AP_HAL::micros64() - last_read_us) > _buffer_time_us) {
+        return avail;
+    }
+
+    return 0;
 }
 
 size_t AP_DroneCAN_Serial::write(uint8_t c)
@@ -156,6 +174,20 @@ bool AP_DroneCAN_Serial::handle_tunnel_broadcast(CanardInstance &ins, CanardRxTr
     _protocol = msg.protocol.protocol;
     // put the data into the read buffer
     _readbuf.write(msg.buffer.data, msg.buffer.len);
+
+    last_read_us = AP_HAL::micros64();
+
+    return true;
+}
+
+bool AP_DroneCAN_Serial::handle_tunnel_config(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_SerialConfig &msg)
+{
+    set_options(msg.options);
+    // port is pointing at the FC so our rx buffer must match its tx buffer
+    begin(msg.baud, msg.tx_bufsize, msg.rx_bufsize);
+
+    debug("UAVCAN SerialConfig: baud %u options %u rxsize %u txsize %u", msg.baud, msg.options, msg.rx_bufsize, msg.tx_bufsize);
+
     return true;
 }
 #endif
