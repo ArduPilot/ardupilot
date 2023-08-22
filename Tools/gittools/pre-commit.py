@@ -26,8 +26,8 @@ class AP_PreCommit(object):
 
     @staticmethod
     def has_flake8_tag(filepath):
-        content = open(filepath).read()
-        return "AP_FLAKE8_CLEAN" in content
+        with open(filepath) as fp:
+            return "AP_FLAKE8_CLEAN" in fp.read()
 
     def files_are_flake8_clean(self, files_to_check):
         if files_to_check:
