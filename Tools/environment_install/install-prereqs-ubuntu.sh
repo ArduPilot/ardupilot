@@ -363,7 +363,7 @@ if [ ${RELEASE_CODENAME} == 'bionic' ]; then
 fi
 
 # try update setuptools and wheel before installing pip package that may need compilation
-$PIP install $PIP_USER_ARGUMENT -U setuptools wheel
+$PIP install $PIP_USER_ARGUMENT -U pip setuptools wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
