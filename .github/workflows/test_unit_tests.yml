@@ -44,6 +44,8 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
   pull_request:
     paths-ignore:
       # Remove markdown files as irrelevant
@@ -87,6 +89,8 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
   workflow_dispatch:
 
 concurrency:
