@@ -8,6 +8,7 @@
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
 #include "AC_CustomControl_PID.h"
+#include "AC_CustomControl_LQR.h"
 #include <GCS_MAVLink/GCS.h>
 
 // table of user settable parameters
@@ -32,6 +33,9 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 
     // parameters for PID controller
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
+
+    // parameters for LQR controller
+    AP_SUBGROUPVARPTR(_backend, "3_", 8, AC_CustomControl, _backend_var_info[2]),
 
     AP_GROUPEND
 };
@@ -61,6 +65,10 @@ void AC_CustomControl::init(void)
         case CustomControlType::CONT_PID:
             _backend = new AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
             _backend_var_info[get_type()] = AC_CustomControl_PID::var_info;
+            break;
+        case CustomControlType::CONT_LQR:
+            _backend = new AC_CustomControl_LQR(*this, _ahrs, _att_control, _motors, _dt);
+            _backend_var_info[get_type()] = AC_CustomControl_LQR::var_info;
             break;
         default:
             return;
