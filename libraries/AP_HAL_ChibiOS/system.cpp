@@ -389,30 +389,4 @@ __FASTRAMFUNC__ uint64_t millis64()
 }
 
 
-__FASTRAMFUNC__ uint32_t native_micros()
-{
-    return micros();
-}
-
-__FASTRAMFUNC__ uint32_t native_millis()
-{
-    return millis();
-}
-
-__FASTRAMFUNC__ uint16_t native_millis16()
-{
-    return millis16();
-}
-
-__FASTRAMFUNC__ uint64_t native_micros64()
-{
-    return micros64();
-}
-
-__FASTRAMFUNC__ uint64_t native_millis64()
-{
-    return millis64();
-}
-
-
 } // namespace AP_HAL
