@@ -55,7 +55,7 @@ extern const AP_HAL::HAL& hal;
 #define LOG_TAG "GPS"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::native_micros64())
+#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
 #else
 #define NATIVE_TIME_OFFSET 0
 #endif
@@ -771,7 +771,7 @@ void AP_GPS_DroneCAN::send_rtcm(void)
     }
     WITH_SEMAPHORE(sem);
 
-    const uint32_t now = AP_HAL::native_millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _rtcm_stream.last_send_ms < 20) {
         // don't send more than 50 per second
         return;
