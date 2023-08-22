@@ -90,7 +90,10 @@ void AP_DroneCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
     }
     _initialized = true;
-    _baudrate = b;
+
+    if (b > 0) {
+        _baudrate = b;
+    }
 }
 
 void AP_DroneCAN_Serial::end()
@@ -117,11 +120,13 @@ ssize_t AP_DroneCAN_Serial::read(uint8_t *buffer, uint16_t count)
 
 size_t AP_DroneCAN_Serial::write(uint8_t c)
 {
+    _last_write_us = AP_HAL::micros64();
     return _writebuf.write(&c, 1);
 }
 
 size_t AP_DroneCAN_Serial::write(const uint8_t *buffer, size_t size)
 {
+    _last_write_us = AP_HAL::micros64();
     return _writebuf.write(buffer, size);
 }
 
@@ -133,7 +138,7 @@ void AP_DroneCAN_Serial::handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, 
 
 void AP_DroneCAN_Serial::trampoline_handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp)
 {
-    // find maching serial driver with channel id
+    // find matching serial driver with channel id
     const uint8_t num_dronecan_serials = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_DroneCAN);
     for (uint8_t i = 0; i < num_dronecan_serials; i++) {
         AP_DroneCAN_Serial* serial = (AP_DroneCAN_Serial*)AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_DroneCAN, i);
@@ -147,7 +152,7 @@ void AP_DroneCAN_Serial::trampoline_handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_
     }
 }
 
-void AP_DroneCAN_Serial::dronecan_loop(AP_SerialManager::SerialProtocol protocol_id)
+void AP_DroneCAN_Serial::dronecan_loop(AP_SerialManager::SerialProtocol protocol_id, uint32_t buffer_us)
 {
     if (!_initialized) {
         return;
@@ -170,9 +175,13 @@ void AP_DroneCAN_Serial::dronecan_loop(AP_SerialManager::SerialProtocol protocol
     }
 
     uavcan::tunnel::SerialConfig serial_config;
+    // push out config changes every 1s
     if (AP_HAL::millis() - _last_serial_config_ms > 1000 || _baudrate != _last_baudrate) {
         serial_config.channel_id = _channel_id;
         serial_config.baud = _baudrate;
+        serial_config.options = get_options();
+        serial_config.rx_bufsize = get_rx_buffer_size();
+        serial_config.tx_bufsize = get_tx_buffer_size();
         for (uint8_t i = 0; i < AP::can().get_num_drivers(); i++) {
             if (serial_config_pub[i] != nullptr) {
                 serial_config_pub[i]->broadcast(serial_config);
@@ -182,31 +191,52 @@ void AP_DroneCAN_Serial::dronecan_loop(AP_SerialManager::SerialProtocol protocol
         _last_baudrate = _baudrate;
     }
 
-    // check if broadcast or call
-    // broadcast
-    uavcan::tunnel::Broadcast bcast_msg;
-    uint8_t data_count = _writebuf.available();
-    if (data_count == 0) {
-        // nothing to send
+    if (!_flush && AP_HAL::micros64() - _last_write_us < buffer_us) {
         return;
     }
-    for (uint8_t i = 0; i < MIN(data_count, bcast_msg.buffer.capacity()); i++) {
-        uint8_t byte;
-        if (_writebuf.read_byte(&byte)) {
-            bcast_msg.buffer.push_back(byte);
-        } else {
-            break;
+
+    // Broadcast remaining data
+    // the general problem is that CAN is slow compared to a UART and the packets are small
+    // this means that if we are not careful a stream of data can be split in transmission and
+    // end up being sent to the end device in pieces, which it doesn't understand.
+    // the CAN payload is 60 bytes and the loop below can send one of these every 1-2ms. It can
+    // then take another 10ms for these to actually get processed on the receiving node. What we want is
+    // for gaps in the original stream to appear as gaps in the ultimate stream. So:
+    // 1. On the sender (here) we wait for a gap of at least buffer_us before attempting to write. This does
+    //    not need to be very long (1ms is usually enough) but makes sure that we have all the data we are 
+    //    going to likely need. We then send all of this data in a loop.
+    // 2. On the receiver we similarly wait for the absence of packets before trying to send to the UART. This 
+    //    delay needs to be longer to take account of transmission delays.
+    // 3. We need to make sure that the sender UART does not try and push out a packet until the last one is done
+    //    otherwise we get packets smushed together. Generally this requires that buffer sizes match through the
+    //    whole chain.
+    uavcan::tunnel::Broadcast bcast_msg;
+    uint32_t data_count = _writebuf.available();
+
+    while (data_count > 0) {
+        bcast_msg.buffer.clear();
+        const uint16_t packet_size = MIN(data_count, bcast_msg.buffer.capacity());
+        for (uint16_t i = 0; i < packet_size; i++) {
+            uint8_t byte;
+            if (_writebuf.read_byte(&byte)) {
+                bcast_msg.buffer.push_back(byte);
+                data_count--;
+            } else {
+                break;
+            }
+        }
+        // set channel id
+        bcast_msg.channel_id = _channel_id;
+        // set protocol_id
+        bcast_msg.protocol = protocol;
+        // find and publish on all interfaces
+        for (uint8_t i = 0; i < AP::can().get_num_drivers(); i++) {
+            if (broadcast_pub[i] != nullptr) {
+                broadcast_pub[i]->broadcast(bcast_msg);
+            }
         }
     }
-    // set channel id
-    bcast_msg.channel_id = _channel_id;
-    // set protocol_id
-    bcast_msg.protocol = protocol;
-    // find and publish on all interfaces
-    for (uint8_t i = 0; i < AP::can().get_num_drivers(); i++) {
-        if (broadcast_pub[i] != nullptr) {
-            broadcast_pub[i]->broadcast(bcast_msg);
-        }
-    }
+
+    _flush = false;
 }
 #endif

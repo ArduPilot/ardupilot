@@ -29,7 +29,7 @@ public:
 
     void end() override;
 
-    void flush() override {}
+    void flush() override { _flush = true; }
 
     void set_blocking_writes(bool blocking) override {}
 
@@ -40,6 +40,8 @@ public:
     bool tx_pending() override {
         return _writebuf.available() > 0;
     }
+
+    uint32_t get_baud_rate() const override { return _baudrate; }
 
     /* Implementations of Stream virtual methods */
     uint32_t available() override {
@@ -60,6 +62,9 @@ public:
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
+    uint16_t get_tx_buffer_size(void) const override { return _writebuf.get_size(); }
+    uint16_t get_rx_buffer_size(void) const override { return _readbuf.get_size(); }
+
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
 
     void handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp);
@@ -68,7 +73,7 @@ public:
 
 private:
 
-    void dronecan_loop(AP_SerialManager::SerialProtocol protocol_id);
+    void dronecan_loop(AP_SerialManager::SerialProtocol protocol_id, uint32_t buffer_us);
 
     int _channel_id;
 
@@ -83,5 +88,7 @@ private:
     uint32_t _baudrate;
     uint32_t _last_baudrate;
     uint32_t _last_serial_config_ms;
+    uint64_t _last_write_us;
+    bool _flush;
 };
 #endif
