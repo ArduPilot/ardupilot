@@ -17,12 +17,9 @@ import subprocess
 
 class AP_PreCommit(object):
 
-    def __init__(self):
-        pass
-
     @staticmethod
     def progress(message):
-        print("***** %s" % (message, ))
+        print(f"***** {message}")
 
     @staticmethod
     def has_flake8_tag(filepath):
@@ -36,7 +33,7 @@ class AP_PreCommit(object):
             try:
                 subprocess.check_output(["flake8"] + files_to_check, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                self.progress("Flake8 check failed: (%s)" % (e.output))
+                self.progress(f"Flake8 check failed: ({e.output})")
                 return False
         return True
 
@@ -44,7 +41,7 @@ class AP_PreCommit(object):
     def split_git_diff_output(output):
         '''split output from git-diff into a list of (status, filepath) tuples'''
         ret = []
-        if type(output) is bytes:
+        if isinstance(output, bytes):
             output = output.decode('utf-8')
         for line in output.split("\n"):
             if len(line) == 0:
@@ -72,7 +69,7 @@ class AP_PreCommit(object):
                     # rename, check destination
                     (status, filepath) = (output_tuple[0], output_tuple[2])
                 else:
-                    raise ValueError("Unknown status %s" % str(output_tuple[0]))
+                    raise ValueError(f"Unknown status {output_tuple[0]}")
             else:
                 (status, filepath) = output_tuple
             if filepath in dirty:
