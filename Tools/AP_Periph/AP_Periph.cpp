@@ -284,7 +284,7 @@ void AP_Periph_FW::init()
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
-    start_ms = AP_HAL::native_millis();
+    start_ms = AP_HAL::millis();
 }
 
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
@@ -302,7 +302,7 @@ void AP_Periph_FW::update_rainbow()
     if (rainbow_done) {
         return;
     }
-    uint32_t now = AP_HAL::native_millis();
+    uint32_t now = AP_HAL::millis();
     if (now - start_ms > 1500) {
         rainbow_done = true;
 #if defined (HAL_PERIPH_ENABLE_NOTIFY)
@@ -386,7 +386,7 @@ void AP_Periph_FW::update()
 #endif
 
     static uint32_t last_led_ms;
-    uint32_t now = AP_HAL::native_millis();
+    uint32_t now = AP_HAL::millis();
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED
