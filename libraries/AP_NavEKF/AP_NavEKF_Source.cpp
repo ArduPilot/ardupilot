@@ -17,6 +17,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -229,6 +230,18 @@ AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
     }
 
     return _source_set[active_source_set].yaw;
+}
+
+// get pos Z source
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
+{
+#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    // check for special case of missing baro
+    if ((_source_set[active_source_set].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+        return SourceZ::NONE;
+    }
+#endif
+    return _source_set[active_source_set].posz;
 }
 
 // align position of inactive sources to ahrs
