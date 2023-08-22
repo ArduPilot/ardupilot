@@ -90,7 +90,7 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
 #if CANARD_ENABLE_CANFD
         .canfd = bcast_transfer.canfd,
 #endif
-        .deadline_usec = AP_HAL::native_micros64() + (bcast_transfer.timeout_ms * 1000),
+        .deadline_usec = AP_HAL::micros64() + (bcast_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
         .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
@@ -127,7 +127,7 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
 #if CANARD_ENABLE_CANFD
         .canfd = req_transfer.canfd,
 #endif
-        .deadline_usec = AP_HAL::native_micros64() + (req_transfer.timeout_ms * 1000),
+        .deadline_usec = AP_HAL::micros64() + (req_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
         .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
@@ -159,7 +159,7 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
 #if CANARD_ENABLE_CANFD
         .canfd = res_transfer.canfd,
 #endif
-        .deadline_usec = AP_HAL::native_micros64() + (res_transfer.timeout_ms * 1000),
+        .deadline_usec = AP_HAL::micros64() + (res_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
         .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
@@ -196,7 +196,7 @@ void CanardInterface::processTestRx() {
     WITH_SEMAPHORE(test_iface_sem);
     for (const CanardCANFrame* txf = canardPeekTxQueue(&test_iface.canard); txf != NULL; txf = canardPeekTxQueue(&test_iface.canard)) {
         if (canard_ifaces[0]) {
-            canardHandleRxFrame(&canard_ifaces[0]->canard, txf, AP_HAL::native_micros64());   
+            canardHandleRxFrame(&canard_ifaces[0]->canard, txf, AP_HAL::micros64());   
         }
         canardPopTxQueue(&test_iface.canard);
     }
@@ -242,7 +242,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
                 // top of the queue, so wait for the next loop
                 break;
             }
-            if ((txf->iface_mask & (1U<<iface)) && (AP_HAL::native_micros64() < txf->deadline_usec)) {
+            if ((txf->iface_mask & (1U<<iface)) && (AP_HAL::micros64() < txf->deadline_usec)) {
                 // try sending to interfaces, clearing the mask if we succeed
                 if (ifaces[iface]->send(txmsg, txf->deadline_usec, 0) > 0) {
                     txf->iface_mask &= ~(1U<<iface);
@@ -366,16 +366,16 @@ void CanardInterface::process(uint32_t duration_ms) {
         hal.scheduler->delay_microseconds(1000);
     }
 #else
-    const uint64_t deadline = AP_HAL::native_micros64() + duration_ms*1000;
+    const uint64_t deadline = AP_HAL::micros64() + duration_ms*1000;
     while (true) {
         processRx();
         processTx();
         {
             WITH_SEMAPHORE(_sem_rx);
             WITH_SEMAPHORE(_sem_tx);
-            canardCleanupStaleTransfers(&canard, AP_HAL::native_micros64());
+            canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
         }
-        uint64_t now = AP_HAL::native_micros64();
+        uint64_t now = AP_HAL::micros64();
         if (now < deadline) {
             _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
             hal.scheduler->delay_microseconds(50);
