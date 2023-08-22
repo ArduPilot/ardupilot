@@ -223,7 +223,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery, "BATT", AP_BattMonitor),
+    GOBJECT(battery_lib, "BATT", AP_BattMonitor),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
