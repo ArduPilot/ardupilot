@@ -107,7 +107,7 @@ void AP_Networking::init()
 
     if (!backend->init()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
-        delete backend;
+        // the backend init function creates a thread which references the backend pointer; that thread may be running so don't remove the backend allocation.
         backend = nullptr;
         return;
     }
