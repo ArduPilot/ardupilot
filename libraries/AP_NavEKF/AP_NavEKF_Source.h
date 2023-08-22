@@ -55,7 +55,7 @@ public:
 
     // get current position source
     SourceXY getPosXYSource() const { return _source_set[active_source_set].posxy; }
-    SourceZ getPosZSource() const { return _source_set[active_source_set].posz; }
+    SourceZ getPosZSource() const;
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void setPosVelYawSourceSet(uint8_t source_set_idx);
