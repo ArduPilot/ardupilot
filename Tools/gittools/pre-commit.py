@@ -44,7 +44,7 @@ class AP_PreCommit(object):
     def split_git_diff_output(output):
         '''split output from git-diff into a list of (status, filepath) tuples'''
         ret = []
-        if type(output) == bytes:
+        if type(output) is bytes:
             output = output.decode('utf-8')
         for line in output.split("\n"):
             if len(line) == 0:
