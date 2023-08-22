@@ -158,6 +158,10 @@ public:
     // return true requested baud on USB port
     virtual uint32_t get_passthrough_baud(void) const { return 0; }
 
+    // return true requested buffer sizes on serial port
+    virtual uint16_t get_tx_buffer_size(void) const { return 0; }
+    virtual uint16_t get_rx_buffer_size(void) const { return 0; }
+
     // disable TX/RX pins for unusued uart
     virtual void disable_rxtx(void) const {}
 
