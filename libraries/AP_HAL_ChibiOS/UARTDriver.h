@@ -44,6 +44,8 @@ public:
     void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
     uint32_t get_passthrough_baud() const override;
+    uint16_t get_tx_buffer_size(void) const override { return _writebuf.get_size(); }
+    uint16_t get_rx_buffer_size(void) const override { return _readbuf.get_size(); }
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
@@ -289,6 +291,7 @@ private:
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
     void read_bytes_NODMA();
+    void read_from_passthrough(void);
 
     void receive_timestamp_update(void);
 

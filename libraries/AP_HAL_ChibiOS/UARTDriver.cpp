@@ -1238,11 +1238,12 @@ void UARTDriver::_rx_timer_tick(void)
     // write to passthrough
     if (_passthrough_port) {
         WITH_SEMAPHORE(_passthrough_sem);
+
         ByteBuffer::IoVec vec[2];
         const uint16_t n_vec = _readbuf.peekiovec(vec, 2);
         size_t ret;
         for (uint16_t i=0; i<n_vec; i++) {
-            ret = _passthrough_port->write(vec[i].data, vec[i].len);    
+            ret = _passthrough_port->write(vec[i].data, vec[i].len);
             _readbuf.advance(ret);
             if (ret != vec[i].len) {
                 break;
@@ -1303,26 +1304,8 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
-    // read from passthrough if set and put it on the port
     if (_passthrough_port) {
-        WITH_SEMAPHORE(_passthrough_sem);
-        // check baudrate
-        if (_baudrate != _passthrough_port->get_passthrough_baud() &&
-            _passthrough_port->get_passthrough_baud() != 0 &&
-            !sdef.is_usb) {
-            // baudrate changed, restart the port
-            end();
-            begin_locked(_passthrough_port->get_passthrough_baud(), passthrough_lock_key);
-        }
-        ByteBuffer::IoVec vec[2];
-        const auto n_vec = _writebuf.reserve(vec, _writebuf.space());
-        for (int i = 0; i < n_vec; i++) {
-            const auto ret = _passthrough_port->read(vec[i].data, vec[i].len);
-            _writebuf.commit(ret);
-            if (ret != vec[i].len) {
-                break;
-            }
-        }
+        read_from_passthrough();
     }
 
     _in_tx_timer = true;
@@ -1370,6 +1353,62 @@ void UARTDriver::_tx_timer_tick(void)
     write_pending_bytes();
 
     _in_tx_timer = false;
+}
+
+// read from passthrough if set and put it on the port
+void UARTDriver::read_from_passthrough(void)
+{
+    WITH_SEMAPHORE(_passthrough_sem);
+
+    if (!_passthrough_port) {
+        return;
+    }
+
+    uint32_t avail = _passthrough_port->available();
+
+    if (avail == 0) {
+        return;
+    }
+
+    // check baudrate
+    if (((_baudrate != _passthrough_port->get_baud_rate() &&
+        _passthrough_port->get_baud_rate() != 0)
+        || get_options() != _passthrough_port->get_options()
+        || get_tx_buffer_size() != _passthrough_port->get_tx_buffer_size()
+        || get_rx_buffer_size() != _passthrough_port->get_rx_buffer_size())
+        && !sdef.is_usb) {
+        // already locked, cannot change
+        if (lock_write_key != 0 && passthrough_lock_key != lock_write_key) {
+            return;
+        }
+        // baudrate changed, restart the port
+        end();
+        set_options(_passthrough_port->get_options());
+        // passthrough port is pointing at the FC so our tx buffer must match its rx buffer
+        begin(_passthrough_port->get_baud_rate(),
+                _passthrough_port->get_tx_buffer_size(),
+                _passthrough_port->get_rx_buffer_size());
+    }
+
+    // don't try and send out a new frame until we have completely sent out the last one
+    if (tx_pending()) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_write_mutex);
+    // transfer data from the passthrough port to the UART write buffer
+    ByteBuffer::IoVec vec[2];
+
+    const auto n_vec = _writebuf.reserve(vec,  MIN(_writebuf.space(), avail));
+    uint32_t len = 0;
+    for (int i = 0; i < n_vec; i++) {
+        const uint32_t ret = _passthrough_port->read(vec[i].data, vec[i].len);
+        len += ret;
+        if (ret != vec[i].len) {
+            break;
+        }
+    }
+    _writebuf.commit(len);
 }
 
 /*
