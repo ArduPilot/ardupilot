@@ -137,12 +137,12 @@ bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_
 
     bool read_select = false;
     bool write_select = true;
-    bool ret = _can_iface->select(read_select, write_select, &out_frame, AP_HAL::native_micros64() + timeout_us);
+    bool ret = _can_iface->select(read_select, write_select, &out_frame, AP_HAL::micros64() + timeout_us);
     if (!ret || !write_select) {
         return false;
     }
 
-    uint64_t deadline = AP_HAL::native_micros64() + 2000000;
+    uint64_t deadline = AP_HAL::micros64() + 2000000;
     return (_can_iface->send(out_frame, deadline, AP_HAL::CANIface::AbortOnError) == 1);
 }
 
