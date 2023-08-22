@@ -169,10 +169,9 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
-    struct AP_Periph_Battery {
-        void handle_battery_failsafe(const char* type_str, const int8_t action) { }
-        AP_BattMonitor lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::AP_Periph_Battery::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
-
+    void handle_battery_failsafe(const char* type_str, const int8_t action) { }
+    AP_BattMonitor battery_lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
+    struct {
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
     } battery;

@@ -31,7 +31,7 @@ public:
         k_param_hardpoint_rate,
         k_param_baro_enable,
         k_param_esc_number0,
-        k_param_battery,
+        k_param_battery_lib,
         k_param_debug,
         k_param_serial_number,
         k_param_adsb_port,
