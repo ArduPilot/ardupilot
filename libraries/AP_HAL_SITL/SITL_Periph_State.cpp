@@ -109,7 +109,7 @@ void SITL_State::init(int argc, char * const argv[]) {
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec) {
-    while (AP_HAL::native_micros64() < wait_time_usec) {
+    while (AP_HAL::micros64() < wait_time_usec) {
         usleep(1000);
     }
 }
