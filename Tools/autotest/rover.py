@@ -6358,6 +6358,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
+        '''test MAV_CMD_NAV_RETURN_TO_LAUNCH mavlink command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        here = self.mav.location()
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+        self.wait_distance_to_home(20, 100)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+        self.wait_mode('RTL')
+
+        self.change_mode('GUIDED')
+
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+        self.wait_mode('RTL')
+
+        self.wait_distance_to_home(0, 5, timeout=30)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6424,6 +6446,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DepthFinder,
             self.ChangeModeByNumber,
             self.EStopAtBoot,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.StickMixingAuto,
             self.AutoDock,
             self.PrivateChannel,
