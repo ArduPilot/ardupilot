@@ -678,14 +678,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_DO_CHANGE_SPEED:
-        // param1 : unused
-        // param2 : new speed in m/s
-        if (!rover.control_mode->set_desired_speed(packet.param2)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-
     case MAV_CMD_NAV_SET_YAW_SPEED:
     {
         // param1 : yaw angle to adjust direction by in centidegress
