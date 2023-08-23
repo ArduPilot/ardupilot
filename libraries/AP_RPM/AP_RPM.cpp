@@ -17,13 +17,13 @@
 
 #if AP_RPM_ENABLED
 
+#include "RPM_Backend.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
 #include "RPM_Generator.h"
 #include "RPM_HarmonicNotch.h"
 #include "RPM_ESC_Telem.h"
-#include "AP_ESC_Telem/AP_ESC_Telem.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -201,17 +201,8 @@ void AP_RPM::update(void)
 
             drivers[i]->update();
 
-#if HAL_WITH_ESC_TELEM
-            // Check if we need to write to esc_telem(). Note:
-            // RPM_TYPE_ESC_TELEM = read ESC_TELEM and store it in AP_RPM
-            // RPM_TYPE_EverythingElse = write to ESC_TELEM with data generated from AP_RPM
-            if (_params[i].type != RPM_TYPE_ESC_TELEM && _params[i].esc_mask > 0 && healthy(i)) {
-                for (uint32_t esc=0; esc<ESC_TELEM_MAX_ESCS; esc++) {
-                    if (_params[i].esc_mask & (1U<<esc)) {
-                        AP::esc_telem().update_rpm(esc, state[i].rate_rpm, 0);
-                    }
-                }
-            }
+#if AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
 #endif
         }
     }

@@ -270,7 +270,9 @@ def double_precision_check(tasks):
                     double_tasks.append([library, s])
 
             src = str(t.inputs[0]).split('/')[-2:]
-            if src in double_tasks:
+            double_library = t.env.DOUBLE_PRECISION_LIBRARIES.get(src[0],False)
+
+            if double_library or src in double_tasks:
                 t.env.CXXFLAGS = t.env.CXXFLAGS[:]
                 for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
                     try:
@@ -323,3 +325,4 @@ def configure(cfg):
     cfg.env.AP_LIB_EXTRA_CXXFLAGS = dict()
     cfg.env.AP_LIB_EXTRA_CFLAGS = dict()
     cfg.env.DOUBLE_PRECISION_SOURCES = dict()
+    cfg.env.DOUBLE_PRECISION_LIBRARIES = dict()

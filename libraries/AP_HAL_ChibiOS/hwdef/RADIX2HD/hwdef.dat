@@ -173,3 +173,6 @@ DMA_PRIORITY SPI1*
 DMA_NOSHARE SPI1* TIM1* TIM2* TIM3* TIM4*
 NODMA I2C*
 define STM32_I2C_USE_DMA FALSE
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

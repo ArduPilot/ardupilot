@@ -59,10 +59,18 @@ void SRV_Channel::output_ch(void)
                 // non-mapped rc passthrough
                 int16_t radio_in = c->get_radio_in();
                 if (passthrough_mapped) {
-                    if ( ((1U<<passthrough_from) & SRV_Channels::get_rc_fs_mask()) && rc().in_rc_failsafe()) {
-                        radio_in = pwm_from_angle(0);
-                    } else {
+                    if (rc().has_valid_input()) {
                         radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                    } else {
+                        // no valid input.  If we are in radio
+                        // failsafe then go to trim values (if
+                        // configured for this channel).  Otherwise
+                        // use the last-good value
+                        if ( ((1U<<passthrough_from) & SRV_Channels::get_rc_fs_mask()) && rc().in_rc_failsafe()) {
+                            radio_in = pwm_from_angle(0);
+                        } else {
+                            radio_in = previous_radio_in;
+                        }
                     }
                 }
                 if (!ign_small_rcin_changes) {

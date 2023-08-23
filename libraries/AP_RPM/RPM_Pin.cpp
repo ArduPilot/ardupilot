@@ -13,25 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RPM_Pin.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_PIN_ENABLED
 
-#include <AP_HAL/AP_HAL.h>
+#include "RPM_Pin.h"
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/GPIO.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
-
-/* 
-   open the sensor in constructor
-*/
-AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, instance, _state)
-{
-}
 
 /*
   handle interrupt on an instance

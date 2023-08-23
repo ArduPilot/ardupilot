@@ -6,6 +6,7 @@
 #include "AP_Networking.h"
 #include "AP_Networking_ChibiOS.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -80,14 +81,19 @@ void AP_Networking::init()
         return;
     }
 
-    // set default MAC Address lower 3 bytes to UUID if possible
-    uint8_t uuid[12];
-    uint8_t uuid_len = sizeof(uuid);
-    const bool udid_is_ok = hal.util->get_system_id_unformatted(uuid, uuid_len) && uuid_len >= 3;
-    if (udid_is_ok) {
-        for (uint8_t i=0; i<3; i++) {
-            param.macaddr.set_default_address_byte(i, uuid[uuid_len-3+i]);
-        }
+    // set default MAC Address as lower 3 bytes of the CRC of the UID
+    uint8_t uid[50];
+    uint8_t uid_len = sizeof(uid);
+    if (hal.util->get_system_id_unformatted(uid, uid_len)) {
+        union {
+            uint8_t bytes[4];
+            uint32_t value32;
+        } crc;
+        crc.value32 = crc_crc32(0, uid, uid_len);
+
+        param.macaddr.set_default_address_byte(3, crc.bytes[0]);
+        param.macaddr.set_default_address_byte(4, crc.bytes[1]);
+        param.macaddr.set_default_address_byte(5, crc.bytes[2]);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -101,7 +107,9 @@ void AP_Networking::init()
 
     if (!backend->init()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend init failed");
+        // the backend init function creates a thread which references the backend pointer; that thread may be running so don't remove the backend allocation.
         backend = nullptr;
+        return;
     }
 
     announce_address_changes();

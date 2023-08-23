@@ -142,10 +142,6 @@
 #define AP_RC_CHANNEL_ENABLED 0
 #endif
 
-#ifndef AP_RCPROTOCOL_ENABLED
-#define AP_RCPROTOCOL_ENABLED 0
-#endif
-
 #define HAL_CRSF_TELEM_ENABLED 0
 
 #ifndef AP_SERVORELAYEVENTS_ENABLED
@@ -302,12 +298,17 @@
 #define AP_SCRIPTING_ENABLED 0
 #endif
 
+#ifndef AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+#define AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED 0
+#endif
+
 #define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
 #define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
 #define AP_RPM_ENABLED defined(HAL_PERIPH_ENABLE_RPM)
+#define AP_RCPROTOCOL_ENABLED defined(HAL_PERIPH_ENABLE_RCIN)
 
 #ifndef AP_BOOTLOADER_ALWAYS_ERASE
 #define AP_BOOTLOADER_ALWAYS_ERASE 1
@@ -327,4 +328,11 @@
 
 #ifndef HAL_BOARD_TERRAIN_DIRECTORY
 #define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+#endif
+
+// for boards other than AP_Periph we are always expecting delays when
+// not initialised.  We can't afford that on AP_Periph as you may end
+// up with a bricked node if you write a bad firmware to it.
+#ifndef AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED
+#define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 0
 #endif

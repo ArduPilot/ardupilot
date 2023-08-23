@@ -771,18 +771,18 @@ class AutoTestPlane(AutoTest):
         self.change_mode("AUTO")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.progress("Waiting for deepstall messages")
-
-        # note that the following two don't necessarily happen in this
-        # order, but at very high speedups we may miss the elevator
-        # PWM if we first look for the text (due to the get_sim_time()
-        # in wait_servo_channel_value)
-        self.context_collect('STATUSTEXT')
+        self.wait_current_waypoint(4)
 
         # assume elevator is on channel 2:
         self.wait_servo_channel_value(2, deepstall_elevator_pwm, timeout=240)
 
-        self.wait_text("Deepstall: Entry: ", check_context=True, timeout=60)
+        self.progress("Waiting for stage DEEPSTALL_STAGE_LAND")
+        self.assert_receive_message(
+            'DEEPSTALL',
+            condition='DEEPSTALL.stage==6',
+            timeout=240,
+        )
+        self.progress("Reached stage DEEPSTALL_STAGE_LAND")
 
         self.disarm_wait(timeout=120)
         self.set_current_waypoint(0, check_afterwards=False)
@@ -3074,7 +3074,7 @@ class AutoTestPlane(AutoTest):
             self.wait_and_maintain_wind_estimate(
                 5, 45,
                 speed_tolerance=1,
-                timeout=20
+                timeout=30
             )
         self.fly_home_land_and_disarm()
 
@@ -3913,6 +3913,18 @@ class AutoTestPlane(AutoTest):
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
 
+    def AutotuneFiltering(self):
+        '''Test AutoTune mode with filter updates disabled'''
+        self.set_parameters({
+            "AUTOTUNE_OPTIONS": 3,
+            # some filtering is required for autotune to complete
+            "RLL_RATE_FLTD": 10,
+            "PTCH_RATE_FLTD": 10,
+            "RLL_RATE_FLTT": 20,
+            "PTCH_RATE_FLTT": 20,
+        })
+        self.AUTOTUNE()
+
     def LandingDrift(self):
         '''Circuit with baro drift'''
         self.customise_SITL_commandline([], wipe=True)
@@ -4731,6 +4743,7 @@ class AutoTestPlane(AutoTest):
             self.DCMFallback,
             self.MAVFTP,
             self.AUTOTUNE,
+            self.AutotuneFiltering,
             self.MegaSquirt,
             self.MSP_DJI,
             self.SpeedToFly,

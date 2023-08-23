@@ -78,6 +78,7 @@ public:
         k_param_esc_serial_port1,
         k_param_networking,
         k_param_rpm_sensor,
+        k_param_g_rcin,
     };
 
     AP_Int16 format_version;

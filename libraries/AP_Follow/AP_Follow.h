@@ -13,6 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "AP_Follow_config.h"
+
+#if AP_FOLLOW_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -160,3 +163,5 @@ private:
 namespace AP {
     AP_Follow &follow();
 };
+
+#endif

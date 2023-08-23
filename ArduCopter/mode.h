@@ -2,6 +2,7 @@
 
 #include "Copter.h"
 #include <AP_Math/chirp.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
 class Parameters;
 class ParametersG2;
 
@@ -957,6 +958,10 @@ private:
 class ModeGuided : public Mode {
 
 public:
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Copter;
+#endif
+
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::GUIDED; }
@@ -1718,6 +1723,7 @@ private:
 
 };
 
+#if AP_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
 
 public:
@@ -1747,6 +1753,7 @@ protected:
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+#endif
 
 class ModeZigZag : public Mode {        
 

@@ -1,2 +1,2 @@
 def configure(cfg):
-    cfg.env.DOUBLE_PRECISION_SOURCES['AP_HAL_SITL'] = ['system.cpp']
+    cfg.env.DOUBLE_PRECISION_LIBRARIES['AP_HAL_SITL'] = True

@@ -245,7 +245,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  
     // @Param: _RC_FS_MSK
     // @DisplayName: Servo RC Failsafe Mask
-    // @Description: Bitmask of scaled passthru output function which will be set to their trim value during rc failsafe instead of holding their last position before failsafe.
+    // @Description: Bitmask of scaled passthru output channels which will be set to their trim value during rc failsafe instead of holding their last position before failsafe.
     // @Bitmask: 0:RCIN1Scaled, 1:RCIN2Scaled, 2:RCIN3Scaled, 3:RCIN4Scaled, 4:RCIN5Scaled, 5:RCIN6Scaled, 6:RCIN7Scaled, 7:RCIN8Scaled, 8:RCIN9Scaled, 9:RCIN10Scaled, 10:RCIN11Scaled, 11:SRCIN12Scaled, 12:RCIN13Scaled, 13:RCIN14Scaled, 14:RCIN15Scaled, 15:RCIN16Scaled
     // @User: Advanced
     AP_GROUPINFO("_RC_FS_MSK", 44, SRV_Channels, rc_fs_mask, 0),

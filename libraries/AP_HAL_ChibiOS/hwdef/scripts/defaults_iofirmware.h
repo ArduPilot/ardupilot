@@ -37,3 +37,7 @@
 
 // allow the IOMCU to have its allowed protocols to be set:
 #define AP_RCPROTOCOL_ENABLE_SET_RC_PROTOCOLS 1
+
+#ifndef AP_INTERNALERROR_ENABLED
+#define AP_INTERNALERROR_ENABLED 0
+#endif

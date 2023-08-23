@@ -43,6 +43,11 @@
 #include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AC_PrecLand/AC_PrecLand_config.h>
+#include <AP_Follow/AP_Follow_config.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include <AP_ExternalControl/AP_ExternalControl.h>
+#endif
 
 // Configuration
 #include "defines.h"
@@ -91,7 +96,9 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+#if MODE_FOLLOW_ENABLED == ENABLED
     friend class ModeFollow;
+#endif
     friend class ModeSimple;
 #if MODE_DOCK_ENABLED == ENABLED
     friend class ModeDock;
@@ -139,6 +146,11 @@ private:
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
+
+    // dummy external control implementation
+#if AP_EXTERNAL_CONTROL_ENABLED
+    AP_ExternalControl external_control;
+#endif
 
 #if AP_OPTICALFLOW_ENABLED
     AP_OpticalFlow optflow;
@@ -236,7 +248,9 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+#if MODE_FOLLOW_ENABLED == ENABLED
     ModeFollow mode_follow;
+#endif
     ModeSimple mode_simple;
 #if MODE_DOCK_ENABLED == ENABLED
     ModeDock mode_dock;

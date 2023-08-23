@@ -214,4 +214,7 @@ define AP_MAVLINK_BATTERY2_ENABLED 0
 # SkyViper doesn't use the Plane landing library:
 define HAL_LANDING_DEEPSTALL_ENABLED 0
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
 AUTOBUILD_TARGETS Copter

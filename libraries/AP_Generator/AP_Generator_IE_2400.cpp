@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_2400.h"
 
-#if AP_GENERATOR_IE2400_ENABLED
+#if AP_GENERATOR_IE_2400_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -203,4 +203,4 @@ void AP_Generator_IE_2400::log_write()
         _err_code
         );
 }
-#endif  // AP_GENERATOR_IE2400_ENABLED
+#endif  // AP_GENERATOR_IE_2400_ENABLED

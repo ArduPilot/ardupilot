@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1115
+APJ_BOARD_ID AP_HW_ACNS_CM4PILOT
 
 # crystal frequency
 OSCILLATOR_HZ 16000000

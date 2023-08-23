@@ -30,7 +30,7 @@ struct PACKED log_FINO {
 //Write a fin input packet
 void Blimp::Write_FINI(float right, float front, float down, float yaw)
 {
-    const struct log_FINI pkt{
+    const struct log_FINI pkt {
         LOG_PACKET_HEADER_INIT(LOG_FINI_MSG),
         time_us       : AP_HAL::micros64(),
         Right         : right,
@@ -44,7 +44,7 @@ void Blimp::Write_FINI(float right, float front, float down, float yaw)
 //Write a fin output packet
 void Blimp::Write_FINO(float *amp, float *off)
 {
-    const struct log_FINO pkt{
+    const struct log_FINO pkt {
         LOG_PACKET_HEADER_INIT(LOG_FINO_MSG),
         time_us       : AP_HAL::micros64(),
         Fin1_Amp      : amp[0],
@@ -92,7 +92,9 @@ void Blimp::Log_Write_PIDs()
 // Write an attitude packet
 void Blimp::Log_Write_Attitude()
 {
-
+    //Attitude targets are all zero since Blimp doesn't have attitude control,
+    //but the rest of the log message is useful.
+    ahrs.Write_Attitude(Vector3f{0,0,0});
 }
 
 // Write an EKF and POS packet
@@ -232,7 +234,6 @@ tuning_max     : tune_max
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
-
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -247,8 +248,10 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: D: Down
     // @Field: Y: Yaw
 
-    { LOG_FINI_MSG, sizeof(log_FINI),
-      "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"  },
+    {
+        LOG_FINI_MSG, sizeof(log_FINI),
+        "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"
+    },
 
     // @LoggerMessage: FINO
     // @Description: Fin output
@@ -262,8 +265,10 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: F4A: Fin 4 Amplitude
     // @Field: F4O: Fin 4 Offset
 
-    { LOG_FINO_MSG, sizeof(log_FINO),
-      "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"  },
+    {
+        LOG_FINO_MSG, sizeof(log_FINO),
+        "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"
+    },
 
     // @LoggerMessage: PIDD,PIVN,PIVE,PIVD,PIVY
     // @Description: Proportional/Integral/Derivative gain values
@@ -278,16 +283,26 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: Dmod: scaler applied to D gain to reduce limit cycling
     // @Field: SRate: slew rate
     // @Field: Limit: 1 if I term is limited due to output saturation
-    { LOG_PIDD_MSG, sizeof(log_PID),
-      "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVN_MSG, sizeof(log_PID),
-      "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVE_MSG, sizeof(log_PID),
-      "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVD_MSG, sizeof(log_PID),
-      "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
-    { LOG_PIVY_MSG, sizeof(log_PID),
-      "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    {
+        LOG_PIDD_MSG, sizeof(log_PID),
+        "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVN_MSG, sizeof(log_PID),
+        "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVE_MSG, sizeof(log_PID),
+        "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVD_MSG, sizeof(log_PID),
+        "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIVY_MSG, sizeof(log_PID),
+        "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
 
     // @LoggerMessage: PTUN
     // @Description: Parameter Tuning information
@@ -403,8 +418,6 @@ void Blimp::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Blimp::Log_Write_Data(LogDataID id, float value) {}
 void Blimp::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Blimp::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Blimp::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
-void Blimp::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
 void Blimp::Log_Write_Vehicle_Startup_Messages() {}
 
 void Blimp::log_init(void) {}

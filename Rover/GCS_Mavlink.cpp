@@ -398,8 +398,10 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
 void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg)
 {
+#if AP_FOLLOW_ENABLED
     // pass message to follow library
     rover.g2.follow.handle_msg(msg);
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -635,7 +637,7 @@ bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool _lock) {
     return rover.set_home(loc, _lock);
 }
 
-MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet)
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
 
@@ -655,20 +657,20 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
         return MAV_RESULT_ACCEPTED;
 
-    default:
-        return GCS_MAVLINK::handle_command_int_packet(packet);
-    }
-}
-
-MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet)
-{
-    switch (packet.command) {
-
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         if (rover.set_mode(rover.mode_rtl, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+
+    default:
+        return GCS_MAVLINK::handle_command_int_packet(packet, msg);
+    }
+}
+
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    switch (packet.command) {
 
     case MAV_CMD_MISSION_START:
         if (rover.set_mode(rover.mode_auto, ModeReason::GCS_COMMAND)) {
@@ -682,11 +684,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         if (!rover.control_mode->set_desired_speed(packet.param2)) {
             return MAV_RESULT_FAILED;
         }
-        return MAV_RESULT_ACCEPTED;
-
-    case MAV_CMD_DO_SET_REVERSE:
-        // param1 : Direction (0=Forward, 1=Reverse)
-        rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -723,7 +720,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
                                               packet.param4);
 
     default:
-        return GCS_MAVLINK::handle_command_long_packet(packet);
+        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
     }
 }
 

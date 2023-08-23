@@ -151,6 +151,16 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 #endif // HAL_BUILD_AP_PERIPH
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+    // @Param: ESC_INDEX
+    // @DisplayName: ESC Telemetry Index to write to
+    // @Description: ESC Telemetry Index to write voltage, current, consumption and temperature data to. Use 0 to disable.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ESC_INDEX", 22, AP_BattMonitor_Params, _esc_telem_outbound_index, 0),
+#endif
+
     AP_GROUPEND
 
 };

@@ -247,6 +247,13 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
 
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(uint8_t instance, float& distance_m) const;
+
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 

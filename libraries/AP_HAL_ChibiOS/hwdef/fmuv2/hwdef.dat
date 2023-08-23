@@ -19,3 +19,6 @@ include ../include/minimal.inc
 
 # produce this error if we are on a 2M board and using 1M firmware
 define BOARD_CHECK_F427_USE_2M "2M flash - use fmuv3 firmware"
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

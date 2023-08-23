@@ -7,10 +7,3 @@ SERIAL5_BAUD 57
 SERIAL5_PROTOCOL 1
 EK2_PRIMARY 1
 EK3_PRIMARY 1
-
-# Networking
-# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
-# A8-B0-28-??-??-?? where the ?? is the lower 3 bytes from the STM32 UUID
-NET_MACADDR0 168    # 0xA8
-NET_MACADDR1 176    # 0xB0
-NET_MACADDR2 40     # 0x28
