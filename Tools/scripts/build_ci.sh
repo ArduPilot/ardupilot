@@ -336,6 +336,7 @@ for t in $CI_BUILD_TARGET; do
         $waf clean
         $waf copter
         $waf plane
+        $waf tests
         continue
     fi
     
