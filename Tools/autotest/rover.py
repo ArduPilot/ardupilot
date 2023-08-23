@@ -342,38 +342,21 @@ class AutoTestRover(AutoTest):
 
     def DriveMaxRCIN(self, timeout=30):
         """Drive rover at max RC inputs"""
-        self.context_push()
-        ex = None
+        self.progress("Testing max RC inputs")
+        self.change_mode("MANUAL")
 
-        try:
-            self.progress("Testing max RC inputs")
-            self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.set_rc(1, 1000)
 
-            self.set_rc(3, 2000)
-            self.set_rc(1, 1000)
-
-            tstart = self.get_sim_time()
-            while self.get_sim_time_cached() - tstart < timeout:
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
-                if m is not None:
-                    self.progress("Current speed: %f" % m.groundspeed)
-
-            # reduce throttle
-            self.set_rc(3, 1500)
-            self.set_rc(1, 1500)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.assert_receive_message('VFR_HUD')
+            self.progress("Current speed: %f" % m.groundspeed)
 
         self.disarm_vehicle()
-        self.context_pop()
-
-        if ex:
-            raise ex
 
     #################################################
     # AUTOTEST ALL
