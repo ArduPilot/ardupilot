@@ -4933,12 +4933,107 @@ class AutoTestCopter(AutoTest):
 
     def set_mount_mode(self, mount_mode):
         '''set mount mode'''
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
+            p1=mount_mode,
+            p2=0, # stabilize roll (unsupported)
+            p3=0, # stabilize pitch (unsupported)
+        )
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
             p1=mount_mode,
             p2=0, # stabilize roll (unsupported)
             p3=0, # stabilize pitch (unsupported)
         )
+
+    def test_mount_rc_targetting(self):
+        '''called in multipleplaces to make sure that mount RC targetting works'''
+        try:
+            self.context_push()
+            self.set_parameters({
+                'RC6_OPTION': 0,
+                'RC11_OPTION': 212,    # MOUNT1_ROLL
+                'RC12_OPTION': 213,    # MOUNT1_PITCH
+                'RC13_OPTION': 214,    # MOUNT1_YAW
+                'RC12_MIN': 1100,
+                'RC12_MAX': 1900,
+                'RC12_TRIM': 1500,
+                'MNT1_PITCH_MIN': -45,
+                'MNT1_PITCH_MAX': 45,
+            })
+            self.progress("Testing RC angular control")
+            # default RC min=1100 max=1900
+            self.set_rc_from_map({
+                11: 1500,
+                12: 1500,
+                13: 1500,
+            })
+            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
+            rc12_in = 1400
+            rc12_min = 1100 # default
+            rc12_max = 1900 # default
+            mpitch_min = -45.0
+            mpitch_max = 45.0
+            expected_pitch = (float(rc12_in-rc12_min)/float(rc12_max-rc12_min) * (mpitch_max-mpitch_min)) + mpitch_min
+            self.progress("expected mount pitch: %f" % expected_pitch)
+            if expected_pitch != -11.25:
+                raise NotAchievedException("Calculation wrong - defaults changed?!")
+            self.set_rc(12, rc12_in)
+            self.test_mount_pitch(-11.25, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.set_rc(12, 1800)
+            self.test_mount_pitch(33.75, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.set_rc_from_map({
+                11: 1500,
+                12: 1500,
+                13: 1500,
+            })
+
+            try:
+                self.context_push()
+                self.set_parameters({
+                    "RC12_MIN": 1000,
+                    "RC12_MAX": 2000,
+                    "MNT1_PITCH_MIN": -90,
+                    "MNT1_PITCH_MAX": 10,
+                })
+                self.set_rc(12, 1000)
+                self.test_mount_pitch(-90.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+                self.set_rc(12, 2000)
+                self.test_mount_pitch(10.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+                self.set_rc(12, 1500)
+                self.test_mount_pitch(-40.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            finally:
+                self.context_pop()
+
+            self.set_rc(12, 1500)
+
+            self.progress("Testing RC rate control")
+            self.set_parameter('MNT1_RC_RATE', 10)
+            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.set_rc(12, 1300)
+            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.set_rc(12, 1700)
+            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+
+            self.progress("Reverting to angle mode")
+            self.set_parameter('MNT1_RC_RATE', 0)
+            self.set_rc(12, 1500)
+            self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+
+            self.context_pop()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            self.context_pop()
+            raise e
 
     def Mount(self):
         '''Test Camera/Antenna Mount'''
@@ -5004,17 +5099,18 @@ class AutoTestCopter(AutoTest):
             self.do_pitch(0)    # level vehicle
             self.wait_pitch(0, despitch_tolerance)
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
-            self.run_cmd(
-                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
-                p1=-20,   # pitch angle in degrees
-                p2=0,     # yaw angle in degrees
-                p3=0,     # pitch rate in degrees (NaN to ignore)
-                p4=0,     # yaw rate in degrees (NaN to ignore)
-                p5=0,     # flags (0=Body-frame, 16/GIMBAL_MANAGER_FLAGS_YAW_LOCK=Earth Frame)
-                p6=0,     # unused
-                p7=0,     # gimbal id
-            )
-            self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+            for (method, angle) in (self.run_cmd, -20), (self.run_cmd_int, -30):
+                method(
+                    mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                    p1=angle,   # pitch angle in degrees
+                    p2=0,     # yaw angle in degrees
+                    p3=0,     # pitch rate in degrees (NaN to ignore)
+                    p4=0,     # yaw rate in degrees (NaN to ignore)
+                    p5=0,     # flags (0=Body-frame, 16/GIMBAL_MANAGER_FLAGS_YAW_LOCK=Earth Frame)
+                    p6=0,     # unused
+                    p7=0,     # gimbal id
+                )
+                self.test_mount_pitch(angle, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
 
             # point gimbal at specified location
             self.progress("Point gimbal at Location using MOUNT_CONTROL (GPS)")
@@ -5042,9 +5138,6 @@ class AutoTestCopter(AutoTest):
             )
             self.test_mount_pitch(-52, 5, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
 
-            # now test RC targetting
-            self.progress("Testing mount RC targetting")
-
             # this is a one-off; ArduCopter *will* time out this directive!
             self.progress("Levelling aircraft")
             self.mav.mav.set_attitude_target_send(
@@ -5058,94 +5151,13 @@ class AutoTestCopter(AutoTest):
                 0, # yaw rate   (rad/s)
                 0.5) # thrust, 0 to 1, translated to a climb/descent rate
 
+            self.wait_groundspeed(0, 1)
+
+            # now test RC targetting
+            self.progress("Testing mount RC targetting")
+
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-
-            try:
-                self.context_push()
-                self.set_parameters({
-                    'RC6_OPTION': 0,
-                    'RC11_OPTION': 212,    # MOUNT1_ROLL
-                    'RC12_OPTION': 213,    # MOUNT1_PITCH
-                    'RC13_OPTION': 214,    # MOUNT1_YAW
-                    'RC12_MIN': 1100,
-                    'RC12_MAX': 1900,
-                    'RC12_TRIM': 1500,
-                    'MNT1_PITCH_MIN': -45,
-                    'MNT1_PITCH_MAX': 45,
-                })
-                self.progress("Testing RC angular control")
-                # default RC min=1100 max=1900
-                self.set_rc_from_map({
-                    11: 1500,
-                    12: 1500,
-                    13: 1500,
-                })
-                self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
-                rc12_in = 1400
-                rc12_min = 1100 # default
-                rc12_max = 1900 # default
-                mpitch_min = -45.0
-                mpitch_max = 45.0
-                expected_pitch = (float(rc12_in-rc12_min)/float(rc12_max-rc12_min) * (mpitch_max-mpitch_min)) + mpitch_min
-                self.progress("expected mount pitch: %f" % expected_pitch)
-                if expected_pitch != -11.25:
-                    raise NotAchievedException("Calculation wrong - defaults changed?!")
-                self.set_rc(12, rc12_in)
-                self.test_mount_pitch(-11.25, 0.01, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.set_rc(12, 1800)
-                self.test_mount_pitch(33.75, 0.01, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.set_rc_from_map({
-                    11: 1500,
-                    12: 1500,
-                    13: 1500,
-                })
-
-                try:
-                    self.context_push()
-                    self.set_parameters({
-                        "RC12_MIN": 1000,
-                        "RC12_MAX": 2000,
-                        "MNT1_PITCH_MIN": -90,
-                        "MNT1_PITCH_MAX": 10,
-                    })
-                    self.set_rc(12, 1000)
-                    self.test_mount_pitch(-90.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                    self.set_rc(12, 2000)
-                    self.test_mount_pitch(10.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                    self.set_rc(12, 1500)
-                    self.test_mount_pitch(-40.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                finally:
-                    self.context_pop()
-
-                self.set_rc(12, 1500)
-
-                self.progress("Testing RC rate control")
-                self.set_parameter('MNT1_RC_RATE', 10)
-                self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.set_rc(12, 1300)
-                self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.set_rc(12, 1700)
-                self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-                self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-
-                self.progress("Reverting to angle mode")
-                self.set_parameter('MNT1_RC_RATE', 0)
-                self.set_rc(12, 1500)
-                self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-
-                self.context_pop()
-
-            except Exception as e:
-                self.print_exception_caught(e)
-                self.context_pop()
-                raise e
+            self.test_mount_rc_targetting()
 
             self.progress("Testing mount ROI behaviour")
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
@@ -5300,6 +5312,128 @@ class AutoTestCopter(AutoTest):
 
         if ex is not None:
             raise ex
+
+    def assert_mount_rpy(self, r, p, y, tolerance=1):
+        '''assert mount atttiude in degrees'''
+        got_r, got_p, got_y = self.get_mount_roll_pitch_yaw_deg()
+        for (want, got, name) in (r, got_r, "roll"), (p, got_p, "pitch"), (y, got_y, "yaw"):
+            if abs(want - got) > tolerance:
+                raise NotAchievedException("%s incorrect; want=%f got=%f" %
+                                           (name, want, got))
+
+    def neutralise_gimbal(self):
+        '''put mount into neutralise mode, assert it is at zero angles'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+            p7=mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL,
+        )
+        self.test_mount_pitch(0, 0, mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+
+    def MAV_CMD_DO_MOUNT_CONTROL(self):
+        '''test MAV_CMD_DO_MOUNT_CONTROL mavlink command'''
+
+        # setup mount parameters
+        self.context_push()
+        self.setup_servo_mount()
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        takeoff_loc = self.mav.location()
+
+        self.takeoff(20, mode='GUIDED')
+        self.guided_achieve_heading(315)
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+            p7=mavutil.mavlink.MAV_MOUNT_MODE_RETRACT,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+            p7=mavutil.mavlink.MAV_MOUNT_MODE_RETRACT,
+        )
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.start_subtest("MAV_MOUNT_MODE_GPS_POINT")
+
+            self.progress("start=%s" % str(takeoff_loc))
+            t = self.offset_location_ne(takeoff_loc, 20, 0)
+            self.progress("targetting=%s" % str(t))
+
+            # this command is *weird* as the lat/lng is *always* 1e7,
+            # even when transported via COMMAND_LONG!
+            x = int(t.lat * 1e7)
+            y = int(t.lng * 1e7)
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p4=0,  # this is a relative altitude!
+                p5=x,
+                p6=y,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT,
+            )
+            self.test_mount_pitch(-45, 5, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
+            self.neutralise_gimbal()
+
+            self.start_subtest("MAV_MOUNT_MODE_HOME_LOCATION")
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_HOME_LOCATION,
+            )
+            self.test_mount_pitch(-90, 5, mavutil.mavlink.MAV_MOUNT_MODE_HOME_LOCATION)
+            self.neutralise_gimbal()
+
+            # try an invalid mount mode.  Note that this is asserting we
+            # are receiving a result code which is actually incorrect;
+            # this should be MAV_RESULT_DENIED
+            self.start_subtest("Invalid mode")
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p7=87,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+
+            self.start_subtest("MAV_MOUNT_MODE_MAVLINK_TARGETING")
+            r = 15
+            p = 20
+            y = 30
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p1=p,
+                p2=r,
+                p3=y,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING,
+            )
+            self.delay_sim_time(2)
+            self.assert_mount_rpy(r, p, y)
+            self.neutralise_gimbal()
+
+            self.start_subtest("MAV_MOUNT_MODE_RC_TARGETING")
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING,
+            )
+            self.test_mount_rc_targetting()
+
+            self.start_subtest("MAV_MOUNT_MODE_RETRACT")
+            self.context_push()
+            retract_r = 13
+            retract_p = 23
+            retract_y = 33
+            self.set_parameters({
+                "MNT1_RETRACT_X": retract_r,
+                "MNT1_RETRACT_Y": retract_p,
+                "MNT1_RETRACT_Z": retract_y,
+            })
+            method(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_RETRACT,
+            )
+            self.delay_sim_time(3)
+            self.assert_mount_rpy(retract_r, retract_p, retract_y)
+            self.context_pop()
+
+        self.do_RTL()
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def MountYawVehicleForMountROI(self):
         '''Test Camera/Antenna Mount vehicle yawing for ROI'''
@@ -9710,6 +9844,7 @@ class AutoTestCopter(AutoTest):
              self.RTLSpeed,
              self.Mount,
              self.MountYawVehicleForMountROI,
+             self.MAV_CMD_DO_MOUNT_CONTROL,
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,
