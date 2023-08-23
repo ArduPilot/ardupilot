@@ -6331,6 +6331,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # both the vehicle and this tests's special heartbeat
             raise NotAchievedException("Got heartbeat on private channel from non-vehicle")
 
+    def MAV_CMD_DO_SET_REVERSE(self):
+        '''test MAV_CMD_DO_SET_REVERSE command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        here = self.mav.location()
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+
+        self.wait_groundspeed(3, 100, minimum_duration=5)
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.progress("Forwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
+            self.wait_heading(0)
+
+            self.progress("Backwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=1)
+            self.wait_heading(180)
+
+            self.progress("Forwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
+            self.wait_heading(0)
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6405,6 +6432,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
             self.CompassPrearms,
+            self.MAV_CMD_DO_SET_REVERSE,
         ])
         return ret
 
