@@ -36,6 +36,7 @@ double amplitude(double dTime, sEnvelope env);
 bool generate(sf::SoundBuffer* buffer, sEnvelope env, std::vector<sTone> tones, unsigned uMasterVol, unsigned uSampleRate);
 bool generate(sf::SoundBuffer* buffer, sEnvelope env, sTone tone, unsigned uMasterVol, unsigned uSampleRate);
 
+
 ////////////////////////////////////////////////////////////
 // Converts frequency (Hz) to angular velocity
 ////////////////////////////////////////////////////////////
@@ -107,7 +108,7 @@ double amplitude(double dTime, sEnvelope env)
     else if (dTime > env.dAttackTime && dTime <= (env.dAttackTime + env.dDecayTime))                                                       // Decay phase
         dAmplitude = ((dTime - env.dAttackTime) / env.dDecayTime) * (env.dSustainAmplitude - env.dStartAmplitude) + env.dStartAmplitude;
 
-    else if (dTime <= env.dAttackTime)                                                                                                     // Attack phase
+    else if (std::fpclassify(env.dAttackTime) != FP_ZERO && dTime <= env.dAttackTime)                                                                         // Attack phase
         dAmplitude = (dTime / env.dAttackTime) * env.dStartAmplitude;
 
     // Amplitude should not be negative, check just in case
