@@ -311,7 +311,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
     const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
     const uint8_t num_idx = ESC_TELEM_MAX_ESCS/4;
     for (uint8_t idx = 0; idx < num_idx; idx++) {
-        const uint8_t i = (next_idx + idx) % num_idx;
+        const uint8_t i = num_idx > 0 ? (next_idx + idx) % num_idx : 0;
 
         // return if no space in output buffer to send mavlink messages
         if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
