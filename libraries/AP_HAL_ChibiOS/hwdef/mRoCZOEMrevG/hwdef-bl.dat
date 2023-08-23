@@ -1,64 +1,55 @@
 ###########################################################################################################################################################
 # mRo Control Zero OEM H7 Flight Controller
 # STM32H743IIK6
-# 8x PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
-# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
+# 8x PWM / IO - DMA capable and hardware and/or software switchable 3.3v
+# Logic level 3v3 fixed
 # Bottom Connectors: 36pin front and 40pin back Samtec FTM-118-02-F-DV 1.00 mm Surface Mount Micro Low Profile Terminal Strip
 # 3x IMUs (BMI088 6DOF, ICM20602 6DOF, ICM20948 9DOF)
-# DPS310 Baro, FRAM (256Bb), SDCARD Socket, TC2030 JTAG
+# DPS368 Baro, FRAM (256Mb), SDCARD Socket, TC2030 SWD interface
 # 5x UARTs (2x with hardware flow control), 2x CAN, 1x SPI, 3x I2C
 # Onboard 3 color LED and buzzer
 # Uncased Weight and Dimensions:
 # Weight: 3.66g (13.oz)
 # Width:  20mm (.79in)
 # Length: 34mm (1.34in)
-# M10059C - Initial Release
+# Current release M10059G
 ###########################################################################################################################################################
 
-# MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
 define STM32_HSE_BYPASS
 define BYPASS_PWR
 
-# USB setup
 USB_STRING_MANUFACTURER "mRo"
 
-# crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
 APJ_BOARD_ID 1124
 
 FLASH_SIZE_KB 2048
-
-# bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
-# the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 128
 
 PB11 LED_BOOTLOADER OUTPUT
 
 PH5 VDD_1V2_CORE_EN OUTPUT HIGH
 
-# define all 3 to make LED output White.
 PB1 LED_ACTIVITY OUTPUT
 PB3 LED_ACTIVITY2 OUTPUT
 # PB11 LED_ACTIVITY3 OUTPUT
 
 define HAL_LED_ON 0
 
-# order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3
 
-# USART2 telem1
+# USART2 TELEM1
 PD5 USART2_TX USART2
 PD6 USART2_RX USART2
 PD3 USART2_CTS USART2
 PD4 USART2_RTS USART2
 
-# USART3 telem2
+# USART3 TELEM2
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 PD11 USART3_CTS USART3
