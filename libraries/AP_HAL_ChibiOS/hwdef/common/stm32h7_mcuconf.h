@@ -87,7 +87,11 @@
 #ifdef SMPS_PWR
 #define STM32_PWR_CR3                       (PWR_CR3_SMPSEN | PWR_CR3_USB33DEN)
 #else
+#ifdef BYPASS_PWR
+#define STM32_PWR_CR3                       (PWR_CR3_BYPASS | PWR_CR3_USB33DEN)
+#else
 #define STM32_PWR_CR3                       (PWR_CR3_LDOEN | PWR_CR3_USB33DEN)
+#endif
 #endif
 #define STM32_PWR_CPUCR                     0
 
