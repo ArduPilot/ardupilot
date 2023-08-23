@@ -28,6 +28,7 @@
 #define DDS_MTU             512
 #define DDS_STREAM_HISTORY  8
 #define DDS_BUFFER_SIZE     DDS_MTU * DDS_STREAM_HISTORY
+#define debug(level, debug_error, fmt, args ...) do { if (debug_level) { if (debug_error){ GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS_DEBUG_ERROR: " fmt, ## args); } else {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS_DEBUG: " fmt, ## args);} } } while (0)
 
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
@@ -41,6 +42,7 @@ class AP_DDS_Client
 private:
 
     AP_Int8 enabled;
+    AP_Int8 debug_level;
 
     // Serial Allocation
     uxrSession session; //Session

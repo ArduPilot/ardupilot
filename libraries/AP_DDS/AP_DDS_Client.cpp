@@ -59,6 +59,14 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
 #endif
 
+    // @Param: _DEBUG
+    // @DisplayName: DDS debug level
+    // @Description: When set to 1, this enables the verbose debugging output for DDS. This can be used to diagnose failures.
+    // @Values: 0:Disabled,1:Debug (basic debug output) ,2:Debug Error Status code 
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_DEBUG", 3, AP_DDS_Client, debug_level, 0),
+
     AP_GROUPEND
 };
 
@@ -445,11 +453,11 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
         subscribe_sample_count++;
         if (rx_joy_topic.axes_size >= 4) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
+            debug(debug_level, 0, "Received sensor_msgs/Joy: %f, %f, %f, %f",
                           rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
             // TODO implement joystick RC control to AP
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
+            debug(debug_level, 0, "Received sensor_msgs/Joy: Insufficient axes size ");
         }
         break;
     }
@@ -465,8 +473,11 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             AP_DDS_External_Odom::handle_external_odom(rx_dynamic_transforms_topic);
 #endif // AP_DDS_VISUALODOM_ENABLED
 
+            debug(debug_level, 0, "Received tf2_msgs/TFMessage of length: %u",
+                          static_cast<unsigned>(rx_dynamic_transforms_topic.transforms_size));
+            // TODO implement external odometry to AP
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage: Insufficient size ");
+            debug(debug_level, 0, "Received tf2_msgs/TFMessage: Insufficient size ");
         }
         break;
     }
@@ -511,10 +522,10 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         if (arm) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Request for arming received");
+            debug(debug_level, 0, "Request for arming received");
             result = AP::arming().arm(AP_Arming::Method::DDS);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Request for disarming received");
+            debug(debug_level, 0, "Request for disarming received");
             result = AP::arming().disarm(AP_Arming::Method::DDS);
         }
 
@@ -537,9 +548,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         if (result) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Request for Arming/Disarming : SUCCESS");
+            debug(debug_level, 0, "Request for Arming/Disarming : SUCCESS");
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Request for Arming/Disarming : FAIL");
+            debug(debug_level, 0, "Request for Arming/Disarming : FAIL");
         }
         break;
     }
@@ -674,14 +685,18 @@ bool AP_DDS_Client::create()
             requests[2] = dwriter_req_id;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Pub/Writer session request failure for index '%u'",i);
-                for (uint8_t s = 0 ; s < nRequests; s++) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                //session request failure displayed on debug level 2 and above
+                debug(debug_level, 1, "XRCE Client: Topic/Pub/Writer session request failure for index '%u'",i);
+                if (debug_level > 1){
+                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                        // status codes displayed on debug level 3 and above
+                        debug(debug_level, 1, "XRCE Client: Status '%d' result '%u'", s, status[s]);
+                    }
                 }
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Pub/Writer session pass for index '%u'",i);
+                debug(debug_level, 0, "XRCE Client: Topic/Pub/Writer session pass for index '%u'",i);
             }
         } else if (strlen(topics[i].dr_profile_label) > 0) {
             // Subscriber
@@ -702,14 +717,18 @@ bool AP_DDS_Client::create()
             requests[2] = dreader_req_id;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Sub/Reader session request failure for index '%u'",i);
-                for (uint8_t s = 0 ; s < nRequests; s++) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                // session request failure displayed on debug_level 2 and above
+                debug(debug_level, 1, "XRCE Client: Topic/Sub/Reader session request failure for index '%u'",i);
+                if(debug_level > 1){
+                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                        // status codes displayed on debug level 3 and above
+                        debug(debug_level, 1, "XRCE Client: Status '%d' result '%u'", s, status[s]);
+                    }
                 }
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Sub/Reader session pass for index '%u'",i);
+                debug(debug_level, 0, "XRCE Client: Topic/Sub/Reader session pass for index '%u'",i);
                 uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
             }
         }
@@ -733,12 +752,16 @@ bool AP_DDS_Client::create()
             uint8_t status;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, &request, &status, 1)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Service/Replier session request failure for index '%u'",i);
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status result '%u'", status);
+                // session request failure displayed on debug level 2 and above
+                debug(debug_level, 1, "XRCE Client: Service/Replier session request failure for index '%u'",i);
+                if(debug_level > 1){
+                    // status codes displayed on debug level 3 and above
+                    debug(debug_level, 1, "XRCE Client: Status result '%u'", status);
+                }
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Service/Replier session pass for index '%u'",i);
+                debug(debug_level, 0, "XRCE Client: Service/Replier session pass for index '%u'",i);
                 uxr_buffer_request_data(&session, reliable_out, rep_id, reliable_in, &delivery_control);
             }
 
