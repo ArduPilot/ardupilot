@@ -4633,7 +4633,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packe
         return MAV_RESULT_UNSUPPORTED;
     }
     return mount->handle_command_long(packet, msg);
-    return MAV_RESULT_UNSUPPORTED;
 }
 #endif
 
