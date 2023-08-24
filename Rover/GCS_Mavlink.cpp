@@ -674,6 +674,12 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
                                               static_cast<int16_t>(packet.param3),
                                               packet.param4);
 
+    case MAV_CMD_MISSION_START:
+        if (rover.set_mode(rover.mode_auto, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -682,12 +688,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
-
-    case MAV_CMD_MISSION_START:
-        if (rover.set_mode(rover.mode_auto, ModeReason::GCS_COMMAND)) {
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_FAILED;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
     {
