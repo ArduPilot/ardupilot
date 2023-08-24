@@ -630,7 +630,7 @@ bootloader(unsigned timeout)
             led_set(LED_OFF);
 
             // erase all sectors
-            for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
+            for (uint16_t i = 0; flash_func_sector_size(i) != 0; i++) {
 #if defined(STM32F7) || defined(STM32H7)
                 if (!flash_func_erase_sector(i, c == PROTO_CHIP_FULL_ERASE)) {
 #else
