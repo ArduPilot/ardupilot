@@ -210,6 +210,8 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
             ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
             ('AP_MAVLINK_BATTERY2_ENABLED', 'GCS_MAVLINK::send_battery2'),
+            ('AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'AP_Mount::handle_mount_control'),
+            ('AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'AP_Mount::handle_mount_configure'),
         ]
 
     def progress(self, msg):
