@@ -771,7 +771,7 @@ class ChibiOSHWDef(object):
 
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
-        if mcu_series.startswith('STM32F4'):
+        if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
