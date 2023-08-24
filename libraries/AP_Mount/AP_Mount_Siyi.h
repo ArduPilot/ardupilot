@@ -72,6 +72,9 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
+    // set camera lens as a value from 0 to 8.  ZT30 only
+    bool set_lens(uint8_t lens) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -98,7 +101,8 @@ private:
         FUNCTION_FEEDBACK_INFO = 0x0B,
         PHOTO = 0x0C,
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
-        ABSOLUTE_ZOOM = 0x0F
+        ABSOLUTE_ZOOM = 0x0F,
+        SET_CAMERA_IMAGE_TYPE = 0x11,
     };
 
     // Function Feedback Info packet info_type values
@@ -145,12 +149,25 @@ private:
         ZT30
     } _hardware_model;
 
-    // gimbal mounting method/direction
+    // lens value
     enum class GimbalMountingDirection : uint8_t {
         UNDEFINED = 0,
         NORMAL = 1,
         UPSIDE_DOWN = 2,
     } _gimbal_mounting_dir;
+
+    // camera image types (aka lens)
+    enum class CameraImageType : uint8_t {
+        MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE = 0,
+        MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM = 1,
+        MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL = 2,
+        MAIN_ZOOM_SUB_THERMAL = 3,
+        MAIN_ZOOM_SUB_WIDEANGLE = 4,
+        MAIN_WIDEANGLE_SUB_THERMAL = 5,
+        MAIN_WIDEANGLE_SUB_ZOOM = 6,
+        MAIN_THERMAL_SUB_ZOOM = 7,
+        MAIN_THERMAL_SUB_WIDEANGLE = 8
+    };
 
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure

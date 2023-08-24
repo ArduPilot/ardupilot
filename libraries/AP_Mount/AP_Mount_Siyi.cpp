@@ -797,6 +797,50 @@ SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
     return SetFocusResult::INVALID_PARAMETERS;
 }
 
+// set camera lens as a value from 0 to 8
+bool AP_Mount_Siyi::set_lens(uint8_t lens)
+{
+    // only supported on ZT30.  sanity check lens values
+    if ((_hardware_model != HardwareModel::ZT30) || (lens > 8)) {
+        return false;
+    }
+
+    // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+    CameraImageType cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL;
+    switch (lens) {
+        case 0:
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL; // 3
+            break;
+        case 1:
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL; // 5
+            break;
+        case 2:
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_ZOOM; // 7
+            break;
+        case 3:
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE; // 0
+            break;
+        case 4:
+            cam_image_type = CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM; // 1
+            break;
+        case 5:
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL; // 2
+            break;
+        case 6:
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE; // 4
+            break;
+        case 7:
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM; // 6
+            break;
+        case 8:
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE; // 8
+            break;
+    }
+
+    // send desired image type to camera
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
+}
+
 // send camera information message to GCS
 void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 {
