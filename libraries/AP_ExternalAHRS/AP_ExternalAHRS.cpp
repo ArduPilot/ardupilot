@@ -26,6 +26,7 @@
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_CINS.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -89,6 +90,13 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
+
+#if AP_EXTERNAL_AHRS_CINS_ENABLED
+    // @Group: _CINS_
+    // @Path: ../AP_CINS/AP_CINS.cpp
+    AP_SUBGROUPPTR(cins_ptr, "_CINS_", 6, AP_ExternalAHRS, AP_CINS),
+#endif
+    
     
     AP_GROUPEND
 };
@@ -96,6 +104,9 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
 void AP_ExternalAHRS::init(void)
 {
+    if (backend != nullptr) {
+        return;
+    }
     if (rate.get() < 50) {
         // min 50Hz
         rate.set(50);
@@ -127,6 +138,12 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
     case DevType::InertialLabs:
         backend = NEW_NOTHROW AP_ExternalAHRS_InertialLabs(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_CINS_ENABLED
+    case DevType::CINS:
+        backend = new AP_ExternalAHRS_CINS(this, state, cins_ptr);
         return;
 #endif
 
@@ -303,7 +320,9 @@ bool AP_ExternalAHRS::get_variances(float &velVar, float &posVar, float &hgtVar,
 bool AP_ExternalAHRS::get_gyro(Vector3f &gyro)
 {
     WITH_SEMAPHORE(state.sem);
-    if (!has_sensor(AvailableSensor::IMU)) {
+    // use accel as a proxy for having gyro - we never expect an exactly
+    // zero accel, but may have a zero gyro
+    if (!has_sensor(AvailableSensor::IMU) || state.accel.is_zero()) {
         return false;
     }
     gyro = state.gyro;
@@ -313,7 +332,7 @@ bool AP_ExternalAHRS::get_gyro(Vector3f &gyro)
 bool AP_ExternalAHRS::get_accel(Vector3f &accel)
 {
     WITH_SEMAPHORE(state.sem);
-    if (!has_sensor(AvailableSensor::IMU)) {
+    if (!has_sensor(AvailableSensor::IMU) || state.accel.is_zero()) {
         return false;
     }
     accel = state.accel;
