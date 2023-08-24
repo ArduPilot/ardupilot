@@ -17,6 +17,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_PITCH_P       1.50    // pitch controller P gain (converts pitch angle error to target rate)
 #define AP_MOUNT_SIYI_YAW_P         1.50    // yaw controller P gain (converts yaw angle error to target rate)
 #define AP_MOUNT_SIYI_LOCK_RESEND_COUNT 5   // lock value is resent to gimbal every 5 iterations
+#define AP_MOUNT_SIYI_TIMEOUT_MS    1000    // timeout for health and rangefinder readings
 
 #define AP_MOUNT_SIYI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_SIYI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: " fmt, ## args); } } while (0)
@@ -163,7 +164,7 @@ bool AP_Mount_Siyi::healthy() const
 
     // unhealthy if attitude information NOT received recently
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_current_angle_rad_ms > 1000) {
+    if (now_ms - _last_current_angle_rad_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
         return false;
     }
 
