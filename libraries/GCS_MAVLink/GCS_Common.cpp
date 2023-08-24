@@ -1791,6 +1791,15 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     pushed_ap_message_ids.set(id);
 }
 
+// Plane only enables follow when scripting is enabled:
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_MAVLINK_FOLLOW_HANDLING_ENABLED (AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED)
+#elif APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_COPTER_OR_HELI
+#define AP_MAVLINK_FOLLOW_HANDLING_ENABLED AP_FOLLOW_ENABLED
+#else
+#define AP_MAVLINK_FOLLOW_HANDLING_ENABLED 0
+#endif
+
 void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
                                  const mavlink_message_t &msg)
 {
@@ -1827,6 +1836,16 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         }
     }
 #endif // AP_SCRIPTING_ENABLED
+
+#if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
+    {
+        AP_Follow *follow = AP_Follow::get_singleton();
+        if (follow != nullptr) {
+            follow->handle_msg(msg);
+        }
+    }
+#endif
+
     if (!accept_packet(status, msg)) {
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;
@@ -5380,6 +5399,22 @@ MAV_RESULT GCS_MAVLINK::handle_do_set_safety_switch_state(const mavlink_command_
     }
 }
 
+#if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    AP_Follow *follow = AP_Follow::get_singleton();
+    if (follow == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    // param1: sysid of target to follow
+    if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+        follow->set_target_sysid((uint8_t)packet.param1);
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_DENIED;
+}
+#endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -5604,6 +5639,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+#if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
+    case MAV_CMD_DO_FOLLOW:
+        return handle_command_do_follow(packet, msg);
+#endif
     }
 
     return MAV_RESULT_UNSUPPORTED;
