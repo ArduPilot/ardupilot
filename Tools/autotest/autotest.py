@@ -729,6 +729,7 @@ def write_fullresults():
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
     results.addglob('APM:Rover documentation', 'docs/Rover/index.html')
     results.addglob('APM:Sub documentation', 'docs/ArduSub/index.html')
+    results.addglob('APM:Blimp documentation', 'docs/Blimp/index.html')
     results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)
