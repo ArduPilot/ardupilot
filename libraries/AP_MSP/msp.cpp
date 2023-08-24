@@ -1,12 +1,12 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-
+#include <AP_HAL/AP_HAL.h>
 #include "msp.h"
 
 #include <stdint.h>
 
 #if HAL_MSP_ENABLED
-
+const extern AP_HAL::HAL& hal;
 /*
  ported from betaflight/src/main/msp/msp_serial.c
  */
@@ -34,6 +34,7 @@ uint32_t MSP::msp_serial_send_frame(msp_port_t *msp, const uint8_t * hdr, uint32
     const uint32_t total_frame_length = hdr_len + data_len + crc_len;
 
     if (!msp->uart->tx_pending() && (msp->uart->txspace() < total_frame_length)) {
+        msp->uart->flush();
         return 0;
     }
 
