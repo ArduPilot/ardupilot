@@ -338,15 +338,13 @@ void AP_Mount_Siyi::process_packet()
                 (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
 
-        // display zoom firmware version
-#if AP_MOUNT_SIYI_DEBUG
+        // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            debug("Mount: SiyiZoom fw:%u.%u.%u",
+            gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiZoom fw:%u.%u.%u",
                 (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
                 (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
         }
-#endif
         break;
     }
 
