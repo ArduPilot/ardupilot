@@ -288,7 +288,7 @@ Changes from 4.3.6
     - Webots 2023a simulator support
     - XPlane support for wider range of aircraft
 ------------------------------------------------------------------
-Copter 4.3.8-beta1 12-Aug-2023
+Copter 4.3.8 24-Aug-2023 / 4.3.8-beta1 12-Aug-2023
 Changes from 4.3.7
 1) Bug fixes
     - DroneCAN GPS RTK injection fix
