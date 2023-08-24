@@ -81,6 +81,13 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(float& distance_m) const override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success
@@ -103,6 +110,7 @@ private:
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
+        READ_RANGEFINDER = 0x15,
     };
 
     // Function Feedback Info packet info_type values
@@ -187,6 +195,7 @@ private:
     void request_configuration() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO, nullptr, 0); }
     void request_function_feedback_info() { send_packet(SiyiCommandId::FUNCTION_FEEDBACK_INFO, nullptr, 0); }
     void request_gimbal_attitude() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE, nullptr, 0); }
+    void request_rangefinder_distance() { send_packet(SiyiCommandId::READ_RANGEFINDER, nullptr, 0); }
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
@@ -264,6 +273,11 @@ private:
     float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
+
+    // rangefinder variables
+    uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
+    uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
+    float _rangefinder_dist_m;                      // distance received from rangefinder
 
     // hardware lookup table indexed by HardwareModel enum values (see above)
     struct HWInfo {
