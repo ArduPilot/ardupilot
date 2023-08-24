@@ -77,6 +77,12 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
+    // request rangefinder distance from ZT30 at 10hz
+    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {    
+        request_rangefinder_distance();
+        _last_rangefinder_req_ms = now_ms;
+    }
+
     // run zoom control
     update_zoom_control();
 
@@ -483,6 +489,11 @@ void AP_Mount_Siyi::process_packet()
         //const float yaw_rate_degs = -(int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+7], _msg_buff[_msg_buff_data_start+6]) * 0.1;   // yaw rate
         //const float pitch_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1;   // pitch rate
         //const float roll_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1;  // roll rate
+        break;
+    
+    case SiyiCommandId::READ_RANGEFINDER:
+        _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
+        _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
     }
 
@@ -924,6 +935,24 @@ const char* AP_Mount_Siyi::get_model_name() const
         return hardware_lookup_table[model_idx].model_name;
     }
     return hardware_lookup_table[0].model_name;
+}
+
+// get rangefinder distance.  Returns true on success
+bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
+{
+    // only supported on ZT30
+    if (_hardware_model != HardwareModel::ZT30) {
+        return false;
+    }
+
+    // unhealthy if distance not received recently
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_rangefinder_dist_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
+        return false;
+    }
+
+    distance_m = _rangefinder_dist_m;
+    return true;
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED
