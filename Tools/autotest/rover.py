@@ -6392,6 +6392,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(0, 5, timeout=30)
         self.disarm_vehicle()
 
+    def MAV_CMD_MISSION_START(self):
+        '''simple test for starting missing using this command'''
+        # home and 1 waypoint a long way away:
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.wait_groundspeed(0, 1)
+            method(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_mode('AUTO')
+            self.wait_groundspeed(3, 100)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6426,6 +6444,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_MISSION_START,
             self.Button,
             self.Rally,
             self.Offboard,
