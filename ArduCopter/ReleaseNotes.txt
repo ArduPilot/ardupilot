@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.8-beta1 12-Aug-2023
+Copter 4.3.8 24-Aug-2023 / 4.3.8-beta1 12-Aug-2023
 Changes from 4.3.7
 1) Bug fixes
     - DroneCAN GPS RTK injection fix
