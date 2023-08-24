@@ -5704,6 +5704,7 @@ class AutoTest(ABC):
                     p5=None,
                     p6=None,
                     p7=None,
+                    quiet=False,
                     ):
 
         if p5 is not None:
@@ -5721,6 +5722,23 @@ class AutoTest(ABC):
         self.get_sim_time() # required for timeout in run_cmd_get_ack to work
 
         """Send a MAVLink command int."""
+        if not quiet:
+            try:
+                command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
+            except KeyError:
+                command_name = "UNKNOWN=%u" % command
+            self.progress("Sending COMMAND_INT to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f)" %
+                          (
+                              target_sysid,
+                              target_compid,
+                              command_name,
+                              p1,
+                              p2,
+                              p3,
+                              p4,
+                              x,
+                              y,
+                              z))
         self.mav.mav.command_int_send(target_sysid,
                                       target_compid,
                                       frame,
@@ -5757,11 +5775,11 @@ class AutoTest(ABC):
             target_sysid = self.sysid_thismav()
         if target_compid is None:
             target_compid = 1
-        try:
-            command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
-        except KeyError:
-            command_name = "UNKNOWN=%u" % command
         if not quiet:
+            try:
+                command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
+            except KeyError:
+                command_name = "UNKNOWN=%u" % command
             self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
                           (
                               target_sysid,
