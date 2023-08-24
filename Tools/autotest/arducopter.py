@@ -5435,6 +5435,71 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE(self):
+        '''test MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE mavlink command'''
+        # setup mount parameters
+        self.context_push()
+        self.setup_servo_mount()
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        self.context_set_message_rate_hz('GIMBAL_MANAGER_STATUS', 10)
+        self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+            "gimbal_device_id": 1,
+            "primary_control_sysid": 0,
+            "primary_control_compid": 0,
+        })
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.start_subtest("set_sysid-compid")
+            method(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
+                p1=37,
+                p2=38,
+            )
+            self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                "gimbal_device_id": 1,
+                "primary_control_sysid": 37,
+                "primary_control_compid": 38,
+            })
+
+            self.start_subtest("leave unchanged")
+            method(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=-1)
+            self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                "gimbal_device_id": 1,
+                "primary_control_sysid": 37,
+                "primary_control_compid": 38,
+            })
+
+            # ardupilot currently handles this incorrectly:
+            # self.start_subtest("self-controlled")
+            # method(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=-2)
+            # self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+            #     "gimbal_device_id": 1,
+            #     "primary_control_sysid": 1,
+            #     "primary_control_compid": 1,
+            # })
+
+            self.start_subtest("release control")
+            method(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
+                p1=self.mav.source_system,
+                p2=self.mav.source_component,
+            )
+            self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                "gimbal_device_id": 1,
+                "primary_control_sysid": self.mav.source_system,
+                "primary_control_compid": self.mav.source_component,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=-3)
+            self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                "gimbal_device_id": 1,
+                "primary_control_sysid": 0,
+                "primary_control_compid": 0,
+            })
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def MountYawVehicleForMountROI(self):
         '''Test Camera/Antenna Mount vehicle yawing for ROI'''
         self.context_push()
@@ -9845,6 +9910,7 @@ class AutoTestCopter(AutoTest):
              self.Mount,
              self.MountYawVehicleForMountROI,
              self.MAV_CMD_DO_MOUNT_CONTROL,
+             self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,
