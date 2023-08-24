@@ -108,11 +108,13 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
     set_mode(MAV_MOUNT_MODE_SYSID_TARGET);
 }
 
+#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
 // process MOUNT_CONFIGURE messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &packet)
 {
     set_mode((MAV_MOUNT_MODE)packet.mount_mode);
 }
+#endif
 
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan)
@@ -212,6 +214,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            0);                          // secondary control component id
 }
 
+#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {
@@ -247,6 +250,7 @@ void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packe
         break;
     }
 }
+#endif
 
 // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
 MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_int_t &packet)

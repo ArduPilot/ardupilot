@@ -23,6 +23,7 @@
 
 #if HAL_MOUNT_ENABLED
 
+#include <GCS_MAVLink/GCS_config.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -281,8 +282,12 @@ private:
     AP_Mount_Backend *get_instance(uint8_t instance) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
     void handle_mount_configure(const mavlink_message_t &msg);
+#endif
+#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
     void handle_mount_control(const mavlink_message_t &msg);
+#endif
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
