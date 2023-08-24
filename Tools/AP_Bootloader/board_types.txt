@@ -240,6 +240,12 @@ AP_HW_QioTekAdeptH743                1126
 AP_HW_YJUAV_A6SE                     1127
 AP_HW_QioTekAdept_6C                 1128
 
+AP_HW_PixFlamingoL4R5_V2             1129
+AP_HW_PixFlamingoF427_V1             1130
+AP_HW_PixFlamingoF767_V1             1131
+AP_HW_PixFlamingoH743I               1132
+AP_HW_PixFlamingoH743V               1133
+
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
