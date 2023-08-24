@@ -1,7 +1,7 @@
-Release 4.3.8-beta1 12th August 2023
-------------------------------------
+Release 4.3.8 24th August 2023
+------------------------------
 
-Changes since 4.3.7:
+Changes since 4.3.8:
 
  - fixed scripting restart bug which could cause a crash on a math error
  - fixed RTK injection when first module is a moving baseline BASE
