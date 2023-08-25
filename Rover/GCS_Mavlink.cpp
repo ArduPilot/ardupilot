@@ -680,17 +680,16 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_FAILED;
 
+    case MAV_CMD_NAV_SET_YAW_SPEED:
+        return handle_command_nav_set_yaw_speed(packet, msg);
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
-MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    switch (packet.command) {
-
-    case MAV_CMD_NAV_SET_YAW_SPEED:
-    {
         // param1 : yaw angle to adjust direction by in centidegress
         // param2 : Speed - normalized to 0 .. 1
         // param3 : 0 = absolute, 1 = relative
@@ -709,11 +708,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
             rover.mode_guided.set_desired_heading_and_speed(packet.param1 * 100.0f, packet.param2);
         }
         return MAV_RESULT_ACCEPTED;
-    }
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
 }
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
