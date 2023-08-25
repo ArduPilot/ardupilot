@@ -246,6 +246,8 @@ AP_HW_PixFlamingoF767_V1             1131
 AP_HW_PixFlamingoH743I               1132
 AP_HW_PixFlamingoH743V               1133
 
+AP_HW_AR-F407SmartBat                1134
+
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
