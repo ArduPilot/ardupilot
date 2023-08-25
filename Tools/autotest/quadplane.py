@@ -932,19 +932,24 @@ class AutoTestQuadPlane(AutoTest):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
-    def ICEngine(self):
-        '''Test ICE Engine support'''
-        rc_engine_start_chan = 11
+    def setup_ICEngine_vehicle(self, start_chan):
+        '''restarts SITL with an IC Engine setup'''
         self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
+            'ICE_START_CHAN': start_chan,
         })
-        model = "quadplane-ice"
 
+        model = "quadplane-ice"
         self.customise_SITL_commandline(
             [],
             model=model,
             defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
+            wipe=False,
+        )
+
+    def ICEngine(self):
+        '''Test ICE Engine support'''
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle(start_chan=rc_engine_start_chan)
 
         self.wait_ready_to_arm()
         self.wait_rpm(1, 0, 0, minimum_duration=1)
@@ -983,18 +988,8 @@ class AutoTestQuadPlane(AutoTest):
     def ICEngineMission(self):
         '''Test ICE Engine Mission support'''
         rc_engine_start_chan = 11
-        self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
-        })
-        model = "quadplane-ice"
+        self.setup_ICEngine_vehicle(start_chan=rc_engine_start_chan)
 
-        self.customise_SITL_commandline(
-            [],
-            model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
-
-        self.reboot_sitl()
         self.load_mission("mission.txt")
         self.wait_ready_to_arm()
         self.set_rc(rc_engine_start_chan, 2000)
