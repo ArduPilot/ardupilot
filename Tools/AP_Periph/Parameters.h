@@ -81,6 +81,7 @@ public:
         k_param_g_rcin,
         k_param_sitl,
         k_param_ahrs,
+        k_param_battery_balance,
     };
 
     AP_Int16 format_version;
