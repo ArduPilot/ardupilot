@@ -34,6 +34,7 @@
 #endif
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
+#include "batt_balance.h"
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -290,6 +291,11 @@ public:
     Parameters_RCIN g_rcin;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    void batt_balance_update();
+    BattBalance battery_balance;
+#endif
+    
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
 #endif

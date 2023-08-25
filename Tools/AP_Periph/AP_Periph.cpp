@@ -465,6 +465,10 @@ void AP_Periph_FW::update()
     rcin_update();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    batt_balance_update();
+#endif
+    
     static uint32_t fiftyhz_last_update_ms;
     if (now - fiftyhz_last_update_ms >= 20) {
         // update at 50Hz
