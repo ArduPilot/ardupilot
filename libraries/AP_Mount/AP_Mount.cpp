@@ -499,6 +499,18 @@ void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_
     }
 }
 
+MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
+{
+    set_target_sysid((uint8_t)packet.param1);
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT AP_Mount::handle_command_do_set_roi_none()
+{
+    set_mode_to_default();
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -510,6 +522,10 @@ MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const m
         return handle_command_do_gimbal_manager_pitchyaw(packet);
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
         return handle_command_do_gimbal_manager_configure(packet, msg);
+    case MAV_CMD_DO_SET_ROI_SYSID:
+        return handle_command_do_set_roi_sysid(packet);
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return handle_command_do_set_roi_none();
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
