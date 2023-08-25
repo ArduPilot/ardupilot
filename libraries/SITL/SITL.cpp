@@ -592,11 +592,24 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
 #endif
+    // @Param: ACC1_BIAS
+    // @DisplayName: Accel 1 bias
+    // @Description: bias of simulated accelerometer sensor
+    // @User: Advanced
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2_BIAS
+    // @DisplayName: Accel 2 bias
+    // @CopyFieldsFrom: SIM_ACC1_BIAS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC3_BIAS
+    // @DisplayName: Accel 3 bias
+    // @CopyFieldsFrom: SIM_ACC1_BIAS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
 #endif
     AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
@@ -792,6 +805,10 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     AP_GROUPINFO("GYR4_RND",     38, SIM, gyro_noise[3],  0),
 
+    // @Param: ACC4_BIAS
+    // @DisplayName: Accel 4 bias
+    // @CopyFieldsFrom: SIM_ACC1_BIAS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC4_BIAS",    39, SIM, accel_bias[3], 0),
 
     // @Param: GYR4_BIAS_X
@@ -838,6 +855,10 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     AP_GROUPINFO("GYR5_RND",     45, SIM, gyro_noise[4],  0),
 
+    // @Param: ACC5_BIAS
+    // @DisplayName: Accel 5 bias
+    // @CopyFieldsFrom: SIM_ACC1_BIAS
+    // @Vector3Parameter: 1
     AP_GROUPINFO("ACC5_BIAS",    46, SIM, accel_bias[4], 0),
 
     // @Param: GYR5_BIAS_X
