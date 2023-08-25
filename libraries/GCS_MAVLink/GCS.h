@@ -765,7 +765,7 @@ private:
 
     virtual void        handleMessage(const mavlink_message_t &msg) = 0;
 
-    MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);
     bool send_relay_status() const;
 
     static bool command_long_stores_location(const MAV_CMD command);
