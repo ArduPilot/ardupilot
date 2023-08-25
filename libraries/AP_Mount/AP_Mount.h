@@ -177,6 +177,12 @@ public:
     void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
+    // handling of set_roi_sysid message
+    MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
+
+    // handling of set_roi_none message
+    MAV_RESULT handle_command_do_set_roi_none();
+
     // mavlink message handling:
     MAV_RESULT handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
