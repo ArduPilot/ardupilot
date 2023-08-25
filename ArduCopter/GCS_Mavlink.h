@@ -2,6 +2,10 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#ifndef AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
+#define AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED 1
+#endif
+
 class GCS_MAVLINK_Copter : public GCS_MAVLINK
 {
 
@@ -91,4 +95,10 @@ private:
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+
+#if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
+    MAV_RESULT handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet);
+#endif
+
 };
