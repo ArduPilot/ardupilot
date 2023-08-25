@@ -6422,6 +6422,10 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def groundspeed(self):
+        m = self.assert_receive_message('VFR_HUD')
+        return m.groundspeed
+
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         self.wait_vfr_hud_speed("groundspeed", speed_min, speed_max, timeout=timeout, **kwargs)
 
@@ -6615,7 +6619,10 @@ class AutoTest(ABC):
         while self.get_sim_time_cached() < tstart + timeout:  # if we failed to received message with the getter the sim time isn't updated  # noqa
             last_value = current_value_getter()
             if called_function is not None:
-                called_function(last_value, target)
+                if print_diagnostics_as_target_not_range:
+                    called_function(last_value, target)
+                else:
+                    called_function(last_value, minimum, maximum)
             if validator is not None:
                 if print_diagnostics_as_target_not_range:
                     is_value_valid = validator(last_value, target)

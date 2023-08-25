@@ -6410,6 +6410,65 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_groundspeed(3, 100)
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_SET_YAW_SPEED(self):
+        '''tests for MAV_CMD_NAV_SET_YAW_SPEED guided-mode command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.wait_groundspeed(0, 1)
+            self.change_mode('GUIDED')
+            self.start_subtest("Absolute angles")
+            for (heading, speed) in (10, 5), (190, 10), (0, 2), (135, 6):
+                def cf(*args, **kwargs):
+                    method(
+                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                        p1=heading,
+                        p2=speed,
+                        p3=0,  # zero is absolute-angles
+                    )
+                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
+                self.wait_heading(heading-0.5, heading+0.5, called_function=cf, minimum_duration=2)
+
+            self.start_subtest("relative angles")
+            original_angle = 90
+            method(
+                mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                p1=original_angle,
+                p2=5,
+                p3=0,  # zero is absolute-angles
+            )
+            self.wait_groundspeed(4, 6)
+            self.wait_heading(original_angle-0.5, original_angle+0.5)
+
+            expected_angle = original_angle
+            for (angle_delta, speed) in (5, 6), (-30, 2), (180, 7):
+                method(
+                    mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                    p1=angle_delta,
+                    p2=speed,
+                    p3=1,  # one is relative-angles
+                )
+
+                def cf(*args, **kwargs):
+                    method(
+                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                        p1=0,
+                        p2=speed,
+                        p3=1,  # one is absolute-angles
+                    )
+                expected_angle += angle_delta
+                if expected_angle < 0:
+                    expected_angle += 360
+                if expected_angle > 360:
+                    expected_angle -= 360
+                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
+                self.wait_heading(expected_angle, called_function=cf, minimum_duration=2)
+        self.do_RTL()
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6445,6 +6504,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_MISSION_START,
+            self.MAV_CMD_NAV_SET_YAW_SPEED,
             self.Button,
             self.Rally,
             self.Offboard,
