@@ -1,0 +1,41 @@
+# hw definition file ARACE SmartBat CAN node
+
+# MCU class and specific type
+MCU CKS32F4xx CKS32F407xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1134
+
+# CKS32F407 does not work in bootloader with normal optimisation
+env OPTIMIZE -Og
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 64
+FLASH_SIZE_KB 1024
+
+# ---------------------------------------------
+PC12 LED_BOOTLOADER OUTPUT LOW  # green
+define HAL_LED_ON 0
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW HIGH
+
+CAN_ORDER 1
+
+define HAL_USE_SERIAL FALSE
+
+define HAL_NO_GPIO_IRQ
+define SERIAL_BUFFERS_SIZE 32
+define HAL_USE_EMPTY_IO TRUE
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
