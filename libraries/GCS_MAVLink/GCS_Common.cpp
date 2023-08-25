@@ -5070,34 +5070,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
 }
 #endif // AP_AHRS_POSITION_RESET_ENABLED
 
-#if HAL_MOUNT_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none()
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    mount->set_mode_to_default();
-    return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_sysid(const uint8_t sysid)
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    mount->set_target_sysid(sysid);
-
-    return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
-{
-    return handle_command_do_set_roi_sysid((uint8_t)packet.param1);
-}
-#endif
-
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
     // be aware that this method is called for both MAV_CMD_DO_SET_ROI
@@ -5147,9 +5119,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi(packet);
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_SYSID:
-        return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_ROI_NONE:
-        return handle_command_do_set_roi_none();
     case MAV_CMD_DO_MOUNT_CONFIGURE:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
