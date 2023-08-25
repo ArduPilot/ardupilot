@@ -21,7 +21,7 @@ protected:
 
     MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg) override;
-    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 
     int32_t global_position_int_relative_alt() const override {
         return 0; // what if we have been picked up and carried somewhere?
