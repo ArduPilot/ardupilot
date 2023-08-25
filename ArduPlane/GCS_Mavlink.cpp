@@ -973,6 +973,14 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return MAV_RESULT_DENIED;
 #endif
 
+#if AP_ICENGINE_ENABLED
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+#endif
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -1089,14 +1097,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 
     case MAV_CMD_DO_VTOL_TRANSITION:
         if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-#endif
-
-#if AP_ICENGINE_ENABLED
-    case MAV_CMD_DO_ENGINE_CONTROL:
-        if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
