@@ -690,9 +690,9 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-        // param1 : yaw angle to adjust direction by in centidegress
-        // param2 : Speed - normalized to 0 .. 1
-        // param3 : 0 = absolute, 1 = relative
+        // param1 : yaw angle (may be absolute or relative)
+        // param2 : Speed - in metres/second
+        // param3 : 0 = param1 is absolute, 1 = param1 is relative
 
         // exit if vehicle is not in Guided mode
         if (!rover.control_mode->in_guided_mode()) {
