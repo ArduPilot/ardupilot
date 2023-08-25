@@ -148,7 +148,7 @@ HAL_GPIO_PIN_TERMCAN1
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
 
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
+#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
 #endif
 
 #ifndef HAL_CAN_DEFAULT_NODE_ID
