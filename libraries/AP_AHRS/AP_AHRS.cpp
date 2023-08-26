@@ -1215,22 +1215,24 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 // EKF has a better ground speed vector estimate
 Vector2f AP_AHRS::_groundspeed_vector(void)
 {
-    Vector3f vec;
-
     switch (active_EKF_type()) {
     case EKFType::NONE:
         break;
 
 #if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
+    case EKFType::TWO: {
+        Vector3f vec;
         EKF2.getVelNED(vec);
         return vec.xy();
+    }
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
+    case EKFType::THREE: {
+        Vector3f vec;
         EKF3.getVelNED(vec);
         return vec.xy();
+    }
 #endif
 
 #if AP_AHRS_SIM_ENABLED
