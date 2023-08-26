@@ -626,10 +626,7 @@ Please use a replacement build as follows:
 class sitl(Board):
 
     def __init__(self):
-        if Utils.unversioned_sys_platform().startswith("linux"):
-            self.with_can = True
-        else:
-            self.with_can = False
+        self.with_can = True
 
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
@@ -654,8 +651,16 @@ class sitl(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
-                                CANARD_ENABLE_CANFD = 1,
-                                CANARD_ENABLE_ASSERTS = 1)
+                               CANARD_ENABLE_CANFD = 1,
+                               CANARD_ENABLE_ASSERTS = 1)
+            if not cfg.options.force_32bit:
+                # needed for cygwin
+                env.CXXFLAGS += [ '-DCANARD_64_BIT=1' ]
+                env.CFLAGS += [ '-DCANARD_64_BIT=1' ]
+            if Utils.unversioned_sys_platform().startswith("linux"):
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 1)
+            else:
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 0)
 
         env.CXXFLAGS += [
             '-Werror=float-equal',
