@@ -87,7 +87,6 @@ private:
     bool use_CAN_SoC() const;
 
     AP_BattMonitor::BattMonitor_State _interim_state;
-    BattMonitor_DroneCAN_Type _type;
 
     HAL_Semaphore _sem_battmon;
 
