@@ -12995,6 +12995,7 @@ switch value'''
         })
         self.assert_prearm_failure("Compasses inconsistent")
         self.context_pop()
+        self.wait_ready_to_arm()
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
