@@ -31,11 +31,8 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_DroneCAN::_sem_registry;
 
-AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
-    : _ap_dronecan(ap_dronecan)
-    , _node_id(node_id)
-    , _sensor_id(sensor_id)
-    , _devid(devid)
+AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint32_t devid) :
+    _devid(devid)
 {
 }
 
@@ -59,7 +56,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
     if (!_detected_modules[index].driver && _detected_modules[index].ap_dronecan) {
         WITH_SEMAPHORE(_sem_registry);
         // Register new Compass mode to a backend
-        driver = new AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
+        driver = new AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].devid);
         if (driver) {
             if (!driver->init()) {
                 delete driver;
