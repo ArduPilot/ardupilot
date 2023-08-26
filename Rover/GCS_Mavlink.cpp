@@ -680,14 +680,18 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_FAILED;
 
+#if AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
     case MAV_CMD_NAV_SET_YAW_SPEED:
+        send_received_message_deprecation_warning("MAV_CMD_NAV_SET_YAW_SPEED");
         return handle_command_nav_set_yaw_speed(packet, msg);
+#endif
 
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
+#if AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
         // param1 : yaw angle (may be absolute or relative)
@@ -709,6 +713,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_com
         }
         return MAV_RESULT_ACCEPTED;
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
