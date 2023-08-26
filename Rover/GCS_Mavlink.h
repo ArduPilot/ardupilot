@@ -2,6 +2,11 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+  // set 0 in 4.6, remove feature in 4.7:
+#ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
+#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 1
+#endif
+
 class GCS_MAVLINK_Rover : public GCS_MAVLINK
 {
 public:
