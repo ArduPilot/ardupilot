@@ -132,7 +132,8 @@ void AP_Periph_FW::rcout_update()
     const bool has_esc_rawcommand_timed_out = esc_timeout_ms != 0 && ((now_ms - last_esc_raw_command_ms) >= esc_timeout_ms);
     if (last_esc_num_channels > 0 && has_esc_rawcommand_timed_out) {
         // If we've seen ESCs previously, and a timeout has occurred, then zero the outputs
-        int16_t esc_output[last_esc_num_channels] {};
+        int16_t esc_output[last_esc_num_channels];
+        memset(esc_output, 0, sizeof(esc_output));
         rcout_esc(esc_output, last_esc_num_channels);
 
         // register that the output has been changed
