@@ -1832,10 +1832,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: 
-        packet.param1 = (fabs(packet.param1 - INT8_MAX) < FLT_EPSILON) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
-        packet.param2 = (fabs(packet.param2 - INT16_MAX) < FLT_EPSILON) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
-        packet.param3 = (fabs(packet.param3 - INT8_MAX) < FLT_EPSILON) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs;
-        packet.param4 = (fabs(packet.param4 - INT8_MAX) < FLT_EPSILON) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
+        packet.param1 = (cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
+        packet.param2 = (cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg == INT16_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
+        packet.param3 = (cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs;
+        packet.param4 = (cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
         packet.x = cmd.content.gimbal_manager_pitchyaw.flags;
         packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
         break;
