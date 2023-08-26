@@ -672,9 +672,9 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     uint16_t year, ms;
     uint8_t month, day, hour, min, sec;
     if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
-        year = month = day = hour = min = sec = 0;
+        year = month = day = hour = min = sec = ms = 0;
     }
-    uint16_t date = ((year-2000) & 0x7f) | (((month+1) & 0x0F) << 7) | ((day & 0x0F) << 11);
+    uint16_t date = ((year-2000) & 0x7f) | (((month+1) & 0x0F) << 7) | ((day & 0x1F) << 11);
     uint64_t second_hundredths = (((hour * 60 * 60) + (min * 60) + sec) * 100) + (ms * 0.1);
 
     // get vehicle velocity in m/s in NED Frame
