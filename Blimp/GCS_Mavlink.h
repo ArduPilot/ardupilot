@@ -26,8 +26,8 @@ protected:
     void send_position_target_global_int() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
-    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
-    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
+    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
 
@@ -73,7 +73,7 @@ private:
         POSZ =        7,
         POSYAW =      8,
     };
-    
+
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;

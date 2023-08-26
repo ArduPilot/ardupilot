@@ -1346,12 +1346,22 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 #endif // HAL_MSP_GPS_ENABLED
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt)
+
+bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr && _type[i] == GPS_TYPE_EXTERNAL_AHRS) {
-            drivers[i]->handle_external(pkt);
+            instance = i;
+            return true;
         }
+    }
+    return false;
+}
+
+void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
+{
+    if (_type[instance] == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+        drivers[instance]->handle_external(pkt);
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED

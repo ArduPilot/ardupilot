@@ -1,7 +1,7 @@
 
 #include "GPIO.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 using namespace HALSITL;
 

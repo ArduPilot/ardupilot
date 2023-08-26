@@ -94,6 +94,7 @@ class ExtractFeatures(object):
 
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+            ('AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', r'AP_BattMonitor_Backend::update_esc_telem_outbound\b',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
@@ -125,6 +126,7 @@ class ExtractFeatures(object):
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
+            ('HAL_RALLY_ENABLED', r'AP_Rally::get_rally_max\b',),
             ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
 
@@ -202,6 +204,12 @@ class ExtractFeatures(object):
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
             ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
             ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
+
+            ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
+            ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
+            ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
+            ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
+            ('AP_MAVLINK_BATTERY2_ENABLED', 'GCS_MAVLINK::send_battery2'),
         ]
 
     def progress(self, msg):

@@ -496,6 +496,10 @@ void AP_BattMonitor::read()
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
+#endif
+
 #if HAL_LOGGING_ENABLED
             if (logger != nullptr && logger->should_log(_log_battery_bit)) {
                 const uint64_t time_us = AP_HAL::micros64();
@@ -562,7 +566,11 @@ bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
 /// consumed_mah - returns total current drawn since start-up in milliampere.hours
 bool AP_BattMonitor::consumed_mah(float &mah, const uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
-        mah = state[instance].consumed_mah;
+        const float consumed_mah = state[instance].consumed_mah;
+        if (isnan(consumed_mah)) {
+            return false;
+        }
+        mah = consumed_mah;
         return true;
     } else {
         return false;

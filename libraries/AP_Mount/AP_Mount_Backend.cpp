@@ -249,9 +249,9 @@ void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packe
 }
 
 // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
-MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_long_t &packet)
+MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_int_t &packet)
 {
-    const MAV_MOUNT_MODE new_mode = (MAV_MOUNT_MODE)packet.param7;
+    const MAV_MOUNT_MODE new_mode = (MAV_MOUNT_MODE)packet.z;
 
     // interpret message fields based on mode
     switch (new_mode) {
@@ -282,19 +282,19 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
     case MAV_MOUNT_MODE_GPS_POINT: {
         // set lat, lon, alt position targets from mavlink message
 
-        // warn if lat, lon appear to be in param1,2 instead of param5,6 as this indicates
+        // warn if lat, lon appear to be in param1,2 instead of param x,y as this indicates
         // sender is relying on a bug in AP-4.2's (and earlier) handling of MAV_CMD_DO_MOUNT_CONTROL
-        if (!is_zero(packet.param1) && !is_zero(packet.param2) && is_zero(packet.param5) && is_zero(packet.param6)) {
+        if (!is_zero(packet.param1) && !is_zero(packet.param2) && packet.x == 0 && packet.y == 0) {
             send_warning_to_GCS("GPS_POINT target invalid");
             return MAV_RESULT_FAILED;
         }
 
         // param4: altitude in meters
-        // param5: latitude in degrees * 1E7
-        // param6: longitude in degrees * 1E7
+        // x: latitude in degrees * 1E7
+        // y: longitude in degrees * 1E7
         const Location target_location {
-            (int32_t)packet.param5,         // latitude in degrees * 1E7
-            (int32_t)packet.param6,         // longitude in degrees * 1E7
+            packet.x,                       // latitude in degrees * 1E7
+            packet.y,                       // longitude in degrees * 1E7
             (int32_t)packet.param4 * 100,   // alt converted from meters to cm
             Location::AltFrame::ABOVE_HOME
         };
@@ -310,7 +310,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
 
 // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
 // requires original message in order to extract caller's sysid and compid
-MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     // sanity check param1 and param2 values
     if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
@@ -387,6 +387,10 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     bool target_yaw_is_ef = false;
     IGNORE_RETURN(get_angle_target(target_roll, target_pitch, target_yaw, target_yaw_is_ef));
 
+    // get rangefinder distance
+    float rangefinder_dist = nanf;
+    IGNORE_RETURN(get_rangefinder_distance(rangefinder_dist));
+
     const struct log_Mount pkt {
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(LOG_MOUNT_MSG)),
         time_us       : (timestamp_us > 0) ? timestamp_us : AP_HAL::micros64(),
@@ -399,6 +403,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
         actual_yaw_bf : yaw_bf,
         desired_yaw_ef: target_yaw_is_ef ? target_yaw : nanf,
         actual_yaw_ef : yaw_ef,
+        rangefinder_dist : rangefinder_dist,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }

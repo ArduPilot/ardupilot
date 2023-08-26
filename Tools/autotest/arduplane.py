@@ -3750,6 +3750,7 @@ class AutoTestPlane(AutoTest):
             "quadplane-tilttrivec": "loses attitude control and crashes",
             "plane-ice" : "needs ICE control channel for ignition",
             "quadplane-ice" : "needs ICE control channel for ignition",
+            "quadplane-can" : "needs CAN periph",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
@@ -3912,6 +3913,18 @@ class AutoTestPlane(AutoTest):
 
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
+
+    def AutotuneFiltering(self):
+        '''Test AutoTune mode with filter updates disabled'''
+        self.set_parameters({
+            "AUTOTUNE_OPTIONS": 3,
+            # some filtering is required for autotune to complete
+            "RLL_RATE_FLTD": 10,
+            "PTCH_RATE_FLTD": 10,
+            "RLL_RATE_FLTT": 20,
+            "PTCH_RATE_FLTT": 20,
+        })
+        self.AUTOTUNE()
 
     def LandingDrift(self):
         '''Circuit with baro drift'''
@@ -4731,6 +4744,7 @@ class AutoTestPlane(AutoTest):
             self.DCMFallback,
             self.MAVFTP,
             self.AUTOTUNE,
+            self.AutotuneFiltering,
             self.MegaSquirt,
             self.MSP_DJI,
             self.SpeedToFly,

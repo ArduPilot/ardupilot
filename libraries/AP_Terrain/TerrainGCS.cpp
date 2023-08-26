@@ -37,6 +37,9 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcache)
 {
+#if !HAL_GCS_ENABLED
+    return false;
+#else
     struct grid_block &grid = gcache.grid;
 
     if (options.get() & uint16_t(Options::DisableDownload)) {
@@ -72,6 +75,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
     last_request_time_ms[chan] = AP_HAL::millis();
 
     return true;
+#endif
 }
 
 /*
@@ -211,6 +215,7 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &ms
  */
 void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
 {
+#if HAL_GCS_ENABLED
     float terrain_height = 0;
     uint16_t spacing = 0;
     if (height_amsl(loc, terrain_height)) {
@@ -232,6 +237,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
                                         terrain_height, current_height,
                                         pending, loaded);
     }
+#endif
 }
 
 /* 

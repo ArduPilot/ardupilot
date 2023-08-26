@@ -556,7 +556,7 @@ void FlightAxis::update(const struct sitl_input &input)
     if (is_positive(dcm.c.z)) {
         rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
     } else {
-        rangefinder_m[0] = -1;
+        rangefinder_m[0] = nanf("");
     }
 
     report_FPS();

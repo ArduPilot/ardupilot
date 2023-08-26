@@ -342,38 +342,21 @@ class AutoTestRover(AutoTest):
 
     def DriveMaxRCIN(self, timeout=30):
         """Drive rover at max RC inputs"""
-        self.context_push()
-        ex = None
+        self.progress("Testing max RC inputs")
+        self.change_mode("MANUAL")
 
-        try:
-            self.progress("Testing max RC inputs")
-            self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.set_rc(1, 1000)
 
-            self.set_rc(3, 2000)
-            self.set_rc(1, 1000)
-
-            tstart = self.get_sim_time()
-            while self.get_sim_time_cached() - tstart < timeout:
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
-                if m is not None:
-                    self.progress("Current speed: %f" % m.groundspeed)
-
-            # reduce throttle
-            self.set_rc(3, 1500)
-            self.set_rc(1, 1500)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.assert_receive_message('VFR_HUD')
+            self.progress("Current speed: %f" % m.groundspeed)
 
         self.disarm_vehicle()
-        self.context_pop()
-
-        if ex:
-            raise ex
 
     #################################################
     # AUTOTEST ALL
@@ -6331,6 +6314,161 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # both the vehicle and this tests's special heartbeat
             raise NotAchievedException("Got heartbeat on private channel from non-vehicle")
 
+    def MAV_CMD_DO_SET_REVERSE(self):
+        '''test MAV_CMD_DO_SET_REVERSE command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        here = self.mav.location()
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+
+        self.wait_groundspeed(3, 100, minimum_duration=5)
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.progress("Forwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
+            self.wait_heading(0)
+
+            self.progress("Backwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=1)
+            self.wait_heading(180)
+
+            self.progress("Forwards!")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
+            self.wait_heading(0)
+
+        self.disarm_vehicle()
+
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
+        '''test MAV_CMD_NAV_RETURN_TO_LAUNCH mavlink command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        here = self.mav.location()
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+        self.wait_distance_to_home(20, 100)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+        self.wait_mode('RTL')
+
+        self.change_mode('GUIDED')
+
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+        self.wait_mode('RTL')
+
+        self.wait_distance_to_home(0, 5, timeout=30)
+        self.disarm_vehicle()
+
+    def MAV_CMD_DO_CHANGE_SPEED(self):
+        '''test MAV_CMD_NAV_RETURN_TO_LAUNCH mavlink command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        original_loc = self.mav.location()
+        here = original_loc
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+        self.wait_distance_to_home(20, 100)
+
+        speeds = 3, 7, 12, 4
+
+        for speed in speeds:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+            self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5)
+
+        self.send_guided_mission_item(original_loc)
+
+        for speed in speeds:
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+            self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5)
+
+        self.change_mode('RTL')
+
+        self.wait_distance_to_home(0, 5, timeout=30)
+        self.disarm_vehicle()
+
+    def MAV_CMD_MISSION_START(self):
+        '''simple test for starting missing using this command'''
+        # home and 1 waypoint a long way away:
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.wait_groundspeed(0, 1)
+            method(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_mode('AUTO')
+            self.wait_groundspeed(3, 100)
+        self.disarm_vehicle()
+
+    def MAV_CMD_NAV_SET_YAW_SPEED(self):
+        '''tests for MAV_CMD_NAV_SET_YAW_SPEED guided-mode command'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.wait_groundspeed(0, 1)
+            self.change_mode('GUIDED')
+            self.start_subtest("Absolute angles")
+            for (heading, speed) in (10, 5), (190, 10), (0, 2), (135, 6):
+                def cf(*args, **kwargs):
+                    method(
+                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                        p1=heading,
+                        p2=speed,
+                        p3=0,  # zero is absolute-angles
+                    )
+                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
+                self.wait_heading(heading-0.5, heading+0.5, called_function=cf, minimum_duration=2)
+
+            self.start_subtest("relative angles")
+            original_angle = 90
+            method(
+                mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                p1=original_angle,
+                p2=5,
+                p3=0,  # zero is absolute-angles
+            )
+            self.wait_groundspeed(4, 6)
+            self.wait_heading(original_angle-0.5, original_angle+0.5)
+
+            expected_angle = original_angle
+            for (angle_delta, speed) in (5, 6), (-30, 2), (180, 7):
+                method(
+                    mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                    p1=angle_delta,
+                    p2=speed,
+                    p3=1,  # one is relative-angles
+                )
+
+                def cf(*args, **kwargs):
+                    method(
+                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
+                        p1=0,
+                        p2=speed,
+                        p3=1,  # one is absolute-angles
+                    )
+                expected_angle += angle_delta
+                if expected_angle < 0:
+                    expected_angle += 360
+                if expected_angle > 360:
+                    expected_angle -= 360
+                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
+                self.wait_heading(expected_angle, called_function=cf, minimum_duration=2)
+        self.do_RTL()
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6364,6 +6502,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SET_ATTITUDE_TARGET,
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
+            self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_MISSION_START,
+            self.MAV_CMD_NAV_SET_YAW_SPEED,
             self.Button,
             self.Rally,
             self.Offboard,
@@ -6397,6 +6538,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DepthFinder,
             self.ChangeModeByNumber,
             self.EStopAtBoot,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.StickMixingAuto,
             self.AutoDock,
             self.PrivateChannel,
@@ -6405,6 +6547,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
             self.CompassPrearms,
+            self.MAV_CMD_DO_SET_REVERSE,
         ])
         return ret
 

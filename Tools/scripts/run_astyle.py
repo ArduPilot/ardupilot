@@ -14,15 +14,18 @@ import sys
 import argparse
 
 os.environ['PYTHONUNBUFFERED'] = '1'
+DRY_RUN_DEFAULT = False
 
 
 class AStyleChecker(object):
-    def __init__(self):
+    def __init__(self, *, dry_run=DRY_RUN_DEFAULT):
         self.retcode = 0
         self.directories_to_check = [
             'libraries/AP_DDS',
+            'libraries/AP_ExternalControl'
         ]
         self.files_to_check = []
+        self.dry_run = dry_run
 
     def progress(self, string):
         print("****** %s" % (string,))
@@ -31,7 +34,10 @@ class AStyleChecker(object):
         '''run astyle on all files in self.files_to_check'''
         # for path in self.files_to_check:
         #     self.progress("Checking (%s)" % path)
-        astyle_command = ["astyle", "--dry-run"]
+        astyle_command = ["astyle"]
+        if self.dry_run:
+            astyle_command.append("--dry-run")
+
         astyle_command.append("--options=Tools/CodeStyle/astylerc")
         astyle_command.extend(self.files_to_check)
         ret = subprocess.run(
@@ -58,8 +64,11 @@ class AStyleChecker(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check all Python files for astyle cleanliness')
-    # parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
+    parser.add_argument('--dry-run',
+                        action='store_true',
+                        default=DRY_RUN_DEFAULT,
+                        help='Perform a trial run with no changes made to check for formatting')
     args = parser.parse_args()
 
-    checker = AStyleChecker()
+    checker = AStyleChecker(dry_run=args.dry_run)
     sys.exit(checker.run())

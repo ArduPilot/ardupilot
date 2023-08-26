@@ -23,7 +23,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO' ]
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -771,7 +771,7 @@ class ChibiOSHWDef(object):
 
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
-        if mcu_series.startswith('STM32F4'):
+        if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
@@ -2849,7 +2849,7 @@ INCLUDE common.ld
         patterns = [
             r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
             r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
-            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d'
+            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
         ]
         matches = False
         for p in patterns:

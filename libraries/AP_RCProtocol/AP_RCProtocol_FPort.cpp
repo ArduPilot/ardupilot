@@ -103,7 +103,7 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
 */
 void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && AP_FRSKY_SPORT_TELEM_ENABLED
     switch (frame.downlink.prim) {
         case FPORT_PRIM_DATA:
             // we've seen at least one 0x10 frame

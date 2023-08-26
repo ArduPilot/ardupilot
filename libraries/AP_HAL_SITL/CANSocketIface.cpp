@@ -53,7 +53,7 @@ using namespace HALSITL;
 
 CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
-uint8_t CANIface::next_interface;
+uint8_t CANIface::_num_interfaces;
 
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
@@ -310,7 +310,7 @@ void CANIface::_pollWrite()
     while (_hasReadyTx()) {
         WITH_SEMAPHORE(sem);
         const CanTxItem tx = _tx_queue.top();
-        uint64_t curr_time = AP_HAL::native_micros64();
+        uint64_t curr_time = AP_HAL::micros64();
         if (tx.deadline >= curr_time) {
             // hal.console->printf("%x TDEAD: %lu CURRT: %lu DEL: %lu\n",tx.frame.id,  tx.deadline, curr_time, tx.deadline-curr_time);
             const int res = _write(tx.frame);
@@ -342,7 +342,7 @@ bool CANIface::_pollRead()
     while (iterations_count < CAN_MAX_POLL_ITERATIONS_COUNT)
     {
         CanRxItem rx;
-        rx.timestamp_us = AP_HAL::native_micros64();  // Monotonic timestamp is not required to be precise (unlike UTC)
+        rx.timestamp_us = AP_HAL::micros64();  // Monotonic timestamp is not required to be precise (unlike UTC)
         bool loopback = false;
         int res;
         res = _read(rx.frame, rx.timestamp_us, loopback);
@@ -423,7 +423,7 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
     /*
      * Timestamp
      */
-    timestamp_us = AP_HAL::native_micros64();
+    timestamp_us = AP_HAL::micros64();
     return 1;
 }
 
@@ -558,8 +558,8 @@ bool CANIface::select(bool &read_select, bool &write_select,
                 stats.num_tx_poll_req++;
             }
         }
-        if (_evt_handle != nullptr && blocking_deadline > AP_HAL::native_micros64()) {
-            _evt_handle->wait(blocking_deadline - AP_HAL::native_micros64());
+        if (_evt_handle != nullptr && blocking_deadline > AP_HAL::micros64()) {
+            _evt_handle->wait(blocking_deadline - AP_HAL::micros64());
         }
     }
 
@@ -614,17 +614,28 @@ bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHan
         return true;
     }
 
-    // Timeout conversion
-    auto ts = timespec();
-    ts.tv_sec = 0;
-    ts.tv_nsec = duration_us * 1000UL;
+    const uint32_t start_us = AP_HAL::micros();
+    do {
+        uint16_t wait_us = MIN(100, duration_us);
+        // Timeout conversion
+        auto ts = timespec();
+        ts.tv_sec = 0;
+        ts.tv_nsec = wait_us * 1000UL;
 
-    // Blocking here
-    const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
+        // check FD for input
+        const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
 
-    if (res < 0) {
-        return false;
-    }
+        if (res < 0) {
+            return false;
+        }
+        if (res > 0) {
+            break;
+        }
+        
+        // ensure simulator runs
+        hal.scheduler->delay_microseconds(wait_us);
+    } while (AP_HAL::micros() - start_us < duration_us);
+
 
     // Handling poll output
     for (unsigned i = 0; i < num_pollfds; i++) {

@@ -81,6 +81,9 @@ public:
     // set desired MPPT powered state (enabled/disabled)
     virtual void mppt_set_powered_state(bool power_on) {};
 
+    // Update an ESC telemetry channel's power information
+    void update_esc_telem_outbound();
+
     // amps: current (A)
     // dt_us: time between samples (micro-seconds)
     static float calculate_mah(float amps, float dt_us) { return (float) (amps * dt_us * AUS_TO_MAH); }

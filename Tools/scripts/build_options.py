@@ -40,6 +40,7 @@ BUILD_OPTIONS = [
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
     Feature('Safety', 'FENCE', 'AP_FENCE_ENABLED', 'Enable Geofence', 2, None),
+    Feature('Safety', 'RALLY', 'HAL_RALLY_ENABLED', 'Enable Rally Points', 0, None),  # noqa
     Feature('Safety', 'AC_AVOID', 'AC_AVOID_ENABLED', 'Enable Avoidance', 0, 'FENCE'),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
 
@@ -49,6 +50,7 @@ BUILD_OPTIONS = [
     Feature('Battery', 'BATTERY_SMBUS', 'AP_BATTERY_SMBUS_ENABLED', 'Enable SMBUS BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
+    Feature('Battery', 'BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
 
     Feature('Ident', 'ADSB', 'HAL_ADSB_ENABLED', 'Enable ADSB', 0, None),
     Feature('Ident', 'ADSB_SAGETECH', 'HAL_ADSB_SAGETECH_ENABLED', 'Enable SageTech ADSB', 0, 'ADSB'),
@@ -59,7 +61,6 @@ BUILD_OPTIONS = [
 
     Feature('Telemetry', 'CRSF', 'HAL_CRSF_TELEM_ENABLED', 'Enable CRSF Telemetry', 0, 'FrSky SPort PassThrough,FrSky,FrSky SPort,RC_CRSF'),  # noqa
     Feature('Telemetry', 'CRSFText', 'HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED', 'Enable CRSF Text Param Selection', 0, 'CRSF,OSD_PARAM,FrSky SPort PassThrough,FrSky,FrSky SPort'),  # NOQA: E501
-    Feature('Telemetry', 'HIGHLAT2', 'HAL_HIGH_LATENCY2_ENABLED', 'Enable HighLatency2 Support', 0, None),
     Feature('Telemetry', 'HOTT', 'HAL_HOTT_TELEM_ENABLED', 'Enable HOTT Telemetry', 0, None),
     Feature('Telemetry', 'SPEKTRUM', 'HAL_SPEKTRUM_TELEM_ENABLED', 'Enable Spektrum Telemetry', 0, None),
     Feature('Telemetry', 'LTM', 'AP_LTM_TELEM_ENABLED', 'Enable LTM Telemetry', 0, None),
@@ -287,8 +288,17 @@ BUILD_OPTIONS = [
     Feature('Other', 'BOOTLOADER_FLASHING', 'AP_BOOTLOADER_FLASHING_ENABLED', 'Enable Bootloader flashing', 0, "FILESYSTEM_ROMFS"),  # noqa
     Feature('Other', 'SCRIPTING', 'AP_SCRIPTING_ENABLED', 'Enable LUA Scripting', 0, None),
     Feature('Other', 'SLCAN', 'AP_CAN_SLCAN_ENABLED', 'Enable SLCAN serial protocol', 0, None),
-    Feature('Other', 'FENCEPOINT_PROTOCOL', 'AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'Enable old MAVLink FencePoint protocol', 0, None),  # noqa
-    Feature('Other', 'RALLYPOINT_PROTOCOL', 'AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'Enable old MAVLink RallyPoint protocol', 0, None),  # noqa
+    Feature('Other', 'SDCARD_MISSION', 'AP_SDCARD_STORAGE_ENABLED', 'Enable storing mission on microSD cards', 0, None),
+
+    # MAVLink section for mavlink features and/or message handling,
+    # rather than for e.g. mavlink-based sensor drivers
+    Feature('MAVLink', 'HIGHLAT2', 'HAL_HIGH_LATENCY2_ENABLED', 'Enable HighLatency2 Support', 0, None),
+    Feature('MAVLink', 'FENCEPOINT_PROTOCOL', 'AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'Enable old MAVLink FencePoint protocol', 0, "FENCE"),  # noqa
+    Feature('MAVLink', 'RALLYPOINT_PROTOCOL', 'AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'Enable old MAVLink RallyPoint protocol', 0, "RALLY"),  # noqa
+    Feature('MAVLink', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'Enable old AUTOPILOT_VERSION_REQUEST mesage', 0, None),  # noqa
+    Feature('MAVLink', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'Enable old REQUEST_AUTOPILOT_CAPABILITIES command', 0, None),  # noqa
+    Feature('MAVLink', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'Enable sending of RELAY_STATUS message', 0, 'RELAY'),  # noqa
+    Feature('MAVLink', 'AP_MAVLINK_BATTERY2_ENABLED', 'AP_MAVLINK_BATTERY2_ENABLED', 'Enable sending of old BATTERY2 message', 0, None),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
     Feature('Developer', 'CRASHCATCHER', 'AP_CRASHDUMP_ENABLED', 'Enable CrashCatcher', 0, None),

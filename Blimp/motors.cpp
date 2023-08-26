@@ -18,7 +18,7 @@ void Blimp::arm_motors_check()
     }
 
     // ensure throttle is down
-    if (channel_down->get_control_in() > 0) { //MIR what dow we do with this?
+    if (channel_up->get_control_in() > 0) { //MIR what dow we do with this?
         arming_counter = 0;
         return;
     }

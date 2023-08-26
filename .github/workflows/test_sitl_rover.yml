@@ -73,6 +73,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
 
   pull_request:
@@ -147,6 +149,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
   workflow_dispatch:
 

@@ -112,7 +112,7 @@ bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
     AP_HAL::CANIface::CanRxItem frm;
     frm.frame = frame;
     frm.flags = 0;
-    frm.timestamp_us = AP_HAL::native_micros64();
+    frm.timestamp_us = AP_HAL::micros64();
     return add_to_rx_queue(frm);
 }
 
@@ -532,10 +532,10 @@ void SLCAN::CANIface::update_slcan_port()
     }
     if (_prev_ser_port != _slcan_ser_port) {
         if (!_slcan_start_req) {
-            _slcan_start_req_time = AP_HAL::native_millis();
+            _slcan_start_req_time = AP_HAL::millis();
             _slcan_start_req = true;
         }
-        if (((AP_HAL::native_millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay*1000))) {
+        if (((AP_HAL::millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay*1000))) {
             return;
         }
         _port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
@@ -546,12 +546,12 @@ void SLCAN::CANIface::update_slcan_port()
         _port->lock_port(_serial_lock_key, _serial_lock_key);
         _prev_ser_port = _slcan_ser_port;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
-        _last_had_activity = AP_HAL::native_millis();
+        _last_had_activity = AP_HAL::millis();
     }
     if (_port == nullptr) {
         return;
     }
-    if (((AP_HAL::native_millis() - _last_had_activity) > ((uint32_t)_slcan_timeout*1000)) &&
+    if (((AP_HAL::millis() - _last_had_activity) > ((uint32_t)_slcan_timeout*1000)) &&
         (uint32_t)_slcan_timeout != 0) {
         _port->lock_port(0, 0);
         _port = nullptr;
@@ -693,7 +693,7 @@ int16_t SLCAN::CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadlin
         ) {
         return ret;
     }
-    reportFrame(frame, AP_HAL::native_micros64());
+    reportFrame(frame, AP_HAL::micros64());
     return ret;
 }
 
@@ -708,7 +708,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         if (ret > 0) {
             // we also pass this frame through to slcan iface,
             // and immediately return
-            reportFrame(out_frame, AP_HAL::native_micros64());
+            reportFrame(out_frame, AP_HAL::micros64());
             return ret;
         } else if (ret < 0) {
             return ret;
@@ -750,7 +750,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
             bool read = false;
             bool write = true;
             _can_iface->select(read, write, &out_frame, 0); // select without blocking
-            if (write && _can_iface->send(out_frame, AP_HAL::native_micros64() + 100000, out_flags) == 1) {
+            if (write && _can_iface->send(out_frame, AP_HAL::micros64() + 100000, out_flags) == 1) {
                     rx_queue_.pop();
                     num_tries = 0;
             } else if (num_tries > 8) {

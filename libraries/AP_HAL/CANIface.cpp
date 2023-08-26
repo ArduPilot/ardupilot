@@ -77,7 +77,7 @@ int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanI
         } else {
             CanRxItem rx_item;
             rx_item.frame = frame;
-            rx_item.timestamp_us = AP_HAL::native_micros64();
+            rx_item.timestamp_us = AP_HAL::micros64();
             rx_item.flags = AP_HAL::CANIface::IsMAVCAN;
             add_to_rx_queue(rx_item);
         }
