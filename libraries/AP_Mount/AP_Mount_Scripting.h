@@ -46,9 +46,6 @@ private:
     uint32_t last_update_ms;        // system time of last call to one of the get_ methods.  Used for health reporting
     Vector3f current_angle_deg;     // current gimbal angles in degrees (x=roll, y=pitch, z=yaw)
 
-    bool target_rate_rads_valid;    // true if mnt_target holds a valid rate target
-    bool target_angle_rad_valid;    // true if mnt_target holds a valid angle target
-
     Location target_loc;            // target location
     bool target_loc_valid;          // true if target_loc holds a valid target location
 };
