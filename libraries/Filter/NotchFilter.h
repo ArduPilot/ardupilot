@@ -34,6 +34,8 @@ public:
     void init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q);
     T apply(const T &sample);
     void reset();
+    float center_freq_hz() const { return _center_freq_hz; }
+    float sample_freq_hz() const { return _sample_freq_hz; }
 
     // calculate attenuation and quality from provided center frequency and bandwidth
     static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
