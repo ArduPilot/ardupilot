@@ -238,12 +238,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         vectornav = new SITL::VectorNav();
         return vectornav;
-    } else if (streq(name, "MicroStrain")) {
-        if (microstrain != nullptr) {
-            AP_HAL::panic("Only one MicroStrain at a time");
+    } else if (streq(name, "MicroStrain5")) {
+        if (microstrain5 != nullptr) {
+            AP_HAL::panic("Only one MicroStrain5 at a time");
         }
-        microstrain = new SITL::MicroStrain();
-        return microstrain;
+        microstrain5 = new SITL::MicroStrain5();
+        return microstrain5;
 #if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
@@ -394,8 +394,8 @@ void SITL_State_Common::sim_update(void)
         vectornav->update();
     }
 
-    if (microstrain != nullptr) {
-        microstrain->update();
+    if (microstrain5 != nullptr) {
+        microstrain5->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
