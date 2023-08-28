@@ -13045,27 +13045,34 @@ switch value'''
     def EAHRSGPSTypes(self):
         '''check each AHRS GPS sensor works'''
         self.reboot_sitl()
-        orig = self.poll_home_position(timeout=60)
-        # (AHRS_EKF_TYPE, EAHRS_TYPE, detect_name, EAHRS_OPTIONS)
+
+        # (AHRS_EKF_TYPE, EAHRS_TYPE, detect_name, EAHRS_OPTIONS, uart_sim_name)
         sim_ahrs = [
-            (11, 1, "VectorNAV", 0), # VN300 only, VN100 is skipped for this test
-            (11, 2, "MicroStrain", 0),
+            (11, 1, "VectorNAV", 0, "VectorNav"), # VN300 only, VN100 is skipped for this test
+            (11, 2, "MicroStrain", 0, "MicroStrain"),
         ]
-        self.context_collect("STATUSTEXT")
-        for (ahrs_ekf_type, eahrs_type, detect_name, eahrs_options) in sim_ahrs:
+        for (ahrs_ekf_type, eahrs_type, detect_name, eahrs_options, uart_sim_name) in sim_ahrs:
+            self.customise_SITL_commandline(["--uartE=sim:%s" % uart_sim_name])
+            orig = self.poll_home_position(timeout=60)
+            self.context_collect("STATUSTEXT")
             self.start_subtest("Checking GPS type %s" % detect_name)
+
             SERIAL_PROTOCOL_EAHRS = 36
             SERIAL_BAUD = 115
             GPS_TYPE_EAHRS = 21
-            self.set_parameter("SERIAL3_PROTOCOL", SERIAL_PROTOCOL_EAHRS)
-            self.set_parameter("SERIAL3_BAUD", SERIAL_BAUD)
-            self.set_parameter("GPS_TYPE", GPS_TYPE_EAHRS)
-            self.set_parameter("AHRS_EKF_TYPE", ahrs_ekf_type)
-            self.set_parameter("EAHRS_TYPE", eahrs_type)
-            self.set_parameter("EAHRS_OPTIONS", eahrs_options)
+            self.set_parameters({
+                "SERIAL3_PROTOCOL": SERIAL_PROTOCOL_EAHRS,
+                "SERIAL3_BAUD": SERIAL_BAUD,
+                "GPS_TYPE": GPS_TYPE_EAHRS,
+                "AHRS_EKF_TYPE": ahrs_ekf_type,
+                "EAHRS_TYPE": eahrs_type,
+                "EAHRS_OPTIONS": eahrs_options,
+            })
+
             self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
-            self.wait_statustext("%s ExternalAHRS initialised" % (detect_name), check_context=True)
+            self.wait_statustext("%s ExternalAHRS initialised" % (detect_name), check_context=True, timeout=30)
+            self.wait_ready_to_arm()
             n = self.poll_home_position(timeout=120)
             distance = self.get_distance_int(orig, n)
             if distance > 1:
