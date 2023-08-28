@@ -662,23 +662,32 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
 }
 
 
-void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
+void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &_accel)
 {
 #if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
+
+    // get batch sampling in correct orientation
+    Vector3f accel = _accel;
+    accel.rotate(_imu._accel_orientation[instance]);
 
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
 #endif
 }
 
-void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &_gyro)
 {
 #if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
+
+    // get batch sampling in correct orientation
+    Vector3f gyro = _gyro;
+    gyro.rotate(_imu._gyro_orientation[instance]);
+
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
 #endif
 }
