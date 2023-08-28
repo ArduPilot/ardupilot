@@ -73,6 +73,10 @@ void AP_ExternalAHRS_MicroStrain5::update_thread(void)
 // Builds packets by looking at each individual byte, once a full packet has been read in it checks the checksum then handles the packet.
 void AP_ExternalAHRS_MicroStrain5::build_packet()
 {
+    if (uart == nullptr) {
+        return;
+    }
+    
     WITH_SEMAPHORE(sem);
     uint32_t nbytes = MIN(uart->available(), 2048u);
     while (nbytes--> 0) {
