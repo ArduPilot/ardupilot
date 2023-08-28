@@ -74,6 +74,10 @@ public:
     ///
     void init(uint16_t sample_rate_hz);
 
+    // get accel/gyro instance numbers that a backend will get when they register
+    bool get_accel_instance(uint8_t &instance) const;
+    bool get_gyro_instance(uint8_t &instance) const;
+
     /// Register a new gyro/accel driver, allocating an instance
     /// number
     bool register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
