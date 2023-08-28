@@ -713,23 +713,11 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
         if (is_positive(zoom_mult_max)) {
             // convert zoom percentage (0~100) to target zoom multiple (e.g. 0~6x or 0~30x)
             const float zoom_mult = linear_interpolate(1, zoom_mult_max, zoom_value, 0, 100);
-            switch (_hardware_model) {
-            case HardwareModel::UNKNOWN:
-                // unknown model
-                return false;
-            case HardwareModel::A8:
-                // set internal zoom control target
+            if (send_zoom_mult(zoom_mult)) {
                 _zoom_type = zoom_type;
-                _zoom_mult_target = zoom_mult;
                 return true;
-            case HardwareModel::ZR10:
-                if (send_zoom_mult(zoom_mult)) {
-                    _zoom_type = zoom_type;
-                    _zoom_mult_target = 0;
-                    return true;
-                }
-                return false;
             }
+            return false;
         }
         return false;
     }
@@ -742,39 +730,19 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 // update zoom controller
 void AP_Mount_Siyi::update_zoom_control()
 {
-    const uint32_t now_ms = AP_HAL::millis();
-    const uint32_t update_diff_ms = now_ms - _last_zoom_control_ms;
-
-    switch (_zoom_type) {
-    case ZoomType::RATE:
+    if (_zoom_type == ZoomType::RATE) {
         // limit updates to 1hz
-        if (update_diff_ms < 1000) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _last_zoom_control_ms < 1000) {
             return;
         }
+        _last_zoom_control_ms = now_ms;
+
         // only send zoom rate target if it's non-zero because if zero it has already been sent
         // and sending zero rate also triggers autofocus
         if (!is_zero(_zoom_rate_target)) {
             send_zoom_rate(_zoom_rate_target);
         }
-        _last_zoom_control_ms = now_ms;
-        return;
-    case ZoomType::PCT:
-        // limit updates to 20hz and only when we have a zoom target
-        if (!is_positive(_zoom_mult_target) || (update_diff_ms < 50)) {
-            return;
-        }
-        // zoom towards target zoom multiple
-        if (_zoom_mult_target > _zoom_mult + 0.1f) {
-            send_zoom_rate(1);
-        } else if (_zoom_mult_target < _zoom_mult - 0.1f) {
-            send_zoom_rate(-1);
-        } else {
-            send_zoom_rate(0);
-            _zoom_mult_target = 0;
-        }
-        _last_zoom_control_ms = now_ms;
-        debug("Siyi zoom targ:%f act:%f", (double)_zoom_mult_target, (double)_zoom_mult);
-        break;
     }
 }
 
