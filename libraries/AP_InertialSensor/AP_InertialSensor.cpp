@@ -761,6 +761,30 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 }
 
 /*
+  get the accel instance number we will get from register_accel()
+ */
+bool AP_InertialSensor::get_accel_instance(uint8_t &instance) const
+{
+    if (_accel_count == INS_MAX_INSTANCES) {
+        return false;
+    }
+    instance = _accel_count;
+    return true;
+}
+
+/*
+  get the gyro instance number we will get from register_accel()
+ */
+bool AP_InertialSensor::get_gyro_instance(uint8_t &instance) const
+{
+    if (_gyro_count == INS_MAX_INSTANCES) {
+        return false;
+    }
+    instance = _gyro_count;
+    return true;
+}
+
+/*
   register a new accel instance
  */
 bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
