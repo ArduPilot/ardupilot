@@ -13045,7 +13045,6 @@ switch value'''
     def EAHRSGPSTypes(self):
         '''check each AHRS GPS sensor works'''
         self.reboot_sitl()
-
         # (AHRS_EKF_TYPE, EAHRS_TYPE, detect_name, EAHRS_OPTIONS, uart_sim_name)
         sim_ahrs = [
             (11, 1, "VectorNAV", 0, "VectorNav"), # VN300 only, VN100 is skipped for this test
@@ -13054,7 +13053,6 @@ switch value'''
         for (ahrs_ekf_type, eahrs_type, detect_name, eahrs_options, uart_sim_name) in sim_ahrs:
             self.customise_SITL_commandline(["--uartE=sim:%s" % uart_sim_name])
             orig = self.poll_home_position(timeout=60)
-            self.context_collect("STATUSTEXT")
             self.start_subtest("Checking GPS type %s" % detect_name)
 
             SERIAL_PROTOCOL_EAHRS = 36
@@ -13069,7 +13067,7 @@ switch value'''
                 "EAHRS_OPTIONS": eahrs_options,
             })
 
-            self.context_clear_collection('STATUSTEXT')
+            self.context_collect("STATUSTEXT")
             self.reboot_sitl()
             self.wait_statustext("%s ExternalAHRS initialised" % (detect_name), check_context=True, timeout=30)
             self.wait_ready_to_arm()
