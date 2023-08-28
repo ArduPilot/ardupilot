@@ -189,7 +189,6 @@ private:
     bool send_zoom_rate(float zoom_value);
 
     // send zoom multiple command to camera. e.g. 1x, 10x, 30x
-    // only supported by ZR10 and ZR30
     bool send_zoom_mult(float zoom_mult);
 
     // get zoom multiple max
@@ -239,7 +238,6 @@ private:
     // absolute zoom control.  only used for A8 that does not support abs zoom control
     ZoomType _zoom_type;                            // current zoom type
     float _zoom_rate_target;                        // current zoom rate target
-    float _zoom_mult_target;                        // current zoom multiple target.  0 if no target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
 };
