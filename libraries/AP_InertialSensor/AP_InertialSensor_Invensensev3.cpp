@@ -280,6 +280,11 @@ void AP_InertialSensor_Invensensev3::start()
         return;
     }
 
+    // tell backend we will be downsampling the data, so logged sensor
+    // rate is correct
+    _set_accel_oversampling(accel_instance, accum.downsample_rate);
+    _set_gyro_oversampling(gyro_instance, accum.downsample_rate);
+
     // update backend sample rate
     _set_accel_raw_sample_rate(accel_instance, backend_rate_hz);
     _set_gyro_raw_sample_rate(gyro_instance, backend_rate_hz);
@@ -355,12 +360,29 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
 
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
-        // these four calls are about 40us
-        _rotate_and_correct_accel(accel_instance, accel);
-        _rotate_and_correct_gyro(gyro_instance, gyro);
+        _notify_new_accel_sensor_rate_sample(accel_instance, accel);
+        _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(accel_instance, accel, 0);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        accum.accel += accel;
+        accum.gyro += gyro;
+        accum.count++;
+
+        if (accum.count == accum.downsample_rate) {
+            const float scale = 1.0 / accum.count;
+            accum.accel *= scale;
+            accum.gyro *= scale;
+
+            // these four calls are about 40us
+            _rotate_and_correct_accel(accel_instance, accum.accel);
+            _rotate_and_correct_gyro(gyro_instance, accum.gyro);
+
+            _notify_new_accel_raw_sample(accel_instance, accum.accel, 0);
+            _notify_new_gyro_raw_sample(gyro_instance, accum.gyro);
+
+            accum.accel.zero();
+            accum.gyro.zero();
+            accum.count = 0;
+        }
 
         temp_filtered = temp_filter.apply(temp);
     }
@@ -564,72 +586,39 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
         accel_aaf_bitshift = 7;
     }
 
+    // no downsampling if fast samping not enabled
+    accum.downsample_rate = 1;
+
     // checked for
     // ICM-40609
     // ICM-42688
     // ICM-42605
     // IIM-42652
-    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
+    if (enable_fast_sampling(accel_instance)) {
         fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
 
         if (fast_sampling) {
             backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, 8 * backend_rate_hz);
 
+            // always sample at 8kHz, then downsample accumulated
+            // samples down to the desired filtering rate
+            odr_config = 0x03; // 8kHz
+
             // limited filtering on ICM-42605
             if (inv3_type == Invensensev3_Type::ICM42605) {
-                switch (backend_rate_hz) {
-                    case 2000: // 2KHz
-                        odr_config = 0x05;
-                        // 507Hz AAF
-                        aaf_delt = 47;
-                        aaf_deltsqr = 2208;
-                        aaf_bitshift = 4;
-                        break;
-                    case 4000: // 4KHz
-                        // 995Hz AAF
-                        aaf_delt = 63;
-                        aaf_deltsqr = 3968;
-                        aaf_bitshift = 3;
-                        odr_config = 0x04;
-                        break;
-                    case 8000: // 8Khz
-                        // 995Hz AAF
-                        aaf_delt = 63;
-                        aaf_deltsqr = 3968;
-                        aaf_bitshift = 3;
-                        odr_config = 0x03;
-                        break;
-                    default: // 1Khz, 334Hz AAF
-                        break;
-                }
+                // 995Hz AAF
+                aaf_delt = 63;
+                aaf_deltsqr = 3968;
+                aaf_bitshift = 3;
             } else {
                 // ICM-42688 / ICM-40609 / IIM-426525
-                switch (backend_rate_hz) {
-                    case 2000: // 2KHz
-                        odr_config = 0x05;
-                        // 536Hz AAF
-                        aaf_delt = 12;
-                        aaf_deltsqr = 144;
-                        aaf_bitshift = 8;
-                        break;
-                    case 4000: // 4KHz
-                        odr_config = 0x04;
-                        // 997Hz AAF
-                        aaf_delt = 21;
-                        aaf_deltsqr = 440;
-                        aaf_bitshift = 6;
-                        break;
-                    case 8000: // 8Khz
-                        odr_config = 0x03;
-                        // 997Hz AAF
-                        aaf_delt = 21;
-                        aaf_deltsqr = 440;
-                        aaf_bitshift = 6;
-                        break;
-                    default: // 1KHz, 348Hz AAF
-                        break;
-                }
+                // 997Hz AAF
+                aaf_delt = 21;
+                aaf_deltsqr = 440;
+                aaf_bitshift = 6;
             }
+            // setup downsampling for desired filter rate
+            accum.downsample_rate = 8000U / backend_rate_hz;
         }
     }
 
@@ -675,6 +664,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
     register_write(INV3REG_70_ACCEL_CONFIG0, 0x05);
     // AAF is not available for accels, so LPF at 180Hz
     register_write(INV3REG_70_ACCEL_CONFIG1, 0x01);
+
+    // no downsampling
+    accum.downsample_rate = 1;
 }
 
 /*
@@ -682,7 +674,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
  */
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 {
-    uint8_t odr_config = 4;
+    // always fetch samples at 6400Hz
+    const uint8_t odr_config = 3;
+
     backend_rate_hz = 1600;
     // always fast sampling
     fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
@@ -693,17 +687,6 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 
     // this sensor actually only supports 2 speeds
     backend_rate_hz = constrain_int16(backend_rate_hz, 3200, 6400);
-
-    switch (backend_rate_hz) {
-    case 6400: // 6.4Khz
-        odr_config = 3;
-        break;
-    case 3200: // 3.2Khz
-        odr_config = 4;
-        break;
-    default:
-        break;
-    }
 
     // Disable FIFO first
     register_write(INV3REG_456_FIFO_CONFIG3, 0x00);
@@ -739,6 +722,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 
     // enable FIFO
     register_write(INV3REG_456_FIFO_CONFIG3, 0x07, true);
+
+    // setup downsampling for the desired rate
+    accum.downsample_rate = 6400U / backend_rate_hz;
 }
 
 /*
