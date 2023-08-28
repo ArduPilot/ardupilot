@@ -17,11 +17,11 @@
 namespace SITL
 {
 
-class MicroStrain : public SerialDevice
+class MicroStrain5 : public SerialDevice
 {
 public:
 
-    MicroStrain();
+    MicroStrain5();
 
     // update state
     void update(void);
