@@ -212,6 +212,10 @@ void AP_InertialSensor_Invensensev3::fifo_reset()
 
 void AP_InertialSensor_Invensensev3::start()
 {
+    // pre-fetch instance numbers for checking fast sampling settings
+    if (!_imu.get_gyro_instance(gyro_instance) || !_imu.get_accel_instance(accel_instance)) {
+        return;
+    }
     WITH_SEMAPHORE(dev->get_semaphore());
 
     // initially run the bus at low speed

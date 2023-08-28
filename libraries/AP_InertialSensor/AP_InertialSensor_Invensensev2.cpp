@@ -166,6 +166,11 @@ bool AP_InertialSensor_Invensensev2::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensensev2::start()
 {
+    // pre-fetch instance numbers for checking fast sampling settings
+    if (!_imu.get_gyro_instance(_gyro_instance) || !_imu.get_accel_instance(_accel_instance)) {
+        return;
+    }
+
     WITH_SEMAPHORE(_dev->get_semaphore());
 
     // initially run the bus at low speed
