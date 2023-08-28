@@ -13058,23 +13058,29 @@ switch value'''
             SERIAL_PROTOCOL_EAHRS = 36
             SERIAL_BAUD = 115
             GPS_TYPE_EAHRS = 21
-            self.set_parameters({
-                "SERIAL3_PROTOCOL": SERIAL_PROTOCOL_EAHRS,
-                "SERIAL3_BAUD": SERIAL_BAUD,
+            params = {
+                "SERIAL4_PROTOCOL": SERIAL_PROTOCOL_EAHRS,
+                "SERIAL4_BAUD": SERIAL_BAUD,
                 "GPS_TYPE": GPS_TYPE_EAHRS,
                 "AHRS_EKF_TYPE": ahrs_ekf_type,
                 "EAHRS_TYPE": eahrs_type,
                 "EAHRS_OPTIONS": eahrs_options,
-            })
+            }
+
+            # VN-300 Specific Setup
+            if detect_name == "VectorNAV":
+                params.update({"GPS_TYPE2": GPS_TYPE_EAHRS})
+
+            self.set_parameters(params)
 
             self.context_collect("STATUSTEXT")
             self.reboot_sitl()
             self.wait_statustext("%s ExternalAHRS initialised" % (detect_name), check_context=True, timeout=30)
-            self.wait_ready_to_arm()
             n = self.poll_home_position(timeout=120)
             distance = self.get_distance_int(orig, n)
             if distance > 1:
                 raise NotAchievedException("gps type %u misbehaving" % detect_name)
+            self.wait_ready_to_arm()
 
     def assert_gps_satellite_count(self, messagename, count):
         m = self.assert_receive_message(messagename)
