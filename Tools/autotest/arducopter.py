@@ -10184,6 +10184,7 @@ class AutoTestCopter(AutoTest):
             self.GPSForYaw,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
+            self.EAHRSGPSTypes,
             self.MultipleGPS,
             self.WatchAlts,
             self.GuidedEKFLaneChange,
