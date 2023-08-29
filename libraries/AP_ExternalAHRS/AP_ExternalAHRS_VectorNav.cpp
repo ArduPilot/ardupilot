@@ -31,6 +31,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>

@@ -30,6 +30,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
 
