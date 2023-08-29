@@ -3910,14 +3910,25 @@ class AutoTest(ABC):
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
 
-    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None):
+    # FIXME: try to use wait_and_maintain here?
+    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None, minimum_duration=None):
+
         tstart = self.get_sim_time_cached()
+        pass_start = None
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
                 raise NotAchievedException("Field never reached values")
             m = self.assert_receive_message(message, instance=instance)
             if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
+                if minimum_duration is not None:
+                    if pass_start is None:
+                        pass_start = now
+                        continue
+                    if now - pass_start < minimum_duration:
+                        continue
                 return m
+            pass_start = None
 
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
@@ -6320,9 +6331,12 @@ class AutoTest(ABC):
             **kwargs
         )
 
-    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
+    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=None, **kwargs):
         """Wait for a given altitude range."""
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
+
+        if timeout is None:
+            timeout = 30
 
         def validator(value2, target2=None):
             if altitude_min <= value2 <= altitude_max:

@@ -94,9 +94,26 @@ class AutoTestPlane(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
-    def takeoff(self, alt=150, alt_max=None, relative=True):
+    def takeoff(self, alt=150, alt_max=None, relative=True, mode=None, timeout=None):
         """Takeoff to altitude."""
 
+        if mode == "TAKEOFF":
+            return self.takeoff_in_TAKEOFF(alt=alt, relative=relative, timeout=timeout)
+
+        return self.takeoff_in_FBWA(alt=alt, alt_max=alt_max, relative=relative, timeout=timeout)
+
+    def takeoff_in_TAKEOFF(self, alt=150, relative=True, mode=None, alt_epsilon=2, timeout=None):
+        if relative is not True:
+            raise ValueError("Only relative alt supported ATM")
+        self.change_mode("TAKEOFF")
+        self.context_push()
+        self.set_parameter('TKOFF_ALT', alt)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(alt-alt_epsilon, alt+alt_epsilon, relative=True, timeout=timeout)
+        self.context_pop()
+
+    def takeoff_in_FBWA(self, alt=150, alt_max=None, relative=True, mode=None, timeout=30):
         if alt_max is None:
             alt_max = alt + 30
 
@@ -129,7 +146,7 @@ class AutoTestPlane(AutoTest):
         })
 
         # gain a bit of altitude
-        self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
+        self.wait_altitude(alt, alt_max, timeout=timeout, relative=relative)
 
         # level off
         self.set_rc(2, 1500)
@@ -820,18 +837,36 @@ class AutoTestPlane(AutoTest):
         if not self.current_onboard_log_contains_message("BCL2"):
             raise NotAchievedException("Expected BCL2 message")
 
-    def DO_CHANGE_SPEED(self):
-        '''Test DO_CHANGE_SPEED command/item'''
+    def context_push_do_change_speed(self):
         # the following lines ensure we revert these parameter values
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
+        self.context_push()
         self.set_parameters({
             "TRIM_ARSPD_CM": self.get_parameter("TRIM_ARSPD_CM"),
             "MIN_GNDSPD_CM": self.get_parameter("MIN_GNDSPD_CM"),
+            "TRIM_THROTTLE": self.get_parameter("TRIM_THROTTLE"),
+        })
+
+    def DO_CHANGE_SPEED(self):
+        '''Test DO_CHANGE_SPEED command/item'''
+        self.set_parameters({
             "RTL_AUTOLAND": 1,
         })
 
-        self.DO_CHANGE_SPEED_mavlink()
+        self.context_push_do_change_speed()
+        self.DO_CHANGE_SPEED_mavlink_long()
+        self.context_pop()
+
+        self.set_current_waypoint(1)
+        self.zero_throttle()
+
+        self.context_push_do_change_speed()
+        self.DO_CHANGE_SPEED_mavlink_int()
+        self.context_pop()
+
+        self.context_push_do_change_speed()
         self.DO_CHANGE_SPEED_mission()
+        self.context_pop()
 
     def DO_CHANGE_SPEED_mission(self):
         '''test DO_CHANGE_SPEED as a mission item'''
@@ -861,10 +896,16 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
-    def DO_CHANGE_SPEED_mavlink(self):
+    def DO_CHANGE_SPEED_mavlink_int(self):
+        self.DO_CHANGE_SPEED_mavlink(self.run_cmd_int)
+
+    def DO_CHANGE_SPEED_mavlink_long(self):
+        self.DO_CHANGE_SPEED_mavlink(self.run_cmd)
+
+    def DO_CHANGE_SPEED_mavlink(self, run_cmd_method):
         '''test DO_CHANGE_SPEED as a mavlink command'''
         self.progress("Takeoff")
-        self.takeoff(alt=100)
+        self.takeoff(alt=100, mode="TAKEOFF", timeout=120)
         self.set_rc(3, 1500)
         # ensure we know what the airspeed is:
         self.progress("Entering guided and flying somewhere constant")
@@ -881,24 +922,24 @@ class AutoTestPlane(AutoTest):
         timeout = 15
         self.wait_airspeed(initial_speed-1, initial_speed+1, minimum_duration=5, timeout=timeout)
 
-        self.progress("Setting groundspeed")
-        new_target_groundspeed = initial_speed + 5
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-            p1=1, # groundspeed
-            p2=new_target_groundspeed,
-            p3=-1, # throttle / no change
-            p4=0, # absolute values
-        )
-        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, timeout=40)
-        self.progress("Adding some wind, ensuring groundspeed holds")
-        self.set_parameter("SIM_WIND_SPD", 5)
-        self.delay_sim_time(5)
-        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, timeout=40)
-        self.set_parameter("SIM_WIND_SPD", 0)
+        self.start_subtest("Setting groundspeed")
+        for new_target_groundspeed in initial_speed + 5, initial_speed + 2:
+            run_cmd_method(
+                mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+                p1=1, # groundspeed
+                p2=new_target_groundspeed,
+                p3=-1, # throttle / no change
+                p4=0, # absolute values
+            )
+            self.wait_groundspeed(new_target_groundspeed-2, new_target_groundspeed+2, timeout=80, minimum_duration=5)
+            self.progress("Adding some wind, ensuring groundspeed holds")
+            self.set_parameter("SIM_WIND_SPD", 5)
+            self.delay_sim_time(5)
+            self.wait_groundspeed(new_target_groundspeed-2, new_target_groundspeed+2, timeout=40, minimum_duration=5)
+            self.set_parameter("SIM_WIND_SPD", 0)
 
         # clear target groundspeed
-        self.run_cmd(
+        run_cmd_method(
             mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
             p1=1, # groundspeed
             p2=0,
@@ -906,16 +947,18 @@ class AutoTestPlane(AutoTest):
             p4=0, # absolute values
         )
 
-        self.progress("Setting airspeed")
-        new_target_airspeed = initial_speed + 5
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-            p1=0, # airspeed
-            p2=new_target_airspeed,
-            p3=-1, # throttle / no change
-            p4=0, # absolute values
-        )
-        self.wait_airspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
+        self.start_subtest("Setting airspeed")
+        for new_target_airspeed in initial_speed - 5, initial_speed + 5:
+            run_cmd_method(
+                mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+                p1=0, # airspeed
+                p2=new_target_airspeed,
+                p3=-1, # throttle / no change
+                p4=0, # absolute values
+            )
+            self.wait_airspeed(new_target_airspeed-2, new_target_airspeed+2, minimum_duration=5)
+
+        self.context_push()
         self.progress("Adding some wind, hoping groundspeed increases/decreases")
         self.set_parameters({
             "SIM_WIND_SPD": 7,
@@ -933,6 +976,39 @@ class AutoTestPlane(AutoTest):
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
+        self.context_pop()
+
+        # cancel minimum groundspeed:
+        run_cmd_method(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=0, # groundspeed
+            p2=-2,  # return to default
+            p3=0, # throttle / no change
+            p4=0, # absolute values
+        )
+        # cancel airspeed:
+        run_cmd_method(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=1, # airspeed
+            p2=-2,  # return to default
+            p3=0, # throttle / no change
+            p4=0, # absolute values
+        )
+
+        self.start_subtest("Setting throttle")
+        self.set_parameter('ARSPD_USE', 0)  # setting throttle only effective without airspeed
+        for (set_throttle, expected_throttle) in (97, 79), (60, 51), (95, 77):
+            run_cmd_method(
+                mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+                p1=3, # throttle
+                p2=0,
+                p3=set_throttle, # throttle / no change
+                p4=0, # absolute values
+            )
+            self.wait_message_field_values('VFR_HUD', {
+                "throttle": expected_throttle,
+            }, minimum_duration=5, epsilon=2)
+
         self.fly_home_land_and_disarm(timeout=240)
 
     def fly_home_land_and_disarm(self, timeout=120):
