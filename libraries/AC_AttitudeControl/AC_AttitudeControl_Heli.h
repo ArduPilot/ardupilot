@@ -51,6 +51,9 @@ public:
     AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
     AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
+    const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
+    const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
