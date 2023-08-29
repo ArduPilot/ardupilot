@@ -84,6 +84,9 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
 
+    //return governor rpm setpoint
+    float get_rpm_setpoint() const {return _main_rotor.get_governor_setpoint();}
+
     // arot_man_enabled - gets contents of manual_autorotation_enabled parameter
     bool arot_man_enabled() const { return (_main_rotor._rsc_arot_man_enable.get() == 1) ? true : false; }
 
@@ -144,6 +147,13 @@ public:
 	
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
+
+    //return collective hover
+    float get_coll_hover() const { return _collective_hover; }
+
+    float get_coll_max_pitch() const { return _collective_max_deg;}
+
+    float get_coll_min_pitch() const { return _collective_min_deg;}
 
     // enum for heli optional features
     enum class HeliOption {
@@ -278,6 +288,7 @@ protected:
     // internal variables
     float           _collective_zero_thrust_pct;      // collective zero thrutst parameter value converted to 0 ~ 1 range
     float           _collective_land_min_pct;      // collective land min parameter value converted to 0 ~ 1 range
+    float           _collective_hover_rad;
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 
     motor_frame_type _frame_type;

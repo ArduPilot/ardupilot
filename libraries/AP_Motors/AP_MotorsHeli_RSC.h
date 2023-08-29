@@ -87,6 +87,7 @@ public:
     // functions for autothrottle, throttle curve, governor, idle speed, output to servo
     void        set_governor_output(float governor_output) {_governor_output = governor_output; }
     float       get_governor_output() const { return _governor_output; }
+    float       get_governor_setpoint() const { return _governor_rpm; }
     void        governor_reset();
     float       get_control_output() const { return _control_output; }
     void        set_idle_output(float idle_output) { _idle_output.set(idle_output); }
