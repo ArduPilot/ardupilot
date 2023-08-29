@@ -946,28 +946,36 @@ void Plane::do_loiter_at_location()
 
 bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    switch (cmd.content.speed.speed_type)
-    {
+    return do_change_speed(
+        (uint8_t)cmd.content.speed.speed_type,
+        cmd.content.speed.target_ms,
+         cmd.content.speed.throttle_pct
+        );
+}
+
+bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float throttle_pct)
+{
+    switch (speedtype) {
     case 0:             // Airspeed
-        if (is_equal(cmd.content.speed.target_ms, -2.0f)) {
+        if (is_equal(speed_target_ms, -2.0f)) {
             new_airspeed_cm = -1; // return to default airspeed
             return true;
-        } else if ((cmd.content.speed.target_ms >= aparm.airspeed_min.get()) &&
-                   (cmd.content.speed.target_ms <= aparm.airspeed_max.get()))  {
-            new_airspeed_cm = cmd.content.speed.target_ms * 100; //new airspeed target for AUTO or GUIDED modes
-            gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
+        } else if ((speed_target_ms >= aparm.airspeed_min.get()) &&
+                   (speed_target_ms <= aparm.airspeed_max.get()))  {
+            new_airspeed_cm = speed_target_ms * 100; //new airspeed target for AUTO or GUIDED modes
+            gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)speed_target_ms);
             return true;
         }
         break;
     case 1:             // Ground speed
-        gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)cmd.content.speed.target_ms);
-        aparm.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
+        gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
+        aparm.min_gndspeed_cm.set(speed_target_ms * 100);
         return true;
     }
 
-    if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Set throttle %u", (unsigned)cmd.content.speed.throttle_pct);
-        aparm.throttle_cruise.set(cmd.content.speed.throttle_pct);
+    if (throttle_pct > 0 && throttle_pct <= 100) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Set throttle %u", (unsigned)throttle_pct);
+        aparm.throttle_cruise.set(throttle_pct);
         return true;
     }
 
