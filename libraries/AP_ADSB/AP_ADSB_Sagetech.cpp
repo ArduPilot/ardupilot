@@ -22,7 +22,9 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
 #include <time.h>
