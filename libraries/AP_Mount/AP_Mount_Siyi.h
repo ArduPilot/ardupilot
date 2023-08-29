@@ -213,10 +213,11 @@ private:
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
 
-    // set gimbal's lock vs follow mode
-    // lock should be true if gimbal should maintain an earth-frame target
-    // lock is false to follow / maintain a body-frame target
-    void set_lock(bool lock);
+    // Set gimbal's motion mode
+    //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
+    //   LOCK: roll, pitch and yaw are all in earth-frame
+    //   FPV: roll, pitch and yaw are all in body-frame
+    void set_motion_mode(GimbalMotionMode mode);
 
     // send target pitch and yaw rates to gimbal
     // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame

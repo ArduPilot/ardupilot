@@ -596,7 +596,8 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
 {
     // send lock/follow value if it has changed
     if ((yaw_is_ef != _last_lock) || (_lock_send_counter >= AP_MOUNT_SIYI_LOCK_RESEND_COUNT)) {
-        set_lock(yaw_is_ef);
+        GimbalMotionMode mode = yaw_is_ef ? GimbalMotionMode::LOCK : GimbalMotionMode::FOLLOW
+        set_motion_mode(mode);
         _lock_send_counter = 0;
         _last_lock = yaw_is_ef;
     } else {
@@ -607,12 +608,19 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
 }
 
-// set gimbal's lock vs follow mode
-// lock should be true if gimbal should maintain an earth-frame target
-// lock is false to follow / maintain a body-frame target
-void AP_Mount_Siyi::set_lock(bool lock)
+// Set gimbal's motion mode
+//   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
+//   LOCK: roll, pitch and yaw are all in earth-frame
+//   FPV: roll, pitch and yaw are all in body-frame
+void AP_Mount_Siyi::set_motion_mode(GimbalMotionMode mode)
 {
-    send_1byte_packet(SiyiCommandId::PHOTO, lock ? (uint8_t)PhotoFunction::LOCK_MODE : (uint8_t)PhotoFunction::FOLLOW_MODE);
+    PhotoFunction data = PhotoFunction::LOCK_MODE;
+    switch (mode) {
+        case GimbalMotionMode::LOCK:   data = PhotoFunction::LOCK_MODE; break;
+        case GimbalMotionMode::FOLLOW: data = PhotoFunction::FOLLOW_MODE; break;
+        case GimbalMotionMode::FPV:    data = PhotoFunction::FPV_MODE; break;
+    }
+    send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
 }
 
 // send target pitch and yaw rates to gimbal
