@@ -157,12 +157,46 @@ private:
         ZT30
     } _hardware_model;
 
-    // lens value
+    enum class HdrStatus : uint8_t {
+        OFF = 0,
+        ON  = 1,
+    };
+
+    enum class RecordingStatus : uint8_t {
+        OFF       = 0,
+        ON        = 1,
+        NO_CARD   = 2,
+        DATA_LOSS = 3,
+    };
+
+    enum class GimbalMotionMode : uint8_t {
+        LOCK   = 0,
+        FOLLOW = 1,
+        FPV    = 2,
+    };
+
     enum class GimbalMountingDirection : uint8_t {
         UNDEFINED = 0,
         NORMAL = 1,
         UPSIDE_DOWN = 2,
-    } _gimbal_mounting_dir;
+    };
+
+    enum class VideoOutputStatus : uint8_t {
+        HDMI = 0,
+        CVBS = 1,
+    };
+
+    // Response message for "Acquire Gimbal Confuguration Information" (0x0A)
+    typedef struct {
+        uint8_t _reserved1;
+        HdrStatus hdr_status;
+        uint8_t _reserved3;
+        RecordingStatus record_status;
+        GimbalMotionMode motion_mode;
+        GimbalMountingDirection mounting_dir;
+        VideoOutputStatus video_mode;
+    } GimbalConfigInfo;
+    static_assert(sizeof(GimbalConfigInfo) == 7);
 
     // camera image types (aka lens)
     enum class CameraImageType : uint8_t {
@@ -269,16 +303,11 @@ private:
     // variables for sending packets to gimbal
     uint32_t _last_send_ms;                         // system time (in milliseconds) of last packet sent to gimbal
     uint16_t _last_seq;                             // last sequence number used (should be increment for each send)
-    bool     _last_lock;                            // last lock value sent to gimbal
-    uint8_t  _lock_send_counter;                    // counter used to resend lock status to gimbal at regular intervals
 
     // actual attitude received from gimbal
     Vector3f _current_angle_rad;                    // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
     uint32_t _last_current_angle_rad_ms;            // system time _current_angle_rad was updated
     uint32_t _last_req_current_angle_rad_ms;        // system time that this driver last requested current angle
-
-    // variables for camera state
-    bool _last_record_video;                        // last record_video state sent to gimbal
 
     // absolute zoom control.  only used for A8 that does not support abs zoom control
     ZoomType _zoom_type;                            // current zoom type
@@ -286,6 +315,9 @@ private:
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
 
+    // Configuration info received from gimbal
+    GimbalConfigInfo _config_info;
+    
     // rangefinder variables
     uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
     uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
