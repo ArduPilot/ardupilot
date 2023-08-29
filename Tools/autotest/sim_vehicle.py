@@ -1148,7 +1148,7 @@ group_sim.add_option("", "--enable-onvif",
 group_sim.add_option("", "--can-peripherals",
                      action='store_true',
                      default=False,
-                     help="start a DroneCAN peripheral instance (use Tools/scripts/CAN/can_sitl_nodev.sh first)")
+                     help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
                      default=None,
