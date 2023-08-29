@@ -1475,24 +1475,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     return MAV_MISSION_ACCEPTED;
 }
 
-// mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
-// return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd)
-{
-    mavlink_mission_item_int_t miss_item = {0};
-
-    miss_item.param1 = packet.param1;
-    miss_item.param2 = packet.param2;
-    miss_item.param3 = packet.param3;
-    miss_item.param4 = packet.param4;
-
-    miss_item.command = packet.command;
-    miss_item.target_system = packet.target_system;
-    miss_item.target_component = packet.target_component;
-
-    return mavlink_int_to_mission_cmd(miss_item, cmd);
-}
-
 // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
 //  return true on success, false on failure
 //  NOTE: callers to this method current fill parts of "packet" in before calling this method, so do NOT attempt to zero the entire packet in here
