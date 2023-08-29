@@ -4471,13 +4471,14 @@ class AutoTest(ABC):
                 raise ValueError("count %u not handled" % count)
         self.progress("Rally content same")
 
-    def load_rally(self, filename):
+    def load_rally_using_mavproxy(self, filename):
         """Load rally points from a file to flight controller."""
         self.progress("Loading rally points (%s)" % filename)
         path = os.path.join(testdir, self.current_test_name_directory, filename)
         mavproxy = self.start_mavproxy()
         mavproxy.send('rally load %s\n' % path)
         mavproxy.expect("Loaded")
+        self.delay_sim_time(10)  # allow transfer to complete
         self.stop_mavproxy(mavproxy)
 
     def load_sample_mission(self):

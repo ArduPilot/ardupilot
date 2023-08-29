@@ -1353,7 +1353,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def Rally(self):
         '''Test Rally Points'''
-        self.load_rally("rover-test-rally.txt")
+        self.load_rally_using_mavproxy("rover-test-rally.txt")
+        self.assert_parameter_value('RALLY_TOTAL', 2)
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
