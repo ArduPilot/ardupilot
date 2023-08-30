@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Avoid_config.h"
+
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
@@ -65,6 +69,12 @@ private:
     // on success returns true and updates margin
     bool calc_margin_from_object_database(const Location &start, const Location &end, float &margin) const;
 
+#if AP_LOCATIONDB_ENABLED
+    // calculate minimum distance between a path and local vehicles
+    // on success returns true and updates margin
+    bool calc_margin_from_location_database(const Location &start, const Location &end, float &margin) const;
+#endif
+
     // Logging function
     void Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const;
 
@@ -82,3 +92,5 @@ private:
     float _bearing_prev;            // stored bearing in degrees 
     Location _destination_prev;     // previous destination, to check if there has been a change in destination
 };
+
+#endif // AP_OAPATHPLANNER_BENDYRULER_ENABLED

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Avoid_config.h"
+
+#if AP_OAPATHPLANNER_ENABLED
+
 #include <AP_HAL/Semaphores.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -115,4 +119,4 @@ namespace AP {
     AP_OADatabase *oadatabase();
 };
 
-
+#endif // AP_OAPATHPLANNER_ENABLED

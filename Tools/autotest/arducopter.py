@@ -7170,6 +7170,107 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("FENCE_ENABLE", 1)
         self.check_avoidance_corners()
 
+    def AC_Avoidance_LocDB(self):
+        '''Test avoidance using location database'''
+        self.context_push()
+        self.set_parameters({
+            "LDB_CAPACITY": 100,
+            "OA_TYPE": 1,
+            "GUID_OPTIONS": 64,
+            "WPNAV_SPEED": 200,
+        })
+        self.reboot_sitl()
+        margin_max = 10
+        self.set_parameters({
+            "OA_BR_TYPE": 1,
+            "OA_BR_LOOKAHEAD": 15,
+            "OA_MARGIN_MAX": margin_max,
+        })
+
+        dest_ofs_n = 100 # m
+        dest_ofs_e = 0 # m
+        dest_ofs_d = -30 # m
+        # construct location for two remote vehicle
+        # both placed midway at 5 meters on either side of the path of vehicle 
+        remote_vehicle_loc_one = self.mav.location()
+        self.location_offset_ne(remote_vehicle_loc_one, dest_ofs_n/2, dest_ofs_e + 5)
+        remote_vehicle_loc_one.alt += (-dest_ofs_d)
+        remote_vehicle_loc_two = self.mav.location()
+        self.location_offset_ne(remote_vehicle_loc_two, dest_ofs_n/2, dest_ofs_e - 5)
+        remote_vehicle_loc_two.alt += (-dest_ofs_d)
+        final_dest = self.mav.location()
+        self.location_offset_ne(final_dest, dest_ofs_n, dest_ofs_e)
+        final_dest.alt += (-dest_ofs_d)
+        self.progress("remote_vehicle_loc_one: %s" % str(remote_vehicle_loc_one))
+        self.progress("remote_vehicle_loc_two: %s" % str(remote_vehicle_loc_two))
+        self.progress("final_dest: %s" % str(final_dest))
+
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff()
+        # move to destination
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-lat-lon-alt
+            int(final_dest.lat * 1e7), # lat
+            int(final_dest.lng * 1e7), # lon
+            final_dest.alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # ax
+            0, # ay
+            0, # az
+            0, # yaw
+            0, # yawrate
+        )
+
+        last_sent = 0
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 120:
+                raise NotAchievedException("Did not reach destination")
+            old_sysid = self.mav.mav.srcSystem
+            # send fake global position message to simulate presence of remote vehicles
+            if now - last_sent > 0.5:
+                self.mav.mav.srcSystem = 2
+                gpi_one = self.global_position_int_for_location(remote_vehicle_loc_one,
+                                                                now,
+                                                                heading=0)
+                gpi_one.pack(self.mav.mav)
+                self.mav.mav.send(gpi_one)
+                self.mav.mav.srcSystem = 3
+                gpi_two = self.global_position_int_for_location(remote_vehicle_loc_two,
+                                                                now,
+                                                                heading=0)
+                gpi_two.pack(self.mav.mav)
+                self.mav.mav.send(gpi_two)
+            self.mav.mav.srcSystem = old_sysid
+            self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            pos = self.mav.location()
+            delta = self.get_distance(final_dest, pos)
+            max_delta = 2
+            self.progress("position delta from dest=%f (want <%f)" % (delta, max_delta))
+            if delta < max_delta:
+                self.progress("Reached destination")
+                break
+            tolerence = 2 # m
+            dist_allowed = margin_max - tolerence
+            dist_from_remote_vehicle_one = self.get_distance(remote_vehicle_loc_one, pos)
+            self.progress("position delta vehicle 1=%f (want >%f)" % (dist_from_remote_vehicle_one, dist_allowed))
+            dist_from_remote_vehicle_two = self.get_distance(remote_vehicle_loc_two, pos)
+            self.progress("position delta vehicle 2=%f (want >%f)" % (dist_from_remote_vehicle_two, dist_allowed))
+            if dist_from_remote_vehicle_one < dist_allowed or dist_from_remote_vehicle_two < dist_allowed:
+                raise NotAchievedException("Went too close to remote vehicles")
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def global_position_int_for_location(self, loc, time_boot, heading=0):
         return self.mav.mav.global_position_int_encode(
             int(time_boot * 1000), # time_boot_ms
@@ -9855,6 +9956,7 @@ class AutoTestCopter(AutoTest):
              self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
              self.AC_Avoidance_Fence,
              self.AC_Avoidance_Beacon,
+             self.AC_Avoidance_LocDB,
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
              self.ThrowDoubleDrop,
