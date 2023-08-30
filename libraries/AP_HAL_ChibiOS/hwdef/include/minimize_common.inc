@@ -89,9 +89,6 @@ define HAL_DISPLAY_ENABLED 0
 # remove support for killing IMUs at runtime - a developer feature:
 define AP_INERTIALSENSOR_KILL_IMU_ENABLED 0
 
-# no MSP:
-define HAL_MSP_ENABLED 0
-
 # shortened names in @SYS/taskinfo.txt
 define AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED 0
 
@@ -105,7 +102,6 @@ define QAUTOTUNE_ENABLED 0
 # Copter-specific defines; these defines are only used in the Copter
 #  directory, but are seen across the entire codebase:
 define MODE_FLOWHOLD_ENABLED 0
-define MODE_TURTLE_ENABLED 0
 define MODE_ZIGZAG_ENABLED 0
 define AC_NAV_GUIDED 0
 define AC_OAPATHPLANNER_ENABLED 0
