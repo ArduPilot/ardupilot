@@ -265,7 +265,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AC_AVOID_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
         // Limit the velocity to prevent fence violations
         // TODO: We need to also limit the _desired_accel
@@ -276,7 +276,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
             desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
         }
     }
-#endif // !APM_BUILD_ArduPlane
+#endif // AC_AVOID_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
     // get loiters desired velocity from the position controller where it is being stored.
     Vector2p target_pos = _pos_control.get_pos_target_cm().xy();

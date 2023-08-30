@@ -110,10 +110,10 @@
  #include <AP_Beacon/AP_Beacon.h>
 #endif
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AC_AVOID_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
-#if AC_OAPATHPLANNER_ENABLED == ENABLED
+#if AP_OAPATHPLANNER_ENABLED
  #include <AC_WPNav/AC_WPNav_OA.h>
  #include <AC_Avoidance/AP_OAPathPlanner.h>
 #endif
@@ -170,7 +170,7 @@
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
 
-#if AC_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
+#if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif
 
@@ -515,7 +515,7 @@ private:
     AP_Mount camera_mount;
 #endif
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AC_AVOID_ENABLED
     AC_Avoid avoid;
 #endif
 
