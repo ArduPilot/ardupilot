@@ -88,7 +88,9 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
+#if AP_OAPATHPLANNER_ENABLED
             & oa_check(report)
+#endif
             & parameter_checks(report)
             & mode_checks(report));
 }
@@ -155,6 +157,7 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
     return true;
 }
 
+#if AP_OAPATHPLANNER_ENABLED
 // check object avoidance has initialised correctly
 bool AP_Arming_Rover::oa_check(bool report)
 {
@@ -171,6 +174,7 @@ bool AP_Arming_Rover::oa_check(bool report)
     }
     return false;
 }
+#endif
 
 // perform parameter checks
 bool AP_Arming_Rover::parameter_checks(bool report)

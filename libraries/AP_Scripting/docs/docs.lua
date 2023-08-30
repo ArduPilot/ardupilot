@@ -2963,3 +2963,61 @@ function mavlink:send_chan(chan, msgid, message) end
 -- Block a given MAV_CMD from being procceced by ArduPilot
 ---@param comand_id integer
 function mavlink:block_command(comand_id) end
+
+-- desc
+---@class DBItem_ud
+local DBItem_ud = {}
+
+---@return DBItem_ud
+function DBItem() end
+
+-- initializes locationdb item fields with specified values
+---@param key uint32_t_ud
+---@param timestamp_ms uint32_t_ud
+---@param pos Vector3f_ud
+---@param vel Vector3f_ud
+---@param accel Vector3f_ud
+---@param heading number
+---@param radius number
+---@param populated_fields integer
+function DBItem_ud:init(key, timestamp_ms, pos, vel, accel, heading, radius, populated_fields) end
+
+-- desc
+---@class locdb
+locdb = {}
+
+-- add item to location database
+-- return true if item is successfully added
+---@param item DBItem_ud
+---@return boolean
+function locdb:add_item(item) end
+
+-- remove item form location database
+-- return true if item is successfully removed
+---@param key uint32_t_ud
+---@return boolean
+function locdb:remove_item(key) end
+
+-- update item in location database
+-- return true if item is successfully updated
+---@param key uint32_t_ud
+---@param new_item DBItem_ud
+---@return boolean
+function locdb:update_item(key, new_item) end
+
+-- get item from location database
+-- return true if item is successfully retrieved
+---@param key uint32_t_ud
+---@param item DBItem_ud
+---@return boolean
+function locdb:get_item(key, item) end
+
+-- return true if database is healthy
+---@return boolean
+function locdb:healthy() end
+
+-- construct key for database item in scripting domain
+-- it accepts a 32 bit uint but leading 8 bits are discarded
+---@param param1 uint32_t_ud
+---@return uint32_t_ud
+function locdb:construct_key_scripting(param1) end

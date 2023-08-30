@@ -378,6 +378,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.g2.windvane.send_wind(chan);
         break;
 
+#if AP_OAPATHPLANNER_ENABLED
     case MSG_ADSB_VEHICLE: {
         AP_OADatabase *oadb = AP::oadatabase();
         if (oadb != nullptr) {
@@ -389,6 +390,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         }
         break;
     }
+#endif
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -398,10 +400,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
 void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg)
 {
-#if AP_FOLLOW_ENABLED
-    // pass message to follow library
-    rover.g2.follow.handle_msg(msg);
-#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 

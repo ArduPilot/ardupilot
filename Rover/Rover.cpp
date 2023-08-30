@@ -126,6 +126,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Logger,           &rover.logger,           periodic_tasks, 50,  300, 108),
 #endif
+#if AP_FOLLOW_ENABLED
+    SCHED_TASK_CLASS(AP_Follow,           &rover.g2.follow,        update,          50, 100, 109),
+#endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200, 111),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
 #if HAL_BUTTON_ENABLED

@@ -162,7 +162,7 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 # FFT option (disabled by default)
 # define HAL_GYROFFT_ENABLED 1
-# define AC_OAPATHPLANNER_ENABLED 0
+# define AP_OAPATHPLANNER_ENABLED 0
 
 # EK2 options (disabled by default)
 # define HAL_NAVEKF2_AVAILABLE 1
