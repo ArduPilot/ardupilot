@@ -3082,9 +3082,9 @@ class AutoTestPlane(AutoTest):
         '''Test VectorNav EAHRS support'''
         self.fly_external_AHRS("VectorNav", 1, "ap1.txt")
 
-    def MicroStrainEAHRS(self):
-        '''Test MicroStrain EAHRS support'''
-        self.fly_external_AHRS("MicroStrain", 2, "ap1.txt")
+    def MicroStrainEAHRS5(self):
+        '''Test MicroStrain EAHRS series 5 support'''
+        self.fly_external_AHRS("MicroStrain5", 2, "ap1.txt")
 
     def get_accelvec(self, m):
         return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
@@ -3750,6 +3750,7 @@ class AutoTestPlane(AutoTest):
             "quadplane-tilttrivec": "loses attitude control and crashes",
             "plane-ice" : "needs ICE control channel for ignition",
             "quadplane-ice" : "needs ICE control channel for ignition",
+            "quadplane-can" : "needs CAN periph",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
@@ -3912,6 +3913,18 @@ class AutoTestPlane(AutoTest):
 
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
+
+    def AutotuneFiltering(self):
+        '''Test AutoTune mode with filter updates disabled'''
+        self.set_parameters({
+            "AUTOTUNE_OPTIONS": 3,
+            # some filtering is required for autotune to complete
+            "RLL_RATE_FLTD": 10,
+            "PTCH_RATE_FLTD": 10,
+            "RLL_RATE_FLTT": 20,
+            "PTCH_RATE_FLTT": 20,
+        })
+        self.AUTOTUNE()
 
     def LandingDrift(self):
         '''Circuit with baro drift'''
@@ -4712,7 +4725,7 @@ class AutoTestPlane(AutoTest):
             self.TerrainMission,
             self.TerrainLoiter,
             self.VectorNavEAHRS,
-            self.MicroStrainEAHRS,
+            self.MicroStrainEAHRS5,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,
@@ -4731,6 +4744,7 @@ class AutoTestPlane(AutoTest):
             self.DCMFallback,
             self.MAVFTP,
             self.AUTOTUNE,
+            self.AutotuneFiltering,
             self.MegaSquirt,
             self.MSP_DJI,
             self.SpeedToFly,

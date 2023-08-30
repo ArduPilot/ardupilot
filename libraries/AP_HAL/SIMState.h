@@ -190,8 +190,8 @@ private:
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
 
-    // simulated LORD MicroStrain system
-    SITL::MicroStrain *microstrain;
+    // simulated MicroStrain Series 5 system
+    SITL::MicroStrain5 *microstrain5;
 
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend

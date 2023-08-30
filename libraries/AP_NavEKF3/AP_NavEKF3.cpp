@@ -207,8 +207,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
-    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors.
-    // @Range: 0.1 10.0
+    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0. This parameter also sets the noise for the 'synthetic' zero height measurement that is used when EK3_SRCx_POSZ = 0.
+    // @Range: 0.1 100.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m

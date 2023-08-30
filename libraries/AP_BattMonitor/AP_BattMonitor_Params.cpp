@@ -9,6 +9,10 @@
   #define DEFAULT_LOW_BATTERY_VOLTAGE 0.0f
 #endif // APM_BUILD_COPTER_OR_HELI
 
+#ifndef AP_BATT_MONITOR_BATTERY_CAPACITY
+    #define AP_BATT_MONITOR_BATTERY_CAPACITY 3300
+#endif
+
 const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
@@ -28,15 +32,15 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // 6 was AMP_OFFSET
 
-#ifndef HAL_BUILD_AP_PERIPH
     // @Param: CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
     // @Units: mAh
     // @Increment: 50
     // @User: Standard
-    AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, 3300),
+    AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, AP_BATT_MONITOR_BATTERY_CAPACITY),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param{Plane}: WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
@@ -150,6 +154,16 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 #endif // HAL_BUILD_AP_PERIPH
+
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+    // @Param: ESC_INDEX
+    // @DisplayName: ESC Telemetry Index to write to
+    // @Description: ESC Telemetry Index to write voltage, current, consumption and temperature data to. Use 0 to disable.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ESC_INDEX", 22, AP_BattMonitor_Params, _esc_telem_outbound_index, 0),
+#endif
 
     AP_GROUPEND
 

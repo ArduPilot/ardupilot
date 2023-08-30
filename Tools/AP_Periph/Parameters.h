@@ -31,7 +31,7 @@ public:
         k_param_hardpoint_rate,
         k_param_baro_enable,
         k_param_esc_number0,
-        k_param_battery,
+        k_param_battery_lib,
         k_param_debug,
         k_param_serial_number,
         k_param_adsb_port,
@@ -78,6 +78,10 @@ public:
         k_param_esc_serial_port1,
         k_param_networking,
         k_param_rpm_sensor,
+        k_param_g_rcin,
+        k_param_sitl,
+        k_param_ahrs,
+        k_param_battery_balance,
     };
 
     AP_Int16 format_version;

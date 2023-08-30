@@ -189,14 +189,12 @@ private:
     bool send_zoom_rate(float zoom_value);
 
     // send zoom multiple command to camera. e.g. 1x, 10x, 30x
-    // only supported by ZR10 and ZR30
     bool send_zoom_mult(float zoom_mult);
 
     // get zoom multiple max
     float get_zoom_mult_max() const;
 
-    // update absolute zoom controller
-    // only used for A8 that does not support abs zoom control
+    // update zoom controller
     void update_zoom_control();
 
     // internal variables
@@ -238,7 +236,8 @@ private:
     bool _last_record_video;                        // last record_video state sent to gimbal
 
     // absolute zoom control.  only used for A8 that does not support abs zoom control
-    float _zoom_mult_target;                        // current zoom multiple target.  0 if no target
+    ZoomType _zoom_type;                            // current zoom type
+    float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
 };

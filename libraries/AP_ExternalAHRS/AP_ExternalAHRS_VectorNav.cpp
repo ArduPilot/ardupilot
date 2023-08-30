@@ -31,6 +31,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -581,8 +582,10 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
                                 Location::AltFrame::ABSOLUTE};
         state.have_origin = true;
     }
-
-    AP::gps().handle_external(gps);
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
 }
 
 /*

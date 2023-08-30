@@ -240,6 +240,14 @@ AP_HW_QioTekAdeptH743                1126
 AP_HW_YJUAV_A6SE                     1127
 AP_HW_QioTekAdept_6C                 1128
 
+AP_HW_PixFlamingoL4R5_V2             1129
+AP_HW_PixFlamingoF427_V1             1130
+AP_HW_PixFlamingoF767_V1             1131
+AP_HW_PixFlamingoH743I               1132
+AP_HW_PixFlamingoH743V               1133
+
+AP_HW_AR-F407SmartBat                1134
+
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
@@ -248,8 +256,9 @@ AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
 
-# IDs 5000-5100 reserved for Carbonix
-# IDs 6000-6100 reserved for SpektreWorks
+# IDs 5000-5099 reserved for Carbonix
+# IDs 5100-5199 reserved for SYPAQ Systems
+# IDs 6000-6099 reserved for SpektreWorks
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140

@@ -141,7 +141,6 @@ private:
 
     private:
         AP_Int8 _driver_type;
-        AP_CANDriver* _testcan;
         AP_CANDriver* _uavcan;
         AP_CANDriver* _piccolocan;
     };

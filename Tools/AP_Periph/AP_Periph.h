@@ -32,6 +32,9 @@
 #if HAL_WITH_ESC_TELEM
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #endif
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
+#include "rc_in.h"
+#include "batt_balance.h"
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -166,10 +169,9 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
-    struct AP_Periph_Battery {
-        void handle_battery_failsafe(const char* type_str, const int8_t action) { }
-        AP_BattMonitor lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::AP_Periph_Battery::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
-
+    void handle_battery_failsafe(const char* type_str, const int8_t action) { }
+    AP_BattMonitor battery_lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
+    struct {
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
     } battery;
@@ -278,6 +280,21 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    void rcin_init();
+    void rcin_update();
+    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
+    bool rcin_initialised;
+    uint32_t rcin_last_sent_RCInput_ms;
+    const char *rcin_rc_protocol;  // protocol currently being decoded
+    Parameters_RCIN g_rcin;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    void batt_balance_update();
+    BattBalance battery_balance;
+#endif
+    
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
 #endif
@@ -370,6 +387,13 @@ public:
         uint32_t baudrate;
         bool locked;
     } uart_monitor;
+#endif
+
+#if AP_SIM_ENABLED
+    SITL::SIM sitl;
+#if AP_AHRS_ENABLED
+    AP_AHRS ahrs;
+#endif
 #endif
 };
 

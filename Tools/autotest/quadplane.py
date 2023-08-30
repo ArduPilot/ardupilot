@@ -169,6 +169,10 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_ready_to_arm()
 
         self.start_subtest("Verify that arming with switch does not spin motors in other modes")
+        # disable compass magnetic field arming check that is triggered by the simulated lean of vehicle
+        # this is required because adjusting the AHRS_TRIM values only affects the IMU and not external compasses
+        arming_magthresh = self.get_parameter("ARMING_MAGTHRESH")
+        self.set_parameter("ARMING_MAGTHRESH", 0)
         # introduce a large attitude error to verify that stabilization is not active
         ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
@@ -207,8 +211,9 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to stop")
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
-        # remove attitude error
+        # remove attitude error and reinstance compass arming check
         self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
+        self.set_parameter("ARMING_MAGTHRESH", arming_magthresh)
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
@@ -932,19 +937,24 @@ class AutoTestQuadPlane(AutoTest):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
-    def ICEngine(self):
-        '''Test ICE Engine support'''
-        rc_engine_start_chan = 11
+    def setup_ICEngine_vehicle(self, start_chan):
+        '''restarts SITL with an IC Engine setup'''
         self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
+            'ICE_START_CHAN': start_chan,
         })
-        model = "quadplane-ice"
 
+        model = "quadplane-ice"
         self.customise_SITL_commandline(
             [],
             model=model,
             defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
+            wipe=False,
+        )
+
+    def ICEngine(self):
+        '''Test ICE Engine support'''
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle(start_chan=rc_engine_start_chan)
 
         self.wait_ready_to_arm()
         self.wait_rpm(1, 0, 0, minimum_duration=1)
@@ -962,7 +972,7 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_rpm(1, 6500, 7500, minimum_duration=30, timeout=40)
         self.progress("Setting min-throttle")
         self.set_rc(3, 1000)
-        self.wait_rpm(1, 300, 400, minimum_duration=1)
+        self.wait_rpm(1, 65, 75, minimum_duration=1)
         self.progress("Setting engine-start RC switch to LOW")
         self.set_rc(rc_engine_start_chan, 1000)
         self.wait_rpm(1, 0, 0, minimum_duration=1)
@@ -983,24 +993,89 @@ class AutoTestQuadPlane(AutoTest):
     def ICEngineMission(self):
         '''Test ICE Engine Mission support'''
         rc_engine_start_chan = 11
-        self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
-        })
-        model = "quadplane-ice"
+        self.setup_ICEngine_vehicle(start_chan=rc_engine_start_chan)
 
-        self.customise_SITL_commandline(
-            [],
-            model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
-
-        self.reboot_sitl()
         self.load_mission("mission.txt")
         self.wait_ready_to_arm()
         self.set_rc(rc_engine_start_chan, 2000)
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_disarmed(timeout=300)
+
+    def MAV_CMD_DO_ENGINE_CONTROL(self):
+        '''test MAV_CMD_DO_ENGINE_CONTROL mavlink command'''
+
+        expected_idle_rpm_min = 65
+        expected_idle_rpm_max = 75
+        expected_starter_rpm_min = 345
+        expected_starter_rpm_max = 355
+
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle(start_chan=rc_engine_start_chan)
+
+        self.wait_ready_to_arm()
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.set_rc(rc_engine_start_chan, 1500)  # allow motor to run
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.arm_vehicle()
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.start_subtest("Start motor")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1)
+            self.wait_rpm(1, expected_starter_rpm_min, expected_starter_rpm_max)
+            self.wait_rpm(1, expected_idle_rpm_min, expected_idle_rpm_max, minimum_duration=10)
+
+            # starting the motor while it is running is failure
+            # (probably wrong, but that's how this works):
+            self.start_subtest("try start motor again")
+            self.context_collect('STATUSTEXT')
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("already running", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+            # shouldn't affect run state:
+            self.wait_rpm(1, expected_idle_rpm_min, expected_idle_rpm_max, minimum_duration=1)
+
+            self.start_subtest("Stop motor")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("Stop motor (again)")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("Check start chan control disable")
+            old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
+            self.set_rc(rc_engine_start_chan, 1000)
+            self.context_collect('STATUSTEXT')
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("start control disabled", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+            self.set_rc(rc_engine_start_chan, old_start_channel_value)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("test start-at-height")
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.context_collect('STATUSTEXT')
+            method(
+                mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL,
+                p1=1,  # start
+                p3=15.5, # ... at 15.5 metres
+            )
+            self.wait_statustext("height set to 15.5m", check_context=True)
+            self.wait_rpm(1, 0, 0, minimum_duration=2)
+
+            self.takeoff(20, mode='GUIDED')
+            self.wait_rpm(1, expected_starter_rpm_min, expected_starter_rpm_max, minimum_duration=1)
+            self.wait_statustext("Engine running", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+
+            # stop the motor again:
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.change_mode('QLAND')
+            self.wait_disarmed()
 
     def Ship(self):
         '''Ensure we can take off from simulated ship'''
@@ -1242,6 +1317,7 @@ class AutoTestQuadPlane(AutoTest):
             self.Tailsitter,
             self.ICEngine,
             self.ICEngineMission,
+            self.MAV_CMD_DO_ENGINE_CONTROL,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
             self.BootInAUTO,

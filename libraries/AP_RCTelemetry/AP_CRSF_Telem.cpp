@@ -192,11 +192,12 @@ bool AP_CRSF_Telem::process_rf_mode_changes()
     if (!uart->is_initialized()) {
         return false;
     }
-
-    // warn the user if their setup is sub-optimal
+#if !defined (STM32H7)
+    // warn the user if their setup is sub-optimal, H7 does not need DMA on serial port
     if (_telem_bootstrap_msg_pending && !uart->is_dma_enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "%s: running on non-DMA serial port", get_protocol_string());
     }
+#endif
     // note if option was set to show LQ in place of RSSI
     bool current_lq_as_rssi_active = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
     if(_telem_bootstrap_msg_pending || _noted_lq_as_rssi_active != current_lq_as_rssi_active){

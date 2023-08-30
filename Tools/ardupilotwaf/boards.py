@@ -626,10 +626,7 @@ Please use a replacement build as follows:
 class sitl(Board):
 
     def __init__(self):
-        if Utils.unversioned_sys_platform().startswith("linux"):
-            self.with_can = True
-        else:
-            self.with_can = False
+        self.with_can = True
 
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
@@ -654,8 +651,16 @@ class sitl(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
-                                CANARD_ENABLE_CANFD = 1,
-                                CANARD_ENABLE_ASSERTS = 1)
+                               CANARD_ENABLE_CANFD = 1,
+                               CANARD_ENABLE_ASSERTS = 1)
+            if not cfg.options.force_32bit:
+                # needed for cygwin
+                env.CXXFLAGS += [ '-DCANARD_64_BIT=1' ]
+                env.CFLAGS += [ '-DCANARD_64_BIT=1' ]
+            if Utils.unversioned_sys_platform().startswith("linux"):
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 1)
+            else:
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 0)
 
         env.CXXFLAGS += [
             '-Werror=float-equal',
@@ -706,10 +711,9 @@ class sitl(Board):
             'AP_CSVReader',
         ]
 
-        if not cfg.env.AP_PERIPH:
-            env.AP_LIBRARIES += [
-                'SITL',
-            ]
+        env.AP_LIBRARIES += [
+            'SITL',
+        ]
 
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
@@ -815,9 +819,19 @@ class sitl_periph_gps(sitl):
         env.DEFINES.update(
             HAL_BUILD_AP_PERIPH = 1,
             PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
-            AP_AIRSPEED_ENABLED = 0,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph"',
             HAL_PERIPH_ENABLE_GPS = 1,
+            HAL_PERIPH_ENABLE_AIRSPEED = 1,
+            HAL_PERIPH_ENABLE_MAG = 1,
+            HAL_PERIPH_ENABLE_BARO = 1,
+            HAL_PERIPH_ENABLE_RANGEFINDER = 1,
+            HAL_PERIPH_ENABLE_BATTERY = 1,
+            HAL_PERIPH_ENABLE_EFI = 1,
+            HAL_PERIPH_ENABLE_RPM = 1,
+            HAL_PERIPH_ENABLE_RC_OUT = 1,
+            AP_AIRSPEED_ENABLED = 1,
+            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
+            AP_AHRS_ENABLED = 1,
             AP_UART_MONITOR_ENABLED = 1,
             HAL_CAN_DEFAULT_NODE_ID = 0,
             HAL_RAM_RESERVE_START = 0,
@@ -836,7 +850,7 @@ class sitl_periph_gps(sitl):
             COMPASS_CAL_ENABLED = 0,
             COMPASS_MOT_ENABLED = 0,
             COMPASS_LEARN_ENABLED = 0,
-            AP_BATTERY_ESC_ENABLED = 0,
+            AP_BATTERY_ESC_ENABLED = 1,
             HAL_EXTERNAL_AHRS_ENABLED = 0,
             HAL_GENERATOR_ENABLED = 0,
             AP_STATS_ENABLED = 0,
@@ -844,7 +858,10 @@ class sitl_periph_gps(sitl):
             AP_CAN_SLCAN_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
             AP_SCRIPTING_ENABLED = 0,
-            AP_AHRS_ENABLED = 0,
+            HAL_NAVEKF2_AVAILABLE = 0,
+            HAL_NAVEKF3_AVAILABLE = 0,
+            HAL_PWM_COUNT = 32,
+            HAL_WITH_ESC_TELEM = 1,
         )
 
 

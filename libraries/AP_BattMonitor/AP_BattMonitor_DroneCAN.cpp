@@ -33,8 +33,7 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
 
 /// Constructor
 AP_BattMonitor_DroneCAN::AP_BattMonitor_DroneCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_DroneCAN_Type type, AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params),
-    _type(type)
+    AP_BattMonitor_Backend(mon, mon_state, params)
 {
     AP_Param::setup_object_defaults(this,var_info);
     _state.var_info = var_info;

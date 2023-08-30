@@ -6,12 +6,12 @@ on:
   push:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
   pull_request:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
 
 concurrency:
@@ -115,6 +115,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
+          source $HOME/venv-ardupilot/bin/activate || true
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure
           ./waf rover
@@ -128,6 +129,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
+          source $HOME/venv-ardupilot/bin/activate || true
           case ${{matrix.os}} in
             *"archlinux"*)
               export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH

@@ -218,6 +218,16 @@ public:
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
+    AP_Int32 can_servo_mask; // mask of servos/escs coming from CAN
+
+#if HAL_NUM_CAN_IFACES
+    enum class CANTransport : uint8_t {
+      MulticastUDP = 0,
+      SocketCAN = 1
+    };
+    AP_Enum<CANTransport> can_transport[HAL_NUM_CAN_IFACES];
+#endif
+
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay

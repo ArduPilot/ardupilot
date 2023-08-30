@@ -38,6 +38,18 @@ RC7_TRIM        1500
 RC8_MAX         2000
 RC8_MIN         1000
 RC8_TRIM        1500
+SERVO1_MAX       2200
+SERVO1_MIN       500
+SERVO1_TRIM      1350
+SERVO2_MAX       2200
+SERVO2_MIN       500
+SERVO2_TRIM      1350
+SERVO3_MAX       2200
+SERVO3_MIN       500
+SERVO3_TRIM      1350
+SERVO4_MAX       2200
+SERVO4_MIN       500
+SERVO4_TRIM      1350
 
 # setting servo functions for the four fins
 SERVO1_FUNCTION 33
@@ -76,16 +88,18 @@ INS_ACC3SCAL_Z   1.000
 
 ARMING_RUDDER 0
 GCS_PID_MASK 255
+SIM_SERVO_SPEED 0.06
+LOG_BITMASK      65535
 
 # default PID params for position and velocity-controlled modes
-MAX_POS_XY       0.3
+MAX_POS_XY       0.15
 MAX_POS_YAW      0.3
 MAX_POS_Z        0.15
-MAX_VEL_XY       0.4
-MAX_VEL_YAW      0.5
+MAX_VEL_XY       0.2
+MAX_VEL_YAW      0.4
 MAX_VEL_Z        0.2
 
-VELXY_D          0.0
+VELXY_D          1.0
 VELXY_FF         0.0
 VELXY_FLTD       3.0
 VELXY_FLTE       3.0
@@ -98,7 +112,7 @@ VELYAW_FLTD      3.0
 VELYAW_FLTE      3.0
 VELYAW_I         0.8
 VELYAW_IMAX      5.0
-VELYAW_P         15.0
+VELYAW_P         10.0
 VELZ_D           0.0
 VELZ_FF          0.0
 VELZ_FLTD        3.0

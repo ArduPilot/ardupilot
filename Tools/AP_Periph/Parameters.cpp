@@ -223,7 +223,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery, "BATT", AP_BattMonitor),
+    GOBJECT(battery_lib, "BATT", AP_BattMonitor),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
@@ -562,6 +562,31 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    // @Group: RC
+    // @Path: rc_in.cpp
+    GOBJECT(g_rcin, "RC",  Parameters_RCIN),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    // @Group: BAL
+    // @Path: batt_balance.cpp
+    GOBJECT(battery_balance, "BAL",  BattBalance),
+#endif
+
+    // NOTE: sim parameters should go last
+#if AP_SIM_ENABLED
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
+    GOBJECT(sitl, "SIM_", SITL::SIM),
+
+#if AP_AHRS_ENABLED
+    // @Group: AHRS_
+    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+#endif
+#endif // AP_SIM_ENABLED
 
     AP_VAREND
 };

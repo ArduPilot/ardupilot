@@ -373,12 +373,12 @@ class AutoTestSub(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        # out battery is reset to full on reboot.  So reduce it to 10%
+        # our battery is reset to full on reboot.  So reduce it to 10%
         # and wait for it to go above 50.
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=255,  # battery mask
-            p2=10,   # percentage
+            p1=65535,   # battery mask
+            p2=10,      # percentage
         )
         self.run_cmd_reboot()
         tstart = time.time()

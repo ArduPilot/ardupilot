@@ -536,19 +536,20 @@ def start_SITL(binary,
             cmd.extend(['--speedup', str(speedup)])
         if sim_rate_hz is not None:
             cmd.extend(['--rate', str(sim_rate_hz)])
-        if defaults_filepath is not None:
-            if type(defaults_filepath) == list:
-                defaults = [reltopdir(path) for path in defaults_filepath]
-                if len(defaults):
-                    cmd.extend(['--defaults', ",".join(defaults)])
-            else:
-                cmd.extend(['--defaults', reltopdir(defaults_filepath)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
         cmd.append('--uartC=tcp:2')
         if not enable_fgview_output:
             cmd.append("--disable-fgview")
+
+    if defaults_filepath is not None:
+        if type(defaults_filepath) == list:
+            defaults = [reltopdir(path) for path in defaults_filepath]
+            if len(defaults):
+                cmd.extend(['--defaults', ",".join(defaults)])
+        else:
+            cmd.extend(['--defaults', reltopdir(defaults_filepath)])
 
     cmd.extend(customisations)
 

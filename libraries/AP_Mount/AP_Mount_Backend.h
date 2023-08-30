@@ -94,17 +94,21 @@ public:
     void set_target_sysid(uint8_t sysid);
 
     // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
-    MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
 
     // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
     // requires original message in order to extract caller's sysid and compid
-    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-    
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
+#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
     // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
+#endif
 
+#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
     // process MOUNT_CONTROL messages received from GCS. deprecated.
     void handle_mount_control(const mavlink_mount_control_t &packet);
+#endif
 
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
     void send_gimbal_device_attitude_status(mavlink_channel_t chan);
@@ -177,6 +181,13 @@ public:
 
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}
+
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    virtual bool get_rangefinder_distance(float& distance_m) const { return false; }
 
 protected:
 

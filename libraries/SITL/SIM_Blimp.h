@@ -19,6 +19,8 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
+// #include "SIM_Motor.h"
+// #include "SIM_Frame.h"
 
 namespace SITL {
 
@@ -26,9 +28,11 @@ struct Fins
 {
   float angle;
   float last_angle;
+  float servo_angle;
   bool dir;
-  float vel; // velocity, in rad/s
+  float vel; // velocity, in m/s
   float T; //Tangential (thrust) force, in Neutons
+  float N; //Normal force, in Newtons
   float Fx; //Fx,y,z = Force in bodyframe orientation at servo position, in Newtons
   float Fy;
   float Fz;
@@ -54,15 +58,17 @@ protected:
     float mass; //kilograms
     float radius; //metres
     Vector3f moment_of_inertia;
+    Vector3f cog; //centre of gravity location relative to center of blimp
 
     //Airfish-specific variables
     Fins fin[4];
-    float k_tan; //Tangential force multiplier
+    float k_tan; //Tangential and normal force multipliers
+    float k_nor;
     float drag_constant;
     float drag_gyr_constant;
-    float delta_time;
 
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
+    float sq(float a) {return pow(a,2);}
 };
 
 }

@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if !defined(HAL_BUILD_AP_PERIPH)
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -52,7 +50,8 @@ void RCOutput::disable_ch(uint8_t ch)
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
-        const uint32_t safety_mask = AP_BoardConfig::get_singleton()->get_safety_mask();
+        const auto *board_config = AP_BoardConfig::get_singleton();
+        const uint32_t safety_mask = board_config != nullptr? board_config->get_safety_mask() : 0;
         if (!(safety_mask & (1U<<ch))) {
             // implement safety pwm value
             period_us = 0;
@@ -157,5 +156,3 @@ void RCOutput::serial_led_send(const uint16_t chan)
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#endif //!defined(HAL_BUILD_AP_PERIPH)
