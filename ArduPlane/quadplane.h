@@ -418,7 +418,6 @@ private:
     Location last_auto_target;
 
     float q_fwd_throttle; // forward throttle used in q modes
-    int32_t q_fwd_nav_pitch_lim_cd; // forward tilt limit used in q modes in centi-degrees
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
