@@ -38,9 +38,11 @@ void AP_Mount_Siyi::init()
     const AP_SerialManager& serial_manager = AP::serialmanager();
 
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_uart != nullptr) {
-        _initialised = true;
+    if (_uart == nullptr) {
+        return;
     }
+
+    _initialised = true;
     AP_Mount_Backend::init();
 }
 
