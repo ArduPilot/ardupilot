@@ -106,8 +106,25 @@ def write_imu_config(f, n):
     f.write('''
 # IMU setup
 SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
-IMU Invensense SPI:imu%s %s
-''' % (n, bus, n, n, alignment[align]))
+''' % (n, bus, n))
+
+    c = 0
+    for define in defines:
+        for imudefine in ['USE_GYRO_SPI_', 'USE_ACCGYRO_']:
+            if define.startswith(imudefine):
+                imu = define[len(imudefine):]
+                c = c + 1
+                if c == int(n):
+                    if imu == 'ICM42688P':
+                        imudriver = 'Invensensev3'
+                    elif imu == 'BMI270':
+                        imudriver = 'BMI270'
+                    else:
+                        imudriver = 'Invensense'
+                    f.write('''
+IMU %s SPI:imu%s %s
+''' % (imudriver, n, alignment[align]))
+
     dma = "SPI" + bus + "*"
     dma_noshare[dma] = dma
 
