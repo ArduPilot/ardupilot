@@ -760,6 +760,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     // Solo user presses pause button
     case MAV_CMD_SOLO_BTN_PAUSE_CLICK:
         return handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(packet);
+    // Solo user presses Fly button:
+    case MAV_CMD_SOLO_BTN_FLY_HOLD:
+        return handle_MAV_CMD_SOLO_BTN_FLY_HOLD(packet);
+    // Solo user holds down Fly button for a couple of seconds
+    case MAV_CMD_SOLO_BTN_FLY_CLICK:
+        return handle_MAV_CMD_SOLO_BTN_FLY_CLICK(packet);
 #endif
 
     default:
@@ -942,8 +948,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
-        /* Solo user presses Fly button */
-    case MAV_CMD_SOLO_BTN_FLY_CLICK: {
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+    }
+}
+
+#if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_command_int_t &packet)
+{
         if (copter.failsafe.radio) {
             return MAV_RESULT_ACCEPTED;
         }
@@ -953,10 +965,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
         }
         return MAV_RESULT_ACCEPTED;
-    }
+}
 
-        /* Solo user holds down Fly button for a couple of seconds */
-    case MAV_CMD_SOLO_BTN_FLY_HOLD: {
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_command_int_t &packet)
+{
         if (copter.failsafe.radio) {
             return MAV_RESULT_ACCEPTED;
         }
@@ -974,14 +986,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND);
         }
         return MAV_RESULT_ACCEPTED;
-    }
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
 }
 
-#if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet)
 {
         if (copter.failsafe.radio) {
