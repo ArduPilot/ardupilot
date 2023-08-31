@@ -29,7 +29,6 @@ UAVCAN sensor types. Support is included for:
  - Barometers (SPI or I2C)
  - Airspeed sensors (I2C)
  - Rangefinders (UART or I2C)
- - ADSB (Ping ADSB receiver on UART)
  - Battery Monitor (Analog, I2C/SMBus, UART)
  - LEDs (GPIO, I2C or WS2812 serial)
  - Safety LED and Safety Switch
