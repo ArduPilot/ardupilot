@@ -190,7 +190,7 @@ def _parse_size_output(s, s_all, totals=False):
     lines = s.splitlines()[1:]
     l = []
     for line in lines:
-      if pattern.match(line) or totals==False:
+      if pattern.match(line) or totals is False:
         row = line.strip().split()
 
         # check if crash_log wasn't found
