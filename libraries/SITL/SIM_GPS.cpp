@@ -1546,7 +1546,7 @@ void GPS::update()
         // add an altitude error controlled by a slow sine wave
         d.altitude = altitude + _sitl->gps_noise[idx] * sinf(now_ms * 0.0005f) + _sitl->gps_alt_offset[idx];
 
-        // Add offet to c.g. velocity to get velocity at antenna and add simulated error
+        // Add offset to c.g. velocity to get velocity at antenna and add simulated error
         Vector3f velErrorNED = _sitl->gps_vel_err[idx];
         d.speedN = speedN + (velErrorNED.x * rand_float());
         d.speedE = speedE + (velErrorNED.y * rand_float()); 
@@ -1554,12 +1554,12 @@ void GPS::update()
         d.have_lock = have_lock;
 
         if (_sitl->gps_drift_alt[idx] > 0) {
-            // slow altitude drift
+            // add slow altitude drift controlled by a slow sine wave
             d.altitude += _sitl->gps_drift_alt[idx]*sinf(now_ms*0.001f*0.02f);
         }
 
         // correct the latitude, longitude, height and NED velocity for the offset between
-        // the vehicle c.g. and GPs antenna
+        // the vehicle c.g. and GPS antenna
         Vector3f posRelOffsetBF = _sitl->gps_pos_offset[idx];
         if (!posRelOffsetBF.is_zero()) {
             // get a rotation matrix following DCM conventions (body to earth)
