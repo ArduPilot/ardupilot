@@ -21,6 +21,16 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_SIYI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: " fmt, ## args); } } while (0)
 
+// hardware lookup table indexed by HardwareModel enum values
+const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
+        {{'0','0'}, "Unknown"},
+        {{'7','5'}, "A2"},
+        {{'7','3'}, "A8"},
+        {{'6','B'}, "ZR10"},
+        {{'7','8'}, "ZR30"},
+        {{'7','A'}, "ZT30"},
+};
+
 // init - performs any required initialisation for this instance
 void AP_Mount_Siyi::init()
 {
@@ -51,6 +61,9 @@ void AP_Mount_Siyi::update()
         _last_send_ms = now_ms;
         if (!_got_firmware_version) {
             request_firmware_version();
+            return;
+        } else if (!_got_hardware_id) {
+            request_hardware_id();
             return;
         } else {
             request_configuration();
@@ -307,9 +320,6 @@ void AP_Mount_Siyi::process_packet()
         }
         _got_firmware_version = true;
 
-        // set hardware version based on message length
-        _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
-
         // consume and display camera firmware version
         _cam_firmware_version = {
             _msg_buff[_msg_buff_data_start+2],      // firmware major version
@@ -340,9 +350,19 @@ void AP_Mount_Siyi::process_packet()
         break;
     }
 
-    case SiyiCommandId::HARDWARE_ID:
-        // unsupported
+    case SiyiCommandId::HARDWARE_ID: {
+        // lookup first two digits of hardware id
+        const uint8_t hwid0 = _msg_buff[_msg_buff_data_start];
+        const uint8_t hwid1 = _msg_buff[_msg_buff_data_start+1];
+        for (uint8_t i=1; i<ARRAY_SIZE(hardware_lookup_table); i++) {
+            if (hwid0 == hardware_lookup_table[i].hwid[0] && hwid1 == hardware_lookup_table[i].hwid[1]) {
+               _hardware_model = (HardwareModel)i;
+               gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi %s", get_model_name());
+            }
+        }
+        _got_hardware_id = true;
         break;
+    }
 
     case SiyiCommandId::AUTO_FOCUS:
 #if AP_MOUNT_SIYI_DEBUG
@@ -684,11 +704,14 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
         return 0;
+    case HardwareModel::A2:
     case HardwareModel::A8:
         // a8 has 6x digital zoom
         return 6;
     case HardwareModel::ZR10:
-        // zr10 has 30x hybrid zoom (optical + digital)
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
+        // 30x hybrid zoom (optical + digital)
         return 30;
     }
     return 0;
@@ -785,21 +808,25 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
     }
 
     static const uint8_t vendor_name[32] = "Siyi";
-    static uint8_t model_name[32] = "Unknown";
+    static uint8_t model_name[32] {};
     const uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
     const char cam_definition_uri[140] {};
 
+    // copy model name
+    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
+
     // focal length
+    // To-Do: check these values are correct for A2, ZR30, ZT30
     float focal_length_mm = 0;
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
-        break;
+    case HardwareModel::A2:
     case HardwareModel::A8:
-        strncpy((char *)model_name, "A8", sizeof(model_name));
         focal_length_mm = 21;
         break;
     case HardwareModel::ZR10:
-        strncpy((char *)model_name, "ZR10", sizeof(model_name));
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
         // focal length range from 5.15 ~ 47.38
         focal_length_mm = 5.15;
         break;
@@ -844,6 +871,16 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         _last_record_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
+// get model name string. returns "Unknown" if hardware model is not yet known
+const char* AP_Mount_Siyi::get_model_name() const
+{
+    uint8_t model_idx = (uint8_t)_hardware_model;
+    if (model_idx < ARRAY_SIZE(hardware_lookup_table)) {
+        return hardware_lookup_table[model_idx].model_name;
+    }
+    return hardware_lookup_table[0].model_name;
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED

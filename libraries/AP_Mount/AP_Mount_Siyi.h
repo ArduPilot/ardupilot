@@ -137,9 +137,12 @@ private:
 
     // hardware model enum
     enum class HardwareModel : uint8_t {
-        UNKNOWN,
+        UNKNOWN = 0,
+        A2,
         A8,
-        ZR10
+        ZR10,
+        ZR30,
+        ZT30
     } _hardware_model;
 
     // gimbal mounting method/direction
@@ -197,10 +200,14 @@ private:
     // update zoom controller
     void update_zoom_control();
 
+    // get model name string, returns nullptr if hardware id is unknown
+    const char* get_model_name() const;
+
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
     bool _got_firmware_version;                     // true once gimbal firmware version has been received
+    bool _got_hardware_id;                          // true once hardware id ha been received
     struct {
         uint8_t major;
         uint8_t minor;
@@ -240,6 +247,13 @@ private:
     float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
+
+    // hardware lookup table indexed by HardwareModel enum values (see above)
+    struct HWInfo {
+        uint8_t hwid[2];
+        const char* model_name;
+    };
+    static const HWInfo hardware_lookup_table[];
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED
