@@ -24,6 +24,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Parachute/AP_Parachute.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -245,6 +246,14 @@ void AP_ICEngine::update(void)
         // user has requested ignition kill on RC failsafe
         should_run = false;
     }
+
+#if HAL_PARACHUTE_ENABLED
+    // Stop on parachute deployment
+    AP_Parachute *parachute = AP::parachute();
+    if ((parachute != nullptr) && parachute->release_initiated()) {
+        should_run = false;
+    }
+#endif
 
     // switch on current state to work out new state
     switch (state) {
