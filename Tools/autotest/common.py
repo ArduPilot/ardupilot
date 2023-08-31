@@ -2576,7 +2576,7 @@ class AutoTest(ABC):
     def find_format_defines(self, lines):
         ret = {}
         for line in lines:
-            if type(line) is bytes:
+            if isinstance(line, bytes):
                 line = line.decode("utf-8")
             m = re.match(r'#define (\w+_(?:LABELS|FMT|UNITS|MULTS))\s+(".*")', line)
             if m is None:
@@ -2633,7 +2633,7 @@ class AutoTest(ABC):
             for line in open(f).readlines():
                 if debug:
                     print("line: %s" % line)
-                if type(line) is bytes:
+                if isinstance(line, bytes):
                     line = line.decode("utf-8")
                 line = re.sub("//.*", "", line) # trim comments
                 if re.match(r"\s*$", line):
@@ -2712,7 +2712,7 @@ class AutoTest(ABC):
         linestate_within = 90
         linestate = linestate_none
         for line in open(filepath, 'rb').readlines():
-            if type(line) is bytes:
+            if isinstance(line, bytes):
                 line = line.decode("utf-8")
             line = re.sub("//.*", "", line) # trim comments
             if re.match(r"\s*$", line):
@@ -2812,7 +2812,7 @@ class AutoTest(ABC):
                         continue
                     count = 0
                     for line in open(filepath, 'rb').readlines():
-                        if type(line) is bytes:
+                        if isinstance(line, bytes):
                             line = line.decode("utf-8")
                         if state == state_outside:
                             if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
@@ -4835,7 +4835,7 @@ class AutoTest(ABC):
     def set_rc_from_map(self, _map, timeout=20):
         map_copy = _map.copy()
         for v in map_copy.values():
-            if type(v) is not int:
+            if not isinstance(v, int):
                 raise NotAchievedException("RC values must be integers")
         self.rc_queue.put(map_copy)
 
@@ -5490,7 +5490,7 @@ class AutoTest(ABC):
 
     def send_get_parameter_direct(self, name):
         encname = name
-        if sys.version_info.major >= 3 and type(encname) is not bytes:
+        if sys.version_info.major >= 3 and not isinstance(encname, bytes):
             encname = bytes(encname, 'ascii')
         self.mav.mav.param_request_read_send(self.sysid_thismav(),
                                              1,
@@ -5885,7 +5885,7 @@ class AutoTest(ABC):
         for param in parameter_stuff:
             fetched_value = self.get_parameter(param)
             wanted_value = parameter_stuff[param]
-            if type(wanted_value) is tuple:
+            if isinstance(wanted_value, tuple):
                 max_delta = wanted_value[1]
                 wanted_value = wanted_value[0]
             if abs(fetched_value - wanted_value) > max_delta:
@@ -6492,7 +6492,7 @@ class AutoTest(ABC):
         )
 
     def wait_and_maintain(self, value_name, target, current_value_getter, validator=None, accuracy=2.0, timeout=30, **kwargs):
-        if type(target) is Vector3:
+        if isinstance(target, Vector3):
             return self.wait_and_maintain_vector(
                 value_name,
                 target,
@@ -6648,7 +6648,7 @@ class AutoTest(ABC):
                          achieved_duration_bit)
                     )
                 else:
-                    if type(last_value) is float:
+                    if isinstance(last_value, float):
                         self.progress(
                             "%s=%0.2f (%s between %s and %s)%s" %
                             (value_name,
@@ -9726,7 +9726,7 @@ Also, ignores heartbeats not from our target system'''
 
     def set_message_rate_hz(self, id, rate_hz, mav=None):
         '''set a message rate in Hz; 0 for original, -1 to disable'''
-        if type(id) is str:
+        if isinstance(id, str):
             id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % id)
         if rate_hz == 0 or rate_hz == -1:
             set_interval = rate_hz
@@ -9742,7 +9742,7 @@ Also, ignores heartbeats not from our target system'''
     def send_get_message_interval(self, victim_message, mav=None):
         if mav is None:
             mav = self.mav
-        if type(victim_message) is str:
+        if isinstance(victim_message, str):
             victim_message = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % victim_message)
         mav.mav.command_long_send(
             1,
@@ -9767,7 +9767,7 @@ Also, ignores heartbeats not from our target system'''
 
     def set_message_interval(self, victim_message, interval_us, mav=None):
         '''sets message interval in microseconds'''
-        if type(victim_message) is str:
+        if isinstance(victim_message, str):
             victim_message = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % victim_message)
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
@@ -9930,7 +9930,7 @@ Also, ignores heartbeats not from our target system'''
     def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None):
         if mav is None:
             mav = self.mav
-        if type(message_id) is str:
+        if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         self.send_cmd(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
@@ -9944,7 +9944,7 @@ Also, ignores heartbeats not from our target system'''
     def poll_message(self, message_id, timeout=10, quiet=False, mav=None):
         if mav is None:
             mav = self.mav
-        if type(message_id) is str:
+        if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_poll_message(message_id, quiet=quiet, mav=mav)
@@ -10999,7 +10999,7 @@ Also, ignores heartbeats not from our target system'''
         seq = 0
         items = []
         for locs in list_of_list_of_locs:
-            if type(locs) is dict:
+            if isinstance(locs, dict):
                 # circular fence
                 if vertex_type == mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
                     v = mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION
@@ -13187,7 +13187,7 @@ switch value'''
         '''write biunary content to filepath'''
         with open(filepath, "wb") as f:
             if sys.version_info.major >= 3:
-                if type(content) is not bytes:
+                if not isinstance(content, bytes):
                     raise NotAchievedException("Want bytes to write_content_to_filepath")
             f.write(content)
             f.close()
@@ -13286,7 +13286,7 @@ SERIAL5_BAUD 128
             tests = self.tests()
         all_tests = []
         for test in tests:
-            if type(test) is not Test:
+            if not isinstance(test, Test):
                 test = Test(test)
             all_tests.append(test)
 
