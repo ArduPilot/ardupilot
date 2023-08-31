@@ -333,7 +333,7 @@ define HAL_BATT_VOLT_SCALE 11.0
             f.write("%s BATT_CURRENT_SENS %s SCALE(1)\n" % (adc[1], name))
             f.write('''define HAL_BATT_CURR_PIN %s
 define HAL_BATT_CURR_SCALE %.1f
-''' % (get_ADC1_chan(mcu, adc[1]), int(settings['ibata_scale']) * 59.5 / 168 )) # scale taken from KakuteH7
+''' % (get_ADC1_chan(mcu, adc[1]), 10000 / int(settings['ibata_scale'])))
         elif (adc[3] == "ADC_RSSI"):
             f.write("%s RSSI_ADC %s\n" % (adc[1], name))
             f.write("define BOARD_RSSI_ANA_PIN %s\n" % (get_ADC1_chan(mcu, adc[1])))
