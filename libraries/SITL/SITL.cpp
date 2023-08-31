@@ -469,7 +469,14 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
+    // @Param: GPS_BYTELOSS
+    // @DisplayName: GPS Byteloss
+    // @Description: Percent of bytes lost from GPS 1
+    // @User: Advanced
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
+    // @Param: GPS_NUMSATS
+    // @DisplayName: GPS 1 Num Satellites
+    // @Description: Number of satellites GPS 1 has in view
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
     AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
     AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
@@ -493,7 +500,14 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @DisplayName: GPS 2 type
     // @Description: Sets the type of simulation used for GPS 2
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
+    // @Param: GPS2_BYTELOS
+    // @DisplayName: GPS 2 Byteloss
+    // @Description: Percent of bytes lost from GPS 2
+    // @User: Advanced
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
+    // @Param: GPS2_NUMSATS
+    // @DisplayName: GPS 2 Num Satellites
+    // @Description: Number of satellites GPS 2 has in view
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
     AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
     AP_GROUPINFO("GPS2_HZ",       36, SIM,  gps_hertz[1],  5),
