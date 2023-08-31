@@ -169,7 +169,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
             _pack_=True,
         )
 
-        if type(self.types[0]) is str:
+        if isinstance(self.types[0], str):
             fieldtypes = [i for i in self.types]
         else:
             fieldtypes = [chr(i) for i in self.types]

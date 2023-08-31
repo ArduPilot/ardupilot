@@ -186,7 +186,7 @@ class LoggerDocco(object):
         # expand things like PIDR,PIDQ,PIDA into multiple doccos
         new_doccos = []
         for docco in self.doccos:
-            if type(docco.name) == list:
+            if isinstance(docco.name, list):
                 for name in docco.name:
                     tmpdocco = copy.copy(docco)
                     tmpdocco.name = name
