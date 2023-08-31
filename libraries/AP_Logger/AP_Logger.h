@@ -173,7 +173,7 @@ enum class LogErrorCode : uint8_t {
 // Baro specific error codes
     BARO_GLITCH = 2,
     BAD_DEPTH = 3, // sub-only
-// GPS specific error coces
+// GPS specific error codes
     GPS_GLITCH = 2,
 };
 
