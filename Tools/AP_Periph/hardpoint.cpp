@@ -2,6 +2,10 @@
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
 
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL &hal;
+
 /*
   hardpoint support
  */
