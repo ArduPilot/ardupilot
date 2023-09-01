@@ -140,7 +140,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     void initOnce(bool enable_irq);
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
     /*
       additional statistics
      */
