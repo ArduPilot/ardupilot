@@ -53,8 +53,6 @@ PA14 JTCK-SWCLK SWD
 
 define AP_PERIPH_HAVE_LED
 
-define CAN_APP_NODE_NAME "com.cubepilot.here4"
-
 # order of UARTs
 SERIAL_ORDER
 define HAL_USE_UART FALSE

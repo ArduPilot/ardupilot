@@ -7,4 +7,3 @@ PD1 CAN1_TX CAN1
 
 env AP_PERIPH 1
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekH743-periph"

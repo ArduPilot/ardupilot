@@ -6,8 +6,6 @@ include ../f103-periph/hwdef.inc
 env AP_PERIPH 1
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_trigger"
-
 # PWM input to hardpoint out
 define HAL_PERIPH_ENABLE_PWM_HARDPOINT
 

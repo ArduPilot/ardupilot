@@ -58,6 +58,3 @@ PD1 CAN1_TX CAN1
 PB6 CAN2_TX CAN2
 PB12 CAN2_RX CAN2
 
-
-
-define CAN_APP_NODE_NAME "org.ardupilot.CubeBlack-periph"

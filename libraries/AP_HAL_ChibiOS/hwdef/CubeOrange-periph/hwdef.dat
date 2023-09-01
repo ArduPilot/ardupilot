@@ -43,9 +43,6 @@ define HAL_NO_RCIN_THREAD
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.CubeOrange-periph"
-
-
 define AP_SCRIPTING_ENABLED 0
 
 # use blue LED
