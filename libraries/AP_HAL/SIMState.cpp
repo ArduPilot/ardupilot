@@ -197,12 +197,6 @@ void SIMState::fdm_input_local(void)
     if (frsky_d != nullptr) {
         frsky_d->update();
     }
-    // if (frsky_sport != nullptr) {
-    //     frsky_sport->update();
-    // }
-    // if (frsky_sportpassthrough != nullptr) {
-    //     frsky_sportpassthrough->update();
-    // }
 
 #if AP_SIM_CRSF_ENABLED
     if (crsf != nullptr) {
@@ -267,7 +261,6 @@ void SIMState::_simulator_servos(struct sitl_input &input)
 {
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
-    // last_update_usec = now;
 
     // find the barometer object if it exists
     const auto *_barometer = AP_Baro::get_singleton();
