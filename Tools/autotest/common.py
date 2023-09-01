@@ -12961,6 +12961,11 @@ switch value'''
         self.assert_prearm_failure("Compasses inconsistent")
         self.context_pop()
         self.wait_ready_to_arm()
+        # the following line papers over a probably problem with the
+        # EKF recovering from bad compass offsets.  Without it, the
+        # EKF will maintain a 10-degree offset from the true compass
+        # heading seemingly indefinitely.
+        self.reboot_sitl()
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
