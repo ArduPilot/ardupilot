@@ -796,6 +796,7 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
 
             if (!pending_tx_[i].pushed) {
                 stats.tx_success++;
+                stats.last_transmit_us = timestamp_us;
                 if (pending_tx_[i].canfd_frame) {
                     stats.fdf_tx_success++;
                 }

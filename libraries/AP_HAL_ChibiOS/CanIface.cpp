@@ -496,6 +496,7 @@ void CANIface::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
     if (txok && !txi.pushed) {
         txi.pushed = true;
         PERF_STATS(stats.tx_success);
+        stats.last_transmit_us = timestamp_us;
     }
 }
 
