@@ -36,7 +36,7 @@
 #include <AP_HAL_SITL/CANSocketIface.h>
 #endif
 
-#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES+1U))-1U)
+#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES))-1U)
 
 #include "i2c.h"
 #include <utility>
@@ -1091,7 +1091,7 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
 
 void AP_Periph_FW::processTx(void)
 {
-    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&dronecan.canard)) != NULL;) {
+    for (CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&dronecan.canard)) != NULL;) {
         AP_HAL::CANFrame txmsg {};
         txmsg.dlc = AP_HAL::CANFrame::dataLengthToDlc(txf->data_len);
         memcpy(txmsg.data, txf->data, txf->data_len);
@@ -1130,6 +1130,10 @@ void AP_Periph_FW::processTx(void)
                 if (stats == nullptr || now_us - stats->last_transmit_us < 2000000UL) {
                     sent = false;
                 }
+            } else {
+#if CANARD_MULTI_IFACE
+                txf->iface_mask &= ~(1U<<_ins.index);
+#endif
             }
         }
         if (sent) {
