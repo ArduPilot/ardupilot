@@ -112,8 +112,6 @@ define HAL_NO_RCOUT_THREAD
 env ROMFS_UNCOMPRESSED True
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.Hitec-Airspeed"
-
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
 

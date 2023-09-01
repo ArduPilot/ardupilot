@@ -51,9 +51,6 @@ define STM32_ADC_USE_ADC1 TRUE
 define HAL_DISABLE_ADC_DRIVER FALSE
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.Pixracer_periph"
-
-
 define AP_SCRIPTING_ENABLED 0
 
 MAIN_STACK 0x2000

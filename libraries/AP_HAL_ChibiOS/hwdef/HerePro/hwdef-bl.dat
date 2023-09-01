@@ -147,6 +147,4 @@ PB2 BOOT1 INPUT
 # passthrough CAN1
 define HAL_DEFAULT_CPORT 1
 
-define CAN_APP_NODE_NAME "com.cubepilot.herepro"
-
 FULL_CHIBIOS_BOOTLOADER 1

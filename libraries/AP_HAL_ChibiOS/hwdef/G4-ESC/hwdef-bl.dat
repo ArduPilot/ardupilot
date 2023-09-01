@@ -85,7 +85,5 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.G4-ESC"
-
 # Add CS pins to ensure they are high in bootloader
 PB12 IMU_CS CS

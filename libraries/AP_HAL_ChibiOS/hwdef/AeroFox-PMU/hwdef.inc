@@ -1,8 +1,6 @@
 # MCU class and specific type
 MCU STM32L431 STM32L431xx
 
-define CAN_APP_NODE_NAME "org.ardupilot.AeroFox_PMU"
-
 # bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
 FLASH_RESERVE_START_KB 40
 FLASH_SIZE_KB 256
