@@ -279,6 +279,7 @@ void CANIface::_pollWrite()
                     _pending_loopback_ids.insert(tx.frame.id);
                 }
                 stats.tx_success++;
+                stats.last_transmit_us = curr_time;
             } else if (res == 0) {            // Not transmitted, nor is it an error
                 stats.tx_full++;
                 break;                        // Leaving the loop, the frame remains enqueued for the next retry
