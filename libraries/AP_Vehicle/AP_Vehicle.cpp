@@ -307,6 +307,7 @@ void AP_Vehicle::setup()
     }
 #endif
 
+#if AP_SCHEDULER_ENABLED
     // initialise the main loop scheduler
     const AP_Scheduler::Task *tasks;
     uint8_t task_count;
@@ -317,6 +318,7 @@ void AP_Vehicle::setup()
     // time per loop - this gets updated in the main loop() based on
     // actual loop rate
     G_Dt = scheduler.get_loop_period_s();
+#endif
 
     // this is here for Plane; its failsafe_check method requires the
     // RC channels to be set as early as possible for maximum
