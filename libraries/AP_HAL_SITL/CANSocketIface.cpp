@@ -145,6 +145,7 @@ void CANIface::_pollWrite()
             bool ok = transport->send(tx.frame);
             if (ok) {
                 stats.tx_success++;
+                stats.last_transmit_us = curr_time;
             } else {
                 break;
             }
