@@ -77,7 +77,7 @@
 #define Debug(fmt, args...)
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
 #define PERF_STATS(x) (x++)
 #else
 #define PERF_STATS(x)
