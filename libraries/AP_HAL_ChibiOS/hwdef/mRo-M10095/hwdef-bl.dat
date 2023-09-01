@@ -60,4 +60,3 @@ PA14 JTCK-SWCLK SWD
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
 
-define CAN_APP_NODE_NAME "org.ardupilot.mRo-M10095"

@@ -7,8 +7,6 @@ define STM32F107_MCUCONF
 
 define HAL_BOARD_AP_PERIPH_ZUBAXGNSS
 
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
-
 # bootloader starts firmware at 34k
 FLASH_RESERVE_START_KB 34
 

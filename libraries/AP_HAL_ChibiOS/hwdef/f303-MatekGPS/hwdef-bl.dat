@@ -82,6 +82,3 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 # want to stay in the bootloader
 PB6 STAY_IN_BOOTLOADER INPUT FLOATING
 
-
-
-define CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"

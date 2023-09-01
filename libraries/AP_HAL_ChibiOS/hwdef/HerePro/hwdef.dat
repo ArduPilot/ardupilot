@@ -195,8 +195,6 @@ PB2 BOOT1 INPUT
 
 
 
-define CAN_APP_NODE_NAME "com.cubepilot.herepro"
-
 # disabled compass cal as it doesn't work for now
 # define COMPASS_CAL_ENABLED 1
 

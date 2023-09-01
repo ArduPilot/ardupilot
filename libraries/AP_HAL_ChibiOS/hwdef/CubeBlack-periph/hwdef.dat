@@ -49,8 +49,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 define HAL_PERIPH_ENABLE_BATTERY
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.CubeBlack-periph"
-
 define AP_SCRIPTING_ENABLED 0
 
 # use blue LED

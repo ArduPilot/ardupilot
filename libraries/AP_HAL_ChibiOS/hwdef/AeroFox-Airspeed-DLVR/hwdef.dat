@@ -3,8 +3,6 @@ include ../f103-periph/hwdef.inc
 # board ID for firmware load
 APJ_BOARD_ID 1104
 
-define CAN_APP_NODE_NAME "org.ardupilot.AeroFox_DLVR_Airspeed"
-
 define HAL_COMPASS_MAX_SENSORS 1
 
 define HAL_AIRSPEED_BUS_DEFAULT 0
