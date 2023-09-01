@@ -15,6 +15,11 @@
 /*
   handle device operations over MAVLink
  */
+
+#include "GCS_config.h"
+
+#if AP_MAVLINK_MSG_DEVICE_OP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/I2CDevice.h>
@@ -137,3 +142,5 @@ fail:
         packet.request_id,
         retcode);
 }
+
+#endif  // AP_MAVLINK_MSG_DEVICE_OP_ENABLED
