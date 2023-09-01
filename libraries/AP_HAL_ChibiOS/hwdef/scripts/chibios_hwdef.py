@@ -23,7 +23,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO' ]
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -3009,7 +3009,11 @@ INCLUDE common.ld
             print("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
                 self.error("Bad env line for %s" % a[0])
-            self.env_vars[a[1]] = ' '.join(a[2:])
+            name = a[1]
+            value = ' '.join(a[2:])
+            if name == 'AP_PERIPH' and value != "1":
+                raise ValueError("AP_PERIPH may only have value 1")
+            self.env_vars[name] = value
 
     def process_file(self, filename):
         '''process a hwdef.dat file'''
@@ -3068,7 +3072,7 @@ INCLUDE common.ld
 ''' % (description, content, description))
 
     def is_io_fw(self):
-        return self.env_vars.get('IOMCU_FW', 0) != 0
+        return int(self.env_vars.get('IOMCU_FW', 0)) != 0
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3079,16 +3083,16 @@ INCLUDE common.ld
         self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
     def is_periph_fw(self):
-        return self.env_vars.get('AP_PERIPH', 0) != 0
+        return int(self.env_vars.get('AP_PERIPH', 0)) != 0
 
     def is_normal_fw(self):
-        if self.env_vars.get('IOMCU_FW', 0) != 0:
+        if self.is_io_fw():
             # IOMCU firmware
             return False
         if self.is_periph_fw():
             # Periph firmware
             return False
-        if args.bootloader:
+        if self.is_bootloader_fw():
             # guess
             return False
         return True
