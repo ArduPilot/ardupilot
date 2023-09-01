@@ -2,7 +2,7 @@
 
 #include "AP_ServoRelayEvents/AP_ServoRelayEvents.h"
 
-#if AP_SERVORELAYEVENTS_ENABLED
+#if AP_MAVLINK_SERVO_RELAY_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_servorelay_message(const mavlink_command_int_t &packet)
 {
@@ -48,4 +48,4 @@ MAV_RESULT GCS_MAVLINK::handle_servorelay_message(const mavlink_command_int_t &p
     return result;
 }
 
-#endif  // AP_SERVORELAYEVENTS_ENABLED
+#endif  // AP_MAVLINK_SERVO_RELAY_ENABLED
