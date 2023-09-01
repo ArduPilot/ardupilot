@@ -1258,6 +1258,7 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
+#define STM32_FLASH_DISABLE_ISR 0
 ''')
             if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
                 f.write('''
