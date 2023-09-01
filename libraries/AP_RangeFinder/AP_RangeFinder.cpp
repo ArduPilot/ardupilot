@@ -59,6 +59,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL &hal;
 
