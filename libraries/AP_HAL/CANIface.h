@@ -231,6 +231,7 @@ public:
         uint32_t rx_overflow;
         uint32_t rx_errors;
         uint32_t num_busoff_err;
+        uint64_t last_transmit_us;
     } bus_stats_t;
 
 #if !defined(HAL_BOOTLOADER_BUILD)
