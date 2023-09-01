@@ -123,7 +123,9 @@ public:
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
+#if AP_SCHEDULER_ENABLED
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
+#endif
 
     /*
       set the "likely flying" flag. This is not guaranteed to be
