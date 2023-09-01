@@ -340,7 +340,24 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     for p in peripheral_list:
         forbidden_map[p] = forbidden_list(p, peripheral_list)
 
+    # force sharing of TIMx_UP and TIMx_CHy if possible
+    periphs = peripheral_list.copy()
+    forbidden_streams = []
     for periph in peripheral_list:
+        if "_UP" in periph:
+            for periph2 in peripheral_list:
+                if "_CH" in periph2 and periph[:4] == periph2[:4]:
+                    shared_channels = [value for value in dma_map[periph] if value in dma_map[periph2]]
+                    if len(shared_channels) > 0:
+                        stream = (shared_channels[0][0], shared_channels[0][1])
+                        curr_dict[periph] = stream
+                        curr_dict[periph2] = stream
+                        forbidden_streams.append(stream)
+                        periphs.remove(periph)
+                        periphs.remove(periph2)
+                        print("Sharing channel %s for %s %s" % (stream, periph, periph2))
+
+    for periph in periphs:
         if "_CH" in periph:
             has_bdshot = True # the list contains a CH port
         if periph in dma_exclude:
@@ -359,7 +376,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                 print('........Possibility for', periph, streamchan)
             stream = (streamchan[0], streamchan[1])
             if check_possibility(periph, stream, curr_dict, dma_map,
-                                 check_list, [], forbidden_map):
+                                 check_list, forbidden_streams, forbidden_map):
                 curr_dict[periph] = stream
                 if debug:
                     print ('....................... Setting', periph, stream)
