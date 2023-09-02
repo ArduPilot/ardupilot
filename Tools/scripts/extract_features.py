@@ -176,6 +176,9 @@ class ExtractFeatures(object):
             ('AP_NOTIFY_PROFILED_ENABLED', r'ProfiLED::init_ports'),
             ('AP_NOTIFY_PROFILED_SPI_ENABLED', r'ProfiLED_SPI::rgb_set_id'),
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
+
+            ('AP_DRONECAN_HIMARK_SERVO_ENABLED', 'AP_UAVCAN::SRV_send_himark'),
+            ('AP_DRONECAN_HOBBYWING_ESC_ENABLED', 'AP_UAVCAN::hobbywing_ESC_update'),
         ]
 
     def progress(self, msg):
