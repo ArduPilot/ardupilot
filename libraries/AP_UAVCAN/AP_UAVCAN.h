@@ -48,8 +48,12 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
-#ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#ifndef AP_DRONECAN_HOBBYWING_ESC_ENABLED
+#define AP_DRONECAN_HOBBYWING_ESC_ENABLED (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef AP_DRONECAN_HIMARK_SERVO_ENABLED
+#define AP_DRONECAN_HIMARK_SERVO_ENABLED (BOARD_FLASH_SIZE>1024)
 #endif
 
 // fwd-declare callback classes
@@ -57,14 +61,18 @@ class ButtonCb;
 class TrafficReportCb;
 class ActuatorStatusCb;
 class ActuatorStatusVolzCb;
-class HimarkServoInfoCb;
 class ESCStatusCb;
 class DebugCb;
 class ParamGetSetCb;
 class ParamExecuteOpcodeCb;
 class AP_PoolAllocator;
 class AP_UAVCAN_DNA_Server;
-#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+
+#if AP_DRONECAN_HIMARK_SERVO_ENABLED
+class HimarkServoInfoCb;
+#endif
+
+#if AP_DRONECAN_HOBBYWING_ESC_ENABLED
 class HobbywingESCIDCb;
 class HobbywingStatus1Cb;
 class HobbywingStatus2Cb;
@@ -244,7 +252,9 @@ private:
     ///// SRV output /////
     void SRV_send_actuator();
     void SRV_send_esc();
+#if AP_DRONECAN_HIMARK_SERVO_ENABLED
     void SRV_send_himark();
+#endif
 
     ///// LED /////
     void led_out_send();
@@ -375,7 +385,7 @@ private:
     // notify vehicle state
     uint32_t _last_notify_state_ms;
 
-#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#if AP_DRONECAN_HOBBYWING_ESC_ENABLED
     /*
       Hobbywing ESC support. Note that we need additional meta-data as
       the status messages do not have an ESC ID in them, so we need a
@@ -394,14 +404,18 @@ private:
     static void handle_hobbywing_GetEscID(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingESCIDCb &cb);
     static void handle_hobbywing_StatusMsg1(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus1Cb &cb);
     static void handle_hobbywing_StatusMsg2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus2Cb &cb);
-#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#endif // AP_DRONECAN_HOBBYWING_ESC_ENABLED
 
+#if AP_DRONECAN_HIMARK_SERVO_ENABLED
+    bool himark_enabled;
+    static void handle_himark_servoinfo(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HimarkServoInfoCb &cb);
+#endif
+    
     // incoming button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
     static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
     static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
     static void handle_actuator_status_Volz(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusVolzCb &cb);
-    static void handle_himark_servoinfo(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HimarkServoInfoCb &cb);
     static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
     static bool is_esc_data_index_valid(const uint8_t index);
     static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
