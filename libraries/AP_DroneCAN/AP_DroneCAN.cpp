@@ -240,7 +240,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     }
 
     // Roundup all subscribers from supported drivers
+#if AP_GPS_DRONECAN_ENABLED
     AP_GPS_DroneCAN::subscribe_msgs(this);
+#endif
 #if AP_COMPASS_DRONECAN_ENABLED
     AP_Compass_DroneCAN::subscribe_msgs(this);
 #endif
