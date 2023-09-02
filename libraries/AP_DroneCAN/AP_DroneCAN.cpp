@@ -284,9 +284,11 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     esc_hobbywing_raw.set_timeout_ms(2);
     esc_hobbywing_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 #endif
-    
+
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     himark_out.set_timeout_ms(2);
     himark_out.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
+#endif
 
     rgb_led.set_timeout_ms(20);
     rgb_led.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
@@ -406,9 +408,12 @@ void AP_DroneCAN::loop(void)
             const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
             if (now - _SRV_last_send_us >= servo_period_us) {
                 _SRV_last_send_us = now;
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
                 if (option_is_set(Options::USE_HIMARK_SERVO)) {
                     SRV_send_himark();
-                } else {
+                } else
+#endif
+                {
                     SRV_send_actuator();
                 }
                 for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
@@ -622,6 +627,7 @@ void AP_DroneCAN::SRV_send_actuator(void)
     } while (repeat_send);
 }
 
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
 /*
   Himark servo output. This uses com.himark.servo.ServoCmd packets
  */
@@ -653,6 +659,7 @@ void AP_DroneCAN::SRV_send_himark(void)
 
     himark_out.broadcast(msg);
 }
+#endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
 void AP_DroneCAN::SRV_send_esc(void)
 {
@@ -1192,6 +1199,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
                                    0, 0, 0, 0, 0, 0);
 }
 
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
 /*
   handle himark ServoInfo message
  */
@@ -1211,6 +1219,7 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
                                    msg.pcb_temp*0.2-40,
                                    msg.error_status);
 }
+#endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
 void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg)

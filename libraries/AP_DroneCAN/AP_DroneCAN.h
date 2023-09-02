@@ -54,6 +54,10 @@
 #define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
 #endif
 
+#ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
+#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
 
@@ -145,7 +149,9 @@ private:
     ///// SRV output /////
     void SRV_send_actuator();
     void SRV_send_esc();
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     void SRV_send_himark();
+#endif
 
     //scale servo output appropriately before sending
     int16_t scale_esc_output(uint8_t idx);
@@ -253,7 +259,10 @@ private:
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
     Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
     Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
+
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     Canard::Publisher<com_himark_servo_ServoCmd> himark_out{canard_iface};
+#endif
 
 #if AP_DRONECAN_SEND_GPS
     Canard::Publisher<uavcan_equipment_gnss_Fix2> gnss_fix2{canard_iface};
@@ -324,6 +333,10 @@ private:
     void handle_hobbywing_StatusMsg1(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg1& msg);
     void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
+    void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
+#endif
     
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
@@ -331,7 +344,6 @@ private:
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
-    void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
     static bool is_esc_data_index_valid(const uint8_t index);
     void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);
     void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);
