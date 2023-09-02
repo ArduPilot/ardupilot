@@ -422,10 +422,8 @@ void AP_Periph_FW::update()
         rcout_init_1Hz();
 #endif
 
-#if HAL_GCS_ENABLED
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-#endif    
+        GCS_SEND_MESSAGE(MSG_HEARTBEAT);
+        GCS_SEND_MESSAGE(MSG_SYS_STATUS);
     }
 
     static uint32_t last_error_ms;
