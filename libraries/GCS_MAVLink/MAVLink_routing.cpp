@@ -16,6 +16,10 @@
 /// @file	MAVLink_routing.h
 /// @brief	handle routing of MAVLink packets by sysid/componentid
 
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -405,3 +409,4 @@ void MAVLink_routing::get_targets(const mavlink_message_t &msg, int16_t &sysid, 
     }
 }
 
+#endif  // HAL_GCS_ENABLED

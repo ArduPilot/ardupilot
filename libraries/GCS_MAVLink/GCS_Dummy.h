@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 #include <AP_Common/AP_FWVersion.h>
 
@@ -72,3 +76,5 @@ private:
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
+
+#endif  // HAL_GCS_ENABLED

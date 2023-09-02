@@ -19,6 +19,11 @@
 This provides some support code and variables for MAVLink enabled sketches
 
 */
+
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 #include "GCS_MAVLink.h"
 
@@ -173,3 +178,5 @@ HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan)
 {
     return chan_locks[uint8_t(chan)];
 }
+
+#endif  // HAL_GCS_ENABLED
