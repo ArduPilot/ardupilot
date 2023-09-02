@@ -14,6 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
@@ -6709,3 +6714,5 @@ MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t
     return MAV_RESULT_ACCEPTED;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+#endif  // HAL_GCS_ENABLED

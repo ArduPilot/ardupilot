@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
@@ -375,3 +379,5 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     }
     return true;
 }
+
+#endif  // HAL_GCS_ENABLED

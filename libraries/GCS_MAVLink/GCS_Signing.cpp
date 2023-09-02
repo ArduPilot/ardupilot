@@ -15,6 +15,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 extern const AP_HAL::HAL& hal;
@@ -259,3 +263,4 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
 }
 
+#endif  // HAL_GCS_ENABLED
