@@ -280,6 +280,8 @@ BUILD_OPTIONS = [
     Feature('Actuators', 'Volz_DroneCAN', 'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', 'Enable Volz DroneCAN Feedback', 0, None),
     Feature('Actuators', 'RobotisServo', 'AP_ROBOTISSERVO_ENABLED', 'Enable RobotisServo Protocol', 0, None),
     Feature('Actuators', 'FETTecOneWire', 'AP_FETTEC_ONEWIRE_ENABLED', 'Enable FETTec OneWire ESCs', 0, None),
+    Feature('Actuators', 'HimarkServo', 'AP_DRONECAN_HIMARK_SERVO_ENABLED', 'Enable Himark DroneCAN servos', 0, None),
+    Feature('Actuators', 'HobbywingESC', 'AP_DRONECAN_HOBBYWING_ESC_ENABLED', 'Enable Hobbywing DroneCAN ESCs', 0, None),
 
 ]
 
