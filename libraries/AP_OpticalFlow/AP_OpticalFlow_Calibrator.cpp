@@ -69,6 +69,7 @@ bool AP_OpticalFlow_Calibrator::update()
 {
     // prefix for reporting
     const char* prefix_str = "FlowCal:";
+    (void)prefix_str;  // in case !HAL_GCS_ENABLED
 
     // while running add samples
     if (_cal_state == CalState::RUNNING) {
@@ -190,7 +191,9 @@ bool AP_OpticalFlow_Calibrator::calc_scalars(uint8_t axis, float& scalar, float&
 {
     // prefix for reporting
     const char* prefix_str = "FlowCal:";
+    (void)prefix_str;  // in case !HAL_GCS_ENABLED
     const char* axis_str = axis == 0 ? "x" : "y";
+    (void)axis_str;  // in case !HAL_GCS_ENABLED
 
     // check we have samples
     // this should never fail because this method should only be called once the sample buffer is full
