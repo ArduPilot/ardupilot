@@ -2946,6 +2946,10 @@ void QuadPlane::setup_target_position(void)
  */
 void QuadPlane::takeoff_controller(void)
 {
+    // reset fixed wing controller to neutral as base output
+    plane.nav_roll_cd = 0;
+    plane.nav_pitch_cd = 0;
+
     if (!plane.arming.is_armed_and_safety_off()) {
         return;
     }
@@ -3007,8 +3011,6 @@ void QuadPlane::takeoff_controller(void)
     takeoff_last_run_ms = now;
 
     if (no_navigation) {
-        plane.nav_roll_cd = 0;
-        plane.nav_pitch_cd = 0;
         pos_control->relax_velocity_controller_xy();
     } else {
         pos_control->set_accel_desired_xy_cmss(zero);
