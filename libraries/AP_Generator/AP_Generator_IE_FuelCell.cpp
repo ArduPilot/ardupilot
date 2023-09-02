@@ -26,7 +26,7 @@ void AP_Generator_IE_FuelCell::init()
     _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
 
     if (_uart == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Generator: No serial port found");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Generator: No serial port found");
         return;
     }
     _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0));
@@ -151,7 +151,7 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     if (!healthy() && (!_health_warn_last_ms || (now - _health_warn_last_ms >= 20000))) {
         // Don't spam GCS with unhealthy message
         _health_warn_last_ms = now;
-        gcs().send_text(MAV_SEVERITY_ALERT, "Generator: Not healthy");
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Generator: Not healthy");
 
     } else if (healthy()) {
         _health_warn_last_ms = 0;
@@ -161,7 +161,7 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     if (_state != _last_state) {
         for (const struct Lookup_State entry : lookup_state) {
             if (_state == entry.option) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Generator: %s", entry.msg_txt);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Generator: %s", entry.msg_txt);
                 break;
             }
         }
@@ -171,7 +171,7 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     // Check error codes
     char msg_txt[32];
     if (check_for_err_code_if_changed(msg_txt, sizeof(msg_txt))) {
-        gcs().send_text(MAV_SEVERITY_ALERT, "%s", msg_txt);
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
     }
 }
 
