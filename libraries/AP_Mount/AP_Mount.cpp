@@ -582,6 +582,7 @@ void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 }
 #endif
 
+#if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
@@ -614,6 +615,7 @@ void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
         }
     }
 }
+#endif  // HAL_GCS_ENABLED
 
 // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
 // returns true on success
