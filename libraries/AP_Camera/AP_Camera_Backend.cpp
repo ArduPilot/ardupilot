@@ -318,7 +318,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
-    gcs().send_message(MSG_CAMERA_FEEDBACK);
+    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
 }
 
 // log picture
