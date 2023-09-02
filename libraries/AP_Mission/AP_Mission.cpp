@@ -89,7 +89,7 @@ void AP_Mission::init()
 
     // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
     if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Clearing Mission");
         clear();
     }
 
@@ -398,9 +398,9 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     }
 
     if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
     } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     }
 
     switch (cmd.id) {
@@ -1978,7 +1978,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             // check if the vehicle is resuming and has returned to where it was interrupted
             if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
                 // vehicle has resumed previous position
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
                 _flags.resuming_mission = false;
             }
 
@@ -2245,7 +2245,7 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
             if (send_gcs_msg) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             }
             return;
         } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
@@ -2340,12 +2340,12 @@ bool AP_Mission::jump_to_landing_sequence(void)
             resume();
         }
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing sequence start");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing sequence start");
         _flags.in_landing_sequence = true;
         return true;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
 
@@ -2386,11 +2386,11 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
 
         _flags.in_landing_sequence = false;
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing abort sequence start");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing abort sequence start");
         return true;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
 
@@ -2448,7 +2448,7 @@ bool AP_Mission::is_best_land_sequence(void)
     // compare distances
     if (dist_via_do_land >= dist_continue_to_land) {
         // then the mission should carry on uninterrupted as that is the shorter distance
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Rejecting RTL: closer land if mis continued");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Rejecting RTL: closer land if mis continued");
         return true;
     } else {
         // allow failsafes to interrupt the current mission

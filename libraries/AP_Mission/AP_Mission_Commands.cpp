@@ -43,12 +43,12 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
     case GRIPPER_ACTION_RELEASE:
         gripper->release();
         // Log_Write_Event(DATA_GRIPPER_RELEASE);
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Released");
         return true;
     case GRIPPER_ACTION_GRAB:
         gripper->grab();
         // Log_Write_Event(DATA_GRIPPER_GRAB);
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Grabbed");
         return true;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -220,7 +220,7 @@ bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
 bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd)
 {
     _repeat_dist = cmd.p1;
-    gcs().send_text(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
     return true;
 }
 
