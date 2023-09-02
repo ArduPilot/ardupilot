@@ -638,7 +638,7 @@ void AC_Fence::record_breach(uint8_t fence_type)
         // emit a message indicated we're newly-breached, but not too often
         if (now - _last_breach_notify_sent_ms > 1000) {
             _last_breach_notify_sent_ms = now;
-            gcs().send_message(MSG_FENCE_STATUS);
+            GCS_SEND_MESSAGE(MSG_FENCE_STATUS);
         }
     }
 
