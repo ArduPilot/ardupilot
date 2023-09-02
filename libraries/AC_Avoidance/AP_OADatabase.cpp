@@ -125,7 +125,7 @@ void AP_OADatabase::init()
     dist_to_radius_scalar = tanf(radians(MAX(_beam_width, 1.0f)));
 
     if (!healthy()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "DB init failed . Sizes queue:%u, db:%u", (unsigned int)_queue.size, (unsigned int)_database.size);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DB init failed . Sizes queue:%u, db:%u", (unsigned int)_queue.size, (unsigned int)_database.size);
         delete _queue.items;
         delete[] _database.items;
         return;
@@ -365,6 +365,7 @@ bool AP_OADatabase::is_close_to_item_in_database(const uint16_t index, const OA_
     return ((distance_sq < sq(item.radius)) || (distance_sq < sq(_database.items[index].radius)));
 }
 
+#if HAL_GCS_ENABLED
 // send ADSB_VEHICLE mavlink messages
 void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_ms)
 {
@@ -469,6 +470,7 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
         num_sent++;
     }
 }
+#endif  // HAL_GCS_ENABLED
 
 // singleton instance
 AP_OADatabase *AP_OADatabase::_singleton;
