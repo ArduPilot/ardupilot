@@ -1149,11 +1149,9 @@ bool AP_AHRS::set_home(const Location &loc)
 
     Log_Write_Home_And_Origin();
 
-#if HAL_GCS_ENABLED
     // send new home and ekf origin to GCS
-    gcs().send_message(MSG_HOME);
-    gcs().send_message(MSG_ORIGIN);
-#endif
+    GCS_SEND_MESSAGE(MSG_HOME);
+    GCS_SEND_MESSAGE(MSG_ORIGIN);
 
     AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     pd.home_lat = loc.lat;
