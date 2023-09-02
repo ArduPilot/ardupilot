@@ -253,9 +253,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.ctrl.x_bit = rx.decoded.transponder_status.x_bit;
         }
         run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
-#if HAL_GCS_ENABLED
-        gcs().send_message(MSG_UAVIONIX_ADSB_OUT_STATUS);
-#endif
+        GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
         break;
 #endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
 
