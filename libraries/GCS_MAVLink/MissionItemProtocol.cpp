@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "MissionItemProtocol.h"
 
 #include "GCS.h"
@@ -380,3 +384,5 @@ void MissionItemProtocol::update()
         link->send_message(next_item_ap_message_id());
     }
 }
+
+#endif  // HAL_GCS_ENABLED

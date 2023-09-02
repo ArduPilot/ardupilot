@@ -1,6 +1,7 @@
+#include "GCS_config.h"
 #include <AC_Fence/AC_Fence_config.h>
 
-#if AP_FENCE_ENABLED
+#if HAL_GCS_ENABLED && AP_FENCE_ENABLED
 
 #include "GCS.h"
 
@@ -103,4 +104,4 @@ void GCS_MAVLINK::send_fence_status() const
                                   breach_mitigation);
 }
 
-#endif
+#endif  // HAL_GCS_ENABLED && AP_FENCE_ENABLED

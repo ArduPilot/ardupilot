@@ -1329,6 +1329,8 @@ void can_printf(const char *fmt, ...);
 #define GCS_SEND_TEXT(severity, format, args...) (void)severity; can_printf(format, ##args)
 #endif
 
+#define GCS_SEND_MESSAGE(msg) gcs().send_message(msg)
+
 #elif defined(HAL_BUILD_AP_PERIPH) && !defined(STM32F1)
 
 // map send text to can_printf() on larger AP_Periph boards
@@ -1336,10 +1338,12 @@ extern "C" {
 void can_printf(const char *fmt, ...);
 }
 #define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
+#define GCS_SEND_MESSAGE(msg)
 
 #else // HAL_GCS_ENABLED
 // empty send text when we have no GCS
 #define GCS_SEND_TEXT(severity, format, args...)
+#define GCS_SEND_MESSAGE(msg)
 
 #endif // HAL_GCS_ENABLED
 
