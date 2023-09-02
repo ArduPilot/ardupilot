@@ -247,7 +247,8 @@ void AP_OADijkstra::report_error(AP_OADijkstra_Error error_id)
     if ((error_id != AP_OADijkstra_Error::DIJKSTRA_ERROR_NONE) &&
         ((error_id != _error_last_id) || ((now_ms - _error_last_report_ms) > OA_DIJKSTRA_ERROR_REPORTING_INTERVAL_MS))) {
         const char* error_msg = get_error_msg(error_id);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Dijkstra: %s", error_msg);
+        (void)error_msg;  // in case !HAL_GCS_ENABLED
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Dijkstra: %s", error_msg);
         _error_last_id = error_id;
         _error_last_report_ms = now_ms;
     }
