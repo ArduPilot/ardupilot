@@ -87,7 +87,7 @@ void AP_Tuning::check_selector_switch(void)
             // save tune
             save_parameters();
             re_center();
-            gcs().send_text(MAV_SEVERITY_INFO, "Tuning: Saved");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: Saved");
             AP_Notify::events.tune_save = 1;
             changed = false;
             need_revert = 0;
@@ -101,7 +101,7 @@ void AP_Tuning::check_selector_switch(void)
             } else if (hold_time < 2000) {
                 // re-center the value
                 re_center();
-                gcs().send_text(MAV_SEVERITY_INFO, "Tuning: recentered %s", get_tuning_name(current_parm));
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: recentered %s", get_tuning_name(current_parm));
             } else if (hold_time < 5000) {
                 // change parameter
                 next_parameter();
@@ -136,7 +136,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     // check for revert on changed flightmode
     if (flightmode != last_flightmode) {
         if (need_revert != 0 && mode_revert != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Tuning: reverted");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: reverted");
             revert_parameters();
             re_center();
         }
@@ -209,7 +209,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
         }
         // starting tuning
         mid_point_wait = false;
-        gcs().send_text(MAV_SEVERITY_INFO, "Tuning: mid-point %s", get_tuning_name(current_parm));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: mid-point %s", get_tuning_name(current_parm));
         AP_Notify::events.tune_started = 1;
     }
     last_channel_value = chan_value;
@@ -315,7 +315,7 @@ void AP_Tuning::next_parameter(void)
             }
             current_parm = tuning_sets[i].parms[current_parm_index];
             re_center();
-            gcs().send_text(MAV_SEVERITY_INFO, "Tuning: started %s", get_tuning_name(current_parm));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: started %s", get_tuning_name(current_parm));
             AP_Notify::events.tune_next = current_parm_index+1;
             break;
         }
