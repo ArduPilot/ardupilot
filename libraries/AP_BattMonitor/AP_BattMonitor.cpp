@@ -879,18 +879,9 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
 {
     if (instance >= _num_instances || drivers[instance] == nullptr) {
         return false;
-    } 
-    
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    if (state[instance].temperature_external_use) {
-        temperature = state[instance].temperature_external;
-        return true;
     }
-#endif
 
-    temperature = state[instance].temperature;
-
-    return drivers[instance]->has_temperature();
+    return drivers[instance]->get_temperature(temperature);
 }
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
