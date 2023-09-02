@@ -272,7 +272,7 @@ void AP_ICEngine::update(void)
                 height_pending = false;
                 initial_height = -pos.z;
             } else if ((-pos.z) >= initial_height + height_required) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Starting height reached %.1f",
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting height reached %.1f",
                                                  (double)(-pos.z - initial_height));
                 state = ICE_STARTING;
             }
@@ -284,7 +284,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Starting engine");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
             state = ICE_STARTING;
         }
         break;
@@ -293,7 +293,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_start_time_ms >= starter_time*1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine running");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine running");
             state = ICE_RUNNING;
         }
         break;
@@ -301,7 +301,7 @@ void AP_ICEngine::update(void)
     case ICE_RUNNING:
         if (!should_run) {
             state = ICE_OFF;
-            gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Stopped engine");
         }
 #if AP_RPM_ENABLED
         else if (rpm_instance > 0) {
@@ -311,7 +311,7 @@ void AP_ICEngine::update(void)
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
-                gcs().send_text(MAV_SEVERITY_INFO, "Uncommanded engine stop");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Uncommanded engine stop");
             }
         }
 #endif
@@ -340,7 +340,7 @@ void AP_ICEngine::update(void)
         filtered_rpm_value =  _rpm_filter.apply(rpm_value);
         if (!redline.flag && filtered_rpm_value > redline_rpm) {
             // redline governor is off. rpm is too high. enable the governor
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
             redline.flag = true;
         } else if (redline.flag && filtered_rpm_value < redline_rpm * 0.9f) {
             // redline governor is on. rpm is safely below. disable the governor
@@ -466,7 +466,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         return true;
     }
     if (state == ICE_RUNNING || state == ICE_START_DELAY || state == ICE_STARTING) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Engine: already running");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: already running");
         return false;
     }
     RC_Channel *c = rc().channel(start_chan-1);
@@ -474,7 +474,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         // get starter control channel
         uint16_t cvalue = c->get_radio_in();
         if (cvalue >= start_chan_min_pwm && cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
     }
@@ -483,7 +483,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         initial_height = 0;
         height_required = height_delay;
         state = ICE_START_HEIGHT_DELAY;
-        gcs().send_text(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
         return true;
     }
     state = ICE_STARTING;
