@@ -271,11 +271,13 @@ void AP_Vehicle::setup()
     // survivability.
     set_control_channels();
 
+#if HAL_GCS_ENABLED
     // initialise serial manager as early as sensible to get
     // diagnostic output during boot process.  We have to initialise
     // the GCS singleton first as it sets the global mavlink system ID
     // which may get used very early on.
     gcs().init();
+#endif
 
 #if AP_NETWORKING_ENABLED
     networking.init();
@@ -283,7 +285,9 @@ void AP_Vehicle::setup()
 
     // initialise serial ports
     serial_manager.init();
+#if HAL_GCS_ENABLED
     gcs().setup_console();
+#endif
 
     // Register scheduler_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -396,11 +400,11 @@ void AP_Vehicle::setup()
     // initialisation
     AP_Param::invalidate_count();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
 #if AP_DDS_ENABLED
     if (!init_dds_client()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
     }
 #endif
 }
@@ -430,7 +434,7 @@ void AP_Vehicle::loop()
     const uint32_t new_internal_errors = AP::internalerror().errors();
     if(_last_internal_errors != new_internal_errors) {
         AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
         _last_internal_errors = new_internal_errors;
     }
 }
@@ -558,21 +562,23 @@ void AP_Vehicle::scheduler_delay_callback()
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
+        GCS_SEND_MESSAGE(MSG_HEARTBEAT);
+        GCS_SEND_MESSAGE(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
+#if HAL_GCS_ENABLED
         gcs().update_receive();
         gcs().update_send();
+#endif
         _singleton->notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
         if (AP_BoardConfig::in_config_error()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising ArduPilot");
         }
     }
 
@@ -586,7 +592,8 @@ void AP_Vehicle::send_watchdog_reset_statustext()
         return;
     }
     const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,
+    (void)pd;  // in case !HAL_GCS_ENABLED
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,
                     "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u TN:%.4s",
                     pd.scheduler_task,
                     pd.semaphore_line,
@@ -916,7 +923,7 @@ void AP_Vehicle::check_motor_noise()
         float energy = gyro_fft.has_noise_at_frequency_hz(esc_data[i]);
         energy = esc_noise[i].apply(energy, 0.2f);
         if (energy > 40.0f && AP_HAL::millis() - last_motor_noise_ms > 5000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Noise %.fdB on motor %u at %.fHz", energy, i+1, esc_data[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Noise %.fdB on motor %u at %.fHz", energy, i+1, esc_data[i]);
             output_error = true;
         }
     }
