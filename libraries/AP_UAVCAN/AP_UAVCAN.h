@@ -48,6 +48,10 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
+#ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
 // fwd-declare callback classes
 class ButtonCb;
 class TrafficReportCb;
@@ -60,6 +64,12 @@ class ParamGetSetCb;
 class ParamExecuteOpcodeCb;
 class AP_PoolAllocator;
 class AP_UAVCAN_DNA_Server;
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+class HobbywingESCIDCb;
+class HobbywingStatus1Cb;
+class HobbywingStatus2Cb;
+#endif
+
 
 #if defined(__GNUC__) && (__GNUC__ > 8)
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
@@ -212,6 +222,7 @@ public:
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
+        USE_HOBBYWING_ESC         = (1U<<7),
     };
 
     // check if a option is set
@@ -363,6 +374,27 @@ private:
 
     // notify vehicle state
     uint32_t _last_notify_state_ms;
+
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    /*
+      Hobbywing ESC support. Note that we need additional meta-data as
+      the status messages do not have an ESC ID in them, so we need a
+      mapping from node ID
+    */
+    #define HOBBYWING_MAX_ESC 8
+    struct {
+        bool enabled;
+        uint32_t last_GetId_send_ms;
+        uint8_t thr_chan[HOBBYWING_MAX_ESC];
+    } hobbywing;
+    void hobbywing_ESC_update();
+
+    void SRV_send_esc_hobbywing();
+    bool hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) const;
+    static void handle_hobbywing_GetEscID(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingESCIDCb &cb);
+    static void handle_hobbywing_StatusMsg1(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus1Cb &cb);
+    static void handle_hobbywing_StatusMsg2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus2Cb &cb);
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
     // incoming button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
