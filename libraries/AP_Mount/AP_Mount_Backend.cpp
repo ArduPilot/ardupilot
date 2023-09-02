@@ -116,6 +116,7 @@ void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &p
 }
 #endif
 
+#if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
@@ -146,6 +147,7 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknonw)
                                                    _instance + 1);  // gimbal_device_id
 }
+#endif
 
 // return gimbal manager capability flags used by GIMBAL_MANAGER_INFORMATION message
 uint32_t AP_Mount_Backend::get_gimbal_manager_capability_flags() const
@@ -654,7 +656,7 @@ void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
         return;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Mount: %s", warning_str);
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mount: %s", warning_str);
     _last_warning_ms = now_ms;
 }
 

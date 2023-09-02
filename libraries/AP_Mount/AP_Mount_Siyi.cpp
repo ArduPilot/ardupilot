@@ -334,20 +334,20 @@ void AP_Mount_Siyi::process_packet()
             _msg_buff[_msg_buff_data_start+0]       // firmware revision (aka patch)
         };
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiCam fw:%u.%u.%u",
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SiyiCam fw:%u.%u.%u",
                 (unsigned)_cam_firmware_version.major,          // firmware major version
                 (unsigned)_cam_firmware_version.minor,          // firmware minor version
                 (unsigned)_cam_firmware_version.patch);         // firmware revision
 
         // display gimbal info to user
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
                 (unsigned)_msg_buff[_msg_buff_data_start+6],    // firmware major version
                 (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
 
         // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiZoom fw:%u.%u.%u",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SiyiZoom fw:%u.%u.%u",
                 (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
                 (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
@@ -362,7 +362,7 @@ void AP_Mount_Siyi::process_packet()
         for (uint8_t i=1; i<ARRAY_SIZE(hardware_lookup_table); i++) {
             if (hwid0 == hardware_lookup_table[i].hwid[0] && hwid1 == hardware_lookup_table[i].hwid[1]) {
                _hardware_model = (HardwareModel)i;
-               gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi %s", get_model_name());
+               GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi %s", get_model_name());
             }
         }
         _got_hardware_id = true;
@@ -430,7 +430,7 @@ void AP_Mount_Siyi::process_packet()
         // update recording state and warn user of mismatch
         const bool recording = _msg_buff[_msg_buff_data_start+3] > 0;
         if (recording != _last_record_video) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
         }
         _last_record_video = recording;
         debug("GimConf hdr:%u rec:%u foll:%u mntdir:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
@@ -449,12 +449,13 @@ void AP_Mount_Siyi::process_packet()
         }
         const uint8_t func_feedback_info = _msg_buff[_msg_buff_data_start];
         const char* err_prefix = "Mount: Siyi";
+        (void)err_prefix;  // in case !HAL_GCS_ENABLED
         switch ((FunctionFeedbackInfo)func_feedback_info) {
         case FunctionFeedbackInfo::SUCCESS:
             debug("FnFeedB success");
             break;
         case FunctionFeedbackInfo::FAILED_TO_TAKE_PHOTO:
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to take picture", err_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to take picture", err_prefix);
             break;
         case FunctionFeedbackInfo::HDR_ON:
             debug("HDR on");
@@ -463,7 +464,7 @@ void AP_Mount_Siyi::process_packet()
             debug("HDR off");
             break;
         case FunctionFeedbackInfo::FAILED_TO_RECORD_VIDEO:
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to record video", err_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to record video", err_prefix);
             break;
         default:
             debug("FnFeedB unexpected val:%u", (unsigned)func_feedback_info);
