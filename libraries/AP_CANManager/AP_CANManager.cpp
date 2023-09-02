@@ -375,7 +375,7 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
 void AP_CANManager::log_retrieve(ExpandingString &str) const
 {
     if (_log_buf == nullptr) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Log buffer not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Log buffer not available");
         return;
     }
     str.append(_log_buf, _log_pos);
