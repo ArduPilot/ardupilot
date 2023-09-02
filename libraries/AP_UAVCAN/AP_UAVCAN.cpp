@@ -52,6 +52,12 @@
 #include <uavcan/protocol/debug/LogMessage.hpp>
 #include <com/himark/servo/ServoCmd.hpp>
 #include <com/himark/servo/ServoInfo.hpp>
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#include <com/hobbywing/esc/GetEscID.hpp>
+#include <com/hobbywing/esc/StatusMsg1.hpp>
+#include <com/hobbywing/esc/StatusMsg2.hpp>
+#include <com/hobbywing/esc/RawCommand.hpp>
+#endif
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
@@ -141,7 +147,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:UseHobbyWingESC
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
@@ -190,6 +196,18 @@ static uavcan::Publisher<ardupilot::gnss::Status>* gnss_status[HAL_MAX_CAN_PROTO
 #endif
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<ardupilot::indication::NotifyState>* notify_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+static uavcan::Publisher<com::hobbywing::esc::RawCommand>* esc_hobbywing_raw[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<com::hobbywing::esc::GetEscID>* esc_hobbywing_GetEscID[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+UC_REGISTRY_BINDER(HobbywingESCIDCb, com::hobbywing::esc::GetEscID);
+static uavcan::Subscriber<com::hobbywing::esc::GetEscID, HobbywingESCIDCb> *hobbywing_GetEscId_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+UC_REGISTRY_BINDER(HobbywingStatus1Cb, com::hobbywing::esc::StatusMsg1);
+static uavcan::Subscriber<com::hobbywing::esc::StatusMsg1, HobbywingStatus1Cb> *hobbywing_Status1_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+UC_REGISTRY_BINDER(HobbywingStatus2Cb, com::hobbywing::esc::StatusMsg2);
+static uavcan::Subscriber<com::hobbywing::esc::StatusMsg2, HobbywingStatus2Cb> *hobbywing_Status2_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
 // Clients
 UC_CLIENT_CALL_REGISTRY_BINDER(ParamGetSetCb, uavcan::protocol::param::GetSet);
@@ -408,6 +426,34 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    hobbywing.enabled = option_is_set(Options::USE_HOBBYWING_ESC);
+    if (hobbywing.enabled) {
+        esc_hobbywing_GetEscID[driver_index] = new uavcan::Publisher<com::hobbywing::esc::GetEscID>(*_node);
+        esc_hobbywing_GetEscID[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+        esc_hobbywing_GetEscID[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+        esc_hobbywing_raw[driver_index] = new uavcan::Publisher<com::hobbywing::esc::RawCommand>(*_node);
+        esc_hobbywing_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+        esc_hobbywing_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+        hobbywing_GetEscId_listener[driver_index] = new uavcan::Subscriber<com::hobbywing::esc::GetEscID, HobbywingESCIDCb>(*_node);
+        if (hobbywing_GetEscId_listener[driver_index]) {
+            hobbywing_GetEscId_listener[driver_index]->start(HobbywingESCIDCb(this, &handle_hobbywing_GetEscID));
+        }
+
+        hobbywing_Status1_listener[driver_index] = new uavcan::Subscriber<com::hobbywing::esc::StatusMsg1, HobbywingStatus1Cb>(*_node);
+        if (hobbywing_Status1_listener[driver_index]) {
+            hobbywing_Status1_listener[driver_index]->start(HobbywingStatus1Cb(this, &handle_hobbywing_StatusMsg1));
+        }
+
+        hobbywing_Status2_listener[driver_index] = new uavcan::Subscriber<com::hobbywing::esc::StatusMsg2, HobbywingStatus2Cb>(*_node);
+        if (hobbywing_Status2_listener[driver_index]) {
+            hobbywing_Status2_listener[driver_index]->start(HobbywingStatus2Cb(this, &handle_hobbywing_StatusMsg2));
+        }
+    }
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    
     rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*_node);
     rgb_led[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
@@ -553,7 +599,14 @@ void AP_UAVCAN::loop(void)
 
             // if we have any ESC's in bitmask
             if (_esc_bm > 0 && !sent_servos) {
-                SRV_send_esc();
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+                if (hobbywing.enabled) {
+                    SRV_send_esc_hobbywing();
+                } else
+#endif
+                {
+                    SRV_send_esc();
+                }
             }
 
             for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
@@ -582,6 +635,9 @@ void AP_UAVCAN::loop(void)
 #endif
 
         logging();
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+        hobbywing_ESC_update();
+#endif
     }
 }
 
@@ -721,6 +777,60 @@ void AP_UAVCAN::SRV_send_esc(void)
         }
     }
 }
+
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+/*
+  send HobbyWing version of ESC RawCommand
+ */
+void AP_UAVCAN::SRV_send_esc_hobbywing(void)
+{
+    static const int cmd_max = 8191;
+    com::hobbywing::esc::RawCommand esc_msg;
+
+    uint8_t active_esc_num = 0, max_esc_num = 0;
+    uint8_t k = 0;
+
+    WITH_SEMAPHORE(SRV_sem);
+
+    // esc offset allows for efficient packing of higher ESC numbers in RawCommand
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+
+    // find out how many esc we have enabled and if they are active at all
+    for (uint8_t i = esc_offset; i < UAVCAN_SRV_NUMBER; i++) {
+        if ((((uint32_t) 1) << i) & _esc_bm) {
+            max_esc_num = i + 1;
+            if (_SRV_conf[i].esc_pending) {
+                active_esc_num++;
+            }
+        }
+    }
+
+    // if at least one is active (update) we need to send to all
+    if (active_esc_num > 0) {
+        k = 0;
+
+        for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
+            if ((((uint32_t) 1) << i) & _esc_bm) {
+                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
+
+                scaled = constrain_float(scaled, 0, cmd_max);
+
+                esc_msg.command.push_back(static_cast<int>(scaled));
+            } else {
+                esc_msg.command.push_back(static_cast<unsigned>(0));
+            }
+
+            k++;
+        }
+
+        if (esc_hobbywing_raw[_driver_index]->broadcast(esc_msg) > 0) {
+            _esc_send_count++;
+        } else {
+            _fail_send_count++;
+        }
+    }
+}
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
 void AP_UAVCAN::SRV_push_servos()
 {
@@ -1578,5 +1688,86 @@ void AP_UAVCAN::logging(void)
                                 _fail_send_count);
 #endif // HAL_LOGGING_ENABLED
 }
+
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+/*
+  update ESC node mapping
+ */
+void AP_UAVCAN::hobbywing_ESC_update(void)
+{
+    if (!hobbywing.enabled) {
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    if (now - hobbywing.last_GetId_send_ms >= 1000U) {
+        com::hobbywing::esc::GetEscID msg;
+        hobbywing.last_GetId_send_ms = now;
+        msg.payload.push_back(0);
+        esc_hobbywing_GetEscID[_driver_index]->broadcast(msg);
+    }
+}
+
+/*
+  handle hobbywing GetEscID reply. This gets us the mapping between CAN NodeID and throttle channel
+ */
+void AP_UAVCAN::handle_hobbywing_GetEscID(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingESCIDCb &cb)
+{
+    const auto &msg = *cb.msg;
+    if (msg.payload.size() == 2 &&
+        msg.payload[0] == node_id) {
+        // throttle channel is 2nd payload byte
+        const uint8_t thr_channel = msg.payload[1];
+        if (thr_channel > 0 && thr_channel <= HOBBYWING_MAX_ESC) {
+            ap_uavcan->hobbywing.thr_chan[thr_channel-1] = node_id;
+        }
+    }
+}
+
+/*
+  find the ESC index given a CAN node ID
+ */
+bool AP_UAVCAN::hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) const
+{
+    for (uint8_t i=0; i<HOBBYWING_MAX_ESC; i++) {
+        if (hobbywing.thr_chan[i] == node_id) {
+            const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+            esc_index = i + esc_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  handle hobbywing StatusMsg1 reply
+ */
+void AP_UAVCAN::handle_hobbywing_StatusMsg1(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus1Cb &cb)
+{
+    uint8_t esc_index;
+    if (ap_uavcan->hobbywing_find_esc_index(node_id, esc_index)) {
+        ap_uavcan->update_rpm(esc_index, cb.msg->rpm);
+    }
+}
+
+/*
+  handle hobbywing StatusMsg2 reply
+ */
+void AP_UAVCAN::handle_hobbywing_StatusMsg2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HobbywingStatus2Cb &cb)
+{
+    uint8_t esc_index;
+    if (ap_uavcan->hobbywing_find_esc_index(node_id, esc_index)) {
+        TelemetryData t {
+            .temperature_cdeg = int16_t(cb.msg->temperature*100),
+            .voltage = cb.msg->input_voltage*0.1f,
+            .current = cb.msg->current*0.1f,
+        };
+        ap_uavcan->update_telem_data(esc_index, t,
+                                     AP_ESC_Telem_Backend::TelemetryType::CURRENT|
+                                     AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|
+                                     AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+    }
+
+}
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
 #endif // HAL_NUM_CAN_IFACES
