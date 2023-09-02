@@ -34,7 +34,7 @@ void AP_WheelEncoder_Quadrature::update_pin(uint8_t &pin,
     // remove old gpio event callback if present
     if (pin != (uint8_t)-1 &&
         !hal.gpio->detach_interrupt(pin)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "WEnc: Failed to detach from pin %u", pin);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "WEnc: Failed to detach from pin %u", pin);
         // ignore this failure or the user may be stuck
     }
 
@@ -51,7 +51,7 @@ void AP_WheelEncoder_Quadrature::update_pin(uint8_t &pin,
                                     bool,
                                     uint32_t),
                 AP_HAL::GPIO::INTERRUPT_BOTH)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "WEnc: Failed to attach to pin %u", pin);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "WEnc: Failed to attach to pin %u", pin);
         }
         pin_value = hal.gpio->read(pin);
     }
