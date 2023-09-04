@@ -114,7 +114,7 @@ public:
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
     bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
-    bool do_fast_descend() const {return _options & PLND_OPTION_FAST_DESCEND; }
+    bool do_fast_descend() const { return _options & PLND_OPTION_FAST_DESCEND; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
