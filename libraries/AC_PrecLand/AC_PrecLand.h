@@ -114,6 +114,7 @@ public:
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
     bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
+    bool do_fast_descend() const {return _options & PLND_OPTION_FAST_DESCEND; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -145,6 +146,7 @@ private:
         PLND_OPTION_DISABLED = 0,
         PLND_OPTION_MOVING_TARGET = (1 << 0),
         PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
+        PLND_OPTION_FAST_DESCEND = (1 << 2),
     };
 
     // check the status of the target
