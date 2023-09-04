@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_Rally/AP_Rally_config.h>
+
+#if HAL_RALLY_ENABLED
+
 #include <AP_Common/Location.h>
 
 #include "Copter.h"
@@ -28,3 +32,5 @@ bool AP_Rally_Copter::is_valid(const Location &rally_point) const
 #endif
     return true;
 }
+
+#endif  // HAL_RALLY_ENABLED
