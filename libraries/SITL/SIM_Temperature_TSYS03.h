@@ -7,6 +7,20 @@
 /*
   Simulator for the TSYS03 temperature sensor
 
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -f Callisto -A --speedup=1
+param set TEMP1_TYPE 4
+param fetch
+param set TEMP1_BUS 2
+param set TEMP1_SRC 3
+param set TEMP1_SRC_ID 1
+graph BATTERY_STATUS.temperature*0.01
+reboot
+
+arm throttle
+rc 3 2000
+
+fly around, check BAT[0].temperature
+
 */
 
 namespace SITL {
