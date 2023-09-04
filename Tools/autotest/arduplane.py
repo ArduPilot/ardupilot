@@ -1130,7 +1130,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.progress("Ensure we've had our throttle squashed to 950")
@@ -1168,7 +1168,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.do_timesync_roundtrip()
@@ -3769,7 +3769,7 @@ class AutoTestPlane(AutoTest):
             # to carry the path to the JSON.
             actual_model = model.split(":")[0]
             defaults = self.model_defaults_filepath(actual_model)
-            if type(defaults) != list:
+            if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
                 ["--defaults", ','.join(defaults), ],

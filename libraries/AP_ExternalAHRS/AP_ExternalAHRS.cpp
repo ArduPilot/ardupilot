@@ -92,21 +92,20 @@ void AP_ExternalAHRS::init(void)
     switch (DevType(devtype)) {
     case DevType::None:
         // nothing to do
-        break;
+        return;
 #if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
     case DevType::VecNav:
         backend = new AP_ExternalAHRS_VectorNav(this, state);
-        break;
+        return;
 #endif
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
     case DevType::MicroStrain5:
         backend = new AP_ExternalAHRS_MicroStrain5(this, state);
-        break;
-    default:
+        return;
 #endif
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
-        break;
     }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
 }
 
 bool AP_ExternalAHRS::enabled() const

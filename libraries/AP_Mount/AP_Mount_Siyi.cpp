@@ -17,9 +17,20 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_PITCH_P       1.50    // pitch controller P gain (converts pitch angle error to target rate)
 #define AP_MOUNT_SIYI_YAW_P         1.50    // yaw controller P gain (converts yaw angle error to target rate)
 #define AP_MOUNT_SIYI_LOCK_RESEND_COUNT 5   // lock value is resent to gimbal every 5 iterations
+#define AP_MOUNT_SIYI_TIMEOUT_MS    1000    // timeout for health and rangefinder readings
 
 #define AP_MOUNT_SIYI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_SIYI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: " fmt, ## args); } } while (0)
+
+// hardware lookup table indexed by HardwareModel enum values
+const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
+        {{'0','0'}, "Unknown"},
+        {{'7','5'}, "A2"},
+        {{'7','3'}, "A8"},
+        {{'6','B'}, "ZR10"},
+        {{'7','8'}, "ZR30"},
+        {{'7','A'}, "ZT30"},
+};
 
 // init - performs any required initialisation for this instance
 void AP_Mount_Siyi::init()
@@ -52,6 +63,9 @@ void AP_Mount_Siyi::update()
         if (!_got_firmware_version) {
             request_firmware_version();
             return;
+        } else if (!_got_hardware_id) {
+            request_hardware_id();
+            return;
         } else {
             request_configuration();
         }
@@ -61,6 +75,12 @@ void AP_Mount_Siyi::update()
     if ((now_ms - _last_req_current_angle_rad_ms) >= 50) {
         request_gimbal_attitude();
         _last_req_current_angle_rad_ms = now_ms;
+    }
+
+    // request rangefinder distance from ZT30 at 10hz
+    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {    
+        request_rangefinder_distance();
+        _last_rangefinder_req_ms = now_ms;
     }
 
     // run zoom control
@@ -150,7 +170,7 @@ bool AP_Mount_Siyi::healthy() const
 
     // unhealthy if attitude information NOT received recently
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_current_angle_rad_ms > 1000) {
+    if (now_ms - _last_current_angle_rad_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
         return false;
     }
 
@@ -307,9 +327,6 @@ void AP_Mount_Siyi::process_packet()
         }
         _got_firmware_version = true;
 
-        // set hardware version based on message length
-        _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
-
         // consume and display camera firmware version
         _cam_firmware_version = {
             _msg_buff[_msg_buff_data_start+2],      // firmware major version
@@ -328,21 +345,29 @@ void AP_Mount_Siyi::process_packet()
                 (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
 
-        // display zoom firmware version
-#if AP_MOUNT_SIYI_DEBUG
+        // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            debug("Mount: SiyiZoom fw:%u.%u.%u",
+            gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiZoom fw:%u.%u.%u",
                 (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
                 (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
                 (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
         }
-#endif
         break;
     }
 
-    case SiyiCommandId::HARDWARE_ID:
-        // unsupported
+    case SiyiCommandId::HARDWARE_ID: {
+        // lookup first two digits of hardware id
+        const uint8_t hwid0 = _msg_buff[_msg_buff_data_start];
+        const uint8_t hwid1 = _msg_buff[_msg_buff_data_start+1];
+        for (uint8_t i=1; i<ARRAY_SIZE(hardware_lookup_table); i++) {
+            if (hwid0 == hardware_lookup_table[i].hwid[0] && hwid1 == hardware_lookup_table[i].hwid[1]) {
+               _hardware_model = (HardwareModel)i;
+               gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi %s", get_model_name());
+            }
+        }
+        _got_hardware_id = true;
         break;
+    }
 
     case SiyiCommandId::AUTO_FOCUS:
 #if AP_MOUNT_SIYI_DEBUG
@@ -464,6 +489,11 @@ void AP_Mount_Siyi::process_packet()
         //const float yaw_rate_degs = -(int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+7], _msg_buff[_msg_buff_data_start+6]) * 0.1;   // yaw rate
         //const float pitch_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1;   // pitch rate
         //const float roll_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1;  // roll rate
+        break;
+    
+    case SiyiCommandId::READ_RANGEFINDER:
+        _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
+        _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
     }
 
@@ -684,11 +714,14 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
         return 0;
+    case HardwareModel::A2:
     case HardwareModel::A8:
         // a8 has 6x digital zoom
         return 6;
     case HardwareModel::ZR10:
-        // zr10 has 30x hybrid zoom (optical + digital)
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
+        // 30x hybrid zoom (optical + digital)
         return 30;
     }
     return 0;
@@ -776,6 +809,50 @@ SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
     return SetFocusResult::INVALID_PARAMETERS;
 }
 
+// set camera lens as a value from 0 to 8
+bool AP_Mount_Siyi::set_lens(uint8_t lens)
+{
+    // only supported on ZT30.  sanity check lens values
+    if ((_hardware_model != HardwareModel::ZT30) || (lens > 8)) {
+        return false;
+    }
+
+    // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+    CameraImageType cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL;
+    switch (lens) {
+        case 0:
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL; // 3
+            break;
+        case 1:
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL; // 5
+            break;
+        case 2:
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_ZOOM; // 7
+            break;
+        case 3:
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE; // 0
+            break;
+        case 4:
+            cam_image_type = CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM; // 1
+            break;
+        case 5:
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL; // 2
+            break;
+        case 6:
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE; // 4
+            break;
+        case 7:
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM; // 6
+            break;
+        case 8:
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE; // 8
+            break;
+    }
+
+    // send desired image type to camera
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
+}
+
 // send camera information message to GCS
 void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 {
@@ -785,21 +862,25 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
     }
 
     static const uint8_t vendor_name[32] = "Siyi";
-    static uint8_t model_name[32] = "Unknown";
+    static uint8_t model_name[32] {};
     const uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
     const char cam_definition_uri[140] {};
 
+    // copy model name
+    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
+
     // focal length
+    // To-Do: check these values are correct for A2, ZR30, ZT30
     float focal_length_mm = 0;
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
-        break;
+    case HardwareModel::A2:
     case HardwareModel::A8:
-        strncpy((char *)model_name, "A8", sizeof(model_name));
         focal_length_mm = 21;
         break;
     case HardwareModel::ZR10:
-        strncpy((char *)model_name, "ZR10", sizeof(model_name));
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
         // focal length range from 5.15 ~ 47.38
         focal_length_mm = 5.15;
         break;
@@ -844,6 +925,34 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         _last_record_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
+// get model name string. returns "Unknown" if hardware model is not yet known
+const char* AP_Mount_Siyi::get_model_name() const
+{
+    uint8_t model_idx = (uint8_t)_hardware_model;
+    if (model_idx < ARRAY_SIZE(hardware_lookup_table)) {
+        return hardware_lookup_table[model_idx].model_name;
+    }
+    return hardware_lookup_table[0].model_name;
+}
+
+// get rangefinder distance.  Returns true on success
+bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
+{
+    // only supported on ZT30
+    if (_hardware_model != HardwareModel::ZT30) {
+        return false;
+    }
+
+    // unhealthy if distance not received recently
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_rangefinder_dist_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
+        return false;
+    }
+
+    distance_m = _rangefinder_dist_m;
+    return true;
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED

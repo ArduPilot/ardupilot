@@ -614,7 +614,7 @@ Please use a replacement build as follows:
 ''' % ctx.env.BOARD)
 
         boards = _board_classes.keys()
-        if not ctx.env.BOARD in boards:
+        if ctx.env.BOARD not in boards:
             ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(sorted(boards, key=str.lower))))
         _board = _board_classes[ctx.env.BOARD]()
     return _board

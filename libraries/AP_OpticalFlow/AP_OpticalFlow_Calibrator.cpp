@@ -18,6 +18,7 @@
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
 
 #include "AP_OpticalFlow_Calibrator.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>

@@ -26,7 +26,6 @@
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
 #define APM_RCOUT_PRIORITY      181
-#define APM_RCIN_PRIORITY       177
 #define APM_LED_PRIORITY         60
 #define APM_UART_PRIORITY        60
 #define APM_UART_UNBUFFERED_PRIORITY 181
@@ -40,6 +39,10 @@
  */
 #ifndef APM_MAIN_PRIORITY_BOOST
 #define APM_MAIN_PRIORITY_BOOST 182
+#endif
+
+#ifndef APM_RCIN_PRIORITY
+#define APM_RCIN_PRIORITY      177
 #endif
 
 #ifndef APM_SPI_PRIORITY

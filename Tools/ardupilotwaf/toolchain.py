@@ -119,7 +119,7 @@ def _set_pkgconfig_crosscompilation_wrapper(cfg):
 
     @conf
     def new_validate_cfg(kw):
-        if not 'path' in kw:
+        if 'path' not in kw:
             if not cfg.env.PKGCONFIG:
                 cfg.find_program('%s-pkg-config' % cfg.env.TOOLCHAIN, var='PKGCONFIG')
             kw['path'] = cfg.env.PKGCONFIG

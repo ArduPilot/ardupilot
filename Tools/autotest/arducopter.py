@@ -4405,7 +4405,7 @@ class AutoTestCopter(AutoTest):
             MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             x, # x
             y, # y
-            -z_up,# z
+            -z_up, # z
             0, # vx
             0, # vy
             0, # vz
@@ -8576,7 +8576,7 @@ class AutoTestCopter(AutoTest):
             # to carry the path to the JSON.
             actual_model = model.split(":")[0]
             defaults = self.model_defaults_filepath(actual_model)
-            if type(defaults) != list:
+            if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
                 ["--defaults", ','.join(defaults), ],

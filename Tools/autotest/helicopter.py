@@ -194,7 +194,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # to carry the path to the JSON.
             actual_model = model.split(":")[0]
             defaults = self.model_defaults_filepath(actual_model)
-            if type(defaults) != list:
+            if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
                 ["--defaults", ','.join(defaults), ],

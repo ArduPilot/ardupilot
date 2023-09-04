@@ -72,11 +72,21 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
+    // set camera lens as a value from 0 to 8.  ZT30 only
+    bool set_lens(uint8_t lens) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
+
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(float& distance_m) const override;
 
 protected:
 
@@ -98,7 +108,9 @@ private:
         FUNCTION_FEEDBACK_INFO = 0x0B,
         PHOTO = 0x0C,
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
-        ABSOLUTE_ZOOM = 0x0F
+        ABSOLUTE_ZOOM = 0x0F,
+        SET_CAMERA_IMAGE_TYPE = 0x11,
+        READ_RANGEFINDER = 0x15,
     };
 
     // Function Feedback Info packet info_type values
@@ -137,17 +149,33 @@ private:
 
     // hardware model enum
     enum class HardwareModel : uint8_t {
-        UNKNOWN,
+        UNKNOWN = 0,
+        A2,
         A8,
-        ZR10
+        ZR10,
+        ZR30,
+        ZT30
     } _hardware_model;
 
-    // gimbal mounting method/direction
+    // lens value
     enum class GimbalMountingDirection : uint8_t {
         UNDEFINED = 0,
         NORMAL = 1,
         UPSIDE_DOWN = 2,
     } _gimbal_mounting_dir;
+
+    // camera image types (aka lens)
+    enum class CameraImageType : uint8_t {
+        MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE = 0,
+        MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM = 1,
+        MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL = 2,
+        MAIN_ZOOM_SUB_THERMAL = 3,
+        MAIN_ZOOM_SUB_WIDEANGLE = 4,
+        MAIN_WIDEANGLE_SUB_THERMAL = 5,
+        MAIN_WIDEANGLE_SUB_ZOOM = 6,
+        MAIN_THERMAL_SUB_ZOOM = 7,
+        MAIN_THERMAL_SUB_WIDEANGLE = 8
+    };
 
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure
@@ -167,6 +195,7 @@ private:
     void request_configuration() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO, nullptr, 0); }
     void request_function_feedback_info() { send_packet(SiyiCommandId::FUNCTION_FEEDBACK_INFO, nullptr, 0); }
     void request_gimbal_attitude() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE, nullptr, 0); }
+    void request_rangefinder_distance() { send_packet(SiyiCommandId::READ_RANGEFINDER, nullptr, 0); }
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
@@ -197,10 +226,14 @@ private:
     // update zoom controller
     void update_zoom_control();
 
+    // get model name string, returns nullptr if hardware id is unknown
+    const char* get_model_name() const;
+
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
     bool _got_firmware_version;                     // true once gimbal firmware version has been received
+    bool _got_hardware_id;                          // true once hardware id ha been received
     struct {
         uint8_t major;
         uint8_t minor;
@@ -240,6 +273,18 @@ private:
     float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
+
+    // rangefinder variables
+    uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
+    uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
+    float _rangefinder_dist_m;                      // distance received from rangefinder
+
+    // hardware lookup table indexed by HardwareModel enum values (see above)
+    struct HWInfo {
+        uint8_t hwid[2];
+        const char* model_name;
+    };
+    static const HWInfo hardware_lookup_table[];
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

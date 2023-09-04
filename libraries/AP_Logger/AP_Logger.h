@@ -161,7 +161,7 @@ enum class LogErrorCode : uint8_t {
     FAILED_CIRCLE_INIT = 4,
     DEST_OUTSIDE_FENCE = 5,
     RTL_MISSING_RNGFND = 6,
-    // subsystem specific error codes -- internal_error
+// subsystem specific error codes -- internal_error
     INTERNAL_ERRORS_DETECTED = 1,
 
 // parachute failed to deploy because of low altitude or landed
@@ -173,7 +173,7 @@ enum class LogErrorCode : uint8_t {
 // Baro specific error codes
     BARO_GLITCH = 2,
     BAD_DEPTH = 3, // sub-only
-// GPS specific error coces
+// GPS specific error codes
     GPS_GLITCH = 2,
 };
 
