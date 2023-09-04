@@ -162,6 +162,12 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     // @Units: km
     AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
+
+    // @Param: OPTIONS
+    // @DisplayName: AFS options
+    // @Description: See description for each bitmask bit description
+    // @Bitmask: 0: Continue the mission even after comms are recovered (does not go to the mission item at the time comms were lost)
+    AP_GROUPINFO("OPTIONS", 21, AP_AdvancedFailsafe, options, 0),
     
     AP_GROUPEND
 };
@@ -277,6 +283,11 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
             gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: AFS_AUTO, GCS now OK");
+
+            if (option_is_set(Option::CONTINUE_AFTER_RECOVERED)) {
+                break;
+            }
+
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
             if (_saved_wp != 0 && 
                 (_max_comms_loss <= 0 || 
