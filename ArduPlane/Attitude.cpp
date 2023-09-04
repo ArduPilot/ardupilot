@@ -259,7 +259,7 @@ void Plane::stabilize_stick_mixing_fbw()
     // non-linear and ends up as 2x the maximum, to ensure that
     // the user can direct the plane in any direction with stick
     // mixing.
-    float roll_input = channel_roll->norm_input();
+    float roll_input = channel_roll->norm_input_dz();
     if (roll_input > 0.5f) {
         roll_input = (3*roll_input - 1);
     } else if (roll_input < -0.5f) {
@@ -273,7 +273,7 @@ void Plane::stabilize_stick_mixing_fbw()
         return;
     }
 
-    float pitch_input = channel_pitch->norm_input();
+    float pitch_input = channel_pitch->norm_input_dz();
     if (pitch_input > 0.5f) {
         pitch_input = (3*pitch_input - 1);
     } else if (pitch_input < -0.5f) {
