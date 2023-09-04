@@ -156,8 +156,10 @@ void AP_Relay::set(const uint8_t instance, const bool value)
        _last_log_ms = now;
        _last_logged_pin_states = _pin_states;
     }
-#if AP_SIM_ENABLED && (CONFIG_HAL_BOARD != HAL_BOARD_SITL)
-    return;
+#if AP_SIM_ENABLED
+    if (!(AP::sitl()->on_hardware_relay_enable_mask & (1U << instance))) {
+        return;
+    }
 #endif
     hal.gpio->pinMode(_pin[instance], HAL_GPIO_OUTPUT);
     hal.gpio->write(_pin[instance], value);
