@@ -666,7 +666,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
                 // doing precland but too far away from the obstacle
                 // do not descend
                 cmb_rate = 0.0f;
-            } else if (target_pos_meas.z > 35.0f && target_pos_meas.z < 200.0f) {
+            } else if (target_pos_meas.z > 35.0f && target_pos_meas.z < 200.0f && !copter.precland.do_fast_descend()) {
                 // very close to the ground and doing prec land, lets slow down to make sure we land on target
                 // compute desired descent velocity
                 const float precland_acceptable_error_cm = 15.0f;
