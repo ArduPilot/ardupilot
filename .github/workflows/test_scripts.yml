@@ -19,6 +19,7 @@ jobs:
             python-cleanliness,
             astyle-cleanliness,
             validate_board_list,
+            pre-commit-cleanliness,
        ]
     steps:
       # git checkout the PR
