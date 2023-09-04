@@ -162,6 +162,14 @@ private:
 
     // update maximum range check
     void max_range_update();
+
+    AP_Int16 options;
+    enum class Option {
+        CONTINUE_AFTER_RECOVERED = (1U<<0),
+    };
+    bool option_is_set(Option option) const {
+        return (options.get() & int16_t(option)) != 0;
+    }
 };
 
 namespace AP {
