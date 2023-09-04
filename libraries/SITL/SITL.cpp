@@ -47,6 +47,15 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#if (CONFIG_HAL_BOARD != HAL_BOARD_SITL)
+// For on-hardware, set allowed relay channels to zero.
+// Requires user to change the param to allow hadware access.
+#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS 0
+#else
+// For SITL, set allowed relay channels to the full mask.
+#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS UINT16_MAX
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -1028,6 +1037,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
 #endif
+
+    // @Param: OH_RELAY_MSK
+    // @DisplayName: SIM-on_hardware Relay Enable Mask
+    // @Description: Allow relay output operation when running SIM-on-hardware
+    AP_GROUPINFO("OH_RELAY_MSK",     48, SIM, on_hardware_relay_enable_mask, SIM_DEFAULT_ENABLED_RELAY_CHANNELS),
 
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
