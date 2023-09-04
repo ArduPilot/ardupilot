@@ -281,6 +281,11 @@ private:
         MSGOUT_RTCM_3X_TYPE1127_UART2   = 0x209102d8,
         MSGOUT_RTCM_3X_TYPE1230_UART2   = 0x20910305,
         MSGOUT_UBX_NAV_RELPOSNED_UART2  = 0x2091008f,
+
+        CFG_HWANT_CFG_OPENDET           = 0x10a30031, 
+        CFG_HWANT_CFG_SHORTDET          = 0x10a3002f,
+        CFG_HWANT_CFG_VOLTCTRL          = 0x10a3002e,
+
     };
     struct PACKED ubx_cfg_valset {
         uint8_t version;
