@@ -24,6 +24,11 @@ repos:
             name: Check line ending character (LF)
             args: ["--fix=lf"]
             types_or: [python, c, c++, shell]
+            exclude: |
+              (?x)^(
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.cpp |
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.h
+              )$
         -   id: check-added-large-files
         -   id: check-executables-have-shebangs
         -   id: check-shebang-scripts-are-executable
