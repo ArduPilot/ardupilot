@@ -544,7 +544,7 @@ def start_SITL(binary,
             cmd.append("--disable-fgview")
 
     if defaults_filepath is not None:
-        if type(defaults_filepath) == list:
+        if isinstance(defaults_filepath, list):
             defaults = [reltopdir(path) for path in defaults_filepath]
             if len(defaults):
                 cmd.extend(['--defaults', ",".join(defaults)])
