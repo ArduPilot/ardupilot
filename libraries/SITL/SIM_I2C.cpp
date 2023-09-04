@@ -28,6 +28,7 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_TSYS03.h"
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
 #include "SIM_IS31FL3195.h"
@@ -63,6 +64,9 @@ static Rotoye rotoye;
 static SIM_BattMonitor_SMBus_Generic smbus_generic;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
+#if AP_SIM_TSYS03_ENABLED
+static TSYS03 tsys03;
+#endif
 static MCP9600 mcp9600;
 static ICM40609 icm40609;
 static MS5525 ms5525;
@@ -107,6 +111,9 @@ struct i2c_device_at_address {
 #endif
 #if AP_SIM_IS31FL3195_ENABLED
     { 2, SIM_IS31FL3195_ADDR, is31fl3195 },    // IS31FL3195 RGB LED driver; see page 9
+#endif
+#if AP_SIM_TSYS03_ENABLED
+    { 2, 0x40, tsys03 },
 #endif
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };
