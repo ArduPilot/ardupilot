@@ -153,6 +153,7 @@ class SizeCompareBranches(object):
             'fmuv3-bdshot',
             'iomcu',
             'iomcu-dshot',
+            'iomcu-f103',
             'iomcu-f103-dshot',
             'iomcu_f103_8MHz',
             'luminousbee4',
