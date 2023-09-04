@@ -179,6 +179,8 @@ class ExtractFeatures(object):
 
             ('AP_DRONECAN_HIMARK_SERVO_ENABLED', 'AP_UAVCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_ENABLED', 'AP_UAVCAN::hobbywing_ESC_update'),
+
+            ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
         ]
 
     def progress(self, msg):
