@@ -1,0 +1,26 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/ModeSwitch.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    struct ModeSwitch_Request {
+      @verbatim (language="comment", text=
+        "This service requests the vehicle to switch its drive/flight mode" "\n"
+        "mode : Set the value to the drive/flight mode to be used" "\n"
+        "Copter : https://mavlink.io/en/messages/ardupilotmega.html#COPTER_MODE" "\n"
+        "Rover  : https://mavlink.io/en/messages/ardupilotmega.html#ROVER_MODE" "\n"
+        "Plane  : https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE")
+      uint8 mode;
+    };
+    @verbatim (language="comment", text=
+      "status    : True if the request for mode switch was successful, False otherwise" "\n"
+      "curr_mode : Returns the code for the current drive/flight mode , after the processing the request")
+    struct ModeSwitch_Response {
+      boolean status;
+
+      uint8 curr_mode;
+    };
+  };
+};
