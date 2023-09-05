@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Logger.h"
 
 #include <AP_Common/Bitmask.h>
@@ -259,3 +263,5 @@ private:
     void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
 };
+
+#endif  // HAL_LOGGING_ENABLED
