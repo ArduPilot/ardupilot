@@ -14,8 +14,8 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
     {
         .req_id = to_underlying(ServiceIndex::ARMING_MOTORS),
         .rep_id = to_underlying(ServiceIndex::ARMING_MOTORS),
-        .srv_profile_label = "ArmMotorsService",
+        .srv_profile_label = "",
         .req_profile_label = "",
-        .rep_profile_label = "ArmMotors_Replier",
+        .rep_profile_label = "arm_motors__replier",
     }
 };
