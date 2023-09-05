@@ -58,6 +58,9 @@ logger = {}
 ---@param data1 integer|number|uint32_t_ud|string -- data to be logged, type to match format string
 function logger:write(name, labels, format, units, multipliers, data1, ...) end
 
+-- log a files content to onboard log
+---@param filename string -- file name
+function logger:log_file_content(filename) end
 
 -- i2c bus interaction
 ---@class i2c
