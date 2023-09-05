@@ -257,7 +257,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 ### Terminal 2 (Integration Service)
 - Source ROS 2 installation
 - Source Integration Service installation
-- Move to the **AP_DDS** folder and run the following command `integration-service Is-Config/Arm_Motors_DDS_IS_config.yaml`
+- Move to the **AP_DDS** folder and run the following command `integration-service Is-Config/DDS_Service_IS_config.yaml`
 
 ### Terminal 3 (Ardupilot)
 - Make sure you have successfully setup Ardupilot and the `DDS_ENABLE` param is set to 1
