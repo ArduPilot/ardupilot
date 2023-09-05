@@ -1,5 +1,23 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.4.0-beta6 05-Sep-2023
+Changes from 4.4.0-beta5
+1) Autopilot related fixes and enhancements
+    - KakuteH7-wing get 8 bit directional dshot channel support
+    - Luminousbee5 boards defaults updated
+    - Navigator autopilot GPIOs fix (PWM output was broken)
+    - Pixhawk6C Serial RTS lines pulled low on startup
+    - QiotekZealotF427 and QiotekZealotH743 battery monitor default fixed
+    - SDMODELH7V1 support
+2) Driver enhancements
+    - DroneCAN battery monitors allow reset of battery SoC
+    - Himark DroneCAN servo support
+    - Hobbywing DroneCAN ESC support
+3) Asymmetrical thrust support for skid steering rovers (see MOT_THST_ASYM)
+4) EKF3 high vibration handling improved with EK3_GLITCH_RADIUS option
+5) Custom build server gets mission storage on SDCard selection
+6) SITL default parameter handling bug fix
+------------------------------------------------------------------
 Rover 4.4.0-beta5 12-Aug-2023
 Changes from 4.4.0-beta4
 1) Autopilots specific changes
