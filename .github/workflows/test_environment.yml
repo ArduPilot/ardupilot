@@ -68,7 +68,7 @@ jobs:
           software-properties-common
           ;;
           *"archlinux"*)
-          pacman -Sy --noconfirm --needed git sudo
+          pacman -Syu --noconfirm --needed git sudo
           ;;
           esac
 
