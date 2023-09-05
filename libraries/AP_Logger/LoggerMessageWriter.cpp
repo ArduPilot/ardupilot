@@ -1,3 +1,7 @@
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Common/AP_FWVersion.h"
 #include "LoggerMessageWriter.h"
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -519,3 +523,5 @@ void LoggerMessageWriter_Write_Polyfence::reset()
 }
 #endif // !APM_BUILD_TYPE(APM_BUILD_Replay)
 #endif // AP_FENCE_ENABLED
+
+#endif  // HAL_LOGGING_ENABLED
