@@ -309,7 +309,9 @@ protected:
 #endif
     AP_Baro barometer;
     Compass compass;
+#if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor ins;
+#endif
 #if HAL_BUTTON_ENABLED
     AP_Button button;
 #endif
@@ -466,6 +468,7 @@ private:
     // statustext:
     void send_watchdog_reset_statustext();
 
+#if AP_INERTIALSENSOR_ENABLED
     // update the harmonic notch for throttle based notch
     void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
 
@@ -474,6 +477,7 @@ private:
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
+#endif
 
     // decimation for 1Hz update
     uint8_t one_Hz_counter;
