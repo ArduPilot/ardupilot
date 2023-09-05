@@ -102,3 +102,5 @@ define HAL_GPIO_A_LED_PIN 57
 
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
+
+include ../include/minimize_features.inc
