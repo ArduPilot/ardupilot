@@ -52,7 +52,7 @@ function maybe_prompt_user() {
 
 sudo usermod -a -G uucp "$USER"
 
-sudo pacman -Sy --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
+sudo pacman -Syu --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
 python3 -m venv "$HOME"/venv-ardupilot
 
