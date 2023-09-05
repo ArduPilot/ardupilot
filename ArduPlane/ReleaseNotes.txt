@@ -1,3 +1,26 @@
+Release 4.4.1-beta1 5th September 2023
+--------------------------------------
+
+Changes from 4.4.1
+
+- support Himark DroneCAN servos
+- support Hobbywing DroneCAN ESCs
+- fixed control surface deflection on quadplanes in VTOL takeoff wait
+- fixed bug in parameter default handling in SITL
+- allow selection of mission sdcard storage on custom.ardupilot.org
+- added support for SDMODELH7V1
+- fixed battery monitor default for QiotekZealotF427 and QiotekZealotH743
+- support 8 bit directional dshot channels on KakuteH7-wing
+- improved handling of high vibration in EKF3 with new EK3_GLITCH_RADIUS options
+- allow reset of battery SoC for DroneCAN battery monitors
+- update GPIOs for Navigator board in HAL_Linux
+- pull RTS lines low on Pixhawk6C on startup
+- added log_file_content in scripting for aerobatics
+- added asymmetry factor for skid steering on rovers
+- updated defaults for luminousbee5 boards
+
+Happy flying!
+
 Release 4.4.0 18th August 2023
 ------------------------------
 
