@@ -79,6 +79,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
     void offset(ftype ofs_north, ftype ofs_east);
+    // extrapolate latitude/longitude given distances (in meters) north
+    // and east. Note that this is metres, *even for the altitude*.
+    void offset(const Vector3p &ofs_ned);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);

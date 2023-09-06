@@ -306,6 +306,14 @@ void Location::offset(ftype ofs_north, ftype ofs_east)
     offset_latlng(lat, lng, ofs_north, ofs_east);
 }
 
+// extrapolate latitude/longitude given distances (in meters) north
+// and east. Note that this is metres, *even for the altitude*.
+void Location::offset(const Vector3p &ofs_ned)
+{
+    offset_latlng(lat, lng, ofs_ned.x, ofs_ned.y);
+    alt += -ofs_ned.z * 100;  // m -> cm
+}
+
 /*
  *  extrapolate latitude/longitude given bearing and distance
  * Note that this function is accurate to about 1mm at a distance of
