@@ -3,8 +3,6 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H750xx
 
-MCU_CLOCKRATE_MHZ 480
-
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
