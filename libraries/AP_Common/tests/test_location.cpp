@@ -113,6 +113,19 @@ TEST(Location, LocOffsetDouble)
     }
 }
 
+TEST(Location, LocOffset3DDouble)
+{
+    Location loc {
+        -353632620, 1491652373, 60000, Location::AltFrame::ABSOLUTE
+    };
+    // this is ned, so our latitude should change, and our new
+    // location should be above the original:
+    loc.offset(Vector3d{1000, 0, -10});
+    EXPECT_EQ(loc.lat, -353542788);
+    EXPECT_EQ(loc.lng, 1491652373);
+    EXPECT_EQ(loc.alt, 61000);
+}
+
 TEST(Location, Tests)
 {
     Location test_location;
