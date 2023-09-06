@@ -3191,6 +3191,31 @@ bool AP_AHRS::get_velocity_NED(Vector3f &vec) const
     return state.velocity_NED_ok;
 }
 
+// return location corresponding to vector relative to the
+// vehicle's origin
+bool AP_AHRS::get_location_from_origin_offset(Location &loc, const Vector3p &offset_ned) const
+{
+    if (!get_origin(loc)) {
+        return false;
+    }
+    loc.offset(offset_ned);
+
+    return true;
+}
+
+// return location corresponding to vector relative to the
+// vehicle's home location
+bool AP_AHRS::get_location_from_home_offset(Location &loc, const Vector3p &offset_ned) const
+{
+    if (!home_is_set()) {
+        return false;
+    }
+    loc = get_home();
+    loc.offset(offset_ned);
+
+    return true;
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
