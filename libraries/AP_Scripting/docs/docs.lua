@@ -3638,6 +3638,22 @@ function rtc:date_fields_to_clock_s(year, month, day, hour, min, sec) end
 function rtc:clock_s_to_date_fields(param1) end
 
 -- desc
+-- fills in year, month, day, hour, min, sec and ms from internal RTC
+-- year is the regular Gregorian year, month is 0~11, day is 1~31, hour is 0~23, minute is 0~59, second is 0~60 (1 leap second), ms is 0~999
+-- values are nil if there is no valid time source 
+-- usage : year, month, day, hour, min, sec, ms = rtc:get_date_and_time_utc()
+---@return integer|nil -- year
+---@return integer|nil -- month 0-11
+---@return integer|nil -- day
+---@return integer|nil -- hour
+---@return integer|nil -- minute
+---@return integer|nil -- second
+---@return integer|nil -- millisecond
+function rtc:get_date_and_time_utc() end
+
+
+
+-- desc
 fs = {}
 
 -- desc

@@ -964,6 +964,7 @@ singleton AP_RTC depends AP_RTC_ENABLED
 singleton AP_RTC rename rtc
 singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
 singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+singleton AP_RTC method get_date_and_time_utc boolean uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint16_t'Null
 
 include AP_Networking/AP_Networking.h depends AP_NETWORKING_ENABLED
 include AP_Networking/AP_Networking_Config.h
