@@ -5755,7 +5755,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             if (camera == nullptr) {
                 break;
             }
-            CHECK_PAYLOAD_SIZE(CAMERA_INFORMATION);
+            CHECK_PAYLOAD_SIZE(CAMERA_SETTINGS);
             camera->send_camera_settings(chan);
         }
         break;
