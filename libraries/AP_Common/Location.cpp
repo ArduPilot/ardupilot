@@ -49,22 +49,6 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
     }
 }
 
-Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
-{
-    zero();
-
-    // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
-
-    // calculate lat, lon
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        lat = ekf_origin.lat;
-        lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
-    }
-}
-
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
 {
     alt = alt_cm;
