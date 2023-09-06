@@ -78,7 +78,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
     if (u.packet.header_lsb != PACKET_HEADER_LSB ||
         u.packet.device_id != 0x00 ||
         u.packet.length != 28 ||
-        u.packet.objects_number != 1 ||
+        //u.packet.objects_number != 1 ||
         u.calculate_checksum() != u.packet.checksum) {
         // sanity checks failed - discard and try again next time we're called:
         move_signature_in_buffer(1);
