@@ -31,6 +31,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_HAL/SIMState.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -51,7 +52,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.
-    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns
+    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns,-1:ShowRunsOnlyToGCS,-2:ShowOverrunsOnlyToGCS
     // @User: Advanced
     AP_GROUPINFO("DEBUG",    0, AP_Scheduler, _debug, 0),
 
@@ -266,6 +267,13 @@ void AP_Scheduler::run(uint32_t time_available)
         now = AP_HAL::micros();
         uint32_t time_taken = now - _task_time_started;
         bool overrun = false;
+        if (_debug.get() == -1) {
+            gcs().send_text(MAV_SEVERITY_INFO, "run,%u,%s,%u,%u",
+                (unsigned)i,
+                task.name,
+                (unsigned)time_taken,
+                (unsigned)_task_time_allowed);
+        }
         if (time_taken > _task_time_allowed) {
             overrun = true;
             // the event overran!
@@ -274,6 +282,13 @@ void AP_Scheduler::run(uint32_t time_available)
                   task.name,
                   (unsigned)time_taken,
                   (unsigned)_task_time_allowed);
+            if (_debug.get() == -2) {
+                gcs().send_text(MAV_SEVERITY_INFO, "over,%u,%s,%u,%u",
+                    (unsigned)i,
+                    task.name,
+                    (unsigned)time_taken,
+                    (unsigned)_task_time_allowed);
+            }
         }
 
         perf_info.update_task_info(i, time_taken, overrun);
