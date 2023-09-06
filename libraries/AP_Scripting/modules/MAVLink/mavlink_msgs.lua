@@ -48,7 +48,14 @@ function mavlink_msgs.decode(message, msg_map)
 
   -- map all the fields out
   for _,v in ipairs(message_map.fields) do
-    if v[3] then
+    -- <c needs a special handling
+    if string.sub(v[2],2) == 'c' then
+      if v[3] == nil then
+        gcs:send_text(0,"no string length for <c format")
+        return nil
+      end
+      result[v[1]], offset  = string.unpack(v[2] .. tostring(v[3]), message, offset)
+    elseif v[3] then
       result[v[1]] = {}
       for j=1,v[3] do
         result[v[1]][j], offset = string.unpack(v[2], message, offset)
@@ -74,15 +81,25 @@ function mavlink_msgs.encode(msgname, message)
   local packedTable = {}
   local packedIndex = 1
   for i,v in ipairs(message_map.fields) do
+
     if v[3] then
-      packString = (packString .. string.rep(string.sub(v[2], 2), v[3]))
-      for j = 1, v[3] do
-        packedTable[packedIndex] = message[message_map.fields[i][1]][j]
-        if packedTable[packedIndex] == nil then
-          packedTable[packedIndex] = 0
-        end
+
+      if string.sub(v[2],2) == 'c' then
+        packString = (packString .. "c" .. tostring(v[3]))
+        packedTable[packedIndex] = message[message_map.fields[i][1]]
         packedIndex = packedIndex + 1
-      end
+      else
+        packString = (packString .. string.rep(string.sub(v[2], 2), v[3]))
+
+        for j = 1, v[3] do
+          packedTable[packedIndex] = message[message_map.fields[i][1]][j]
+          if packedTable[packedIndex] == nil then
+            packedTable[packedIndex] = 0
+          end
+        packedIndex = packedIndex + 1
+        end
+
+      end       
     else
       packString = (packString .. string.sub(v[2], 2))
       packedTable[packedIndex] = message[message_map.fields[i][1]]
