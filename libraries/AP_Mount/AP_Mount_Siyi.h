@@ -251,7 +251,8 @@ private:
     //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
     //   LOCK: roll, pitch and yaw are all in earth-frame
     //   FPV: roll, pitch and yaw are all in body-frame
-    void set_motion_mode(GimbalMotionMode mode);
+    // Returns true if message successfully sent to Gimbal
+    bool set_motion_mode(const GimbalMotionMode mode);
 
     // send target pitch and yaw rates to gimbal
     // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
