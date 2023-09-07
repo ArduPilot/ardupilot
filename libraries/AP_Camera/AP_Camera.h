@@ -120,6 +120,10 @@ public:
     void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
     bool take_multiple_pictures(uint8_t instance, uint32_t time_interval_ms, int16_t total_num);
 
+    // stop capturing multiple image sequence
+    void stop_capture();
+    bool stop_capture(uint8_t instance);
+
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording
     bool record_video(bool start_recording);
