@@ -604,30 +604,41 @@ bool AP_Mount_Siyi::send_1byte_packet(SiyiCommandId cmd_id, uint8_t data_byte)
 // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
 void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef)
 {
-    // send lock/follow value if it has changed
+    // send lock/follow value
     const GimbalMotionMode mode = yaw_is_ef ? GimbalMotionMode::LOCK : GimbalMotionMode::FOLLOW;
-    if (mode != _config_info.motion_mode) {
-        set_motion_mode(mode);
+    if (!set_motion_mode(mode)) {
+        // couldn't set mode, so don't send rotation
+        return;
     }
 
     const uint8_t yaw_and_pitch_rates[] {(uint8_t)yaw_scalar, (uint8_t)pitch_scalar};
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
 }
 
-// Set gimbal's motion mode
+// Set gimbal's motion mode if it has changed. Use force=true to always send.
 //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
 //   LOCK: roll, pitch and yaw are all in earth-frame
 //   FPV: roll, pitch and yaw are all in body-frame
 // Returns true if mode successfully sent to Gimbal
-bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode)
+bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool force)
 {
+    if (!force && (mode == _config_info.motion_mode)) {
+        // we're already in the right mode...
+        return true;
+    }
+
     PhotoFunction data = PhotoFunction::LOCK_MODE;
     switch (mode) {
         case GimbalMotionMode::LOCK:   data = PhotoFunction::LOCK_MODE; break;
         case GimbalMotionMode::FOLLOW: data = PhotoFunction::FOLLOW_MODE; break;
         case GimbalMotionMode::FPV:    data = PhotoFunction::FPV_MODE; break;
     }
-    return send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
+    bool sent = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
+    if (sent) {
+        // assume the mode is set correctly until told otherwise
+        _config_info.motion_mode = mode;
+    }
+    return sent;
 }
 
 // send target pitch and yaw rates to gimbal
