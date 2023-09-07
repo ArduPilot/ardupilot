@@ -401,6 +401,14 @@ private:
     // limit applied to forward pitch to prevent wing producing negative lift
     AP_Float q_fwd_pitch_lim;
 
+    // specifies when the feature controlled by q_fwd_thr_gain and q_fwd_pitch_lim is used
+    enum {
+        Q_FWD_THR_USE_OFF     = 0,
+        Q_FWD_THR_USE_POSCTRL = 1,
+        Q_FWD_THR_USE_ALL     = 2,
+    };
+    AP_Int8 q_fwd_thr_use;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
