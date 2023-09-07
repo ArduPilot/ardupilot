@@ -35,7 +35,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: DIST
     // @DisplayName: Takeoff mode distance
-    // @Description: This is the distance from the takeoff location where the plane will loiter. The loiter point will be in the direction of takeoff (the direction the plane is facing when the motor starts)
+    // @Description: This is the distance from the takeoff location where the plane will loiter. The loiter point will be in the direction of takeoff (the direction the plane is facing when the plane begins takeoff)
     // @Range: 0 500
     // @Increment: 1
     // @Units: m
