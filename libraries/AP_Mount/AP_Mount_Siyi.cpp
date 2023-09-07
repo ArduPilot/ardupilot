@@ -917,7 +917,10 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
 {
     const float NaN = nanf("0x4152");
     const float zoom_mult_max = get_zoom_mult_max();
-    const float zoom_pct = is_positive(zoom_mult_max) ? (_zoom_mult / zoom_mult_max * 100) : 0;
+    float zoom_pct = 0.0;
+    if (is_positive(zoom_mult_max)) {
+        zoom_pct = linear_interpolate(0, 100, _zoom_mult, 1.0, zoom_mult_max);
+    }
 
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
