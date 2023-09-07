@@ -8,8 +8,9 @@
 // set zoom specified as a rate or percentage
 // enumerators match MAVLink CAMERA_ZOOM_TYPE
 enum class ZoomType : uint8_t {
+    STEP = 0,   // zoom one step increment (-1 for wide, 1 for tele). Same as ZOOM_TYPE_STEP
     RATE = 1,   // zoom in, out or hold (zoom out = -1, hold = 0, zoom in = 1). Same as ZOOM_TYPE_CONTINUOUS
-    PCT = 2     // zoom to a percentage (from 0 to 100) of the full range. Same as ZOOM_TYPE_RANGE
+    PCT = 2,    // zoom to a percentage (from 0 to 100) of the full range. Same as ZOOM_TYPE_RANGE
 };
 
 // set focus specified as a rate or percentage

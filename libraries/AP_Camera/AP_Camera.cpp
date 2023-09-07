@@ -229,6 +229,10 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
             set_zoom(ZoomType::PCT, packet.param2)) {
             return MAV_RESULT_ACCEPTED;
         }
+        if (is_equal(packet.param1, (float)ZOOM_TYPE_STEP) &&
+            set_zoom(ZoomType::STEP, packet.param2)) {
+            return MAV_RESULT_ACCEPTED;
+        }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_SET_CAMERA_FOCUS:
         // accept any of the auto focus types

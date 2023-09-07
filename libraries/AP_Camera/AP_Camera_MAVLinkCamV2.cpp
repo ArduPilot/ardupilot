@@ -82,6 +82,9 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
     case ZoomType::PCT:
         pkt.param1 = ZOOM_TYPE_RANGE;
         break;
+    case ZoomType::STEP:
+        pkt.param1 = ZOOM_TYPE_STEP;
+        break;
     }
     pkt.param2 = zoom_value;            // Zoom Value
 
