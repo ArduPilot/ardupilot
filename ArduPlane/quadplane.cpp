@@ -3613,7 +3613,7 @@ float QuadPlane::forward_throttle_pct()
 #if QAUTOTUNE_ENABLED
     if (is_positive(q_fwd_thr_gain) && plane.control_mode != &plane.mode_qautotune) {
 #else
-    if (is_positive(q_fwd_thr_gain) && is_positive(q_fwd_thr_gain)) {
+    if (is_positive(q_fwd_thr_gain)) {
 #endif
         // handle special case where we are using forward throttle instead of forward tilt in Q modes
         return 100.0f * q_fwd_throttle;
