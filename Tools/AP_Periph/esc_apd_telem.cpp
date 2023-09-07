@@ -51,6 +51,7 @@ bool ESC_APD_Telem::update() {
                     decoded.current = le16toh(received.packet.bus_current) * (1 / 12.5f);
                     decoded.rpm = le32toh(received.packet.erpm) / pole_count;
                     decoded.power_rating_pct = le16toh(received.packet.motor_duty) * 1e-2f;
+                    decoded.status_flags = received.packet.status_flags;
                     ret = true;
                     len = 0;
                 } else {

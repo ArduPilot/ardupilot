@@ -1804,6 +1804,7 @@ void AP_Periph_FW::apd_esc_telem_update()
             pkt.rpm = t.rpm;
             pkt.power_rating_pct = t.power_rating_pct;
             pkt.error_count = t.error_count;
+            pkt.status_flags = t.status_flags;
 
             uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
             uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !periph.canfdout());
