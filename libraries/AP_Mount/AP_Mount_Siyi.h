@@ -247,12 +247,12 @@ private:
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
 
-    // Set gimbal's motion mode
+    // Set gimbal's motion mode if it has changed. Use force=true to always send.
     //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
     //   LOCK: roll, pitch and yaw are all in earth-frame
     //   FPV: roll, pitch and yaw are all in body-frame
     // Returns true if message successfully sent to Gimbal
-    bool set_motion_mode(const GimbalMotionMode mode);
+    bool set_motion_mode(const GimbalMotionMode mode, const bool force=false);
 
     // send target pitch and yaw rates to gimbal
     // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
