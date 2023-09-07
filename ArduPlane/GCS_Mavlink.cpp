@@ -696,7 +696,7 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
 }
 
 
-MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     plane.in_calibration = true;
     MAV_RESULT ret = GCS_MAVLINK::handle_command_preflight_calibration(packet, msg);
