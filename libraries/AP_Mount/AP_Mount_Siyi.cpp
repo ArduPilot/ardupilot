@@ -637,6 +637,7 @@ bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool forc
     if (sent) {
         // assume the mode is set correctly until told otherwise
         _config_info.motion_mode = mode;
+        request_configuration();
     }
     return sent;
 }
