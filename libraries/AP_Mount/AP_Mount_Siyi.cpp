@@ -443,13 +443,24 @@ void AP_Mount_Siyi::process_packet()
         // Alert user if recording status changed
         if (prev_record_status != _config_info.record_status) {
             const char * msg = "?";
+            MAV_SEVERITY sev = MAV_SEVERITY_INFO;
             switch (_config_info.record_status) {
-                case RecordingStatus::OFF:       msg = "OFF";        break;
-                case RecordingStatus::ON:        msg = "ON";         break;
-                case RecordingStatus::NO_CARD:   msg = "NO CARD!";   break;
-                case RecordingStatus::DATA_LOSS: msg = "DATA LOSS!"; break;
+                case RecordingStatus::OFF:
+                    msg = "OFF";
+                    break;
+                case RecordingStatus::ON:
+                    msg = "ON";
+                    break;
+                case RecordingStatus::NO_CARD:
+                    msg = "NO CARD!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
+                case RecordingStatus::DATA_LOSS:
+                    msg = "DATA LOSS!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
             }
-            gcs().send_text(MAV_SEVERITY_INFO, "Siyi: recording %s", msg);
+            GCS_SEND_TEXT(sev, "Siyi: recording %s", msg);
         }
 
         debug(
