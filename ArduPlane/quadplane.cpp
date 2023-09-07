@@ -167,7 +167,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: VFWD_GAIN
     // @DisplayName: Forward velocity hold gain
-    // @Description: The use of this parameter is no longer recommended and has been superseded by a method that works in all VTOL  modes with the exception of autotune which is controlled by the Q_FWD_THR_GAIN parameter. This Q_VFD_GAIN parameter controls use of the forward motor in VTOL modes that use the velocity controller. Set to 0 to disable this function. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor. 
+    // @Description: The use of this parameter is no longer recommended and has been superseded by a method that works in all VTOL  modes with the exception of autotune which is controlled by the Q_FWD_THR_USE parameter. This Q_VFD_GAIN parameter controls use of the forward motor in VTOL modes that use the velocity controller. Set to 0 to disable this function. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor. 
     // @Range: 0 0.5
     // @Increment: 0.01
     // @User: Standard
@@ -507,11 +507,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: FWD_THR_GAIN
     // @DisplayName: Q mode fwd throttle gain
-    // @Description: Gain from forward accel/tilt to forward throttle that is used in all VTOL modes except autotune. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors) with a value of 2 being typical. Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter and the Q_VFWD_GAIN parameter should be set to 0 to disable the alternative method that works through the velocity controller. Set Q_FWD_THR_GAIN to 0 to disable this function. Do not use this parameter with tail sitters.
+    // @Description: This parameter sets the gain from forward accel/tilt to forward throttle in Q modes. The Q modes this feature operates in is controlled by the Q_FWD_THR_USE parameter. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors) with a value of 2 being typical. Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter.
     // @Range: 0.0 5.0
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("FWD_THR_GAIN", 35, QuadPlane, q_fwd_thr_gain, 0.0f),
+    AP_GROUPINFO("FWD_THR_GAIN", 35, QuadPlane, q_fwd_thr_gain, 2.0f),
 
     // @Param: FWD_PIT_LIM
     // @DisplayName: Q mode forward pitch limit
@@ -521,6 +521,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("FWD_PIT_LIM", 36, QuadPlane, q_fwd_pitch_lim, 3.0f),
+
+    // @Param: FWD_THR_USE
+    // @DisplayName: Q mode forward throttle use
+    // @Description: This parameter determines when the feature that uses forward throttle insread of forward tilt is used. The amount fo forward throttle is controlled by the Q_FWD_THR_GAIN parameter. The maximum amout of forward pitch allowed is controlled by the Q_FWD_PIT_LIM parameter. Q_FWD_THR_USE = 0 disables the feature. Q_FWD_THR_USE = 1 enables the feature in all position controlled modes such as QLOITER, QLAND, QRTL and QTAKEOFF. Q_FWD_THR_USE enables the feature in all Q modes except QAUTOTUNE and QACRO. When enabling the feature, the legacy method of controlling forward throttle use via velocity controller error should be disabled by setting Q_VFWD_GAIN to 0. Do not use this feature with tailsitters.
+    // @Values: 0:Off,1:On in all position controlled Q modes,2:On in all Q modes except QAUTOTUNE and QACRO
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, Q_FWD_THR_USE_OFF),
     AP_GROUPEND
 };
 
@@ -2926,7 +2934,10 @@ void QuadPlane::vtol_position_controller(void)
 }
 
 void QuadPlane::assign_tilt_to_fwd_thr(void) {
-    if (!is_positive(q_fwd_thr_gain)) {
+
+    if ((q_fwd_thr_use == Q_FWD_THR_USE_OFF) ||
+        ((q_fwd_thr_use == Q_FWD_THR_USE_POSCTRL) && !pos_control->is_active_xy()) ||
+        !is_positive(q_fwd_thr_gain)) {
         q_fwd_throttle = 0.0f;
         return;
     }
