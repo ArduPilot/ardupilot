@@ -4357,7 +4357,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
     return MAV_RESULT_IN_PROGRESS;
 }
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
 
@@ -4380,7 +4380,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     rc().calibrating(is_positive(packet.param4));
 
 #if HAL_INS_ACCELCAL_ENABLED
-    if (is_equal(packet.param5,1.0f)) {
+    if (packet.x == 1) {
         // start with gyro calibration
         if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4393,11 +4393,11 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if AP_INERTIALSENSOR_ENABLED
-    if (is_equal(packet.param5,2.0f)) {
+    if (packet.x == 2) {
         return AP::ins().calibrate_trim();
     }
 
-    if (is_equal(packet.param5,4.0f)) {
+    if (packet.x == 4) {
         // simple accel calibration
         return AP::ins().simple_accel_cal();
     }
@@ -4407,7 +4407,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
       compass to be written as valid. This is useful when reloading
       parameters after a full parameter erase
      */
-    if (is_equal(packet.param5,76.0f)) {
+    if (packet.x == 76) {
         // force existing accel calibration to be accepted as valid
         AP::ins().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
@@ -4423,7 +4423,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
@@ -4871,10 +4871,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_preflight_reboot(packet, msg);
         break;
 
-    case MAV_CMD_PREFLIGHT_CALIBRATION:
-        result = handle_command_preflight_calibration(packet, msg);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5148,6 +5144,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_CANCEL_MAG_CAL:
         return handle_command_mag_cal(packet);
 #endif
+
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        return handle_command_preflight_calibration(packet, msg);
 
 #if AP_MAVLINK_SERVO_RELAY_ENABLED
     case MAV_CMD_DO_SET_SERVO:
