@@ -439,6 +439,15 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: THRUST_FAIL
+    // @DisplayName: Simulated thrust failure
+    // @Description: Simulated full or partial forward thrust failure for Plane. A value of >= 1 is full loss. Values between 0 and 1 simulate degraded thrust where 0.1 would mean only 10% of normal thrust is being generated. A value <= 0 means no failure.
+    // @Range: 0 1
+    // @Increment: 0.1
+    AP_GROUPINFO("THRUST_FAIL", 43, SIM, thrust_fail, 0),
+#endif
+
     // @Group: ARSPD_
     // @Path: ./SITL_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),
