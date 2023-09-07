@@ -708,18 +708,45 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
         return false;
     }
 
-    // check desired recording state has changed
-    bool ret = true;
-    const RecordingStatus new_record_status = start_recording ? RecordingStatus::ON : RecordingStatus::OFF;
-    if (_config_info.record_status != new_record_status) {
-        // request recording start or stop (sadly the same message is used)
-        ret = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE);
+    bool success = true;
+    bool send_toggle = false;
+    if (start_recording) {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                // already recording...
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+                send_toggle = true;
+                break;
+            case RecordingStatus::NO_CARD:
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Siyi: can't start recording: No Card");
+                success = false;
+                break;
+        }
+    } else {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                send_toggle = true;
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+            case RecordingStatus::NO_CARD:
+                // already off...
+                break;
+        }
+    }
+
+    if (send_toggle) {
+        success = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE);
     }
 
     // request recording state update from gimbal
     request_configuration();
 
-    return ret;
+    return success;
 }
 
 // send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
