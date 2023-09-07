@@ -76,6 +76,8 @@ private:
         TUNING_PIT_I =                        55,
         TUNING_PIT_D =                        56,
         TUNING_PIT_FF =                       57,
+
+        TUNING_Q_FWD_THR =                    58,
     };
 
     /*
