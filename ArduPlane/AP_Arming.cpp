@@ -223,6 +223,11 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
+    if ((plane.quadplane.vel_forward.gain > 0) && (plane.quadplane.q_fwd_thr_use != plane.quadplane.Q_FWD_THR_USE_OFF)) {
+        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "set either Q_VFWD_GAIN or Q_FWD_THR_USE to 0");
+        ret = false;
+    }
+
     return ret;
 }
 #endif // HAL_QUADPLANE_ENABLED
