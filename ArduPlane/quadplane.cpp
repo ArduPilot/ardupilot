@@ -507,11 +507,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: FWD_THR_GAIN
     // @DisplayName: Q mode fwd throttle gain
-    // @Description: Gain from forward accel/tilt to forward throttle that is used in all VTOL modes except autotune. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors). Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximnated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter and the Q_VFWD_GAIN parameter should be set to 0 to disable the alternative method that works through the velocity controller. Set Q_FWD_THR_GAIN to 0 to disable this function. Do not use this parameter with tail sitters.
+    // @Description: Gain from forward accel/tilt to forward throttle that is used in all VTOL modes except autotune. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors) with a value of 2 being typical. Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter and the Q_VFWD_GAIN parameter should be set to 0 to disable the alternative method that works through the velocity controller. Set Q_FWD_THR_GAIN to 0 to disable this function. Do not use this parameter with tail sitters.
     // @Range: 0.0 5.0
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("FWD_THR_GAIN", 35, QuadPlane, q_fwd_thr_gain, 2.0f),
+    AP_GROUPINFO("FWD_THR_GAIN", 35, QuadPlane, q_fwd_thr_gain, 0.0f),
 
     // @Param: FWD_PIT_LIM
     // @DisplayName: Q mode forward pitch limit
