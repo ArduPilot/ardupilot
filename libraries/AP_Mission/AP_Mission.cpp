@@ -1312,6 +1312,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_IMAGE_START_CAPTURE:
+        cmd.content.image_start_capture.instance = packet.param1;
         cmd.content.image_start_capture.interval_s = packet.param2;
         cmd.content.image_start_capture.total_num_images = packet.param3;
         cmd.content.image_start_capture.start_seq_number = packet.param4;
@@ -1807,6 +1808,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_IMAGE_START_CAPTURE:
+        packet.param1 = cmd.content.image_start_capture.instance;
         packet.param2 = cmd.content.image_start_capture.interval_s;
         packet.param3 = cmd.content.image_start_capture.total_num_images;
         packet.param4 = cmd.content.image_start_capture.start_seq_number;
