@@ -19,6 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -595,6 +596,14 @@ void SITL_State::set_height_agl(void)
         if (_terrain != nullptr &&
             _terrain->height_amsl(location, terrain_height_amsl, false)) {
             _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            if (_sitl->height_agl < 0) {
+                static bool sent_warning_clamp;
+                if (!sent_warning_clamp) {
+                    sent_warning_clamp = true;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Clamping simulated height agl to zero from (%f)", _sitl->height_agl);
+                }
+                _sitl->height_agl = 0;
+            }
             return;
         }
     }
