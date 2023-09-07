@@ -366,20 +366,32 @@ void Tailsitter::output(void)
         if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
             // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
             // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
-            // Assume there is always roll and pitch control surfaces, otherwise motors only assist should not be set.
+            // Assume there is always roll control surfaces, otherwise motors only assist should not be set.
             const float dt = quadplane.attitude_control->get_dt();
-            quadplane.attitude_control->get_rate_pitch_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
-            motors->limit.pitch = true;
+
+            // VTOL yaw / FW roll
             quadplane.attitude_control->get_rate_yaw_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
             motors->limit.yaw = true;
 
+            // VTOL and FW pitch
+            if (_have_elevator || _have_elevon || _have_v_tail) {
+                // have pitch control surfaces, use them
+                quadplane.attitude_control->get_rate_pitch_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
+                motors->limit.pitch = true;
+            } else {
+                // no pitch control surfaces, zero plane I terms and use motors
+                // We skip the outputting to surfaces for this axis from the copter controller but there are none setup
+                plane.pitchController.reset_I();
+            }
+
+            // VTOL roll / FW yaw
             if (_have_rudder || _have_v_tail) {
                 // there are yaw control  surfaces, zero motor I term
                 quadplane.attitude_control->get_rate_roll_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
                 motors->limit.roll = true;
             } else {
                 // no yaw control surfaces, zero plane I terms and use motors
-                // We skip the outputing to surfaces for this axis from the copter controller but there are none setup
+                // We skip the outputting to surfaces for this axis from the copter controller but there are none setup
                 plane.yawController.reset_I();
             }
 
