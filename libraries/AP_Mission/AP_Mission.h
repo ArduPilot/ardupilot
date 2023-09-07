@@ -269,6 +269,7 @@ public:
 
     // MAV_CMD_IMAGE_START_CAPTURE support
     struct PACKED image_start_capture_Command {
+        uint8_t instance;
         float interval_s;
         uint16_t total_num_images;
         uint16_t start_seq_number;
