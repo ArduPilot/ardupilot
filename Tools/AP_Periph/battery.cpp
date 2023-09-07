@@ -27,6 +27,10 @@ void AP_Periph_FW::can_battery_update(void)
 
     const uint8_t battery_instances = battery_lib.num_instances();
     for (uint8_t i=0; i<battery_instances; i++) {
+        if (BIT_IS_SET(g.battery_hide_mask, i)) {
+            // do not transmit this battery
+            continue;
+        }
         if (!battery_lib.healthy(i)) {
             continue;
         }

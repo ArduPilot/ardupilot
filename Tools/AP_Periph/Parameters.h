@@ -82,6 +82,7 @@ public:
         k_param_sitl,
         k_param_ahrs,
         k_param_battery_balance,
+        k_param_battery_hide_mask,
     };
 
     AP_Int16 format_version;
@@ -181,6 +182,10 @@ public:
 
 #if HAL_GCS_ENABLED
     AP_Int16 sysid_this_mav;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    AP_Int32 battery_hide_mask;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_EFI
