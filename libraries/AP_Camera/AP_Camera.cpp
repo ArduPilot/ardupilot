@@ -127,6 +127,31 @@ bool AP_Camera::take_multiple_pictures(uint8_t instance, uint32_t time_interval_
     return true;
 }
 
+// stop capturing multiple image sequence
+void AP_Camera::stop_capture()
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call for each instance
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] != nullptr) {
+            _backends[i]->stop_capture();
+        }
+    }
+}
+
+bool AP_Camera::stop_capture(uint8_t instance)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    backend->stop_capture();
+    return true;
+}
+
 // start/stop recording video
 // start_recording should be true to start recording, false to stop recording
 bool AP_Camera::record_video(bool start_recording)
@@ -309,6 +334,16 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
             if (take_multiple_pictures(packet.param1-1,packet.param2*1000, packet.param3)) {
                 return MAV_RESULT_ACCEPTED;
             }
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        if (is_zero(packet.param1)) {
+            // stop capture for every backend
+            stop_capture();
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (stop_capture(packet.param1)) {
+            return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_POINT:
