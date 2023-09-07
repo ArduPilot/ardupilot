@@ -189,6 +189,14 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         }
         return false;
 
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        if (cmd.p1 == 0) {
+            // stop capture for each backend
+            camera->stop_capture();
+            return true;
+        }
+        return camera->stop_capture(cmd.p1);
+
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
     {
