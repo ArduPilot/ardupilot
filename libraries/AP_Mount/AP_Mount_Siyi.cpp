@@ -618,7 +618,8 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
 //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
 //   LOCK: roll, pitch and yaw are all in earth-frame
 //   FPV: roll, pitch and yaw are all in body-frame
-void AP_Mount_Siyi::set_motion_mode(GimbalMotionMode mode)
+// Returns true if mode successfully sent to Gimbal
+bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode)
 {
     PhotoFunction data = PhotoFunction::LOCK_MODE;
     switch (mode) {
@@ -626,7 +627,7 @@ void AP_Mount_Siyi::set_motion_mode(GimbalMotionMode mode)
         case GimbalMotionMode::FOLLOW: data = PhotoFunction::FOLLOW_MODE; break;
         case GimbalMotionMode::FPV:    data = PhotoFunction::FPV_MODE; break;
     }
-    send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
+    return send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
 }
 
 // send target pitch and yaw rates to gimbal
