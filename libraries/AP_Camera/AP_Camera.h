@@ -113,11 +113,12 @@ public:
 
     // take a picture
     void take_picture();
-    void take_picture(uint8_t instance);
+    bool take_picture(uint8_t instance);
 
     // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
     // total_num is number of pictures to be taken, -1 means capture forever
     void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+    bool take_multiple_pictures(uint8_t instance, uint32_t time_interval_ms, int16_t total_num);
 
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording

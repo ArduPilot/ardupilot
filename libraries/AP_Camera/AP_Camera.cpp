@@ -81,10 +81,24 @@ void AP_Camera::take_picture()
 {
     WITH_SEMAPHORE(_rsem);
 
-    if (primary == nullptr) {
-        return;
+    // call for each instance
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] != nullptr) {
+            _backends[i]->take_picture();
+        }
     }
-    primary->take_picture();
+}
+
+bool AP_Camera::take_picture(uint8_t instance)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    backend->take_picture();
+    return true;
 }
 
 // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
@@ -93,10 +107,24 @@ void AP_Camera::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_
 {
     WITH_SEMAPHORE(_rsem);
 
-    if (primary == nullptr) {
-        return;
+    // call for all instances
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] != nullptr) {
+            _backends[i]->take_multiple_pictures(time_interval_ms, total_num);
+        }
     }
-    primary->take_multiple_pictures(time_interval_ms, total_num);
+}
+
+bool AP_Camera::take_multiple_pictures(uint8_t instance, uint32_t time_interval_ms, int16_t total_num)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    backend->take_multiple_pictures(time_interval_ms, total_num);
+    return true;
 }
 
 // start/stop recording video
@@ -251,17 +279,38 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         }
         return MAV_RESULT_DENIED;
     case MAV_CMD_IMAGE_START_CAPTURE:
-        if (!is_zero(packet.param2) || !is_equal(packet.param3, 1.0f) || !is_zero(packet.param4)) {
-            // Its a multiple picture request
-            if (is_equal(packet.param3, 0.0f)) {
-                take_multiple_pictures(packet.param2*1000, -1);
-            } else {
-                take_multiple_pictures(packet.param2*1000, packet.param3);
+        // check if this is a single picture request
+        if (is_equal(packet.param3, 1.0f)) {
+            if (is_zero(packet.param1)) {
+                // take pictures for every backend
+                take_picture();
+                return MAV_RESULT_ACCEPTED;
             }
-            return MAV_RESULT_ACCEPTED;
+            if (take_picture(packet.param1-1)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else if (is_zero(packet.param3)) {
+            // multiple picture request, take pictures forever
+            if (is_zero(packet.param1)) {
+                // take pictures for every backend
+                take_multiple_pictures(packet.param2*1000, -1);
+                return MAV_RESULT_ACCEPTED;
+            }
+            if (take_multiple_pictures(packet.param1-1,packet.param2*1000, -1)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else {
+            // take multiple pictures equal to the number specified in param3
+            if (is_zero(packet.param1)) {
+                // take pictures for every backend
+                take_multiple_pictures(packet.param2*1000, packet.param3);
+                return MAV_RESULT_ACCEPTED;
+            }
+            if (take_multiple_pictures(packet.param1-1,packet.param2*1000, packet.param3)) {
+                return MAV_RESULT_ACCEPTED;
+            }
         }
-        take_picture();
-        return MAV_RESULT_ACCEPTED;
+        return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_POINT:
         if (set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
@@ -431,20 +480,6 @@ void AP_Camera::update()
             _backends[instance]->update();
         }
     }
-}
-
-// take_picture - take a picture
-void AP_Camera::take_picture(uint8_t instance)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return;
-    }
-
-    // call backend
-    backend->take_picture();
 }
 
 // start/stop recording video.  returns true on success
