@@ -4752,6 +4752,69 @@ class AutoTestPlane(AutoTest):
         )
         self.fly_home_land_and_disarm()
 
+    def _MAV_CMD_PREFLIGHT_CALIBRATION(self, command):
+        self.context_push()
+        self.start_subtest("Denied when armed")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p1=1,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle()
+
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("gyro cal")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p1=1,
+        )
+
+        self.start_subtest("baro cal")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p3=1,
+        )
+        self.wait_statustext('Barometer calibration complete', check_context=True)
+
+        # accelcal skipped here, it is checked elsewhere
+
+        self.start_subtest("ins trim")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=2,
+        )
+
+        # enforced delay between cals:
+        self.delay_sim_time(5)
+
+        self.start_subtest("simple accel cal")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+        )
+
+        self.start_subtest("force save accels")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=76,
+        )
+
+        self.start_subtest("force save compasses")
+        command(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p2=76,
+        )
+
+        self.context_pop()
+
+    def MAV_CMD_PREFLIGHT_CALIBRATION(self):
+        '''test MAV_CMD_PREFLIGHT_CALIBRATION mavlink handling'''
+        self._MAV_CMD_PREFLIGHT_CALIBRATION(self.run_cmd)
+        self._MAV_CMD_PREFLIGHT_CALIBRATION(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4843,6 +4906,7 @@ class AutoTestPlane(AutoTest):
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            self.MAV_CMD_PREFLIGHT_CALIBRATION,
         ])
         return ret
 
