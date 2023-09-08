@@ -83,6 +83,7 @@ public:
     AP_Float fixed_angle;
     AP_Float fixed_gain;
     AP_Float flap_angle_deg;
+    AP_Int8  max_rate_down_transition_dps;
 
     float current_tilt;
     float current_throttle;
@@ -90,6 +91,8 @@ public:
     float transition_yaw_cd;
     uint32_t transition_yaw_set_ms;
     bool _is_vectored;
+    float _dt;
+    float _transition_fwd_tilt_frac;
 
     // types of tilt mechanisms
     enum {TILT_TYPE_CONTINUOUS    =0,
