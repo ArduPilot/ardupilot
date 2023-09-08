@@ -527,6 +527,22 @@ void AP_Mount_Siyi::process_packet()
         break;
     }
 
+    case SiyiCommandId::ABSOLUTE_ZOOM:
+#if AP_MOUNT_SIYI_DEBUG
+        // always returns uint8_t(1)
+        if (_parsed_msg.data_bytes_received != 1) {
+            unexpected_len = true;
+        }
+#endif
+        break;
+
+    case SiyiCommandId::ACQUIRE_ZOOM_MAX: {
+        float max = (float)_msg_buff[_msg_buff_data_start];
+        max += (float)_msg_buff[_msg_buff_data_start + 1] / 10;
+        debug("Max Zoom response: %.02f", max);
+        break;
+    }
+
     case SiyiCommandId::READ_RANGEFINDER: {
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
         _last_rangefinder_dist_ms = AP_HAL::millis();

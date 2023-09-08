@@ -111,6 +111,7 @@ private:
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
         READ_RANGEFINDER = 0x15,
+        ACQUIRE_ZOOM_MAX = 0x16,
     };
 
     // Function Feedback Info packet info_type values
@@ -242,6 +243,7 @@ private:
     void request_function_feedback_info() { send_packet(SiyiCommandId::FUNCTION_FEEDBACK_INFO, nullptr, 0); }
     void request_gimbal_attitude() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE, nullptr, 0); }
     void request_rangefinder_distance() { send_packet(SiyiCommandId::READ_RANGEFINDER, nullptr, 0); }
+    void request_zoom_max() { send_packet(SiyiCommandId::ACQUIRE_ZOOM_MAX, nullptr, 0); }
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
