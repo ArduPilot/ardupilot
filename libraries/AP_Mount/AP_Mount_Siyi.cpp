@@ -60,7 +60,7 @@ void AP_Mount_Siyi::update()
     uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - _last_send_ms) >= 1000) {
         _last_send_ms = now_ms;
-        if (!_got_firmware_version) {
+        if (!_firmware_version.received) {
             request_firmware_version();
             return;
         } else if (!_got_hardware_id) {
@@ -164,7 +164,7 @@ void AP_Mount_Siyi::update()
 bool AP_Mount_Siyi::healthy() const
 {
     // unhealthy until gimbal has been found and replied with firmware version info
-    if (!_initialised || !_got_firmware_version) {
+    if (!_initialised || !_firmware_version.received) {
         return false;
     }
 
@@ -325,32 +325,43 @@ void AP_Mount_Siyi::process_packet()
 #endif
             break;
         }
-        _got_firmware_version = true;
 
         // consume and display camera firmware version
-        _cam_firmware_version = {
-            _msg_buff[_msg_buff_data_start+2],      // firmware major version
-            _msg_buff[_msg_buff_data_start+1],      // firmware minor version
-            _msg_buff[_msg_buff_data_start+0]       // firmware revision (aka patch)
+        _firmware_version = {
+            .camera = {
+                .major = _msg_buff[_msg_buff_data_start+2],  // firmware major version
+                .minor = _msg_buff[_msg_buff_data_start+1],  // firmware minor version
+                .patch = _msg_buff[_msg_buff_data_start+0],  // firmware revision (aka patch)
+            },
+            .gimbal = {
+                .major = _msg_buff[_msg_buff_data_start+6],  // firmware major version
+                .minor = _msg_buff[_msg_buff_data_start+5],  // firmware minor version
+                .patch = _msg_buff[_msg_buff_data_start+4],  // firmware revision (aka patch)
+            },
+            .received = true,
         };
 
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SiyiCam fw:%u.%u.%u",
-                (unsigned)_cam_firmware_version.major,          // firmware major version
-                (unsigned)_cam_firmware_version.minor,          // firmware minor version
-                (unsigned)_cam_firmware_version.patch);         // firmware revision
+        // display camera info to user
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi camera fw v%u.%u.%u",
+                (unsigned)_firmware_version.camera.major,
+                (unsigned)_firmware_version.camera.minor,
+                (unsigned)_firmware_version.camera.patch);
 
         // display gimbal info to user
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
-                (unsigned)_msg_buff[_msg_buff_data_start+6],    // firmware major version
-                (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
-                (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi gimbal fw v%u.%u.%u",
+                (unsigned)_firmware_version.gimbal.major,
+                (unsigned)_firmware_version.gimbal.minor,
+                (unsigned)_firmware_version.gimbal.patch);
 
         // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SiyiZoom fw:%u.%u.%u",
-                (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
-                (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
-                (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
+            _firmware_version.zoom.major = _msg_buff[_msg_buff_data_start+10];
+            _firmware_version.zoom.minor = _msg_buff[_msg_buff_data_start+ 9];
+            _firmware_version.zoom.patch = _msg_buff[_msg_buff_data_start+ 8];
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi zoom fw v%u.%u.%u",
+                (unsigned)_firmware_version.zoom.major,
+                (unsigned)_firmware_version.zoom.minor,
+                (unsigned)_firmware_version.zoom.patch);
         }
         break;
     }
@@ -858,13 +869,13 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
 void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 {
     // exit immediately if not initialised
-    if (!_initialised || !_got_firmware_version) {
+    if (!_initialised || !_firmware_version.received) {
         return;
     }
 
     static const uint8_t vendor_name[32] = "Siyi";
     static uint8_t model_name[32] {};
-    const uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
+    const uint32_t fw_version = _firmware_version.camera.major | (_firmware_version.camera.minor << 8) | (_firmware_version.camera.patch << 16);
     const char cam_definition_uri[140] {};
 
     // copy model name
