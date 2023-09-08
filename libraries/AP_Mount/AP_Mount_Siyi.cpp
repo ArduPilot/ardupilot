@@ -44,6 +44,14 @@ void AP_Mount_Siyi::init()
     // Invalidate the reported maximum zoom
     _zoom.multiple_max = -1.0;
 
+    // Request the information required to correctly drive the gimbal
+    request_hardware_id();
+    request_firmware_version();
+
+    // Set the zoom rate to zero (this sends the MANUAL_ZOOM_AND_AUTO_FOCUS
+    // command, which is the only way to get the current zoom level).
+    send_zoom_rate(0.0);
+
     AP_Mount_Backend::init();
 }
 
