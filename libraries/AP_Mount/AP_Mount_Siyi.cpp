@@ -60,7 +60,7 @@ void AP_Mount_Siyi::update()
     uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - _last_send_ms) >= 1000) {
         _last_send_ms = now_ms;
-        if (!_firmware_version.received) {
+        if (!_fw_version.received) {
             request_firmware_version();
             return;
         } else if (!_got_hardware_id) {
@@ -164,7 +164,7 @@ void AP_Mount_Siyi::update()
 bool AP_Mount_Siyi::healthy() const
 {
     // unhealthy until gimbal has been found and replied with firmware version info
-    if (!_initialised || !_firmware_version.received) {
+    if (!_initialised || !_fw_version.received) {
         return false;
     }
 
@@ -327,7 +327,7 @@ void AP_Mount_Siyi::process_packet()
         }
 
         // consume and display camera firmware version
-        _firmware_version = {
+        _fw_version = {
             .camera = {
                 .major = _msg_buff[_msg_buff_data_start+2],  // firmware major version
                 .minor = _msg_buff[_msg_buff_data_start+1],  // firmware minor version
@@ -343,25 +343,25 @@ void AP_Mount_Siyi::process_packet()
 
         // display camera info to user
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi camera fw v%u.%u.%u",
-                (unsigned)_firmware_version.camera.major,
-                (unsigned)_firmware_version.camera.minor,
-                (unsigned)_firmware_version.camera.patch);
+                _fw_version.camera.major,
+                _fw_version.camera.minor,
+                _fw_version.camera.patch);
 
         // display gimbal info to user
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi gimbal fw v%u.%u.%u",
-                (unsigned)_firmware_version.gimbal.major,
-                (unsigned)_firmware_version.gimbal.minor,
-                (unsigned)_firmware_version.gimbal.patch);
+                _fw_version.gimbal.major,
+                _fw_version.gimbal.minor,
+                _fw_version.gimbal.patch);
 
         // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            _firmware_version.zoom.major = _msg_buff[_msg_buff_data_start+10];
-            _firmware_version.zoom.minor = _msg_buff[_msg_buff_data_start+ 9];
-            _firmware_version.zoom.patch = _msg_buff[_msg_buff_data_start+ 8];
+            _fw_version.zoom.major = _msg_buff[_msg_buff_data_start+10];
+            _fw_version.zoom.minor = _msg_buff[_msg_buff_data_start+ 9];
+            _fw_version.zoom.patch = _msg_buff[_msg_buff_data_start+ 8];
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi zoom fw v%u.%u.%u",
-                (unsigned)_firmware_version.zoom.major,
-                (unsigned)_firmware_version.zoom.minor,
-                (unsigned)_firmware_version.zoom.patch);
+                _fw_version.zoom.major,
+                _fw_version.zoom.minor,
+                _fw_version.zoom.patch);
         }
         break;
     }
@@ -869,13 +869,13 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
 void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 {
     // exit immediately if not initialised
-    if (!_initialised || !_firmware_version.received) {
+    if (!_initialised || !_fw_version.received) {
         return;
     }
 
     static const uint8_t vendor_name[32] = "Siyi";
     static uint8_t model_name[32] {};
-    const uint32_t fw_version = _firmware_version.camera.major | (_firmware_version.camera.minor << 8) | (_firmware_version.camera.patch << 16);
+    const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
     const char cam_definition_uri[140] {};
 
     // copy model name
