@@ -181,7 +181,8 @@ bool AP_Mount_Siyi::healthy() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Siyi::get_attitude_quaternion(Quaternion& att_quat)
 {
-    att_quat.from_euler(_current_angle_rad.x, _current_angle_rad.y, _current_angle_rad.z);
+    // Order of rotation for Siyi gimbals is (yaw, roll, pitch), which is 312 order
+    att_quat.from_vector312(_current_angle_rad.x, _current_angle_rad.y, _current_angle_rad.z);
     return true;
 }
 
