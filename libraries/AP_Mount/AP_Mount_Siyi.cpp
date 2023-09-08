@@ -40,6 +40,10 @@ void AP_Mount_Siyi::init()
     if (_uart != nullptr) {
         _initialised = true;
     }
+
+    // Invalidate the reported maximum zoom
+    _zoom.multiple_max = -1.0;
+
     AP_Mount_Backend::init();
 }
 
@@ -67,6 +71,9 @@ void AP_Mount_Siyi::update()
             return;
         } else {
             request_configuration();
+            if (_zoom.multiple_max < 0.0) {
+                request_zoom_max();
+            }
         }
     }
 
@@ -539,6 +546,7 @@ void AP_Mount_Siyi::process_packet()
     case SiyiCommandId::ACQUIRE_ZOOM_MAX: {
         float max = (float)_msg_buff[_msg_buff_data_start];
         max += (float)_msg_buff[_msg_buff_data_start + 1] / 10;
+        _zoom.multiple_max = max;
         debug("Max Zoom response: %.02f", max);
         break;
     }
@@ -807,20 +815,28 @@ bool AP_Mount_Siyi::send_zoom_mult(float zoom_mult)
 // get zoom multiple max
 float AP_Mount_Siyi::get_zoom_mult_max() const
 {
+    // If we have it, use the zoom level reported by the gimbal (as it can
+    // changed based on image resolution).
+    if (_zoom.multiple_max >= 0.0) {
+        return _zoom.multiple_max;
+    }
+
+    // Otherwise, return the expected max zoom level based on model
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
-        return 0;
+        return 1.0;
     case HardwareModel::A2:
     case HardwareModel::A8:
-        // a8 has 6x digital zoom
-        return 6;
+        // A8 has 6x digital zoom
+        return 6.0;
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
         // 30x hybrid zoom (optical + digital)
-        return 30;
+        return 30.0;
     }
-    return 0;
+
+    return 1.0;
 }
 
 // set zoom specified as a rate or percentage

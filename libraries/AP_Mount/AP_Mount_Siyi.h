@@ -317,6 +317,9 @@ private:
     float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
+    struct {
+        float multiple_max;                       // max zoom level received from camera
+    } _zoom;
 
     // Configuration info received from gimbal
     GimbalConfigInfo _config_info;
