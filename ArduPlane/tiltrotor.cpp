@@ -288,7 +288,7 @@ void Tiltrotor::continuous_update(void)
 #endif
 
     if (!quadplane.assisted_flight &&
-        is_positive(plane.quadplane.q_fwd_thr_gain) &&
+        quadplane.get_vfwd_method() == QuadPlane::ActiveFwdThr::NEW &&
         quadplane.is_flying_vtol())
     {
         // We are using the rotor tilt functionality controlled by Q_FWD_THR_GAIN which can

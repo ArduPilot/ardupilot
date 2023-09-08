@@ -518,7 +518,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Description: When forward throttle is being controlled by the Q_FWD_THR_GAIN parameter in Q modes, the vehicle forward (nose down) pitch rotation will be limited to the value specified by this parameter and the any additional forward acceleration required will be produced by use of the forward thrust motor(s) or tilting of moveable rotors. Larger values allow the vehicle to pitch more nose down. Set initially to the amount of nose down pitch required to remove wing lift.
     // @Units: degrees
     // @Range: 0.0 5.0
-    // @Increment: 10
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("FWD_PIT_LIM", 36, QuadPlane, q_fwd_pitch_lim, 3.0f),
 
@@ -661,8 +661,6 @@ bool QuadPlane::setup(void)
     if (!enable || hal.util->get_soft_armed()) {
         return false;
     }
-
-    q_fwd_throttle = 0.0f;
 
     /*
       cope with upgrade from old AP_Motors values for frame_class
@@ -2095,7 +2093,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
             gcs().send_text(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
-        // This is a precaustion. It should be looked after by the call to QuadPlane::mode_enter(void) on mode entry.
+        // This is a precaution. It should be looked after by the call to QuadPlane::mode_enter(void) on mode entry.
         plane.quadplane.q_fwd_throttle = 0.0f;
         return true;
         
@@ -3648,13 +3646,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
 float QuadPlane::forward_throttle_pct()
 {
     // handle special case where forward thrust motor is used instead of forward pitch.
-    // but not in autotune as it will upset the results
-#if QAUTOTUNE_ENABLED
-    if (is_positive(q_fwd_thr_gain) && plane.control_mode != &plane.mode_qautotune) {
-#else
-    if (is_positive(q_fwd_thr_gain)) {
-#endif
-        // handle special case where we are using forward throttle instead of forward tilt in Q modes
+    if (get_vfwd_method() == ActiveFwdThr::NEW) {
         return 100.0f * q_fwd_throttle;
     }
 
