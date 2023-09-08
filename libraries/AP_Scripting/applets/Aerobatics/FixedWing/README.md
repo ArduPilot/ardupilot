@@ -1,5 +1,7 @@
 # Scripted Aerobatics
 
+NOTE: this script requires an ArduPilot version of 4.4.1 or greater to execute
+
 The lua script "plane_aerobatics.lua" implements scripted aerobatics,
 allowing fixed wing aircraft to execute a number of aerobatic
 manoeuvres either in AUTO mission or by triggering using pilot commands
