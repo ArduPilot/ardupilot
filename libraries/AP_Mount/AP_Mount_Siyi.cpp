@@ -941,10 +941,17 @@ void AP_Mount_Siyi::update_zoom_control()
         }
         _zoom.rate.last_control_ms = now_ms;
 
-        // only send zoom rate target if it's non-zero because if zero it has already been sent
-        // and sending zero rate also triggers autofocus
-        if (!is_zero(_zoom.rate.target)) {
+        // only send zoom rate target if it's non-zero and hasn't reached the limit.
+        // if target is zero, it has already been sent, and sending zero rate also triggers autofocus
+        const bool is_zooming_in  = is_positive(_zoom.rate.target) && _zoom.multiple < get_zoom_mult_max();
+        const bool is_zooming_out = is_negative(_zoom.rate.target) && _zoom.multiple > 1.0;
+        if (is_zooming_in || is_zooming_out) {
             send_zoom_rate(_zoom.rate.target);
+        } else {
+            // if we've reached a limit, clear the rate target
+            if (!is_zero(_zoom.rate.target)) {
+                _zoom.rate.target = 0.0f;
+            }
         }
     } else {
         // limit updates to 10hz
