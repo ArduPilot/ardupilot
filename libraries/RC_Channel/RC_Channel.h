@@ -248,6 +248,7 @@ public:
         PLANE_AUTO_LANDING_ABORT = 173, // Abort Glide-slope or VTOL landing during payload place or do_land type mission items
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
+        VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
 
 
         // inputs from 200 will eventually used to replace RCMAP
