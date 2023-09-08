@@ -401,13 +401,25 @@ private:
     // limit applied to forward pitch to prevent wing producing negative lift
     AP_Float q_fwd_pitch_lim;
 
-    // specifies when the feature controlled by q_fwd_thr_gain and q_fwd_pitch_lim is used
-    enum {
-        Q_FWD_THR_USE_OFF     = 0,
-        Q_FWD_THR_USE_POSCTRL = 1,
-        Q_FWD_THR_USE_ALL     = 2,
+    // which fwd throttle handling method is active
+    enum class ActiveFwdThr : uint8_t {
+        NONE = 0,
+        OLD  = 1,
+        NEW  = 2,
     };
-    AP_Int8 q_fwd_thr_use;
+    // override with AUX function
+    bool vfwd_enable_active;
+    
+    // specifies when the feature controlled by q_fwd_thr_gain and q_fwd_pitch_lim is used
+    enum class FwdThrUse : uint8_t {
+        OFF     = 0,
+        POSCTRL = 1,
+        ALL     = 2,
+    };
+    AP_Enum<FwdThrUse> q_fwd_thr_use;
+
+    // return which vfwd method to use
+    ActiveFwdThr get_vfwd_method(void) const;
 
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;

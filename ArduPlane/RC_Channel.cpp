@@ -176,6 +176,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
+    case AUX_FUNC::VFWD_THR_OVERRIDE:
         break;
 
     case AUX_FUNC::SOARING:
@@ -271,6 +272,15 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::QSTABILIZE:
         do_aux_function_change_mode(Mode::Number::QSTABILIZE, ch_flag);
         break;
+
+    case AUX_FUNC::VFWD_THR_OVERRIDE: {
+        const bool enable = (ch_flag == AuxSwitchPos::HIGH);
+        if (enable != plane.quadplane.vfwd_enable_active) {
+            plane.quadplane.vfwd_enable_active = enable;
+            gcs().send_text(MAV_SEVERITY_INFO, "QFwdThr: %s", enable?"ON":"OFF");
+        }
+        break;
+    }
 #endif
 
     case AUX_FUNC::SOARING:
