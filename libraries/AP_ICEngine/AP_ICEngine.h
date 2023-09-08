@@ -40,6 +40,7 @@ public:
     bool throttle_override(float &percent, const float base_throttle);
 
     enum ICE_State {
+        ICE_DISABLED = -1,
         ICE_OFF=0,
         ICE_START_HEIGHT_DELAY=1,
         ICE_START_DELAY=2,
@@ -48,7 +49,7 @@ public:
     };
 
     // get current engine control state
-    ICE_State get_state(void) const { return state; }
+    ICE_State get_state(void) const { return !enable?ICE_DISABLED:state; }
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
