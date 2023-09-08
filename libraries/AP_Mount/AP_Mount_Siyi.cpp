@@ -832,6 +832,28 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
         }
         return false;
     }
+    case ZoomType::STEP: {
+        const float zoom_mult_max = get_zoom_mult_max();
+        if (zoom_mult_max <= 1.0) {
+            return false;
+        }
+
+        // Calculate a step value to give n steps between min and max zoom
+        const float num_steps = 10.0;
+        const float step = (zoom_mult_max - 1.0) / num_steps;
+        float delta = 0.0;
+        if (zoom_value > 0.0) {
+            delta = step;
+        } else if (zoom_value < 0.0) {
+            delta = -step;
+        } else {
+            // A step of zero is a no-op, so return true.
+            return true;
+        }
+
+        const float new_zoom = constrain_float(this->_zoom_mult + delta, 1.0, zoom_mult_max);
+        return send_zoom_mult(new_zoom);
+    }
     }
 
     // unsupported zoom type
