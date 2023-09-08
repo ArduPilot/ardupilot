@@ -257,6 +257,8 @@ void AP_ICEngine::update(void)
 
     // switch on current state to work out new state
     switch (state) {
+    case ICE_DISABLED:
+        return;
     case ICE_OFF:
         if (should_run) {
             state = ICE_START_DELAY;
@@ -356,6 +358,8 @@ void AP_ICEngine::update(void)
 
     /* now set output channels */
     switch (state) {
+    case ICE_DISABLED:
+        return;
     case ICE_OFF:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
@@ -461,6 +465,9 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
 */
 bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay)
 {
+    if (!enable) {
+        return false;
+    }
     if (start_control <= 0) {
         state = ICE_OFF;
         return true;
