@@ -241,6 +241,9 @@ private:
     // get model name string, returns nullptr if hardware id is unknown
     const char* get_model_name() const;
 
+    // Checks that the firmware version on the Gimbal meets the minimum supported version.
+    void check_firmware_version() const;
+
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised

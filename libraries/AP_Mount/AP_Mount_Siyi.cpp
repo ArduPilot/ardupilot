@@ -60,11 +60,11 @@ void AP_Mount_Siyi::update()
     uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - _last_send_ms) >= 1000) {
         _last_send_ms = now_ms;
-        if (!_fw_version.received) {
-            request_firmware_version();
-            return;
-        } else if (!_got_hardware_id) {
+        if (!_got_hardware_id) {
             request_hardware_id();
+            return;
+        } else if (!_fw_version.received) {
+            request_firmware_version();
             return;
         } else {
             request_configuration();
@@ -78,7 +78,7 @@ void AP_Mount_Siyi::update()
     }
 
     // request rangefinder distance from ZT30 at 10hz
-    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {    
+    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {
         request_rangefinder_distance();
         _last_rangefinder_req_ms = now_ms;
     }
@@ -363,6 +363,10 @@ void AP_Mount_Siyi::process_packet()
                 _fw_version.zoom.minor,
                 _fw_version.zoom.patch);
         }
+
+        // report to the user if gimbal firmware is not up-to-date
+        check_firmware_version();
+
         break;
     }
 
@@ -502,7 +506,7 @@ void AP_Mount_Siyi::process_packet()
         //const float pitch_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1;   // pitch rate
         //const float roll_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1;  // roll rate
         break;
-    
+
     case SiyiCommandId::READ_RANGEFINDER:
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
         _last_rangefinder_dist_ms = AP_HAL::millis();
@@ -968,6 +972,53 @@ bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
 
     distance_m = _rangefinder_dist_m;
     return true;
+}
+
+// Checks that the firmware version on the Gimbal meets the minimum supported version.
+void AP_Mount_Siyi::check_firmware_version() const
+{
+    if (!_fw_version.received) {
+        debug("Can't check firmware if we haven't received it...");
+        return;
+    }
+
+    if (!_got_hardware_id) {
+        debug("Can't check firmware without Hardware ID!");
+        return;
+    }
+
+    FirmwareVersion minimum_ver {};
+    switch (_hardware_model) {
+        case HardwareModel::A8:
+            minimum_ver.camera.major = 0;
+            minimum_ver.camera.minor = 2;
+            minimum_ver.camera.patch = 1;
+            break;
+
+        case HardwareModel::A2:
+        case HardwareModel::ZR10:
+        case HardwareModel::ZR30:
+        case HardwareModel::ZT30:
+            // TBD
+            break;
+
+        case HardwareModel::UNKNOWN:
+            debug("Can't check FW on unknown hardware model!");
+            return;
+    }
+
+    const uint32_t minimum_camera_val =  (minimum_ver.camera.major << 16) + (minimum_ver.camera.minor << 8) + minimum_ver.camera.patch;
+    const uint32_t firmware_camera_val = (_fw_version.camera.major << 16) + (_fw_version.camera.minor << 8) + _fw_version.camera.patch;
+
+    const bool is_camera_supported = firmware_camera_val >= minimum_camera_val;
+
+    if (!is_camera_supported) {
+        GCS_SEND_TEXT(
+            MAV_SEVERITY_WARNING,
+            "Mount: Siyi running old camera fw (need v%u.%u.%u)",
+            minimum_ver.camera.major, minimum_ver.camera.minor, minimum_ver.camera.patch
+        );
+    }
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED
