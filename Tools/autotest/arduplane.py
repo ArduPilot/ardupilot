@@ -2573,11 +2573,6 @@ class AutoTestPlane(AutoTest):
 
         self.load_mission('CMAC-soar.txt', strict=False)
 
-        self.set_current_waypoint(1)
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
         # Enable thermalling RC
         rc_chan = 0
         for i in range(8):
@@ -2591,14 +2586,21 @@ class AutoTestPlane(AutoTest):
 
         self.set_rc_from_map({
             rc_chan: 1900,
-            3: 1500, # Use trim airspeed.
         })
+
+        self.set_parameters({
+            "SOAR_VSPEED": 0.55,
+            "SOAR_MIN_THML_S": 25,
+        })
+
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
         # Wait to detect thermal
         self.progress("Waiting for thermal")
         self.wait_mode('THERMAL', timeout=600)
-
-        self.set_parameter("SOAR_VSPEED", 0.6)
 
         # Wait to climb to SOAR_ALT_MAX
         self.progress("Waiting for climb to max altitude")
