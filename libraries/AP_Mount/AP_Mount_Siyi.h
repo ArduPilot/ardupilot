@@ -177,6 +177,18 @@ private:
         MAIN_THERMAL_SUB_WIDEANGLE = 8
     };
 
+    typedef struct {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+    } Version;
+    typedef struct {
+        Version camera;
+        Version gimbal;
+        Version zoom;
+        bool received; // true once version information has been received
+    } FirmwareVersion;
+
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure
     void read_incoming_packets();
@@ -232,13 +244,9 @@ private:
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
-    bool _got_firmware_version;                     // true once gimbal firmware version has been received
     bool _got_hardware_id;                          // true once hardware id ha been received
-    struct {
-        uint8_t major;
-        uint8_t minor;
-        uint8_t patch;
-    } _cam_firmware_version;                        // camera firmware version (for reporting for GCS)
+
+    FirmwareVersion _firmware_version;              // firmware version (for reporting for GCS)
 
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
