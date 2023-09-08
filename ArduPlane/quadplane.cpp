@@ -524,11 +524,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: FWD_THR_USE
     // @DisplayName: Q mode forward throttle use
-    // @Description: This parameter determines when the feature that uses forward throttle insread of forward tilt is used. The amount fo forward throttle is controlled by the Q_FWD_THR_GAIN parameter. The maximum amout of forward pitch allowed is controlled by the Q_FWD_PIT_LIM parameter. Q_FWD_THR_USE = 0 disables the feature. Q_FWD_THR_USE = 1 enables the feature in all position controlled modes such as QLOITER, QLAND, QRTL and QTAKEOFF. Q_FWD_THR_USE enables the feature in all Q modes except QAUTOTUNE and QACRO. When enabling the feature, the legacy method of controlling forward throttle use via velocity controller error should be disabled by setting Q_VFWD_GAIN to 0. Do not use this feature with tailsitters.
+    // @Description: This parameter determines when the feature that uses forward throttle insread of forward tilt is used. The amount of forward throttle is controlled by the Q_FWD_THR_GAIN parameter. The maximum amount of forward pitch allowed is controlled by the Q_FWD_PIT_LIM parameter. Q_FWD_THR_USE = 0 disables the feature. Q_FWD_THR_USE = 1 enables the feature in all position controlled modes such as QLOITER, QLAND, QRTL and VTOL TAKEOFF. Q_FWD_THR_USE = 2 enables the feature in all Q modes except QAUTOTUNE and QACRO. When enabling the feature, the legacy method of controlling forward throttle use via velocity controller error should be disabled by setting Q_VFWD_GAIN to 0. Do not use this feature with tailsitters.
     // @Values: 0:Off,1:On in all position controlled Q modes,2:On in all Q modes except QAUTOTUNE and QACRO
-    // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, Q_FWD_THR_USE_OFF),
+    AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
+
     AP_GROUPEND
 };
 
@@ -2933,11 +2933,50 @@ void QuadPlane::vtol_position_controller(void)
     }
 }
 
+/*
+  determine which fwd throttle handling method is active
+ */
+QuadPlane::ActiveFwdThr QuadPlane::get_vfwd_method(void) const
+{
+    const bool have_fwd_thr_gain = is_positive(q_fwd_thr_gain);
+    const bool have_vfwd_gain = is_positive(vel_forward.gain);
+
+#if AP_ICENGINE_ENABLED
+    const auto ice_state = plane.g2.ice_control.get_state();
+    if (ice_state != AP_ICEngine::ICE_DISABLED && ice_state != AP_ICEngine::ICE_RUNNING) {
+        // we need the engine running for fwd throttle
+        return ActiveFwdThr::NONE;
+    }
+#endif
+
+#if QAUTOTUNE_ENABLED
+    if (plane.control_mode == &plane.mode_qautotune) {
+        return ActiveFwdThr::NONE;
+    }
+#endif
+
+    if (have_fwd_thr_gain) {
+        if (vfwd_enable_active) {
+            // user has used AUX function to activate new method
+            return ActiveFwdThr::NEW;
+        }
+        if (q_fwd_thr_use == FwdThrUse::ALL) {
+            return ActiveFwdThr::NEW;
+        }
+        if (q_fwd_thr_use == FwdThrUse::POSCTRL && pos_control->is_active_xy()) {
+            return ActiveFwdThr::NEW;
+        }
+    }
+    if (have_vfwd_gain && pos_control->is_active_xy()) {
+        return ActiveFwdThr::OLD;
+    }
+    return ActiveFwdThr::NONE;
+}
+
 void QuadPlane::assign_tilt_to_fwd_thr(void) {
 
-    if ((q_fwd_thr_use == Q_FWD_THR_USE_OFF) ||
-        ((q_fwd_thr_use == Q_FWD_THR_USE_POSCTRL) && !pos_control->is_active_xy()) ||
-        !is_positive(q_fwd_thr_gain)) {
+    const auto fwd_thr_active = get_vfwd_method();
+    if (fwd_thr_active != ActiveFwdThr::NEW) {
         q_fwd_throttle = 0.0f;
         return;
     }
@@ -3642,15 +3681,9 @@ float QuadPlane::forward_throttle_pct()
     }
 
     /*
-      in qautotune mode or modes without a velocity controller
+      see if the controller should be active
     */
-    bool use_forward_gain = (vel_forward.gain > 0);
-#if QAUTOTUNE_ENABLED
-    if (plane.control_mode == &plane.mode_qautotune) {
-        use_forward_gain = false;
-    }
-#endif
-    if (!use_forward_gain) {
+    if (get_vfwd_method() != ActiveFwdThr::OLD) {
         return 0;
     }
 
