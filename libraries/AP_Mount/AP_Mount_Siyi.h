@@ -246,7 +246,7 @@ private:
     bool _initialised;                              // true once the driver has been initialised
     bool _got_hardware_id;                          // true once hardware id ha been received
 
-    FirmwareVersion _firmware_version;              // firmware version (for reporting for GCS)
+    FirmwareVersion _fw_version;                    // firmware version (for reporting for GCS)
 
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
