@@ -1579,6 +1579,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     //inverted roll AH
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
         roll = -roll;
+        pitch = -pitch;  // Invert the pitch as well
     }
 
     pitch = constrain_float(pitch, -ah_max_pitch, ah_max_pitch);
