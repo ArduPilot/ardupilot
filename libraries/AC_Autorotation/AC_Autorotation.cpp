@@ -3,6 +3,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_AHRS/AP_AHRS.h>
 
+//TRY CHANCHE FROM BROWSER CODESPACE
 //Autorotation controller defaults
 #define AROT_BAIL_OUT_TIME                            2.0f     // Default time for bail out controller to run (unit: s)
 
