@@ -31,6 +31,7 @@
 #define DDS_STREAM_HISTORY  8
 #define DDS_BUFFER_SIZE     DDS_MTU * DDS_STREAM_HISTORY
 
+
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
 #include <AP_Networking/AP_Networking_address.h>
@@ -52,8 +53,12 @@ private:
     // input and output stream
     uint8_t *input_reliable_stream;
     uint8_t *output_reliable_stream;
+    uint8_t *input_besteffort_stream;
+    uint8_t *output_besteffort_stream;
     uxrStreamId reliable_in;
     uxrStreamId reliable_out;
+    uxrStreamId besteffort_in;
+    uxrStreamId besteffort_out;
 
     // Outgoing Sensor and AHRS data
     builtin_interfaces_msg_Time time_topic;
@@ -208,6 +213,8 @@ public:
         const char* topic_profile_label;
         const char* dw_profile_label;
         const char* dr_profile_label;
+        uxrStreamType dw_stream_type;
+        uxrStreamType dr_stream_type;
     };
     static const struct Topic_table topics[];
 
@@ -224,6 +231,12 @@ public:
 
         //! @brief Profile Label for the service replier
         const char* rep_profile_label;
+
+        //! @brief Stream type for requestor
+        uxrStreamType rq_stream_type;
+
+        //! @brief Stream type for replier
+        uxrStreamType rr_stream_type;
     };
     static const struct Service_table services[];
 };

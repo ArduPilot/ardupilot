@@ -42,6 +42,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "time__t",
         .dw_profile_label = "time__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::NAV_SAT_FIX_PUB),
@@ -52,6 +54,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "navsatfix0__t",
         .dw_profile_label = "navsatfix0__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_BEST_EFFORT_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::STATIC_TRANSFORMS_PUB),
@@ -62,6 +66,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "statictransforms__t",
         .dw_profile_label = "statictransforms__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::BATTERY_STATE_PUB),
@@ -72,6 +78,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "batterystate0__t",
         .dw_profile_label = "batterystate0__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),
@@ -82,6 +90,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "localpose__t",
         .dw_profile_label = "localpose__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_BEST_EFFORT_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_VELOCITY_PUB),
@@ -92,6 +102,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "localvelocity__t",
         .dw_profile_label = "localvelocity__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_BEST_EFFORT_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::GEOPOSE_PUB),
@@ -102,6 +114,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "geopose__t",
         .dw_profile_label = "geopose__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_BEST_EFFORT_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::CLOCK_PUB),
@@ -112,6 +126,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "clock__t",
         .dw_profile_label = "clock__dw",
         .dr_profile_label = "",
+        .dw_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_NONE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::JOY_SUB),
@@ -122,6 +138,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "joy__t",
         .dw_profile_label = "",
         .dr_profile_label = "joy__dr",
+        .dw_stream_type = uxrStreamType::UXR_NONE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB),
@@ -132,6 +150,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "dynamictf__t",
         .dw_profile_label = "",
         .dr_profile_label = "dynamictf__dr",
+        .dw_stream_type = uxrStreamType::UXR_NONE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::VELOCITY_CONTROL_SUB),
@@ -142,6 +162,8 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "velocitycontrol__t",
         .dw_profile_label = "",
         .dr_profile_label = "velocitycontrol__dr",
+        .dw_stream_type = uxrStreamType::UXR_NONE_STREAM,
+        .dr_stream_type = uxrStreamType::UXR_BEST_EFFORT_STREAM,
     },
     {
         .topic_id = to_underlying(TopicIndex::GLOBAL_POSITION_SUB),

@@ -98,11 +98,8 @@
     <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
     <qos>
       <reliability>
-        <kind>BEST_EFFORT</kind>
+        <kind>RELIABLE</kind>
       </reliability>
-      <durability>
-        <kind>VOLATILE</kind>
-      </durability>
     </qos>
     <topic>
       <kind>NO_KEY</kind>
@@ -237,6 +234,11 @@
       <name>rt/ap/joy</name>
       <dataType>sensor_msgs::msg::dds_::Joy_</dataType>
     </topic>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
   </data_reader>
   <topic profile_name="dynamictf__t">
     <name>rt/ap/tf</name>
@@ -252,6 +254,11 @@
       <name>rt/ap/tf</name>
       <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
     </topic>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
   </data_reader>
   <topic profile_name="velocitycontrol__t">
     <name>rt/ap/cmd_vel</name>
@@ -267,10 +274,39 @@
       <name>rt/ap/cmd_vel</name>
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     </topic>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+    </qos>
   </data_reader>
   <replier profile_name="arm_motors__replier" service_name="rs/ap/arm_motorsService" request_type="ardupilot_msgs::srv::dds_::ArmMotors_Request_" reply_type="ardupilot_msgs::srv::dds_::ArmMotors_Response_">
     <request_topic_name>rq/ap/arm_motorsRequest</request_topic_name>
     <reply_topic_name>rr/ap/arm_motorsReply</reply_topic_name>
+    <publisher>
+      <topic>
+        <kind>NO_KEY</kind>
+        <name>rr/ap/arm_motorsReply</name>
+        <dataType>ardupilot_msgs::srv::dds_::ArmMotors_Response_</dataType>
+      </topic>
+      <qos>
+        <reliability>
+          <kind>RELIABLE</kind>
+        </reliability>
+      </qos>
+    </publisher>
+    <!-- <subscriber>
+      <topic>
+        <kind>NO_KEY</kind>
+        <name>rq/ap/arm_motorsRequest</name>
+        <dataType>ardupilot_msgs::srv::dds_::ArmMotors_Request_</dataType>
+      </topic>
+      <qos>
+        <reliability>
+          <kind>BEST_EFFORT</kind>
+        </reliability>
+      </qos>
+    </subscriber> -->
   </replier>
   <replier profile_name="mode_switch__replier" service_name="rs/ap/mode_switchService" request_type="ardupilot_msgs::srv::dds_::ModeSwitch_Request_" reply_type="ardupilot_msgs::srv::dds_::ModeSwitch_Response_">
     <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
