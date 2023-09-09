@@ -57,46 +57,120 @@ public:
     // RangeFinder driver types
     enum class Type {
         NONE   = 0,
+#if AP_RANGEFINDER_ANALOG_ENABLED
         ANALOG = 1,
+#endif
+#if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
         MBI2C  = 2,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2C  = 3,
+#endif
 //        PX4    = 4, // no longer used, but may be in some user's parameters
+#if AP_RANGEFINDER_PWM_ENABLED
         PX4_PWM= 5,
+#endif
+#if AP_RANGEFINDER_BBB_PRU_ENABLED
         BBB_PRU= 6,
+#endif
+#if AP_RANGEFINDER_LWI2C_ENABLED
         LWI2C  = 7,
+#endif
+#if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
         LWSER  = 8,
+#endif
+#if AP_RANGEFINDER_BEBOP_ENABLED
         BEBOP  = 9,
+#endif
+#if AP_RANGEFINDER_MAVLINK_ENABLED
         MAVLink = 10,
+#endif
+#if AP_RANGEFINDER_USD1_SERIAL_ENABLED
         USD1_Serial = 11,
+#endif
+#if AP_RANGEFINDER_LEDDARONE_ENABLED
         LEDDARONE = 12,
+#endif
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
         MBSER  = 13,
+#endif
+#if AP_RANGEFINDER_TRI2C_ENABLED
         TRI2C  = 14,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2CV3= 15,
+#endif
         VL53L0X = 16,
+#if AP_RANGEFINDER_NMEA_ENABLED
         NMEA = 17,
+#endif
+#if AP_RANGEFINDER_WASP_ENABLED
         WASP = 18,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
         BenewakeTF02 = 19,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
         BenewakeTFmini = 20,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2CV3HP = 21,
+#endif
+#if AP_RANGEFINDER_PWM_ENABLED
         PWM = 22,
+#endif
+#if AP_RANGEFINDER_BLPING_ENABLED
         BLPing = 23,
+#endif
+#if AP_RANGEFINDER_DRONECAN_ENABLED
         UAVCAN = 24,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
         BenewakeTFminiPlus = 25,
+#endif
+#if AP_RANGEFINDER_LANBAO_ENABLED
         Lanbao = 26,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
         BenewakeTF03 = 27,
+#endif
         VL53L1X_Short = 28,
+#if AP_RANGEFINDER_LEDDARVU8_ENABLED
         LeddarVu8_Serial = 29,
+#endif
+#if AP_RANGEFINDER_HC_SR04_ENABLED
         HC_SR04 = 30,
+#endif
+#if AP_RANGEFINDER_GYUS42V2_ENABLED
         GYUS42v2 = 31,
+#endif
+#if HAL_MSP_RANGEFINDER_ENABLED
         MSP = 32,
+#endif
+#if AP_RANGEFINDER_USD1_CAN_ENABLED
         USD1_CAN = 33,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
         Benewake_CAN = 34,
+#endif
+#if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
         TeraRanger_Serial = 35,
+#endif
+#if AP_SCRIPTING_ENABLED
         Lua_Scripting = 36,
+#endif
+#if AP_RANGEFINDER_NOOPLOOP_ENABLED
         NoopLoop_P = 37,
+#endif
+#if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
         TOFSenseP_CAN = 38,
+#endif
+#if AP_RANGEFINDER_NRA24_CAN_ENABLED
         NRA24_CAN = 39,
+#endif
+#if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
+#endif
     };
 
     enum class Function {
