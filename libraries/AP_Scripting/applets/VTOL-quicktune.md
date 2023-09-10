@@ -151,11 +151,13 @@ With default settings the parameters to be tuned will be:
  - YAW_D
  - YAW_P
 
-The script will also adjust filter settings using the following rules:
+The script will also adjust filter settings using the following rules
+if QUIK_AUTO_FILTER is set to 1 (which is the default):
 
  - the FLTD and FLTT settings will be set to half of the INS_GYRO_FILTER value
- - the YAW_FLTE filter will be set to a maximum of 2Hz
- - if no SMAX is set for a rate controller than the SMAX will be set to 50Hz
+ - the YAW_FLTE filter will be set to a maximum of 8Hz
+
+Additionally, if no SMAX is set for a rate controller than the SMAX will be set to 50Hz.
 
 Once the tuning is finished you will see a "Tuning: done" message. You
 can save the tune by moving the switch to the high position (Tune Save). You
