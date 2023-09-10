@@ -611,6 +611,8 @@ void Copter::three_hz_loop()
 
     // check if avoidance should be enabled based on alt
     low_alt_avoidance();
+
+    notify_flight_mode();
 }
 
 // one_hz_loop - runs at 1Hz
@@ -643,6 +645,10 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+    if (!arming.armed) {
+        check_outdoors_ready();
+    }
 }
 
 void Copter::init_simple_bearing()
@@ -773,6 +779,31 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
         rate_ef_targets = attitude_control->get_rate_ef_targets();
     }
     return true;
+}
+
+void Copter::check_outdoors_ready() {
+    if (!copter.ahrs.get_option_90_active())
+    {
+        // if (!(arming.armed)) { //Only update mode when disarmed
+        bool optflow_good = optflow.enabled() && optflow.healthy();
+        bool gps_good = arming.gps_checks_indoor_mode(false) && (gps.num_sats() >= 9 && gps.get_hdop() < 140);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%d %d", gps_good, optflow_good);
+        bool new_outdoors_ready = gps_good || !optflow_good;
+        if (outdoors_ready != new_outdoors_ready) {
+            outdoors_ready = new_outdoors_ready;
+            if (new_outdoors_ready) {
+                ahrs.set_posvelyaw_source_set(1);
+            } else {
+                ahrs.set_posvelyaw_source_set(0);
+            }
+        }
+    } else {
+        outdoors_ready = ahrs.get_posvelyaw_source_set() == 0;
+    }
+}
+
+bool Copter::is_outdoors_ready() {
+    return outdoors_ready;
 }
 
 /*

@@ -1291,6 +1291,70 @@ float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);
 }
 
+void AP_OSD_Screen::draw_selected_mode(uint8_t x, uint8_t y) 
+{
+    AP_Notify * notify = AP_Notify::get_singleton();
+    backend->write(x, y, false, "MODE: %s", convert_num_to_sprout_mode_name(notify->get_flight_mode_number()));
+}
+
+const char *AP_OSD_Screen::convert_num_to_sprout_mode_name(uint8_t mode_number) {
+    switch (mode_number) {
+    case 29:
+        return "RC CAR";
+    break;
+    case 31:
+        return "RC CAR UNLIMITED";
+    break;
+    case 0:
+        return "STABILIZE";
+    break;
+    case 2:
+        return "ALTITUDE HOLD";
+    break;
+    case 30:
+        return "THROTTLE TRAIN";
+    break;
+    case 32:
+        return "ACRO TRAIN";
+    break;
+    case 1:
+        return "ACRO";
+    break;
+    }
+    return "NON-SPROUT MODE";
+}
+
+void AP_OSD_Screen::draw_available_modes(uint8_t x, uint8_t y)
+{
+    if (!hal.util->get_soft_armed()) {
+        // const AP_GPS &gps = AP::gps();
+        Compass &_compass = AP::compass();
+        const AP_InertialSensor &ins = AP::ins();
+        AP_Arming &arming_obj = AP::arming();
+        AP_AHRS &ahrs_obj = AP::ahrs();
+        const AP_OpticalFlow &opflow_obj = *(AP::opticalflow());
+        // RangeFinder &rangefinder = AP::rangefinder();
+
+        bool indoors_mode = ahrs_obj.get_posvelyaw_source_set() == 0;
+        bool isAccelGyroReady = ins.accel_calibrated_ok_all() && ins.get_accel_health_all() && ins.gyro_calibrated_ok_all() && ins.get_gyro_health_all();
+        bool isCompassReady = indoors_mode ? true : (_compass.healthy() && _compass.consistent());
+        bool isGPSReady = indoors_mode ? true : arming_obj.gps_checks_indoor_mode(false); //gps.num_sensors() >= 1 && gps.status(0) >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy() && AP::ahrs().home_is_set();
+        bool isFlowReady = opflow_obj.enabled() && opflow_obj.healthy();
+        bool autonomousModesReady = isAccelGyroReady && (indoors_mode ? isFlowReady : (isCompassReady && isGPSReady));
+        backend->write(x, y, false, "MODE: %s", indoors_mode ? "INDOORS" : "OUTDOORS");
+        backend->write(x, y+1, false, autonomousModesReady ?                  "RC CAR:    READY" : "RC CAR:    WAITING");
+        backend->write(x, y+2, false, autonomousModesReady ?                  "RC CAR UNL:READY" : "RC CAR UNL:WAITING");
+        backend->write(x, y+3, false, autonomousModesReady ?                  "LEVEL:     READY" : "LEVEL:     WAITING");
+        // if (indoors_mode) {
+        //     backend->write(x, y+4, false,                                         "THR TRNR:  N/A INDRS");
+        // } else {
+            backend->write(x, y+4, false, autonomousModesReady ?                  "THR TRNR:  READY" : "THR TRNR:  WAITING");
+        // }
+        backend->write(x, y+5, false, isAccelGyroReady ?                      "ACR TRNR:  READY" : "ACR TRNR:  WAITING");
+        backend->write(x, y+6, false, isAccelGyroReady ?                      "ACRO:      READY" : "ACRO:      WAITING");    
+    }
+}
+
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
     float alt;
@@ -2285,6 +2349,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
     DRAW_SETTING(current2);
+    DRAW_SETTING(available_modes);
+    DRAW_SETTING(selected_mode);
 }
 #endif
 #endif // OSD_ENABLED

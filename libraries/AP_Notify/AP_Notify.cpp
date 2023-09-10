@@ -509,6 +509,11 @@ void AP_Notify::set_flight_mode_str(const char *str)
     _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
 }
 
+void AP_Notify::set_flight_mode_number(uint8_t num)
+{
+    _flight_mode_number = num;
+}
+
 void AP_Notify::send_text(const char *str)
 {
     strncpy(_send_text, str, sizeof(_send_text));

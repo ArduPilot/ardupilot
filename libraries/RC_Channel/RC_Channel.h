@@ -279,8 +279,10 @@ public:
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
 
+        RCCAR_UNLIMITED_HEIGHT = 308,
+
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   308,
+        AUX_FUNCTION_MAX =   309,
     };
     typedef enum AUX_FUNC aux_func_t;
 

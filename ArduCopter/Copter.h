@@ -225,6 +225,8 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeRCCar;
+    friend class Mode2DPos;
 
     Copter(void);
 
@@ -313,10 +315,14 @@ private:
     // Arming/Disarming management class
     AP_Arming_Copter arming;
 
+    bool is_outdoors_ready();
+    bool outdoors_ready = true;
+
     // Optical flow sensor
 #if AP_OPTICALFLOW_ENABLED
     AP_OpticalFlow optflow;
 #endif
+    bool rccar_flow_hold = false;
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
@@ -696,6 +702,7 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets) const override;
+    void check_outdoors_ready();
 
     // Attitude.cpp
     void update_throttle_hover();
@@ -1023,6 +1030,8 @@ private:
 #if MODE_TURTLE_ENABLED == ENABLED
     ModeTurtle mode_turtle;
 #endif
+    ModeRCCar mode_rccar;
+    Mode2DPos mode_2dposhold;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

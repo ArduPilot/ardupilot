@@ -137,6 +137,9 @@ public:
         return (_arming_options & uint32_t(option)) != 0;
     }
 
+    virtual bool gps_checks(bool report);
+    bool gps_checks_indoor_mode(bool report);
+
 protected:
 
     // Parameters
@@ -161,8 +164,6 @@ protected:
     virtual bool ins_checks(bool report);
 
     bool compass_checks(bool report);
-
-    virtual bool gps_checks(bool report);
 
     bool battery_checks(bool report);
 
