@@ -1573,10 +1573,18 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     float roll;
     float pitch;
+    bool inverted = false;
     AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
     pitch *= -1;
-
-    //inverted roll AH
+    // Are we inverted? then flash horizon line
+    if (abs(roll) >= radians(90)) {
+       inverted = true;
+    }
+    // Aviation style AH instead of Betaflight FPV style
+    if (inverted && check_option(AP_OSD::OPTION_AVIATION_AH)) {
+        pitch = -pitch;            
+    }
+    //inverted roll AH (Russian HUD emulation)
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
         roll = -roll;
     }
@@ -1595,7 +1603,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             //chars in font in reversed order
             c = SYMBOL(SYM_AH_H_START) + ((SYMBOL(SYM_AH_H_COUNT) - 1) - c);
             if (dy >= -4 && dy <= 4) {
-                backend->write(x + dx, y - dy, false, "%c", c);
+                backend->write(x + dx, y - dy, inverted, "%c", c);
             }
         }
     } else {
@@ -1605,7 +1613,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             char c = (fx - dx) * SYMBOL(SYM_AH_V_COUNT);
             c = SYMBOL(SYM_AH_V_START) + c;
             if (dx >= -4 && dx <=4) {
-                backend->write(x + dx, y - dy, false, "%c", c);
+                backend->write(x + dx, y - dy, inverted, "%c", c);
             }
         }
     }
