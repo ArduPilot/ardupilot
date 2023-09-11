@@ -262,12 +262,13 @@ struct PACKED log_RCIN {
     uint16_t chan14;
 };
 
-struct PACKED log_RCIN2 {
+struct PACKED log_RCI2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint16_t chan15;
     uint16_t chan16;
     uint16_t override_mask;
+    uint8_t flags;
 };
 
 struct PACKED log_RCOUT {
@@ -971,6 +972,8 @@ struct PACKED log_VER {
 // @Field: C15: channel 15 input
 // @Field: C16: channel 16 input
 // @Field: OMask: bitmask of RC channels being overridden by mavlink input
+// @Field: Flags: bitmask of RC state flags
+// @FieldBitmaskEnum: Flags: AP_Logger::RCLoggingFlags
 
 // @LoggerMessage: RCIN
 // @Description: RC input channels to vehicle
@@ -1204,8 +1207,8 @@ LOG_STRUCTURE_FROM_GPS \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
-    { LOG_RCIN2_MSG, sizeof(log_RCIN2), \
-      "RCI2",  "QHHH",     "TimeUS,C15,C16,OMask", "sYY-", "F---", true }, \
+    { LOG_RCI2_MSG, sizeof(log_RCI2), \
+      "RCI2",  "QHHHB",     "TimeUS,C15,C16,OMask,Flags", "sYY--", "F----", true }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
     { LOG_RCOUT2_MSG, sizeof(log_RCOUT2), \
@@ -1324,7 +1327,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_NAVEKF3,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
-    LOG_RCIN2_MSG,
+    LOG_RCI2_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
     LOG_IDS_FROM_BARO,
