@@ -111,6 +111,7 @@ private:
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
         READ_RANGEFINDER = 0x15,
+        EXTERNAL_ATTITUDE = 0x22,
     };
 
     // Function Feedback Info packet info_type values
@@ -323,6 +324,10 @@ private:
     uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
     uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
     float _rangefinder_dist_m;                      // distance received from rangefinder
+
+    // sending of attitude to gimbal
+    uint32_t _last_attitude_send_ms;
+    void send_attitude(void);
 
     // hardware lookup table indexed by HardwareModel enum values (see above)
     struct HWInfo {
