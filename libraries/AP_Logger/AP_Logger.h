@@ -431,6 +431,11 @@ private:
         BLOCK      = (1<<2),
     };
 
+    enum class RCLoggingFlags : uint8_t {
+        HAS_VALID_INPUT = 1U<<0,  // true if the system is receiving good RC values
+        IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
+    };
+
     /*
      * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.
