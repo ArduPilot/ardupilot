@@ -27,6 +27,7 @@
 #define AC_ATTITUDE_RATE_RELAX_TC                       0.16f   // This is used to decay the rate I term to 5% in half a second.
 
 #define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(30.0f) // Thrust angle error above which yaw corrections are limited
+#define AC_ATTITUDE_YAW_MAX_ERROR_ANGLE                 radians(45.0f) // Thrust angle error above which yaw corrections are limited
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
