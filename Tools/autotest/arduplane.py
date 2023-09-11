@@ -4795,6 +4795,10 @@ class AutoTestPlane(AutoTest):
             mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
             p5=4,
         )
+        # simple gyro cal makes the GPS units go unhealthy as they are
+        # not maintaining their update rate (gyro cal is synchronous
+        # in the main loop).  Usually ~30 seconds to recover...
+        self.wait_gps_sys_status_not_present_or_enabled_and_healthy(timeout=60)
 
         self.start_subtest("force save accels")
         command(
