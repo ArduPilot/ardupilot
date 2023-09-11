@@ -36,7 +36,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
         return;
     }
 
-    uint8_t slewrate = aparm.throttle_slewrate;
+    uint16_t slewrate = aparm.throttle_slewrate;
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;

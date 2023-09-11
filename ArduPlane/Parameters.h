@@ -452,7 +452,7 @@ public:
     AP_Int8 takeoff_tdrag_elevator;
     AP_Float takeoff_tdrag_speed1;
     AP_Float takeoff_rotate_speed;
-    AP_Int8 takeoff_throttle_slewrate;
+    AP_Int16 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
 #if AP_TERRAIN_AVAILABLE
