@@ -7201,7 +7201,7 @@ class AutoTest(ABC):
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
-        tstart = self.get_sim_time_cached()
+        tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
@@ -7221,7 +7221,8 @@ class AutoTest(ABC):
             if (not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
                 self.progress("GPS not healthy")
                 continue
-            self.progress("GPS healthy")
+            self.progress("GPS healthy after %f/%f seconds" %
+                          ((now - tstart), timeout))
             return
 
     def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True, verbose=False):
