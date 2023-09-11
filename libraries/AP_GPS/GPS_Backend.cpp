@@ -46,37 +46,6 @@ AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::
     state.have_vertical_accuracy = false;
 }
 
-int32_t AP_GPS_Backend::swap_int32(int32_t v) const
-{
-    const uint8_t *b = (const uint8_t *)&v;
-    union {
-        int32_t v;
-        uint8_t b[4];
-    } u;
-
-    u.b[0] = b[3];
-    u.b[1] = b[2];
-    u.b[2] = b[1];
-    u.b[3] = b[0];
-
-    return u.v;
-}
-
-int16_t AP_GPS_Backend::swap_int16(int16_t v) const
-{
-    const uint8_t *b = (const uint8_t *)&v;
-    union {
-        int16_t v;
-        uint8_t b[2];
-    } u;
-
-    u.b[0] = b[1];
-    u.b[1] = b[0];
-
-    return u.v;
-}
-
-
 /**
    fill in time_week_ms and time_week from BCD date and time components
    assumes MTK19 millisecond form of bcd_time
