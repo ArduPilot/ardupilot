@@ -7,3 +7,7 @@ repositories:
     type: git
     url: https://github.com/micro-ROS/micro-ROS-Agent.git
     version: humble
+  colcon-python-project:
+    type: git
+    url: https://github.com/colcon/colcon-python-project.git
+    branch: devel

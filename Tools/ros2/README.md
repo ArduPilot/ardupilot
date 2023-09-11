@@ -65,6 +65,8 @@ ROS_DISTRO=humble
 
 ```bash
 cd ~/ros_ws
+colcon build --packages-up-to colcon-python-project
+. install/local_setup.bash
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
