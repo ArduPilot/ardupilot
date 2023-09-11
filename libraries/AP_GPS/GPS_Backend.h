@@ -111,10 +111,6 @@ protected:
     uint32_t _last_itow_ms;
     bool _have_itow;
 
-    // common utility functions
-    int32_t swap_int32(int32_t v) const;
-    int16_t swap_int16(int16_t v) const;
-
     /*
       fill in 3D velocity from 2D components
      */
