@@ -155,6 +155,10 @@ AP_Notify *AP_Notify::_singleton;
 #define DEFAULT_BUZZ_ON_LVL 1
 #endif
 
+#ifndef AP_NOTIFY_DISCRETE_RGB_ENABLED
+#define AP_NOTIFY_DISCRETE_RGB_ENABLED 0
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
@@ -207,7 +211,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 17: DiscreteRGB
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -396,6 +400,14 @@ void AP_Notify::add_backends(void)
                 FOREACH_I2C_INTERNAL(b) {
                     ADD_BACKEND(new IS31FL3195(b, 0x54));
                 }
+                break;
+#endif
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+            case Notify_LED_DiscreteRGB:
+                ADD_BACKEND(new DiscreteRGBLed(DISCRETE_RGB_RED_PIN,
+                                               DISCRETE_RGB_GREEN_PIN,
+                                               DISCRETE_RGB_BLUE_PIN,
+                                               DISCRETE_RGB_POLARITY));
                 break;
 #endif
         }
