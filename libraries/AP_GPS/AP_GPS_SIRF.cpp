@@ -18,10 +18,14 @@
 //	Code by Michael Smith.
 //
 
-#include "AP_GPS_SIRF.h"
-#include <stdint.h>
+#include "AP_GPS_config.h"
 
 #if AP_GPS_SIRF_ENABLED
+
+#include "AP_GPS_SIRF.h"
+#include <AP_HAL/utility/sparse-endian.h>
+#include <stdint.h>
+
 // Initialisation messages
 //
 // Turn off all messages except for 0x29.
@@ -177,13 +181,13 @@ AP_GPS_SIRF::_parse_gps(void)
         }else{
             state.status = AP_GPS::GPS_OK_FIX_2D;
         }
-        state.location.lat      = swap_int32(_buffer.nav.latitude);
-        state.location.lng      = swap_int32(_buffer.nav.longitude);
-        state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
+        state.location.lat      = int32_t(be32toh(_buffer.nav.latitude));
+        state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));
+        state.location.alt      = int32_t(be32toh(_buffer.nav.altitude_msl));
         state.have_undulation = true;
-        state.undulation = (state.location.alt - swap_int32(_buffer.nav.altitude_ellipsoid))*0.01;
-        state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
-        state.ground_course     = wrap_360(swap_int16(_buffer.nav.ground_course)*0.01f);
+        state.undulation = (state.location.alt - int32_t(be32toh(_buffer.nav.altitude_ellipsoid)))*0.01;
+        state.ground_speed      = int32_t(be32toh(_buffer.nav.ground_speed))*0.01f;
+        state.ground_course     = wrap_360(int16_t(be16toh(_buffer.nav.ground_course)*0.01f));
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;
@@ -248,4 +252,5 @@ bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
     }
     return false;
 }
-#endif
+
+#endif  // AP_GPS_SIRF_ENABLED
