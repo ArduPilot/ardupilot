@@ -4980,6 +4980,12 @@ class AutoTest(ABC):
             p1=1,  # ARM
         )
 
+    def send_mavlink_disarm_command(self):
+        self.send_cmd(
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            p1=0,  # DISARM
+        )
+
     def send_mavlink_run_prearms_command(self):
         self.send_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS)
 
@@ -6525,6 +6531,7 @@ class AutoTest(ABC):
         achieving_duration_start = None
         sum_of_achieved_values = Vector3()
         last_value = Vector3()
+        last_fail_print = 0
         count_of_achieved_values = 0
         called_function = kwargs.get("called_function", None)
         minimum_duration = kwargs.get("minimum_duration", 0)
@@ -6534,7 +6541,15 @@ class AutoTest(ABC):
         self.progress("Waiting for %s=(%s)" % (value_name, str(target)))
 
         last_print_time = 0
-        while self.get_sim_time_cached() < tstart + timeout:  # if we failed to received message with the getter the sim time isn't updated  # noqa
+        while True:  # if we failed to received message with the getter the sim time isn't updated  # noqa
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException(
+                    "Failed to attain %s want %s, reached %s" %
+                    (value_name,
+                     str(target),
+                     str(sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else str(last_value)))  # noqa
+
             last_value = current_value_getter()
             if called_function is not None:
                 called_function(last_value, target)
@@ -6571,11 +6586,10 @@ class AutoTest(ABC):
                 achieving_duration_start = None
                 sum_of_achieved_values.zero()
                 count_of_achieved_values = 0
-        raise AutoTestTimeoutException(
-            "Failed to attain %s want %s, reached %s" %
-            (value_name,
-             str(target),
-             str(sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else str(last_value)))
+                if now - last_fail_print > 1:
+                    self.progress("Waiting for (%s), got %s" %
+                                  (target, last_value))
+                    last_fail_print = now
 
     def validate_kwargs(self, kwargs, valid={}):
         for key in kwargs:
@@ -6757,9 +6771,10 @@ class AutoTest(ABC):
     """Wait for a given speed vector."""
     def wait_speed_vector(self, speed_vector, accuracy=0.3, timeout=30, **kwargs):
         def validator(value2, target2):
-            return (math.fabs(value2.x - target2.x) <= accuracy and
-                    math.fabs(value2.y - target2.y) <= accuracy and
-                    math.fabs(value2.z - target2.z) <= accuracy)
+            for (want, got) in (target2.x, value2.x), (target2.y, value2.y), (target2.z, value2.z):
+                if want != float("nan") and (math.fabs(got - want) > accuracy):
+                    return False
+            return True
 
         self.wait_and_maintain(
             value_name="SpeedVector",
