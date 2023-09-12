@@ -310,7 +310,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
     // loop through groups of 4 ESCs
     const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
     
-    //This ensures that number of escs are present in a group of 4 and if not then it will rectify it by adding 1
+    // ensure we send out partially-full groups:
     const uint8_t num_idx = (ESC_TELEM_MAX_ESCS % 4 == 0) ? ESC_TELEM_MAX_ESCS / 4 : (ESC_TELEM_MAX_ESCS / 4) + 1; 
     
     for (uint8_t idx = 0; idx < num_idx; idx++) {
