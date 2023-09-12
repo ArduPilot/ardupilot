@@ -1,0 +1,6 @@
+include ../f303-M10025/hwdef.dat
+
+env AP_PERIPH 1
+
+# RM3100 compass Y axis reversed in revision C
+define AP_RM3100_REVERSAL_MASK 2

@@ -1,0 +1,3 @@
+include ../f303-M10025/hwdef-bl.dat
+
+env AP_PERIPH 1
