@@ -1,5 +1,17 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.4.1-beta2 14-Sep-2023
+Changes from 4.4.1-beta1
+1) Autopilot related enhancements
+    - H750 external flash optimisations for to lower CPU load
+    - MambaF405Mini fixes to match manufacturer's recommended wiring
+    - RADIX2 HD support
+    - YJUAV_A6SE support
+2) Bug fixes
+    - Airbotf4 features minimised to build for 4.4
+    - ChibiOS clock fix for 480Mhz H7 boards (affected FDCAN)
+    - RPI hardware version check fix
+------------------------------------------------------------------
 Copter 4.4.1-beta1 05-Sep-2023
 Changes from 4.4.0
 1) Autopilot related fixes and enhancements
