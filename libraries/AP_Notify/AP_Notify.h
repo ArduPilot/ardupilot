@@ -51,13 +51,6 @@ public:
         return _singleton;
     }
 
-    // Oreo LED Themes
-    enum Oreo_LED_Theme {
-        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
-        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
-        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
-    };
-
     enum Notify_LED_Type {
         Notify_LED_None                     = 0,        // not enabled
         Notify_LED_Board                    = (1 << 0), // Built in board LED's
