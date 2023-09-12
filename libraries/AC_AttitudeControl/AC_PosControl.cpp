@@ -656,6 +656,13 @@ void AC_PosControl::update_xy_controller()
     if (!limit_accel_xy(_vel_desired.xy(), _accel_target.xy(), accel_max)) {
         // _accel_target was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
+    } else {
+        // Check for pitch limiting in the forward direction
+        const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
+        const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
+        const float accel_fwd_limited = _accel_target.x * _ahrs.cos_yaw() + _accel_target.y * _ahrs.sin_yaw();
+        const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
+        _fwd_pitch_is_limited = is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
     }
 
     // update angle targets that will be passed to stabilize controller
