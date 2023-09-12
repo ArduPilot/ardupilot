@@ -768,6 +768,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return handle_MAV_CMD_SOLO_BTN_FLY_CLICK(packet);
 #endif
 
+#if AP_WINCH_ENABLED
+    case MAV_CMD_DO_WINCH:
+        return handle_MAV_CMD_DO_WINCH(packet);
+#endif
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -924,8 +929,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
                                                packet.param4,
                                                (uint8_t)packet.param5);
 
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+    }
+}
+
 #if AP_WINCH_ENABLED
-    case MAV_CMD_DO_WINCH:
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_WINCH(const mavlink_command_int_t &packet)
+{
         // param1 : winch number (ignored)
         // param2 : action (0=relax, 1=relative length control, 2=rate control). See WINCH_ACTIONS enum.
         if (!copter.g2.winch.enabled()) {
@@ -946,12 +957,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             break;
         }
         return MAV_RESULT_FAILED;
-#endif
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
 }
+#endif  // AP_WINCH_ENABLED
 
 #if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_command_int_t &packet)

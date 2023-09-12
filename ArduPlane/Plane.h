@@ -945,6 +945,7 @@ private:
 
     bool is_land_command(uint16_t cmd) const;
 
+    bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
     /*
       return true if in a specific AUTO mission command
     */

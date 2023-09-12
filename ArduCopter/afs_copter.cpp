@@ -68,4 +68,9 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }
 
+//to force entering auto mode when datalink loss 
+ void AP_AdvancedFailsafe_Copter::set_mode_auto(void)
+ {
+    copter.set_mode(Mode::Number::AUTO,ModeReason::GCS_FAILSAFE);
+ }
 #endif // ADVANCED_FAILSAFE

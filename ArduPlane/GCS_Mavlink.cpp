@@ -981,16 +981,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return MAV_RESULT_ACCEPTED;
 #endif
 
+    case MAV_CMD_DO_CHANGE_SPEED:
+        return handle_command_DO_CHANGE_SPEED(packet);
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
-MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
 {
-    switch(packet.command) {
-
-    case MAV_CMD_DO_CHANGE_SPEED: {
         // if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
@@ -1001,15 +1001,15 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             return MAV_RESULT_FAILED;
         }
 
-        AP_Mission::Mission_Command cmd;
-        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) != MAV_MISSION_ACCEPTED) {
-            return MAV_RESULT_DENIED;
-        }
-        if (plane.do_change_speed(cmd)) {
+        if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
-    }
+}
+
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    switch(packet.command) {
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);

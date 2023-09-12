@@ -351,7 +351,7 @@ void AP_Torqeedo::report_error_codes()
     if (_display_system_state.flags.temp_warning) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s high temp", msg_prefix);
     }
-    if (_display_system_state.flags.temp_warning) {
+    if (_display_system_state.flags.batt_nearly_empty) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s batt nearly empty", msg_prefix);
     }
     if (_display_system_state.master_error_code > 0) {

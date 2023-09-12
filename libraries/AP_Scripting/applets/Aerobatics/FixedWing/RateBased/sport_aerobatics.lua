@@ -84,6 +84,7 @@ TRIK_SEL_FN = bind_add_param2("_SEL_FN", 2, 301)
 TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
 TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
 TRICKS = {}
+local last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 
 
 function tricks_exist()
@@ -764,7 +765,6 @@ function check_auto_mission()
    end
 end
   
-local last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 local trick_sel_chan = nil
 local last_trick_selection = 0
 

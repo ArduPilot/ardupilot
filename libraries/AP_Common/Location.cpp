@@ -49,22 +49,6 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
     }
 }
 
-Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
-{
-    zero();
-
-    // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
-
-    // calculate lat, lon
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        lat = ekf_origin.lat;
-        lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
-    }
-}
-
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
 {
     alt = alt_cm;
@@ -304,6 +288,14 @@ void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype 
 void Location::offset(ftype ofs_north, ftype ofs_east)
 {
     offset_latlng(lat, lng, ofs_north, ofs_east);
+}
+
+// extrapolate latitude/longitude given distances (in meters) north
+// and east. Note that this is metres, *even for the altitude*.
+void Location::offset(const Vector3p &ofs_ned)
+{
+    offset_latlng(lat, lng, ofs_ned.x, ofs_ned.y);
+    alt += -ofs_ned.z * 100;  // m -> cm
 }
 
 /*
