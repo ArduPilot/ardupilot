@@ -3800,14 +3800,14 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
-    def MotorTest(self, timeout=60):
-        '''Run Motor Tests'''
+    def _MotorTest(self, command, timeout=60):
+        '''Run Motor Tests (with specific mavlink message)'''
         self.start_subtest("Testing PWM output")
         pwm_in = 1300
         # default frame is "+" - start motor of 2 is "B", which is
         # motor 1... see
         # https://ardupilot.org/copter/docs/connect-escs-and-motors.html
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
             p1=2, # start motor
             p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
@@ -3829,7 +3829,7 @@ class AutoTestCopter(AutoTest):
         # min/max are used.
         expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
         self.progress("expected pwm=%f" % expected_pwm)
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
             p1=2, # start motor
             p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
@@ -3843,6 +3843,11 @@ class AutoTestCopter(AutoTest):
         self.wait_servo_channel_value(4, expected_pwm, timeout=10)
         self.wait_statustext("finished motor test")
         self.end_subtest("Testing percentage output")
+
+    def MotorTest(self, timeout=60):
+        '''Run Motor Tests'''
+        self._MotorTest(self.run_cmd)
+        self._MotorTest(self.run_cmd_int)
 
     def PrecisionLanding(self):
         """Use PrecLand backends precision messages to land aircraft."""
