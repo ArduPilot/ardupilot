@@ -286,6 +286,26 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 }
 #endif
 
+// send camera capture status message to GCS
+void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+
+    // Current status of image capturing (0: idle, 1: capture in progress, 2: interval set but idle, 3: interval set and capture in progress)
+    const uint8_t image_status = (time_interval_settings.num_remaining > 0) ? 2 : 0;
+
+    // send CAMERA_CAPTURE_STATUS message
+    mavlink_msg_camera_capture_status_send(
+        chan,
+        AP_HAL::millis(),
+        image_status,
+        0,                // current status of video capturing (0: idle, 1: capture in progress)
+        static_cast<float>(time_interval_settings.time_interval_ms) / 1000.0, // image capture interval (s)
+        0,                // elapsed time since recording started (ms)
+        NaN,              // available storage capacity (ms)
+        image_index);     // total number of images captured
+}
+
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()

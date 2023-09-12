@@ -541,6 +541,19 @@ void AP_Camera::send_camera_fov_status(mavlink_channel_t chan)
 }
 #endif
 
+// send camera capture status message to GCS
+void AP_Camera::send_camera_capture_status(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_capture_status(chan);
+        }
+    }
+}
+
 /*
   update; triggers by distance moved and camera trigger
 */

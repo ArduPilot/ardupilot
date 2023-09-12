@@ -115,6 +115,9 @@ public:
     void send_camera_fov_status(mavlink_channel_t chan) const;
 #endif
 
+    // send camera capture status message to GCS
+    virtual void send_camera_capture_status(mavlink_channel_t chan) const;
+
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
