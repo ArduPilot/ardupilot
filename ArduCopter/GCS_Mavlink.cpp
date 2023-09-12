@@ -756,6 +756,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return handle_command_pause_continue(packet);
 
+    case MAV_CMD_DO_MOTOR_TEST:
+        return handle_MAV_CMD_DO_MOTOR_TEST(packet);
+
 #if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
     // Solo user presses pause button
     case MAV_CMD_SOLO_BTN_PAUSE_CLICK:
@@ -915,7 +918,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
-    case MAV_CMD_DO_MOTOR_TEST:
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+    }
+}
+
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet)
+{
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
         // param3 : throttle (range depends upon param2)
@@ -927,11 +936,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
                                                (uint8_t)packet.param2,
                                                packet.param3,
                                                packet.param4,
-                                               (uint8_t)packet.param5);
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
+                                               (uint8_t)packet.x);
 }
 
 #if AP_WINCH_ENABLED
