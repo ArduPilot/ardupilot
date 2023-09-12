@@ -133,9 +133,21 @@ const AP_Param::GroupInfo SIM::var_info[] = {
 #endif
 
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // @Param: FLOW_ENABLE
+    // @DisplayName: Opflow Enable
+    // @Description: Enable simulated Optical Flow sensor
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
+    // @Param: FLOW_RATE
+    // @DisplayName: Opflow Rate
+    // @Description: Opflow Data Rate
+    // @Units: Hz
     AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
+    // @Param: FLOW_DELAY
+    // @DisplayName: Opflow Delay
+    // @Description: Opflow data delay
+    // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
@@ -151,6 +163,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // @Param: FLOW_POS
+    // @DisplayName: Opflow Pos
+    // @Description: XYZ position of the optical flow sensor focal point relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
 #if AP_SIM_SHIP_ENABLED
@@ -227,6 +244,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("SHOVE_TIME",  33, SIM,  shove.t, 0),
     
     // optical flow sensor measurement noise in rad/sec
+    // @Param: FLOW_RND
+    // @DisplayName: Opflow noise
+    // @Description: Optical Flow sensor measurement noise in rad/sec
     AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
     AP_GROUPINFO("TWIST_X",     37, SIM,  twist.x, 0),
