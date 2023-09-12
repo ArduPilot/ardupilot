@@ -473,6 +473,15 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
+    enum class log_PID_Flags : uint8_t {
+        LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
+    };
+
+    uint8_t flags = 0;
+    if (info.limit) {
+        flags |= (uint8_t)log_PID_Flags::LIMIT;
+    }
+
     const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
@@ -485,7 +494,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
         FF              : info.FF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
-        limit           : info.limit
+        flags           : flags
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
