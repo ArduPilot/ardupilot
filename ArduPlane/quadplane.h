@@ -438,6 +438,7 @@ private:
     Location last_auto_target;
 
     float q_fwd_throttle; // forward throttle used in q modes
+    float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;

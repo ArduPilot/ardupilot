@@ -2095,6 +2095,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
         plane.auto_state.vtol_mode = true;
         // This is a precaution. It should be looked after by the call to QuadPlane::mode_enter(void) on mode entry.
         plane.quadplane.q_fwd_throttle = 0.0f;
+        plane.quadplane.q_fwd_pitch_lim_cd = 100.0f * plane.quadplane.q_fwd_pitch_lim;
         return true;
         
     case MAV_VTOL_STATE_FW:
@@ -2976,6 +2977,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     const auto fwd_thr_active = get_vfwd_method();
     if (fwd_thr_active != ActiveFwdThr::NEW) {
         q_fwd_throttle = 0.0f;
+        q_fwd_pitch_lim_cd = 100.0f * q_fwd_pitch_lim;
         return;
     }
 
@@ -2983,8 +2985,20 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     // and are using the forward thrust motor or tilting rotors to provide the forward acceleration
     float fwd_tilt_rad = radians(constrain_float(-0.01f * (float)plane.nav_pitch_cd, 0.0f, 45.0f));
     q_fwd_throttle = MIN(q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
-    int32_t fwd_pitch_lim_cd = (int32_t)(-100.0f * q_fwd_pitch_lim);
 
+    // Slowly relax forward tilt limit if the position controller is saturating in the forward direction because
+    // the forward thrust motor could be failed
+    const float fwd_tilt_range_cd = (float)aparm.angle_max - 100.0f * q_fwd_pitch_lim;
+    if (is_positive(fwd_tilt_range_cd)) {
+        const float fwd_pitch_lim_cd_tgt = plane.quadplane.pos_control->get_fwd_pitch_is_limited() ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
+        const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
+        q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
+    } else {
+        // take the lesser of the two limits
+        q_fwd_pitch_lim_cd = (float)aparm.angle_max;
+    }
+
+    float nav_pitch_lower_limit_cd;
     if (!in_vtol_land_approach()) {
         // To prevent forward motor prop strike, reduce throttle to zero when close to ground.
         // When we are doing horizontal positioning in a VTOL land we always allow the fwd motor
@@ -2996,10 +3010,12 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         q_fwd_throttle *= fwd_thr_scaler;
         // When reducing forward throttle use, relax forward pitch limit to maintain forward
         // acceleration capability.
-        fwd_pitch_lim_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + 100.0f * q_fwd_pitch_lim * fwd_thr_scaler);
+        nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + 100.0f * q_fwd_pitch_lim_cd * fwd_thr_scaler);
+    } else {
+        nav_pitch_lower_limit_cd = - q_fwd_pitch_lim_cd;
     }
 
-    plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, fwd_pitch_lim_cd);
+    plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, nav_pitch_lower_limit_cd);
 }
 
 /*
@@ -4547,6 +4563,7 @@ void QuadPlane::mode_enter(void)
     guided_wait_takeoff = false;
 
     q_fwd_throttle = 0.0f;
+    q_fwd_pitch_lim_cd = 100.0f * q_fwd_pitch_lim;
 }
 
 // Set attitude control yaw rate time constant to pilot input command model value
