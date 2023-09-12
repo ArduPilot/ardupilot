@@ -11,6 +11,7 @@ import numpy
 import math
 
 from pymavlink import mavutil
+from pymavlink.rotmat import Vector3
 
 from common import AutoTest
 from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
@@ -357,41 +358,84 @@ class AutoTestQuadPlane(AutoTest):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
-    def fly_qautotune(self):
-        self.change_mode("QHOVER")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.set_rc(3, 1800)
-        self.wait_altitude(30,
-                           40,
-                           relative=True,
-                           timeout=30)
+    def QAUTOTUNE(self):
+        '''test Plane QAutoTune mode'''
+
+        # this is a list of all parameters modified by QAUTOTUNE.  Set
+        # them so that when the context is popped we get the original
+        # values back:
+        parameter_values = self.get_parameters([
+            "Q_A_RAT_RLL_P",
+            "Q_A_RAT_RLL_I",
+            "Q_A_RAT_RLL_D",
+            "Q_A_ANG_RLL_P",
+            "Q_A_ACCEL_R_MAX",
+            "Q_A_RAT_PIT_P",
+            "Q_A_RAT_PIT_I",
+            "Q_A_RAT_PIT_D",
+            "Q_A_ANG_PIT_P",
+            "Q_A_ACCEL_P_MAX",
+            "Q_A_RAT_YAW_P",
+            "Q_A_RAT_YAW_I",
+            "Q_A_RAT_YAW_FLTE",
+            "Q_A_ANG_YAW_P",
+            "Q_A_ACCEL_Y_MAX",
+        ])
+        self.set_parameters(parameter_values)
+
+        self.takeoff(15, mode='GUIDED')
         self.set_rc(3, 1500)
+        self.change_mode("QLOITER")
         self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
-        sim_time_expected = 5000
-        deadline = tstart + sim_time_expected
-        while self.get_sim_time_cached() < deadline:
+        self.context_collect('STATUSTEXT')
+        while True:
             now = self.get_sim_time_cached()
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
-            if "AutoTune: Success" in m.text:
-                break
-        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-        self.set_rc(3, 1200)
-        self.wait_altitude(-5, 1, relative=True, timeout=30)
-        while self.get_sim_time_cached() < deadline:
-            self.mavproxy.send('disarm\n')
+            if now - tstart > 5000:
+                raise NotAchievedException("Did not get success message")
             try:
-                self.wait_text("AutoTune: Saved gains for Roll Pitch Yaw", timeout=0.5)
+                self.wait_text("AutoTune: Success", timeout=1, check_context=True)
+            except AutoTestTimeoutException:
+                continue
+            # got success message
+            break
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.context_clear_collection('STATUSTEXT')
+
+        self.progress("Landing to save gains")
+        self.set_rc(3, 1200)
+        self.wait_speed_vector(
+            Vector3(float('nan'), float('nan'), 1.4),
+            timeout=5,
+        )
+        self.wait_speed_vector(
+            Vector3(0.0, 0.0, 0.0),
+            timeout=20,
+        )
+        distance = self.distance_to_home()
+        if distance > 20:
+            raise NotAchievedException("wandered from home (distance=%f)" %
+                                       (distance,))
+        self.set_rc(3, 1000)
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 500:
+                raise NotAchievedException("Did not get success message")
+            self.send_mavlink_disarm_command()
+            try:
+                self.wait_text(
+                    "AutoTune: Saved gains for Roll Pitch Yaw.*",
+                    timeout=0.5,
+                    check_context=True,
+                    regex=True,
+                    )
             except AutoTestTimeoutException:
                 continue
             break
+
         self.wait_disarmed()
+        self.reboot_sitl()  # far from home
 
     def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
@@ -1344,6 +1388,7 @@ class AutoTestQuadPlane(AutoTest):
             self.TestMotorMask,
             self.PilotYaw,
             self.ParameterChecks,
+            self.QAUTOTUNE,
             self.LogDownload,
             self.EXTENDED_SYS_STATE,
             self.Mission,
