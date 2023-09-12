@@ -1,3 +1,16 @@
+Release 4.4.1-beta2 12th September 2023
+--------------------------------------
+
+Changes from 4.4.1-beta1
+
+- Airbotf4 features minimised to build for 4.4
+- ChibiOS clock fix for 480Mhz H7 boards (affected FDCAN)
+- H750 external flash optimisations for to lower CPU load
+- MambaF405Mini fixes to match manufacturer's recommended wiring
+- RADIX2 HD support
+- RPI hardware version check fix
+- YJUAV_A6SE support
+
 Release 4.4.1-beta1 5th September 2023
 --------------------------------------
 
