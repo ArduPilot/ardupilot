@@ -450,6 +450,7 @@ void AP_Mount_Siyi::process_packet()
                     msg = "OFF";
                     break;
                 case RecordingStatus::ON:
+                    _capture_status.video_start_ms = AP_HAL::millis();
                     msg = "ON";
                     break;
                 case RecordingStatus::NO_CARD:
@@ -490,6 +491,7 @@ void AP_Mount_Siyi::process_packet()
             debug("FnFeedB success");
             break;
         case FunctionFeedbackInfo::FAILED_TO_TAKE_PHOTO:
+            _capture_status.snapshot_count--;
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to take picture", err_prefix);
             break;
         case FunctionFeedbackInfo::HDR_ON:
@@ -707,7 +709,16 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
 // take a picture.  returns true on success
 bool AP_Mount_Siyi::take_picture()
 {
-    return send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::TAKE_PICTURE);
+    bool ok = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::TAKE_PICTURE);
+    if (ok) {
+        // Because we're not keeping track of every SiyiCommandId::PHOTO command sent, and
+        // therefore we have no way to correlate ack messages with commands, we assume the
+        // capture was successful. Then, if we get a failure reported, we decrement this
+        // counter again.
+        _capture_status.snapshot_count++;
+    }
+
+    return ok;
 }
 
 // start or stop video recording.  returns true on success
@@ -1010,6 +1021,30 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
+// send camera capture status message to GCS
+void AP_Mount_Siyi::send_camera_capture_status(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+
+    const uint32_t time_boot_ms = AP_HAL::millis();
+
+    // Current status of video capturing (0: idle, 1: capture in progress)
+    const uint8_t video_status = (_config_info.record_status == RecordingStatus::ON) ? 1 : 0;
+    // Time since recording started (ms)
+    const uint32_t recording_time_ms = video_status ? (time_boot_ms - _capture_status.video_start_ms) : 0;
+
+    // send CAMERA_CAPTURE_STATUS message
+    mavlink_msg_camera_capture_status_send(
+        chan,
+        time_boot_ms,
+        0,   // Current status of image capturing (0: idle, 1: capture in progress, 2: interval set but idle, 3: interval set and capture in progress)
+        video_status,
+        0.0, // image capture interval (s)
+        recording_time_ms,
+        NaN, // available storage capacity (ms)
+        _capture_status.snapshot_count); // total number of images captured
 }
 
 // get model name string. returns "Unknown" if hardware model is not yet known

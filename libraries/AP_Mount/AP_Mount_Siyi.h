@@ -81,6 +81,9 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+    // send camera capture status message to GCS
+    void send_camera_capture_status(mavlink_channel_t chan) const override;
+
     //
     // rangefinder
     //
@@ -318,11 +321,18 @@ private:
 
     // Configuration info received from gimbal
     GimbalConfigInfo _config_info;
-    
+
     // rangefinder variables
     uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
     uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
     float _rangefinder_dist_m;                      // distance received from rangefinder
+
+    struct {
+        // NOTE: Recording status is in _config_info.record_status
+
+        uint32_t video_start_ms; // Time since boot (ms) at which video recording started
+        uint32_t snapshot_count; // Number of successful snapshots taken
+    } _capture_status;
 
     // hardware lookup table indexed by HardwareModel enum values (see above)
     struct HWInfo {
