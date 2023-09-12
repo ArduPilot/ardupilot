@@ -169,6 +169,13 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Bitmask: 0: Continue the mission even after comms are recovered (does not go to the mission item at the time comms were lost)
     // @Bitmask: 1: Enable AFS for all autonomous modes (not just AUTO) 
     AP_GROUPINFO("OPTIONS", 21, AP_AdvancedFailsafe, options, 0),
+
+    // @Param: GCS_TIMEOUT
+    // @DisplayName: GCS timeout
+    // @Description: The time (in seconds) of persistent data link loss before GCS failsafe occurs. 
+    // @User: Advanced
+    // @Units: s
+    AP_GROUPINFO("GCS_TIMEOUT", 22, AP_AdvancedFailsafe, _gcs_fail_time_seconds, 10),
     
     AP_GROUPEND
 };
@@ -220,7 +227,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
 
     const uint32_t last_heartbeat_ms = gcs().sysid_myggcs_last_seen_time_ms();
     uint32_t now = AP_HAL::millis();
-    bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
+    bool gcs_link_ok = ((now - last_heartbeat_ms) < (_gcs_fail_time_seconds*1000.0f));
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
 
     AP_Mission *_mission = AP::mission();

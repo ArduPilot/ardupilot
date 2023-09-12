@@ -126,6 +126,7 @@ protected:
     AP_Int32 _amsl_limit;
     AP_Int32 _amsl_margin_gps;
     AP_Float _rc_fail_time_seconds;
+    AP_Float _gcs_fail_time_seconds;
     AP_Int8  _max_gps_loss;
     AP_Int8  _max_comms_loss;
     AP_Int8  _enable_geofence_fs;
