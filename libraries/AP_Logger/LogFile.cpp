@@ -475,11 +475,15 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
     enum class log_PID_Flags : uint8_t {
         LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
+        PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
     };
 
     uint8_t flags = 0;
     if (info.limit) {
         flags |= (uint8_t)log_PID_Flags::LIMIT;
+    }
+    if (info.PD_limit) {
+        flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
     }
 
     const struct log_PID pkt{
