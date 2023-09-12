@@ -556,11 +556,7 @@ class AutoTestHelicopter(AutoTestCopter):
             copy.copy(wp5_by_three),
             self.mission_item_rtl(target_system=target_system, target_component=target_component),
         ])
-        # renumber the items:
-        count = 0
-        for item in ret:
-            item.seq = count
-            count += 1
+        self.correct_wp_seq_numbers(ret)
         return ret
 
     def scurve_nasty_up_mission(self, target_system=1, target_component=1):
@@ -633,11 +629,7 @@ class AutoTestHelicopter(AutoTestCopter):
             wp7,
             self.mission_item_rtl(target_system=target_system, target_component=target_component),
         ])
-        # renumber the items:
-        count = 0
-        for item in ret:
-            item.seq = count
-            count += 1
+        self.correct_wp_seq_numbers(ret)
         return ret
 
     def fly_mission_points(self, points):
