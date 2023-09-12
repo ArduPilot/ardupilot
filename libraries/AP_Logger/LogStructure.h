@@ -407,7 +407,7 @@ struct PACKED log_PID {
     float   FF;
     float   Dmod;
     float   slew_rate;
-    uint8_t limit;
+    uint8_t flags;
 };
 
 struct PACKED log_WheelEncoder {
@@ -676,7 +676,7 @@ struct PACKED log_VER {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod,SRate,Limit"
+#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod,SRate,Flags"
 #define PID_FMT    "QfffffffffB"
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
@@ -909,7 +909,8 @@ struct PACKED log_VER {
 // @Field: FF: controller feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
 // @Field: SRate: slew rate used in slew limiter
-// @Field: Limit: 1 if I term is limited due to output saturation
+// @Field: Flags: bitmask of PID state flags
+// @FieldBitmaskEnum: Flags: log_PID_Flags
 
 // @LoggerMessage: PM
 // @Description: autopilot system performance and general data dumping ground
