@@ -3731,6 +3731,13 @@ class AutoTest(ABC):
         self.set_rc(ch, 1000)
         self.delay_sim_time(1)
 
+    def correct_wp_seq_numbers(self, wps):
+        # renumber the items:
+        count = 0
+        for item in wps:
+            item.seq = count
+            count += 1
+
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
         '''takes a list of (type, n, e, alt) items.  Creates a mission in
         absolute frame using alt as relative-to-home and n and e as
@@ -3741,34 +3748,24 @@ class AutoTest(ABC):
         items.extend(items_in)
         seq = 0
         ret = []
-        for (t, n, e, alt) in items:
+        for item in items:
+            if not isinstance(item, tuple):
+                # hope this is a mission item...
+                item.seq = seq
+                seq += 1
+                ret.append(item)
+                continue
+            (t, n, e, alt) = item
             lat = 0
             lng = 0
             if n != 0 or e != 0:
                 loc = self.home_relative_loc_ne(n, e)
                 lat = loc.lat
                 lng = loc.lng
-            p1 = 0
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
             if not self.ardupilot_stores_frame_for_cmd(t):
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL
-            ret.append(self.mav.mav.mission_item_int_encode(
-                target_system,
-                target_component,
-                seq, # seq
-                frame,
-                t,
-                0, # current
-                0, # autocontinue
-                p1, # p1
-                0, # p2
-                0, # p3
-                0, # p4
-                int(lat*1e7), # latitude
-                int(lng*1e7), # longitude
-                alt, # altitude
-                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
-            )
+            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, x=int(lat*1e7), y=int(lng*1e7), z=alt))
             seq += 1
 
         return ret
@@ -5634,6 +5631,42 @@ class AutoTest(ABC):
 
     def sysid_thismav(self):
         return 1
+
+    def create_MISSION_ITEM_INT(
+            self,
+            t,
+            p1=0,
+            p2=0,
+            p3=0,
+            p4=0,
+            x=0,
+            y=0,
+            z=0,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            autocontinue=1,
+            current=0,
+            target_system=1,
+            target_component=1,
+            seq=0,
+            mission_type=mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+    ):
+        return self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                seq, # seq
+                frame,
+                t,
+                0, # current
+                0, # autocontinue
+                p1, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                x, # latitude
+                y, # longitude
+                z, # altitude
+                mission_type
+        )
 
     def run_cmd_int(self,
                     command,

@@ -416,13 +416,19 @@ class AutoTestQuadPlane(AutoTest):
         self.zero_throttle()
 
     def fly_home_land_and_disarm(self, timeout=30):
-        self.set_parameter("LAND_TYPE", 0)
-        filename = "flaps.txt"
+        self.change_mode('LOITER')
+        self.set_parameter('RTL_AUTOLAND', 1)
+        filename = "QuadPlaneDalbyRTL.txt"
         self.progress("Using %s to fly home" % filename)
-        self.load_mission(filename)
-        self.change_mode("AUTO")
-        self.set_current_waypoint(7)
+        self.load_generic_mission(filename)
+        self.change_mode("RTL")
+        self.wait_current_waypoint(4)
+        self.wait_statustext('Land descend started')
+        self.wait_statustext('Land final started', timeout=60)
         self.wait_disarmed(timeout=timeout)
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        # the following command is accepted, but doesn't actually
+        # work!  Should be able to remove check_afterwards!
         self.set_current_waypoint(0, check_afterwards=False)
 
     def wait_level_flight(self, accuracy=5, timeout=30):
@@ -1299,6 +1305,36 @@ class AutoTestQuadPlane(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def mission_MAV_CMD_DO_VTOL_TRANSITION(self):
+        '''mission item forces transition'''
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+                p1=mavutil.mavlink.MAV_VTOL_STATE_MC
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 200, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+                p1=mavutil.mavlink.MAV_VTOL_STATE_FW
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 200, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(4)
+        self.wait_servo_channel_value(5, 1200, comparator=operator.gt)
+        self.wait_current_waypoint(6)
+        self.wait_servo_channel_value(5, 1000, comparator=operator.eq, timeout=90)
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1327,5 +1363,6 @@ class AutoTestQuadPlane(AutoTest):
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
             self.RCDisableAirspeedUse,
+            self.mission_MAV_CMD_DO_VTOL_TRANSITION,
         ])
         return ret
