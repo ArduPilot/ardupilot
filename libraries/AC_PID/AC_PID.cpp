@@ -172,15 +172,23 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     P_out *= boost;
     D_out *= boost;
 
+    // Apply PD sum limit if enabled
+    if (is_positive(_kpdmax)) {
+        const float PD_sum_abs = fabsf(P_out + D_out);
+        if (PD_sum_abs > _kpdmax) {
+            const float PD_scale = _kpdmax / PD_sum_abs;
+            P_out *= PD_scale;
+            D_out *= PD_scale;
+            _pid_info.PD_limit = true;
+        }
+    }
+
     _pid_info.target = _target;
     _pid_info.actual = measurement;
     _pid_info.error = _error;
     _pid_info.P = P_out;
     _pid_info.D = D_out;
 
-    if (is_positive(_kpdmax)) {
-        return constrain_float(P_out + D_out, -_kpdmax, _kpdmax) + _integrator;
-    }
     return P_out + D_out + _integrator;
 }
 
@@ -227,16 +235,24 @@ float AC_PID::update_error(float error, float dt, bool limit)
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
-    
+
+    // Apply PD sum limit if enabled
+    if (is_positive(_kpdmax)) {
+        const float PD_sum_abs = fabsf(P_out + D_out);
+        if (PD_sum_abs > _kpdmax) {
+            const float PD_scale = _kpdmax / PD_sum_abs;
+            P_out *= PD_scale;
+            D_out *= PD_scale;
+            _pid_info.PD_limit = true;
+        }
+    }
+
     _pid_info.target = 0.0f;
     _pid_info.actual = 0.0f;
     _pid_info.error = _error;
     _pid_info.P = P_out;
     _pid_info.D = D_out;
 
-    if (is_positive(_kpdmax)) {
-        return constrain_float(P_out + D_out, -_kpdmax, _kpdmax) + _integrator;
-    }
     return P_out + D_out + _integrator;
 }
 
