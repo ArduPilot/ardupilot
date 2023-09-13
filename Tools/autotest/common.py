@@ -4705,7 +4705,6 @@ class AutoTest(ABC):
         self.upload_using_mission_protocol(mission_type, items)
         self.progress("check %s upload/download: download items" % itype)
         downloaded_items = self.download_using_mission_protocol(mission_type)
-        self.progress("Downloaded items: (%s)" % str(downloaded_items))
         if len(items) != len(downloaded_items):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
                                        (len(items), len(downloaded_items)))
