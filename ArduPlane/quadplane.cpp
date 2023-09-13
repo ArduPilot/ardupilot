@@ -3015,6 +3015,17 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     // acceleration capability.
     const float nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
 
+    // Diagnostics logging - remove when feature is fully flight tested.
+    AP::logger().WriteStreaming("FWDT",
+                                "TimeUS,fts,qfpcd,npllcd,npcd,qft",  // labels
+                                "Qfffff",    // fmt
+                                AP_HAL::micros64(),
+                                (double)fwd_thr_scaler,
+                                (double)q_fwd_pitch_lim_cd,
+                                (double)nav_pitch_lower_limit_cd,
+                                (double)plane.nav_pitch_cd,
+                                (double)q_fwd_throttle);
+
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
 }
 
