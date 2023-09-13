@@ -68,6 +68,10 @@
     #endif
 #endif
 
+#ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
+#define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
+#endif
+
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
