@@ -3010,7 +3010,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         q_fwd_throttle *= fwd_thr_scaler;
         // When reducing forward throttle use, relax forward pitch limit to maintain forward
         // acceleration capability.
-        nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + 100.0f * q_fwd_pitch_lim_cd * fwd_thr_scaler);
+        nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
     } else {
         nav_pitch_lower_limit_cd = - q_fwd_pitch_lim_cd;
     }
