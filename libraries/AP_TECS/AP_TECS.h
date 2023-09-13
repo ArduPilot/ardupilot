@@ -282,6 +282,9 @@ private:
     float _hgt_dem;             // height demand sent to control loops (m)
     float _hgt_dem_prev;        // _hgt_dem from previous frame (m)
 
+    // fraction of flare manoeuvre completed
+    float _flare_fraction;
+
     // height rate demands
     float _hgt_dem_rate_ltd;    // height demand after application of the rate limiter (m)
     float _hgt_rate_dem;        // height rate demand sent to control loops
@@ -381,7 +384,7 @@ private:
 
     // variables used for precision landing pitch control
     float _hgt_at_start_of_flare;
-    float _hgt_rate_at_flare_entry;
+    float _hgt_rate_dem_at_flare_entry;
     float _hgt_afe;
     float _pitch_min_at_flare_entry;
 

@@ -312,12 +312,11 @@ void AP_TECS::update_50hz(void)
     // Widnall W.S, Sinha P.K,
     // AIAA Journal of Guidance and Control, 78-1307R
 
-    /*
-      if we have a vertical position estimate from the EKF then use
-      it, otherwise use barometric altitude
-     */
-    _ahrs.get_relative_position_D_home(_height);
-    _height *= -1.0f;
+    // Use distance above home for up and away flight and fade across to distance above field
+    // when flaring.
+    float dist_below_home_m;
+    _ahrs.get_relative_position_D_home(dist_below_home_m);
+    _height = _hgt_afe * _flare_fraction - dist_below_home_m * (1.0f - _flare_fraction);
 
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
@@ -566,6 +565,7 @@ void AP_TECS::_update_height_demand(void)
             }
         }
         _hgt_dem_prev = _hgt_dem;
+        _flare_fraction = 0.0f;
     } else {
         // when flaring force height rate demand to the
         // configured sink rate and adjust the demanded height to
@@ -580,7 +580,7 @@ void AP_TECS::_update_height_demand(void)
             _flare_hgt_dem_adj = _hgt_dem;
             _flare_hgt_dem_ideal = _hgt_afe;
             _hgt_at_start_of_flare = _hgt_afe;
-            _hgt_rate_at_flare_entry = _climb_rate;
+            _hgt_rate_dem_at_flare_entry = _hgt_rate_dem;
             _flare_initialised = true;
         }
 
@@ -588,22 +588,29 @@ void AP_TECS::_update_height_demand(void)
         float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
 
         // bring it in linearly with height
-        float p;
         if (_hgt_at_start_of_flare > _flare_holdoff_hgt) {
-            p = constrain_float((_hgt_at_start_of_flare - _hgt_afe) / (_hgt_at_start_of_flare - _flare_holdoff_hgt), 0.0f, 1.0f);
+            _flare_fraction = constrain_float((_hgt_at_start_of_flare - _hgt_afe) / (_hgt_at_start_of_flare - _flare_holdoff_hgt), 0.0f, 1.0f);
         } else {
-            p = 1.0f;
+            _flare_fraction = 1.0f;
         }
-        _hgt_rate_dem = _hgt_rate_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
+        _hgt_rate_dem = _hgt_rate_dem_at_flare_entry * (1.0f - _flare_fraction) - land_sink_rate_adj * _flare_fraction;
 
         _flare_hgt_dem_ideal += _DT * _hgt_rate_dem; // the ideal height profile to follow
         _flare_hgt_dem_adj   += _DT * _hgt_rate_dem; // the demanded height profile that includes the pre-flare height tracking offset
 
-        // fade across to the ideal height profile
-        _hgt_dem = _flare_hgt_dem_adj * (1.0f - p) + _flare_hgt_dem_ideal * p;
+        // fade the demanded height from height above home to height above ground as flare progresses
+        // the measured height is faded across for height above home to height above ground in AP_TECS::update_50hz
+        _hgt_dem = _flare_hgt_dem_adj * (1.0f - _flare_fraction) + _flare_hgt_dem_ideal * _flare_fraction;
 
-        // correct for offset between height above ground and height above datum used by control loops
-        _hgt_dem += (_hgt_afe - _height);
+        AP::logger().WriteStreaming("TECF", "TimeUS,hafe,hdem,hdem_adj,frac",
+                                    "s----",
+                                    "F----",
+                                    "Qffff",
+                                    AP_HAL::micros64(),
+                                    (double)_hgt_afe,
+                                    (double)_flare_hgt_dem_ideal,
+                                    (double)_flare_hgt_dem_adj,
+                                    (double)_flare_fraction);
     }
 }
 
@@ -1100,7 +1107,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 
         // misc variables used for alternative precision landing pitch control
         _hgt_at_start_of_flare    = 0.0f;
-        _hgt_rate_at_flare_entry  = 0.0f;
+        _hgt_rate_dem_at_flare_entry  = 0.0f;
         _hgt_afe                  = 0.0f;
         _pitch_min_at_flare_entry = 0.0f;
 
