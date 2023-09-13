@@ -509,7 +509,7 @@ void AP_Periph_FW::handle_safety_state(CanardInstance* canard_instance, CanardRx
         return;
     }
     safety_state = req.status;
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_SAFETY_SWITCH_ENABLED
     rcout_handle_safety_state(safety_state);
 #endif
 }
