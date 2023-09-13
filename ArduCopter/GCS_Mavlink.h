@@ -99,6 +99,7 @@ private:
 
 
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet);
 
 #if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_command_int_t &packet);
