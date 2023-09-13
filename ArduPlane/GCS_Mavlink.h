@@ -55,6 +55,7 @@ private:
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_DO_CHANGE_SPEED(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_DO_VTOL_TRANSITION(const mavlink_command_int_t &packet);
 
     bool try_send_message(enum ap_message id) override;
