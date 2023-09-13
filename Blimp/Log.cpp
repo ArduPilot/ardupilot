@@ -282,7 +282,8 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: FF: controller feed-forward portion of response
     // @Field: Dmod: scaler applied to D gain to reduce limit cycling
     // @Field: SRate: slew rate
-    // @Field: Limit: 1 if I term is limited due to output saturation
+    // @Field: Flags: bitmask of PID state flags
+    // @FieldBitmaskEnum: Flags: log_PID_Flags
     {
         LOG_PIDD_MSG, sizeof(log_PID),
         "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
