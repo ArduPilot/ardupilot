@@ -3138,7 +3138,7 @@ class AutoTest(ABC):
         """Called as each mavlink msg is received."""
 #        print("msg: %s" % str(msg))
         if msg.get_type() == 'STATUSTEXT':
-            self.progress("AP: %s" % msg.text)
+            self.progress("AP: %s" % msg.text, send_statustext=False)
 
         self.write_msg_to_tlog(msg)
 
