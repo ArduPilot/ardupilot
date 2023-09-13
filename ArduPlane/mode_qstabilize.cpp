@@ -36,7 +36,10 @@ void ModeQStabilize::update()
         plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
     }
 
-    plane.quadplane.assign_tilt_to_fwd_thr();
+    if (plane.control_mode->mode_number() == Mode::Number::QSTABILIZE) {
+        // protect against this function running twice
+        plane.quadplane.assign_tilt_to_fwd_thr();
+    }
 }
 
 // quadplane stabilize mode
