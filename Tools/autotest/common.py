@@ -1446,12 +1446,13 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, function, attempts=1, speedup=None):
+    def __init__(self, function, kwargs={}, attempts=1, speedup=None):
         self.name = function.__name__
         self.description = function.__doc__
         if self.description is None:
             raise ValueError("%s is missing a docstring" % self.name)
         self.function = function
+        self.kwargs = kwargs
         self.attempts = attempts
         self.speedup = speedup
 
@@ -7850,6 +7851,7 @@ Also, ignores heartbeats not from our target system'''
         name = test.name
         desc = test.description
         test_function = test.function
+        test_kwargs = test.kwargs
         if attempt != 1:
             self.progress("RETRYING %s" % name)
             test_output_filename = self.buildlogs_path("%s-%s-retry-%u.txt" %
@@ -7886,7 +7888,7 @@ Also, ignores heartbeats not from our target system'''
                 orig_speedup = self.get_parameter("SIM_SPEEDUP")
                 self.set_parameter("SIM_SPEEDUP", test.speedup)
 
-            test_function()
+            test_function(**test_kwargs)
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
@@ -13280,6 +13282,77 @@ SERIAL5_BAUD 128
             binary_with_defaults = self.add_embedded_params_to_binary(self.binary, content)
             self.customise_SITL_commandline([], binary=binary_with_defaults)
             self.assert_parameter_values(param_values)
+
+    def _MotorTest(self,
+                   command,
+                   timeout=60,
+                   mot1_servo_chan=1,
+                   mot4_servo_chan=4,
+                   wait_finish_text=True,
+                   quadplane=False):
+        '''Run Motor Tests (with specific mavlink message)'''
+        self.start_subtest("Testing PWM output")
+        pwm_in = 1300
+        # default frame is "+" - start motor of 2 is "B", which is
+        # motor 1... see
+        # https://ardupilot.org/copter/docs/connect-escs-and-motors.html
+        command(
+            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+            p1=2, # start motor
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
+            p3=pwm_in, # pwm-to-output
+            p4=2, # timeout in seconds
+            p5=2, # number of motors to output
+            p6=0, # compass learning
+            timeout=timeout,
+        )
+        # long timeouts here because there's a pause before we start motors
+        self.wait_servo_channel_value(mot1_servo_chan, pwm_in, timeout=10)
+        self.wait_servo_channel_value(mot4_servo_chan, pwm_in, timeout=10)
+        if wait_finish_text:
+            self.wait_statustext("finished motor test")
+        self.wait_disarmed()
+        # wait_disarmed is not sufficient here; it's actually the
+        # *motors* being armed which causes the problem, not the
+        # vehicle's arm state!  Could we use SYS_STATUS here instead?
+        self.delay_sim_time(10)
+        self.end_subtest("Testing PWM output")
+
+        self.start_subtest("Testing percentage output")
+        percentage = 90.1
+        # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
+        # min/max are used.
+        expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
+        # quadplane doesn't use the expect value - it wants 1900
+        # rather than the calculated 1901...
+        if quadplane:
+            expected_pwm = 1900
+        self.progress("expected pwm=%f" % expected_pwm)
+        command(
+            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+            p1=2, # start motor
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
+            p3=percentage, # pwm-to-output
+            p4=2, # timeout in seconds
+            p5=2, # number of motors to output
+            p6=0, # compass learning
+            timeout=timeout,
+        )
+        self.wait_servo_channel_value(mot1_servo_chan, expected_pwm, timeout=10)
+        self.wait_servo_channel_value(mot4_servo_chan, expected_pwm, timeout=10)
+        if wait_finish_text:
+            self.wait_statustext("finished motor test")
+        self.wait_disarmed()
+        # wait_disarmed is not sufficient here; it's actually the
+        # *motors* being armed which causes the problem, not the
+        # vehicle's arm state!  Could we use SYS_STATUS here instead?
+        self.delay_sim_time(10)
+        self.end_subtest("Testing percentage output")
+
+    def MotorTest(self, timeout=60, **kwargs):
+        '''Run Motor Tests'''  # common to Copter and QuadPlane
+        self._MotorTest(self.run_cmd, **kwargs)
+        self._MotorTest(self.run_cmd_int, **kwargs)
 
     def tests(self):
         return [
