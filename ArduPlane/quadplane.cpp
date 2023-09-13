@@ -3015,7 +3015,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         nav_pitch_lower_limit_cd = - q_fwd_pitch_lim_cd;
     }
 
-    plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, nav_pitch_lower_limit_cd);
+    plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
 }
 
 /*
