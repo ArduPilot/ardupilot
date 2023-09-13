@@ -292,6 +292,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     if (frame.isErrorFrame() || frame.dlc > 8) {
         return -1;
     }
+    PERF_STATS(stats.tx_requests);
 
     /*
      * Normally we should perform the same check as in @ref canAcceptNewTxFrame(), because
@@ -323,7 +324,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         } else if ((can_->TSR & bxcan::TSR_TME2) == bxcan::TSR_TME2) {
             txmailbox = 2;
         } else {
-            PERF_STATS(stats.tx_rejected);
+            PERF_STATS(stats.tx_overflow);
             return 0;       // No transmission for you.
         }
 
