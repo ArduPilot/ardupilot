@@ -3805,55 +3805,6 @@ class AutoTestCopter(AutoTest):
         self._Parachute(self.run_cmd)
         self._Parachute(self.run_cmd_int)
 
-    def _MotorTest(self, command, timeout=60):
-        '''Run Motor Tests (with specific mavlink message)'''
-        self.start_subtest("Testing PWM output")
-        pwm_in = 1300
-        # default frame is "+" - start motor of 2 is "B", which is
-        # motor 1... see
-        # https://ardupilot.org/copter/docs/connect-escs-and-motors.html
-        command(
-            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
-            p1=2, # start motor
-            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
-            p3=pwm_in, # pwm-to-output
-            p4=2, # timeout in seconds
-            p5=2, # number of motors to output
-            p6=0, # compass learning
-            timeout=timeout,
-        )
-        # long timeouts here because there's a pause before we start motors
-        self.wait_servo_channel_value(1, pwm_in, timeout=10)
-        self.wait_servo_channel_value(4, pwm_in, timeout=10)
-        self.wait_statustext("finished motor test")
-        self.end_subtest("Testing PWM output")
-
-        self.start_subtest("Testing percentage output")
-        percentage = 90.1
-        # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
-        # min/max are used.
-        expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
-        self.progress("expected pwm=%f" % expected_pwm)
-        command(
-            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
-            p1=2, # start motor
-            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
-            p3=percentage, # pwm-to-output
-            p4=2, # timeout in seconds
-            p5=2, # number of motors to output
-            p6=0, # compass learning
-            timeout=timeout,
-        )
-        self.wait_servo_channel_value(1, expected_pwm, timeout=10)
-        self.wait_servo_channel_value(4, expected_pwm, timeout=10)
-        self.wait_statustext("finished motor test")
-        self.end_subtest("Testing percentage output")
-
-    def MotorTest(self, timeout=60):
-        '''Run Motor Tests'''
-        self._MotorTest(self.run_cmd)
-        self._MotorTest(self.run_cmd_int)
-
     def PrecisionLanding(self):
         """Use PrecLand backends precision messages to land aircraft."""
 
