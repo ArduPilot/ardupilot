@@ -3666,8 +3666,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def Parachute(self):
-        '''Test Parachute Functionality'''
+    def _Parachute(self, command):
+        '''Test Parachute Functionality using specific mavlink command'''
         self.set_rc(9, 1000)
         self.set_parameters({
             "CHUTE_ENABLED": 1,
@@ -3690,7 +3690,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Test triggering with mavlink message")
         self.takeoff(20)
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=2, # release
         )
@@ -3711,7 +3711,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Test mavlink triggering")
         self.takeoff(20)
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=mavutil.mavlink.PARACHUTE_DISABLE,
         )
@@ -3722,7 +3722,7 @@ class AutoTestCopter(AutoTest):
             ok = True
         if not ok:
             raise NotAchievedException("Disabled parachute fired")
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=mavutil.mavlink.PARACHUTE_ENABLE,
         )
@@ -3740,7 +3740,7 @@ class AutoTestCopter(AutoTest):
 
         # parachute should not fire if you go from disabled to release:
         self.takeoff(20)
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=mavutil.mavlink.PARACHUTE_RELEASE,
         )
@@ -3753,11 +3753,11 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Parachute fired when going straight from disabled to release")
 
         # now enable then release parachute:
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=mavutil.mavlink.PARACHUTE_ENABLE,
         )
-        self.run_cmd(
+        command(
             mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
             p1=mavutil.mavlink.PARACHUTE_RELEASE,
         )
@@ -3799,6 +3799,11 @@ class AutoTestCopter(AutoTest):
         self.set_rc(9, 1000)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
+
+    def Parachute(self):
+        '''Test Parachute Functionality'''
+        self._Parachute(self.run_cmd)
+        self._Parachute(self.run_cmd_int)
 
     def _MotorTest(self, command, timeout=60):
         '''Run Motor Tests (with specific mavlink message)'''
