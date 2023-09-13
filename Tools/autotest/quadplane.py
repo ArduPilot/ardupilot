@@ -745,6 +745,40 @@ class AutoTestQuadPlane(AutoTest):
         self.set_rc(4, 1500)
         self.do_RTL()
 
+    def FwdThrInVTOL(self):
+        '''test use of fwd motor throttle into wind'''
+        self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
+                             "SIM_WIND_DIR": 360,
+                             "Q_WVANE_ENABLE": 1,
+                             "Q_WVANE_GAIN": 1,
+                             "STICK_MIXING": 0,
+                             "Q_FWD_THR_USE": 2,
+                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
+
+        self.takeoff(10, mode="QLOITER")
+        self.set_rc(2, 1000)
+        self.delay_sim_time(10)
+        # Check that it is using some forward throttle
+        fwd_thr_pwm = self.get_servo_channel_value(3)
+        if fwd_thr_pwm < 1150 :
+            raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
+        # check that pitch is on limit
+        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+        pitch = math.degrees(m.pitch)
+        if abs(pitch + 3.0) > 0.5 :
+            raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
+        self.set_rc(2, 1500)
+        self.delay_sim_time(5)
+        loc1 = self.mav.location()
+        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
+        self.delay_sim_time(20)
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=60)
+        loc2 = self.mav.location()
+        position_drift = self.get_distance(loc1, loc2)
+        if position_drift > 5.0 :
+            raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
+
     def Weathervane(self):
         '''test nose-into-wind functionality'''
         # We test nose into wind code paths and yaw direction in copter autotest,
@@ -1413,6 +1447,7 @@ class AutoTestQuadPlane(AutoTest):
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
+            self.FwdThrInVTOL,
             self.AirMode,
             self.TestMotorMask,
             self.PilotYaw,
