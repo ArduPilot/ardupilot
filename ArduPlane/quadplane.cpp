@@ -2980,7 +2980,6 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         q_fwd_pitch_lim_cd = 100.0f * q_fwd_pitch_lim;
         return;
     }
-
     // Handle the case where we are limiting the forward pitch angle to prevent negative wing lift
     // and are using the forward thrust motor or tilting rotors to provide the forward acceleration
     float fwd_tilt_rad = radians(constrain_float(-0.01f * (float)plane.nav_pitch_cd, 0.0f, 45.0f));
@@ -2998,22 +2997,23 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         q_fwd_pitch_lim_cd = (float)aparm.angle_max;
     }
 
-    float nav_pitch_lower_limit_cd;
+    float fwd_thr_scaler;
     if (!in_vtol_land_approach()) {
         // To prevent forward motor prop strike, reduce throttle to zero when close to ground.
+        float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
+    } else {
         // When we are doing horizontal positioning in a VTOL land we always allow the fwd motor
         // to run. Otherwise a bad height above landing point estimate could cause the aircraft
         // not to be able to approach the landing point
-        float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        float fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
-        q_fwd_throttle *= fwd_thr_scaler;
-        // When reducing forward throttle use, relax forward pitch limit to maintain forward
-        // acceleration capability.
-        nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
-    } else {
-        nav_pitch_lower_limit_cd = - q_fwd_pitch_lim_cd;
+        fwd_thr_scaler = 1.0f;
     }
+    q_fwd_throttle *= fwd_thr_scaler;
+
+    // When reducing forward throttle use, relax lower pitch limit to maintain forward
+    // acceleration capability.
+    const float nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
 
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
 }
