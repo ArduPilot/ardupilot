@@ -3120,7 +3120,7 @@ void GCS_MAVLINK::send_vfr_hud()
   motors. That can be dangerous when a preflight reboot is done with
   the pilot close to the aircraft and can also damage the aircraft
  */
-MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
@@ -3208,8 +3208,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     // refuse reboot when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
-        const float magic_force_reboot_value = 20190226;
-        if (!is_equal(packet.param6, magic_force_reboot_value)) {
+        const uint32_t magic_force_reboot_value = 20190226;
+        if (packet.y != magic_force_reboot_value) {
             return MAV_RESULT_FAILED;
         }
     }
@@ -4867,10 +4867,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_can_forward(packet, msg);
         break;
 
-    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-        result = handle_preflight_reboot(packet, msg);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5147,6 +5143,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         return handle_command_preflight_calibration(packet, msg);
+
+    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+        return handle_preflight_reboot(packet, msg);
 
 #if AP_MAVLINK_SERVO_RELAY_ENABLED
     case MAV_CMD_DO_SET_SERVO:
