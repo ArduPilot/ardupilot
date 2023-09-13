@@ -466,7 +466,8 @@ class AutoTestQuadPlane(AutoTest):
         filename = "QuadPlaneDalbyRTL.txt"
         self.progress("Using %s to fly home" % filename)
         self.load_generic_mission(filename)
-        self.change_mode("RTL")
+        self.send_cmd_do_set_mode("RTL")
+        self.wait_mode('AUTO')
         self.wait_current_waypoint(4)
         self.wait_statustext('Land descend started')
         self.wait_statustext('Land final started', timeout=60)
