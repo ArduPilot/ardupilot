@@ -14,6 +14,7 @@ from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
 from common import AutoTest
+from common import Test
 from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 import operator
@@ -1435,6 +1436,12 @@ class AutoTestQuadPlane(AutoTest):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            Test(self.MotorTest, kwargs={  # tests motors 4 and 2
+                "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
+                "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
+                "wait_finish_text": False,
+                "quadplane": True,
+            }),
             self.RCDisableAirspeedUse,
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
