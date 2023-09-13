@@ -1590,6 +1590,7 @@ class AutoTest(ABC):
         )
         self.terrain_data_messages_sent = 0  # count of messages back
         self.dronecan_tests = dronecan_tests
+        self.statustext_id = 1
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -7733,7 +7734,14 @@ Also, ignores heartbeats not from our target system'''
             text = bytes(text, "ascii")
         elif 'unicode' in str(type(text)):
             text = text.encode('ascii')
-        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text)
+        seq = 0
+        while len(text):
+            self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
+            text = text[50:]
+            seq += 1
+        self.statustext_id += 1
+        if self.statustext_id > 255:
+            self.statustext_id = 1
 
     def get_stacktrace(self):
         return ''.join(traceback.format_stack())
