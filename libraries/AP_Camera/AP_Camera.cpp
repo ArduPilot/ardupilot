@@ -32,6 +32,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Camera options
+    // @Description: Camera options bitmask
+    // @Bitmask: 0:Enable deprecated CAMERA_FEEDBACK message
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 11, AP_Camera, _options, 0),
+
     // @Group: 1
     // @Path: AP_Camera_Params.cpp
     AP_SUBGROUPINFO(_params[0], "1", 12, AP_Camera, AP_Camera_Params),

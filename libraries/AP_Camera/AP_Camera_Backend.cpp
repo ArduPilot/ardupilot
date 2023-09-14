@@ -327,8 +327,10 @@ void AP_Camera_Backend::prep_capture_feedback(uint64_t timestamp_us)
     prep_mavlink_msg_camera_image_captured(timestamp_us, camera_location);
     GCS_SEND_MESSAGE(MSG_CAMERA_IMAGE_CAPTURED);
 
-    prep_mavlink_msg_camera_feedback(timestamp_us, camera_location);
-    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
+    if (_frontend.option_is_enabled(AP_Camera::Option::FEEDBACK_MESSAGE)) {
+        prep_mavlink_msg_camera_feedback(timestamp_us, camera_location);
+        GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
+    }
 }
 
 void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, Location &camera_location)
