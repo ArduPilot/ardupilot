@@ -17,6 +17,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#if HAL_WITH_DSP
+
 #include "AP_HAL_SITL.h"
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
@@ -209,3 +211,5 @@ void DSP::calculate_fft(complexf *samples, uint16_t fftlen)
         istep <<= 1;
     }
 }
+
+#endif
