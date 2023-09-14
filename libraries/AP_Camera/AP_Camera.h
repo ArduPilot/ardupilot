@@ -86,8 +86,10 @@ public:
     // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);

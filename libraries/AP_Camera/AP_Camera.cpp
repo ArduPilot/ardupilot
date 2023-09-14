@@ -492,6 +492,7 @@ void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float z
     backend->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 /*
   Send camera feedback to the GCS
  */
@@ -506,6 +507,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         }
     }
 }
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
 // send camera information message to GCS
 void AP_Camera::send_camera_information(mavlink_channel_t chan)

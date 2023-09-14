@@ -169,6 +169,7 @@ void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, 
     }
 }
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 // send camera feedback message to GCS
 void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 {
@@ -203,6 +204,7 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
         CAMERA_FEEDBACK_PHOTO,              // flags
         camera_feedback.feedback_trigger_logged_count); // completed image captures
 }
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
 // send camera information message to GCS
 void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
@@ -327,12 +329,15 @@ void AP_Camera_Backend::prep_capture_feedback(uint64_t timestamp_us)
     prep_mavlink_msg_camera_image_captured(timestamp_us, camera_location);
     GCS_SEND_MESSAGE(MSG_CAMERA_IMAGE_CAPTURED);
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     if (_frontend.option_is_enabled(AP_Camera::Option::FEEDBACK_MESSAGE)) {
         prep_mavlink_msg_camera_feedback(timestamp_us, camera_location);
         GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
     }
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 }
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, Location &camera_location)
 {
     const AP_AHRS &ahrs = AP::ahrs();
@@ -342,6 +347,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, 
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 }
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
 void AP_Camera_Backend::prep_mavlink_msg_camera_image_captured(uint64_t timestamp_us, Location &camera_location)
 {
