@@ -345,7 +345,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, 
 
 void AP_Camera_Backend::prep_mavlink_msg_camera_image_captured(uint64_t timestamp_us, Location &camera_location)
 {
-    if (!AP::rtc().get_utc_usec(camera_image_captured.time_utc)) {
+    if (!AP::rtc().get_utc_usec_from_boottime(camera_image_captured.time_utc, timestamp_us)) {
         camera_image_captured.time_utc = 0;
     }
     camera_image_captured.time_boot_ms = timestamp_us / 1000;
