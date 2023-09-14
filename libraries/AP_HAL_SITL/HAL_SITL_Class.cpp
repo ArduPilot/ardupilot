@@ -46,7 +46,9 @@ static Empty::RCInput  sitlRCInput;
 static RCOutput sitlRCOutput(&sitlState);
 static GPIO sitlGPIO(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
+#if HAL_WITH_DSP
 static DSP dspDriver;
+#endif
 
 
 // use the Empty HAL for hardware we don't emulate
@@ -104,7 +106,9 @@ HAL_SITL::HAL_SITL() :
         &utilInstance,      /* util */
         &emptyOpticalFlow,  /* onboard optical flow */
         &emptyFlash,        /* flash driver */
+#if HAL_WITH_DSP
         &dspDriver,         /* dsp driver */
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
