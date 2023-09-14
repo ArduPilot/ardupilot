@@ -155,10 +155,6 @@ AP_Notify *AP_Notify::_singleton;
 #define DEFAULT_BUZZ_ON_LVL 1
 #endif
 
-#ifndef AP_NOTIFY_DISCRETE_RGB_ENABLED
-#define AP_NOTIFY_DISCRETE_RGB_ENABLED 0
-#endif
-
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
