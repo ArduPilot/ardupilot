@@ -46,6 +46,10 @@ bool ESC_APD_Telem::update() {
                 // valid stop byte, check the CRC
                 if (crc_fletcher16(received.bytes, 18) == received.packet.checksum) {
                     // valid packet, copy the data we need and reset length
+                    // SKYWAYS start
+                    // There's no ESC status dronecan field, so hijacking error_count
+                    decoded.error_count = le32toh(received.packet.status_flags);
+                    // SKYWAYS end
                     decoded.voltage = le16toh(received.packet.voltage) * 1e-2f;
                     decoded.temperature = convert_temperature(le16toh(received.packet.temperature));
                     decoded.current = le16toh(received.packet.bus_current) * (1 / 12.5f);

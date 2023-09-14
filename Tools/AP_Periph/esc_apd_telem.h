@@ -40,7 +40,10 @@ private:
             uint32_t erpm;
             uint16_t input_duty;
             uint16_t motor_duty;
-            uint16_t reserved1;
+            // SKYWAYS start
+            uint8_t status_flags;
+            uint8_t reserved1;
+            // SKYWAYS end
             uint16_t checksum; // 16 bit fletcher checksum
             uint16_t stop; // should always be 65535 on a valid packet
         } packet;
