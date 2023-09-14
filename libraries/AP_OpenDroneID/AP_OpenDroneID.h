@@ -117,7 +117,7 @@ private:
     char id_type[3];
     size_t id_len;
     char id_str[21];
-
+    bool bootloader_flashed;
     enum Options : int16_t {
         EnforceArming     = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
