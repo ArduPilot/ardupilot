@@ -5743,6 +5743,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
 #if AP_CAMERA_ENABLED
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     case MSG_CAMERA_FEEDBACK:
         {
             AP_Camera *camera = AP::camera();
@@ -5753,6 +5754,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             camera->send_feedback(chan);
         }
         break;
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     case MSG_CAMERA_INFORMATION:
         {
             AP_Camera *camera = AP::camera();
