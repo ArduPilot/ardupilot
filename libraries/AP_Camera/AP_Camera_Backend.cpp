@@ -390,7 +390,11 @@ void AP_Camera_Backend::log_picture()
         // if we're using a feedback pin then when the event occurs we
         // stash the feedback data.  Since we're not using a feedback
         // pin, we just use "now".
-        prep_mavlink_msg_camera_feedback(AP::gps().time_epoch_usec());
+        uint64_t timestamp_us;
+        if (AP::rtc().get_utc_usec(timestamp_us)) {
+            timestamp_us = 0;
+        }
+        prep_capture_feedback(timestamp_us);
     }
 
     if (!using_feedback_pin) {
