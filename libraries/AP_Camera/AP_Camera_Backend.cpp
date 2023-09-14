@@ -247,6 +247,11 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
+void AP_Camera_Backend::send_camera_image_captured(mavlink_channel_t chan) const
+{
+    mavlink_msg_camera_image_captured_send_struct(chan, &camera_image_captured);
+}
+
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()
@@ -303,7 +308,7 @@ void AP_Camera_Backend::check_feedback()
         feedback_trigger_logged_count = feedback_trigger_count;
 
         // we should consider doing this inside the ISR and pin_timer
-        prep_mavlink_msg_camera_feedback(feedback_trigger_timestamp_us);
+        prep_capture_feedback(feedback_trigger_timestamp_us);
 
         // log camera message
         uint32_t tdiff = AP_HAL::micros() - timestamp32;
@@ -312,19 +317,66 @@ void AP_Camera_Backend::check_feedback()
     }
 }
 
-void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
+void AP_Camera_Backend::prep_capture_feedback(uint64_t timestamp_us)
 {
     const AP_AHRS &ahrs = AP::ahrs();
-    if (!ahrs.get_location(camera_feedback.location)) {
-        // completely ignore this failure!  AHRS will provide its best guess.
-    }
+    Location camera_location;
+    // completely ignore this failure!  AHRS will provide its best guess.
+    UNUSED_RESULT(ahrs.get_location(camera_location));
+
+    prep_mavlink_msg_camera_image_captured(timestamp_us, camera_location);
+    GCS_SEND_MESSAGE(MSG_CAMERA_IMAGE_CAPTURED);
+
+    prep_mavlink_msg_camera_feedback(timestamp_us, camera_location);
+    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
+}
+
+void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, Location &camera_location)
+{
+    const AP_AHRS &ahrs = AP::ahrs();
     camera_feedback.timestamp_us = timestamp_us;
     camera_feedback.roll_sensor = ahrs.roll_sensor;
     camera_feedback.pitch_sensor = ahrs.pitch_sensor;
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
+}
 
-    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
+void AP_Camera_Backend::prep_mavlink_msg_camera_image_captured(uint64_t timestamp_us, Location &camera_location)
+{
+    if (!AP::rtc().get_utc_usec(camera_image_captured.time_utc)) {
+        camera_image_captured.time_utc = 0;
+    }
+    camera_image_captured.time_boot_ms = timestamp_us / 1000;
+
+    camera_image_captured.lat = camera_location.lat;
+    camera_image_captured.lon = camera_location.lng;
+
+    camera_image_captured.alt = 0;
+    if (camera_location.initialised() && !camera_location.get_alt_cm(Location::AltFrame::ABSOLUTE, camera_image_captured.alt)) {
+        // completely ignore this failure!  this is a shouldn't-happen
+        // as current_loc should never be in an altitude we can't
+        // convert.
+    }
+    camera_image_captured.relative_alt = 0;
+    if (camera_location.initialised() && !camera_location.get_alt_cm(Location::AltFrame::ABOVE_HOME, camera_image_captured.relative_alt)) {
+        // completely ignore this failure!  this is a shouldn't-happen
+        // as current_loc should never be in an altitude we can't
+        // convert.
+    }
+
+    Quaternion vehicle_quat {};
+    const AP_AHRS &ahrs = AP::ahrs();
+    UNUSED_RESULT(ahrs.get_quaternion(vehicle_quat));
+    // TODO: we should apply camera rotation here as well...
+    camera_image_captured.q[0] = vehicle_quat.q1;
+    camera_image_captured.q[1] = vehicle_quat.q2;
+    camera_image_captured.q[2] = vehicle_quat.q3;
+    camera_image_captured.q[3] = vehicle_quat.q4;
+
+    camera_image_captured.image_index = this->image_index;
+    camera_image_captured.camera_id = _instance;
+    camera_image_captured.capture_result = 1; // Boolean indicating success (1) or failure (0)
+    camera_image_captured.file_url[0] = '\0';
 }
 
 // log picture

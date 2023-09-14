@@ -526,6 +526,17 @@ void AP_Camera::send_camera_settings(mavlink_channel_t chan)
     }
 }
 
+// send camera image captured message to GCS
+void AP_Camera::send_camera_image_captured(mavlink_channel_t chan) {
+    WITH_SEMAPHORE(_rsem);
+
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] != nullptr) {
+            _backends[i]->send_camera_image_captured(chan);
+        }
+    }
+}
+
 /*
   update; triggers by distance moved and camera trigger
 */
