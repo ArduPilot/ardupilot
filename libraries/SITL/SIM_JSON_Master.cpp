@@ -22,6 +22,8 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <errno.h>
+#include <stdio.h>
+#include <SITL/SITL.h>
 
 using namespace SITL;
 
