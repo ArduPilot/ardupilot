@@ -46,7 +46,9 @@ public:
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
         class AP_HAL::SIMState*   _simstate,
 #endif
+#if HAL_WITH_DSP
         AP_HAL::DSP*        _dsp,
+#endif
 #if HAL_NUM_CAN_IFACES > 0
         AP_HAL::CANIface* _can_ifaces[HAL_NUM_CAN_IFACES])
 #else
@@ -76,11 +78,13 @@ public:
         scheduler(_scheduler),
         util(_util),
         opticalflow(_opticalflow),
-        flash(_flash),
+#if HAL_WITH_DSP
+        dsp(_dsp),
+#endif
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
         simstate(_simstate),
 #endif
-        dsp(_dsp)
+        flash(_flash)
     {
 #if HAL_NUM_CAN_IFACES > 0
         if (_can_ifaces == nullptr) {
