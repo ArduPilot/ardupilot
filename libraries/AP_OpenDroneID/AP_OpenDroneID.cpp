@@ -131,7 +131,7 @@ void AP_OpenDroneID::set_basic_id() {
     if (pkt_basic_id.id_type != MAV_ODID_ID_TYPE_NONE) {
         return;
     }
-    if (id_len == 0) {
+    if ((id_len == 0) && (_options & LockUASIDOnFirstBasicIDRx)) {
         load_UAS_ID_from_persistent_memory();
     }
     if (id_len > 0) {
@@ -208,10 +208,12 @@ void AP_OpenDroneID::update()
 
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
         && (_options & LockUASIDOnFirstBasicIDRx)
-        && id_len == 0) {
+        && id_len == 0
+        && !bootloader_flashed) {
         hal.util->flash_bootloader();
         // reset the basic id on next set_basic_id call
         pkt_basic_id.id_type = MAV_ODID_ID_TYPE_NONE;
+        bootloader_flashed = true;
     }
 
     set_basic_id();
