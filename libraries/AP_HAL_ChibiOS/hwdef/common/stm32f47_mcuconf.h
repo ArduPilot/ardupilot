@@ -388,9 +388,9 @@
  * I2C driver system settings.
  */
 #define STM32_I2C_BUSY_TIMEOUT              50
-#define STM32_I2C_I2C1_IRQ_PRIORITY         5
-#define STM32_I2C_I2C2_IRQ_PRIORITY         5
-#define STM32_I2C_I2C3_IRQ_PRIORITY         5
+#define STM32_I2C_I2C1_IRQ_PRIORITY         3
+#define STM32_I2C_I2C2_IRQ_PRIORITY         3
+#define STM32_I2C_I2C3_IRQ_PRIORITY         3
 #define STM32_I2C_I2C1_DMA_PRIORITY         3
 #define STM32_I2C_I2C2_DMA_PRIORITY         3
 #define STM32_I2C_I2C3_DMA_PRIORITY         3
