@@ -37,6 +37,9 @@
 #include "batt_balance.h"
 #include "networking.h"
 #include "serial_options.h"
+#if AP_SIM_ENABLED
+#include <SITL/SITL.h>
+#endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
