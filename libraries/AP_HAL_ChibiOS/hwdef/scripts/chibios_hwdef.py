@@ -2045,8 +2045,12 @@ INCLUDE common.ld
         pwm_out = []
         # start with the ordered list from the dma resolver
         pwm_timers = ordered_timers
-        for label in self.bylabel.keys():
-            p = self.bylabel[label]
+        for label in list(self.bylabel.keys()) + list(self.altlabel.keys()):
+            if label in self.bylabel.keys():
+                p = self.bylabel[label]
+            else:
+                p = self.altlabel[label]
+
             if p.type.startswith('TIM'):
                 if p.has_extra('RCIN'):
                     rc_in = p
