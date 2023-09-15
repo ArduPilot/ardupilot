@@ -1308,6 +1308,7 @@ void AP_DroneCAN::check_parameter_callback_timeout()
         param_request_sent_ms = 0;
         param_int_cb = nullptr;
         param_float_cb = nullptr;
+        param_string_cb = nullptr;
     }
 }
 
@@ -1334,7 +1335,8 @@ bool AP_DroneCAN::set_parameter_on_node(uint8_t node_id, const char *name, float
 
     // fail if waiting for any previous get/set request
     if (param_int_cb != nullptr ||
-        param_float_cb != nullptr) {
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
         return false;
     }
     param_getset_req.index = 0;
@@ -1357,7 +1359,8 @@ bool AP_DroneCAN::set_parameter_on_node(uint8_t node_id, const char *name, int32
 
     // fail if waiting for any previous get/set request
     if (param_int_cb != nullptr ||
-        param_float_cb != nullptr) {
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
         return false;
     }
     param_getset_req.index = 0;
@@ -1365,6 +1368,30 @@ bool AP_DroneCAN::set_parameter_on_node(uint8_t node_id, const char *name, int32
     param_getset_req.value.integer_value = value;
     param_getset_req.value.union_tag = UAVCAN_PROTOCOL_PARAM_VALUE_INTEGER_VALUE;
     param_int_cb = cb;
+    param_request_sent = false;
+    param_request_sent_ms = AP_HAL::millis();
+    param_request_node_id = node_id;
+    return true;
+}
+
+/*
+  set named string parameter on node
+*/
+bool AP_DroneCAN::set_parameter_on_node(uint8_t node_id, const char *name, const string &value, ParamGetSetStringCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+
+    // fail if waiting for any previous get/set request
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
+        return false;
+    }
+    param_getset_req.index = 0;
+    param_getset_req.name.len = strncpy_noterm((char*)param_getset_req.name.data, name, sizeof(param_getset_req.name.data)-1);
+    memcpy(&param_getset_req.value.string_value, (const void*)&value, sizeof(value));
+    param_getset_req.value.union_tag = UAVCAN_PROTOCOL_PARAM_VALUE_STRING_VALUE;
+    param_string_cb = cb;
     param_request_sent = false;
     param_request_sent_ms = AP_HAL::millis();
     param_request_node_id = node_id;
@@ -1380,7 +1407,8 @@ bool AP_DroneCAN::get_parameter_on_node(uint8_t node_id, const char *name, Param
 
     // fail if waiting for any previous get/set request
     if (param_int_cb != nullptr ||
-        param_float_cb != nullptr) {
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
         return false;
     }
     param_getset_req.index = 0;
@@ -1402,7 +1430,8 @@ bool AP_DroneCAN::get_parameter_on_node(uint8_t node_id, const char *name, Param
 
     // fail if waiting for any previous get/set request
     if (param_int_cb != nullptr ||
-        param_float_cb != nullptr) {
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
         return false;
     }
     param_getset_req.index = 0;
@@ -1415,11 +1444,35 @@ bool AP_DroneCAN::get_parameter_on_node(uint8_t node_id, const char *name, Param
     return true;
 }
 
+/*
+  get named string parameter on node
+*/
+bool AP_DroneCAN::get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetStringCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+
+    // fail if waiting for any previous get/set request
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr ||
+        param_string_cb != nullptr) {
+        return false;
+    }
+    param_getset_req.index = 0;
+    param_getset_req.name.len = strncpy_noterm((char*)param_getset_req.name.data, name, sizeof(param_getset_req.name.data));
+    param_getset_req.value.union_tag = UAVCAN_PROTOCOL_PARAM_VALUE_EMPTY;
+    param_string_cb = cb;
+    param_request_sent = false;
+    param_request_sent_ms = AP_HAL::millis();
+    param_request_node_id = node_id;
+    return true;
+}
+
 void AP_DroneCAN::handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp)
 {
     WITH_SEMAPHORE(_param_sem);
     if (!param_int_cb &&
-        !param_float_cb) {
+        !param_float_cb &&
+        !param_string_cb) {
         return;
     }
     if ((rsp.value.union_tag == UAVCAN_PROTOCOL_PARAM_VALUE_INTEGER_VALUE) && param_int_cb) {
@@ -1448,12 +1501,27 @@ void AP_DroneCAN::handle_param_get_set_response(const CanardRxTransfer& transfer
             param_request_node_id = transfer.source_node_id;
             return;
         }
+    } else if ((rsp.value.union_tag == UAVCAN_PROTOCOL_PARAM_VALUE_STRING_VALUE) && param_string_cb) {
+        string val;
+        memcpy(&val, &rsp.value.string_value, sizeof(val));
+        if ((*param_string_cb)(this, transfer.source_node_id, (const char*)rsp.name.data, val)) {
+            // we want the parameter to be set with val
+            param_getset_req.index = 0;
+            memcpy(param_getset_req.name.data, rsp.name.data, rsp.name.len);
+            memcpy(&param_getset_req.value.string_value, &val, sizeof(val));
+            param_getset_req.value.union_tag = UAVCAN_PROTOCOL_PARAM_VALUE_STRING_VALUE;
+            param_request_sent = false;
+            param_request_sent_ms = AP_HAL::millis();
+            param_request_node_id = transfer.source_node_id;
+            return;
+        }
     }
+
     param_request_sent_ms = 0;
     param_int_cb = nullptr;
     param_float_cb = nullptr;
+    param_string_cb = nullptr;
 }
-
 
 void AP_DroneCAN::send_parameter_save_request()
 {
