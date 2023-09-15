@@ -505,6 +505,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_ALT_MIN", 34, QuadPlane, qrtl_alt_min, 10),
 
+    // @Param: FWD_THR_MIN
+    // @DisplayName: VTOL minimum forward throttle percent
+    // @Description: Minimum value for manual forward throttle; allows for aft translation using backward tilt angles in tiltrotor configurations
+    // @Range: -100 0
+    AP_GROUPINFO("FWD_THR_MIN", 35, QuadPlane, fwd_thr_min, 0),
+
     AP_GROUPEND
 };
 
@@ -3550,10 +3556,19 @@ float QuadPlane::forward_throttle_pct()
             return 0;
         } else {
             // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->percent_input();
+            float fwd_thr;
 
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            if (fwd_thr_min < 0){
+                fwd_thr = rc_fwd_thr_ch->norm_input();
+            } else {
+                fwd_thr = rc_fwd_thr_ch->percent_input() * 0.01;
+            }
+            if (!is_negative(fwd_thr)) {
+                fwd_thr *= constrain_float(fwd_thr_max, 0, 100);
+            } else {
+                fwd_thr *= constrain_float(-fwd_thr_min, 0, 100);
+            }
+            
             return fwd_thr;
         }
     }
@@ -3620,10 +3635,14 @@ float QuadPlane::forward_throttle_pct()
     // integrator as throttle percentage (-100 to 100)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
-    // inhibit reverse throttle and allow petrol engines with min > 0
-    int8_t fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
+    // inhibit to minimum throttle unless fwd_thr_min is set
+    int8_t fwd_throttle_min = 0;
+    if (fwd_thr_min < 0) {
+        fwd_throttle_min = fwd_thr_min;
+    } else {
+        fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
+    }
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_cruise);
-
     if (in_vtol_land_approach()) {
         // when we are doing horizontal positioning in a VTOL land
         // we always allow the fwd motor to run. Otherwise a bad
