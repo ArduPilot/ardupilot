@@ -217,9 +217,35 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 #endif
 
-        // pilot-speed-up parameter check
+        // pilot-speed parameter checks
         if (copter.g.pilot_speed_up <= 0) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
+            return false;
+        }
+        if (!copter.pos_control->target_speed_up_within_limit(copter.g.pilot_speed_up*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "PILOT_SPEED_UP too close to PSC_SPEED_UP_MAX");
+            return false;
+        }
+        if (!copter.pos_control->target_speed_down_within_limit(copter.get_pilot_speed_dn()*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "PILOT_SPEED_DN too close to PSC_SPEED_DN_MAX");
+            return false;
+        }
+        if (!copter.pos_control->target_speed_up_within_limit(copter.g.pilot_accel_z*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "PILOT_ACCEL_Z too close to PSC_ACCEL_Z_MAX");
+            return false;
+        }
+
+        // Waypoint speed parameter checks
+        if (!copter.pos_control->target_speed_up_within_limit(copter.wp_nav->get_default_speed_up()*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "WPNAV_SPEED_UP too close to PSC_SPEED_UP_MAX");
+            return false;
+        }
+        if (!copter.pos_control->target_speed_down_within_limit(copter.wp_nav->get_default_speed_down()*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "WPNAV_SPEED_DN too close to PSC_SPEED_DN_MAX");
+            return false;
+        }
+        if (!copter.pos_control->target_accel_z_within_limit(copter.wp_nav->get_accel_z()*0.01)) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "WPNAV_ACCEL_Z too close to PSC_ACCEL_Z_MAX");
             return false;
         }
 
