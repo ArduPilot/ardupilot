@@ -606,6 +606,9 @@ private:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
     bool delay_arming;
 
+    // minimum throttle for airbraking
+    AP_Int8 airbrake_thr_pct;
+
     /*
       return true if current mission item is a vtol takeoff
      */

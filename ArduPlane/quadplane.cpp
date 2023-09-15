@@ -505,6 +505,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_ALT_MIN", 34, QuadPlane, qrtl_alt_min, 10),
 
+    // @Param: ABRAKE_THR_PCT
+    // @DisplayName: airbrake minimum throttle
+    // @Description: This sets the minimum throttle to use during the airbrake phase of a VTOL approach and landing. Raising this will allow for faster slowdown of the vehicle, allowing for landings over a shorter distance. A value of -1 means to run the VTOL controller to hold height.
+    // @Units: %
+    // @Range: -1 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ABRAKE_THR_PCT", 35, QuadPlane, airbrake_thr_pct, -1),
+    
     AP_GROUPEND
 };
 
@@ -2431,7 +2440,12 @@ void QuadPlane::vtol_position_controller(void)
         const float stop_distance = stopping_distance() + 2*closing_speed;
 
         if (!suppress_z_controller && poscontrol.get_state() == QPOS_AIRBRAKE) {
-            hold_hover(0);
+            if (airbrake_thr_pct >= 0) {
+                // user has asked for a specific throttle
+                hold_stabilize(airbrake_thr_pct.get() * 0.01);
+            } else {
+                hold_hover(0);
+            }
             // don't run Z controller again in this loop
             suppress_z_controller = true;
         }
