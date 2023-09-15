@@ -112,7 +112,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_trim_or_esc;
     }
 
-    // radio and battery failsafe patter: flash yellow
+    // radio and battery failsafe pattern: flash yellow
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
     if (AP_Notify::flags.failsafe_radio ||
@@ -138,8 +138,9 @@ uint32_t RGBLed::get_colour_sequence(void) const
 
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
-        // solid green if armed with GPS 3d lock
-        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+        // solid green if armed with GPS 3d lock and EKF active
+        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D &&
+            AP_Notify::flags.gps_fusion > 0) {
             return sequence_armed;
         }
         // solid blue if armed with no GPS lock
