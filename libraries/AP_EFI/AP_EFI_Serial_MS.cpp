@@ -23,12 +23,11 @@
 
 #include "AP_EFI_Serial_MS.h"
 
-extern const AP_HAL::HAL &hal;
+#include <AP_HAL/utility/sparse-endian.h>
 
 AP_EFI_Serial_MS::AP_EFI_Serial_MS(AP_EFI &_frontend):
     AP_EFI_Backend(_frontend)
 {
-    internal_state.estimated_consumed_fuel_volume_cm3 = 0; // Just to be sure
     port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_EFI, 0);
 }
 
@@ -39,15 +38,12 @@ void AP_EFI_Serial_MS::update()
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
-
-    const uint32_t expected_bytes = 2 + (RT_LAST_OFFSET - RT_FIRST_OFFSET) + 4;
-    if (port->available() >= expected_bytes && read_incoming_realtime_data()) {
-        last_response_ms = now;
+    if (read_incoming_realtime_data()) {
         copy_to_frontend();
     }
 
-    if (now - last_response_ms > 100) {
+    const auto now_ms = AP_HAL::millis();
+    if (now_ms - last_response_ms > 100) {
         port->discard_input();
         // Request an update from the realtime table (7).
         // The data we need start at offset 6 and ends at 129
@@ -55,111 +51,101 @@ void AP_EFI_Serial_MS::update()
     }
 }
 
-bool AP_EFI_Serial_MS::read_incoming_realtime_data() 
+bool AP_EFI_Serial_MS::read_incoming_realtime_data()
 {
-    // Data is parsed directly from the buffer, otherwise we would need to allocate
-    // several hundred bytes for the entire realtime data table or request every
-    // value individiually
-    uint16_t message_length = 0;
+    // the following is 2 length bytes, the number of bytes we request
+    // in the packet we send and 4 bytes of checksum:
+    constexpr uint32_t expected_bytes = 2 + (RT_LAST_OFFSET - RT_FIRST_OFFSET) + 4;
 
-    // reset checksum before reading new data
-    checksum = 0;
-    
-    // Message length field begins the message (16 bits, excluded from CRC calculation)
-    // Message length value excludes the message length and CRC bytes 
-    message_length = port->read() << 8;
-    message_length += port->read();
+    const uint32_t available_bytes = port->available();
+    if (available_bytes < expected_bytes) {
+        return false;
+    }
 
-    if (message_length >= 256) {
-        // don't process invalid messages
-        // hal.console->printf("message_length: %u\n", message_length);
+    // we must have *exactly* what we want in the buffer:
+    if (available_bytes > expected_bytes) {
+        port->discard_input();
+        return false;
+    }
+
+    struct PACKED MSData {
+        uint16_t message_length;
+        uint8_t response_flag;
+        uint16_t pw1;
+        uint8_t unused1[2];
+        uint16_t rpm;
+        uint16_t advance;
+        uint8_t unused2[1];
+        uint8_t engine_bm;
+        uint8_t unused3[4];
+        uint16_t barometer;
+        uint16_t map;
+        uint16_t mat;
+        uint16_t cht;
+        uint16_t tps;
+        uint8_t unused4[2];
+        uint16_t afr1;
+        uint16_t afr2;
+        uint8_t unused5[30];
+        uint16_t dwell;
+        uint8_t load;
+        uint8_t unused6[61];
+        uint16_t fuel_pressure;
+        uint32_t checksum;
+    } ms_data;
+
+    static_assert(offsetof(MSData, response_flag) == 2, "response_flag offset");
+    static_assert(offsetof(MSData, pw1) == 3, "pw1 offset");
+    static_assert(offsetof(MSData, barometer) == 17, "barometer offset");
+    static_assert(offsetof(MSData, afr1) == 29, "afr1 offset");
+    static_assert(offsetof(MSData, dwell) == 63, "dwell offset");
+
+    assert_storage_size<MSData, expected_bytes> assert_storage_size_MSData;
+    (void)assert_storage_size_MSData;
+
+    // read exactly the right number of bytes:
+    if (port->read((uint8_t*)&ms_data, available_bytes) != (ssize_t)available_bytes) {
+        port->discard_input();
+        return false;
+    }
+
+    // the message_length field excludes both itself and the checksum:
+    constexpr uint32_t expected_message_length = expected_bytes - 4 - 2;
+    if (be16toh(ms_data.message_length) != expected_message_length) {
+        port->discard_input();
+        return false;
+    }
+
+    // check the checksum:
+    if (be32toh(ms_data.checksum) != calc_CRC32_buffer(&(((uint8_t*)&ms_data)[2]), expected_message_length)) {
+        port->discard_input();
         return false;
     }
 
     // Response Flag (see "response_codes" enum)
-    response_flag = read_byte_CRC32();
-    if (response_flag != RESPONSE_WRITE_OK) {
+    if (ms_data.response_flag != RESPONSE_WRITE_OK) {
         // abort read if we did not receive the correct response code;
+        port->discard_input();
         return false;
     }
-    
-    // Iterate over the payload bytes 
-    for (uint16_t offset=RT_FIRST_OFFSET; offset < (RT_FIRST_OFFSET + message_length - 1); offset++) {
-        uint8_t data = read_byte_CRC32();
-        float temp_float;
-        switch (offset) {
-            case PW1_MSB:
-                internal_state.cylinder_status.injection_time_ms = (float)((data << 8) + read_byte_CRC32())/1000.0f;
-                offset++;  // increment the counter because we read a byte in the previous line
-                break;
-            case RPM_MSB:
-                // Read 16 bit RPM
-                internal_state.engine_speed_rpm = (data << 8) + read_byte_CRC32();
-                offset++;
-                break;
-            case ADVANCE_MSB:
-                internal_state.cylinder_status.ignition_timing_deg = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                break;
-            case ENGINE_BM:
-                break;
-            case BAROMETER_MSB:
-                internal_state.atmospheric_pressure_kpa = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                break;
-            case MAP_MSB:
-                internal_state.intake_manifold_pressure_kpa = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                break;
-            case MAT_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                internal_state.intake_manifold_temperature = degF_to_Kelvin(temp_float);
-                break;
-            case CHT_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                internal_state.cylinder_status.cylinder_head_temperature = degF_to_Kelvin(temp_float);
-                break;
-            case TPS_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                internal_state.throttle_position_percent = roundf(temp_float);
-                break;
-            case AFR1_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                offset++;
-                internal_state.cylinder_status.lambda_coefficient = temp_float;
-                break;
-            case DWELL_MSB:
-                temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
-                internal_state.spark_dwell_time_ms = temp_float;
-                offset++;
-                break;
-            case LOAD:
-                internal_state.engine_load_percent = data;
-                break;
-            case FUEL_PRESSURE_MSB:
-                // MS Fuel Pressure is unitless, store as KPA anyway
-                temp_float = (float)((data << 8) + read_byte_CRC32());
-                internal_state.fuel_pressure = temp_float;
-                offset++;
-                break;   
-                
-        }
-    }
-    
-    // Read the four CRC bytes
-    uint32_t received_CRC;
-    received_CRC = port->read() << 24;
-    received_CRC += port->read() << 16;
-    received_CRC += port->read() << 8;
-    received_CRC += port->read();
-                        
-    if (received_CRC != checksum) {
-        // hal.console->printf("EFI CRC: 0x%08x 0x%08x\n", received_CRC, checksum);
-        return false;
-    }
+
+    // message is good!  Copy data to our internal state:
+    internal_state.cylinder_status.injection_time_ms = be32toh(ms_data.pw1) * 0.001f;
+    internal_state.engine_speed_rpm = be16toh(ms_data.rpm);
+    internal_state.cylinder_status.ignition_timing_deg = be16toh(ms_data.advance) * 0.1f;
+    internal_state.atmospheric_pressure_kpa = be16toh(ms_data.barometer) * 0.1f;
+
+    internal_state.intake_manifold_pressure_kpa = be16toh(ms_data.map) * 0.1f;
+    internal_state.intake_manifold_temperature = degF_to_Kelvin(be16toh(ms_data.map) * 0.1f);
+    internal_state.cylinder_status.cylinder_head_temperature = degF_to_Kelvin(be16toh(ms_data.cht) * 0.1f);
+    internal_state.throttle_position_percent = roundf(be16toh(ms_data.tps) * 0.1f);
+    internal_state.cylinder_status.lambda_coefficient = be16toh(ms_data.afr1) * 0.1f;
+    internal_state.spark_dwell_time_ms = be16toh(ms_data.dwell) * 0.1f;
+    internal_state.engine_load_percent = ms_data.load;
+
+    // MS Fuel Pressure is unitless, store as KPA anyway
+    internal_state.fuel_pressure = be16toh(ms_data.fuel_pressure);
+
 
     // Calculate Fuel Consumption 
     // Duty Cycle (Percent, because that's how HFE gives us the calibration coefficients)
@@ -167,16 +153,16 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
     uint32_t current_time = AP_HAL::millis();
     // Super Simplified integration method - Error Analysis TBD
     // This calculation gives erroneous results when the engine isn't running
-    if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
+    if (internal_state.engine_speed_rpm > 100) {  // min 100rpm to be running
         internal_state.fuel_consumption_rate_cm3pm = duty_cycle*get_coef1() - get_coef2();
         internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (current_time - internal_state.last_updated_ms)/60000.0f;
     } else {
         internal_state.fuel_consumption_rate_cm3pm = 0;
     }
-    internal_state.last_updated_ms = current_time;
-    
+
+    internal_state.last_updated_ms = AP_HAL::millis();
+
     return true;
-         
 }
 
 void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16_t last_offset)
@@ -216,21 +202,22 @@ void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16
 
 }
 
-uint8_t AP_EFI_Serial_MS::read_byte_CRC32()
-{   
-    // Read a byte and update the CRC 
-    uint8_t data = port->read();
-    checksum = CRC32_compute_byte(checksum, data);
-    return data;
-}
-
 // CRC32 matching MegaSquirt
-uint32_t AP_EFI_Serial_MS::CRC32_compute_byte(uint32_t crc, uint8_t data)
+uint32_t AP_EFI_Serial_MS::CRC32_compute_byte(uint32_t crc, uint8_t data) const
 {
     crc ^= ~0U;
     crc = crc_crc32(crc, &data, 1);
     crc ^= ~0U;
     return crc;
+}
+
+uint32_t AP_EFI_Serial_MS::calc_CRC32_buffer(uint8_t *buffer, uint8_t len) const
+{
+    uint32_t checksum = 0;
+    for (uint8_t i=0; i<len; i++) {
+        checksum = CRC32_compute_byte(checksum, buffer[i]);
+    }
+    return checksum;
 }
 
 #endif  // AP_EFI_SERIAL_MS_ENABLED
