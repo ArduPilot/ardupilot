@@ -1569,7 +1569,7 @@ class AutoTestPlane(AutoTest):
             # test a rather unfortunate behaviour:
             self.progress("Killing a live fence with fence-clear")
             self.load_fence("CMAC-fence.txt")
-            self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
+            self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION::RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
             self.clear_fence()
@@ -1665,7 +1665,7 @@ class AutoTestPlane(AutoTest):
             self.set_parameters({
                 "RTL_RADIUS": want_radius,
                 "NAVL1_LIM_BANK": 60,
-                "FENCE_ACTION": 1, # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
+                "FENCE_ACTION": 1, # AC_FENCE_ACTION::RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
             })
 
             self.wait_ready_to_arm()  # need an origin to load fence

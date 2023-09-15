@@ -1408,7 +1408,7 @@ void Plane::load_parameters(void)
     if (fence_type_new && !fence_type_new->configured()) {
         // If we find the new parameter and it hasn't been configured
         // attempt to upgrade the altitude fences.
-        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
+        int8_t fence_type_new_val = int8_t(AC_FENCE_TYPE::POLYGON);
         AP_Int16 fence_alt_min_old;
         AP_Param::ConversionInfo fence_alt_min_info_old = {
             Parameters::k_param_fence_minalt,
@@ -1419,7 +1419,7 @@ void Plane::load_parameters(void)
         if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
             if (fence_alt_min_old.configured()) {
                 //
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
+                fence_type_new_val |= int8_t(AC_FENCE_TYPE::ALT_MIN);
             }
         }
 
@@ -1432,7 +1432,7 @@ void Plane::load_parameters(void)
         };
         if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
             if (fence_alt_max_old.configured()) {
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
+                fence_type_new_val |= int8_t(AC_FENCE_TYPE::ALT_MAX);
             }
         }
 
@@ -1455,16 +1455,16 @@ void Plane::load_parameters(void)
                 case 0: // FENCE_ACTION_NONE
                 case 2: // FENCE_ACTION_REPORT_ONLY
                 default:
-                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    fence_action_new_val = uint8_t(AC_FENCE_ACTION::REPORT_ONLY);
                     break;
                 case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    fence_action_new_val = uint8_t(AC_FENCE_ACTION::GUIDED);
                     break;
                 case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    fence_action_new_val = uint8_t(AC_FENCE_ACTION::GUIDED_THROTTLE_PASS);
                     break;
                 case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    fence_action_new_val = uint8_t(AC_FENCE_ACTION::RTL_AND_LAND);
                     break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);

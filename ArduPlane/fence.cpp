@@ -15,10 +15,10 @@ void Plane::fence_check()
     if (!fence.enabled()) {
         // Switch back to the chosen control mode if still in
         // GUIDED to the return point
-        switch(fence.get_action()) {
-            case AC_FENCE_ACTION_GUIDED:
-            case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
-            case AC_FENCE_ACTION_RTL_AND_LAND:
+        switch(AC_FENCE_ACTION(fence.get_action())) {
+            case AC_FENCE_ACTION::GUIDED:
+            case AC_FENCE_ACTION::GUIDED_THROTTLE_PASS:
+            case AC_FENCE_ACTION::RTL_AND_LAND:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
                     control_mode->is_guided_mode()) {
                     set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE);
@@ -54,13 +54,14 @@ void Plane::fence_check()
 
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
-        switch (fence_act) {
-        case AC_FENCE_ACTION_REPORT_ONLY:
+        switch (AC_FENCE_ACTION(fence_act)) {
+        case AC_FENCE_ACTION::REPORT_ONLY:
+        default:
             break;
-        case AC_FENCE_ACTION_GUIDED:
-        case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
-        case AC_FENCE_ACTION_RTL_AND_LAND:
-            if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
+        case AC_FENCE_ACTION::GUIDED:
+        case AC_FENCE_ACTION::GUIDED_THROTTLE_PASS:
+        case AC_FENCE_ACTION::RTL_AND_LAND:
+            if (AC_FENCE_ACTION(fence_act) == AC_FENCE_ACTION::RTL_AND_LAND) {
                 if (control_mode == &mode_auto &&
                     mission.get_in_landing_sequence_flag() &&
                     (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
@@ -74,7 +75,7 @@ void Plane::fence_check()
             }
 
             Location loc;
-            if (fence.get_return_rally() != 0 || fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
+            if (fence.get_return_rally() != 0 || AC_FENCE_ACTION(fence_act) == AC_FENCE_ACTION::RTL_AND_LAND) {
                 loc = calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
             } else {
                 //return to fence return point, not a rally point
@@ -103,12 +104,12 @@ void Plane::fence_check()
                 }
             }
 
-            if (fence.get_action() != AC_FENCE_ACTION_RTL_AND_LAND) {
+            if (AC_FENCE_ACTION(fence.get_action()) != AC_FENCE_ACTION::RTL_AND_LAND) {
                 setup_terrain_target_alt(loc);
                 set_guided_WP(loc);
             }
 
-            if (fence.get_action() == AC_FENCE_ACTION_GUIDED_THROTTLE_PASS) {
+            if (AC_FENCE_ACTION(fence.get_action()) == AC_FENCE_ACTION::GUIDED_THROTTLE_PASS) {
                 guided_throttle_passthru = true;
             }
             break;

@@ -29,11 +29,11 @@ void Copter::fence_check()
 
         // if the user wants some kind of response and motors are armed
         uint8_t fence_act = fence.get_action();
-        if (fence_act != AC_FENCE_ACTION_REPORT_ONLY ) {
+        if (fence_act != uint8_t(AC_FENCE_ACTION::REPORT_ONLY) ) {
 
             // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
-            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
+            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & uint8_t(AC_FENCE_TYPE::ALT_MAX))== 0))){
                 arming.disarm(AP_Arming::Method::FENCEBREACH);
 
             } else {
@@ -42,19 +42,19 @@ void Copter::fence_check()
                 if (fence.get_breach_distance(new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
                     set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                 } else {
-                    switch (fence_act) {
-                    case AC_FENCE_ACTION_RTL_AND_LAND:
+                    switch (AC_FENCE_ACTION(fence_act)) {
+                    case AC_FENCE_ACTION::RTL_AND_LAND:
                     default:
                         // switch to RTL, if that fails then Land
                         if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
-                    case AC_FENCE_ACTION_ALWAYS_LAND:
+                    case AC_FENCE_ACTION::ALWAYS_LAND:
                         // if always land option mode is specified, land
                         set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         break;
-                    case AC_FENCE_ACTION_SMART_RTL:
+                    case AC_FENCE_ACTION::SMART_RTL:
                         // Try SmartRTL, if that fails, RTL, if that fails Land
                         if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
                             if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
@@ -62,13 +62,13 @@ void Copter::fence_check()
                             }
                         }
                         break;
-                    case AC_FENCE_ACTION_BRAKE:
+                    case AC_FENCE_ACTION::BRAKE:
                         // Try Brake, if that fails Land
                         if (!set_mode(Mode::Number::BRAKE, ModeReason::FENCE_BREACHED)) {
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
-                    case AC_FENCE_ACTION_SMART_RTL_OR_LAND:
+                    case AC_FENCE_ACTION::SMART_RTL_OR_LAND:
                         // Try SmartRTL, if that fails, Land
                         if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);

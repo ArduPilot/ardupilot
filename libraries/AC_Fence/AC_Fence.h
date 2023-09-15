@@ -11,20 +11,24 @@
 #include <AC_Fence/AC_PolyFence_loader.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
-#define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
-#define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
-#define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
-#define AC_FENCE_TYPE_ALT_MIN                       8       // low alt fence which usually initiates an RTL
+enum class AC_FENCE_TYPE : uint8_t {
+    ALT_MAX = 1,  // high alt fence which usually initiates an RTL
+    CIRCLE  = 2,  // circular horizontal fence (usually initiates an RTL)
+    POLYGON = 4,  // polygon horizontal fence
+    ALT_MIN = 8,  // low alt fence which usually initiates an RTL
+};
 
 // valid actions should a fence be breached
-#define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
-#define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
-#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
-#define AC_FENCE_ACTION_SMART_RTL                   3       // smartRTL, if that fails, RTL, it that still fails, land
-#define AC_FENCE_ACTION_BRAKE                       4       // brake, if that fails, land
-#define AC_FENCE_ACTION_SMART_RTL_OR_LAND           5       // SmartRTL, if that fails, Land
-#define AC_FENCE_ACTION_GUIDED                      6       // guided mode, with target waypoint as fence return point
-#define AC_FENCE_ACTION_GUIDED_THROTTLE_PASS        7       // guided mode, but pilot retains manual throttle control
+enum class AC_FENCE_ACTION : uint8_t {
+    REPORT_ONLY          = 0,  // report to GCS that boundary has been breached but take no further action
+    RTL_AND_LAND         = 1,  // return to launch and, if that fails, land
+    ALWAYS_LAND          = 2,  // always land
+    SMART_RTL            = 3,  // smartRTL, if that fails, RTL, it that still fails, land
+    BRAKE                = 4,  // brake, if that fails, land
+    SMART_RTL_OR_LAND    = 5,  // SmartRTL, if that fails, Land
+    GUIDED               = 6,  // guided mode, with target waypoint as fence return point
+    GUIDED_THROTTLE_PASS = 7,  // guided mode, but pilot retains manual throttle control
+};
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code

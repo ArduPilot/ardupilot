@@ -343,11 +343,11 @@ void Plane::check_fbwb_altitude(void)
 #if AP_FENCE_ENABLED
     // taking fence max and min altitude (with margin)
     const uint8_t enabled_fences = plane.fence.get_enabled_fences();
-    if ((enabled_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
+    if ((enabled_fences & uint8_t(AC_FENCE_TYPE::ALT_MIN)) != 0) {
         min_alt_cm = plane.fence.get_safe_alt_min()*100.0;
         should_check_min = true;
     }
-    if ((enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
+    if ((enabled_fences & uint8_t(AC_FENCE_TYPE::ALT_MAX)) != 0) {
         max_alt_cm = plane.fence.get_safe_alt_max()*100.0;
         should_check_max = true;
     }
