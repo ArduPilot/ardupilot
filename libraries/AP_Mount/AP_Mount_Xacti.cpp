@@ -16,9 +16,12 @@ extern const AP_HAL::HAL& hal;
 #define XACTI_PARAM_FOCUSMODE "FocusMode"
 #define XACTI_PARAM_SENSORMODE "SensorMode"
 #define XACTI_PARAM_DIGITALZOOM "DigitalZoomMagnification"
+#define XACTI_PARAM_FIRMWAREVERSION "FirmwareVersion"
+#define XACTI_PARAM_STATUS "Status"
 
 #define XACTI_MSG_SEND_MIN_MS 20                    // messages should not be sent to camera more often than 20ms
 #define XACTI_ZOOM_RATE_UPDATE_INTERVAL_MS  500     // zoom rate control increments zoom by 10% up or down every 0.5sec
+#define XACTI_STATUS_REQ_INTERVAL_MS 3000           // request status every 3 seconds
 
 #define AP_MOUNT_XACTI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_XACTI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xacti: " fmt, ## args); } } while (0)
@@ -36,6 +39,7 @@ AP_Mount_Xacti::AP_Mount_Xacti(class AP_Mount &frontend, class AP_Mount_Params &
     register_backend();
 
     param_int_cb = FUNCTOR_BIND_MEMBER(&AP_Mount_Xacti::handle_param_get_set_response_int, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
+    param_string_cb = FUNCTOR_BIND_MEMBER(&AP_Mount_Xacti::handle_param_get_set_response_string, bool, AP_DroneCAN*, const uint8_t, const char*, AP_DroneCAN::string &);
     param_save_cb = FUNCTOR_BIND_MEMBER(&AP_Mount_Xacti::handle_param_save_response, void, AP_DroneCAN*, const uint8_t, bool);
 }
 
@@ -55,6 +59,16 @@ void AP_Mount_Xacti::update()
 
     // return immediately if any message sent is unlikely to be processed
     if (!is_safe_to_send()) {
+        return;
+    }
+
+    // get firmware version
+    if (request_firmware_version()) {
+        return;
+    }
+
+    // request status
+    if (request_status()) {
         return;
     }
 
@@ -148,8 +162,8 @@ void AP_Mount_Xacti::update()
 // return true if healthy
 bool AP_Mount_Xacti::healthy() const
 {
-    // unhealthy until gimbal has been found and replied with firmware version info
-    if (!_initialised) {
+    // unhealthy until gimbal has been found and replied with firmware version and no motor errors
+    if (!_initialised || !_firmware_version.received || _motor_error) {
         return false;
     }
 
@@ -172,7 +186,6 @@ bool AP_Mount_Xacti::take_picture()
 
     // set SingleShot parameter
     return set_param_int32(XACTI_PARAM_SINGLESHOT, 0);
-
 }
 
 // start or stop video recording.  returns true on success
@@ -271,7 +284,7 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
         model_name,             // model_name uint8_t[32]
-        0,                      // firmware version uint32_t
+        _firmware_version.received ? _firmware_version.mav_ver : 0, // firmware version uint32_t
         NaN,                    // focal_length float (mm)
         NaN,                    // sensor_size_h float (mm)
         NaN,                    // sensor_size_v float (mm)
@@ -517,6 +530,78 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
     return false;
 }
 
+// handle param get/set response
+bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, AP_DroneCAN::string &value)
+{
+    if (strcmp(name, XACTI_PARAM_FIRMWAREVERSION) == 0) {
+        _firmware_version.received = true;
+        const uint8_t len = MIN(value.len, ARRAY_SIZE(_firmware_version.str)-1);
+        memcpy(_firmware_version.str, (const char*)value.data, len);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mount: Xacti fw:%s", _firmware_version.str);
+
+        // firmware str from gimbal is of the format YYMMDD[b]xx.  Convert to uint32 for reporting to GCS
+        if (len >= 9) {
+            const char major_str[3] = {_firmware_version.str[0], _firmware_version.str[1], 0};
+            const char minor_str[3] = {_firmware_version.str[2], _firmware_version.str[3], 0};
+            const char patch_str[3] = {_firmware_version.str[4], _firmware_version.str[5], 0};
+            const char dev_str[3] = {_firmware_version.str[7], _firmware_version.str[8], 0};
+            const uint8_t major_ver_num = atoi(major_str) & 0xFF;
+            const uint8_t minor_ver_num = atoi(minor_str) & 0xFF;
+            const uint8_t patch_ver_num = atoi(patch_str) & 0xFF;
+            const uint8_t dev_ver_num = atoi(dev_str) & 0xFF;
+            _firmware_version.mav_ver = UINT32_VALUE(dev_ver_num, patch_ver_num, minor_ver_num, major_ver_num);
+        }
+        return false;
+    } else if (strcmp(name, XACTI_PARAM_STATUS) == 0) {
+        // check for expected length
+        const char* error_str = "error";
+        if (value.len != sizeof(_status)) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "%s status len %s", send_text_prefix, error_str);
+            return false;
+        }
+
+        // backup error status and copy to structure
+        const uint32_t last_error_status = _status.error_status;
+        memcpy(&_status, value.data, value.len);
+
+        // report change in status
+        uint32_t changed_bits = last_error_status ^ _status.error_status;
+        const char* ok_str = "OK";
+        if (changed_bits & (uint32_t)ErrorStatus::CANNOT_TAKE_PIC) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s %s take pic", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::CANNOT_TAKE_PIC ? "cannot" : "can");
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::TIME_NOT_SET) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s time %sset", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TIME_NOT_SET ? "not " : " ");
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::MEDIA_ERROR) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s media %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MEDIA_ERROR ? error_str : ok_str);
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::LENS_ERROR) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s lens %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::LENS_ERROR ? error_str : ok_str);
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::MOTOR_INIT_ERROR) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s motor %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_INIT_ERROR ? "init error" : ok_str);
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s motor op %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR ? error_str : ok_str);
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s control %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR ? error_str : ok_str);
+        }
+        if (changed_bits & (uint32_t)ErrorStatus::TEMP_WARNING) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s temp %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TEMP_WARNING ? "warning" : ok_str);
+        }
+
+        // set motor error for health reporting
+        _motor_error = _status.error_status & ((uint32_t)ErrorStatus::MOTOR_INIT_ERROR | (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR | (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR);
+        return false;
+    }
+
+    // unhandled parameter get or set
+    gcs().send_text(MAV_SEVERITY_INFO, "%s get/set string %s res:%s", send_text_prefix, name, (const char*)value.data);
+    return false;
+}
+
 void AP_Mount_Xacti::handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success)
 {
     // display failure to save parameter
@@ -533,7 +618,21 @@ bool AP_Mount_Xacti::set_param_int32(const char* param_name, int32_t param_value
     }
 
     if (_detected_modules[_instance].ap_dronecan->set_parameter_on_node(_detected_modules[_instance].node_id, param_name, param_value, &param_int_cb)) {
-        last_send_set_param_ms = AP_HAL::millis();
+        last_send_getset_param_ms = AP_HAL::millis();
+        return true;
+    }
+    return false;
+}
+
+// helper function to get string parameters
+bool AP_Mount_Xacti::get_param_string(const char* param_name)
+{
+    if (_detected_modules[_instance].ap_dronecan == nullptr) {
+        return false;
+    }
+
+    if (_detected_modules[_instance].ap_dronecan->get_parameter_on_node(_detected_modules[_instance].node_id, param_name, &param_string_cb)) {
+        last_send_getset_param_ms = AP_HAL::millis();
         return true;
     }
     return false;
@@ -629,6 +728,38 @@ bool AP_Mount_Xacti::update_zoom_rate_control()
     return set_param_int32(XACTI_PARAM_DIGITALZOOM, zoom_value);
 }
 
+// request firmware version
+// returns true if sent so that we avoid immediately trying to also send other messages
+bool AP_Mount_Xacti::request_firmware_version()
+{
+    // return immediately if already have version or no dronecan
+    if (_firmware_version.received) {
+        return false;
+    }
+
+    // send request once per second until received
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _firmware_version.last_request_ms < 1000) {
+        return false;
+    }
+    _firmware_version.last_request_ms = now_ms;
+    return get_param_string(XACTI_PARAM_FIRMWAREVERSION);
+}
+
+// request status
+// returns true if sent so that we avoid immediately trying to also send other messages
+bool AP_Mount_Xacti::request_status()
+{
+    // return immediately if 3 seconds has not passed
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _status_report.last_request_ms < XACTI_STATUS_REQ_INTERVAL_MS) {
+        return false;
+    }
+
+    _status_report.last_request_ms = now_ms;
+    return get_param_string(XACTI_PARAM_STATUS);
+}
+
 // check if safe to send message (if messages sent too often camera will not respond)
 bool AP_Mount_Xacti::is_safe_to_send() const
 {
@@ -645,7 +776,7 @@ bool AP_Mount_Xacti::is_safe_to_send() const
     }
 
     // check time since last set param message sent
-    if (now_ms - last_send_set_param_ms < XACTI_MSG_SEND_MIN_MS) {
+    if (now_ms - last_send_getset_param_ms < XACTI_MSG_SEND_MIN_MS) {
         return false;
     }
 
