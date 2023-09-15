@@ -112,12 +112,15 @@ private:
 
     // DroneCAN parameter handling methods
     FUNCTOR_DECLARE(param_int_cb, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
+    FUNCTOR_DECLARE(param_string_cb, bool, AP_DroneCAN*, const uint8_t, const char*, AP_DroneCAN::string &);
     FUNCTOR_DECLARE(param_save_cb, void, AP_DroneCAN*, const uint8_t, bool);
     bool handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, int32_t &value);
+    bool handle_param_get_set_response_string(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, AP_DroneCAN::string &value);
     void handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success);
 
-    // helper function to set integer parameters
+    // helper function to get and set parameters
     bool set_param_int32(const char* param_name, int32_t param_value);
+    bool get_param_string(const char* param_name);
 
     // send gimbal control message via DroneCAN
     // mode is 2:angle control or 3:rate control
@@ -132,6 +135,14 @@ private:
     // update zoom rate controller
     // returns true if sent so that we avoid immediately trying to also send other messages
     bool update_zoom_rate_control();
+
+    // request firmware version
+    // returns true if sent so that we avoid immediately trying to also send other messages
+    bool request_firmware_version();
+
+    // request status
+    // returns true if sent so that we avoid immediately trying to also send other messages
+    bool request_status();
 
     // check if safe to send message (if messages sent too often camera will not respond)
     bool is_safe_to_send() const;
@@ -150,6 +161,52 @@ private:
         uint32_t last_update_ms;                    // system time that zoom rate control last updated zoom
     } _zoom_rate_control;
 
+    // firmware version received from gimbal
+    struct {
+        uint32_t last_request_ms;                   // system time of last request for firmware version
+        bool received;                              // true once firmware version has been received
+        char str[12] {};                            // firmware version string (11 bytes + 1 null byte)
+        uint32_t mav_ver;                           // version formatted for reporting to GCS via CAMERA_INFORMATION message
+    } _firmware_version;
+
+    // gimbal status handling
+    enum class ErrorStatus : uint32_t {
+        TAKING_PICTURE = 0x04,                      // currently taking a picture
+        RECORDING_VIDEO = 0x08,                     // currently recording video
+        CANNOT_TAKE_PIC = 0x20,
+        TIME_NOT_SET = 0x10000,
+        MEDIA_ERROR = 0x20000,
+        LENS_ERROR = 0x40000,
+        MOTOR_INIT_ERROR = 0x100000,
+        MOTOR_OPERATION_ERROR = 0x200000,
+        GIMBAL_CONTROL_ERROR = 0x400000,
+        TEMP_WARNING = 0x1000000
+    };
+    struct {
+        uint32_t error_status;                      // see ErrorStatus enum
+        uint32_t video_remain_time;                 // max seconds of video that may be recorded before SD card is full
+        uint32_t photo_remain_count;                // max number of pics before SD card is full
+        uint32_t sd_card_size_mb;                   // SD card size in MB
+        uint32_t sd_card_free_mb;                   // SD card remaining size in MB
+        uint16_t body;                              // body type
+        uint16_t cmos;                              // cmos type
+        uint16_t gimbal_pitch;                      // gimbal pitch angle
+        uint16_t gimbal_roll;                       // gimbal roll angle
+        uint16_t gimbal_yaw;                        // gimbal yaw angle
+        uint16_t reserved1;
+        uint8_t date_time[7];                       // camera's date and time
+        uint8_t reserved2;
+        uint32_t exposure_time_us;                  // camera's exposure time in us
+        uint16_t apeture;                           // cameras' aperture * 100
+        uint16_t iso_sensitivity;                   // camera's iso sensitivity
+    } _status;                                      // latest status received
+    static_assert(sizeof(_status) == 48);           // status should be 48 bytes
+    struct {
+        uint32_t last_request_ms;                   // system time that status was last requested
+        uint32_t last_error_status;                 // last error status reported to user
+    } _status_report;
+    bool _motor_error;                              // true if status reports motor or control error (used for health reporting)
+
     // DroneCAN related variables
     static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
     static struct DetectedModules {
@@ -160,7 +217,7 @@ private:
     static HAL_Semaphore _sem_registry;             // semaphore protecting access to _detected_modules table
     uint32_t last_send_gimbal_control_ms;           // system time that send_gimbal_control was last called (used to slow down sends to 5hz)
     uint32_t last_send_copter_att_status_ms;        // system time that send_copter_att_status was last called (used to slow down sends to 10hz)
-    uint32_t last_send_set_param_ms;                // system time that a set parameter message was sent
+    uint32_t last_send_getset_param_ms;             // system time that a get or set parameter message was sent
 };
 
 #endif // HAL_MOUNT_XACTI_ENABLED
