@@ -507,8 +507,9 @@ void AP_Mount_Siyi::process_packet()
         //const float pitch_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1;   // pitch rate
         //const float roll_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1;  // roll rate
         break;
+    }
 
-    case SiyiCommandId::READ_RANGEFINDER:
+    case SiyiCommandId::READ_RANGEFINDER: {
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
         _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
