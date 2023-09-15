@@ -23,6 +23,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Common/AP_BackendIterator.h>
 
 #include "ap_message.h"
 
@@ -97,7 +98,6 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
         }                                                               \
         return (subclass_name *)_chan[ofs];                        \
     }
-
 
 #define GCS_MAVLINK_NUM_STREAM_RATES 10
 class GCS_MAVLINK_Parameters
@@ -1158,6 +1158,9 @@ public:
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;
     // return the number of valid GCS objects
     uint8_t num_gcs() const { return _num_gcs; };
+
+    AP_BackendIterator<GCS_MAVLINK> links{_chan, _num_gcs};
+
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
@@ -1233,6 +1236,7 @@ public:
     MAV_RESULT set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t interval_us);
 
     uint8_t get_channel_from_port_number(uint8_t port_num);
+    GCS_MAVLINK *get_link_from_port_number(uint8_t port_num);
 
 #if HAL_HIGH_LATENCY2_ENABLED
     bool high_latency_link_enabled;

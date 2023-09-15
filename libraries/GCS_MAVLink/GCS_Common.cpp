@@ -2368,8 +2368,8 @@ void GCS_MAVLINK::service_statustext(void)
 
 void GCS::send_message(enum ap_message id)
 {
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i)->send_message(id);
+    for (auto &l : links) {
+        l.send_message(id);
     }
 }
 
@@ -2427,8 +2427,8 @@ void GCS::update_send()
 
 void GCS::update_receive(void)
 {
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i)->update_receive();
+    for (auto &l : links) {
+        l.update_receive();
     }
     // also update UART pass-thru, if enabled
     update_passthru();
@@ -2436,9 +2436,9 @@ void GCS::update_receive(void)
 
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
 {
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i)->mission_item_reached_index = mission_index;
-        chan(i)->send_message(MSG_MISSION_ITEM_REACHED);
+    for (auto &l : links) {
+        l.mission_item_reached_index = mission_index;
+        l.send_message(MSG_MISSION_ITEM_REACHED);
     }
 }
 
@@ -2896,25 +2896,32 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
  */
 MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t interval_us)
 {
-    uint8_t channel = get_channel_from_port_number(port_num);
-
-    GCS_MAVLINK *link = chan(channel);
-    if (link == nullptr) {
+    GCS_MAVLINK *l = get_link_from_port_number(port_num);
+    if (l == nullptr) {
         return MAV_RESULT_FAILED;
     }
-    return link->set_message_interval(msg_id, interval_us);
+
+    return l->set_message_interval(msg_id, interval_us);
+}
+
+GCS_MAVLINK *GCS::get_link_from_port_number(uint8_t port_num)
+{
+    const AP_HAL::UARTDriver *u = AP::serialmanager().get_serial_by_id(port_num);
+    for (auto &l : links) {
+        if (l.get_uart() == u) {
+            return &l;
+        }
+    }
+    return nullptr;
 }
 
 uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 {
-    const AP_HAL::UARTDriver *u = AP::serialmanager().get_serial_by_id(port_num);
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i)->get_uart() == u) {
-            return i;
-        }
+    GCS_MAVLINK *l = get_link_from_port_number(port_num);
+    if (l == nullptr) {
+        return UINT8_MAX;
     }
-
-    return UINT8_MAX;
+    return l->get_chan();
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
