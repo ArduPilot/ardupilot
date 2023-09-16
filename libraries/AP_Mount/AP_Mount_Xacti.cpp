@@ -343,7 +343,7 @@ void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     // return immediately if DroneCAN is unavailable
     if (ap_dronecan == nullptr) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Xacti: DroneCAN subscribe failed");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s DroneCAN subscribe failed", send_text_prefix);
         return;
     }
 
@@ -496,7 +496,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
             gcs().send_text(MAV_SEVERITY_ERROR, "%s record", err_prefix_str);
         } else {
             _recording_video = (value == 1);
-            gcs().send_text(MAV_SEVERITY_INFO, "Xacti: recording %s", _recording_video ? "ON" : "OFF");
+            gcs().send_text(MAV_SEVERITY_INFO, "%s recording %s", send_text_prefix, _recording_video ? "ON" : "OFF");
         }
         return false;
     }
@@ -504,7 +504,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         if (value < 0) {
             gcs().send_text(MAV_SEVERITY_ERROR, "%s change focus", err_prefix_str);
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Xacti: %s focus", value == 0 ? "manual" : "auto");
+            gcs().send_text(MAV_SEVERITY_INFO, "%s %s focus", send_text_prefix, value == 0 ? "manual" : "auto");
         }
         return false;
     }
@@ -512,7 +512,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         if (value < 0) {
             gcs().send_text(MAV_SEVERITY_ERROR, "%s change lens", err_prefix_str);
         } else if ((uint32_t)value < ARRAY_SIZE(sensor_mode_str)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Xacti: %s", sensor_mode_str[(uint8_t)value]);
+            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, sensor_mode_str[(uint8_t)value]);
         }
         return false;
     }
@@ -527,7 +527,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         return false;
     }
     // unhandled parameter get or set
-    gcs().send_text(MAV_SEVERITY_INFO, "Xacti: get/set %s res:%ld", name, (long int)value);
+    gcs().send_text(MAV_SEVERITY_INFO, "%s get/set %s res:%ld", send_text_prefix, name, (long int)value);
     return false;
 }
 
@@ -607,7 +607,7 @@ void AP_Mount_Xacti::handle_param_save_response(AP_DroneCAN* ap_dronecan, const 
 {
     // display failure to save parameter
     if (!success) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Xacti: CAM%u failed to set param", (int)_instance+1);
+        gcs().send_text(MAV_SEVERITY_ERROR, "%s CAM%u failed to set param", send_text_prefix, (int)_instance+1);
     }
 }
 
