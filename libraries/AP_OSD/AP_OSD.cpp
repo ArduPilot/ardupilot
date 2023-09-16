@@ -352,8 +352,8 @@ bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
         _backends[instance]->init_symbol_set(AP_OSD_AbstractScreen::symbols_lookup_table, AP_OSD_NUM_SYMBOLS);
         return true;
     }
-    return false;
 #endif
+    return false;
 }
 
 #if OSD_ENABLED
