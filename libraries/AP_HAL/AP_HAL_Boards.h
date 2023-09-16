@@ -318,7 +318,8 @@
 #else
 // Enough for a notch per motor on an octa quad using two IMUs and one harmonic
 // plus one static notch with one harmonic
-#define HAL_HNF_MAX_FILTERS 18
+// Or triple-notch per motor on one IMU with one harmonic
+#define HAL_HNF_MAX_FILTERS 24
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 
