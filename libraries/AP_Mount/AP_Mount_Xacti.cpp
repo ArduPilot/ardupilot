@@ -58,28 +58,29 @@ void AP_Mount_Xacti::update()
     }
 
     // return immediately if any message sent is unlikely to be processed
-    if (!is_safe_to_send()) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!is_safe_to_send(now_ms)) {
         return;
     }
 
     // get firmware version
-    if (request_firmware_version()) {
+    if (request_firmware_version(now_ms)) {
         return;
     }
 
     // request status
-    if (request_status()) {
+    if (request_status(now_ms)) {
         return;
     }
 
     // periodically send copter attitude and GPS status
-    if (send_copter_att_status()) {
+    if (send_copter_att_status(now_ms)) {
         // if message sent avoid sending other messages
         return;
     }
 
     // update zoom rate control
-    if (update_zoom_rate_control()) {
+    if (update_zoom_rate_control(now_ms)) {
         // if message sent avoid sending other messages
         return;
     }
@@ -665,9 +666,9 @@ void AP_Mount_Xacti::send_gimbal_control(uint8_t mode, int16_t pitch_cd, int16_t
     _detected_modules[_instance].ap_dronecan->xacti_gimbal_control_data.broadcast(gimbal_control_data_msg);
 }
 
-// send copter attitude status message to gimbal
+// send copter attitude status message to gimbal.  now_ms is current system time
 // returns true if sent so that we avoid immediately trying to also send other messages
-bool AP_Mount_Xacti::send_copter_att_status()
+bool AP_Mount_Xacti::send_copter_att_status(uint32_t now_ms)
 {
     // exit immediately if no DroneCAN port
     if (_detected_modules[_instance].ap_dronecan == nullptr) {
@@ -675,7 +676,6 @@ bool AP_Mount_Xacti::send_copter_att_status()
     }
 
     // send at no faster than 5hz
-    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_send_copter_att_status_ms < 100) {
         return false;
     }
@@ -699,9 +699,9 @@ bool AP_Mount_Xacti::send_copter_att_status()
     return true;
 }
 
-// update zoom rate controller
+// update zoom rate controller.  now_ms is current system time
 // returns true if sent so that we avoid immediately trying to also send other messages
-bool AP_Mount_Xacti::update_zoom_rate_control()
+bool AP_Mount_Xacti::update_zoom_rate_control(uint32_t now_ms)
 {
     // return immediately if zoom rate control is not enabled
     if (!_zoom_rate_control.enabled) {
@@ -709,7 +709,6 @@ bool AP_Mount_Xacti::update_zoom_rate_control()
     }
 
     // update only every 0.5 sec
-    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _zoom_rate_control.last_update_ms < XACTI_ZOOM_RATE_UPDATE_INTERVAL_MS) {
         return false;
     }
@@ -728,9 +727,9 @@ bool AP_Mount_Xacti::update_zoom_rate_control()
     return set_param_int32(XACTI_PARAM_DIGITALZOOM, zoom_value);
 }
 
-// request firmware version
+// request firmware version. now_ms should be current system time (reduces calls to AP_HAL::millis)
 // returns true if sent so that we avoid immediately trying to also send other messages
-bool AP_Mount_Xacti::request_firmware_version()
+bool AP_Mount_Xacti::request_firmware_version(uint32_t now_ms)
 {
     // return immediately if already have version or no dronecan
     if (_firmware_version.received) {
@@ -738,7 +737,6 @@ bool AP_Mount_Xacti::request_firmware_version()
     }
 
     // send request once per second until received
-    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _firmware_version.last_request_ms < 1000) {
         return false;
     }
@@ -746,12 +744,11 @@ bool AP_Mount_Xacti::request_firmware_version()
     return get_param_string(XACTI_PARAM_FIRMWAREVERSION);
 }
 
-// request status
+// request status. now_ms should be current system time (reduces calls to AP_HAL::millis)
 // returns true if sent so that we avoid immediately trying to also send other messages
-bool AP_Mount_Xacti::request_status()
+bool AP_Mount_Xacti::request_status(uint32_t now_ms)
 {
     // return immediately if 3 seconds has not passed
-    const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _status_report.last_request_ms < XACTI_STATUS_REQ_INTERVAL_MS) {
         return false;
     }
@@ -761,10 +758,9 @@ bool AP_Mount_Xacti::request_status()
 }
 
 // check if safe to send message (if messages sent too often camera will not respond)
-bool AP_Mount_Xacti::is_safe_to_send() const
+// now_ms should be current system time (reduces calls to AP_HAL::millis)
+bool AP_Mount_Xacti::is_safe_to_send(uint32_t now_ms) const
 {
-    const uint32_t now_ms = AP_HAL::millis();
-
     // check time since last attitude sent
     if (now_ms - last_send_copter_att_status_ms < XACTI_MSG_SEND_MIN_MS) {
         return false;
