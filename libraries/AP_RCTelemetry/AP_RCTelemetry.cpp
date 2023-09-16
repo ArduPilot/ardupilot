@@ -22,6 +22,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_DAL/AP_DAL.h>
 #include <stdio.h>
 #include <math.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -208,7 +209,8 @@ void AP_RCTelemetry::check_sensor_status_flags(void)
         } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Compass Health");
             check_sensor_status_timer = now;
-        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0
+                    && AP::dal().baro().num_instances() > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Baro Health");
             check_sensor_status_timer = now;
         } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
