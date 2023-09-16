@@ -516,7 +516,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Param: FWD_PIT_LIM
     // @DisplayName: Q mode forward pitch limit
     // @Description: When forward throttle is being controlled by the Q_FWD_THR_GAIN parameter in Q modes, the vehicle forward (nose down) pitch rotation will be limited to the value specified by this parameter and the any additional forward acceleration required will be produced by use of the forward thrust motor(s) or tilting of moveable rotors. Larger values allow the vehicle to pitch more nose down. Set initially to the amount of nose down pitch required to remove wing lift.
-    // @Units: degrees
+    // @Units: deg
     // @Range: 0.0 5.0
     // @Increment: 0.1
     // @User: Standard
