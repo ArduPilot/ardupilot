@@ -128,24 +128,25 @@ private:
     // yaw_cd is angle in centi-degrees or yaw rate in cds
     void send_gimbal_control(uint8_t mode, int16_t pitch_cd, int16_t yaw_cd);
 
-    // send vehicle attitude to gimbal via DroneCAN
+    // send vehicle attitude to gimbal via DroneCAN.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
-    bool send_copter_att_status();
+    bool send_copter_att_status(uint32_t now_ms);
 
-    // update zoom rate controller
+    // update zoom rate controller.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
-    bool update_zoom_rate_control();
+    bool update_zoom_rate_control(uint32_t now_ms);
 
-    // request firmware version
+    // request firmware version.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
-    bool request_firmware_version();
+    bool request_firmware_version(uint32_t now_ms);
 
-    // request status
+    // request status.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
-    bool request_status();
+    bool request_status(uint32_t now_ms);
 
     // check if safe to send message (if messages sent too often camera will not respond)
-    bool is_safe_to_send() const;
+    // now_ms is current system time
+    bool is_safe_to_send(uint32_t now_ms) const;
 
     // internal variables
     bool _initialised;                              // true once the driver has been initialised
