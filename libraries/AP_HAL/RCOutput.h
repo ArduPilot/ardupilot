@@ -372,7 +372,7 @@ public:
     /*
      * calculate the prescaler required to achieve the desire bitrate
      */
-    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
+    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool at_least_freq = false);
 
     /*
      * bit width values for different protocols
