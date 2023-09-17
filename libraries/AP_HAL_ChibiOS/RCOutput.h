@@ -657,7 +657,7 @@ private:
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
                          const uint16_t buffer_length, uint32_t pulse_time_us,
-                         bool is_dshot);
+                         bool at_least_freq);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
     static uint32_t protocol_bitrate(const enum output_mode mode);
