@@ -912,7 +912,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
   This is used for both DShot and serial output
  */
 bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length,
-                               uint32_t pulse_time_us, bool is_dshot)
+                               uint32_t pulse_time_us, bool at_least_freq)
 {
 #if HAL_DSHOT_ENABLED
     // for dshot we setup for DMAR based output
@@ -976,7 +976,8 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
         group.pwm_started = false;
     }
     const uint32_t target_frequency = bitrate * bit_width;
-    const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_frequency, is_dshot);
+
+    const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_frequency, at_least_freq);
     if (prescaler == 0 || prescaler > 0x8000) {
 #if AP_HAL_SHARED_DMA_ENABLED
         group.dma_handle->unlock();
@@ -993,13 +994,13 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     group.bit_width_mul = (freq + (target_frequency/2)) / target_frequency;
     // ARR is calculated by ChibiOS as pwm_cfg.period -1
     group.pwm_cfg.period = bit_width * group.bit_width_mul;
-
-    //hal.console->printf("CLOCK=%u BW=%u FREQ=%u BR=%u MUL=%u PRE=%u\n", unsigned(group.pwm_drv->clock), unsigned(bit_width), unsigned(group.pwm_cfg.frequency),
-    //    unsigned(bitrate), unsigned(group.bit_width_mul), unsigned(prescaler));
-    //static char clock_setup[64];
-    //hal.util->snprintf(clock_setup, 64, "CLOCK=%u BW=%u FREQ=%u BR=%u MUL=%u PRE=%u\n", unsigned(group.pwm_drv->clock), unsigned(bit_width), unsigned(group.pwm_cfg.frequency),
-    //        unsigned(bitrate), unsigned(group.bit_width_mul), unsigned(prescaler));
-
+#if 0
+    hal.console->printf("CLOCK=%u BW=%u FREQ=%u BR=%u MUL=%u PRE=%u\n", unsigned(group.pwm_drv->clock), unsigned(bit_width), unsigned(group.pwm_cfg.frequency),
+        unsigned(bitrate), unsigned(group.bit_width_mul), unsigned(prescaler));
+    static char clock_setup[64];
+    hal.util->snprintf(clock_setup, 64, "CLOCK=%u BW=%u FREQ=%u BR=%u MUL=%u PRE=%u\n", unsigned(group.pwm_drv->clock), unsigned(bit_width), unsigned(group.pwm_cfg.frequency),
+        unsigned(bitrate), unsigned(group.bit_width_mul), unsigned(prescaler));
+#endif
     for (uint8_t j=0; j<4; j++) {
         pwmmode_t mode = group.pwm_cfg.channels[j].mode;
         if (mode != PWM_OUTPUT_DISABLED) {
@@ -1091,14 +1092,21 @@ void RCOutput::set_group_mode(pwm_group &group)
 #endif
 
     case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
+#if HAL_DSHOT_ENABLED
         const uint32_t rate = protocol_bitrate(group.current_mode);
         bool active_high = is_bidir_dshot_enabled() ? false : true;
+        bool at_least_freq = false;
         // calculate min time between pulses
         const uint32_t pulse_send_time_us = 1000000UL * dshot_bit_length / rate;
 
+        // BLHeli_S (and BlueJay) appears to always want the frequency above the target
+        if (_dshot_esc_type == DSHOT_ESC_BLHELI_S || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S) {
+            at_least_freq = true;
+        }
+
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, DSHOT_BIT_WIDTH_TICKS, active_high,
-                             MAX(DSHOT_BUFFER_LENGTH, GCR_TELEMETRY_BUFFER_LEN), pulse_send_time_us, true)) {
+                             MAX(DSHOT_BUFFER_LENGTH, GCR_TELEMETRY_BUFFER_LEN), pulse_send_time_us, at_least_freq)) {
             group.current_mode = MODE_PWM_NORMAL;
             break;
         }
@@ -1107,6 +1115,7 @@ void RCOutput::set_group_mode(pwm_group &group)
             // to all intents and purposes the pulse time of send and receive are the same
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
         }
+#endif
         break;
     }
 
