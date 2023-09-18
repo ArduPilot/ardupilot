@@ -120,6 +120,7 @@ private:
 
     // helper function to get and set parameters
     bool set_param_int32(const char* param_name, int32_t param_value);
+    bool set_param_string(const char* param_name, const AP_DroneCAN::string& param_value);
     bool get_param_string(const char* param_name);
 
     // send gimbal control message via DroneCAN
@@ -139,6 +140,9 @@ private:
     // request firmware version.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
     bool request_firmware_version(uint32_t now_ms);
+
+    // set date and time.  now_ms is current system time
+    bool set_datetime(uint32_t now_ms);
 
     // request status.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
@@ -169,6 +173,12 @@ private:
         char str[12] {};                            // firmware version string (11 bytes + 1 null byte)
         uint32_t mav_ver;                           // version formatted for reporting to GCS via CAMERA_INFORMATION message
     } _firmware_version;
+
+    // date and time handling
+    struct {
+        uint32_t last_request_ms;                   // system time that date/time was last requested
+        bool set;                                   // true once date/time has been set
+    } _datetime;
 
     // gimbal status handling
     enum class ErrorStatus : uint32_t {
