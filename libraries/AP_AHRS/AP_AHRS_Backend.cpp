@@ -330,7 +330,7 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 }
 
 // get apparent to true airspeed ratio
-float AP_AHRS_Backend::get_EAS2TAS(void) const {
+float AP_AHRS_Backend::get_EAS2TAS(void) {
     return AP::baro().get_EAS2TAS();
 }
 
