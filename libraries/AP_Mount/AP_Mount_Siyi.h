@@ -296,6 +296,8 @@ private:
         const char* model_name;
     };
     static const HWInfo hardware_lookup_table[];
+
+    const float NaN = nanf("0x4152");               // NaN value used for invalid data
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

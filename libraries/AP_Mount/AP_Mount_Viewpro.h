@@ -392,6 +392,8 @@ private:
     uint8_t _model_name[11] {};                     // model name received from gimbal
     bool _got_model_name;                           // true once we have received model name
     float _rangefinder_dist_m;                      // latest rangefinder distance (in meters)
+
+    const float NaN = nanf("0x4152");               // NaN value used to indicate no data
 };
 
 #endif // HAL_MOUNT_VIEWPRO_ENABLED

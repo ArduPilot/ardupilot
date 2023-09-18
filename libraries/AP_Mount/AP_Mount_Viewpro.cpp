@@ -884,9 +884,9 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         _model_name,            // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
-        0,                      // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
+        NaN,                    // focal_length float (mm)
+        NaN,                    // sensor_size_h float (mm)
+        NaN,                    // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -903,8 +903,6 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
     if (!_initialised) {
         return;
     }
-
-    const float NaN = nanf("0x4152");
 
     // convert zoom times (e.g. 1x ~ 20x) to target zoom level (e.g. 0 to 100)
     const float zoom_level = linear_interpolate(0, 100, _zoom_times, 1, AP_MOUNT_VIEWPRO_ZOOM_MAX);

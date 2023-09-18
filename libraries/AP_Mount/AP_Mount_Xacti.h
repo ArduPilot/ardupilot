@@ -161,6 +161,8 @@ private:
     uint32_t last_send_gimbal_control_ms;           // system time that send_gimbal_control was last called (used to slow down sends to 5hz)
     uint32_t last_send_copter_att_status_ms;        // system time that send_copter_att_status was last called (used to slow down sends to 10hz)
     uint32_t last_send_set_param_ms;                // system time that a set parameter message was sent
+
+    const float NaN = nanf("0x4152");               // NaN value used to indicate invalid values
 };
 
 #endif // HAL_MOUNT_XACTI_ENABLED

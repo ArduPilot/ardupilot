@@ -915,8 +915,8 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         model_name,             // model_name uint8_t[32]
         fw_version,             // firmware version uint32_t
         focal_length_mm,        // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
+        NaN,                    // sensor_size_h float (mm)
+        NaN,                    // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -929,7 +929,6 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
     const float zoom_mult_max = get_zoom_mult_max();
     float zoom_pct = 0.0;
     if (is_positive(zoom_mult_max)) {

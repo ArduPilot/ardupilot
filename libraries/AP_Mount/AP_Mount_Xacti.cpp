@@ -258,7 +258,6 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
     static const uint8_t vendor_name[32] = "Xacti";
     static uint8_t model_name[32] = "CX-GB100";
     const char cam_definition_uri[140] {};
-    const float NaN = nanf("0x4152");
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -287,8 +286,6 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
