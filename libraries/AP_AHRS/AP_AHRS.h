@@ -727,9 +727,6 @@ private:
     EKFType ekf_type(void) const;
     void update_DCM();
 
-    // get the index of the current primary IMU
-    uint8_t get_primary_IMU_index(void) const { return state.primary_IMU; }
-
     /*
      * home-related state
      */
