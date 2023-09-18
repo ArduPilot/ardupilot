@@ -57,6 +57,10 @@
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
  */
 
+#include "AP_Compass_config.h"
+
+#if COMPASS_CAL_ENABLED
+
 #include "AP_Compass.h"
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
@@ -1153,3 +1157,5 @@ bool CompassCalibrator::right_angle_rotation(Rotation r) const
             return false;
     }
 }
+
+#endif  // COMPASS_CAL_ENABLED
