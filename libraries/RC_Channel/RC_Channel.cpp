@@ -1556,7 +1556,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
-    
+
+#if COMPASS_CAL_ENABLED
     case AUX_FUNC::MAG_CAL: {
         Compass &compass = AP::compass();
         switch (ch_flag) {
@@ -1580,6 +1581,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
     case AUX_FUNC::ARM_EMERGENCY_STOP: {
         switch (ch_flag) {
