@@ -207,7 +207,7 @@ private:
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
     
-    // current height estimate (above field elevation)
+    // current height estimate (m)
     float _height;
 
     // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
@@ -277,8 +277,8 @@ private:
     float _hgt_dem_in;          // height demand input from autopilot after unachievable climb or descent limiting (m)
     float _hgt_dem_in_prev;     // previous value of _hgt_dem_in (m)
     float _hgt_dem_lpf;         // height demand after application of low pass filtering (m)
-    float _flare_hgt_dem_adj;   // height rate demand duirng flare adjusted for height tracking offset at flare entry (m)
-    float _flare_hgt_dem_ideal; // height we want to fly at during flare (m)
+    float _flare_hgt_dem_home;  // demanded height above home during flare that is initialised to match the flare entry height demand (m)
+    float _flare_hgt_dem_rwy;   // demanded height above runway during flare that is initialised to match the flare entry height measurement (m)
     float _hgt_dem;             // height demand sent to control loops (m)
     float _hgt_dem_prev;        // _hgt_dem from previous frame (m)
 
@@ -383,10 +383,10 @@ private:
     float _SKEdot;
 
     // variables used for precision landing pitch control
-    float _hgt_at_start_of_flare;
-    float _hgt_rate_dem_at_flare_entry;
-    float _hgt_afe;
-    float _pitch_min_at_flare_entry;
+    float _hgt_at_start_of_flare; // height above runway at flare entry (m)
+    float _hgt_rate_dem_at_flare_entry; // demanded height rate at flare entry (m/s)
+    float _hgt_above_rwy; // measured height above runway (m)
+    float _pitch_min_at_flare_entry; // lower pitch angle limit at flare entry (rad)
 
     // used to scale max climb and sink limits to match vehicle ability
     float _max_climb_scaler;
