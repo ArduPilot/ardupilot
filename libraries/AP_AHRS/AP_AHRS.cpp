@@ -2871,7 +2871,6 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
     int8_t imu = -1;
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        imu = AP::ins().get_primary_gyro();
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -2895,7 +2894,7 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
 #endif
     }
     if (imu == -1) {
-        imu = AP::ins().get_primary_accel();
+        imu = AP::ins().get_primary_gyro();
     }
     return imu;
 }
@@ -2933,19 +2932,13 @@ int8_t AP_AHRS::_get_primary_core_index() const
 // get the index of the current primary accelerometer sensor
 uint8_t AP_AHRS::_get_primary_accel_index(void) const
 {
-    if (ekf_type() != EKFType::NONE) {
-        return _get_primary_IMU_index();
-    }
-    return AP::ins().get_primary_accel();
+    return _get_primary_IMU_index();
 }
 
 // get the index of the current primary gyro sensor
 uint8_t AP_AHRS::_get_primary_gyro_index(void) const
 {
-    if (ekf_type() != EKFType::NONE) {
-        return _get_primary_IMU_index();
-    }
-    return AP::ins().get_primary_gyro();
+    return _get_primary_IMU_index();
 }
 
 // see if EKF lane switching is possible to avoid EKF failsafe
