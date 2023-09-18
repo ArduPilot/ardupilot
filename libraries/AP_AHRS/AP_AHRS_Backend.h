@@ -309,12 +309,6 @@ public:
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
 
-    // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
-        ret.zero();
-        AP::ins().get_delta_velocity(ret, dt);
-    }
-
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return
     // false when no limiting is required
