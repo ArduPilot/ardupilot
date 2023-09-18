@@ -230,7 +230,9 @@ void AP_SmartRTL::set_home(bool position_ok, const Vector3f& current_pos)
     }
 
     // successfully added point and reset path
-    _last_good_position_ms = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
+    _last_good_position_ms = now;
+    _last_position_save_ms = now;
     _active = true;
     _home_saved = true;
 }
