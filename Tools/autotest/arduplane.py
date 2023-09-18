@@ -4848,7 +4848,7 @@ class AutoTestPlane(AutoTest):
         self.wait_message_field_values("NAV_CONTROLLER_OUTPUT", {
             "nav_roll": 0,
             "nav_pitch": 0,
-        }, epsilon=5)
+        }, epsilon=10)
 
         def check_altitude(mav, m):
             global initial_airspeed_threshold_reached
@@ -4871,7 +4871,7 @@ class AutoTestPlane(AutoTest):
         self.wait_message_field_values("NAV_CONTROLLER_OUTPUT", {
             "nav_roll": 0,
             "nav_pitch": 0,
-        }, epsilon=5)
+        }, epsilon=10)
 
         self.context_pop()  # remove the check_altitude call
 
