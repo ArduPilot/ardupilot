@@ -325,7 +325,7 @@ void AP_AHRS::update_state(void)
     state.primary_accel = _get_primary_accel_index();
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
-    state.EAS2TAS = dcm.get_EAS2TAS();
+    state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_ok = _airspeed_estimate(state.airspeed);
     state.airspeed_true_ok = _airspeed_estimate_true(state.airspeed_true);
     state.airspeed_vec_ok = _airspeed_vector_true(state.airspeed_vec);
@@ -786,7 +786,7 @@ bool AP_AHRS::_wind_estimate(Vector3f &wind) const
  */
 bool AP_AHRS::airspeed_sensor_enabled(void) const
 {
-    if (!dcm.airspeed_sensor_enabled()) {
+    if (!AP_AHRS_Backend::airspeed_sensor_enabled()) {
         return false;
     }
     nav_filter_status filter_status;

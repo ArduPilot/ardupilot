@@ -155,7 +155,7 @@ public:
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
         // FIXME: make this a method on the active backend
-        return dcm.airspeed_sensor_enabled(airspeed_index);
+        return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
     }
 
     // return a synthetic airspeed estimate (one derived from sensors
