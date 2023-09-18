@@ -813,25 +813,6 @@ private:
     void update_notify_from_filter_status(const nav_filter_status &status);
 
     /*
-     *  backends (and their results)
-     */
-    AP_AHRS_DCM dcm{_kp_yaw, _kp, gps_gain, beta, _gps_use, _gps_minsats};
-    struct AP_AHRS_Backend::Estimates dcm_estimates;
-#if AP_AHRS_SIM_ENABLED
-#if HAL_NAVEKF3_AVAILABLE
-    AP_AHRS_SIM sim{EKF3};
-#else
-    AP_AHRS_SIM sim;
-#endif
-    struct AP_AHRS_Backend::Estimates sim_estimates;
-#endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
-    AP_AHRS_External external;
-    struct AP_AHRS_Backend::Estimates external_estimates;
-#endif
-
-    /*
      * copy results from a backend over AP_AHRS canonical results.
      * This updates member variables like roll and pitch, as well as
      * updating derived values like sin_roll and sin_pitch.
@@ -957,6 +938,26 @@ private:
         Vector3f velocity_NED;
         bool velocity_NED_ok;
     } state;
+
+    /*
+     *  backends (and their results)
+     */
+    AP_AHRS_DCM dcm{_kp_yaw, _kp, gps_gain, beta, _gps_use, _gps_minsats};
+    struct AP_AHRS_Backend::Estimates dcm_estimates;
+#if AP_AHRS_SIM_ENABLED
+#if HAL_NAVEKF3_AVAILABLE
+    AP_AHRS_SIM sim{EKF3};
+#else
+    AP_AHRS_SIM sim;
+#endif
+    struct AP_AHRS_Backend::Estimates sim_estimates;
+#endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_AHRS_External external;
+    struct AP_AHRS_Backend::Estimates external_estimates;
+#endif
+
 };
 
 namespace AP {

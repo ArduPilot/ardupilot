@@ -60,9 +60,6 @@ public:
         return have_initial_yaw;
     }
 
-    // dead-reckoning support
-    virtual bool get_location(Location &loc) const override;
-
     // status reporting
     float           get_error_rp() const {
         return _error_rp;
@@ -131,6 +128,9 @@ public:
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
+
+    // dead-reckoning support
+    bool get_location(Location &loc) const;
 
     // settable parameters
     AP_Float &_kp_yaw;
