@@ -703,7 +703,7 @@ bool AP_AHRS::_get_location(Location &loc) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return dcm.get_location(loc);
+        return dcm_estimates.get_location(loc);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -723,19 +723,18 @@ bool AP_AHRS::_get_location(Location &loc) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_location(loc);
+        return sim_estimates.get_location(loc);
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL: {
-        return external.get_location(loc);
-    }
+    case EKFType::EXTERNAL:
+        return external_estimates.get_location(loc);
 #endif
     }
 
     // fall back to position from DCM
     if (!always_use_EKF()) {
-        return dcm.get_location(loc);
+        return dcm_estimates.get_location(loc);
     }
     return false;
 }
@@ -1178,7 +1177,10 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 
     case EKFType::NONE:
         // return DCM position
-        dcm.get_location(loc);
+        loc = dcm_estimates.location;
+        // FIXME: we intentionally do not return whether location is
+        // actually valid here so we continue to send mavlink messages
+        // and log data:
         return true;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1204,7 +1206,7 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
         // External is secondary
-        return external.get_location(loc);
+        return external_estimates.get_location(loc);
 #endif
     }
 

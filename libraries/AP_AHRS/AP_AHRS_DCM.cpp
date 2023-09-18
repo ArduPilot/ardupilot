@@ -124,6 +124,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
     results.accel_ef = _accel_ef;
+
+    results.location_valid = get_location(results.location);
 }
 
 /*
