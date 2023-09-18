@@ -1121,48 +1121,6 @@ bool AP_AHRS_DCM::get_unconstrained_airspeed_estimate(uint8_t airspeed_index, fl
     return false;
 }
 
-bool AP_AHRS::set_home(const Location &loc)
-{
-    WITH_SEMAPHORE(_rsem);
-    // check location is valid
-    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
-        return false;
-    }
-    if (!loc.check_latlng()) {
-        return false;
-    }
-    // home must always be global frame at the moment as .alt is
-    // accessed directly by the vehicles and they may not be rigorous
-    // in checking the frame type.
-    Location tmp = loc;
-    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
-        return false;
-    }
-
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (!_home_is_set) {
-        // record home is set
-        AP::logger().Write_Event(LogEvent::SET_HOME);
-    }
-#endif
-
-    _home = tmp;
-    _home_is_set = true;
-
-    Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    GCS_SEND_MESSAGE(MSG_HOME);
-    GCS_SEND_MESSAGE(MSG_ORIGIN);
-
-    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-    pd.home_lat = loc.lat;
-    pd.home_lon = loc.lng;
-    pd.home_alt_cm = loc.alt;
-
-    return true;
-}
-
 /*
   check if the AHRS subsystem is healthy
 */
