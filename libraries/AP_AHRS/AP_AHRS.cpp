@@ -2934,7 +2934,7 @@ int8_t AP_AHRS::_get_primary_core_index() const
 uint8_t AP_AHRS::_get_primary_accel_index(void) const
 {
     if (ekf_type() != EKFType::NONE) {
-        return get_primary_IMU_index();
+        return _get_primary_IMU_index();
     }
     return AP::ins().get_primary_accel();
 }
@@ -2943,7 +2943,7 @@ uint8_t AP_AHRS::_get_primary_accel_index(void) const
 uint8_t AP_AHRS::_get_primary_gyro_index(void) const
 {
     if (ekf_type() != EKFType::NONE) {
-        return get_primary_IMU_index();
+        return _get_primary_IMU_index();
     }
     return AP::ins().get_primary_gyro();
 }
