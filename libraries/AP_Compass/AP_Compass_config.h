@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS_config.h>
 #include <AP_MSP/msp.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #ifndef AP_COMPASS_ENABLED
 #define AP_COMPASS_ENABLED 1
@@ -13,7 +14,7 @@
 #endif
 
 #ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED AP_COMPASS_ENABLED
+#define COMPASS_CAL_ENABLED AP_COMPASS_ENABLED && AP_AHRS_DCM_ENABLED
 #endif
 
 #define COMPASS_MAX_SCALE_FACTOR 1.5
