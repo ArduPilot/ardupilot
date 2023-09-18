@@ -2272,11 +2272,11 @@ void AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
         break;
 #endif
     }
+    ret.zero();
     if (imu_idx == -1) {
-        dcm.getCorrectedDeltaVelocityNED(ret, dt);
+        AP::ins().get_delta_velocity(ret, dt);
         return;
     }
-    ret.zero();
     AP::ins().get_delta_velocity((uint8_t)imu_idx, ret, dt);
     ret -= accel_bias*dt;
     ret = state.dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
