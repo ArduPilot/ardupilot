@@ -807,8 +807,6 @@ bool AP_AHRS::airspeed_sensor_enabled(void) const
 // if we have an estimate
 bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 {
-    bool ret = false;
-
 #if AP_AIRSPEED_ENABLED
     if (airspeed_sensor_enabled()) {
         uint8_t idx = get_active_airspeed_index();
@@ -837,6 +835,8 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 
     // get wind estimates
     Vector3f wind_vel;
+    bool have_wind = false;
+
     switch (active_EKF_type()) {
     case EKFType::NONE:
         return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
@@ -853,7 +853,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        ret = EKF3.getWind(wind_vel);
+        have_wind = EKF3.getWind(wind_vel);
         break;
 #endif
 
@@ -865,10 +865,9 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 
     // estimate it via nav velocity and wind estimates
     Vector3f nav_vel;
-    float true_airspeed;
-    if (ret && have_inertial_nav() && get_velocity_NED(nav_vel)) {
+    if (have_wind && have_inertial_nav() && get_velocity_NED(nav_vel)) {
         Vector3f true_airspeed_vec = nav_vel - wind_vel;
-        true_airspeed = true_airspeed_vec.length();
+        float true_airspeed = true_airspeed_vec.length();
         float gnd_speed = nav_vel.length();
         if (_wind_max > 0) {
             float tas_lim_lower = MAX(0.0f, (gnd_speed - _wind_max));
@@ -878,12 +877,11 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
             true_airspeed = MAX(0.0f, true_airspeed);
         }
         airspeed_ret = true_airspeed / get_EAS2TAS();
-    } else {
-        // fallback to DCM if airspeed estimate if EKF has wind but no velocity estimate
-        ret = dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+        return true;
     }
 
-    return ret;
+    // fallback to DCM
+    return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 }
 
 bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
