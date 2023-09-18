@@ -7,6 +7,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_RTC/AP_RTC.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,6 +19,7 @@ extern const AP_HAL::HAL& hal;
 #define XACTI_PARAM_DIGITALZOOM "DigitalZoomMagnification"
 #define XACTI_PARAM_FIRMWAREVERSION "FirmwareVersion"
 #define XACTI_PARAM_STATUS "Status"
+#define XACTI_PARAM_DATETIME "DateTime"
 
 #define XACTI_MSG_SEND_MIN_MS 20                    // messages should not be sent to camera more often than 20ms
 #define XACTI_ZOOM_RATE_UPDATE_INTERVAL_MS  500     // zoom rate control increments zoom by 10% up or down every 0.5sec
@@ -65,6 +67,11 @@ void AP_Mount_Xacti::update()
 
     // get firmware version
     if (request_firmware_version(now_ms)) {
+        return;
+    }
+
+    // set date and time
+    if (_firmware_version.received && set_datetime(now_ms)) {
         return;
     }
 
@@ -553,11 +560,15 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
             _firmware_version.mav_ver = UINT32_VALUE(dev_ver_num, patch_ver_num, minor_ver_num, major_ver_num);
         }
         return false;
+    } else if (strcmp(name, XACTI_PARAM_DATETIME) == 0) {
+        // display when time and date have been set
+        gcs().send_text(MAV_SEVERITY_INFO, "%s datetime set %s", send_text_prefix, (const char*)value.data);
+        return false;
     } else if (strcmp(name, XACTI_PARAM_STATUS) == 0) {
         // check for expected length
         const char* error_str = "error";
         if (value.len != sizeof(_status)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s status len %s", send_text_prefix, error_str);
+            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
             return false;
         }
 
@@ -619,6 +630,19 @@ bool AP_Mount_Xacti::set_param_int32(const char* param_name, int32_t param_value
     }
 
     if (_detected_modules[_instance].ap_dronecan->set_parameter_on_node(_detected_modules[_instance].node_id, param_name, param_value, &param_int_cb)) {
+        last_send_getset_param_ms = AP_HAL::millis();
+        return true;
+    }
+    return false;
+}
+
+bool AP_Mount_Xacti::set_param_string(const char* param_name, const AP_DroneCAN::string& param_value)
+{
+    if (_detected_modules[_instance].ap_dronecan == nullptr) {
+        return false;
+    }
+
+    if (_detected_modules[_instance].ap_dronecan->set_parameter_on_node(_detected_modules[_instance].node_id, param_name, param_value, &param_string_cb)) {
         last_send_getset_param_ms = AP_HAL::millis();
         return true;
     }
@@ -742,6 +766,46 @@ bool AP_Mount_Xacti::request_firmware_version(uint32_t now_ms)
     }
     _firmware_version.last_request_ms = now_ms;
     return get_param_string(XACTI_PARAM_FIRMWAREVERSION);
+}
+
+// set date and time.  now_ms is current system time
+bool AP_Mount_Xacti::set_datetime(uint32_t now_ms)
+{
+    // return immediately if gimbal's date/time has been set
+    if (_datetime.set) {
+        return false;
+    }
+
+    // attempt to set datetime once per second until received
+    if (now_ms - _datetime.last_request_ms < 1000) {
+        return false;
+    }
+    _datetime.last_request_ms = now_ms;
+
+    // get date and time
+    uint16_t year, ms;
+    uint8_t month, day, hour, min, sec;
+    if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
+        return false;
+    }
+
+    // date time is of the format YYYYMMDDHHMMSS (14 bytes)
+    // convert month from 0~11 to 1~12 range
+    AP_DroneCAN::string datetime_string {};
+    const int num_bytes = snprintf((char *)datetime_string.data, sizeof(AP_DroneCAN::string::data), "%04u%02u%02u%02u%02u%02u",
+                             (unsigned)year, (unsigned)month+1, (unsigned)day, (unsigned)hour, (unsigned)min, (unsigned)sec);
+    // sanity check bytes to be sent
+    if (num_bytes != 14) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return false;
+    }
+    datetime_string.len = num_bytes;
+    _datetime.set = set_param_string(XACTI_PARAM_DATETIME, datetime_string);
+    if (!_datetime.set) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to set date/time", send_text_prefix);
+    }
+
+    return _datetime.set;
 }
 
 // request status. now_ms should be current system time (reduces calls to AP_HAL::millis)
