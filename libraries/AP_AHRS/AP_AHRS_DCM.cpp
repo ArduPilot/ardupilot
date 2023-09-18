@@ -51,22 +51,6 @@ AP_AHRS_DCM::reset_gyro_drift(void)
     _omega_I_sum_time = 0;
 }
 
-
-/* if this was a watchdog reset then get home from backup registers */
-void AP_AHRS::load_watchdog_home()
-{
-    const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-    if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
-        _home.lat = pd.home_lat;
-        _home.lng = pd.home_lon;
-        _home.set_alt_cm(pd.home_alt_cm, Location::AltFrame::ABSOLUTE);
-        _home_is_set = true;
-        _home_locked = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Restored watchdog home");
-    }
-}
-
-
 // run a full DCM update round
 void
 AP_AHRS_DCM::update()
