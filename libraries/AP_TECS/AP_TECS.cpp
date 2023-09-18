@@ -360,7 +360,7 @@ void AP_TECS::update_50hz(void)
         // If more than 1 second has elapsed since last update then reset the integrator state
         // to the measured height
         if (_flags.reset) {
-            _height_filter.height = _height;
+            _height_filter.height = AP::baro().get_altitude();
         } else {
             _height_filter.height += integ3_input*DT;
         }
