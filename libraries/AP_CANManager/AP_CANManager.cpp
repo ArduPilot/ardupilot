@@ -385,7 +385,7 @@ void AP_CANManager::log_retrieve(ExpandingString &str) const
 /*
   handle MAV_CMD_CAN_FORWARD mavlink long command
  */
-bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
