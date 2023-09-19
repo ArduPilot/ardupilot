@@ -3762,17 +3762,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_int_t &pack
 }
 #endif  // COMPASS_CAL_ENABLED
 
+#if HAL_CANMANAGER_ENABLED
 /*
   handle MAV_CMD_CAN_FORWARD
  */
-MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-#if HAL_CANMANAGER_ENABLED
     return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif
 
 /*
   handle CAN_FRAME messages
@@ -4863,10 +4861,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
             break;
 #endif
 
-    case MAV_CMD_CAN_FORWARD:
-        result = handle_can_forward(packet, msg);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5111,6 +5105,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if HAL_CANMANAGER_ENABLED
+    case MAV_CMD_CAN_FORWARD:
+        return handle_can_forward(packet, msg);
+#endif
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
