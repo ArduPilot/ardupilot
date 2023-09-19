@@ -860,7 +860,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     // so that the throttle mapping adjusts for the effect of pitch control errors
     _pitch_demand_lpf.apply(_pitch_dem, _DT);
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
-    _pitch_measured_lpf.apply(_ahrs.pitch, _DT);
+    _pitch_measured_lpf.apply(pitch_wrt_tecs_datum(), _DT);
     const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(0.01f * (float)aparm.pitch_trim_cd);
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
@@ -1091,7 +1091,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _integSEBdot          = 0.0f;
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
-        _last_pitch_dem       = _ahrs.pitch;
         _hgt_above_rwy              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
@@ -1122,8 +1121,10 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         const float fc = 1.0f / (M_2PI * _timeConst);
         _pitch_demand_lpf.set_cutoff_frequency(fc);
         _pitch_measured_lpf.set_cutoff_frequency(fc);
-        _pitch_demand_lpf.reset(_ahrs.pitch);
-        _pitch_measured_lpf.reset(_ahrs.pitch);
+        const float pitch = pitch_wrt_tecs_datum();
+        _pitch_demand_lpf.reset(pitch);
+        _pitch_measured_lpf.reset(pitch);
+        _last_pitch_dem = pitch;
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         _PITCHminf            = 0.000174533f * ptchMinCO_cd;
@@ -1143,8 +1144,9 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
 
-        _pitch_demand_lpf.reset(_ahrs.pitch);
-        _pitch_measured_lpf.reset(_ahrs.pitch);
+        const float pitch = pitch_wrt_tecs_datum();
+        _pitch_demand_lpf.reset(pitch);
+        _pitch_measured_lpf.reset(pitch);
     }
 
     if (_flight_stage != AP_FixedWing::FlightStage::TAKEOFF && _flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
@@ -1161,6 +1163,10 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }
 
+float AP_TECS::pitch_wrt_tecs_datum(void) const
+{
+    return _ahrs.pitch - radians(0.01f * (float)aparm.pitch_trim_cd);
+}
 
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,

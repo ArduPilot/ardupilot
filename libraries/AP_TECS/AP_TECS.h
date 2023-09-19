@@ -476,4 +476,7 @@ private:
 
     // current time constant
     float timeConstant(void) const;
+
+    float pitch_wrt_tecs_datum() const;
+
 };
