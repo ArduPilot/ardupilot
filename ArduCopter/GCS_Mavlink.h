@@ -107,6 +107,8 @@ private:
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet);
 #endif
 
+    MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);
+
 #if AP_WINCH_ENABLED
     MAV_RESULT handle_MAV_CMD_DO_WINCH(const mavlink_command_int_t &packet);
 #endif
