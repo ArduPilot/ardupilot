@@ -436,10 +436,11 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         Location loc = { };
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
-        loc.alt = cb.msg->height_msl_mm / 10;
+        const int32_t alt_amsl_cm = cb.msg->height_msl_mm / 10;
         interim_state.have_undulation = true;
         interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
+        set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
         handle_velocity(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
 
