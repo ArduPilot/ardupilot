@@ -265,5 +265,6 @@ private:
     char portIdentifier[5];
     uint8_t portLength;
     bool readyForCommand;
+    char portIdChar;
 };
 #endif

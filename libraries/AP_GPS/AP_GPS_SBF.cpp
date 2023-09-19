@@ -108,17 +108,17 @@ AP_GPS_SBF::read(void)
                     if (config_string == nullptr) {
                         switch (config_step) {
                             case Config_State::Baud_Rate:
-                                if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
-                                             (int)gps._com_port[state.instance],
+                                if (asprintf(&config_string, "scs,COM%c,baud%d,bits8,No,bit1,%s\n",
+                                             portIdChar,
                                              230400,
                                              port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
                             case Config_State::SSO:
-                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                if (asprintf(&config_string, "sso,Stream%d,COM%c,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)gps._com_port[state.instance]) == -1) {
+                                             portIdChar) == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
@@ -216,6 +216,7 @@ AP_GPS_SBF::parse(uint8_t temp)
                             }
                         } else if (portLength >= sizeof(portIdentifier)) {
                             if ((char)temp == '>') {
+                                portIdChar = portIdentifier[portLength-2];
                                 readyForCommand = true;
                                 Debug("SBF: Ready for command");
                             }
