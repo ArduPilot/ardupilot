@@ -86,6 +86,12 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Wheel rate control PD sum maximum
+    // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
 
     // @Param: 2_RATE_FF
@@ -154,6 +160,12 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: 2_RATE_PDMX
+    // @DisplayName: Wheel rate control PD sum maximum
+    // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),
