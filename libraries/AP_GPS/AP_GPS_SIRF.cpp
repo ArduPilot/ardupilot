@@ -183,9 +183,11 @@ AP_GPS_SIRF::_parse_gps(void)
         }
         state.location.lat      = int32_t(be32toh(_buffer.nav.latitude));
         state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));
-        state.location.alt      = int32_t(be32toh(_buffer.nav.altitude_msl));
+        const int32_t alt_amsl = int32_t(be32toh(_buffer.nav.altitude_msl));
+        const int32_t alt_ellipsoid = int32_t(be32toh(_buffer.nav.altitude_ellipsoid));
+        state.undulation = (alt_amsl - alt_ellipsoid)*0.01;
         state.have_undulation = true;
-        state.undulation = (state.location.alt - int32_t(be32toh(_buffer.nav.altitude_ellipsoid)))*0.01;
+        set_alt_amsl_cm(state, alt_amsl);
         state.ground_speed      = int32_t(be32toh(_buffer.nav.ground_speed))*0.01f;
         state.ground_course     = wrap_360(int16_t(be16toh(_buffer.nav.ground_course)*0.01f));
         state.num_sats          = _buffer.nav.satellites;
