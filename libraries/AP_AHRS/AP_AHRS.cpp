@@ -1523,15 +1523,15 @@ bool AP_AHRS::_get_velocity_NED(Vector3f &vec) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_velocity_NED(vec);
+        return sim_estimates.get_velocity_NED(vec);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_velocity_NED(vec);
+        return external_estimates.get_velocity_NED(vec);
 #endif
     }
 #if AP_AHRS_DCM_ENABLED
-    return dcm.get_velocity_NED(vec);
+    return dcm_estimates.get_velocity_NED(vec);
 #endif
     return false;
 }
