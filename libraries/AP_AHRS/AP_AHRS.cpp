@@ -427,7 +427,7 @@ void AP_AHRS::update(bool skip_ins_update)
         last_active_ekf_type = state.active_EKF;
         const char *shortname = "???";
         switch ((EKFType)state.active_EKF) {
-        case EKFType::NONE:
+        case EKFType::DCM:
             shortname = "DCM";
             break;
 #if AP_AHRS_SIM_ENABLED
@@ -502,7 +502,7 @@ void AP_AHRS::update_DCM()
     // an EKF or external AHRS.  This is long-held behaviour, but this
     // really shouldn't be doing this.
 
-    // if (active_EKF_type() == EKFType::NONE) {
+    // if (active_EKF_type() == EKFType::DCM) {
         copy_estimates_from_backend_estimates(dcm_estimates);
     // }
 }
@@ -702,7 +702,7 @@ void AP_AHRS::reset()
 bool AP_AHRS::_get_location(Location &loc) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm_estimates.get_location(loc);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -754,7 +754,7 @@ float AP_AHRS::get_error_yaw(void) const
 bool AP_AHRS::_wind_estimate(Vector3f &wind) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.wind_estimate(wind);
 
 #if AP_AHRS_SIM_ENABLED
@@ -838,7 +838,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
     bool have_wind = false;
 
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 
 #if AP_AHRS_SIM_ENABLED
@@ -887,7 +887,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.airspeed_estimate_true(airspeed_ret);
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -916,7 +916,7 @@ bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
 bool AP_AHRS::_airspeed_vector_true(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -946,7 +946,7 @@ bool AP_AHRS::_airspeed_vector_true(Vector3f &vec) const
 bool AP_AHRS::airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -984,7 +984,7 @@ bool AP_AHRS::synthetic_airspeed(float &ret) const
 bool AP_AHRS::use_compass(void)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1015,7 +1015,7 @@ bool AP_AHRS::_get_quaternion(Quaternion &quat) const
     // backends always return in autopilot XYZ frame; rotate result
     // according to trim
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         if (!dcm.get_quaternion(quat)) {
             return false;
         }
@@ -1065,7 +1065,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 
     switch (secondary_ekf_type) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         // DCM is secondary
         eulers[0] = dcm_estimates.roll_rad;
         eulers[1] = dcm_estimates.pitch_rad;
@@ -1118,7 +1118,7 @@ bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
 
     switch (secondary_ekf_type) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         // DCM is secondary
         if (!dcm.get_quaternion(quat)) {
             return false;
@@ -1173,7 +1173,7 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 
     switch (secondary_ekf_type) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         // return DCM position
         loc = dcm_estimates.location;
         // FIXME: we intentionally do not return whether location is
@@ -1216,7 +1216,7 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 Vector2f AP_AHRS::_groundspeed_vector(void)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1251,7 +1251,7 @@ Vector2f AP_AHRS::_groundspeed_vector(void)
 float AP_AHRS::_groundspeed(void)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.groundspeed();
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1288,7 +1288,7 @@ bool AP_AHRS::set_origin(const Location &loc)
 
     // return success if active EKF's origin was set
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1330,7 +1330,7 @@ bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_a
 // return true if inertial navigation is active
 bool AP_AHRS::have_inertial_nav(void) const
 {
-    return active_EKF_type() != EKFType::NONE;
+    return active_EKF_type() != EKFType::DCM;
 }
 
 // return a ground velocity in meters/second, North/East/Down
@@ -1338,7 +1338,7 @@ bool AP_AHRS::have_inertial_nav(void) const
 bool AP_AHRS::_get_velocity_NED(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1369,7 +1369,7 @@ bool AP_AHRS::_get_velocity_NED(Vector3f &vec) const
 bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1400,7 +1400,7 @@ bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
 bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1433,7 +1433,7 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_vert_pos_rate_D(velocity);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1465,7 +1465,7 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 bool AP_AHRS::get_hagl(float &height) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1498,7 +1498,7 @@ bool AP_AHRS::get_hagl(float &height) const
 bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_relative_position_NED_origin(vec);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1565,7 +1565,7 @@ bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
 bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_relative_position_NE_origin(posNE);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1620,7 +1620,7 @@ bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_relative_position_D_origin(posD);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1703,7 +1703,7 @@ AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
     case EKFType::THREE:
         return type;
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
         if (always_use_EKF()) {
 #if HAL_NAVEKF2_AVAILABLE
             return EKFType::TWO;
@@ -1711,7 +1711,7 @@ AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
             return EKFType::THREE;
 #endif
         }
-        return EKFType::NONE;
+        return EKFType::DCM;
     }
     // we can get to here if the user has mis-set AHRS_EKF_TYPE - any
     // value above 3 will get to here.  TWO is returned here for no
@@ -1721,23 +1721,23 @@ AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
 #elif HAL_NAVEKF3_AVAILABLE
     return EKFType::THREE;
 #else
-    return EKFType::NONE;
+    return EKFType::DCM;
 #endif
 }
 
 AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 {
-    EKFType ret = EKFType::NONE;
+    EKFType ret = EKFType::DCM;
 
     switch (ekf_type()) {
-    case EKFType::NONE:
-        return EKFType::NONE;
+    case EKFType::DCM:
+        return EKFType::DCM;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
         // do we have an EKF2 yet?
         if (!_ekf2_started) {
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
         if (always_use_EKF()) {
             uint16_t ekf2_faults;
@@ -1756,7 +1756,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
     case EKFType::THREE: {
         // do we have an EKF3 yet?
         if (!_ekf3_started) {
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
         if (always_use_EKF()) {
             uint16_t ekf3_faults;
@@ -1790,7 +1790,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
       and we are disarmed. This is to ensure that the arming checks do
       wait for good GPS position on fixed wing and rover
      */
-    if (ret != EKFType::NONE &&
+    if (ret != EKFType::DCM &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
          _vehicle_class == VehicleClass::GROUND)) {
         if (!dcm.yaw_source_available() && !fly_forward) {
@@ -1833,15 +1833,15 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             // prefer to use the GPS position from DCM. This is a
             // safety net while some issues with the EKF get sorted
             // out
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
         if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
         if (!filt_state.flags.attitude ||
             !filt_state.flags.vert_vel ||
             !filt_state.flags.vert_pos) {
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
@@ -1858,7 +1858,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
                     return ret;
                 }
             }
-            return EKFType::NONE;
+            return EKFType::DCM;
         }
     }
     return ret;
@@ -1869,7 +1869,7 @@ bool AP_AHRS::_get_secondary_EKF_type(EKFType &secondary_ekf_type) const
 {
 
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // EKF2, EKF3 or External is secondary
 #if HAL_NAVEKF3_AVAILABLE
         if ((EKFType)_ekf_type.get() == EKFType::THREE) {
@@ -1904,7 +1904,7 @@ bool AP_AHRS::_get_secondary_EKF_type(EKFType &secondary_ekf_type) const
     case EKFType::EXTERNAL:
 #endif
         // DCM is secondary
-        secondary_ekf_type = EKFType::NONE;
+        secondary_ekf_type = EKFType::DCM;
         return true;
     }
 
@@ -1921,7 +1921,7 @@ bool AP_AHRS::healthy(void) const
     // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
     // an internal processing error, but not for bad sensor data.
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.healthy();
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2008,7 +2008,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     case EKFType::SIM:
         return ret;
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
 
 #if HAL_EXTERNAL_AHRS_ENABLED
@@ -2044,7 +2044,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 bool AP_AHRS::initialised(void) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return true;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2075,7 +2075,7 @@ bool AP_AHRS::initialised(void) const
 bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_filter_status(status);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2168,7 +2168,7 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         dcm.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
         break;
 
@@ -2204,7 +2204,7 @@ void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler
  */
 float AP_AHRS::getControlScaleZ(void) const
 {
-    if (active_EKF_type() == EKFType::NONE) {
+    if (active_EKF_type() == EKFType::DCM) {
         // when flying on DCM lower gains by 4x to cope with the high
         // lag
         return 0.25;
@@ -2217,7 +2217,7 @@ float AP_AHRS::getControlScaleZ(void) const
 bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2249,7 +2249,7 @@ void AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
     int8_t imu_idx = -1;
     Vector3f accel_bias;
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -2390,7 +2390,7 @@ uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 {
     switch (active_EKF_type()) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.getLastYawResetAngle(yawAng);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2421,7 +2421,7 @@ uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 {
     switch (active_EKF_type()) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         return 0;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2452,7 +2452,7 @@ uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 {
     switch (active_EKF_type()) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
         return 0;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2483,7 +2483,7 @@ uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return 0;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2520,7 +2520,7 @@ bool AP_AHRS::resetHeightDatum(void)
     
     switch (ekf_type()) {
 
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
         EKF3.resetHeightDatum();
 #endif
@@ -2561,7 +2561,7 @@ bool AP_AHRS::resetHeightDatum(void)
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // send zero status report
         dcm.send_ekf_status_report(link);
         break;
@@ -2596,7 +2596,7 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
 {
     switch (type) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         return dcm.get_origin(ret);
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2702,7 +2702,7 @@ void AP_AHRS::load_watchdog_home()
 bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // We are not using an EKF so no limiting applies
         return false;
 
@@ -2764,7 +2764,7 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // We are not using an EKF so no data
         return false;
 
@@ -2802,7 +2802,7 @@ bool AP_AHRS::is_vibration_affected() const
     case EKFType::THREE:
         return EKF3.isVibrationAffected();
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
 #endif
@@ -2824,7 +2824,7 @@ bool AP_AHRS::is_vibration_affected() const
 bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // We are not using an EKF so no data
         return false;
 
@@ -2863,7 +2863,7 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
 bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
 {
     switch (ekf_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         // We are not using an EKF so no data
         return false;
 
@@ -2926,7 +2926,7 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
 {
     int8_t imu = -1;
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -2959,7 +2959,7 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
 int8_t AP_AHRS::_get_primary_core_index() const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
 #endif
@@ -3001,7 +3001,7 @@ uint8_t AP_AHRS::_get_primary_gyro_index(void) const
 void AP_AHRS::check_lane_switch(void)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 
 #if AP_AHRS_SIM_ENABLED
@@ -3032,7 +3032,7 @@ void AP_AHRS::check_lane_switch(void)
 void AP_AHRS::request_yaw_reset(void)
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
+    case EKFType::DCM:
         break;
 
 #if AP_AHRS_SIM_ENABLED
@@ -3102,7 +3102,7 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
     case EKFType::TWO:
         return EKF2.isExtNavUsedForYaw();
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.using_noncompass_for_yaw();
@@ -3127,7 +3127,7 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
     case EKFType::TWO:
         return EKF2.isExtNavUsedForYaw();
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.using_extnav_for_yaw();
@@ -3163,7 +3163,7 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
     case EKFType::TWO:
         return EKF2.get_yawEstimator();
 #endif
-    case EKFType::NONE:
+    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return EKF3.get_yawEstimator();
