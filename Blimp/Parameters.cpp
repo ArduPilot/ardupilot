@@ -721,6 +721,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
+
+    // @Param: POSYAW_PDMX
+    // @DisplayName: Position (yaw) axis controller PD sum maximum
+    // @Description: Position (yaw) axis controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: d%
+    // @User: Advanced
     GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
 
     // @Group:
