@@ -90,7 +90,6 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
 #endif
 
         case AP_TemperatureSensor_Params::Source::None:
-        case AP_TemperatureSensor_Params::Source::Pitot_tube:
         default:
             break;
     }
