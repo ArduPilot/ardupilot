@@ -1,3 +1,7 @@
+#include "AP_Tuning_config.h"
+
+#if AP_TUNING_ENABLED
+
 #include "AP_Tuning.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -334,3 +338,5 @@ const char *AP_Tuning::get_tuning_name(uint8_t parm)
     }
     return "UNKNOWN";
 }
+
+#endif  // AP_TUNING_ENABLED
