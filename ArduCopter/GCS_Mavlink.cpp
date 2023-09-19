@@ -776,6 +776,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return handle_MAV_CMD_SOLO_BTN_FLY_CLICK(packet);
 #endif
 
+#if MODE_AUTO_ENABLED == ENABLED
+    case MAV_CMD_MISSION_START:
+        return handle_MAV_CMD_MISSION_START(packet);
+#endif
+
 #if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:
         return handle_MAV_CMD_DO_WINCH(packet);
@@ -893,8 +898,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         return MAV_RESULT_FAILED;
 
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+    }
+}
+
 #if MODE_AUTO_ENABLED == ENABLED
-    case MAV_CMD_MISSION_START:
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
+{
         if (copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             copter.set_auto_armed(true);
             if (copter.mode_auto.mission.state() != AP_Mission::MISSION_RUNNING) {
@@ -903,12 +914,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+}
 #endif
 
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
-}
+
 
 #if PARACHUTE == ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet)
