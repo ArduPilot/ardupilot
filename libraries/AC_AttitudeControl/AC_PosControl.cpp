@@ -204,6 +204,13 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _ACCZ_PDMX
+    // @DisplayName: Acceleration (vertical) controller PD sum maximum
+    // @Description: Acceleration (vertical) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1000
+    // @Units: d%
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
