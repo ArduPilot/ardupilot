@@ -1164,8 +1164,18 @@ void AP_GPS::update(void)
 void AP_GPS::update_primary(void)
 {
 #if defined(GPS_BLENDED_INSTANCE)
-    // if blending is requested, attempt to calculate weighting for each GPS
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND) {
+    /*
+      if blending is requested, attempt to calculate weighting for
+      each GPS
+      we do not do blending if using moving baseline yaw as the rover is
+      significant lagged and gives no more information on position or
+      velocity
+    */
+    const bool using_moving_base = (_type[0] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[0] == GPS_TYPE_UBLOX_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UBLOX_RTK_BASE);
+    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
         if (!_output_is_blended) {
