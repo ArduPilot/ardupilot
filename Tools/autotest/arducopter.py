@@ -10170,6 +10170,23 @@ class AutoTestCopter(AutoTest):
         self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
         self.land_and_disarm()
 
+    def MISSION_START(self):
+        '''test mavlink command MAV_CMD_MISSION_START'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 200),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        for command in self.run_cmd, self.run_cmd_int:
+            self.change_mode('LOITER')
+            self.set_current_waypoint(1)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+            command(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_altitude(20, 1000, relative=True)
+            self.change_mode('RTL')
+            self.wait_disarmed()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10206,6 +10223,7 @@ class AutoTestCopter(AutoTest):
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.DO_CHANGE_SPEED,
+            self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
             self.WPNAV_SPEED,
             self.WPNAV_SPEED_UP,
