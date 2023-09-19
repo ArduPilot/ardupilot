@@ -64,6 +64,12 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("SMAX", 12, AC_PID, _slew_rate_max, default_slew_rate_max),
 
+    // @Param: PDMX
+    // @DisplayName: PD sum maximum
+    // @Description: The maximum/minimum value that the sum of the P and D term can output
+    // @User: Advanced
+    AP_GROUPINFO("PDMX", 13, AC_PID, _kpdmax, 0),
+
     AP_GROUPEND
 };
 
@@ -172,7 +178,10 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     _pid_info.P = P_out;
     _pid_info.D = D_out;
 
-    return P_out + _integrator + D_out;
+    if (is_positive(_kpdmax)) {
+        return constrain_float(P_out + D_out, -_kpdmax, _kpdmax) + _integrator;
+    }
+    return P_out + D_out + _integrator;
 }
 
 //  update_error - set error input to PID controller and calculate outputs
@@ -225,7 +234,10 @@ float AC_PID::update_error(float error, float dt, bool limit)
     _pid_info.P = P_out;
     _pid_info.D = D_out;
 
-    return P_out + _integrator + D_out;
+    if (is_positive(_kpdmax)) {
+        return constrain_float(P_out + D_out, -_kpdmax, _kpdmax) + _integrator;
+    }
+    return P_out + D_out + _integrator;
 }
 
 //  update_i - update the integral
@@ -279,6 +291,8 @@ void AC_PID::load_gains()
     _kff.load();
     _kimax.load();
     _kimax.set(fabsf(_kimax));
+    _kpdmax.load();
+    _kpdmax.set(fabsf(_kpdmax));
     _filt_T_hz.load();
     _filt_E_hz.load();
     _filt_D_hz.load();
