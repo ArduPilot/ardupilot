@@ -379,6 +379,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: PITCH2SRV_PDMX
+    // @DisplayName: Pitch axis controller PD sum maximum
+    // @Description: Pitch axis controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: d%
+    // @User: Advanced
+
     GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
@@ -446,6 +454,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: YAW2SRV_PDMX
+    // @DisplayName: Yaw axis controller PD sum maximum
+    // @Description: Yaw axis controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: d%
     // @User: Advanced
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
