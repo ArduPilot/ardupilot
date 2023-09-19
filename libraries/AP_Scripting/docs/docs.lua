@@ -2865,6 +2865,17 @@ function ahrs:get_pitch() end
 ---@return number
 function ahrs:get_roll() end
 
+
+-- desc
+---@class AC_PosControl
+AC_PosControl = {}
+
+-- desc
+---@return number
+---@return number
+function AC_PosControl:get_accel_z_slew_rate() end
+
+
 -- desc
 ---@class AC_AttitudeControl
 AC_AttitudeControl = {}

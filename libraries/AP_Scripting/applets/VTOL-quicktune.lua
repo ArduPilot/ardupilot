@@ -37,7 +37,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 13), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 14), 'could not add param table')
 
 --[[
   // @Param: QUIK_ENABLE
@@ -52,7 +52,7 @@ local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0)
   // @Param: QUIK_AXES
   // @DisplayName: Quicktune axes
   // @Description: axes to tune
-  // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+  // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:ACCZ
   // @User: Standard
 --]]
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
@@ -158,6 +158,15 @@ local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
 --]]
 local QUIK_MAX_REDUCE  = bind_add_param('MAX_REDUCE',    13, 20)
 
+--[[
+  // @Param: QUIK_Z_PI_MAX
+  // @DisplayName: The maximum ratio for ACCZ_P to ACCZ_I
+  // @Description: This is the maximum value that ACCZ_I can have. Q_P_ACCZ_P/Z_PI_MAX. Raise this to get a lower I gain.
+  // @Range: 0.5 20
+  // @User: Standard
+--]]
+local QUIK_Z_PI_MAX  = bind_add_param('Z_PI_MAX',    14, 1.5)
+
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
 local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
@@ -183,6 +192,7 @@ local DEFAULT_SMAX = 50.0
 if param:get("Q_A_RAT_RLL_SMAX") then
    is_quadplane = true
    atc_prefix = "Q_A"
+   accz_prefix = "Q_P"
    gcs:send_text(MAV_SEVERITY_EMERGENCY, "Quicktune for quadplane loaded")
 elseif param:get("ATC_RAT_RLL_SMAX") then
    is_quadplane = false
@@ -197,9 +207,9 @@ function get_time()
    return millis():tofloat() * 0.001
 end
 
-local axis_names = { "RLL", "PIT", "YAW" }
+local axis_names = { "RLL", "PIT", "YAW", "ACCZ" }
 local param_suffixes = { "FF", "P", "I", "D", "SMAX", "FLTT", "FLTD", "FLTE" }
-local stages = { "D", "P" }
+local stages = { "D", "P", "I" }
 local stage = stages[1]
 local last_stage_change = get_time()
 local last_gain_report = get_time()
@@ -222,8 +232,15 @@ local need_restore = false
 for _, axis in ipairs(axis_names) do
    for _, suffix in ipairs(param_suffixes) do
       local pname = axis .. "_" .. suffix
+      -- special handling because accz is not RAT_
+      -- implements a goto for "continue" functionality
+      if axis == "ACCZ" then
+         params[pname] = bind_param(accz_prefix .. "_" .. pname)
+         goto next_param
+      end
       params[pname] = bind_param(atc_prefix .. "_" .. "RAT_" .. pname)
       param_changed[pname] = false
+      ::next_param::
    end
 end
 
@@ -277,6 +294,11 @@ end
 -- setup filter frequencies
 function setup_filters(axis)
    if QUIK_AUTO_FILTER:get() <= 0 then
+      return
+   end
+   -- skip accz filters for now
+   if axis == "ACCZ" then
+      filters_done[axis] = true
       return
    end
    local fltd = axis .. "_FLTD"
@@ -343,11 +365,26 @@ function get_slew_rate(axis)
    if axis == "YAW" then
       return yaw_srate
    end
+   if axis == "ACCZ" then
+      return AC_PosControl:get_accel_z_slew_rate()
+   end
    return 0.0
 end
 
 -- move to next stage of tune
 function advance_stage(axis)
+   -- for accz, tune P then I, assume no D
+   if axis == "ACCZ" then
+      if stage == "P" then
+         stage = "I"
+      else
+         axes_done[axis] = true
+         gcs:send_text(5, string.format("Tuning: %s done", axis))
+         -- only do P and I on ACCZ axis, reset stage to D for other axis
+         stage = "D"
+      end
+      return
+   end
    if stage == "D" then
       stage = "P"
    else
@@ -381,15 +418,22 @@ function adjust_gain(pname, value)
    if string.sub(pname, -2) == "_P" then
       -- also change I gain
       local iname = string.gsub(pname, "_P", "_I")
-      local ffname = string.gsub(pname, "_P", "_FF")
       local I = params[iname]
+      param_changed[iname] = true
+      -- keep accz_I at 10% of accz_P
+      if param_axis(pname) == "ACC" then
+         -- set to 10% of P and return because there is not FF
+         I:set(value*0.1)
+         return
+      end
+
+      local ffname = string.gsub(pname, "_P", "_FF")
       local FF = params[ffname]
       if FF:get() > 0 then
          -- if we have any FF on an axis then we don't couple I to P,
          -- usually we want I = FF for a one sectond time constant for trim
          return
       end
-      param_changed[iname] = true
 
       -- work out ratio of P to I that we want
       local PI_ratio = QUIK_RP_PI_RATIO:get()
@@ -406,7 +450,8 @@ end
 function limit_gain(pname, value)
    local saved_value = param_saved[pname]
    local max_reduction = QUIK_MAX_REDUCE:get()
-   if max_reduction >= 0 and max_reduction < 100 and saved_value > 0 then
+   -- skip the gain reduction on accz for now
+   if max_reduction >= 0 and max_reduction < 100 and saved_value > 0 and not param_axis(pname) == "ACCZ" then
       -- check if we exceeded gain reduction
       local reduction_pct = 100.0 * (saved_value - value) / saved_value
       if reduction_pct > max_reduction then
@@ -442,7 +487,7 @@ function update_slew_gain()
       local ax_stage = string.sub(slew_parm, -1)
       adjust_gain(slew_parm, P:get()+slew_delta)
       slew_steps = slew_steps - 1
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', get_slew_rate(axis), P:get(), axis .. ax_stage)
+      logger.write('QUIK','SRate,Gain,Param', 'ffN', get_slew_rate(axis), P:get(), axis .. ax_stage)
       if slew_steps == 0 then
          gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f", slew_parm, P:get()))
          slew_parm = nil
@@ -463,6 +508,19 @@ function gain_limit(pname)
       end
       if suffix == "_D" then
          return QUIK_YAW_D_MAX:get()
+      end
+   end
+   -- set a limit on I to avoid being too large compared to P for accz axis
+   if param_axis(pname) == "ACC" then
+      local suffix = stage
+      if suffix == "I" then
+         local p_gain_name = string.gsub(pname, "_I", "_P")
+         local P = params[p_gain_name]
+         local value = P:get()
+         local PI_RATIO = QUIK_Z_PI_MAX:get()
+         if PI_RATIO > 0 then
+            return value/PI_RATIO
+         end
       end
    end
    return 0.0
@@ -537,6 +595,11 @@ function update()
       return
    end
 
+   -- we want to start with P on ACCZ axis and not touch D
+   if axis == "ACCZ" and stage == "D" then
+      stage = "P"
+   end
+
    if not need_restore then
       -- we are just starting tuning, get current values
       gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: starting tune"))
@@ -580,7 +643,7 @@ function update()
          adjust_gain_limited(P_name, new_P)
       end
       setup_slew_gain(pname, new_gain)
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
+      logger.write('QUIK','SRate,Gain,Param', 'ffN', srate, P:get(), axis .. stage)
       gcs:send_text(6, string.format("Tuning: %s done", pname))
       advance_stage(axis)
       last_stage_change = get_time()
@@ -590,7 +653,7 @@ function update()
          new_gain = 0.001
       end
       adjust_gain_limited(pname, new_gain)
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
+      logger.write('QUIK','SRate,Gain,Param', 'ffN', srate, P:get(), axis .. stage)
       if get_time() - last_gain_report > 3 then
          last_gain_report = get_time()
          gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f sr:%.2f", pname, new_gain, srate))

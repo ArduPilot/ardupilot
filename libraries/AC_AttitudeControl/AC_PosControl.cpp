@@ -74,6 +74,8 @@ extern const AP_HAL::HAL& hal;
 #define POSCONTROL_VIBE_COMP_P_GAIN 0.250f
 #define POSCONTROL_VIBE_COMP_I_GAIN 0.125f
 
+AC_PosControl *AC_PosControl::_singleton = nullptr;
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -319,6 +321,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _jerk_max_xy_cmsss(POSCONTROL_JERK_XY * 100.0),
     _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -1018,6 +1021,12 @@ void AC_PosControl::set_pos_vel_accel_xy(const Vector2p& pos, const Vector2f& ve
     _pos_target.xy() = pos;
     _vel_desired.xy() = vel;
     _accel_desired.xy() = accel;
+}
+
+// get the acceleration z slew rate for scripting
+void AC_PosControl::get_accel_z_slew_rate(float &accel_z_slew_rate)
+{
+    accel_z_slew_rate = get_accel_z_pid().get_pid_info().slew_rate;
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean target angles to lat/lon frame accelerations in cm/s/s

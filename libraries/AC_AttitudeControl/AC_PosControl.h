@@ -43,6 +43,11 @@ public:
 
 
 
+    // do not allow copying
+    CLASS_NO_COPY(AC_PosControl);
+
+    static AC_PosControl *get_singleton() { return _singleton; }
+
     /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
     ///   _dt should be set based on the time of the last IMU read used by these controllers
     ///   the position controller should run updates for active controllers on each loop to ensure normal operation
@@ -360,6 +365,7 @@ public:
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
     AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
     AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    void get_accel_z_slew_rate(float &acc_z_slew_rate);
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
@@ -424,6 +430,8 @@ protected:
     const AP_InertialNav&   _inav;
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
+
+    static AC_PosControl *_singleton;
 
     // parameters
     AP_Float        _lean_angle_max;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
