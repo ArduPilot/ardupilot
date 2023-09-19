@@ -131,6 +131,13 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Pitch axis rate controller PD sum maximum
+    // @Description: Pitch axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
 
     AP_GROUPEND
