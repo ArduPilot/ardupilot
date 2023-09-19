@@ -103,6 +103,7 @@ public:
     AP_Float &kI() { return _ki; }
     AP_Float &kD() { return _kd; }
     AP_Float &kIMAX() { return _kimax; }
+    AP_Float &kPDMAX() { return _kpdmax; }
     AP_Float &ff() { return _kff;}
     AP_Float &filt_T_hz() { return _filt_T_hz; }
     AP_Float &filt_E_hz() { return _filt_E_hz; }
@@ -110,6 +111,7 @@ public:
     AP_Float &slew_limit() { return _slew_rate_max; }
 
     float imax() const { return _kimax.get(); }
+    float pdmax() const { return _kpdmax.get(); }
     float get_filt_T_alpha(float dt) const;
     float get_filt_E_alpha(float dt) const;
     float get_filt_D_alpha(float dt) const;
@@ -120,6 +122,7 @@ public:
     void kD(const float v) { _kd.set(v); }
     void ff(const float v) { _kff.set(v); }
     void imax(const float v) { _kimax.set(fabsf(v)); }
+    void pdmax(const float v) { _kpdmax.set(fabsf(v)); }
     void filt_T_hz(const float v);
     void filt_E_hz(const float v);
     void filt_D_hz(const float v);
@@ -160,6 +163,7 @@ protected:
     AP_Float _kd;
     AP_Float _kff;
     AP_Float _kimax;
+    AP_Float _kpdmax;
     AP_Float _filt_T_hz;         // PID target filter frequency in Hz
     AP_Float _filt_E_hz;         // PID error filter frequency in Hz
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
