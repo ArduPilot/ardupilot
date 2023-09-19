@@ -103,12 +103,14 @@ static_assert(sizeof(log_ISBD) < 256, "log_ISBD is over-size");
 // @Field: VibeY: Primary accelerometer filtered vibration, y-axis
 // @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
 // @Field: Clip: Number of clipping events on 1st accelerometer
+// @Field: Length: Vibration 3D Vector length
 struct PACKED log_Vibe {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t imu;
     float vibe_x, vibe_y, vibe_z;
     uint32_t clipping;
+    float length;
 };
 
 #define LOG_STRUCTURE_FROM_INERTIALSENSOR        \
@@ -119,7 +121,7 @@ struct PACKED log_Vibe {
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QBffffffIIfBBHH", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" , true }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QBfffI", "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#ooo-", "F-000-" , true }, \
+      "VIBE", "QBfffIf", "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip,Length", "s#ooo-o", "F-000-0" , true }, \
     { LOG_ISBH_MSG, sizeof(log_ISBH), \
       "ISBH", "QHBBHHQf", "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate", "s-----sz", "F-----F-" },  \
     { LOG_ISBD_MSG, sizeof(log_ISBD), \

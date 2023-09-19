@@ -89,7 +89,8 @@ void AP_InertialSensor::Write_Vibration() const
             vibe_x      : vibration.x,
             vibe_y      : vibration.y,
             vibe_z      : vibration.z,
-            clipping    : get_accel_clip_count(i)
+            clipping    : get_accel_clip_count(i),
+            length      : vibration.length(),
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
