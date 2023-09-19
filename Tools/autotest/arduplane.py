@@ -4879,6 +4879,28 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def DO_PARACHUTE(self):
+        '''test triggering parachute via mavlink'''
+        self.set_parameters({
+            "CHUTE_ENABLED": 1,
+            "CHUTE_TYPE": 10,
+            "SERVO9_FUNCTION": 27,
+            "SIM_PARA_ENABLE": 1,
+            "SIM_PARA_PIN": 9,
+            "FS_LONG_ACTN": 3,
+        })
+        for command in self.run_cmd, self.run_cmd_int:
+            self.wait_servo_channel_value(9, 1100)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            command(
+                mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                p1=mavutil.mavlink.PARACHUTE_RELEASE,
+            )
+            self.wait_servo_channel_value(9, 1300)
+            self.disarm_vehicle()
+            self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4897,6 +4919,7 @@ class AutoTestPlane(AutoTest):
             self.TestGripperMission,
             self.Parachute,
             self.ParachuteSinkRate,
+            self.DO_PARACHUTE,
             self.PitotBlockage,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
