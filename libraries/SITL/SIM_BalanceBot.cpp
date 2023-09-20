@@ -85,7 +85,7 @@ void BalanceBot::update(const struct sitl_input &input)
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // yaw rate in degrees/s
-    const float yaw_rate = calc_yaw_rate(steering);
+    float yaw_rate = calc_yaw_rate(steering);
 
     // obtain roll, pitch, yaw from dcm
     float r, p, y;
@@ -98,6 +98,11 @@ void BalanceBot::update(const struct sitl_input &input)
         const float p_gain = 200;
         const float pitch_response = -sin(p) * p_gain * delta_time;
         ang_vel += pitch_response;
+
+        // simulated fingers rotating the vehicle
+        const float y_gain = 100000;
+        const float yaw_response = -sin(wrap_180(y)) * y_gain * delta_time;
+        yaw_rate += yaw_response;
     }
 
     // t1,t2,t3 are terms in the equation to find vehicle frame x acceleration
@@ -143,11 +148,15 @@ void BalanceBot::update(const struct sitl_input &input)
         // reset to vertical when not armed for faster testing
         accel_earth.zero();
         velocity_ef.zero();
-        dcm.identity();
-        gyro.zero();
         velocity_vf_x =0;
+        gyro[1] = 0; // no pitch rate
+        if (y < radians(2)) {
+            // no rates at all:
+            dcm.identity();
+            gyro.zero();
+        }
     }
-    
+
     // work out acceleration as seen by the accelerometers. It sees the kinematic
     // acceleration (ie. real movement), plus gravity
     accel_body += dcm.transposed() * (Vector3f(0, 0, -GRAVITY_MSS));
