@@ -302,8 +302,10 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
