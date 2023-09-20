@@ -115,7 +115,11 @@ public:
     bool wind_estimate(Vector3f &wind) const;
 
     // instruct DCM to update its wind estimate:
-    void estimate_wind() { dcm.estimate_wind(); }
+    void estimate_wind() {
+#if AP_AHRS_DCM_ENABLED
+        dcm.estimate_wind();
+#endif
+    }
 
     // return the parameter AHRS_WIND_MAX in metres per second
     uint8_t get_max_wind() const {
@@ -285,10 +289,12 @@ public:
     // true if the AHRS has completed initialisation
     bool initialised() const;
 
+#if AP_AHRS_DCM_ENABLED
     // return true if *DCM* yaw has been initialised
     bool dcm_yaw_initialised(void) const {
         return dcm.yaw_initialised();
     }
+#endif
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
@@ -532,11 +538,13 @@ public:
     // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const;
 
+#if AP_AHRS_DCM_ENABLED
     // get rotation matrix specifically from DCM backend (used for
     // compass calibrator)
     const Matrix3f &get_DCM_rotation_body_to_ned(void) const {
         return dcm_estimates.dcm_matrix;
     }
+#endif
 
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
@@ -660,7 +668,9 @@ private:
     AP_Int8 _gps_minsats;
 
     enum class EKFType {
+#if AP_AHRS_DCM_ENABLED
         DCM = 0,
+#endif
 #if HAL_NAVEKF3_AVAILABLE
         THREE = 3,
 #endif
@@ -893,6 +903,10 @@ private:
      */
     void update_state(void);
 
+    // returns an EKF type to be used as active if we decide the
+    // primary is not good enough.
+    EKFType fallback_active_EKF_type(void) const;
+
     /*
       state updated at the end of each update() call
      */
@@ -939,8 +953,10 @@ private:
     /*
      *  backends (and their results)
      */
+#if AP_AHRS_DCM_ENABLED
     AP_AHRS_DCM dcm{_kp_yaw, _kp, gps_gain, beta, _gps_use, _gps_minsats};
     struct AP_AHRS_Backend::Estimates dcm_estimates;
+#endif
 #if AP_AHRS_SIM_ENABLED
 #if HAL_NAVEKF3_AVAILABLE
     AP_AHRS_SIM sim{EKF3};
