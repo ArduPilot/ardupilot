@@ -649,6 +649,8 @@ private:
 #endif
     bool init_done;
 
+    bool suppress_devid_save;
+
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
 };
 
