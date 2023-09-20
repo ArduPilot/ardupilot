@@ -1275,6 +1275,11 @@ class ChibiOSHWDef(object):
         if self.env_vars.get('ROMFS_UNCOMPRESSED', False):
             f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
+        if self.env_vars.get('DEFAULT_PARAMETERS', False):
+            default_parameters_file_size = os.path.getsize(self.env_vars.get('DEFAULT_PARAMETERS', 0))
+            if default_parameters_file_size > 0 and default_parameters_file_size < 32768:
+                f.write("#define AP_PARAM_MAX_EMBEDDED_PARAM %u\n" % default_parameters_file_size)
+
         if not args.bootloader:
             f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
 
@@ -3117,6 +3122,9 @@ INCLUDE common.ld
         self.mcu_type = self.get_config('MCU', 1)
         print("Setup for MCU %s" % self.mcu_type)
 
+        if not args.bootloader:
+            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
+
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
 
@@ -3137,9 +3145,6 @@ INCLUDE common.ld
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
-
-        if not args.bootloader:
-            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
