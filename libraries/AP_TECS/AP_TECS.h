@@ -292,9 +292,6 @@ private:
     // offset applied to height demand post takeoff to compensate for height demand filter lag
     float _post_TO_hgt_offset;
 
-    // last lag compensation offset applied to height demand
-    float _lag_comp_hgt_offset;
-
     // Speed demand after application of rate limiting
     // This is the demand tracked by the TECS control loops
     float _TAS_dem_adj;

@@ -1099,7 +1099,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _TAS_dem_adj          = _TAS_dem;
         _flags.reset          = true;
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
-        _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
         _takeoff_start_ms = 0;
         _use_synthetic_airspeed_once = false;
