@@ -10,8 +10,7 @@ bool AP_Camera_Mount::trigger_pic()
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        mount->take_picture(get_mount_instance());
-        return true;
+        return mount->take_picture(get_mount_instance());
     }
     return false;
 }
