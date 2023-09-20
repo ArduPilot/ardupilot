@@ -4879,6 +4879,14 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_DO_AUTOTUNE_ENABLE(self):
+        '''test enabling autotune via mavlink'''
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_AUTOTUNE_ENABLE, p1=1)
+        self.wait_statustext('Started autotune', check_context=True)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_AUTOTUNE_ENABLE, p1=0)
+        self.wait_statustext('Stopped autotune', check_context=True)
+
     def DO_PARACHUTE(self):
         '''test triggering parachute via mavlink'''
         self.set_parameters({
@@ -4995,6 +5003,7 @@ class AutoTestPlane(AutoTest):
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             self.MAV_CMD_PREFLIGHT_CALIBRATION,
             self.MAV_CMD_DO_INVERTED_FLIGHT,
+            self.MAV_CMD_DO_AUTOTUNE_ENABLE,
         ])
         return ret
 
