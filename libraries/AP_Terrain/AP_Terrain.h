@@ -183,6 +183,11 @@ public:
     void get_statistics(uint16_t &pending, uint16_t &loaded) const;
 
     /*
+      get terrain spacing
+     */
+    bool get_terrain_spacing(float &terrain_spacing);
+
+    /*
       returns true if initialisation failed because out-of-memory
      */
     bool init_failed() const { return memory_alloc_failed; }

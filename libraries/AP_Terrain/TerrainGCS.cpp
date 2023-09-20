@@ -196,6 +196,17 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
     }
 }
 
+/*
+  get some statistics for TERRAIN_REPORT
+ */
+bool AP_Terrain::get_terrain_spacing(float &terrain_spacing)
+{
+    terrain_spacing = grid_spacing;
+    if (isnan(terrain_spacing)) {
+        return false;
+    }
+    return true;
+}
 
 /* 
    handle terrain messages from GCS
