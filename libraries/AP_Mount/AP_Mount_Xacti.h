@@ -16,6 +16,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Mount.h"
 
 class AP_Mount_Xacti : public AP_Mount_Backend
@@ -118,10 +119,30 @@ private:
     bool handle_param_get_set_response_string(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, AP_DroneCAN::string &value);
     void handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success);
 
+    // param enum.  If enum is updated also update _param_names definition in cpp
+    enum class Param : uint8_t {
+        SingleShot = 0,
+        Recording,
+        FocusMode,
+        SensorMode,
+        DigitalZoomMagnification,
+        FirmwareVersion,
+        Status,
+        DateTime,
+        LAST = DateTime,                            // this should be equal to the final parameter enum
+    };
+    static const char* _param_names[];              // array of Xacti parameter strings
+
+    // get parameter name for a particular param enum value
+    const char* get_param_name_str(Param param) const;
+
     // helper function to get and set parameters
-    bool set_param_int32(const char* param_name, int32_t param_value);
-    bool set_param_string(const char* param_name, const AP_DroneCAN::string& param_value);
-    bool get_param_string(const char* param_name);
+    bool set_param_int32(Param param, int32_t param_value);
+    bool set_param_string(Param param, const AP_DroneCAN::string& param_value);
+    bool get_param_string(Param param);
+
+    // process queue of set parameter items. returns true if set-parameter message was sent
+    bool process_set_param_int32_queue();
 
     // send gimbal control message via DroneCAN
     // mode is 2:angle control or 3:rate control
@@ -217,6 +238,7 @@ private:
         uint32_t last_error_status;                 // last error status reported to user
     } _status_report;
     bool _motor_error;                              // true if status reports motor or control error (used for health reporting)
+    bool _camera_error;                             // true if status reports camera error
 
     // DroneCAN related variables
     static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
@@ -229,6 +251,13 @@ private:
     uint32_t last_send_gimbal_control_ms;           // system time that send_gimbal_control was last called (used to slow down sends to 5hz)
     uint32_t last_send_copter_att_status_ms;        // system time that send_copter_att_status was last called (used to slow down sends to 10hz)
     uint32_t last_send_getset_param_ms;             // system time that a get or set parameter message was sent
+
+    // queue of set parameter int32 items.  set-parameter requests to camera are throttled to improve reliability
+    struct SetParamQueueItem {
+        Param param;                                // parameter (name)
+        int32_t value;                              // parameter value
+    };
+    ObjectArray<SetParamQueueItem> *_set_param_int32_queue; // queue of set-parameter items
 };
 
 #endif // HAL_MOUNT_XACTI_ENABLED
