@@ -744,6 +744,14 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG3_SCALING",  30, SIM,  mag_scaling[2], 1),
     AP_GROUPINFO("MAG3_ORIENT",   36, SIM,  mag_orient[2], 0),
 #endif
+
+    // @Param: MAG_SAVE_IDS
+    // @DisplayName: Save MAG devids on startup
+    // @Description: This forces saving of compass devids on startup so that simulated compasses start as calibrated
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("MAG_SAVE_IDS", 37, SIM, mag_save_ids, 1),
+
     AP_GROUPEND
 };
 
