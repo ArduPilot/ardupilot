@@ -21,6 +21,10 @@
  *
  */
 
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_DCM_ENABLED
+
 #include "AP_AHRS_Backend.h"
 
 class AP_AHRS_DCM : public AP_AHRS_Backend {
@@ -283,3 +287,5 @@ private:
     float _sin_yaw;
     float _cos_yaw;
 };
+
+#endif  // AP_AHRS_DCM_ENABLED
