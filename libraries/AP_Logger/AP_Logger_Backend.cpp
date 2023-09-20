@@ -599,8 +599,9 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
     }
 
     uint32_t log_num = oldest_log + list_entry - 1;
-    if (log_num > MAX_LOG_FILES) {
-        log_num -= MAX_LOG_FILES;
+    const auto max_logs_num = _front.get_max_num_logs();
+    if (log_num > (uint32_t)max_logs_num) {
+        log_num -= max_logs_num;
     }
     return (uint16_t)log_num;
 }
