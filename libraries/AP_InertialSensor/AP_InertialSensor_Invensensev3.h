@@ -32,13 +32,13 @@ public:
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
     enum class Invensensev3_Type : uint8_t {
-        ICM40609 = 0,
-        ICM42688,
-        ICM42605,
-        ICM40605,
-        IIM42652,
-        ICM42670,
-        ICM45686
+        ICM40609 = 0, // No HiRes
+        ICM42688, // HiRes 19bit
+        ICM42605, // No HiRes
+        ICM40605, // No HiRes
+        IIM42652, // HiRes 19bit
+        ICM42670, // HiRes 19bit
+        ICM45686  // HiRes 20bit
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -72,6 +72,7 @@ private:
     void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
 
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
+    bool accumulate_highres_samples(const struct FIFODataHighRes *data, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
@@ -86,20 +87,46 @@ private:
     
     const enum Rotation rotation;
 
+    static constexpr float SCALE_RANGE_16BIT = 32768; // 2^15;
+    // HiRes support is either 20bit (19bit accel) or 19bit (18bit accel)
+    static constexpr float SCALE_RANGE_20BIT = 524288; // 2^19;
+    static constexpr float SCALE_RANGE_19BIT = 262144; // 2^18;
+
     /*
       gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==0)
     */
-    static constexpr float GYRO_SCALE_2000DPS = (0.0174532f / 16.4f);
+    static constexpr float GYRO_SCALE_2000DPS = radians(1) / (SCALE_RANGE_16BIT / 2000.0);
     /*
       gyro as 8.2 LSB/DPS at scale factor of +/- 4000dps (FS_SEL==0)
     */
-    static constexpr float GYRO_SCALE_4000DPS = (0.0174532f / 8.2f);
+    static constexpr float GYRO_SCALE_4000DPS = radians(1) / (SCALE_RANGE_16BIT / 4000.0);
+    /*
+      highres gyro is always 131 LSB/DPS modified by the data size transmitted
+    */
+    static constexpr float GYRO_SCALE_HIGHRES_2000DPS = radians(1) / (SCALE_RANGE_20BIT / 2000.0);
+    static constexpr float GYRO_SCALE_HIGHRES_4000DPS = radians(1) / (SCALE_RANGE_20BIT / 4000.0);
+    /*
+      Accel scale 16g (2048 LSB/g)
+    */
+    static constexpr float ACCEL_SCALE_16G = (GRAVITY_MSS / (SCALE_RANGE_16BIT / 16));
+    /*
+      Accel scale 32g (1024 LSB/g)
+    */
+    static constexpr float ACCEL_SCALE_32G = (GRAVITY_MSS / (SCALE_RANGE_16BIT / 32));
+    /*
+      highres accel is 16384 LSB/g on 45686 amd 8192 LSB/g on all others
+    */
+    static constexpr float ACCEL_SCALE_HIGHRES_16G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 16));
+    static constexpr float ACCEL_SCALE_HIGHRES_32G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 32));
 
-    float accel_scale = (GRAVITY_MSS / 2048);
+    float accel_scale = ACCEL_SCALE_16G;
     float gyro_scale = GYRO_SCALE_2000DPS;
 
     // are we doing more than 1kHz sampling?
     bool fast_sampling;
+#if HAL_INS_HIGHRES_SAMPLE
+    bool highres_sampling;
+#endif
 
     // what rate are we generating samples into the backend for gyros and accels?
     uint16_t backend_rate_hz;
@@ -113,7 +140,7 @@ private:
     enum Invensensev3_Type inv3_type;
 
     // buffer for fifo read
-    struct FIFOData *fifo_buffer;
+    void* fifo_buffer;
 
     float temp_filtered;
     LowPassFilter2pFloat temp_filter;
