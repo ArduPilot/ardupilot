@@ -579,9 +579,6 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         // report change in status
         uint32_t changed_bits = last_error_status ^ _status.error_status;
         const char* ok_str = "OK";
-        if (changed_bits & (uint32_t)ErrorStatus::CANNOT_TAKE_PIC) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s %s take pic", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::CANNOT_TAKE_PIC ? "cannot" : "can");
-        }
         if (changed_bits & (uint32_t)ErrorStatus::TIME_NOT_SET) {
             gcs().send_text(MAV_SEVERITY_INFO, "%s time %sset", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TIME_NOT_SET ? "not " : " ");
         }
