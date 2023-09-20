@@ -269,7 +269,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Bitmask: 8: Mtrs_Only_Qassist-in tailsitters only uses VTOL motors and not flying surfaces for QASSIST
     // @Bitmask: 10: Disarmed Yaw Tilt-enable motor tilt for yaw when disarmed
     // @Bitmask: 11: Delay Spoolup-delay VTOL spoolup for 2 seconds after arming
-    // @Bitmask: 12: Disable Qassist-based on synthetic airspeed even if airspeed sensor is used
+    // @Bitmask: 12: Disable speed based Qassist when using synthethic airspeed estimates
     // @Bitmask: 13: Disable Ground Effect Compensation-on baro altitude reports
     // @Bitmask: 14: Ignore forward flight angle limits-in Qmodes and use Q_ANGLE_MAX exclusively
     // @Bitmask: 15: ThrLandControl-enable throttle stick control of landing rate
