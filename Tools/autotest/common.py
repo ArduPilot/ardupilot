@@ -5714,12 +5714,13 @@ class AutoTest(ABC):
             try:
                 command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
             except KeyError:
-                command_name = "UNKNOWN=%u" % command
-            self.progress("Sending COMMAND_INT to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f)" %
+                command_name = "UNKNOWNu"
+            self.progress("Sending COMMAND_INT to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f)" %
                           (
                               target_sysid,
                               target_compid,
                               command_name,
+                              command,
                               p1,
                               p2,
                               p3,
@@ -5767,12 +5768,13 @@ class AutoTest(ABC):
             try:
                 command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
             except KeyError:
-                command_name = "UNKNOWN=%u" % command
-            self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
+                command_name = "UNKNOWN"
+            self.progress("Sending COMMAND_LONG to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
                           (
                               target_sysid,
                               target_compid,
                               command_name,
+                              command,
                               p1,
                               p2,
                               p3,
