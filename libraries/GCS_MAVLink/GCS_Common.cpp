@@ -4605,7 +4605,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 /*
   handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
  */
-MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_int_t &packet)
 {
     // Param 1: Select which gear, not used in ArduPilot
     // Param 2: 0 = Deploy, 1 = Retract
@@ -4856,12 +4856,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_flight_termination(packet);
         break;
 
-#if AP_LANDINGGEAR_ENABLED
-        case MAV_CMD_AIRFRAME_CONFIGURATION:
-            result = handle_command_airframe_configuration(packet);
-            break;
-#endif
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5106,6 +5100,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if AP_LANDINGGEAR_ENABLED
+    case MAV_CMD_AIRFRAME_CONFIGURATION:
+        return handle_command_airframe_configuration(packet);
+#endif
 #if HAL_CANMANAGER_ENABLED
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
