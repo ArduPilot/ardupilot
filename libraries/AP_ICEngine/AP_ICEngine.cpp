@@ -142,8 +142,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: ICE options
-    // @Description: Options for ICE control. The DisableIgnitionRCFailsafe option will cause the ignition to be set off on any R/C failsafe. If ThrottleWhileDisarmed is set then throttle control will be allowed while disarmed for planes when in MANUAL mode.
-    // @Bitmask: 0:DisableIgnitionRCFailsafe,1:DisableRedineGovernor,2:ThrottleWhileDisarmed
+    // @Description: Options for ICE control. The Disable ignition in RC failsafe option will cause the ignition to be set off on any R/C failsafe. If Throttle while disarmed is set then throttle control will be allowed while disarmed for planes when in MANUAL mode. If disable while disarmed is set the engine will not start while the vehicle is disarmed.
+    // @Bitmask: 0:Disable ignition in RC failsafe,1:Disable redine governor,2:ThrottleWhileDisarmed,3:Disable while disarmed
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
@@ -244,6 +244,11 @@ void AP_ICEngine::update(void)
 
     if (option_set(Options::DISABLE_IGNITION_RC_FAILSAFE) && AP_Notify::flags.failsafe_radio) {
         // user has requested ignition kill on RC failsafe
+        should_run = false;
+    }
+
+    if (option_set(Options::NO_RUNNING_WHILE_DISARMED) && !hal.util->get_soft_armed()) {
+        // disable the engine if disarmed
         should_run = false;
     }
 
@@ -558,7 +563,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Calculate the change per loop to achieve the desired slew rate of 1 percent per second
     static const float idle_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
 
-    // Update Integrator 
+    // Update Integrator
     if (underspeed) {
         idle_governor_integrator += idle_setpoint_step;
     } else {
