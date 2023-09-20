@@ -143,7 +143,11 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
     }
 
     // do not align until ahrs yaw initialised
-    if (!AP::ahrs().initialised() || !AP::ahrs().dcm_yaw_initialised()) {
+    if (!AP::ahrs().initialised()
+#if AP_AHRS_DCM_ENABLED
+        || !AP::ahrs().dcm_yaw_initialised()
+#endif
+        ) {
         return false;
     }
 
