@@ -552,7 +552,11 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 bool Plane::verify_takeoff()
 {
-    if (ahrs.dcm_yaw_initialised() && steer_state.hold_course_cd == -1) {
+    bool trust_ahrs_yaw = AP::ahrs().initialised();
+#if AP_AHRS_DCM_ENABLED
+    trust_ahrs_yaw |= ahrs.dcm_yaw_initialised();
+#endif
+    if (trust_ahrs_yaw && steer_state.hold_course_cd == -1) {
         const float min_gps_speed = 5;
         if (auto_state.takeoff_speed_time_ms == 0 && 
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
