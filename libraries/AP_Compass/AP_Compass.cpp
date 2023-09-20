@@ -697,6 +697,25 @@ void Compass::init()
         return;
     }
 
+    /*
+      on init() if any devid is set then we set suppress_devid_save to
+      false. This is used to determine if we save device ids during
+      the init process.
+     */
+    suppress_devid_save = true;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state._priv_instance[i].dev_id != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#if COMPASS_MAX_INSTANCES > 1
+        if (_priority_did_stored_list._priv_instance[i] != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#endif
+    }
+
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
@@ -741,24 +760,26 @@ void Compass::init()
 
     // Load priority list from storage, the changes to priority list
     // by user only take effect post reboot, after this
-    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_stored_list[i] != 0) {
-            _priority_did_list[i] = _priority_did_stored_list[i];
-        } else {
-            // Maintain a list without gaps and duplicates
-            for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
-                int32_t temp;
-                if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+    if (!suppress_devid_save) {
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (_priority_did_stored_list[i] != 0) {
+                _priority_did_list[i] = _priority_did_stored_list[i];
+            } else {
+                // Maintain a list without gaps and duplicates
+                for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
+                    int32_t temp;
+                    if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+                        _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    }
+                    if (_priority_did_stored_list[j] == 0) {
+                        continue;
+                    }
+                    temp = _priority_did_stored_list[j];
                     _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    _priority_did_list[i] = temp;
+                    _priority_did_stored_list[i].set_and_save_ifchanged(temp);
+                    break;
                 }
-                if (_priority_did_stored_list[j] == 0) {
-                    continue;
-                }
-                temp = _priority_did_stored_list[j];
-                _priority_did_stored_list[j].set_and_save_ifchanged(0);
-                _priority_did_list[i] = temp;
-                _priority_did_stored_list[i].set_and_save_ifchanged(temp);
-                break;
             }
         }
     }
@@ -777,7 +798,7 @@ void Compass::init()
         // cache the extra devices detected in last boot
         // for detecting replacement mag
         _previously_unreg_mag[i] = extra_dev_id[i];
-        extra_dev_id[i].set_and_save(0);
+        extra_dev_id[i].set(0);
     }
 #endif
 
@@ -786,23 +807,15 @@ void Compass::init()
     // which are set() but not saved() during normal runtime,
     // do not move this call without ensuring that is not happening
     // read comments under set_and_save_ifchanged for details
-    _reorder_compass_params();
+    if (!suppress_devid_save) {
+        _reorder_compass_params();
+    }
 #endif
 
     if (_compass_count == 0) {
         // detect available backends. Only called once
         _detect_backends();
     }
-
-#if COMPASS_MAX_UNREG_DEV
-    // We store the list of unregistered mags detected here,
-    // We don't do this during runtime, as we don't want to detect
-    // compasses connected by user as a replacement while the system
-    // is running
-    for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        extra_dev_id[i].save();
-    }
-#endif
 
     if (_compass_count != 0) {
         // get initial health status
@@ -826,6 +839,7 @@ void Compass::init()
 #endif
 
     init_done = true;
+    suppress_devid_save = false;
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
@@ -846,7 +860,11 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
     // We are not in priority list, let's add at first empty
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_stored_list[i] == 0) {
-            _priority_did_stored_list[i].set_and_save(dev_id);
+            if (suppress_devid_save) {
+                _priority_did_stored_list[i].set(dev_id);
+            } else {
+                _priority_did_stored_list[i].set_and_save(dev_id);
+            }
             _priority_did_list[i] = dev_id;
             if (i >= _compass_count) {
                 _compass_count = uint8_t(i)+1;
@@ -1463,7 +1481,7 @@ void Compass::_detect_backends(void)
         }
 
 #if COMPASS_MAX_UNREG_DEV > 0
-        if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT)) {
+        if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT) && !suppress_devid_save) {
             // check if there's any uavcan compass in prio slot that's not found
             // and replace it if there's a replacement compass
             for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -1570,7 +1588,7 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
 #if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if ((uint32_t)extra_dev_id[i] == devid) {
-            extra_dev_id[i].set_and_save(0);
+            extra_dev_id[i].set(0);
             return;
         }
     }
@@ -2152,7 +2170,6 @@ void Compass::force_save_calibration(void)
         }
     }
 }
-
 
 // singleton instance
 Compass *Compass::_singleton;
