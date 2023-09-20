@@ -22,8 +22,10 @@ AP_Compass_SITL::AP_Compass_SITL()
                 _compass_instance[_num_compass] = instance;
                 set_dev_id(_compass_instance[_num_compass], dev_id);
 
-                // save so the compass always comes up configured in SITL
-                save_dev_id(_compass_instance[_num_compass]);
+                if (_sitl->mag_save_ids) {
+                    // save so the compass always comes up configured in SITL
+                    save_dev_id(_compass_instance[_num_compass]);
+                }
                 set_rotation(instance, ROTATION_NONE);
                 _num_compass++;
             }
