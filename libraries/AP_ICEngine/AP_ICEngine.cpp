@@ -283,11 +283,13 @@ void AP_ICEngine::update(void)
     case ICE_START_DELAY:
         if (!should_run) {
             state = ICE_OFF;
-        } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
-            state = ICE_STARTING;
+            break;
+        } else if (now - starter_last_run_ms <= starter_delay*1000) {
+            break;
         }
-        break;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
+        state = ICE_STARTING;
+        FALLTHROUGH;
 
     case ICE_STARTING:
         if (!should_run) {
