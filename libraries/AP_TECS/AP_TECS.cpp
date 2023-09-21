@@ -1212,7 +1212,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _hgt_above_rwy = hgt_afe;
     _load_factor = load_factor;
 
-    // Don't allow height deamnd to continue changing in a direction that saturates vehicle manoeuvre limits
+    // Don't allow height deamand to continue changing in a direction that saturates vehicle manoeuvre limits
     // if vehicle is unable to follow the demanded climb or descent.
     const bool max_climb_condition = (_pitch_dem_unc > _PITCHmaxf || _thr_clip_status == clipStatus::MAX) &&
                                     !(_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
