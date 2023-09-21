@@ -182,6 +182,7 @@ bool AP_Generator_IE_2400::check_for_err_code(char* msg_txt, uint8_t msg_len) co
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // log generator status to the onboard log
 void AP_Generator_IE_2400::log_write()
 {
@@ -203,4 +204,6 @@ void AP_Generator_IE_2400::log_write()
         _err_code
         );
 }
+#endif  // HAL_LOGGING_ENABLED
+
 #endif  // AP_GENERATOR_IE_2400_ENABLED
