@@ -425,6 +425,20 @@ class AutoTestSub(AutoTest):
         })
         return ret
 
+    def MAV_CMD_NAV_LOITER_UNLIM(self):
+        '''test handling of MAV_CMD_NAV_LOITER_UNLIM received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
+            self.assert_mode('POSHOLD')
+
+    def MAV_CMD_NAV_LAND(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
+            self.assert_mode('SURFACE')
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -440,6 +454,8 @@ class AutoTestSub(AutoTest):
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
+            self.MAV_CMD_NAV_LOITER_UNLIM,
+            self.MAV_CMD_NAV_LAND,
         ])
 
         return ret
