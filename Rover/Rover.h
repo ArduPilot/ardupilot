@@ -394,13 +394,13 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-    enum Failsafe_Action {
-        Failsafe_Action_None          = 0,
-        Failsafe_Action_RTL           = 1,
-        Failsafe_Action_Hold          = 2,
-        Failsafe_Action_SmartRTL      = 3,
-        Failsafe_Action_SmartRTL_Hold = 4,
-        Failsafe_Action_Terminate     = 5
+    enum class FailsafeAction: int8_t {
+        None          = 0,
+        RTL           = 1,
+        Hold          = 2,
+        SmartRTL      = 3,
+        SmartRTL_Hold = 4,
+        Terminate     = 5
     };
 
     enum class Failsafe_Options : uint32_t {
@@ -408,12 +408,12 @@ private:
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
-                                                       Failsafe_Action_Terminate,
-                                                       Failsafe_Action_Hold,
-                                                       Failsafe_Action_RTL,
-                                                       Failsafe_Action_SmartRTL_Hold,
-                                                       Failsafe_Action_SmartRTL,
-                                                       Failsafe_Action_None,
+                                                       (int8_t)FailsafeAction::Terminate,
+                                                       (int8_t)FailsafeAction::Hold,
+                                                       (int8_t)FailsafeAction::RTL,
+                                                       (int8_t)FailsafeAction::SmartRTL_Hold,
+                                                       (int8_t)FailsafeAction::SmartRTL,
+                                                       (int8_t)FailsafeAction::None,
                                                        -1 // the priority list must end with a sentinel of -1
                                                       };
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
