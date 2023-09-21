@@ -53,7 +53,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 
 uint32_t GCS_Rover::custom_mode() const
 {
-    return rover.control_mode->mode_number();
+    return (uint32_t)rover.control_mode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
