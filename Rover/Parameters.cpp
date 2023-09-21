@@ -109,7 +109,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: What to do on a failsafe event
     // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
     // @User: Standard
-    GSCALAR(fs_action,    "FS_ACTION",     Failsafe_Action_Hold),
+    GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
