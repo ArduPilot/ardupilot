@@ -719,7 +719,7 @@ public:
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() const override { return smart_rtl_state == SmartRTL_StopAtHome; }
+    bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
     // set desired speed in m/s
     bool set_desired_speed(float speed) override;
@@ -730,11 +730,11 @@ public:
 protected:
 
     // Safe RTL states
-    enum SmartRTLState {
-        SmartRTL_WaitForPathCleanup,
-        SmartRTL_PathFollow,
-        SmartRTL_StopAtHome,
-        SmartRTL_Failure
+    enum class SmartRTLState: uint8_t {
+        WaitForPathCleanup,
+        PathFollow,
+        StopAtHome,
+        Failure
     } smart_rtl_state;
 
     bool _enter() override;
