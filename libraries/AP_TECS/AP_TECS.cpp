@@ -567,9 +567,10 @@ void AP_TECS::_update_height_demand(void)
         _max_climb_scaler = constrain_float(_max_climb_scaler, 0.0f, 1.0f);
         _max_sink_scaler = constrain_float(_max_sink_scaler, 0.0f, 1.0f);
 
-
         _hgt_dem_prev = _hgt_dem;
+
         _flare_fraction = 0.0f;
+        _flare_initialised = false;
     } else {
         // when flaring force height rate demand to the
         // configured sink rate and adjust the demanded height to
@@ -1281,9 +1282,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else if (_landing.is_on_approach()) {
         _PITCHminf = MAX(_PITCHminf, 0.01f * aparm.pitch_limit_min_cd);
         _pitch_min_at_flare_entry = _PITCHminf;
-        _flare_initialised = false;
-    } else {
-        _flare_initialised = false;
     }
 
     if (_landing.is_on_approach()) {
