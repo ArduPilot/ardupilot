@@ -247,6 +247,45 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+// send camera field of view status
+void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
+{
+    // getting corresponding mount instance for camera
+    const AP_Mount* mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    Quaternion quat;
+    Location loc;
+    Location poi_loc;
+    if (!mount->get_poi(get_mount_instance(), quat, loc, poi_loc)) {
+        return;
+    }
+    // send camera fov status message only if the last calculated values aren't stale
+    const float NaN = nanf("0x4152");
+    const float quat_array[4] = {
+        quat.q1,
+        quat.q2,
+        quat.q3,
+        quat.q4
+    };
+    mavlink_msg_camera_fov_status_send(
+        chan,
+        AP_HAL::millis(),
+        loc.lat,
+        loc.lng,
+        loc.alt,
+        poi_loc.lat,
+        poi_loc.lng,
+        poi_loc.alt,
+        quat_array,
+        NaN, // currently setting hfov as NaN
+        NaN  // currently setting vfov as NaN
+    );
+}
+#endif
+
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()

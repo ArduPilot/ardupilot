@@ -526,6 +526,21 @@ void AP_Camera::send_camera_settings(mavlink_channel_t chan)
     }
 }
 
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+// send camera field of view status
+void AP_Camera::send_camera_fov_status(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_fov_status(chan);
+        }
+    }
+}
+#endif
+
 /*
   update; triggers by distance moved and camera trigger
 */
