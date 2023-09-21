@@ -776,9 +776,8 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
         }
     }
 
-    // enable gyro and accel in low-noise modes
-    register_write(INV3REG_PWR_MGMT0, 0x0F);
-    hal.scheduler->delay_microseconds(300);
+    // disable gyro and accel as per 12.9 in the ICM-42688 docs
+    register_write(INV3REG_PWR_MGMT0, 0x00);
 
     // setup gyro for backend rate
     register_write(INV3REG_GYRO_CONFIG0, odr_config);
@@ -797,6 +796,10 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC2, accel_aaf_delt<<1); // ACCEL_AAF_DELT | enabled bit
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC3, (accel_aaf_deltsqr & 0xFF)); // ACCEL_AAF_DELTSQR
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC4, ((accel_aaf_bitshift<<4) & 0xF0) | ((accel_aaf_deltsqr>>8) & 0x0F)); // ACCEL_AAF_BITSHIFT | ACCEL_AAF_DELTSQR
+
+    // enable gyro and accel in low-noise modes
+    register_write(INV3REG_PWR_MGMT0, 0x0F);
+    hal.scheduler->delay_microseconds(300);
 }
 
 /*
