@@ -1095,12 +1095,14 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _integSEBdot          = 0.0f;
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
-        _hgt_above_rwy              = hgt_afe;
-        _hgt_dem_in_prev      = hgt_afe;
-        _hgt_dem_lpf          = hgt_afe;
-        _hgt_dem_rate_ltd     = hgt_afe;
-        _hgt_dem_prev         = hgt_afe;
-        _TAS_dem_adj          = _TAS_dem;
+        _hgt_above_rwy        = hgt_afe;
+        float dist_below_home_m;
+        _ahrs.get_relative_position_D_home(dist_below_home_m);
+        _hgt_dem_in_prev      = - dist_below_home_m;
+        _hgt_dem_lpf          = - dist_below_home_m;
+        _hgt_dem_rate_ltd     = - dist_below_home_m;
+        _hgt_dem_prev         = - dist_below_home_m;
+        _TAS_dem_adj          = - dist_below_home_m;
         _flags.reset          = true;
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
         _post_TO_hgt_offset   = 0.0f;
@@ -1131,13 +1133,15 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         _PITCHminf            = 0.000174533f * ptchMinCO_cd;
-        _hgt_above_rwy              = hgt_afe;
-        _hgt_dem_lpf          = hgt_afe;
-        _hgt_dem_rate_ltd     = hgt_afe;
-        _hgt_dem_prev         = hgt_afe;
-        _hgt_dem              = hgt_afe;
-        _hgt_dem_in_prev      = hgt_afe;
-        _hgt_dem_in_raw       = hgt_afe;
+        _hgt_above_rwy        = hgt_afe;
+        float dist_below_home_m;
+        _ahrs.get_relative_position_D_home(dist_below_home_m);
+        _hgt_dem_lpf          = - dist_below_home_m;
+        _hgt_dem_rate_ltd     = - dist_below_home_m;
+        _hgt_dem_prev         = - dist_below_home_m;
+        _hgt_dem              = - dist_below_home_m;
+        _hgt_dem_in_prev      = - dist_below_home_m;
+        _hgt_dem_in_raw       = - dist_below_home_m;
         _TAS_dem_adj          = _TAS_dem;
         _flags.reset          = true;
         _post_TO_hgt_offset   = _climb_rate * _hgt_dem_tconst;
