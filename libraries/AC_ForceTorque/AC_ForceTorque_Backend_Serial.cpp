@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_ForceTorque_Backend_Serial.h"
 #include <AP_SerialManager/AP_SerialManager.h>
-//测试2
+
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
