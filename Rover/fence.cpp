@@ -42,6 +42,9 @@ void Rover::fence_check()
                         set_mode(mode_hold, ModeReason::FENCE_BREACHED);
                     }
                     break;
+                case FailsafeAction::Terminate:
+                    arming.disarm(AP_Arming::Method::FENCEBREACH);
+                    break;
                 }
             } else {
                 // if more than 100m outside the fence just force to HOLD
