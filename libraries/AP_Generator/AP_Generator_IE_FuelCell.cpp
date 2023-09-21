@@ -67,7 +67,9 @@ void AP_Generator_IE_FuelCell::update()
 
     update_frontend();
 
+#if HAL_LOGGING_ENABLED
     log_write();
+#endif
 }
 
 // Add a single character to the buffer and attempt to decode
