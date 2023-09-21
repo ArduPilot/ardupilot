@@ -182,6 +182,11 @@ public:
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}
 
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc);
+#endif
+
     //
     // rangefinder
     //
@@ -220,6 +225,11 @@ protected:
 
     // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
     virtual bool suppress_heartbeat() const { return false; }
+
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // calculate the Location that the gimbal is pointing at
+    void calculate_poi();
+#endif
 
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
@@ -268,6 +278,17 @@ protected:
         MountTarget angle_rad;      // angle target in radians
         MountTarget rate_rads;      // rate target in rad/s
     } mnt_target;
+
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    struct {
+        HAL_Semaphore sem;        // semaphore protecting this structure
+        uint32_t poi_request_ms;  // system time POI was last requested
+        uint32_t poi_update_ms;   // system time POI was calculated
+        Location loc;             // gimbal location used for poi calculation
+        Location poi_loc;         // location of the POI
+        Quaternion att_quat;      // attitude quaternion of the gimbal
+    } poi_calculation;
+#endif
 
     Location _roi_target;           // roi target location
     bool _roi_target_set;           // true if the roi target has been set

@@ -609,6 +609,18 @@ void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
 }
 #endif  // HAL_GCS_ENABLED
 
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+// get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->get_poi(instance, quat, loc, poi_loc);
+}
+#endif
+
 // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
 // returns true on success
 bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
