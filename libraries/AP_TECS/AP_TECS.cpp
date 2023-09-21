@@ -1265,16 +1265,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // calculate the expected pitch angle from the demanded climb rate and airspeed for use during approach and flare
     if (_landing.is_flaring()) {
-        // smoothly move the min pitch to the required minimum at touchdown
-        float p; // 0 at start of flare, 1 at finish
-        if (!_flare_initialised) {
-            p = 0.0f;
-        } else if (_hgt_at_start_of_flare > _flare_holdoff_hgt) {
-            p = constrain_float((_hgt_at_start_of_flare - _hgt_above_rwy) / _hgt_at_start_of_flare, 0.0f, 1.0f);
-        } else {
-            p = 1.0f;
-        }
-        const float pitch_limit_deg = (1.0f - p) * _pitch_min_at_flare_entry + p * 0.01f * _landing.get_pitch_cd();
+        const float pitch_limit_deg = (1.0f - _flare_fraction) * _pitch_min_at_flare_entry + _flare_fraction * 0.01f * _landing.get_pitch_cd();
 
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, pitch_limit_deg);
