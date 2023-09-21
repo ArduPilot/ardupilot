@@ -101,6 +101,9 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
                     set_mode(mode_hold, ModeReason::FAILSAFE);
                 }
                 break;
+            case FailsafeAction::Terminate:
+                arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
+                break;
             }
         }
     }
