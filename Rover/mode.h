@@ -544,13 +544,13 @@ public:
 
 protected:
 
-    enum GuidedMode {
-        Guided_WP,
-        Guided_HeadingAndSpeed,
-        Guided_TurnRateAndSpeed,
-        Guided_Loiter,
-        Guided_SteeringAndThrottle,
-        Guided_Stop
+    enum class SubMode: uint8_t {
+        WP,
+        HeadingAndSpeed,
+        TurnRateAndSpeed,
+        Loiter,
+        SteeringAndThrottle,
+        Stop
     };
 
     // enum for GUID_OPTIONS parameter
@@ -564,7 +564,7 @@ protected:
     // scurves provide path planning and object avoidance but cannot handle fast updates to the destination (for fast updates use position controller input shaping)
     bool use_scurves_for_navigation() const;
 
-    GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
+    SubMode _guided_mode;    // stores which GUIDED mode the vehicle is in
 
     // attitude control
     bool have_attitude_target;  // true if we have a valid attitude target
