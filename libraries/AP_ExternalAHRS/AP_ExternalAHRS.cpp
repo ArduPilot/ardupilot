@@ -26,6 +26,7 @@
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_AdvancedNavigation.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -129,6 +130,11 @@ void AP_ExternalAHRS::init(void)
         return;
 #endif
 
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+    case DevType::AdNav:
+        backend = new AP_ExternalAHRS_AdvancedNavigation(this, state);
+        break;
+#endif
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));

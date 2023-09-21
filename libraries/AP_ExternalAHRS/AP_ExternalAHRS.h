@@ -49,10 +49,12 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+#if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+        AdNav = 3,
+#endif
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
         InertialLabs = 5,
 #endif
-        // 3 reserved for AdNav
         // 4 reserved for CINS
         // 6 reserved for Trimble
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
