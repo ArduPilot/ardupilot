@@ -459,21 +459,40 @@ bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool _lock) {
     return sub.set_home(loc, _lock);
 }
 
-
-MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    switch (packet.command) {
+    switch(packet.command) {
+
     case MAV_CMD_NAV_LOITER_UNLIM:
+        return handle_MAV_CMD_NAV_LOITER_UNLIM(packet);
+
+    case MAV_CMD_NAV_LAND:
+        return handle_MAV_CMD_NAV_LAND(packet);
+
+    }
+
+    return GCS_MAVLINK::handle_command_int_packet(packet, msg);
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LOITER_UNLIM(const mavlink_command_int_t &packet)
+{
         if (!sub.set_mode(Mode::Number::POSHOLD, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
 
-    case MAV_CMD_NAV_LAND:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t &packet)
+{
         if (!sub.set_mode(Mode::Number::SURFACE, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    switch (packet.command) {
 
     case MAV_CMD_CONDITION_YAW:
         // param1 : target angle [0-360]
