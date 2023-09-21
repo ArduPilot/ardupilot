@@ -3,16 +3,27 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_UPDATE_DT 0.02     // update rate in seconds.  update() should be called at this rate
+#define AP_MOUNT_POI_REQ_TIMOUT_MS  3000    // POI calculations valid for 3 seconds
+#define AP_MOUNT_POI_DIST_M_MAX     10000   // POI calculations limit of 10,000m (10km)
 
 // Default init function for every mount
 void AP_Mount_Backend::init()
 {
     // setting default target sysid from parameters
     _target_sysid = _params.sysid_default.get();
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // create a calculation thread for poi.
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Mount_Backend::calculate_poi, void),
+                                      "mount_calc_poi",
+                                      8192, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "POI: failed to start thread");
+    }
+#endif
 }
 
 // set device id of this instance, for MNTx_DEVID parameter
@@ -413,6 +424,120 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+// get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+bool AP_Mount_Backend::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc)
+{
+    {
+        WITH_SEMAPHORE(poi_calculation.sem);
+        if ((AP_HAL::millis() - poi_calculation.poi_update_ms) > AP_MOUNT_POI_REQ_TIMOUT_MS) {
+            // last lat,lon,alt values are stale
+            return false;
+        }
+        if (poi_calculation.att_quat.is_nan()) {
+            return false;
+        }
+        quat = poi_calculation.att_quat;
+        loc = poi_calculation.loc;
+        poi_loc = poi_calculation.poi_loc;
+        return true;
+    }
+}
+
+// calculate poi
+void AP_Mount_Backend::calculate_poi()
+{
+    while (true) {
+        // run this loop at 10hz
+        hal.scheduler->delay(100);
+
+        // get the current location of vehicle
+        const AP_AHRS &ahrs = AP::ahrs();
+        Location curr_loc;
+        if (!ahrs.get_location(curr_loc)) {
+            continue;
+        }
+
+        // change vehicle location to AMSL
+        curr_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+
+        // retrieve gimbal attitude
+        Quaternion quat;
+        if (!get_attitude_quaternion(quat)) {
+            // gimbal attitude unavailable
+            continue;
+        }
+
+        // project forward from vehicle looking for terrain
+        // start testing at vehicle's location
+        Location test_loc = curr_loc;
+        Location prev_test_loc = curr_loc;
+
+        auto terrain = AP_Terrain::get_singleton();
+        float terrain_amsl_m;
+        // get terrain altitude (AMSL) at test_loc
+        if (!terrain->height_amsl(test_loc, terrain_amsl_m, true)) {
+            // failed to get terrain altitude
+            continue;
+        }
+
+        float dist_increment_m;
+        if (!terrain->get_terrain_spacing(dist_increment_m)) {
+            // failed to get the terrain spacing
+            continue;
+        }
+
+        float total_dist_m = 0;
+        float mount_pitch_deg = degrees(quat.get_euler_pitch());
+        float mount_yaw_ef_deg = wrap_180(degrees(quat.get_euler_yaw()) + degrees(ahrs.get_yaw()));
+        bool get_terrain_alt_success = true;
+        float prev_terrain_amsl_m = terrain_amsl_m;
+        // iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
+        while (total_dist_m < AP_MOUNT_POI_DIST_M_MAX && (test_loc.alt * 0.01) > terrain_amsl_m) {
+            total_dist_m += dist_increment_m;
+
+            // Take backup of previous test location and terrain amsl
+            prev_test_loc = test_loc;
+            prev_terrain_amsl_m = terrain_amsl_m;
+
+            // Move test location forward
+            test_loc.offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_increment_m);
+
+            // Get terrain's alt-above-sea-level (at test_loc)
+            // Fail if terrain alt cannot be retrieved
+            if (!terrain->height_amsl(test_loc, terrain_amsl_m, true) || std::isnan(terrain_amsl_m)) {
+                // failed to get terrain alt
+                get_terrain_alt_success = false;
+                continue;
+            }
+        }
+        // if a fail occurs in the loop while getting terrain alt then continue to next interation
+        if (!get_terrain_alt_success) {
+            continue;
+        }
+        if (total_dist_m >= AP_MOUNT_POI_DIST_M_MAX) {
+            // unable to find terrain within dist_max
+            continue;
+        }
+        if (is_negative(terrain_amsl_m)) {
+            // failed to retrieve terrain alt
+            continue;
+        }
+        // test location has dropped below terrain
+        // interpolate along line between prev_test_loc and test_loc
+        float dist_interp_m = linear_interpolate(0, dist_increment_m, 0, prev_test_loc.alt * 0.01 - prev_terrain_amsl_m, test_loc.alt * 0.01 - terrain_amsl_m);
+        {
+            WITH_SEMAPHORE(poi_calculation.sem);
+            poi_calculation.poi_loc = prev_test_loc;
+            poi_calculation.poi_loc.offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m);
+            poi_calculation.att_quat = {quat[0], quat[1], quat[2], quat[3]};
+            poi_calculation.loc = curr_loc;
+            poi_calculation.poi_update_ms = AP_HAL::millis();
+        }
+    }
+}
+#endif
 
 // get pilot input (in the range -1 to +1) received through RC
 void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const
