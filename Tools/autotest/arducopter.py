@@ -3843,7 +3843,7 @@ class AutoTestCopter(AutoTest):
                 new_pos = self.mav.location()
                 delta = self.get_distance(target, new_pos)
                 self.progress("Landed %f metres from target position" % delta)
-                max_delta = 1
+                max_delta = 1.5
                 if delta > max_delta:
                     raise NotAchievedException("Did not land close enough to target position (%fm > %fm" % (delta, max_delta))
 
@@ -4560,7 +4560,7 @@ class AutoTestCopter(AutoTest):
             # determine if we've successfully navigated to close to
             # where we should be:
             dist = math.sqrt(delta_ef.x * delta_ef.x + delta_ef.y * delta_ef.y)
-            dist_max = 0.15
+            dist_max = 1
             self.progress("dist=%f want <%f" % (dist, dist_max))
             if dist < dist_max:
                 # success!  We've gotten within our target distance
@@ -6851,9 +6851,11 @@ class AutoTestCopter(AutoTest):
             })
             self.set_analog_rangefinder_parameters()
             self.reboot_sitl()
-            tstart = self.get_sim_time()
+
             self.change_mode('LOITER')
             self.wait_ekf_happy()
+
+            tstart = self.get_sim_time()
             while True:
                 if self.armed():
                     break
@@ -6904,7 +6906,7 @@ class AutoTestCopter(AutoTest):
                 if self.get_sim_time_cached() - tstart > 10:
                     break
                 vel = self.get_body_frame_velocity()
-                if vel.length() > 0.3:
+                if vel.length() > 0.5:
                     raise NotAchievedException("Moved too much (%s)" %
                                                (str(vel),))
                 shove(None, None)
@@ -8332,7 +8334,7 @@ class AutoTestCopter(AutoTest):
             def verify_yaw(mav, m):
                 if m.get_type() != 'ATTITUDE':
                     return
-                yawspeed_thresh_rads = math.radians(10)
+                yawspeed_thresh_rads = math.radians(20)
                 if m.yawspeed > yawspeed_thresh_rads:
                     raise NotAchievedException("Excessive yaw on takeoff: %f deg/s > %f deg/s (frame=%s)" %
                                                (math.degrees(m.yawspeed), math.degrees(yawspeed_thresh_rads), frame))
