@@ -127,7 +127,7 @@ int lua_scripts::atpanic(lua_State *L) {
 void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem)
 {
     if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
-        gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
                                             (unsigned int)run_time,
                                             (int)total_mem,
                                             (int)run_mem);
@@ -238,7 +238,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
     auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
         return;
     }
 
@@ -450,7 +450,7 @@ void lua_scripts::run(void) {
     bool succeeded_initial_load = false;
 
     if (!_heap.available()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
         return;
     }
 
@@ -475,7 +475,7 @@ void lua_scripts::run(void) {
     lua_state = lua_newstate(alloc, NULL);
     lua_State *L = lua_state;
     if (L == nullptr) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
     }
 
@@ -504,7 +504,7 @@ void lua_scripts::run(void) {
         loaded = true;
     }
     if (!loaded) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
     }
 
 #ifndef __clang_analyzer__
@@ -543,7 +543,7 @@ void lua_scripts::run(void) {
             }
 
             if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
             // copy name for logging, cant do it after as script reschedule moves the pointers
             const char * script_name = scripts->name;
@@ -572,7 +572,7 @@ void lua_scripts::run(void) {
 
         } else {
             if ((_debug_options.get() & uint8_t(DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }
             hal.scheduler->delay(1000);
         }

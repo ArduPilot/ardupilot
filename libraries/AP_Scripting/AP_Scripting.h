@@ -16,6 +16,7 @@
 
 #if AP_SCRIPTING_ENABLED
 
+#include <GCS_MAVLink/GCS_config.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -43,16 +44,20 @@ public:
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
 
+#if HAL_GCS_ENABLED
     void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
 
     // Check if command ID is blocked
     bool is_handling_command(uint16_t cmd_id);
+#endif
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if HAL_GCS_ENABLED
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+#endif
 
     void handle_mission_command(const class AP_Mission::Mission_Command& cmd);
 
