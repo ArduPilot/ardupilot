@@ -6777,9 +6777,10 @@ class AutoTest(ABC):
     """Wait for a given speed vector."""
     def wait_speed_vector(self, speed_vector, accuracy=0.3, timeout=30, **kwargs):
         def validator(value2, target2):
-            return (math.fabs(value2.x - target2.x) <= accuracy and
-                    math.fabs(value2.y - target2.y) <= accuracy and
-                    math.fabs(value2.z - target2.z) <= accuracy)
+            for (want, got) in (target2.x, value2.x), (target2.y, value2.y), (target2.z, value2.z):
+                if want != float("nan") and (math.fabs(got - want) > accuracy):
+                    return False
+            return True
 
         self.wait_and_maintain(
             value_name="SpeedVector",
@@ -7213,7 +7214,7 @@ class AutoTest(ABC):
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
-        tstart = self.get_sim_time_cached()
+        tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
@@ -8031,6 +8032,11 @@ Also, ignores heartbeats not from our target system'''
             sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
             self.sup_prog.append(sup_prog_link)
             self.expect_list_add(sup_prog_link)
+
+        # mavlink will have disconnected here.  Explicitly reconnect,
+        # or the first packet we send will be lost:
+        if self.mav is not None:
+            self.mav.reconnect()
 
     def get_suplementary_programs(self):
         return self.sup_prog
