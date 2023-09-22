@@ -782,6 +782,7 @@ class AutoTestPlane(AutoTest):
             0,
             0)
         self.wait_airspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
+        self.context_push()
         self.progress("Adding some wind, hoping groundspeed increases/decreases")
         self.set_parameters({
             "SIM_WIND_SPD": 7,
@@ -799,6 +800,7 @@ class AutoTestPlane(AutoTest):
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
+        self.context_pop()
         self.fly_home_land_and_disarm(timeout=240)
 
     def fly_home_land_and_disarm(self, timeout=120):
@@ -996,7 +998,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.progress("Ensure we've had our throttle squashed to 950")
@@ -1034,7 +1036,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.do_timesync_roundtrip()
