@@ -537,7 +537,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
     }
 
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    uint32_t batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    uint32_t batt = (((uint16_t)roundf(_battery.telem_voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
     batt |= prep_number(roundf(current * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
