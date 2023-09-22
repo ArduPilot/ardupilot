@@ -149,6 +149,13 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_RV", 9, AP_DroneCAN, _esc_rv, 0),
     
+    // @Param: SRV_OF
+    // @DisplayName: Servo output channels offset
+    // @Description: Offset for servo numbering in DroneCAN Actuator messages. This allows for more efficient packing of servo commands. If your servos are on servo functions 5 to 8 and you set this parameter to 4 then the Actuator command will be sent with the first 4 slots filled. This can be used for more efficint usage of CAN bandwidth
+    // @Range: 0 18
+    // @User: Advanced
+    AP_GROUPINFO("SRV_OF", 10, AP_DroneCAN, _servo_offset, 0),
+
     AP_GROUPEND
 };
 
@@ -573,7 +580,7 @@ int16_t AP_DroneCAN::scale_esc_output(uint8_t idx){
 
 void AP_DroneCAN::SRV_send_actuator(void)
 {
-    uint8_t starting_servo = 0;
+    uint8_t starting_servo = MAX(_servo_offset, 0);
     bool repeat_send;
 
     WITH_SEMAPHORE(SRV_sem);
