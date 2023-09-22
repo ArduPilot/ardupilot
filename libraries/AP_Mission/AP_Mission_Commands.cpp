@@ -191,7 +191,7 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
             camera->stop_capture();
             return true;
         }
-        return camera->stop_capture(cmd.p1);
+        return camera->stop_capture(cmd.p1 - 1);
 
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
