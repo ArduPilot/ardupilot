@@ -26,6 +26,7 @@ class AP_TemperatureSensor_TSYS01;
 class AP_TemperatureSensor_MCP9600;
 class AP_TemperatureSensor_MAX31865;
 class AP_TemperatureSensor_TSYS03;
+class AP_TemperatureSensor_Analog;
 
 class AP_TemperatureSensor
 {
@@ -34,6 +35,7 @@ class AP_TemperatureSensor
     friend class AP_TemperatureSensor_MCP9600;
     friend class AP_TemperatureSensor_MAX31865;
     friend class AP_TemperatureSensor_TSYS03;
+    friend class AP_TemperatureSensor_Analog;
 
 public:
 
