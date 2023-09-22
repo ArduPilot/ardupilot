@@ -77,16 +77,20 @@ void AP_Camera::cam_mode_toggle()
 }
 
 // take a picture
-void AP_Camera::take_picture()
+bool AP_Camera::take_picture()
 {
     WITH_SEMAPHORE(_rsem);
 
     // call for each instance
+    bool success = false;
     for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
         if (_backends[i] != nullptr) {
-            _backends[i]->take_picture();
+            success |= _backends[i]->take_picture();
         }
     }
+
+    // return true if at least once pic taken
+    return success;
 }
 
 bool AP_Camera::take_picture(uint8_t instance)
@@ -97,27 +101,44 @@ bool AP_Camera::take_picture(uint8_t instance)
     if (backend == nullptr) {
         return false;
     }
-    backend->take_picture();
-    return true;
+    return backend->take_picture();
 }
 
 // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+// if instance is not provided, all available cameras affected
+// time_interval_ms must be positive
 // total_num is number of pictures to be taken, -1 means capture forever
-void AP_Camera::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num)
+// returns true if at least one camera is successful
+bool AP_Camera::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num)
 {
     WITH_SEMAPHORE(_rsem);
 
+    // sanity check time interval
+    if (time_interval_ms == 0) {
+        return false;
+    }
+
     // call for all instances
+    bool success = false;
     for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
         if (_backends[i] != nullptr) {
             _backends[i]->take_multiple_pictures(time_interval_ms, total_num);
+            success = true;
         }
     }
+
+    // return true if at least once backend was successful
+    return success;
 }
 
 bool AP_Camera::take_multiple_pictures(uint8_t instance, uint32_t time_interval_ms, int16_t total_num)
 {
     WITH_SEMAPHORE(_rsem);
+
+    // sanity check time interval
+    if (time_interval_ms == 0) {
+        return false;
+    }
 
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
