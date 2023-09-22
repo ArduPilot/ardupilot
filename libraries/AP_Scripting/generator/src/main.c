@@ -352,6 +352,7 @@ struct method {
   struct type return_type;
   struct argument * arguments;
   uint32_t flags; // filled out with TYPE_FLAGS
+  char *dependency;
 };
 
 enum alias_type {
@@ -796,6 +797,15 @@ void handle_method(struct userdata *node) {
       }
       string_copy(&(method->deprecate), deprecate);
       return;
+
+    } else if (strcmp(token, keyword_depends) == 0) {
+      char *dependency = strtok(NULL, "");
+      if (dependency == NULL) {
+        error(ERROR_USERDATA, "Expected dependency string for %s %s on line", parent_name, name, state.line_num);
+      }
+      string_copy(&(method->dependency), dependency);
+      return;
+
     }
     error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
   }
@@ -1821,6 +1831,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   int arg_count = 1;
 
   start_dependency(source, data->dependency);
+  start_dependency(source, method->dependency);
 
   // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
@@ -2091,6 +2102,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   fprintf(source, "}\n");
+  end_dependency(source, method->dependency);
   end_dependency(source, data->dependency);
   fprintf(source, "\n");
 
@@ -2198,7 +2210,9 @@ void emit_index(struct userdata *head) {
 
     struct method *method = node->methods;
     while (method) {
+      start_dependency(source, method->dependency);
       fprintf(source, "    {\"%s\", %s_%s},\n", method->rename ? method->rename :  method->name, node->sanatized_name, method->name);
+      end_dependency(source, method->dependency);
       method = method->next;
     }
 
