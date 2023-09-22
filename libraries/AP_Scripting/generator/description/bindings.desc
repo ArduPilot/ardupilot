@@ -231,6 +231,7 @@ singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method get uint8_t uint8_t 0 AP_RELAY_NUM_RELAYS
 
 include GCS_MAVLink/GCS.h
+singleton GCS depends HAL_GCS_ENABLED
 singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
@@ -316,6 +317,7 @@ singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'e
 singleton SRV_Channels method get_emergency_stop boolean
 singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0
 
+ap_object RC_Channel depends AP_RC_CHANNEL_ENABLED
 ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
@@ -323,6 +325,7 @@ ap_object RC_Channel method norm_input_ignore_trim float
 ap_object RC_Channel method set_override void uint16_t 0 2200 0'literal
 
 include RC_Channel/RC_Channel.h
+singleton RC_Channels depends AP_RC_CHANNEL_ENABLED
 singleton RC_Channels rename rc
 singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
@@ -444,7 +447,9 @@ singleton AP_Button depends HAL_BUTTON_ENABLED == 1
 singleton AP_Button rename button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 
-include AP_Notify/ScriptingLED.h
+include AP_Notify/ScriptingLED.h depends AP_NOTIFY_SCRIPTING_LED_ENABLED
+include AP_Notify/AP_Notify_config.h
+singleton ScriptingLED depends AP_NOTIFY_SCRIPTING_LED_ENABLED
 singleton ScriptingLED rename LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
@@ -715,6 +720,7 @@ singleton AP_EFI method get_state void EFI_State'Ref
 -- ----END EFI Library----
 
 include AP_Logger/AP_Logger.h
+singleton AP_Logger depends HAL_LOGGING_ENABLED
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write 7
 singleton AP_Logger method log_file_content void string
@@ -748,6 +754,7 @@ userdata uint32_t manual tofloat uint32_t_tofloat 0
 global manual dirlist lua_dirlist 1
 global manual remove lua_removefile 1
 
+singleton mavlink depends HAL_GCS_ENABLED
 singleton mavlink manual init lua_mavlink_init 2
 singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1
 singleton mavlink manual send_chan lua_mavlink_send_chan 3
