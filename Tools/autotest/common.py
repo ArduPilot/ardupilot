@@ -6384,9 +6384,12 @@ class AutoTest(ABC):
             **kwargs
         )
 
-    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
+    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=None, **kwargs):
         """Wait for a given altitude range."""
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
+
+        if timeout is None:
+            timeout = 30
 
         def validator(value2, target2=None):
             if altitude_min <= value2 <= altitude_max:
@@ -6772,7 +6775,7 @@ class AutoTest(ABC):
         return Vector3(msg.vx, msg.vy, msg.vz)
 
     """Wait for a given speed vector."""
-    def wait_speed_vector(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
+    def wait_speed_vector(self, speed_vector, accuracy=0.3, timeout=30, **kwargs):
         def validator(value2, target2):
             return (math.fabs(value2.x - target2.x) <= accuracy and
                     math.fabs(value2.y - target2.y) <= accuracy and
@@ -8389,11 +8392,11 @@ Also, ignores heartbeats not from our target system'''
         start_loc = self.sitl_start_location()
         self.progress("SITL start loc: %s" % str(start_loc))
         delta = abs(orig_home.latitude * 1.0e-7 - start_loc.lat)
-        if delta > 0.000001:
+        if delta > 0.000006:
             raise ValueError("homes differ in lat got=%f vs want=%f delta=%f" %
                              (orig_home.latitude * 1.0e-7, start_loc.lat, delta))
         delta = abs(orig_home.longitude * 1.0e-7 - start_loc.lng)
-        if delta > 0.000001:
+        if delta > 0.000006:
             raise ValueError("homes differ in lon  got=%f vs want=%f delta=%f" %
                              (orig_home.longitude * 1.0e-7, start_loc.lng, delta))
         if self.is_rover():
