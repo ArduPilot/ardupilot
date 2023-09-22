@@ -43,6 +43,7 @@ int lua_micros(lua_State *L) {
     return 1;
 }
 
+#if HAL_GCS_ENABLED
 int lua_mavlink_init(lua_State *L) {
 
     // Allow : and . access
@@ -212,6 +213,7 @@ int lua_mavlink_block_command(lua_State *L) {
     lua_pushboolean(L, true);
     return 1;
 }
+#endif // HAL_GCS_ENABLED
 
 int lua_mission_receive(lua_State *L) {
     binding_argcheck(L, 0);
@@ -241,6 +243,7 @@ int lua_mission_receive(lua_State *L) {
     return 5;
 }
 
+#if HAL_LOGGING_ENABLED
 int AP_Logger_Write(lua_State *L) {
     AP_Logger * AP_logger = AP_Logger::get_singleton();
     if (AP_logger == nullptr) {
@@ -526,6 +529,7 @@ int AP_Logger_Write(lua_State *L) {
 
     return 0;
 }
+#endif // HAL_LOGGING_ENABLED
 
 int lua_get_i2c_device(lua_State *L) {
 
