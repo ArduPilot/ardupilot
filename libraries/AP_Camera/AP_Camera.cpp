@@ -358,12 +358,15 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         }
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         // param1 : camera id
+        if (is_negative(packet.param1)) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
         if (is_zero(packet.param1)) {
             // stop capture for every backend
             stop_capture();
             return MAV_RESULT_ACCEPTED;
         }
-        if (stop_capture(packet.param1)) {
+        if (stop_capture(packet.param1-1)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
