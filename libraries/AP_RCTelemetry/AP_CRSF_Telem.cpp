@@ -872,7 +872,7 @@ void AP_CRSF_Telem::calc_battery()
 {
     const AP_BattMonitor &_battery = AP::battery();
 
-    _telem.bcast.battery.voltage = htobe16(uint16_t(roundf(_battery.voltage(0) * 10.0f)));
+    _telem.bcast.battery.voltage = htobe16(uint16_t(roundf(_battery.telem_voltage(0) * 10.0f)));
 
     float current;
     if (!_battery.current_amps(current, 0)) {
