@@ -205,55 +205,17 @@ float AC_PID::update_error(float error, float dt, bool limit)
         return 0.0f;
     }
 
-    _target = 0.0f;
+    // Reuse update all code path, zero target and pass negative error as measurement
+    // Passing as measurement bypasses any target filtering to maintain behaviour
+    // Negate as update all calculates error as target - measurement
+    _target = 0.0;
+    const float output = update_all(0.0, -error, dt, limit);
 
-    // reset input filter to value received
-    if (_flags._reset_filter) {
-        _flags._reset_filter = false;
-        _error = error;
-        _derivative = 0.0f;
-    } else {
-        float error_last = _error;
-        _error += get_filt_E_alpha(dt) * (error - _error);
+    // Make sure logged target and actual are still 0 to maintain behaviour
+    _pid_info.target = 0.0;
+    _pid_info.actual = 0.0;
 
-        // calculate and filter derivative
-        if (is_positive(dt)) {
-            float derivative = (_error - error_last) / dt;
-            _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
-        }
-    }
-
-    // update I term
-    update_i(dt, limit);
-
-    float P_out = (_error * _kp);
-    float D_out = (_derivative * _kd);
-
-    // calculate slew limit modifier for P+D
-    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, dt);
-    _pid_info.slew_rate = _slew_limiter.get_slew_rate();
-
-    P_out *= _pid_info.Dmod;
-    D_out *= _pid_info.Dmod;
-
-    // Apply PD sum limit if enabled
-    if (is_positive(_kpdmax)) {
-        const float PD_sum_abs = fabsf(P_out + D_out);
-        if (PD_sum_abs > _kpdmax) {
-            const float PD_scale = _kpdmax / PD_sum_abs;
-            P_out *= PD_scale;
-            D_out *= PD_scale;
-            _pid_info.PD_limit = true;
-        }
-    }
-
-    _pid_info.target = 0.0f;
-    _pid_info.actual = 0.0f;
-    _pid_info.error = _error;
-    _pid_info.P = P_out;
-    _pid_info.D = D_out;
-
-    return P_out + D_out + _integrator;
+    return output;
 }
 
 //  update_i - update the integral
