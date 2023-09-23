@@ -556,8 +556,7 @@ private:
         float target_heading_accel_limit;
         uint32_t target_heading_time_ms;
         guided_heading_type_t target_heading_type;
-        bool target_heading_limit_low;
-        bool target_heading_limit_high;
+        bool target_heading_limit;
 #endif // OFFBOARD_GUIDED == ENABLED
     } guided_state;
 
