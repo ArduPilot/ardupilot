@@ -49,6 +49,9 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+        MicroStrain7 = 3,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
