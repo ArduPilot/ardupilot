@@ -22,9 +22,14 @@ class AStyleChecker(object):
         self.retcode = 0
         self.directories_to_check = [
             'libraries/AP_DDS',
-            'libraries/AP_ExternalControl'
+            'libraries/AP_ExternalControl',
         ]
-        self.files_to_check = []
+        self.files_to_check = [
+            pathlib.Path(s) for s in [
+                'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.cpp',
+                'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.h',
+            ]
+        ]
         self.dry_run = dry_run
 
     def progress(self, string):
