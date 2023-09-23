@@ -40,19 +40,6 @@ protected:
         WaitingFor_Checksum
     };
 
-        // A MicroStrain packet can be a maximum of 261 bytes
-    struct MicroStrain_Packet {
-        uint8_t header[4];
-        uint8_t payload[255];
-        uint8_t checksum[2];
-    };
-
-    struct {
-        MicroStrain_Packet packet;
-        AP_MicroStrain::ParseState state;
-        uint8_t index;
-    } message_in;
-
     struct {
         Vector3f accel;
         Vector3f gyro;
@@ -60,6 +47,8 @@ protected:
         Quaternion quat;
         float pressure;
     } imu_data;
+
+    static constexpr uint8_t NUM_GNSS_INSTANCES = 2;
 
     struct {
         uint16_t week;
@@ -77,7 +66,7 @@ protected:
         float ned_velocity_east;
         float ned_velocity_down;
         float speed_accuracy;
-    } gnss_data;
+    } gnss_data[NUM_GNSS_INSTANCES];
 
     struct {
         uint16_t state;
@@ -105,13 +94,47 @@ protected:
         SystemCommand = 0x7F,
         IMUData = 0x80,
         GNSSData = 0x81,
-        EstimationData = 0x82
+        FilterData = 0x82,
+        GNSSRecv1 = 0x91,
+        GNSSRecv2 = 0x92
     };
 
     const uint8_t SYNC_ONE = 0x75;
     const uint8_t SYNC_TWO = 0x65;
 
-    uint32_t last_ins_pkt;
+    struct MicroStrain_Packet {
+        uint8_t header[4];
+        uint8_t payload[255];
+        uint8_t checksum[2];
+
+        // Gets the payload length
+        uint8_t payload_length() const WARN_IF_UNUSED {
+            return header[3];
+        }
+
+        // Sets the payload length
+        void payload_length(const uint8_t len) {
+            header[3] = len;
+        }
+
+        // Gets the descriptor set
+        DescriptorSet descriptor_set() const WARN_IF_UNUSED {
+            return DescriptorSet(header[2]);
+        }
+
+        // Sets the descriptor set (without validation)
+        void descriptor_set(const uint8_t descriptor_set) {
+            header[2] = descriptor_set;
+        }
+    };
+
+    struct {
+        MicroStrain_Packet packet;
+        AP_MicroStrain::ParseState state;
+        uint8_t index;
+    } message_in;
+
+    uint32_t last_imu_pkt;
     uint32_t last_gps_pkt;
     uint32_t last_filter_pkt;
 
@@ -129,6 +152,8 @@ protected:
     void handle_filter(const MicroStrain_Packet &packet);
     static Vector3f populate_vector3f(const uint8_t* data, uint8_t offset);
     static Quaternion populate_quaternion(const uint8_t* data, uint8_t offset);
+    // Depending on the descriptor, the data corresponds to a different GNSS instance.
+    static bool get_gnss_instance(const DescriptorSet& descriptor, uint8_t& instance);
 };
 
 #endif // AP_MICROSTRAIN_ENABLED
