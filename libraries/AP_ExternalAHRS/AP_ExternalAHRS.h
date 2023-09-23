@@ -53,7 +53,9 @@ public:
         // 4 reserved for CINS
         // 5 reserved for InertialLabs
         // 6 reserved for Trimble
-        // 7 reserved for MicroStrain7
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+        MicroStrain7 = 7,
+#endif
         // 8 reserved for SBG
         // 9 reserved for EulerNav
     };
