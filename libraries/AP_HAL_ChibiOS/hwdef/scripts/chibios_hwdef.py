@@ -1828,6 +1828,19 @@ INCLUDE common.ld
             return
         f.write('\n// UART configuration\n')
 
+        # write out which serial ports we actually have
+        idx = 0
+        nports = 0
+        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        for serial in serial_order:
+            if serial == 'EMPTY':
+                f.write('#define HAL_HAVE_SERIAL%u 0\n' % idx)
+            else:
+                f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
+                nports = nports + 1
+            idx += 1
+        f.write('#define HAL_NUM_SERIAL_PORTS %u\n' % nports)
+
         # write out driver declarations for HAL_ChibOS_Class.cpp
         devnames = "ABCDEFGHIJ"
         sdev = 0
