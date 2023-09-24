@@ -204,7 +204,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 void Sub::exit_mission()
 {
     // play a tone
-    AP_Notify::events.mission_complete = 1;
+    AP_Notify::events.mission_complete = true;
 
     // Try to enter loiter, if that fails, go to depth hold
     if (!mode_auto.auto_loiter_start()) {
@@ -430,7 +430,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // play a tone
-    AP_Notify::events.waypoint_complete = 1;
+    AP_Notify::events.waypoint_complete = true;
 
     // start timer if necessary
     if (loiter_time == 0) {
