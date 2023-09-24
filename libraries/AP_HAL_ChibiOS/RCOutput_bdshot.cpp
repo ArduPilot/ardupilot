@@ -21,8 +21,19 @@
 #include "hwdef/common/stm32_util.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 #ifdef HAL_WITH_BIDIR_DSHOT
+
+#if defined(IOMCU_FW)
+#undef INTERNAL_ERROR
+#define INTERNAL_ERROR(x) do {} while (0)
+#endif
 
 using namespace ChibiOS;
 
@@ -35,14 +46,18 @@ extern const AP_HAL::HAL& hal;
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
 #endif
 
-#define TELEM_IC_SAMPLE 16
-
 /*
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
+#if HAL_WITH_IO_MCU
+    const uint32_t iomcu_mask = ((1U<<chan_offset)-1);
+    if (AP_BoardConfig::io_dshot() && (mask & iomcu_mask)) {
+        iomcu.set_bidir_dshot_mask(mask & iomcu_mask);
+    }
+#endif
     _bdshot.mask = (mask >> chan_offset);
     // we now need to reconfigure the DMA channels since they are affected by the value of the mask
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
@@ -75,6 +90,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             // Return error
             return false;
         }
+
         if (!group.bdshot.ic_dma_handle[i]) {
             // share up channel if required
             if (group.dma_ch[i].stream_id == group.dma_up_stream_id) {
@@ -98,6 +114,11 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
         if (group.chan[i] != CHAN_DISABLED && _bdshot.mask & group.ch_mask) {
             // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
             // when switching from output to input
+#if defined(STM32F1)
+            // on F103 the line mode has to be managed manually
+            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medieum speed on other MCUs
+            palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+#else
             palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
                 | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP |
 #ifdef PAL_STM32_OSPEED_MID1
@@ -108,6 +129,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 #error "Cannot set bdshot line speed"
 #endif
                 );
+#endif
         }
 
         if (!group.is_chan_enabled(i) || !(_bdshot.mask & (1 << group.chan[i]))) {
@@ -166,13 +188,12 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
  */
 void RCOutput::bdshot_ic_dma_allocate(Shared_DMA *ctx)
 {
+    chSysLock();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         for (uint8_t icuch = 0; icuch < 4; icuch++) {
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] == nullptr) {
-                chSysLock();
                 group.bdshot.ic_dma[icuch] = dmaStreamAllocI(group.dma_ch[icuch].stream_id, 10, bdshot_dma_ic_irq_callback, &group);
-                chSysUnlock();
 #if STM32_DMA_SUPPORTS_DMAMUX
                 if (group.bdshot.ic_dma[icuch]) {
                     dmaSetRequestSource(group.bdshot.ic_dma[icuch], group.dma_ch[icuch].channel);
@@ -181,6 +202,7 @@ void RCOutput::bdshot_ic_dma_allocate(Shared_DMA *ctx)
             }
         }
     }
+    chSysUnlock();
 }
 
 /*
@@ -188,23 +210,23 @@ void RCOutput::bdshot_ic_dma_allocate(Shared_DMA *ctx)
  */
 void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
 {
+    chSysLock();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         for (uint8_t icuch = 0; icuch < 4; icuch++) {
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] != nullptr) {
-                chSysLock();
                 dmaStreamFreeI(group.bdshot.ic_dma[icuch]);
                 group.bdshot.ic_dma[icuch] = nullptr;
-                chSysUnlock();
             }
         }
     }
+    chSysUnlock();
 }
 
 // setup bdshot for sending and receiving the next pulse
 void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
 {
-   // assume that we won't be able to get the input capture lock
+    // assume that we won't be able to get the input capture lock
     group.bdshot.enabled = false;
 
     uint32_t active_channels = group.ch_mask & group.en_mask;
@@ -214,8 +236,10 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
             // no locking required
             group.bdshot.enabled = true;
         } else {
-            osalDbgAssert(!group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan]->is_locked(), "DMA handle is already locked");
-            group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan]->lock();
+            osalDbgAssert(!group.bdshot.curr_ic_dma_handle, "IC DMA handle has not been released");
+            group.bdshot.curr_ic_dma_handle = group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan];
+            osalDbgAssert(group.shared_up_dma || !group.bdshot.curr_ic_dma_handle->is_locked(), "IC DMA handle is already locked");
+            group.bdshot.curr_ic_dma_handle->lock();
             group.bdshot.enabled = true;
         }
     }
@@ -236,31 +260,42 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
             _bdshot.erpm_errors[chan] = 0;
             _bdshot.erpm_last_stats_ms[chan] = now;
         }
+    } else if (group.dshot_state == DshotState::RECV_FAILED) {
+        _bdshot.erpm_errors[group.bdshot.curr_telem_chan]++;
     }
 
     if (group.bdshot.enabled) {
         if (group.pwm_started) {
-            bdshot_reset_pwm(group);
-        } else {
-            pwmStart(group.pwm_drv, &group.pwm_cfg);
+            bdshot_reset_pwm(group, group.bdshot.prev_telem_chan);
         }
-        group.pwm_started = true;
+        else {
+            pwmStart(group.pwm_drv, &group.pwm_cfg);
+            group.pwm_started = true;
+        }
 
         // we can be more precise for capture timer
         group.bdshot.telempsc = (uint16_t)(lrintf(((float)group.pwm_drv->clock / bdshot_get_output_rate_hz(group.current_mode) + 0.01f)/TELEM_IC_SAMPLE) - 1);
     }
 }
 
-void RCOutput::bdshot_reset_pwm(pwm_group& group)
+// reset pwm driver to output mode without resetting the clock or the peripheral
+// the code here is the equivalent of pwmStart()/pwmStop()
+void RCOutput::bdshot_reset_pwm(pwm_group& group, uint8_t telem_channel)
 {
+#if defined(STM32F1)
+    bdshot_reset_pwm_f1(group, telem_channel);
+#else
+    // on more capable MCUs we can do something very simple
     pwmStop(group.pwm_drv);
     pwmStart(group.pwm_drv, &group.pwm_cfg);
+#endif
 }
 
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625
 // called from the interrupt
 #pragma GCC push_options
 #pragma GCC optimize("O2")
+#if !defined(STM32F1)
 void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
 {
     // make sure the transaction finishes or times out, this function takes a little time to run so the most
@@ -268,13 +303,12 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     // should be plenty
     chVTSetI(&group->dma_timeout, chTimeUS2I(group->dshot_pulse_send_time_us + 30U + 10U),
         bdshot_finish_dshot_gcr_transaction, group);
-    uint8_t curr_ch = group->bdshot.curr_telem_chan;
 
     group->pwm_drv->tim->CR1 = 0;
-    group->pwm_drv->tim->CCER = 0;
 
     // Configure Timer
     group->pwm_drv->tim->SR = 0;
+    group->pwm_drv->tim->CCER = 0;
     group->pwm_drv->tim->CCMR1 = 0;
     group->pwm_drv->tim->CCMR2 = 0;
     group->pwm_drv->tim->DIER = 0;
@@ -286,6 +320,7 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     //TOGGLE_PIN_CH_DEBUG(54, curr_ch);
     group->pwm_drv->tim->ARR = 0xFFFF;  // count forever
     group->pwm_drv->tim->CNT = 0;
+    uint8_t curr_ch = group->bdshot.curr_telem_chan;
 
     // Initialise ICU channels
     bdshot_config_icu_dshot(group->pwm_drv->tim, curr_ch, group->bdshot.telem_tim_ch[curr_ch]);
@@ -308,7 +343,9 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
 #endif
     dmaStreamSetMode(ic_dma,
                     STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
-                    STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD |
+                    STM32_DMA_CR_DIR_P2M |
+                    STM32_DMA_CR_PSIZE_WORD |
+                    STM32_DMA_CR_MSIZE_WORD |
                     STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
                     STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
 
@@ -424,6 +461,7 @@ void RCOutput::bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t 
         break;
     }
 }
+#endif
 
 /*
   unlock DMA channel after a bi-directional dshot transaction completes
@@ -441,14 +479,21 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     // or the input channel buffer
     const stm32_dma_stream_t *dma =
         group->has_shared_ic_up_dma() ? group->dma : group->bdshot.ic_dma[curr_telem_chan];
+    osalDbgAssert(dma, "No DMA channel");
     // record the transaction size before the stream is released
     dmaStreamDisable(dma);
     group->bdshot.dma_tx_size = MIN(uint16_t(GCR_TELEMETRY_BIT_LEN),
         GCR_TELEMETRY_BIT_LEN - dmaStreamGetTransactionSize(dma));
-    stm32_cacheBufferInvalidate(group->dma_buffer, group->bdshot.dma_tx_size);
-    memcpy(group->bdshot.dma_buffer_copy, group->dma_buffer, sizeof(uint32_t) * group->bdshot.dma_tx_size);
 
-    group->dshot_state = DshotState::RECV_COMPLETE;
+    stm32_cacheBufferInvalidate(group->dma_buffer, group->bdshot.dma_tx_size);
+    memcpy(group->bdshot.dma_buffer_copy, group->dma_buffer, sizeof(dmar_uint_t) * group->bdshot.dma_tx_size);
+
+    // although it should be possible to start the next DMAR transaction concurrently with receiving 
+    // telemetry, in practice it seems to interfere with the DMA engine
+    if (group->shared_up_dma && group->bdshot.enabled) {
+        // next dshot pulse can go out now
+        chEvtSignalI(group->dshot_waiter, DSHOT_CASCADE);
+    }
 
     // if using input capture DMA and sharing the UP and CH channels then clean up
     // by assigning the source back to UP
@@ -458,9 +503,17 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     }
 #endif
 
-    // rotate to the next input channel
     group->bdshot.prev_telem_chan = group->bdshot.curr_telem_chan;
+    // rotate to the next input channel, we have to rotate even on failure otherwise
+    // we will not get data from active channels
     group->bdshot.curr_telem_chan = bdshot_find_next_ic_channel(*group);
+
+    if (group->bdshot.dma_tx_size > 0) {
+        group->dshot_state = DshotState::RECV_COMPLETE;
+    } else {
+        group->dshot_state = DshotState::RECV_FAILED;
+    }
+
     // tell the waiting process we've done the DMA
     chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
 #ifdef HAL_GPIO_LINE_GPIO56
@@ -479,7 +532,12 @@ bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
     }
 
     // evaluate dshot telemetry
+#if defined(STM32F1)
+    const bool reversed = (group.bdshot.telem_tim_ch[chan] & 1U) == 0;
+    group.bdshot.erpm[chan] = bdshot_decode_telemetry_packet_f1(group.bdshot.dma_buffer_copy, group.bdshot.dma_tx_size, reversed);
+#else
     group.bdshot.erpm[chan] = bdshot_decode_telemetry_packet(group.bdshot.dma_buffer_copy, group.bdshot.dma_tx_size);
+#endif
 
     group.dshot_state = DshotState::IDLE;
 
@@ -496,7 +554,7 @@ bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
         TOGGLE_PIN_DEBUG(57);
 #endif
     }
-
+#if !defined(IOMCU_FW)
     uint64_t now = AP_HAL::micros64();
     if (chan == DEBUG_CHANNEL && (now  - group.bdshot.last_print) > 1000000) {
         hal.console->printf("TELEM: %d <%d Hz, %.1f%% err>", group.bdshot.erpm[chan], group.bdshot.telem_rate[chan],
@@ -511,6 +569,7 @@ bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
         group.bdshot.telem_err_rate[chan] = 0;
         group.bdshot.last_print = now;
     }
+#endif
 #endif
     return group.bdshot.erpm[chan] != 0xFFFF;
 }
@@ -549,13 +608,19 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     }
     dmaStreamDisable(group->dma);
 
-    if (group->in_serial_dma && irq.waiter) {
+    if (soft_serial_waiting()) {
+#if HAL_SERIAL_ESC_COMM_ENABLED
         // tell the waiting process we've done the DMA
         chEvtSignalI(irq.waiter, serial_event_mask);
+#endif
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
         // sending is done, in 30us the ESC will send telemetry
+#if defined(STM32F1)
+        bdshot_receive_pulses_DMAR_f1(group);
+#else
         bdshot_receive_pulses_DMAR(group);
+#endif
     } else {
         // non-bidir case, this prevents us ever having two dshot pulses too close together
         if (is_dshot_protocol(group->current_mode)) {
@@ -604,20 +669,21 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     }
 }
 
-#define INVALID_ERPM 0xffffU
+#define INVALID_ERPM 0xfffU
 
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
-uint32_t RCOutput::bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t count)
+uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count)
 {
     uint32_t value = 0;
-    uint32_t oldValue = buffer[0];
     uint32_t bits = 0;
     uint32_t len;
 
+    dmar_uint_t oldValue = buffer[0];
+
     for (uint32_t i = 1; i <= count; i++) {
         if (i < count) {
-            int32_t diff = buffer[i] - oldValue;
+            dmar_int_t diff = buffer[i] - oldValue;
             if (bits >= 21U) {
                 break;
             }
@@ -631,6 +697,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t cou
         oldValue = buffer[i];
         bits += len;
     }
+
     if (bits != 21U) {
         return INVALID_ERPM;
     }
@@ -665,8 +732,16 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     }
 
     // eRPM = m << e (see https://github.com/bird-sanctuary/extended-dshot-telemetry)
-    uint8_t expo = ((encodederpm & 0xfffffe00U) >> 9U) & 0xffU;
-    uint16_t value = (encodederpm & 0x000001ffU);
+    uint8_t expo = ((encodederpm & 0xfffffe00U) >> 9U) & 0xffU; // 3bits
+    uint16_t value = (encodederpm & 0x000001ffU);               // 9bits
+#if HAL_WITH_ESC_TELEM
+    uint8_t normalized_chan = chan;
+#endif
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_dshot()) {
+        normalized_chan = chan + chan_offset;
+    }
+#endif
 
     if (!(value & 0x100U) && (_dshot_esc_type == DSHOT_ESC_BLHELI_EDT || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S)) {
         switch (expo) {
@@ -675,7 +750,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             TelemetryData t {
                 .temperature_cdeg = int16_t(value * 100)
             };
-            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
     #endif
             return false;
             }
@@ -685,7 +760,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             TelemetryData t {
                 .voltage = 0.25f * value
             };
-            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
     #endif
             return false;
             }
@@ -695,7 +770,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             TelemetryData t {
                 .current = float(value)
             };
-            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
     #endif
             return false;
             }
@@ -726,11 +801,21 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     // update the ESC telemetry data
     if (erpm < INVALID_ERPM) {
         _bdshot.erpm[chan] = erpm;
+        _bdshot.update_mask |= 1U<<chan;
 #if HAL_WITH_ESC_TELEM
-        update_rpm(chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
+        update_rpm(normalized_chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
 #endif
     }
     return erpm < INVALID_ERPM;
+}
+
+uint32_t RCOutput::read_erpm(uint16_t* erpm, uint8_t len)
+{
+    const uint8_t READ_LEN = MIN(len, uint8_t(max_channels));
+    memcpy(erpm, _bdshot.erpm, sizeof(uint16_t) * READ_LEN);
+    const uint32_t mask = _bdshot.update_mask;
+    _bdshot.update_mask = 0;
+    return mask;
 }
 
 #endif // HAL_WITH_BIDIR_DSHOT
