@@ -143,26 +143,26 @@ public:
     /// notify_events_type - bitmask of active events.
     //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
-        uint32_t arming_failed          : 1;    // 1 if copter failed to arm after user input
-        uint32_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
-        uint32_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
-        uint32_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
-        uint32_t autotune_complete      : 1;    // 1 when autotune has successfully completed
-        uint32_t autotune_failed        : 1;    // 1 when autotune has failed
-        uint32_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
-        uint32_t mission_complete       : 1;    // 1 when the mission has completed successfully
-        uint32_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
-        uint32_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
-        uint32_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
-        uint32_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
-        uint32_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
-        uint32_t tune_started           : 1;    // tuning a parameter has started
-        uint32_t tune_next              : 3;    // tuning switched to next parameter
-        uint32_t tune_save              : 1;    // tuning saved parameters
-        uint32_t tune_error             : 1;    // tuning controller error
-        uint32_t initiated_temp_cal     : 1;    // 1 when temperature calibration starts
-        uint32_t temp_cal_saved         : 1;    // 1 when temperature calibration was just saved
-        uint32_t temp_cal_failed        : 1;    // 1 when temperature calibration has just failed
+        bool arming_failed          : 1;    // true if copter failed to arm after user input
+        bool user_mode_change       : 1;    // true if user has initiated a flight mode change
+        bool user_mode_change_failed: 1;    // true when user initiated flight mode change fails
+        bool failsafe_mode_change   : 1;    // true when failsafe has triggered a flight mode change
+        bool autotune_complete      : 1;    // true when autotune has successfully completed
+        bool autotune_failed        : 1;    // true when autotune has failed
+        bool autotune_next_axis     : 1;    // true when autotune has completed one axis and is moving onto the next
+        bool mission_complete       : 1;    // true when the mission has completed successfully
+        bool waypoint_complete      : 1;    // true as vehicle completes a waypoint
+        bool initiated_compass_cal  : 1;    // true when user input to begin compass cal was accepted
+        bool compass_cal_saved      : 1;    // true when compass calibration was just saved
+        bool compass_cal_failed     : 1;    // true when compass calibration has just failed
+        bool compass_cal_canceled   : 1;    // true when compass calibration was just canceled
+        bool tune_started           : 1;    // tuning a parameter has started
+        uint8_t tune_next           : 3;    // tuning switched to next parameter
+        bool tune_save              : 1;    // tuning saved parameters
+        bool tune_error             : 1;    // tuning controller error
+        bool initiated_temp_cal     : 1;    // true when temperature calibration starts
+        bool temp_cal_saved         : 1;    // true when temperature calibration was just saved
+        bool temp_cal_failed        : 1;    // true when temperature calibration has just failed
     };
 
     // The notify flags and values are static to allow direct class access
