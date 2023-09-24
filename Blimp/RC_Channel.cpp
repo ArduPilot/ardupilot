@@ -24,7 +24,7 @@ void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
     if (!blimp.set_mode((Mode::Number)blimp.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         // alert user to mode change failure
         if (blimp.ap.initialised) {
-            AP_Notify::events.user_mode_change_failed = 1;
+            AP_Notify::events.user_mode_change_failed = true;
         }
         return;
     }
@@ -32,7 +32,7 @@ void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
     // play a tone
     // alert user to mode change (except if autopilot is just starting up)
     if (blimp.ap.initialised) {
-        AP_Notify::events.user_mode_change = 1;
+        AP_Notify::events.user_mode_change = true;
     }
 }
 
@@ -82,9 +82,9 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
         const bool success = blimp.set_mode(mode, ModeReason::RC_COMMAND);
         if (blimp.ap.initialised) {
             if (success) {
-                AP_Notify::events.user_mode_change = 1;
+                AP_Notify::events.user_mode_change = true;
             } else {
-                AP_Notify::events.user_mode_change_failed = 1;
+                AP_Notify::events.user_mode_change_failed = true;
             }
         }
         break;
