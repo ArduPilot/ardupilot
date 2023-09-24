@@ -114,7 +114,7 @@ void AP_Parachute::release()
     _release_initiated = true;
 
     // update AP_Notify
-    AP_Notify::flags.parachute_release = 1;
+    AP_Notify::flags.parachute_release = true;
 }
 
 /// update - shuts off the trigger should be called at about 10hz
@@ -167,7 +167,7 @@ void AP_Parachute::update()
         _release_in_progress = false;
         _release_time = 0;
         // update AP_Notify
-        AP_Notify::flags.parachute_release = 0;
+        AP_Notify::flags.parachute_release = false;
     }
 }
 
