@@ -626,7 +626,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::exit_mission()
 {
     // play a tone
-    AP_Notify::events.mission_complete = 1;
+    AP_Notify::events.mission_complete = true;
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
