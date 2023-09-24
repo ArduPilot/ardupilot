@@ -192,7 +192,12 @@ bool AP_ExternalAHRS::get_speed_down(float &speedD)
 
 bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
-    return backend && backend->pre_arm_check(failure_msg, failure_msg_len);
+    if (backend == nullptr) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: Invalid backend");
+        return false;
+    }
+
+    return backend->pre_arm_check(failure_msg, failure_msg_len);
 }
 
 /*
