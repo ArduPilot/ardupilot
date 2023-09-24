@@ -157,7 +157,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
-#if SERIALMANAGER_NUM_PORTS > 0
+#if HAL_HAVE_SERIAL0
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
@@ -174,7 +174,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if HAL_HAVE_SERIAL1
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, DEFAULT_SERIAL1_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if HAL_HAVE_SERIAL2
     // @Param: 2_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
@@ -205,7 +205,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, DEFAULT_SERIAL2_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if HAL_HAVE_SERIAL3
     // @Param: 3_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
@@ -219,7 +219,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, DEFAULT_SERIAL3_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if HAL_HAVE_SERIAL4
     // @Param: 4_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial4 protocol selection
@@ -233,7 +233,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, DEFAULT_SERIAL4_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if HAL_HAVE_SERIAL5
     // @Param: 5_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial5 protocol selection
@@ -249,7 +249,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // index 11 used by 0_PROTOCOL
         
-#if SERIALMANAGER_NUM_PORTS > 6
+#if HAL_HAVE_SERIAL6
     // @Param: 6_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial6 protocol selection
@@ -263,7 +263,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, DEFAULT_SERIAL6_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if HAL_HAVE_SERIAL1
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
@@ -273,35 +273,35 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, DEFAULT_SERIAL1_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if HAL_HAVE_SERIAL2
     // @Param: 2_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Telem2 options
     AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, DEFAULT_SERIAL2_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if HAL_HAVE_SERIAL3
     // @Param: 3_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial3 options
     AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, DEFAULT_SERIAL3_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if HAL_HAVE_SERIAL4
     // @Param: 4_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial4 options
     AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, DEFAULT_SERIAL4_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if HAL_HAVE_SERIAL5
     // @Param: 5_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial5 options
     AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, DEFAULT_SERIAL5_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 6
+#if HAL_HAVE_SERIAL6
     // @Param: 6_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial6 options
@@ -330,7 +330,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
 
-#if SERIALMANAGER_NUM_PORTS > 7
+#if HAL_HAVE_SERIAL7
     // @Param: 7_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial7 protocol selection
@@ -349,7 +349,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 8
+#if HAL_HAVE_SERIAL8
     // @Param: 8_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial8 protocol selection
@@ -368,7 +368,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("8_OPTIONS",  28, AP_SerialManager, state[8].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 9
+#if HAL_HAVE_SERIAL9
     // @Param: 9_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial9 protocol selection
