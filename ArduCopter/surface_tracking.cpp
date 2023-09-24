@@ -101,12 +101,12 @@ void Copter::SurfaceTracking::set_surface(Surface new_surface)
     // check we have a range finder in the correct direction
     if ((new_surface == Surface::GROUND) && !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
         copter.gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking: no downward rangefinder");
-        AP_Notify::events.user_mode_change_failed = 1;
+        AP_Notify::events.user_mode_change_failed = true;
         return;
     }
     if ((new_surface == Surface::CEILING) && !copter.rangefinder.has_orientation(ROTATION_PITCH_90)) {
         copter.gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking: no upward rangefinder");
-        AP_Notify::events.user_mode_change_failed = 1;
+        AP_Notify::events.user_mode_change_failed = true;
         return;
     }
     surface = new_surface;

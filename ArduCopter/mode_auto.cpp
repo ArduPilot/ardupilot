@@ -219,7 +219,7 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 
             // make happy noise
             if (copter.ap.initialised) {
-                AP_Notify::events.user_mode_change = 1;
+                AP_Notify::events.user_mode_change = true;
             }
             return true;
         }
@@ -234,7 +234,7 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
     // make sad noise
     if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change_failed = 1;
+        AP_Notify::events.user_mode_change_failed = true;
     }
     return false;
 }
@@ -747,7 +747,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::exit_mission()
 {
     // play a tone
-    AP_Notify::events.mission_complete = 1;
+    AP_Notify::events.mission_complete = true;
     // if we are not on the ground switch to loiter or land
     if (!copter.ap.land_complete) {
         // try to enter loiter but if that fails land
@@ -2135,7 +2135,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         loiter_time = millis();
         if (loiter_time_max > 0) {
             // play a tone
-            AP_Notify::events.waypoint_complete = 1;
+            AP_Notify::events.waypoint_complete = true;
         }
     }
 
@@ -2143,7 +2143,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         if (loiter_time_max == 0) {
             // play a tone
-            AP_Notify::events.waypoint_complete = 1;
+            AP_Notify::events.waypoint_complete = true;
         }
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
