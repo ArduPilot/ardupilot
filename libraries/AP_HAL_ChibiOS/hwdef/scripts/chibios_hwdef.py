@@ -2225,13 +2225,16 @@ INCLUDE common.ld
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
 #endif
 ''' % (n, i, n, i, n, i, n, i, n, i, n, i)
-                hal_icu_cfg += '},  \\'
+                hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
 
             f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
 #else
 # define HAL_PWM%u_DMA_CONFIG false, 0, 0
 #endif\n%s''' % (n, n, n, n, n, n, hal_icu_def))
+            f.write('''#if !defined(HAL_TIM%u_UP_SHARED)
+#define HAL_TIM%u_UP_SHARED false
+#endif\n''' % (n, n))
             f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\

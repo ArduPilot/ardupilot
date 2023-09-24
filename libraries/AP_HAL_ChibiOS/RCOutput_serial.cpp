@@ -39,7 +39,7 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
         return false;
     }
 
-    if (soft_serial_waiting() || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+    if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
@@ -57,18 +57,8 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     group.dshot_waiter = rcout_thread_ctx;
     bool bdshot_telem = false;
 #ifdef HAL_WITH_BIDIR_DSHOT
-    uint32_t active_channels = group.ch_mask & group.en_mask;
-    // no need to get the input capture lock
-    group.bdshot.enabled = false;
-    if ((_bdshot.mask & active_channels) == active_channels) {
-        bdshot_telem = true;
-        // it's not clear why this is required, but without it we get no output
-        if (group.pwm_started) {
-            pwmStop(group.pwm_drv);
-        }
-        pwmStart(group.pwm_drv, &group.pwm_cfg);
-        group.pwm_started = true;
-    }
+    bdshot_prepare_for_next_pulse(group);
+    bdshot_telem = group.bdshot.enabled;
 #endif    
 
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
@@ -121,7 +111,11 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 
     DshotCommandPacket pkt;
     pkt.command = command;
-    pkt.chan = chan - chan_offset;
+    if (chan != ALL_CHANNELS) {
+        pkt.chan = chan - chan_offset;
+    } else {
+        pkt.chan = ALL_CHANNELS;
+    }
     if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
