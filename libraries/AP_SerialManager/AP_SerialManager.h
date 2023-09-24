@@ -37,6 +37,41 @@
 #define SERIALMANAGER_NUM_PORTS 8
 #endif
 
+#ifndef HAL_NUM_SERIAL_PORTS
+#define HAL_NUM_SERIAL_PORTS SERIALMANAGER_NUM_PORTS
+#endif
+
+#ifndef HAL_HAVE_SERIAL0
+#define HAL_HAVE_SERIAL0 HAL_NUM_SERIAL_PORTS > 0
+#endif
+#ifndef HAL_HAVE_SERIAL1
+#define HAL_HAVE_SERIAL1 HAL_NUM_SERIAL_PORTS > 1
+#endif
+#ifndef HAL_HAVE_SERIAL2
+#define HAL_HAVE_SERIAL2 HAL_NUM_SERIAL_PORTS > 2
+#endif
+#ifndef HAL_HAVE_SERIAL3
+#define HAL_HAVE_SERIAL3 HAL_NUM_SERIAL_PORTS > 3
+#endif
+#ifndef HAL_HAVE_SERIAL4
+#define HAL_HAVE_SERIAL4 HAL_NUM_SERIAL_PORTS > 4
+#endif
+#ifndef HAL_HAVE_SERIAL5
+#define HAL_HAVE_SERIAL5 HAL_NUM_SERIAL_PORTS > 5
+#endif
+#ifndef HAL_HAVE_SERIAL6
+#define HAL_HAVE_SERIAL6 HAL_NUM_SERIAL_PORTS > 6
+#endif
+#ifndef HAL_HAVE_SERIAL7
+#define HAL_HAVE_SERIAL7 HAL_NUM_SERIAL_PORTS > 7
+#endif
+#ifndef HAL_HAVE_SERIAL8
+#define HAL_HAVE_SERIAL8 HAL_NUM_SERIAL_PORTS > 8
+#endif
+#ifndef HAL_HAVE_SERIAL9
+#define HAL_HAVE_SERIAL9 HAL_NUM_SERIAL_PORTS > 9
+#endif
+
 /*
   array size for state[]. This needs to be at least
   SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
