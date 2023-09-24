@@ -29,7 +29,7 @@ public:
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool _is_dps310=false);
 
 protected:
-    bool init(void);
+    bool init(bool _is_dps310);
     bool read_calibration(void);
     void timer(void);
     void calculate_PT(int32_t UT, int32_t UP, float &pressure, float &temperature);
