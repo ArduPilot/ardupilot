@@ -24,7 +24,7 @@ void Compass::cal_update()
             continue;
         }
         if (_calibrator[i]->failed()) {
-            AP_Notify::events.compass_cal_failed = 1;
+            AP_Notify::events.compass_cal_failed = true;
         }
 
         if (_calibrator[i]->running()) {
@@ -77,7 +77,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         }
     }
     if (!is_calibrating()) {
-        AP_Notify::events.initiated_compass_cal = 1;
+        AP_Notify::events.initiated_compass_cal = true;
     }
 
     if (_rotate_auto) {
@@ -158,13 +158,13 @@ bool Compass::start_calibration_all(bool retry, bool autosave, float delay, bool
 
 void Compass::_cancel_calibration(uint8_t i)
 {
-    AP_Notify::events.initiated_compass_cal = 0;
+    AP_Notify::events.initiated_compass_cal = false;
     Priority prio = Priority(i);
     if (_calibrator[prio] == nullptr) {
         return;
     }
     if (_calibrator[prio]->running() || _calibrator[prio]->get_state().status == CompassCalibrator::Status::WAITING_TO_START) {
-        AP_Notify::events.compass_cal_canceled = 1;
+        AP_Notify::events.compass_cal_canceled = true;
     }
     _cal_saved[prio] = false;
     _calibrator[prio]->stop();
@@ -214,7 +214,7 @@ bool Compass::_accept_calibration(uint8_t i)
         }
 
         if (!is_calibrating()) {
-            AP_Notify::events.compass_cal_saved = 1;
+            AP_Notify::events.compass_cal_saved = true;
         }
         return true;
     } else {
