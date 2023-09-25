@@ -538,34 +538,40 @@ void AP_TECS::_update_height_demand(void)
         _post_TO_hgt_offset *= (1.0f - coef);
         _hgt_dem = _hgt_dem_lpf + _post_TO_hgt_offset;
 
-        // during approach compensate for height filter lag
         if (_flags.is_doing_auto_land) {
+            // During approach compensate for height filter lag
             _hgt_dem += _hgt_dem_tconst * _hgt_rate_dem;
-        }
+            // During landing approach a larger decent rate may be possible depending on use of flaps and landing gear
+            // so remove all prior learned limiting
+            _max_sink_scaler = 1.0f;
+            // Ensure we can go immediately to a maximum climb if the landing is aborted
+            _max_climb_scaler = 1.0f;
 
-        // Don't allow height demand to get too far ahead of the vehicles current height
-        // if vehicle is unable to follow the demanded climb or descent
-        bool max_climb_condition   = (_pitch_dem_unc > _PITCHmaxf) ||
-                                        (_SEBdot_dem_clip == clipStatus::MAX);
-        bool max_descent_condition = (_pitch_dem_unc < _PITCHminf) ||
-                                        (_SEBdot_dem_clip == clipStatus::MIN);
-        if (_using_airspeed_for_throttle) {
-            // large height errors will result in the throttle saturating
-            max_climb_condition   |= (_thr_clip_status == clipStatus::MAX) &&
-                                        !((_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) || (_flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING));
-            max_descent_condition |= (_thr_clip_status == clipStatus::MIN);
-        }
-        const float hgt_dem_alpha = _DT / MAX(_DT + _hgt_dem_tconst, _DT);
-        if (max_climb_condition && _hgt_dem > _hgt_dem_prev) {
-                _max_climb_scaler *= (1.0f - hgt_dem_alpha);
-        } else if (!_flags.is_doing_auto_land && max_descent_condition && _hgt_dem < _hgt_dem_prev) {
-            _max_sink_scaler *= (1.0f - hgt_dem_alpha);
         } else {
-            _max_climb_scaler = _max_climb_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
-            _max_sink_scaler  =  _max_sink_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
+            // Don't allow height demand to get too far ahead of the vehicles current height
+            // if vehicle is unable to follow the demanded climb or descent
+            bool max_climb_condition   = (_pitch_dem_unc > _PITCHmaxf) ||
+                                            (_SEBdot_dem_clip == clipStatus::MAX);
+            bool max_descent_condition = (_pitch_dem_unc < _PITCHminf) ||
+                                            (_SEBdot_dem_clip == clipStatus::MIN);
+            if (_using_airspeed_for_throttle) {
+                // large height errors will result in the throttle saturating
+                max_climb_condition   |= (_thr_clip_status == clipStatus::MAX) &&
+                                            !((_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) || (_flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING));
+                max_descent_condition |= (_thr_clip_status == clipStatus::MIN);
+            }
+            const float hgt_dem_alpha = _DT / MAX(_DT + _hgt_dem_tconst, _DT);
+            if (max_climb_condition && _hgt_dem > _hgt_dem_prev) {
+                    _max_climb_scaler *= (1.0f - hgt_dem_alpha);
+            } else if (!_flags.is_doing_auto_land && max_descent_condition && _hgt_dem < _hgt_dem_prev) {
+                _max_sink_scaler *= (1.0f - hgt_dem_alpha);
+            } else {
+                _max_climb_scaler = _max_climb_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
+                _max_sink_scaler  =  _max_sink_scaler * (1.0f - hgt_dem_alpha) + hgt_dem_alpha;
+            }
+            _max_climb_scaler = constrain_float(_max_climb_scaler, 0.0f, 1.0f);
+            _max_sink_scaler = constrain_float(_max_sink_scaler, 0.0f, 1.0f);
         }
-        _max_climb_scaler = constrain_float(_max_climb_scaler, 0.0f, 1.0f);
-        _max_sink_scaler = constrain_float(_max_sink_scaler, 0.0f, 1.0f);
 
         _hgt_dem_prev = _hgt_dem;
 
