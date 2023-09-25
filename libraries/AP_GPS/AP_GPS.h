@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
@@ -57,10 +61,6 @@
 
 #ifndef GPS_MOVING_BASELINE
 #define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
-#endif
-
-#ifndef HAL_MSP_GPS_ENABLED
-#define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 #if GPS_MOVING_BASELINE
@@ -791,3 +791,5 @@ private:
 namespace AP {
     AP_GPS &gps();
 };
+
+#endif  // AP_GPS_ENABLED
