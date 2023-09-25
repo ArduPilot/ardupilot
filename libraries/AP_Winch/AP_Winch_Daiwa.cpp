@@ -8,6 +8,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+const char* AP_Winch_Daiwa::send_text_prefix = "Winch:";
+
 // true if winch is healthy
 bool AP_Winch_Daiwa::healthy() const
 {
@@ -40,6 +42,9 @@ void AP_Winch_Daiwa::update()
 
     // send outputs to winch
     control_winch();
+
+    // update_user
+    update_user();
 }
 
 //send generator status
@@ -220,6 +225,76 @@ void AP_Winch_Daiwa::control_winch()
         scaled_output = linear_interpolate(output_dz, 1000, fabsf(rate_limited), 0, config.rate_max) * (is_positive(rate_limited) ? 1.0f : -1.0f);
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
+}
+
+// update user with changes to winch state via send text messages
+void AP_Winch_Daiwa::update_user()
+{
+    // exit immediately if verbose output disabled
+    if (!option_enabled(AP_Winch::Options::VerboseOutput)) {
+        return;
+    }
+
+    // send updates at no more than 2hz
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - user_update.last_ms < 500) {
+        return;
+    }
+    bool update_sent = false;
+
+    // health change
+    const bool now_healthy = healthy();
+    if (user_update.healthy != now_healthy) {
+        user_update.healthy = now_healthy;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, now_healthy ? "healthy" : "not healthy");
+        update_sent = true;
+    }
+
+    // thread end
+    if (latest.thread_end && (user_update.thread_end != latest.thread_end)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s thread end", send_text_prefix);
+        update_sent = true;
+    }
+    user_update.thread_end = latest.thread_end;
+
+    // moving state
+    if (user_update.moving != latest.moving) {
+        // 0:stopped, 1:retracting line, 2:extending line, 3:clutch engaged, 4:zero reset
+        static const char* moving_str[] = {"stopped", "raising", "lowering", "free spinning", "zero reset"};
+        if (latest.moving < ARRAY_SIZE(moving_str)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, moving_str[latest.moving]);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s move state uknown", send_text_prefix);
+        }
+        update_sent = true;
+    }
+    user_update.moving = latest.moving;
+
+    // clutch state
+    if (user_update.clutch != latest.clutch) {
+        // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
+        static const char* clutch_str[] = {"off", "weak", "strong (free)"};
+        if (user_update.clutch < ARRAY_SIZE(clutch_str)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch %s", send_text_prefix, clutch_str[latest.moving]);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch state uknown", send_text_prefix);
+        }
+        update_sent = true;
+    }
+    user_update.clutch = latest.clutch;
+
+    // length in meters
+    const float latest_line_length_rounded = roundf(latest.line_length);
+    if (!is_equal(user_update.line_length, latest_line_length_rounded)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %dm", send_text_prefix, (int)latest_line_length_rounded);
+        update_sent = true;
+    }
+    user_update.line_length = latest_line_length_rounded;
+
+    // record time message last sent to user
+    if (update_sent) {
+        user_update.last_ms = now_ms;
+    }
 }
 
 #endif  // AP_WINCH_DAIWA_ENABLED

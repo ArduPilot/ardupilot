@@ -106,6 +106,18 @@ private:
         WAITING_FOR_PCB_TEMP,
         WAITING_FOR_MOTOR_TEMP
     } parse_state;
+
+    // update user with changes to winch state via send text messages
+    static const char* send_text_prefix;// send text prefix string to reduce flash cost
+    void update_user();
+    struct {
+        uint32_t last_ms;               // system time of last update to user
+        bool healthy;                   // latest reported health
+        float line_length;
+        bool thread_end;                // true if end of thread has been detected
+        uint8_t moving;                 // 0:stopped, 1:retracting line, 2:extending line, 3:clutch engaged, 4:zero reset
+        uint8_t clutch;                 // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
+    } user_update;
 };
 
 #endif  // AP_WINCH_DAIWA_ENABLED
