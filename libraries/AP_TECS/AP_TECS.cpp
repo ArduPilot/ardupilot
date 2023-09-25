@@ -1096,7 +1096,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
     _flags.reset = false;
 
     // Initialise states and variables if DT > 0.2 second or in climbout
-    if (_DT > 0.2f || _need_reset) {
+    if (_DT > 0.2f || _need_reset || _need_reset_with_defined_pitch) {
         _SKE_weighting        = 1.0f;
         _integTHR_state       = 0.0f;
         _integSEBdot          = 0.0f;
@@ -1133,7 +1133,9 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         const float fc = 1.0f / (M_2PI * _timeConst);
         _pitch_demand_lpf.set_cutoff_frequency(fc);
         _pitch_measured_lpf.set_cutoff_frequency(fc);
-        const float pitch = pitch_wrt_tecs_datum();
+
+        const float pitch = _need_reset_with_defined_pitch ? _reset_pitch_dem : pitch_wrt_tecs_datum();
+        _need_reset_with_defined_pitch = false;
         _pitch_demand_lpf.reset(pitch);
         _pitch_measured_lpf.reset(pitch);
         _last_pitch_dem = pitch;

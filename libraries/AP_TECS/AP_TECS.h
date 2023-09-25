@@ -138,9 +138,16 @@ public:
         _use_synthetic_airspeed_once = true;
     }
 
-    // reset on next loop
+    // reset all states on next loop equivalent to re-starting TECS
     void reset(void) {
         _need_reset = true;
+    }
+
+    // reset all states on next loop equivalent to re-starting TECS but with a defined
+    // initial TECS pitch demand in radians
+    void reset_with_defined_pitch(float pitch_dem_rad) {
+        _need_reset_with_defined_pitch = true;
+        _reset_pitch_dem = pitch_dem_rad;
     }
 
     // this supports the TECS_* user settable parameters
@@ -411,8 +418,12 @@ private:
 
     float _land_pitch_min = -90;
 
-    // need to reset on next loop
+    // need to do a full reset on next loop
     bool _need_reset;
+
+    // need to do a full reset on next loop using a defined initial pitch demand _reset_pitch_dem
+    bool _need_reset_with_defined_pitch;
+    float _reset_pitch_dem;
 
     float _SKE_weighting;
 
