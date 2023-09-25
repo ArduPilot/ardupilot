@@ -675,7 +675,10 @@ public:
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
     AP_Float                surftrak_tc;
-
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
+    AP_Int8                 failsafe_mr_enable;
+    AP_Int16                failsafe_mr_timeout;
+#endif
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
     AP_Float takeoff_throttle_max;

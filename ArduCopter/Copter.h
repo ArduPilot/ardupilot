@@ -754,6 +754,9 @@ private:
     void crash_check();
     void thrust_loss_check();
     void yaw_imbalance_check();
+    void desync_check();
+    uint32_t motor_failure_start_ms;
+
     LowPassFilterFloat yaw_I_filt{0.05f};
     uint32_t last_yaw_warn_ms;
     void parachute_check();

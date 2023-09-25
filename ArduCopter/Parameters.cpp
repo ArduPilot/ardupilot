@@ -1225,8 +1225,22 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
-#endif
 
+    // @Param: FS_MR_ENABLE
+    // @DisplayName: Motor restart Failsafe Action
+    // @Description: Failsafe action taken immediately after a motor restart
+    // @Values: 0:Disabled/NoAction,1:Land, 2:RTL, 3:SmartRTL or RTL, 4:SmartRTL or Land, 6:Auto DO_LAND_START or RTL
+    // @User: Advanced
+    AP_GROUPINFO("FS_MR_ENABLE", 8, ParametersG2, failsafe_mr_enable, (uint8_t)Copter::FailsafeAction::RTL),
+
+    // @Param: FS_MR_TIMEOUT
+    // @DisplayName: Motor restart Failsafe Timeout
+    // @Description: If a motor is lost for more than this many milliseonds the motor restart logic will be run and the failsafe action triggered. A value of zero indicates no attempt to restart motors.
+    // @Range: 0 1000
+    // @Units: ms
+    // @User: Advanced
+    AP_GROUPINFO("FS_MR_TIMEOUT", 9, ParametersG2, failsafe_mr_timeout, 0),
+#endif
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
