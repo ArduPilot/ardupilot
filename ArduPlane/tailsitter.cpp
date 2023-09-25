@@ -810,8 +810,8 @@ void Tailsitter_Transition::update()
 
     case TRANSITION_ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
-            plane.TECS_controller.reset();
             transition_state = TRANSITION_DONE;
+            plane.TECS_controller.reset_with_defined_pitch(radians(0.01f * (float)plane.nav_pitch_cd));
             if (plane.arming.is_armed_and_safety_off()) {
                 fw_limit_start_ms = now;
                 fw_limit_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);

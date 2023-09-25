@@ -1590,7 +1590,7 @@ void SLT_Transition::update()
     // the tilt will decrease rapidly)
     if (quadplane.tiltrotor.fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         if (transition_state == TRANSITION_TIMER) {
-            plane.TECS_controller.reset();
+            plane.TECS_controller.reset_with_defined_pitch(radians(0.01f * (float)plane.nav_pitch_cd));
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
         }
         transition_state = TRANSITION_DONE;
@@ -1706,7 +1706,7 @@ void SLT_Transition::update()
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
-            plane.TECS_controller.reset();
+            plane.TECS_controller.reset_with_defined_pitch(radians(0.01f * (float)plane.nav_pitch_cd));
         }
         float trans_time_ms = MAX((float)quadplane.transition_time_ms.get(),1);
         float transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
