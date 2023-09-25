@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include <AP_Logger/AP_Logger.h>
@@ -524,3 +528,5 @@ void AP_GPS_Backend::logging_start(void)
     logging_loop();
 }
 #endif // AP_GPS_DEBUG_LOGGING_ENABLED
+
+#endif  // AP_GPS_ENABLED

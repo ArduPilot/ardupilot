@@ -18,6 +18,10 @@
  */
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_RTC/JitterCorrection.h>
@@ -180,3 +184,5 @@ private:
 #endif
 
 };
+
+#endif  // AP_GPS_ENABLED

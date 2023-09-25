@@ -12,6 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
@@ -2330,3 +2334,5 @@ AP_GPS &gps()
 }
 
 };
+
+#endif  // AP_GPS_ENABLED
