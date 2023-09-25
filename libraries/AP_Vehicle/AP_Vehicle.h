@@ -289,7 +289,9 @@ protected:
     float G_Dt;
 
     // sensor drivers
+#if AP_GPS_ENABLED
     AP_GPS gps;
+#endif
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
