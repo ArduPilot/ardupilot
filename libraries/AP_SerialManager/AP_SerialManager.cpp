@@ -501,14 +501,6 @@ void AP_SerialManager::init()
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_Robotis:
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
-                    uart->set_unbuffered_writes(true);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    break;
-
                 case SerialProtocol_SLCAN:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
