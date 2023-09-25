@@ -71,7 +71,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     ap = AP_Param::first(&token, &type, &param_default);
 }
 
-bool LoggerMessageWriter_DFLogStart::out_of_time_for_writing_messages() const
+bool LoggerMessageWriter_DFLogStart::out_of_time_for_writing_messages_df() const
 {
     if (stage == Stage::FORMATS) {
         // write out the FMT messages as fast as we can
@@ -99,7 +99,7 @@ bool LoggerMessageWriter_DFLogStart::check_process_limit(uint32_t start_us)
 
 void LoggerMessageWriter_DFLogStart::process()
 {
-    if (out_of_time_for_writing_messages()) {
+    if (out_of_time_for_writing_messages_df()) {
         return;
     }
     // allow any stage to run for max 1ms, to prevent a long loop on arming
