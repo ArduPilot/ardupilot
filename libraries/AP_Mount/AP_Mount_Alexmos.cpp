@@ -59,14 +59,25 @@
 
 void AP_Mount_Alexmos::init()
 {
-    const AP_SerialManager& serial_manager = AP::serialmanager();
+    AP_SerialManager& serial_manager = AP::serialmanager();
 
     // check for alexmos protcol
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos, 0))) {
-        _initialised = true;
-        get_boardinfo();
-        read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
+    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos, 0);
+    if (_port == nullptr) {
+        return;
     }
+
+    // Note baudrate is hardcoded to 115200
+
+   // update baud param in case user looks at it
+    serial_manager.set_default_baud(AP_SerialManager::SerialProtocol_AlexMos, 0, 115200/1000);
+
+    _port->begin(115200, 128, 128);
+
+    _initialised = true;
+    get_boardinfo();
+    read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
+
     AP_Mount_Backend::init();
 }
 
