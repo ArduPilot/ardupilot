@@ -145,6 +145,27 @@ bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm
     return true;
 }
 
+// return all the motors in servo_channel_mask that are not running
+uint32_t AP_ESC_Telem::get_motors_not_running(uint32_t servo_channel_mask) const
+{
+    const uint32_t now = AP_HAL::micros();
+    uint32_t failed_motors = 0;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        if (BIT_IS_SET(servo_channel_mask, i)) {
+            const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[i];
+            // we choose a relatively strict measure of health so that failsafe actions can rely on the results
+            if (!rpm_data_within_timeout(rpmdata, now, ESC_RPM_CHECK_TIMEOUT_US)) {
+                BIT_SET(failed_motors, i);
+            }
+            else if (is_zero(rpmdata.rpm)) {
+                BIT_SET(failed_motors, i);
+            }
+        }
+    }
+    return failed_motors;
+}
+
 // is telemetry active for the provided channel mask
 bool AP_ESC_Telem::is_telemetry_active(uint32_t servo_channel_mask) const
 {
