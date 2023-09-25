@@ -453,6 +453,7 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
 
 #endif // COMPASS_CAL_ENABLED
 
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 /*
   get mag field with the effects of offsets, diagonals and
   off-diagonals removed
@@ -573,3 +574,5 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
 
     return MAV_RESULT_ACCEPTED;
 }
+
+#endif  // AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
