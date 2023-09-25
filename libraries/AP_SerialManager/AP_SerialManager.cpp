@@ -501,10 +501,6 @@ void AP_SerialManager::init()
                 case SerialProtocol_Aerotenna_USD1:
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
                     break;
-                case SerialProtocol_Volz:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
-                    break;
                 case SerialProtocol_Sbus1:
                     state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
                     uart->begin(state[i].baudrate(),
