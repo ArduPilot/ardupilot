@@ -4908,8 +4908,7 @@ class AutoTestCopter(AutoTest):
                           (mount_pitch, despitch))
             if success_start == 0:
                 success_start = now
-                continue
-            if now - success_start > hold:
+            if now - success_start >= hold:
                 self.progress("Mount pitch achieved")
                 return
 
