@@ -503,16 +503,8 @@ void AP_SerialManager::init()
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
                     break;
                 case SerialProtocol_Sbus1:
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
-                    uart->configure_parity(2);    // enable even parity
-                    uart->set_stop_bits(2);
-                    uart->set_unbuffered_writes(true);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    // initialised within library
                     break;
-
                 case SerialProtocol_ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
                     state[i].baud.set_and_default(115200 / 1000);
