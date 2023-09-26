@@ -2188,10 +2188,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             )
             self.wait_location(loc, accuracy=100)
-            self.progress("Stewing")
-            self.delay_sim_time(20)
+            self.progress("Orbit with GPS and learn wind")
+            # allow longer to learn wind if there is no airspeed sensor
+            if disable_airspeed_sensor:
+                self.delay_sim_time(60)
+            else:
+                self.delay_sim_time(20)
             self.set_parameter("SIM_GPS_DISABLE", 1)
-            self.progress("Roasting")
+            self.progress("Continue orbit without GPS")
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
