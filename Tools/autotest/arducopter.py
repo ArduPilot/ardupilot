@@ -10000,6 +10000,9 @@ class AutoTestCopter(AutoTest):
              self.MAVLandedStateTakeoff,
              self.Weathervane,
              self.MAV_CMD_AIRFRAME_CONFIGURATION,
+             self.MAV_CMD_NAV_LOITER_UNLIM,
+             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+             self.MAV_CMD_NAV_VTOL_LAND,
         ])
         return ret
 
@@ -10280,6 +10283,30 @@ class AutoTestCopter(AutoTest):
         '''test MAV_CMD_DO_FLIGHTTERMINATION works on Copter'''
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd)
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int)
+
+    def MAV_CMD_NAV_LOITER_UNLIM(self):
+        '''ensure MAV_CMD_NAV_LOITER_UNLIM via mavlink works'''
+        for command in self.run_cmd, self.run_cmd_int:
+            self.change_mode('STABILIZE')
+            command(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
+            self.wait_mode('LOITER')
+
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
+        '''ensure MAV_CMD_NAV_RETURN_TO_LAUNCH via mavlink works'''
+        for command in self.run_cmd, self.run_cmd_int:
+            self.change_mode('STABILIZE')
+            command(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            self.wait_mode('RTL')
+
+    def MAV_CMD_NAV_VTOL_LAND(self):
+        '''ensure MAV_CMD_NAV_LAND via mavlink works'''
+        for command in self.run_cmd, self.run_cmd_int:
+            self.change_mode('STABILIZE')
+            command(mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND)
+            self.wait_mode('LAND')
+            self.change_mode('STABILIZE')
+            command(mavutil.mavlink.MAV_CMD_NAV_LAND)
+            self.wait_mode('LAND')
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
