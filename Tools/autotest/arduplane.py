@@ -4926,6 +4926,25 @@ class AutoTestPlane(AutoTest):
         self._MAV_CMD_DO_GO_AROUND(self.run_cmd)
         self._MAV_CMD_DO_GO_AROUND(self.run_cmd_int)
 
+    def _MAV_CMD_DO_FLIGHTTERMINATION(self, command):
+        self.set_parameters({
+            "AFS_ENABLE": 1,
+            "SYSID_MYGCS": self.mav.source_system,
+            "AFS_TERM_ACTION": 42,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        command(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=1)
+        self.wait_disarmed()
+        self.wait_text('Terminating due to GCS request', check_context=True)
+        self.reboot_sitl()
+
+    def MAV_CMD_DO_FLIGHTTERMINATION(self):
+        '''test MAV_CMD_DO_FLIGHTTERMINATION works on Plane'''
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd)
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5022,6 +5041,7 @@ class AutoTestPlane(AutoTest):
             self.MAV_CMD_DO_INVERTED_FLIGHT,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
             self.MAV_CMD_DO_GO_AROUND,
+            self.MAV_CMD_DO_FLIGHTTERMINATION,
         ])
         return ret
 

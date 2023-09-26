@@ -10264,6 +10264,23 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def _MAV_CMD_DO_FLIGHTTERMINATION(self, command):
+        self.set_parameters({
+            "SYSID_MYGCS": self.mav.source_system,
+            "DISARM_DELAY": 0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        command(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=1)
+        self.wait_disarmed()
+        self.reboot_sitl()
+
+    def MAV_CMD_DO_FLIGHTTERMINATION(self):
+        '''test MAV_CMD_DO_FLIGHTTERMINATION works on Copter'''
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd)
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int)
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10328,6 +10345,7 @@ class AutoTestCopter(AutoTest):
             self.RPLidarA2,
             self.SafetySwitch,
             self.BrakeZ,
+            self.MAV_CMD_DO_FLIGHTTERMINATION,
         ])
         return ret
 
