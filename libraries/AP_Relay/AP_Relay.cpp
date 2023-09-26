@@ -60,54 +60,37 @@
 
 
 const AP_Param::GroupInfo AP_Relay::var_info[] = {
-    // @Param: PIN
-    // @DisplayName: First Relay Pin
-    // @Description: Digital pin number for first relay control. This is the pin used for camera shutter control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,27:BBBMini Pin P8.17,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN",  0, AP_Relay, _pin[0], RELAY1_PIN_DEFAULT),
+    // 0 was PIN
+    // 1 was PIN2
+    // 2 was PIN3
+    // 3 was PIN4
+    // 4 was DEFAULT
+    // 5 was PIN5
+    // 6 was PIN6
 
-    // @Param: PIN2
-    // @DisplayName: Second Relay Pin
-    // @Description: Digital pin number for 2nd relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,65:BBBMini Pin P8.18,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN2",  1, AP_Relay, _pin[1], RELAY2_PIN_DEFAULT),
+    // @Group: 1_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[0], "1_", 7, AP_Relay, AP_Relay_Params),
 
-    // @Param: PIN3
-    // @DisplayName: Third Relay Pin
-    // @Description: Digital pin number for 3rd relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,22:BBBMini Pin P8.19,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN3",  2, AP_Relay, _pin[2], RELAY3_PIN_DEFAULT),
+    // @Group: 2_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[1], "2_", 8, AP_Relay, AP_Relay_Params),
 
-    // @Param: PIN4
-    // @DisplayName: Fourth Relay Pin
-    // @Description: Digital pin number for 4th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,63:BBBMini Pin P8.34,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN4",  3, AP_Relay, _pin[3], RELAY4_PIN_DEFAULT),
+    // @Group: 3_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[2], "3_", 9, AP_Relay, AP_Relay_Params),
 
-    // @Param: DEFAULT
-    // @DisplayName: Default relay state
-    // @Description: The state of the relay on boot.
-    // @User: Standard
-    // @Values: 0:Off,1:On,2:NoChange
-    AP_GROUPINFO("DEFAULT",  4, AP_Relay, _default, 0),
+    // @Group: 4_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[3], "4_", 10, AP_Relay, AP_Relay_Params),
 
-    // @Param: PIN5
-    // @DisplayName: Fifth Relay Pin
-    // @Description: Digital pin number for 5th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,62:BBBMini Pin P8.13,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN5",  5, AP_Relay, _pin[4], RELAY5_PIN_DEFAULT),
+    // @Group: 5_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[4], "5_", 11, AP_Relay, AP_Relay_Params),
 
-    // @Param: PIN6
-    // @DisplayName: Sixth Relay Pin
-    // @Description: Digital pin number for 6th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @User: Standard
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,37:BBBMini Pin P8.14,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
-    AP_GROUPINFO("PIN6",  6, AP_Relay, _pin[5], RELAY6_PIN_DEFAULT),
+    // @Group: 6_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[5], "6_", 12, AP_Relay, AP_Relay_Params),
 
     AP_GROUPEND
 };
@@ -128,14 +111,127 @@ AP_Relay::AP_Relay(void)
     singleton = this;
 }
 
+void AP_Relay::convert_params()
+{
+    // Find old default param
+    int8_t default_state = 0; // off was the old behaviour
+    const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
+
+    // grab the old values if they were set
+    for (uint8_t i = 0; i < MIN(AP_RELAY_NUM_RELAYS, 6); i++) {
+
+        uint8_t param_index = i;
+        if (i > 3) {
+            // Skip over the old DEFAULT parameter at index 4
+            param_index += 1;
+        }
+
+        int8_t pin = 0;
+        if (!_params[i].pin.configured() && AP_Param::get_param_by_index(this, param_index, AP_PARAM_INT8, &pin) && (pin >= 0)) {
+            // if the pin isn't negative we can assume the user might have been using it, map it to the old school relay interface
+            _params[i].pin.set_and_save(pin);
+            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::relay));
+
+            if (have_default) {
+                _params[i].default_state.set_and_save(default_state);
+            }
+        }
+
+    }
+}
+
+void AP_Relay::set_defaults() {
+    const int8_t pins[] = { RELAY1_PIN_DEFAULT,
+                             RELAY2_PIN_DEFAULT,
+                             RELAY3_PIN_DEFAULT,
+                             RELAY4_PIN_DEFAULT,
+                             RELAY5_PIN_DEFAULT,
+                             RELAY6_PIN_DEFAULT };
+
+    for (uint8_t i = 0; i < MIN(uint8_t(AP_RELAY_NUM_RELAYS), ARRAY_SIZE(pins)); i++) {
+        // set the default
+        if (pins[i] != -1) {
+            _params[i].pin.set_default(pins[i]);
+        }
+    }
+}
 
 void AP_Relay::init()
 {
-    if (_default != 0 && _default != 1) {
+    set_defaults();
+
+    convert_params();
+
+    // setup the actual default values of all the pins
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        const int8_t pin = _params[instance].pin;
+        if (pin == -1) {
+            // no valid pin to set it on, skip it
+            continue;
+        }
+
+        const AP_Relay_Params::Function function = _params[instance].function;
+        if (function < AP_Relay_Params::Function::relay || function >= AP_Relay_Params::Function::num_functions) {
+            // invalid function, skip it
+            continue;
+        }
+
+        if (function == AP_Relay_Params::Function::relay) {
+            // relay by instance number, set the state to match our output
+            const AP_Relay_Params::DefaultState default_state = _params[instance].default_state;
+            if ((default_state == AP_Relay_Params::DefaultState::OFF) ||
+                (default_state == AP_Relay_Params::DefaultState::ON)) {
+
+                set_pin_by_instance(instance, (bool)default_state);
+            }
+        } else {
+            // all functions are supposed to be off by default
+            // this will need revisiting when we support inversion
+            set_pin_by_instance(instance, false);
+        }
+    }
+}
+
+void AP_Relay::set(const AP_Relay_Params::Function function, const bool value) {
+    if (function <= AP_Relay_Params::Function::none && function >= AP_Relay_Params::Function::num_functions) {
+        // invalid function
         return;
     }
-    for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
-        set(i, _default);
+
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        if (function != _params[instance].function) {
+            continue;
+        }
+
+        set_pin_by_instance(instance, value);
+    }
+}
+
+// set a pins output state by instance and log if required
+// this is an internal helper, instance must have already been validated to be in range
+void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
+{
+    const int8_t pin = _params[instance].pin;
+    if (pin == -1) {
+        // no valid pin to set it on, skip it
+        return;
+    }
+
+#if AP_SIM_ENABLED
+    if (!(AP::sitl()->on_hardware_relay_enable_mask & (1U << instance))) {
+        return;
+    }
+#endif
+
+    hal.gpio->pinMode(pin, HAL_GPIO_OUTPUT);
+    const bool initial_value = (bool)hal.gpio->read(pin);
+
+    if (initial_value != value) {
+        hal.gpio->write(pin, value);
+        AP::logger().Write("RELY", "TimeUS,Instance,State", "s#-", "F--", "QBB",
+                            AP_HAL::micros64(),
+                            instance,
+                            value);
     }
 }
 
@@ -144,32 +240,18 @@ void AP_Relay::set(const uint8_t instance, const bool value)
     if (instance >= AP_RELAY_NUM_RELAYS) {
         return;
     }
-    if (_pin[instance] == -1) {
+
+    if (_params[instance].function != AP_Relay_Params::Function::relay) {
         return;
     }
-    const uint32_t now = AP_HAL::millis();
-    _pin_states = value ? _pin_states | (1U<<instance) : _pin_states & ~(1U<<instance);
-    if ((_pin_states != _last_logged_pin_states) && (now - _last_log_ms > 10)) {
-       AP::logger().Write("RELY", "TimeUS,State", "s-", "F-", "QB",
-                                        AP_HAL::micros64(),
-                                        _pin_states);
-       _last_log_ms = now;
-       _last_logged_pin_states = _pin_states;
-    }
-#if AP_SIM_ENABLED
-    if (!(AP::sitl()->on_hardware_relay_enable_mask & (1U << instance))) {
-        return;
-    }
-#endif
-    hal.gpio->pinMode(_pin[instance], HAL_GPIO_OUTPUT);
-    hal.gpio->write(_pin[instance], value);
+
+    set_pin_by_instance(instance, value);
 }
 
 void AP_Relay::toggle(uint8_t instance)
 {
-    if (instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1) {
-        bool ison = hal.gpio->read(_pin[instance]);
-        set(instance, !ison);
+    if (instance < AP_RELAY_NUM_RELAYS) {
+        set(instance, !get(instance));
     }
 }
 
@@ -177,12 +259,10 @@ void AP_Relay::toggle(uint8_t instance)
 bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
-        int8_t pin = _pin[i].get();
+        const int8_t pin = _params[i].pin.get();
         if (pin != -1 && !hal.gpio->valid_pin(pin)) {
-            char param_name_buf[11] = "RELAY_PIN";
-            if (i > 0) {
-                hal.util->snprintf(param_name_buf, ARRAY_SIZE(param_name_buf), "RELAY_PIN%u", unsigned(i+1));
-            }
+            char param_name_buf[14];
+            hal.util->snprintf(param_name_buf, ARRAY_SIZE(param_name_buf), "RELAY%u_PIN", unsigned(i+1));
             uint8_t servo_ch;
             if (hal.gpio->pin_to_servo_channel(pin, servo_ch)) {
                 hal.util->snprintf(buffer, buflen, "%s=%d, set SERVO%u_FUNCTION=-1", param_name_buf, int(pin), unsigned(servo_ch+1));
@@ -195,6 +275,29 @@ bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+bool AP_Relay::get(uint8_t instance) const
+{
+    if (instance >= AP_RELAY_NUM_RELAYS) {
+        // invalid instance
+        return false;
+    }
+
+    const int8_t pin = _params[instance].pin.get();
+
+    if (pin < 0) {
+        // invalid pin
+        return false;
+    }
+
+    return (bool)hal.gpio->read(pin);
+}
+
+// see if the relay is enabled
+bool AP_Relay::enabled(uint8_t instance) const 
+{
+    // Must be a valid instance with function relay and pin set
+    return (instance < AP_RELAY_NUM_RELAYS) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::Function::relay);
+}
 
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
 // this method may only return false if there is no space in the
@@ -214,7 +317,7 @@ bool AP_Relay::send_relay_status(const GCS_MAVLINK &link) const
         const uint16_t relay_bit_mask = 1U << i;
         present_mask |= relay_bit_mask;
 
-        if (_pin_states & relay_bit_mask) {
+        if (get(i)) {
             on_mask |= relay_bit_mask;
         }
     }
