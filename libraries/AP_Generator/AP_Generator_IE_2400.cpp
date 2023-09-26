@@ -395,7 +395,7 @@ bool AP_Generator_IE_2400::is_low_error(const uint32_t err_in) const
 bool AP_Generator_IE_2400::check_for_err_code(char* msg_txt, uint8_t msg_len) const
 {
     if ((_version == ProtocolVersion::V2) && (strlen(_valid_V2.info_str) > 0)) {
-        hal.util->snprintf(msg_txt, msg_len, "Fuel cell err %s", _valid_V2.info_str);
+        hal.util->snprintf(msg_txt, msg_len, "Fuel cell err %u.%u: %s", (unsigned)_err_code, (unsigned)_sub_err_code, _valid_V2.info_str);
         return true;
     }
 

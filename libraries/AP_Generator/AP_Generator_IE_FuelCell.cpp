@@ -168,7 +168,7 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     update_state_msg();
 
     // Check error codes
-    char msg_txt[32];
+    char msg_txt[64];
     if (check_for_err_code_if_changed(msg_txt, sizeof(msg_txt))) {
         GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
     }
