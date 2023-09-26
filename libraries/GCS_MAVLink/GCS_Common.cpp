@@ -3260,7 +3260,7 @@ void GCS_MAVLINK::deadlock_sem(void)
 /*
   handle a flight termination request
  */
-MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &packet)
 {
 #if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe *failsafe = AP::advancedfailsafe();
@@ -4852,10 +4852,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_request_message(packet);
         break;
 
-    case MAV_CMD_DO_FLIGHTTERMINATION:
-        result = handle_flight_termination(packet);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5108,6 +5104,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
 #endif
+
+    case MAV_CMD_DO_FLIGHTTERMINATION:
+        return handle_flight_termination(packet);
+
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
