@@ -35,11 +35,6 @@ void ModeQStabilize::update()
         plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
         plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
     }
-
-    if (plane.control_mode->mode_number() == Mode::Number::QSTABILIZE) {
-        // protect against this function running twice
-        plane.quadplane.assign_tilt_to_fwd_thr();
-    }
 }
 
 // quadplane stabilize mode
@@ -51,6 +46,8 @@ void ModeQStabilize::run()
         Mode::run();
         return;
     }
+
+    plane.quadplane.assign_tilt_to_fwd_thr();
 
     // special check for ESC calibration in QSTABILIZE
     if (quadplane.esc_calibration != 0) {

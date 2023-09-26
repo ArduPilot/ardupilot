@@ -2972,6 +2972,9 @@ QuadPlane::ActiveFwdThr QuadPlane::get_vfwd_method(void) const
     return ActiveFwdThr::NONE;
 }
 
+/*
+  map from pitch tilt to fwd throttle when enabled
+ */
 void QuadPlane::assign_tilt_to_fwd_thr(void) {
 
     const auto fwd_thr_active = get_vfwd_method();
@@ -2991,7 +2994,8 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     if (is_positive(fwd_tilt_range_cd)) {
         // rate limit the forward tilt change to slew between the motor good and motor failed
         // value over 10 seconds
-        const float fwd_pitch_lim_cd_tgt = plane.quadplane.pos_control->get_fwd_pitch_is_limited() ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
+        const bool fwd_limited = plane.quadplane.pos_control->is_active_xy() and plane.quadplane.pos_control->get_fwd_pitch_is_limited();
+        const float fwd_pitch_lim_cd_tgt = fwd_limited ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
         const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
         q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
         // Don't let the forward pitch limit be more than the forward pitch demand before limiting to
