@@ -799,7 +799,7 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
         );
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
+MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_t &packet) {
     if (packet.param1 > 0.5f) {
         sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;

@@ -15,7 +15,7 @@ protected:
         return 0;
     };
 
-    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg) override;
