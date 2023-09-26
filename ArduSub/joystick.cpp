@@ -593,6 +593,21 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_custom_6:
         // Not implemented
         break;
+
+#if AP_SCRIPTING_ENABLED
+    case JSButton::button_function_t::k_script_1:
+        sub.script_buttons[0].press();
+        break;
+    case JSButton::button_function_t::k_script_2:
+        sub.script_buttons[1].press();
+        break;
+    case JSButton::button_function_t::k_script_3:
+        sub.script_buttons[2].press();
+        break;
+    case JSButton::button_function_t::k_script_4:
+        sub.script_buttons[3].press();
+        break;
+#endif // AP_SCRIPTING_ENABLED
     }
 }
 
@@ -637,6 +652,21 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
     }
         break;
 #endif
+
+#if AP_SCRIPTING_ENABLED
+    case JSButton::button_function_t::k_script_1:
+        sub.script_buttons[0].release();
+        break;
+    case JSButton::button_function_t::k_script_2:
+        sub.script_buttons[1].release();
+        break;
+    case JSButton::button_function_t::k_script_3:
+        sub.script_buttons[2].release();
+        break;
+    case JSButton::button_function_t::k_script_4:
+        sub.script_buttons[3].release();
+        break;
+#endif // AP_SCRIPTING_ENABLED
     }
 }
 
@@ -730,3 +760,15 @@ void Sub::clear_input_hold()
     zTrim = 0;
     input_hold_engaged = false;
 }
+
+#if AP_SCRIPTING_ENABLED
+bool Sub::is_button_pressed(uint8_t index)
+{
+    return script_buttons[index - 1].is_pressed();
+}
+
+uint8_t Sub::get_and_clear_button_count(uint8_t index)
+{
+    return script_buttons[index - 1].get_and_clear_count();
+}
+#endif // AP_SCRIPTING_ENABLED
