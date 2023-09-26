@@ -1002,6 +1002,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return handle_command_DO_VTOL_TRANSITION(packet);
 #endif
 
+    case MAV_CMD_DO_GO_AROUND:
+        return plane.trigger_land_abort(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -1060,9 +1063,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
-
-    case MAV_CMD_DO_GO_AROUND:
-        return plane.trigger_land_abort(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet, msg);
