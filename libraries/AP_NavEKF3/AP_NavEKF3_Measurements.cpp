@@ -872,7 +872,7 @@ void NavEKF3_core::readAirSpdData()
     // Allow use of a default value or a value synthesised from a stored wind velocity vector
     if (!useAirspeed()) {
         if (is_positive(defaultAirSpeed)) {
-            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+            if (imuDataDelayed.time_ms - lastTasPassTime_ms > 200) {
                 tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
                 tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
                 tasDataToFuse = true;
@@ -881,7 +881,7 @@ void NavEKF3_core::readAirSpdData()
                 tasDataToFuse = false;
             }
         } else if (windStateLastObsIsValid && !windStateIsObservable) {
-            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+            if (imuDataDelayed.time_ms - lastTasPassTime_ms > 200) {
                 // use stored wind state to synthesise an airspeed measurement
                 const Vector3F windRelVel = stateStruct.velocity - Vector3F(windStateLastObs.x, windStateLastObs.y, 0.0F);
                 tasDataDelayed.tas = windRelVel.length();
