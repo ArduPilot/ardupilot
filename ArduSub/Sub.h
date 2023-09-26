@@ -530,7 +530,7 @@ private:
     uint16_t get_pilot_speed_dn() const;
 
     void convert_old_parameters(void);
-    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();
 
