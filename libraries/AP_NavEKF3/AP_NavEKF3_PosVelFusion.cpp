@@ -1041,7 +1041,7 @@ void NavEKF3_core::FuseVelPosNED()
                 }
 
                 // inhibit wind state estimation by setting Kalman gains to zero
-                if (!inhibitWindStates) {
+                if (!inhibitWindStates && !treatWindStatesAsTruth) {
                     Kfusion[22] = P[22][stateIndex]*SK;
                     Kfusion[23] = P[23][stateIndex]*SK;
                 } else {
@@ -1549,7 +1549,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 16, 21);
             }
 
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = t77*(P[22][5]*t4+P[22][4]*t9+P[22][0]*t14-P[22][6]*t11+P[22][1]*t18-P[22][2]*t21+P[22][3]*t24);
                 Kfusion[23] = t77*(P[23][5]*t4+P[23][4]*t9+P[23][0]*t14-P[23][6]*t11+P[23][1]*t18-P[23][2]*t21+P[23][3]*t24);
             } else {
@@ -1726,7 +1726,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 16, 21);
             }
 
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = t77*(-P[22][4]*t3+P[22][5]*t8+P[22][0]*t15+P[22][6]*t12+P[22][1]*t18+P[22][2]*t22-P[22][3]*t25);
                 Kfusion[23] = t77*(-P[23][4]*t3+P[23][5]*t8+P[23][0]*t15+P[23][6]*t12+P[23][1]*t18+P[23][2]*t22-P[23][3]*t25);
             } else {
@@ -1904,7 +1904,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 16, 21);
             }
 
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = t77*(P[22][4]*t4+P[22][0]*t14+P[22][6]*t9-P[22][5]*t11-P[22][1]*t17+P[22][2]*t20+P[22][3]*t24);
                 Kfusion[23] = t77*(P[23][4]*t4+P[23][0]*t14+P[23][6]*t9-P[23][5]*t11-P[23][1]*t17+P[23][2]*t20+P[23][3]*t24);
             } else {
