@@ -529,7 +529,7 @@ void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 } // end handle mavlink
 
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_int_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
     if (packet.param1 > 0.5f) {

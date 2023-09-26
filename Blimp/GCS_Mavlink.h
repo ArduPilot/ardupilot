@@ -13,7 +13,7 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
