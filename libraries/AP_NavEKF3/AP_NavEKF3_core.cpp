@@ -1086,10 +1086,18 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
 
     if (!inhibitWindStates) {
         const bool isDragFusionDeadReckoning = filterStatus.flags.dead_reckoning && !dragTimeout;
-        treatWindStatesAsTruth = isDragFusionDeadReckoning || !windStateIsObservable;
-        if (treatWindStatesAsTruth) {
+        const bool newTreatWindStatesAsTruth = isDragFusionDeadReckoning || !windStateIsObservable;
+        if (newTreatWindStatesAsTruth) {
+            treatWindStatesAsTruth = true;
             P[23][23] = P[22][22] = 0.0f;
         } else {
+            if (treatWindStatesAsTruth) {
+                treatWindStatesAsTruth = false;
+                if (windStateIsObservable) {
+                    // allow EKF to relearn wind states rapidly
+                    P[23][23] = P[22][22] = sq(WIND_VEL_VARIANCE_MAX);
+                }
+            }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
 	        if (!tasDataDelayed.allowFusion) {
 	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
