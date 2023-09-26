@@ -1478,7 +1478,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 } // end handle mavlink
 
 
-MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
+MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {
 #if ADVANCED_FAILSAFE == ENABLED
     if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
         return MAV_RESULT_ACCEPTED;
