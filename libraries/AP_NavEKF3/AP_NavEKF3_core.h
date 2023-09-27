@@ -957,8 +957,8 @@ private:
     // zero attitude state covariances, but preserve variances
     void zeroAttCovOnly();
 
-    // record a yaw reset event
-    void recordYawReset();
+    // record all requested yaw resets completed
+    void recordYawResetsCompleted();
 
     // record a magnetic field state reset event
     void recordMagReset();
