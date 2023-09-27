@@ -734,6 +734,13 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Units: m
     AP_GROUPINFO("GPS_VACC_MAX", 10, NavEKF3, _gpsVAccThreshold, 0.0f),
 
+    // @Param: OPTIONS
+    // @DisplayName: Optional EKF behaviour
+    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
+    // @Bitmask: 0:JammingExpected
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
+
     AP_GROUPEND
 };
 
