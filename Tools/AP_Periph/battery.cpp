@@ -75,7 +75,53 @@ void AP_Periph_FW::can_battery_update(void)
                         CANARD_TRANSFER_PRIORITY_LOW,
                         &buffer[0],
                         total_size);
+
+        // Send individual cell information if available
+        if (battery_lib.has_cell_voltages(i)) {
+            can_battery_send_cells(i);
+        }
     }
+}
+
+/*
+  send individual cell voltages if available
+ */
+void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
+{
+    // allocate space for the packet. This is a large
+    // packet that won't fit on the stack, so dynamically allocate
+    auto* pkt = new ardupilot_equipment_power_BatteryInfoAux;
+    uint8_t* buffer = new uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
+    if (pkt == nullptr || buffer == nullptr) {
+        delete pkt;
+        delete [] buffer;
+        return;
+    }
+    const auto &cell_voltages = battery_lib.get_cell_voltages(instance);
+			
+    for (uint8_t i = 0; i < ARRAY_SIZE(cell_voltages.cells); i++) {
+        if (cell_voltages.cells[i] == 0xFFFFU) {
+            break;
+        }
+        pkt->voltage_cell.data[i] = cell_voltages.cells[i]*0.001;
+        pkt->voltage_cell.len = i+1;
+    }
+			
+    pkt->max_current = nanf("");
+    pkt->nominal_voltage = nanf("");
+
+    // encode and send message:
+    const uint16_t total_size = ardupilot_equipment_power_BatteryInfoAux_encode(pkt, buffer, !periph.canfdout());
+
+    canard_broadcast(ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_SIGNATURE,
+                     ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_ID,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     buffer,
+                     total_size);
+
+    // Delete temporary buffers
+    delete pkt;
+    delete [] buffer;
 }
 
 #endif // HAL_PERIPH_ENABLE_BATTERY
