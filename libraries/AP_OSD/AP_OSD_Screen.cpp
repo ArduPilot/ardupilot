@@ -1354,7 +1354,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     case VoltageType::RESTING_CELL: { 
         blinkvolt = osd->warn_avgcellrestvolt;
         v = battery.voltage_resting_estimate(instance);
-         FALLTHROUGH;
+        FALLTHROUGH;
     }
     case VoltageType::AVG_CELL: {         
        if (type == VoltageType::AVG_CELL) { //for fallthrough of RESTING_CELL
@@ -1376,10 +1376,18 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     }    
     if (!show_remaining_pct) {
         // Do not show battery percentage
-        backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+            backend->write(x,y, v < blinkvolt, "%1.2f%c", (double)v, SYMBOL(SYM_VOLT));
+        } else {
+            backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        }
         return;
     }
-    backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+        backend->write(x,y, v < blinkvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    } else {
+        backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    }
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
