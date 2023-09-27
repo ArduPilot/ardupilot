@@ -947,7 +947,7 @@ void ModeGuided::angle_control_run()
 
     // TODO: use get_alt_hold_state
     // landed with positive desired climb rate, takeoff
-    if (copter.ap.land_complete && (guided_angle_state.climb_rate_cms > 0.0f)) {
+    if (copter.ap.land_complete && is_positive(guided_angle_state.climb_rate_cms)) {
         zero_throttle_and_relax_ac();
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
@@ -1052,7 +1052,7 @@ bool ModeGuided::limit_check()
     }
 
     // check if we have gone beyond horizontal limit
-    if (guided_limit.horiz_max_cm > 0.0f) {
+    if (is_positive(guided_limit.horiz_max_cm)) {
         const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
