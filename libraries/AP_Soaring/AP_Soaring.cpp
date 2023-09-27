@@ -239,7 +239,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
         const float mcCreadyAlt = McCready(alt);
         if (_thermalability < mcCreadyAlt) {
             result = LoiterStatus::THERMAL_WEAK;
-        } else if (alt < (-_thermal_start_pos.z) || _vario.get_filtered_climb() < 0.0) {
+        } else if (alt < (-_thermal_start_pos.z) || is_negative(_vario.get_filtered_climb())) {
             result = LoiterStatus::ALT_LOST;
         } else if (check_drift(prev_wp, next_wp)) {
             result = LoiterStatus::DRIFT_EXCEEDED;
