@@ -13,7 +13,7 @@ public:
     CLASS_NO_COPY(AP_YawController);
 
     // return true if rate control or damping is enabled
-    bool enabled() const { return rate_control_enabled() || (_K_D > 0.0); } 
+    bool enabled() const { return rate_control_enabled() || is_positive(_K_D); } 
 
     // return true if rate control is enabled
     bool rate_control_enabled(void) const { return _rate_enable != 0; }
