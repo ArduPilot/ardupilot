@@ -1110,8 +1110,8 @@ private:
     Vector3F magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     ftype tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances should not be used
-    Vector2F windStateLastObs;      // wind states from the last time wind states were constrained using observations (m/s)
-    bool windStateLastObsIsValid;
+    ftype lastAirspeedEstimate;     // last true airspeed estimate (m/s)
+    bool lastAspdEstIsValid;        // true when the last true airspeed estimate is valid (m/s)
     bool windStateIsObservable;     // true when wind states are observable from measurements.
     bool treatWindStatesAsTruth;    // true when wind states should be used as a truth reference
     bool windStatesAligned;         // true when wind states have been aligned
