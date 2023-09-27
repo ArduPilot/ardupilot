@@ -193,7 +193,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
     if (fabsf(Nu) > Nu_limit &&
         fabsf(_last_Nu) > Nu_limit &&
         labs(wrap_180_cd(_target_bearing_cd - get_yaw_sensor())) > 12000 &&
-        Nu * _last_Nu < 0.0f) {
+        is_negative(Nu * _last_Nu)) {
         // we are moving away from the target waypoint and pointing
         // away from the waypoint (not flying backwards). The sign
         // of Nu has also changed, which means we are
@@ -429,7 +429,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     float velTangent = xtrackVelCap * float(loiter_direction);
 
     //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
-    if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
+    if (is_negative(ltrackVelCap) && is_negative(velTangent)) {
         latAccDemCircPD =  MAX(latAccDemCircPD, 0.0f);
     }
 
@@ -442,7 +442,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // Perform switchover between 'capture' and 'circle' modes at the
     // point where the commands cross over to achieve a seamless transfer
     // Only fly 'capture' mode if outside the circle
-    if (xtrackErrCirc > 0.0f && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc) {
+    if (is_positive(xtrackErrCirc) && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc) {
         _latAccDem = latAccDemCap;
         _WPcircle = false;
         _bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
