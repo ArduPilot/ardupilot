@@ -854,46 +854,50 @@ void NavEKF3_core::readAirSpdData()
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
 
-    const auto *airspeed = dal.airspeed();
-    if (airspeed &&
-        (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
-        timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
-        tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
-        tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
-        tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
-
-        // Correct for the average intersampling delay due to the filter update rate
-        tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Save data into the buffer to be fused when the fusion time horizon catches up with it
-        storedTAS.push(tasDataNew);
-    }
-
-    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-    tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-
-    // Allow use of a default value or a value synthesised from a stored wind velocity vector
-    if (!useAirspeed()) {
+    if (useAirspeed()) {
+        const auto *airspeed = dal.airspeed();
+        if (airspeed &&
+            (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
+            tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
+            if (tasDataNew.allowFusion) {
+                tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
+                timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
+                tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
+                tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
+                // Correct for the average intersampling delay due to the filter update rate
+                tasDataNew.time_ms -= localFilterTimeStep_ms/2;
+                // Save data into the buffer to be fused when the fusion time horizon catches up with it
+                storedTAS.push(tasDataNew);
+            }
+        }
+        // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
+        tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+    } else {
         if (is_positive(defaultAirSpeed)) {
-            if (imuDataDelayed.time_ms - lastTasPassTime_ms > 200) {
+            // this is the preferred method with the autopilot providing a model based airspeed estimate
+            if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
                 tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
                 tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
                 tasDataToFuse = true;
                 tasDataDelayed.allowFusion = true;
+                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
             } else {
                 tasDataToFuse = false;
+                tasDataDelayed.allowFusion = false;
             }
-        } else if (windStateLastObsIsValid && !windStateIsObservable) {
-            if (imuDataDelayed.time_ms - lastTasPassTime_ms > 200) {
-                // use stored wind state to synthesise an airspeed measurement
-                const Vector3F windRelVel = stateStruct.velocity - Vector3F(windStateLastObs.x, windStateLastObs.y, 0.0F);
-                tasDataDelayed.tas = windRelVel.length();
-                tasDataDelayed.tasVariance = sq(MAX(frontend->_easNoise, 0.5f));
+        } else if (lastAspdEstIsValid && !windStateIsObservable) {
+            // this uses the last airspeed estimated before dead reckoning started and
+            // wind states became unobservable
+            if (lastAspdEstIsValid && imuDataDelayed.time_ms - prevTasStep_ms > 200) {
+                tasDataDelayed.tas = lastAirspeedEstimate;
+                // this airspeed estimate has a lot of uncertainty
+                tasDataDelayed.tasVariance = sq(MAX(MAX(frontend->_easNoise, 0.5f), 0.5f * lastAirspeedEstimate));
                 tasDataToFuse = true;
                 tasDataDelayed.allowFusion = true;
+                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
             } else {
                 tasDataToFuse = false;
+                tasDataDelayed.allowFusion = false;
             }
         }
     }

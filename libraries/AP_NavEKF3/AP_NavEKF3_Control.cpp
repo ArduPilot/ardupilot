@@ -64,7 +64,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
         inhibitWindStates = true;
-        windStateLastObsIsValid = false;
+        lastAspdEstIsValid = false;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
                (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
@@ -323,14 +323,12 @@ void NavEKF3_core::setAidingMode()
             // a sensor that only observes attitude
             velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
-            // Store the last wind states whose errors were constrained by measurements
-            // This will be used to synthesise an airspeed measurement to enable dead reckoning
-            bool newWindStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
-            if (!inhibitWindStates && !newWindStateIsObservable && windStateIsObservable) {
-                windStateLastObs = stateStruct.wind_vel;
-                windStateLastObsIsValid = true;
+            // Store the last valid airspeed estimate
+            windStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
+            if (windStateIsObservable) {
+                lastAirspeedEstimate = (stateStruct.velocity - Vector3F(stateStruct.wind_vel.x, stateStruct.wind_vel.y, 0.0F)).length();
+                lastAspdEstIsValid = true;
             }
-            windStateIsObservable = newWindStateIsObservable;
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
