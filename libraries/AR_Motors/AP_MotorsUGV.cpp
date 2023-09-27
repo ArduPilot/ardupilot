@@ -1020,7 +1020,7 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     }
 
     // calculate scaler
-    const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
+    const float sign = is_negative(throttle) ? -1.0f : 1.0f;
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) * 0.01f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
 }
