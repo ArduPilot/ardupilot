@@ -1221,7 +1221,7 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
         const Vector2f accel_turn = _accel_desired.xy() - _vel_desired.xy() * accel_forward / vel_desired_xy_len;
         const float accel_turn_xy_len = accel_turn.length();
         turn_rate = accel_turn_xy_len / vel_desired_xy_len;
-        if ((accel_turn.y * _vel_desired.x - accel_turn.x * _vel_desired.y) < 0.0) {
+        if (is_negative(accel_turn.y * _vel_desired.x - accel_turn.x * _vel_desired.y)) {
             turn_rate = -turn_rate;
         }
     }

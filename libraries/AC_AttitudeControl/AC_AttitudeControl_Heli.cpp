@@ -267,7 +267,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _ang_vel_target.y = _ahrs.get_gyro().y;
 
     // accel limit desired yaw rate
-    if (get_accel_yaw_max_radss() > 0.0f) {
+    if (is_positive(get_accel_yaw_max_radss())) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
         float rate_change_rads = yaw_rate_bf_rads - _ang_vel_target.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
