@@ -73,7 +73,7 @@ class HALSITL::SITL_State_Common {
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
 public:
-    void init(int argc, char * const argv[]);
+    virtual void init(int argc, char * const argv[]) = 0;
 
     enum vehicle_type {
         NONE,
