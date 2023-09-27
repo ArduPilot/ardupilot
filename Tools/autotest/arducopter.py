@@ -2768,6 +2768,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Auto mission completed: passed!")
 
+    def set_origin(self, loc, timeout=60):
+        '''set the GPS global origin to loc'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get non-zero lat")
+            target_system = 1
+            self.mav.mav.set_gps_global_origin_send(
+                target_system,
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                int(loc.alt * 1e3)
+            )
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            self.progress("gpi=%s" % str(gpi))
+            if gpi.lat != 0:
+                break
+
+    def FarOrigin(self):
+        '''fly a mission far from the vehicle origin'''
+        # Fly mission #1
+        self.set_parameters({
+            "SIM_GPS_DISABLE": 1,
+        })
+        self.reboot_sitl()
+        nz = mavutil.location(-43.730171, 169.983118, 1466.3, 270)
+        self.set_origin(nz)
+        self.set_parameters({
+            "SIM_GPS_DISABLE": 0,
+        })
+        self.progress("# Load copter_mission")
+        # load the waypoint count
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        if not num_wp:
+            raise NotAchievedException("load copter_mission failed")
+
+        self.fly_loaded_mission(num_wp)
+
+        self.progress("Auto mission completed: passed!")
+
     def fly_loaded_mission(self, num_wp):
         '''fly mission loaded on vehicle.  FIXME: get num_wp from vehicle'''
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
@@ -11388,6 +11428,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CompassMot,
             self.AutoRTL,
             self.EK3_OGN_HGT_MASK,
+            self.FarOrigin,
         ])
         return ret
 
