@@ -17,7 +17,7 @@ class HALSITL::SITL_State : public SITL_State_Common {
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
 public:
-    void init(int argc, char * const argv[]);
+    void init(int argc, char * const argv[]) override;
 
     void loop_hook(void);
     uint16_t base_port(void) const {

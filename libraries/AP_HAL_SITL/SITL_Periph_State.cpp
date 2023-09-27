@@ -117,6 +117,9 @@ void SITL_State::init(int argc, char * const argv[]) {
     sitl_model = new SimMCast("");
 
     _sitl = AP::sitl();
+
+    _sitl->i2c_sim.init();
+    sitl_model->set_i2c(&_sitl->i2c_sim);
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
@@ -285,6 +288,12 @@ SimMCast::SimMCast(const char *frame_str) :
 void SimMCast::update(const struct sitl_input &input)
 {
     multicast_read();
+    update_external_payload(input);
+
+    auto *_sitl = AP::sitl();
+    if (_sitl != nullptr) {
+        battery_voltage = _sitl->batt_voltage;
+    }
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_BUILD_AP_PERIPH)
