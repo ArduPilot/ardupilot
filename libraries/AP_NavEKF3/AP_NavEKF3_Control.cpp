@@ -683,9 +683,11 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     return true;
 }
 
-// record a yaw reset event
-void NavEKF3_core::recordYawReset()
+// record all requested yaw resets completed
+void NavEKF3_core::recordYawResetsCompleted()
 {
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
     yawAlignComplete = true;
     if (inFlight) {
         finalInflightYawInit = true;
