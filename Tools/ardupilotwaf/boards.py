@@ -837,6 +837,7 @@ class sitl_periph_gps(sitl):
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
             HAL_GCS_ENABLED = 0,
+            HAL_MAVLINK_BINDINGS_ENABLED = 1,
             HAL_LOGGING_ENABLED = 0,
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             AP_MISSION_ENABLED = 0,
