@@ -53,6 +53,7 @@ private:
 
     int16_t vfr_hud_throttle() const override;
 
+    MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_NAV_LOITER_UNLIM(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t &packet);
