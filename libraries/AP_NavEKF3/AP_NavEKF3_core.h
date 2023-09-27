@@ -1038,7 +1038,7 @@ private:
     bool dragTimeout;               // boolean true if drag measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
     bool velAiding;                 // boolean true if the velocity drift is constrained by observations
-    bool waitingForGpsChecks;          // boolean true if the EKF should not retrieve GPS data from the buffer until quality checks have passed
+    bool waitingForGpsChecks;       // boolean true if the EKF should write GPS data to the buffer until quality checks have passed
     uint32_t badIMUdata_ms;         // time stamp bad IMU data was last detected
     uint32_t goodIMUdata_ms;        // time stamp good IMU data was last detected
     uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit

@@ -345,6 +345,7 @@ struct PACKED log_XKQ {
 // @Field: AI: airspeed selection index
 // @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 // @Field: GPS_GTA: GPS good to align
+// @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -355,6 +356,7 @@ struct PACKED log_XKFS {
     uint8_t airspeed_index;
     uint8_t source_set;
     uint8_t gps_good_to_align;
+    uint8_t wait_for_gps_checks;
 };
 
 // @LoggerMessage: XKTV
@@ -441,7 +443,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA", "s#------", "F-------" , true }, \
+      "XKFS","QBBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT", "s#-------", "F--------" , true }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \
