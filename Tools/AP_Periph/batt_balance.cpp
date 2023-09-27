@@ -102,6 +102,7 @@ void AP_Periph_FW::batt_balance_update()
     uint8_t *buffer = new uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
     if (pkt == nullptr || buffer == nullptr) {
         delete pkt;
+        delete [] buffer;
         return;
     }
 
@@ -130,7 +131,7 @@ void AP_Periph_FW::batt_balance_update()
                      total_size);
 
     delete pkt;
-    delete buffer;
+    delete [] buffer;
 }
 
 #endif  // HAL_PERIPH_ENABLE_BATTERY_BALANCE
