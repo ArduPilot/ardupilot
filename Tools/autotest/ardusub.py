@@ -439,6 +439,21 @@ class AutoTestSub(AutoTest):
             cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
             self.assert_mode('SURFACE')
 
+    def MAV_CMD_MISSION_START(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.assert_mode('AUTO')
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -456,6 +471,7 @@ class AutoTestSub(AutoTest):
             self.TestLogDownloadMAVProxy,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_LAND,
+            self.MAV_CMD_MISSION_START,
         ])
 
         return ret
