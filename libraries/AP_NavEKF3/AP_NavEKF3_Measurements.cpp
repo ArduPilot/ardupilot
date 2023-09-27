@@ -548,24 +548,6 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
-    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
-        // The GPS has dropped lock so force quality checks to restart
-        gpsGoodToAlign = false;
-        lastGpsVelFail_ms = imuSampleTime_ms;
-        lastGpsVelPass_ms = 0;
-        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
-        const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
-        const bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip());
-        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingBodyVelNav);
-        if (canDeadReckon) {
-            // If we can do dead reckoning with a data source other than GPS there is time to wait
-            // for GPS alignment checks to pass before using GPS inside the EKF.
-            waitingForGpsChecks = true;
-        } else {
-            waitingForGpsChecks = false;
-        }
-    }
-
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
@@ -657,6 +639,27 @@ void NavEKF3_core::readGpsData()
         useGpsVertVel = false;
     }
 
+    if ((frontend->_options & (int32_t)NavEKF3::Options::JammingExpected) &&
+        (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
+        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
+        const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
+        const bool canDoWindRelNav = assume_zero_sideslip();
+        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
+        if (canDeadReckon) {
+            // If we can do dead reckoning with a data source other than GPS there is time to wait
+            // for GPS alignment checks to pass before using GPS inside the EKF.
+            // this gets set back to false in calcGpsGoodToAlign() when GPS checks pass
+            waitingForGpsChecks = true;
+            // force GPS checks to restart
+            lastPreAlignGpsCheckTime_ms = 0;
+            lastGpsVelFail_ms = imuSampleTime_ms;
+            lastGpsVelPass_ms = 0;
+            gpsGoodToAlign = false;
+        } else {
+            waitingForGpsChecks = false;
+        }
+    }
+
     // Monitor quality of the GPS velocity data before and after alignment
     calcGpsGoodToAlign();
 
@@ -705,7 +708,8 @@ void NavEKF3_core::readGpsData()
     }
 
     // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
-    if (validOrigin) {
+    // and are not waiting for GPs checks to pass
+    if (validOrigin && !waitingForGpsChecks) {
         gpsDataNew.lat = gpsloc.lat;
         gpsDataNew.lng = gpsloc.lng;
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
