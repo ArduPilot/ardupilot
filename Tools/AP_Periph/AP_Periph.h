@@ -137,6 +137,7 @@ public:
     void can_airspeed_update();
     void can_rangefinder_update();
     void can_battery_update();
+    void can_battery_send_cells(uint8_t instance);
     void can_proximity_update();
     void can_buzzer_update(void);
     void can_safety_button_update(void);
