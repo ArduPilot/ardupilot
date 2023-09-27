@@ -180,7 +180,7 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
         // if max thrust is more than one reduce average throttle
         thr_adj = 1.0f - thrust_max;
         limit.throttle_upper = true;
-    } else if (thrust_min < 0.0) {
+    } else if (is_negative(thrust_min)) {
         // if min thrust is less than 0 increase average throttle
         // but never above max boost
         thr_adj = -thrust_min;

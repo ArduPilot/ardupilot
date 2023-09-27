@@ -312,7 +312,7 @@ void AP_MotorsMulticopter::update_throttle_filter()
     if (armed()) {
         _throttle_filter.apply(_throttle_in, _dt);
         // constrain filtered throttle
-        if (_throttle_filter.get() < 0.0f) {
+        if (is_negative(_throttle_filter.get())) {
             _throttle_filter.reset(0.0f);
         }
         if (_throttle_filter.get() > 1.0f) {
@@ -562,7 +562,7 @@ void AP_MotorsMulticopter::output_logic()
 
         case DesiredSpoolState::GROUND_IDLE:
             float spin_up_armed_ratio = 0.0f;
-            if (thr_lin.get_spin_min() > 0.0f) {
+            if (is_positive(thr_lin.get_spin_min())) {
                 spin_up_armed_ratio = _spin_arm / thr_lin.get_spin_min();
             }
             _spin_up_ratio += constrain_float(spin_up_armed_ratio - _spin_up_ratio, -spool_step, spool_step);
@@ -600,7 +600,7 @@ void AP_MotorsMulticopter::output_logic()
         if (_throttle_thrust_max >= MIN(get_throttle(), get_current_limit_max_throttle())) {
             _throttle_thrust_max = get_current_limit_max_throttle();
             _spool_state = SpoolState::THROTTLE_UNLIMITED;
-        } else if (_throttle_thrust_max < 0.0f) {
+        } else if (is_negative(_throttle_thrust_max)) {
             _throttle_thrust_max = 0.0f;
         }
 

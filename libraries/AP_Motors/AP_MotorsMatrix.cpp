@@ -375,11 +375,11 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         limit.roll = true;
         limit.pitch = true;
         limit.yaw = true;
-        if (thr_adj > 0.0f) {
+        if (is_positive(thr_adj)) {
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;
-    } else if (thr_adj < 0.0f) {
+    } else if (is_negative(thr_adj)) {
         // Throttle can't be reduced to desired value
         // todo: add lower limit flag and ensure it is handled correctly in altitude controller
         thr_adj = 0.0f;
