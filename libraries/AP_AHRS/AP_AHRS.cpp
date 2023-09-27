@@ -831,7 +831,7 @@ bool AP_AHRS::airspeed_sensor_enabled(void) const
 // if we have an estimate
 bool AP_AHRS::_airspeed_estimate(float &airspeed_ret) const
 {
-#if AP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_ENABLED && AP_GPS_ENABLED
     if (airspeed_sensor_enabled()) {
         uint8_t idx = get_active_airspeed_index();
         airspeed_ret = AP::airspeed()->get_airspeed(idx);
@@ -1743,13 +1743,15 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !_get_origin(originLLH)) {
+#if AP_GPS_ENABLED
         const auto &gps = AP::gps();
         if (_gps_use == GPSUse::EnableWithHeight &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             posD = (get_home().alt - gps.location().alt) * 0.01;
-        } else {
-            posD = -AP::baro().get_altitude();
+            return;
         }
+#endif
+        posD = -AP::baro().get_altitude();
         return;
     }
 
