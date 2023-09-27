@@ -91,7 +91,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
 
             if (meas_cnt == tgt_cnt && meas_cnt != 0) {
-                if (tgt_ampl > 0.0f) {
+                if (is_positive(tgt_ampl)) {
                     sum_gain += meas_ampl / tgt_ampl;
                     gcnt++;
                 }

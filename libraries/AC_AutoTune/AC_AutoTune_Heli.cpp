@@ -125,7 +125,7 @@ void AC_AutoTune_Heli::test_init()
         if (is_zero(start_freq)) {
             if (tune_type == RP_UP) {
                 // continue using frequency where testing left off or RD_UP completed
-                if (test_phase[12] > 0.0f && test_phase[12] < 180.0f) {
+                if (is_positive(test_phase[12]) && test_phase[12] < 180.0f) {
                     freq_cnt = 12;
                 // start with freq found for sweep where phase was 180 deg
                 } else if (!is_zero(sweep.ph180.freq)) {
@@ -1029,7 +1029,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             tgt_rate_reading = attitude_control->rate_bf_targets().x;
             if (settle_time == 0) {
                 float ff_rate_contr = 0.0f;
-                if (tune_roll_rff > 0.0f) {
+                if (is_positive(tune_roll_rff)) {
                     ff_rate_contr = 5730.0f * trim_command / tune_roll_rff;
                 }
                 trim_rate_cds.x += ff_rate_contr;
@@ -1049,7 +1049,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             tgt_rate_reading = attitude_control->rate_bf_targets().y;
             if (settle_time == 0) {
                 float ff_rate_contr = 0.0f;
-                if (tune_pitch_rff > 0.0f) {
+                if (is_positive(tune_pitch_rff)) {
                     ff_rate_contr = 5730.0f * trim_command / tune_pitch_rff;
                 }
                 trim_rate_cds.y += ff_rate_contr;
@@ -1070,7 +1070,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             tgt_rate_reading = attitude_control->rate_bf_targets().z;
             if (settle_time == 0) {
                 float rp_rate_contr = 0.0f;
-                if (tune_yaw_rp > 0.0f) {
+                if (is_positive(tune_yaw_rp)) {
                     rp_rate_contr = 5730.0f * trim_command / tune_yaw_rp;
                 }
                 trim_rate_cds.z += rp_rate_contr;
@@ -1548,7 +1548,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             freq_cnt_max = freq_cnt;
             phase_max = phase[freq_cnt];
             sp_prev_gain = gain[freq_cnt];
-        } else if (freq[freq_cnt] > max_sweep_freq || (gain[freq_cnt] > 0.0f && gain[freq_cnt] < 0.5f)) {
+        } else if (freq[freq_cnt] > max_sweep_freq || (is_positive(gain[freq_cnt]) && gain[freq_cnt] < 0.5f)) {
             // must be past peak, continue on to determine angle p
             freq_cnt = 11;
         }
