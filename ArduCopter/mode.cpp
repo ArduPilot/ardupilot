@@ -25,6 +25,8 @@ Mode::Mode(void) :
     G_Dt(copter.G_Dt)
 { };
 
+PayloadPlace Mode::payload_place;
+
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
