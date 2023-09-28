@@ -831,6 +831,9 @@ float AP_TECS::_get_i_gain(void)
  */
 void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
 {
+    // reset clip status after possible use of synthetic airspeed
+    _thr_clip_status = clipStatus::NONE;
+
     // Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
@@ -1088,6 +1091,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
         _takeoff_start_ms = 0;
+        _use_synthetic_airspeed_once = false;
 
         _flags.underspeed            = false;
         _flags.badDescent            = false;
