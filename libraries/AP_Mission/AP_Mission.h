@@ -724,6 +724,8 @@ public:
     // Returns 0 if no appropriate JUMP_TAG match can be found.
     uint16_t get_index_of_jump_tag(const uint16_t tag) const;
 
+    bool is_valid_index(const uint16_t index) const { return index < _cmd_total; }
+
 #if AP_SDCARD_STORAGE_ENABLED
     bool failed_sdcard_storage(void) const {
         return _failed_sdcard_storage;
