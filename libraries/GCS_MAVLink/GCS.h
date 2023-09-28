@@ -580,10 +580,10 @@ protected:
     void deadlock_sem(void);
 
     // reset a message interval via mavlink:
-    MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_get_message_interval(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_set_message_interval(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_get_message_interval(const mavlink_command_int_t &packet);
     bool get_ap_message_interval(ap_message id, uint16_t &interval_ms) const;
-    MAV_RESULT handle_command_request_message(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_request_message(const mavlink_command_int_t &packet);
 
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
 
