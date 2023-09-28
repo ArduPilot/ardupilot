@@ -3007,21 +3007,24 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     q_fwd_throttle = MIN(q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
 
     // Relax forward tilt limit if the position controller is saturating in the forward direction because
-    // the forward thrust motor could be failed
-    const float fwd_tilt_range_cd = (float)aparm.angle_max - 100.0f * q_fwd_pitch_lim;
-    if (is_positive(fwd_tilt_range_cd)) {
-        // rate limit the forward tilt change to slew between the motor good and motor failed
-        // value over 10 seconds
-        const bool fwd_limited = plane.quadplane.pos_control->is_active_xy() and plane.quadplane.pos_control->get_fwd_pitch_is_limited();
-        const float fwd_pitch_lim_cd_tgt = fwd_limited ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
-        const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
-        q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
-        // Don't let the forward pitch limit be more than the forward pitch demand before limiting to
-        // avoid opening up the limit more than necessary
-        q_fwd_pitch_lim_cd = MIN(q_fwd_pitch_lim_cd, MAX(-(float)plane.nav_pitch_cd, 100.0f * q_fwd_pitch_lim));
-    } else {
-        // take the lesser of the two limits
-        q_fwd_pitch_lim_cd = (float)aparm.angle_max;
+    // the forward thrust motor could be failed. Do not do this with tilt rotors because they do not rely on
+    // forward throttle during VTOL flight
+    if (!tiltrotor.enabled()) {
+        const float fwd_tilt_range_cd = (float)aparm.angle_max - 100.0f * q_fwd_pitch_lim;
+        if (is_positive(fwd_tilt_range_cd)) {
+            // rate limit the forward tilt change to slew between the motor good and motor failed
+            // value over 10 seconds
+            const bool fwd_limited = plane.quadplane.pos_control->is_active_xy() and plane.quadplane.pos_control->get_fwd_pitch_is_limited();
+            const float fwd_pitch_lim_cd_tgt = fwd_limited ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
+            const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
+            q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
+            // Don't let the forward pitch limit be more than the forward pitch demand before limiting to
+            // avoid opening up the limit more than necessary
+            q_fwd_pitch_lim_cd = MIN(q_fwd_pitch_lim_cd, MAX(-(float)plane.nav_pitch_cd, 100.0f * q_fwd_pitch_lim));
+        } else {
+            // take the lesser of the two limits
+            q_fwd_pitch_lim_cd = (float)aparm.angle_max;
+        }
     }
 
     float fwd_thr_scaler;
