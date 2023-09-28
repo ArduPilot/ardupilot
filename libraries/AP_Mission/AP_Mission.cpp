@@ -1247,6 +1247,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.do_engine_control.start_control = (packet.param1>0);
         cmd.content.do_engine_control.cold_start = (packet.param2>0);
         cmd.content.do_engine_control.height_delay_cm = packet.param3*100;
+        cmd.content.do_engine_control.allow_disarmed_start = (((uint32_t)packet.param4) & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
@@ -1751,6 +1752,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.do_engine_control.start_control?1:0;
         packet.param2 = cmd.content.do_engine_control.cold_start?1:0;
         packet.param3 = cmd.content.do_engine_control.height_delay_cm*0.01f;
+        if (cmd.content.do_engine_control.allow_disarmed_start) {
+            packet.param4 = ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED;
+        }
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
