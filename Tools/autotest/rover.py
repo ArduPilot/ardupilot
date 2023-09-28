@@ -6542,6 +6542,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.Gripper,
             self.GripperMission,
             self.SET_MESSAGE_INTERVAL,
+            self.MESSAGE_INTERVAL_COMMAND_INT,
             self.REQUEST_MESSAGE,
             self.SYSID_ENFORCE,
             self.SET_ATTITUDE_TARGET,
