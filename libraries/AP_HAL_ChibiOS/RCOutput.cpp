@@ -794,6 +794,7 @@ void RCOutput::push_local(void)
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
                     group.current_mode == MODE_NEOPIXEL ||
+                    group.current_mode == MODE_NEOPIXELRGB ||
                     group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
                     // only control widest pulse for oneshot and dshot
@@ -1056,6 +1057,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         break;
 
     case MODE_NEOPIXEL:
+    case MODE_NEOPIXELRGB:
     case MODE_PROFILED:
 #if HAL_SERIALLED_ENABLED
     {
@@ -2413,6 +2415,7 @@ uint32_t RCOutput::protocol_bitrate(const enum output_mode mode)
     case MODE_PWM_DSHOT1200:
         return 1200000;
     case MODE_NEOPIXEL:
+    case MODE_NEOPIXELRGB:
         return 800000;
     case MODE_PROFILED:
         return 1500000; // experiment winding this up 3000000 max from data sheet
@@ -2452,9 +2455,11 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
     }
 
     switch (mode) {
-        case MODE_NEOPIXEL: {
+
+        case MODE_NEOPIXEL:
+        case MODE_NEOPIXELRGB: {
             grp->serial_nleds = MAX(num_leds, grp->serial_nleds);
-            grp->led_mode = MODE_NEOPIXEL;
+            grp->led_mode = mode;
             return true;
         }
         case MODE_PROFILED: {
@@ -2504,6 +2509,9 @@ void RCOutput::fill_DMA_buffer_serial_led(pwm_group& group)
             switch (group.current_mode) {
                 case MODE_NEOPIXEL:
                     _set_neopixel_rgb_data(&group, j, i, led.red, led.green, led.blue);
+                    break;
+                case MODE_NEOPIXELRGB:
+                    _set_neopixel_rgb_data(&group, j, i, led.green, led.red, led.blue);
                     break;
                 case MODE_PROFILED: {
                     if (i < group.serial_nleds - 2) {
@@ -2677,6 +2685,7 @@ void RCOutput::serial_led_set_single_rgb_data(pwm_group& group, uint8_t idx, uin
     switch (group.current_mode) {
         case MODE_PROFILED:
         case MODE_NEOPIXEL:
+        case MODE_NEOPIXELRGB:
             group.serial_led_data[idx][led].red = red;
             group.serial_led_data[idx][led].green = green;
             group.serial_led_data[idx][led].blue = blue;
