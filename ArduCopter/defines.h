@@ -76,18 +76,6 @@ enum class AirMode {
     AIRMODE_ENABLED,
 };
 
-enum PayloadPlaceStateType {
-    PayloadPlaceStateType_FlyToLocation,
-    PayloadPlaceStateType_Descent_Start,
-    PayloadPlaceStateType_Descent,
-    PayloadPlaceStateType_Release,
-    PayloadPlaceStateType_Releasing,
-    PayloadPlaceStateType_Delay,
-    PayloadPlaceStateType_Ascent_Start,
-    PayloadPlaceStateType_Ascent,
-    PayloadPlaceStateType_Done,
-};
-
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
