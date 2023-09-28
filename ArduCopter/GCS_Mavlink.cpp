@@ -814,6 +814,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         }
         return MAV_RESULT_ACCEPTED;
 
+#if MODE_AUTO_ENABLED == ENABLED
+    case MAV_CMD_DO_LAND_START:
+        if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+#endif
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -856,14 +864,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         return MAV_RESULT_ACCEPTED;
     }
-
-#if MODE_AUTO_ENABLED == ENABLED
-    case MAV_CMD_DO_LAND_START:
-        if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(ModeReason::GCS_COMMAND)) {
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_FAILED;
-#endif
 
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet, msg);
