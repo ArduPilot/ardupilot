@@ -8,6 +8,27 @@ class ParametersG2;
 
 class GCS_Copter;
 
+// object shared by both Guided and Auto for takeoff.
+// position controller controls vehicle but the user can control the yaw.
+class _AutoTakeoff {
+public:
+    void run();
+    void start(float complete_alt_cm, bool terrain_alt);
+    bool get_position(Vector3p& completion_pos);
+
+    bool complete;          // true when takeoff is complete
+
+private:
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    bool no_nav_active;
+    float no_nav_alt_cm;
+
+    // auto takeoff variables
+    float complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
+    bool terrain_alt;       // true if altitudes are above terrain
+    Vector3p complete_pos;  // target takeoff position as offset from ekf origin in cm
+};
+
 class Mode {
 
 public:
@@ -50,6 +71,8 @@ public:
 
     // do not allow copying
     CLASS_NO_COPY(Mode);
+
+    friend class _AutoTakeoff;
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
@@ -215,21 +238,7 @@ protected:
 
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
-    // method shared by both Guided and Auto for takeoff.
-    // position controller controls vehicle but the user can control the yaw.
-    void auto_takeoff_run();
-    void auto_takeoff_start(float complete_alt_cm, bool terrain_alt);
-    bool auto_takeoff_get_position(Vector3p& completion_pos);
-
-    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
-    static bool auto_takeoff_no_nav_active;
-    static float auto_takeoff_no_nav_alt_cm;
-
-    // auto takeoff variables
-    static float auto_takeoff_complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
-    static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
-    static bool auto_takeoff_complete;          // true when takeoff is complete
-    static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm
+    static _AutoTakeoff auto_takeoff;
 
 public:
     // Navigation Yaw control
