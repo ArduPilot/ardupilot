@@ -3363,7 +3363,7 @@ class AutoTest(ABC):
         overridden_message_rates = self.context_get().overridden_message_rates
 
         if id not in overridden_message_rates:
-            overridden_message_rates[id] = self.get_message_rate(id)
+            overridden_message_rates[id] = self.measure_message_rate(id)
 
         self.set_message_rate_hz(id, rate_hz)
 
@@ -9729,7 +9729,7 @@ Also, ignores heartbeats not from our target system'''
         self.progress("ALL PASS")
     # TODO : Test arming magic;
 
-    def get_message_rate(self, victim_message, timeout=10, mav=None):
+    def measure_message_rate(self, victim_message, timeout=10, mav=None):
         if mav is None:
             mav = self.mav
         tstart = self.get_sim_time()
@@ -9821,7 +9821,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.set_message_rate_hz(victim_message, in_rate, mav=mav)
 
-        new_measured_rate = self.get_message_rate(victim_message, timeout=message_rate_sample_period, mav=mav)
+        new_measured_rate = self.measure_message_rate(victim_message, timeout=message_rate_sample_period, mav=mav)
         self.progress(
             "Measured rate: %f (want %f)" %
             (round(new_measured_rate, ndigits=ndigits),
@@ -9893,7 +9893,7 @@ Also, ignores heartbeats not from our target system'''
         if mav is None:
             mav = self.mav
         self.drain_mav(mav)
-        rate = round(self.get_message_rate(message, sample_period, mav=mav), ndigits=ndigits)
+        rate = round(self.measure_message_rate(message, sample_period, mav=mav), ndigits=ndigits)
         self.progress("%s: Want=%f got=%f" % (message, round(want_rate, ndigits=ndigits), round(rate, ndigits=ndigits)))
         if rate != want_rate:
             raise NotAchievedException("Did not get expected rate (want=%f got=%f)" % (want_rate, rate))
@@ -9901,7 +9901,7 @@ Also, ignores heartbeats not from our target system'''
     def test_set_message_interval_basic(self):
         ex = None
         try:
-            rate = round(self.get_message_rate("VFR_HUD", 20))
+            rate = round(self.measure_message_rate("VFR_HUD", 20))
             self.progress("Initial rate: %u" % rate)
 
             self.test_rate("Test set to %u" % (rate/2,), rate/2, rate/2, victim_message="VFR_HUD")
@@ -9911,7 +9911,7 @@ Also, ignores heartbeats not from our target system'''
             self.test_rate("Resetting original rate", 0, rate)
 
             self.progress("try getting a message which is not ordinarily streamed out")
-            rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
             if rate != 0:
                 raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
             self.progress("try various message rates")
@@ -9928,7 +9928,7 @@ Also, ignores heartbeats not from our target system'''
             want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
                                      want_rate)
-            rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
             self.set_parameter("SIM_SPEEDUP", old_speedup)
             self.progress("Want=%f got=%f" % (want_rate, rate))
             if abs(rate - want_rate) > 2:
@@ -10023,7 +10023,7 @@ Also, ignores heartbeats not from our target system'''
         '''Test MAV_CMD_REQUEST_MESSAGE'''
         self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
         self.reboot_sitl() # needed for CAM1_TYPE to take effect
-        rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
+        rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
             raise PreconditionFailedException("Receiving camera feedback")
         self.poll_message("CAMERA_FEEDBACK")
