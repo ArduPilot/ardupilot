@@ -203,6 +203,7 @@ public:
         bool start_control; // start or stop engine
         bool cold_start; // use cold start procedure
         uint16_t height_delay_cm; // height delay for start
+        bool allow_disarmed_start; // allow starting the engine while disarmed
     };
 
     // NAV_SET_YAW_SPEED support
