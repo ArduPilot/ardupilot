@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: STARTCHN_MIN
     // @DisplayName: Input channel for engine start minimum PWM
-    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM below 1300 triggers an engine stop.
+    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value below 800 will result in any PWM between 800 to 1300 triggers an engine stop, and anything below 800 does not change the current engine state.
     // @User: Standard
     // @Range: 0 1300
     AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
