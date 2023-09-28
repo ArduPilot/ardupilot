@@ -30,6 +30,7 @@ const char* AP_HAL::RCOutput::get_output_mode_string(enum output_mode out_mode) 
     case MODE_PWM_DSHOT1200:
         return "DS1200";
     case MODE_NEOPIXEL:
+    case MODE_NEOPIXELRGB:
         return "NeoP";
     case MODE_PROFILED:
         return "ProfiLED";

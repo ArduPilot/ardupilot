@@ -215,6 +215,7 @@ public:
         MODE_PWM_DSHOT1200,
         MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
         MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
+        MODE_NEOPIXELRGB,  // same as MODE_NEOPIXEL but RGB ordering
     };
     // true when the output mode is of type dshot
     // static to allow use in the ChibiOS thread stuff
@@ -223,6 +224,7 @@ public:
     static bool is_led_protocol(const enum output_mode mode) {
       switch (mode) {
       case MODE_NEOPIXEL:
+      case MODE_NEOPIXELRGB:
       case MODE_PROFILED:
         return true;
       default:
@@ -351,7 +353,7 @@ public:
       and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
     virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
-    
+
     /*
       trigger send of serial led
      */
