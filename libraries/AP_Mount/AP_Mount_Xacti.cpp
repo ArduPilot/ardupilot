@@ -497,14 +497,18 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
 // handle param get/set response
 bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, int32_t &value)
 {
-    // display errors
+    // error string prefix to save on flash
     const char* err_prefix_str = "Xacti: failed to";
+
+    // take picture
     if (strcmp(name, get_param_name_str(Param::SingleShot)) == 0) {
         if (value < 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s take pic", err_prefix_str);
         }
         return false;
     }
+
+    // recording
     if (strcmp(name, get_param_name_str(Param::Recording)) == 0) {
         if (value < 0) {
             _recording_video = false;
@@ -515,6 +519,8 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         }
         return false;
     }
+
+    // focus
     if (strcmp(name, get_param_name_str(Param::FocusMode)) == 0) {
         if (value < 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change focus", err_prefix_str);
@@ -523,6 +529,8 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         }
         return false;
     }
+
+    // camera lens (aka sensor mode)
     if (strcmp(name, get_param_name_str(Param::SensorMode)) == 0) {
         if (value < 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change lens", err_prefix_str);
@@ -531,6 +539,8 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         }
         return false;
     }
+
+    // digital zoom
     if (strcmp(name, get_param_name_str(Param::DigitalZoomMagnification)) == 0) {
         if (value < 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change zoom", err_prefix_str);
