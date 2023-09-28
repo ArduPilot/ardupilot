@@ -47,7 +47,7 @@ local WINCH_RATE_UP = bind_add_param('RATE_UP', 1, 0.5)
   // @Range: 0.1 5.0
   // @User: Standard
 --]]
-local WINCH_RATE_DN = bind_add_param('RATE_UP', 2, 2.0)
+local WINCH_RATE_DN = bind_add_param('RATE_DN', 2, 2.0)
 
 --[[
   // @Param: WINCH_RC_FUNC
