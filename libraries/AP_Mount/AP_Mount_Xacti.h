@@ -129,7 +129,8 @@ private:
         FirmwareVersion,
         Status,
         DateTime,
-        LAST = DateTime,                            // this should be equal to the final parameter enum
+        OpticalZoomMagnification,
+        LAST = OpticalZoomMagnification,            // this should be equal to the final parameter enum
     };
     static const char* _param_names[];              // array of Xacti parameter strings
 
@@ -163,6 +164,10 @@ private:
     // returns true if sent so that we avoid immediately trying to also send other messages
     bool request_firmware_version(uint32_t now_ms);
 
+    // request parameters used to determine camera capabilities.  now_ms is current system time
+    // returns true if a param get/set was sent so that we avoid sending other messages
+    bool request_capabilities(uint32_t now_ms);
+
     // set date and time.  now_ms is current system time
     bool set_datetime(uint32_t now_ms);
 
@@ -181,10 +186,11 @@ private:
     Quaternion _current_attitude_quat;              // current attitude as a quaternion
     uint32_t _last_current_attitude_quat_ms;        // system time _current_angle_rad was updated
     bool _recording_video;                          // true if recording video
-    uint16_t _last_zoom_param_value = 100;          // last digital zoom parameter value sent to camera.  100 ~ 1000 (interval 100)
+    uint16_t _last_digital_zoom_param_value = 100;  // last digital zoom parameter value sent to camera.  100 ~ 1000 (interval 100)
+    uint16_t _last_optical_zoom_param_value = 100;  // last optical zoom parameter value sent to camera.  100 ~ 250 (interval 10)
     struct {
         bool enabled;                               // true if zoom rate control is enabled
-        int8_t increment;                           // zoom increment on each update (+100 or -100)
+        int8_t dir;                                 // zoom direction (-1 to zoom out, +1 to zoom in)
         uint32_t last_update_ms;                    // system time that zoom rate control last updated zoom
     } _zoom_rate_control;
 
@@ -201,6 +207,19 @@ private:
         uint32_t last_request_ms;                   // system time that date/time was last requested
         bool set;                                   // true once date/time has been set
     } _datetime;
+
+    // capability handling
+    enum class Capability : uint8_t {
+        False = 0,
+        True = 1,
+        Unknown = 2,
+    };
+    struct {
+        bool received;                              // true if we have determined cameras capabilities
+        uint32_t first_request_ms;                  // system time of first request for capabilities (used to timeout)
+        uint32_t last_request_ms;                   // system time of last capability related parameter check
+        Capability optical_zoom;                    // Yes if camera has optical zoom
+    } capabilities = {false, 0, 0, Capability::Unknown};
 
     // gimbal status handling
     enum class ErrorStatus : uint32_t {
