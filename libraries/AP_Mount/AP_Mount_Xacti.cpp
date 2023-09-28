@@ -13,7 +13,8 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "Mount"
 #define XACTI_MSG_SEND_MIN_MS 20                    // messages should not be sent to camera more often than 20ms
-#define XACTI_ZOOM_RATE_UPDATE_INTERVAL_MS  500     // zoom rate control increments zoom by 10% up or down every 0.5sec
+#define XACTI_DIGITAL_ZOOM_RATE_UPDATE_INTERVAL_MS  500 // digital zoom rate control updates 11% up or down every 0.5sec
+#define XACTI_OPTICAL_ZOOM_RATE_UPDATE_INTERVAL_MS  250 // optical zoom rate control updates 6.6% up or down every 0.25sec
 #define XACTI_STATUS_REQ_INTERVAL_MS 3000           // request status every 3 seconds
 #define XACTI_SET_PARAM_QUEUE_SIZE 3                // three set-param requests may be queued
 
@@ -25,7 +26,10 @@ AP_Mount_Xacti::DetectedModules AP_Mount_Xacti::_detected_modules[];
 HAL_Semaphore AP_Mount_Xacti::_sem_registry;
 const char* AP_Mount_Xacti::send_text_prefix = "Xacti:";
 const char* AP_Mount_Xacti::sensor_mode_str[] = { "RGB", "IR", "PIP", "NDVI" };
-const char* AP_Mount_Xacti::_param_names[] = {"SingleShot", "Recording", "FocusMode", "SensorMode", "DigitalZoomMagnification", "FirmwareVersion", "Status", "DateTime"};
+const char* AP_Mount_Xacti::_param_names[] = {"SingleShot", "Recording", "FocusMode",
+                                              "SensorMode", "DigitalZoomMagnification",
+                                              "FirmwareVersion", "Status", "DateTime",
+                                              "OpticalZoomMagnification"};
 
 // Constructor
 AP_Mount_Xacti::AP_Mount_Xacti(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
@@ -72,9 +76,16 @@ void AP_Mount_Xacti::update()
         return;
     }
 
-    // set date and time
-    if (_firmware_version.received && set_datetime(now_ms)) {
-        return;
+    // additional initial setup
+    if (_firmware_version.received) {
+        // set date and time
+        if (set_datetime(now_ms)) {
+            return;
+        }
+         // request camera capabilities
+        if (request_capabilities(now_ms)) {
+            return;
+        }
     }
 
     // request status
@@ -222,13 +233,31 @@ bool AP_Mount_Xacti::set_zoom(ZoomType zoom_type, float zoom_value)
         } else {
             // zoom in or out
             _zoom_rate_control.enabled = true;
-            _zoom_rate_control.increment = (zoom_value < 0) ? -100 : 100;
+            _zoom_rate_control.dir = (zoom_value < 0) ? -1 : 1;
         }
         return true;
     }
 
     // zoom percentage
     if (zoom_type == ZoomType::PCT) {
+        if (capabilities.optical_zoom == Capability::True) {
+            // optical zoom capable cameras use combination of optical and digital zoom
+            // convert zoom percentage (0 ~ 100) to zoom times using linear interpolation
+            // optical zoom covers 1x to 2.5x, param values are in 100 to 250
+            // digital zoom covers 2.5x to 25x, param values are 100 to 1000
+            const float zoom_times = linear_interpolate(1, 25, zoom_value, 0, 100);
+            const uint16_t optical_zoom_param = constrain_uint16(uint16_t(zoom_times * 10) * 10, 100, 250);
+            const uint16_t digital_zoom_param = constrain_uint16(uint16_t(zoom_times * 0.4) * 100, 100, 1000);
+            bool ret = true;
+            if (optical_zoom_param != _last_optical_zoom_param_value) {
+                ret = set_param_int32(Param::OpticalZoomMagnification, optical_zoom_param);
+            }
+            if (digital_zoom_param != _last_digital_zoom_param_value) {
+                ret &= set_param_int32(Param::DigitalZoomMagnification, digital_zoom_param);
+            }
+            return ret;
+        }
+        // digital only zoom
         // convert zoom percentage (0 ~ 100) to zoom parameter value (100, 200, 300, ... 1000)
         // 0~9pct:100, 10~19pct:200, ... 90~100pct:1000
         uint16_t zoom_param_value = constrain_uint16(uint16_t(zoom_value * 0.1) * 10, 100, 1000);
@@ -547,10 +576,25 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
             // disable zoom rate control (if active) to avoid repeated failures
             _zoom_rate_control.enabled = false;
         } else if (value >= 100 && value <= 1000) {
-            _last_zoom_param_value = value;
+            _last_digital_zoom_param_value = value;
         }
         return false;
     }
+
+    // optical zoom
+    if (strcmp(name, get_param_name_str(Param::OpticalZoomMagnification)) == 0) {
+        if (value < 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change optical zoom", err_prefix_str);
+            // disable zoom rate control (if active) to avoid repeated failures
+            _zoom_rate_control.enabled = false;
+        } else if (value >= 100 && value <= 250) {
+            capabilities.optical_zoom = Capability::True;
+            capabilities.received = true;
+            _last_optical_zoom_param_value = value;
+        }
+        return false;
+    }
+    
     // unhandled parameter get or set
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set %s res:%ld", send_text_prefix, name, (long int)value);
     return false;
@@ -790,23 +834,42 @@ bool AP_Mount_Xacti::update_zoom_rate_control(uint32_t now_ms)
         return false;
     }
 
-    // update only every 0.5 sec
-    if (now_ms - _zoom_rate_control.last_update_ms < XACTI_ZOOM_RATE_UPDATE_INTERVAL_MS) {
+    // we are controlling optical zoom if the camera has it and we are below the optical zoom upper limit
+    // or at the optical zoom upper limit, the lower digital zoom limit and are zooming out
+    bool optical_zoom_control = (capabilities.optical_zoom == Capability::True) &&
+                                ((_last_optical_zoom_param_value < 250) ||
+                                 ((_last_optical_zoom_param_value == 250) && (_last_digital_zoom_param_value == 100) && (_zoom_rate_control.dir < 0)));
+
+    // update every 0.25 or 0.5 sec
+    const uint32_t update_interval_ms = optical_zoom_control ? XACTI_OPTICAL_ZOOM_RATE_UPDATE_INTERVAL_MS : XACTI_DIGITAL_ZOOM_RATE_UPDATE_INTERVAL_MS;
+    if (now_ms - _zoom_rate_control.last_update_ms < update_interval_ms) {
         return false;
     }
     _zoom_rate_control.last_update_ms = now_ms;
 
-    // increment zoom
-    const uint16_t zoom_value = _last_zoom_param_value + _zoom_rate_control.increment;
+    // optical zoom
+    if (optical_zoom_control) {
+        const uint16_t optical_zoom_value = _last_optical_zoom_param_value + _zoom_rate_control.dir * 10;
+        // if reached lower limit of optical zoom, disable zoom control
+        if (optical_zoom_value < 100) {
+            _zoom_rate_control.enabled = false;
+            return false;
+        }
 
+        // send desired optical zoom to camera
+        return set_param_int32(Param::OpticalZoomMagnification, MIN(optical_zoom_value, 250));
+    }
+
+    // digital zoom
+    const uint16_t digital_zoom_value = _last_digital_zoom_param_value + _zoom_rate_control.dir * 100;
     // if reached limit then disable zoom
-    if ((zoom_value < 100) || (zoom_value > 1000)) {
+    if (((capabilities.optical_zoom != Capability::True) && (digital_zoom_value < 100)) || (digital_zoom_value > 1000)) {
         _zoom_rate_control.enabled = false;
         return false;
     }
 
-    // send desired zoom to camera
-    return set_param_int32(Param::DigitalZoomMagnification, zoom_value);
+    // send desired digital zoom to camera
+    return set_param_int32(Param::DigitalZoomMagnification, digital_zoom_value);
 }
 
 // request firmware version. now_ms should be current system time (reduces calls to AP_HAL::millis)
@@ -824,6 +887,38 @@ bool AP_Mount_Xacti::request_firmware_version(uint32_t now_ms)
     }
     _firmware_version.last_request_ms = now_ms;
     return get_param_string(Param::FirmwareVersion);
+}
+
+// request parameters used to determine camera capabilities.  now_ms is current system time
+// returns true if a param get/set was sent so that we avoid sending other messages
+bool AP_Mount_Xacti::request_capabilities(uint32_t now_ms)
+{
+    // return immediately if we have already determined this models capabilities
+    if (capabilities.received) {
+        return false;
+    }
+
+    // send requests once per second until received
+    if (now_ms - capabilities.last_request_ms < 1000) {
+        return false;
+    }
+    capabilities.last_request_ms = now_ms;
+
+    // record start time
+    if (capabilities.first_request_ms == 0) {
+        capabilities.first_request_ms = now_ms;
+    }
+
+    // timeout after 10 seconds
+    if (now_ms - capabilities.first_request_ms > 10000) {
+        capabilities.optical_zoom = Capability::False;
+        capabilities.received = true;
+        return false;
+    }
+
+    // optical zoom: try setting optical zoom to 1x
+    // return is handled in handle_param_get_set_response_int
+    return set_param_int32(Param::OpticalZoomMagnification, 100);
 }
 
 // set date and time.  now_ms is current system time
