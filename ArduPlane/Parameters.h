@@ -548,7 +548,7 @@ public:
 
 #if OFFBOARD_GUIDED == ENABLED
     // guided yaw heading PID
-    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
