@@ -171,17 +171,10 @@ void ADSB::send_report(const class Aircraft &aircraft)
         heartbeat.mavlink_version = 0;
         heartbeat.custom_mode = 0;
 
-        /*
-          save and restore sequence number for chan0, as it is used by
-          generated encode functions
-         */
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        chan0_status->current_tx_seq = mavlink.seq;
-        len = mavlink_msg_heartbeat_encode(vehicle_system_id,
-                                           vehicle_component_id,
-                                           &msg, &heartbeat);
-        chan0_status->current_tx_seq = saved_seq;
+        len = mavlink_msg_heartbeat_encode_status(vehicle_system_id,
+                                                  vehicle_component_id,
+                                                  &mavlink.status,
+                                                  &msg, &heartbeat);
 
         write_to_autopilot((char*)&msg.magic, len);
 
@@ -235,14 +228,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
 
             adsb_vehicle.squawk = 1200;
 
-            mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-            uint8_t saved_seq = chan0_status->current_tx_seq;
-            chan0_status->current_tx_seq = mavlink.seq;
-            len = mavlink_msg_adsb_vehicle_encode(vehicle_system_id,
+            len = mavlink_msg_adsb_vehicle_encode_status(vehicle_system_id,
                                                   MAV_COMP_ID_ADSB,
+                                                  &mavlink.status,
                                                   &msg, &adsb_vehicle);
-            chan0_status->current_tx_seq = saved_seq;
-            
+
             uint8_t msgbuf[len];
             len = mavlink_msg_to_send_buffer(msgbuf, &msg);
             if (len > 0) {
@@ -255,17 +245,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
     if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
         last_tx_report_ms = now;
 
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        uint8_t saved_flags = chan0_status->flags;
-        chan0_status->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-        chan0_status->current_tx_seq = mavlink.seq;
         const mavlink_uavionix_adsb_transceiver_health_report_t health_report = {UAVIONIX_ADSB_RF_HEALTH_OK};
-        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode(vehicle_system_id,
-                                              MAV_COMP_ID_ADSB,
-                                              &msg, &health_report);
-        chan0_status->current_tx_seq = saved_seq;
-        chan0_status->flags = saved_flags;
+        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode_status(vehicle_system_id,
+                                                                                MAV_COMP_ID_ADSB,
+                                                                                &mavlink.status,
+                                                                                &msg, &health_report);
 
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);
