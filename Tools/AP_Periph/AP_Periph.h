@@ -236,6 +236,7 @@ public:
     struct {
         mavlink_message_t msg;
         mavlink_status_t status;
+        uint32_t last_heartbeat_ms;
     } adsb;
 #endif
 
