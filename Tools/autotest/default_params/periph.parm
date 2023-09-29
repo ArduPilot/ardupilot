@@ -6,7 +6,8 @@ BARO_ENABLE 1
 ARSPD_TYPE 100
 RNGFND1_TYPE 100
 RNGFND1_MAX_CM 12000
-BATT_MONITOR 4
+BATT_MONITOR 16
+BATT_I2C_BUS 2
 
 # by default disable motors/servos, overridden in vehicle specific parameters
 OUT1_FUNCTION -1
@@ -17,3 +18,7 @@ OUT5_FUNCTION -1
 OUT6_FUNCTION -1
 OUT7_FUNCTION -1
 OUT8_FUNCTION -1
+
+# enable some simulated ADSB vehicles
+SIM_ADSB_COUNT 4
+ADSB_PORT 2
