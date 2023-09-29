@@ -341,6 +341,10 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 #endif
 
+#ifndef HAL_MAVLINK_BINDINGS_ENABLED
+#define HAL_MAVLINK_BINDINGS_ENABLED defined(HAL_PERIPH_ENABLE_ADSB) || HAL_GCS_ENABLED
+#endif
+
 // for boards other than AP_Periph we are always expecting delays when
 // not initialised.  We can't afford that on AP_Periph as you may end
 // up with a bricked node if you write a bad firmware to it.
