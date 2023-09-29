@@ -656,14 +656,11 @@ void Morse::send_report(void)
         }
 
         mavlink_message_t msg;
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        chan0_status->current_tx_seq = mavlink.seq;
-        uint16_t len = mavlink_msg_obstacle_distance_encode(
+        uint16_t len = mavlink_msg_obstacle_distance_encode_status(
                 mavlink_system.sysid,
                 13,
+                &mavlink.status,
                 &msg, &packet);
-        chan0_status->current_tx_seq = saved_seq;
 
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);
