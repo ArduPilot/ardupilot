@@ -259,8 +259,8 @@ bool AP_Mount_Xacti::set_zoom(ZoomType zoom_type, float zoom_value)
         }
         // digital only zoom
         // convert zoom percentage (0 ~ 100) to zoom parameter value (100, 200, 300, ... 1000)
-        // 0~9pct:100, 10~19pct:200, ... 90~100pct:1000
-        uint16_t zoom_param_value = constrain_uint16(uint16_t(zoom_value * 0.1) * 10, 100, 1000);
+        // 0~11pct:100, 12~22pct:200, 23~33pct:300, 34~44pct:400, 45~55pct:500, 56~66pct:600, 67~77pct:700, 78~88pct:800, 89~99pct:900, 100:1000
+        const uint16_t zoom_param_value = uint16_t(linear_interpolate(1, 10, zoom_value, 0, 100)) * 100;
         return set_param_int32(Param::DigitalZoomMagnification, zoom_param_value);
     }
 
