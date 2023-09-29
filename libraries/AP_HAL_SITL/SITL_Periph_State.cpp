@@ -270,6 +270,12 @@ void SimMCast::multicast_read(void)
         base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
     }
     _sitl->state = state;
+    location.lat = state.latitude*1.0e7;
+    location.lng = state.longitude*1.0e7;
+    location.alt = state.altitude*1.0e2;
+    if (home.is_zero()) {
+        home = location;
+    }
     hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
     HALSITL::Scheduler::timer_event();
     if (servo_fd == -1) {

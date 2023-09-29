@@ -66,7 +66,7 @@ public:
         "none:0",
         "GPS1",
         "none:1",
-        "none:2",
+        "sim:adsb",
         "none:3",
         "none:4",
         "none:5",
