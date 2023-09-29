@@ -184,13 +184,3 @@ HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan)
 }
 
 #endif  // HAL_GCS_ENABLED
-
-#if HAL_MAVLINK_BINDINGS_ENABLED && !HAL_GCS_ENABLED
-/*
-  this allows for SITL bindings for constructing mavlink messages
- */
-mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
-{
-    return nullptr;
-}
-#endif
