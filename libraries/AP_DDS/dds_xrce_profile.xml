@@ -2,7 +2,7 @@
 <profiles>
   <participant profile_name="participant_profile">
     <rtps>
-      <name>Ardupilot_DDS_XRCE_Client</name>
+      <name>ardupilot_dds</name>
     </rtps>
   </participant>
   <topic profile_name="time__t">
