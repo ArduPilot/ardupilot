@@ -62,6 +62,7 @@ public:
     enum OptionsMask {
         ON_LANDING_FLARE_USE_THR_MIN                   = (1<<0),   // If set then set trottle to thr_min instead of zero on final flare
         ON_LANDING_USE_ARSPD_MAX                       = (1<<1),   // If set then allow landing throttle constraint to be increased from trim airspeed to max airspeed (ARSPD_FBW_MAX)
+        LAND_POINT_IS_FLARE_POINT                      = (1<<2),   // Treat NAV_LAND waypoint as flare target instead of land target
     };
 
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
