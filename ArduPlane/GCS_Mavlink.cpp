@@ -919,11 +919,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
         float new_target_heading = radians(wrap_180(packet.param2));
 
-        // if packet is requesting us to go to the heading we are already going to, we-re already on it.
-        if ( (is_equal(new_target_heading,plane.guided_state.target_heading))) { // compare two floats as near-enough
-            return MAV_RESULT_ACCEPTED;
-        }
-
         // course over ground
         if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
             plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
