@@ -2137,7 +2137,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
         self.set_parameter("EK3_OPTIONS", 1)
-        self.set_parameter("AHRS_OPTIONS",1)
+        self.set_parameter("AHRS_OPTIONS", 3)
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.gpi = None
