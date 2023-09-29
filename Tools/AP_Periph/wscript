@@ -80,11 +80,8 @@ def build(bld):
                      'AP_SBusOut',
                      'AP_RobotisServo',
                      'AP_FETtecOneWire',
+                     'GCS_MAVLink',
                      ]
-
-    if bld.env.BOARD == "sitl_periph_gps":
-        # sitl_periph_gps needs mavlink bindings for simulators
-        libraries.extend(['GCS_MAVLink'])
 
     bld.ap_stlib(
         name= 'AP_Periph_libs',
