@@ -200,7 +200,7 @@ You should be able to see the agent here and view the data output.
 
 ```bash
 $ ros2 node list
-/Ardupilot_DDS_XRCE_Client
+/ardupilot_dds
 ```
 
 ```bash
