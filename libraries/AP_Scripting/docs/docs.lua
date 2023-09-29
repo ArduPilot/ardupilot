@@ -1968,6 +1968,11 @@ function serialLED:set_num_profiled(chan, num_leds) end
 ---@return boolean
 function serialLED:set_num_neopixel(chan, num_leds) end
 
+-- desc
+---@param chan integer
+---@param num_leds integer
+---@return boolean
+function serialLED:set_num_neopixel_rgb(chan, num_leds) end
 
 -- desc
 ---@class vehicle
