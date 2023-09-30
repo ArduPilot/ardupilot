@@ -234,7 +234,7 @@ void Copter::desync_check()
 {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // If we are on the ground do nothing
-    if (!motors->armed() || motors->restarting() || copter.g2.failsafe_mr_timeout == 0
+    if (!motors->armed() || motors->restarting() || copter.g2.failsafe_mr_timeout == 0 || SRV_Channels::get_emergency_stop()
 #ifndef AP_MOTOR_DESYNC_DEBUG
         || ap.land_complete
 #endif
