@@ -1,97 +1,78 @@
 #!/usr/bin/env python3
 
-
 import pathlib
+import platform
 
 
 def configure(cfg):
-    extra_src = [
-        # 'modules/Micro-XRCE-DDS-Client/src/c/core/session/stream/*.c',
-        # 'modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c',
-        # 'modules/Micro-XRCE-DDS-Client/src/c/core/serialization/*.c',
-        # 'modules/Micro-XRCE-DDS-Client/src/c/util/*.c',
-        # 'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/custom/custom_transport.c',
-        # 'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/stream_framing/stream_framing_protocol.c',
-        # 'modules/Micro-CDR/src/c/types/*.c',
-        # 'modules/Micro-CDR/src/c/common.c',
-    ]
+    host_system = platform.system()
+    host_processor = platform.processor()
+    host_machine = platform.machine()
+    host_release = platform.release()       # kernel version
+    toolchain = cfg.env.TOOLCHAIN
 
-    cfg.env.AP_LIB_EXTRA_SOURCES['AP_UROS'] = []
-    for pattern in extra_src:
-        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
-        for x in s:
-            cfg.env.AP_LIB_EXTRA_SOURCES['AP_UROS'].append(str(x))
+    print('host_system:     {}'.format(host_system))
+    print('host_processor:  {}'.format(host_processor))
+    print('host_machine:    {}'.format(host_machine))
+    print('host_release:    {}'.format(host_release))
+    print('toolchain:       {}'.format(toolchain))
+
+    distro = None
+    if toolchain == 'native':
+        if host_system == 'Darwin':
+            if host_machine == 'amd64':
+                distro = 'uros-macos-13.4-amd64'
+            elif host_machine == 'arm64':
+                distro = 'uros-macos-13.4-arm64'
+        elif host_system == 'Linux':
+            if host_machine == 'amd64':
+                distro = 'uros-ubuntu-22-amd64'
+            elif host_machine == 'arm64':
+                distro = 'uros-ubuntu-22-arm64'
+        else:
+            print('Cannot configure AP_UROS. Unsupported host: {}'.format(host_system))
+            return
+    elif toolchain == 'arm-none-eabi':
+        distro = 'uros-stm32-m7-custom'
+    elif toolchain == 'xtensa-esp32-elf':
+        distro = 'uros-esp-idf-4.4-custom'
+    else:
+        print('Cannot configure AP_UROS. Unsupported toolchain: {}'.format(toolchain))
+        return
+
+    uros_include_dir = str(pathlib.PurePath('modules', 'ardupilot_uros', distro, 'uros', 'include'))
+    uros_library_dir = str(pathlib.PurePath('modules', 'ardupilot_uros', distro, 'uros', 'lib'))
+    cfg.env.UROS_INCLUDE_DIR = uros_include_dir
+    cfg.env.UROS_LIBRARY_DIR = uros_library_dir
 
     extra_src_inc = [
-        # 'modules/Micro-XRCE-DDS-Client/include',
-        # 'modules/Micro-XRCE-DDS-Client/include/uxr/client',
-        # 'modules/Micro-CDR/src/c',
-        # 'modules/Micro-CDR/include',
-        # 'modules/Micro-CDR/include/ucdr',
+        f'{uros_include_dir}',
+        f'{uros_include_dir}/rcl',
+        f'{uros_include_dir}/rcl_action',
+        f'{uros_include_dir}/rcl_interfaces',
+        f'{uros_include_dir}/rcutils',
+        f'{uros_include_dir}/rmw',
+        f'{uros_include_dir}/rosidl_runtime_c',
+        f'{uros_include_dir}/rosidl_typesupport_interface',
+        f'{uros_include_dir}/rosidl_typesupport_introspection_c',
+        f'{uros_include_dir}/action_msgs',
+        f'{uros_include_dir}/ardupilot_msgs',
+        f'{uros_include_dir}/builtin_interfaces',
+        f'{uros_include_dir}/geographic_msgs',
+        f'{uros_include_dir}/geometry_msgs',
+        f'{uros_include_dir}/rosgraph_msgs',
+        f'{uros_include_dir}/sensor_msgs',
+        f'{uros_include_dir}/std_msgs',
+        f'{uros_include_dir}/tf2_msgs',
+        f'{uros_include_dir}/unique_identifier_msgs',
     ]
     for inc in extra_src_inc:
         cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
 
     # auto update submodules
-    # cfg.env.append_value('GIT_SUBMODULES', 'Micro-XRCE-DDS-Client')
-    # cfg.env.append_value('GIT_SUBMODULES', 'Micro-CDR')
+    cfg.env.append_value('GIT_SUBMODULES', 'ardupilot_uros')
 
 
 def build(bld):
-    config_h_in = [
-        # 'modules/Micro-XRCE-DDS-Client/include/uxr/client/config.h.in',
-        # 'modules/Micro-CDR/include/ucdr/config.h.in',
-    ]
-    # config_h_in_nodes = [bld.srcnode.make_node(h) for h in config_h_in]
-    # config_h_nodes = [bld.bldnode.find_or_declare(h[:-3]) for h in config_h_in]
-
-    # gen_path = "libraries/AP_UROS"
-    extra_bld_inc = [
-        # 'modules/Micro-CDR/include',
-        # 'modules/Micro-XRCE-DDS-Client/include',
-        # str(pathlib.PurePath(gen_path, "generated")),
-    ]
-    for inc in extra_bld_inc:
-        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
-
-    # for i in range(len(config_h_nodes)):
-    #     print(f"building {config_h_nodes[i].abspath()}")
-    #     bld(
-    #         # build config.h file
-    #         source=config_h_in_nodes[i],
-    #         target=config_h_nodes[i],
-    #         rule="%s %s/%s %s %s"
-    #         % (
-    #             bld.env.get_flat('PYTHON'),
-    #             bld.env.SRCROOT,
-    #             "libraries/AP_UROS/gen_config_h.py",
-    #             config_h_in_nodes[i].abspath(),
-    #             config_h_nodes[i].abspath(),
-    #         ),
-    #         group='dynamic_sources',
-    #     )
-
-    # TODO instead of keeping standard IDL files in the source tree, copy them with "ros2 pkg prefix --share " tools
-    # idl_files = bld.srcnode.ant_glob('libraries/AP_UROS/Idl/**/*.idl')
-    # idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
-
-    # for idl in idl_files:
-    #     idl_path = pathlib.PurePath(idl.abspath())
-    #     b = idl_path.name
-
-    #     gen_h = idl_path.with_suffix('.h').name
-    #     gen_c = idl_path.with_suffix('.c').name
-
-    #     idl_folder = idl_path.parts[-3:-1]
-    #     dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
-    #     gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
-    #     gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
-    #     bld(
-    #         # build IDL file
-    #         source=idl,
-    #         target=gen,
-    #         rule=gen_cmd,
-    #         group='dynamic_sources',
-    #     )
-
-    #     bld.env.AP_LIB_EXTRA_SOURCES['AP_UROS'] += [str(gen[1])]
+    bld.env.LIB += ['microros']
+    bld.env.LIBPATH += [str(pathlib.PurePath(bld.env.SRCROOT, bld.env.UROS_LIBRARY_DIR))]
