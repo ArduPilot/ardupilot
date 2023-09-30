@@ -110,8 +110,6 @@ static AP_HAL::SIMState xsimstate;
 
 #if HAL_WITH_DSP
 static ChibiOS::DSP dspDriver;
-#else
-static Empty::DSP dspDriver;
 #endif
 
 #ifndef HAL_NO_FLASH_SUPPORT
@@ -166,7 +164,9 @@ HAL_ChibiOS::HAL_ChibiOS() :
 #if AP_SIM_ENABLED
         &xsimstate,
 #endif
+#if HAL_WITH_DSP
         &dspDriver,
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
