@@ -214,8 +214,11 @@ private:
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
     
-    // current height estimate (m)
+    // current height estimate used for control feedback which can fade between a home and runway height reference (m)
     float _height;
+
+    // current height above the home point (m)
+    float _height_above_home;
 
     // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
     float _throttle_dem;

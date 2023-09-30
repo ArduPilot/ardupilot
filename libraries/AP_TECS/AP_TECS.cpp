@@ -316,7 +316,8 @@ void AP_TECS::update_50hz(void)
     // when flaring.
     float dist_below_home_m;
     _ahrs.get_relative_position_D_home(dist_below_home_m);
-    _height = _hgt_above_rwy * _flare_fraction - dist_below_home_m * (1.0f - _flare_fraction);
+    _height_above_home = - dist_below_home_m;
+    _height = _hgt_above_rwy * _flare_fraction + _height_above_home * (1.0f - _flare_fraction);
 
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
@@ -613,15 +614,13 @@ void AP_TECS::_update_height_demand(void)
         // the measured height is faded across from height above home to height above runway in AP_TECS::update_50hz
         _hgt_dem = _flare_hgt_dem_home * (1.0f - _flare_fraction) + _flare_hgt_dem_rwy * _flare_fraction;
 
-        float dist_below_home_m;
-        _ahrs.get_relative_position_D_home(dist_below_home_m);
         AP::logger().WriteStreaming("TECF", "TimeUS,h_rwy,h_home,h_blend,hdem_rwy,hdem_home,hdem_blend,frac",
                                     "s-------",
                                     "F-------",
                                     "Qfffffff",
                                     AP_HAL::micros64(),
                                     (double)_hgt_above_rwy,
-                                    (double)-dist_below_home_m,
+                                    (double)_height_above_home,
                                     (double)_height,
                                     (double)_flare_hgt_dem_rwy,
                                     (double)_flare_hgt_dem_home,
@@ -1105,11 +1104,12 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_above_rwy        = hgt_afe;
         float dist_below_home_m;
         _ahrs.get_relative_position_D_home(dist_below_home_m);
-        _hgt_dem_in_prev      = - dist_below_home_m;
-        _hgt_dem_lpf          = - dist_below_home_m;
-        _hgt_dem_rate_ltd     = - dist_below_home_m;
-        _hgt_dem_prev         = - dist_below_home_m;
-        _TAS_dem_adj          = - dist_below_home_m;
+        _height_above_home    = - dist_below_home_m;
+        _hgt_dem_in_prev      = _height_above_home;
+        _hgt_dem_lpf          = _height_above_home;
+        _hgt_dem_rate_ltd     = _height_above_home;
+        _hgt_dem_prev         = _height_above_home;
+        _TAS_dem_adj          = _height_above_home;
         _flags.reset          = true;
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
         _post_TO_hgt_offset   = 0.0f;
@@ -1145,12 +1145,13 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_above_rwy        = hgt_afe;
         float dist_below_home_m;
         _ahrs.get_relative_position_D_home(dist_below_home_m);
-        _hgt_dem_lpf          = - dist_below_home_m;
-        _hgt_dem_rate_ltd     = - dist_below_home_m;
-        _hgt_dem_prev         = - dist_below_home_m;
-        _hgt_dem              = - dist_below_home_m;
-        _hgt_dem_in_prev      = - dist_below_home_m;
-        _hgt_dem_in_raw       = - dist_below_home_m;
+        _height_above_home    = - dist_below_home_m;
+        _hgt_dem_lpf          = _height_above_home;
+        _hgt_dem_rate_ltd     = _height_above_home;
+        _hgt_dem_prev         = _height_above_home;
+        _hgt_dem              = _height_above_home;
+        _hgt_dem_in_prev      = _height_above_home;
+        _hgt_dem_in_raw       = _height_above_home;
         _TAS_dem_adj          = _TAS_dem;
         _flags.reset          = true;
         _post_TO_hgt_offset   = _climb_rate * _hgt_dem_tconst;
