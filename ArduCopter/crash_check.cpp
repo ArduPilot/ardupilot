@@ -267,7 +267,7 @@ void Copter::desync_check()
     }
 
     // see whether the timeout has expired
-    if (now_ms - motor_failure_start_ms < copter.g2.failsafe_mr_timeout) {
+    if (now_ms - motor_failure_start_ms < uint32_t(copter.g2.failsafe_mr_timeout.get())) {
         return;
     }
 
