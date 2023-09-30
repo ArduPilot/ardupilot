@@ -276,6 +276,18 @@ void Copter::desync_check()
 
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Desync detected on %u motor(s), first motor: %u - restarting",
         __builtin_popcount(failed_motors), __builtin_ffs(failed_motors));
+
+    // log error
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_DESYNC, LogErrorCode::FAILSAFE_OCCURRED);
+
+    // immediately disarm while landed
+    if (should_disarm_on_failsafe()) {
+        arming.disarm(AP_Arming::Method::DESYNC_FAILSAFE);
+        return;
+    }
+
+    // take user specified action
+    do_failsafe_action((FailsafeAction)g2.failsafe_mr_enable.get(), ModeReason::DESYNC_FAILSAFE);
 #endif
 }
 
