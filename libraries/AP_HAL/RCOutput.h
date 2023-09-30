@@ -84,7 +84,7 @@ public:
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
      */
-    virtual void     update_channel_masks() {}
+    virtual void     update_channel_masks(bool force = false) {}
 
     /*
      * Allow channel mask updates to be temporarily suspended
