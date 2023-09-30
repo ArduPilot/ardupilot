@@ -39,3 +39,6 @@
 	path = modules/Micro-CDR
 	url = https://github.com/ardupilot/Micro-CDR.git
 	branch = master
+[submodule "modules/ardupilot_uros"]
+	path = modules/ardupilot_uros
+	url = https://github.com/srmainwaring/ardupilot_uros.git
