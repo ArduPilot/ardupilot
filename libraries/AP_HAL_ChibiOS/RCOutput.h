@@ -234,7 +234,7 @@ public:
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
      */
-    void update_channel_masks() override;
+    void update_channel_masks(bool force) override;
 
     /*
      * Allow channel mask updates to be temporarily suspended

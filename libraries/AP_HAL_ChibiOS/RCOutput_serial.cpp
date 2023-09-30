@@ -149,10 +149,10 @@ void RCOutput::set_reversible_mask(uint32_t chanmask) {
 }
 
 // Update the dshot outputs that should be reversible/3D at 1Hz
-void RCOutput::update_channel_masks() {
+void RCOutput::update_channel_masks(bool force) {
 
     // post arming dshot commands will not be accepted
-    if (hal.util->get_soft_armed() || _disable_channel_mask_updates) {
+    if (!force && (hal.util->get_soft_armed() || _disable_channel_mask_updates)) {
         return;
     }
 
