@@ -809,6 +809,8 @@ class AutoTestHelicopter(AutoTestCopter):
         ex = None
         try:
             self.set_parameters({
+                "FILT1_TYPE": 1,
+                "FILT2_TYPE": 1,
                 "AHRS_EKF_TYPE": 10,
                 "INS_LOG_BAT_MASK": 3,
                 "INS_LOG_BAT_OPT": 0,
@@ -818,15 +820,11 @@ class AutoTestHelicopter(AutoTestCopter):
                 "SIM_VIB_FREQ_X": 120,  # roll
                 "SIM_VIB_FREQ_Y": 120,  # pitch
                 "SIM_VIB_FREQ_Z": 180,  # yaw
-                "ATC_RAT_RLL_ADV": 1,
-                "ATC_RAT_RLL_NEF": 120,
-                "ATC_RAT_RLL_NBW": 50,
-                "ATC_RAT_PIT_ADV": 1,
-                "ATC_RAT_PIT_NEF": 120,
-                "ATC_RAT_PIT_NBW": 50,
-                "ATC_RAT_YAW_ADV": 1,
-                "ATC_RAT_YAW_NEF": 180,
-                "ATC_RAT_YAW_NBW": 50,
+                "FILT1_NOTCH_FREQ": 120,
+                "FILT2_NOTCH_FREQ": 180,
+                "ATC_RAT_RLL_NEF": 1,
+                "ATC_RAT_PIT_NEF": 1,
+                "ATC_RAT_YAW_NEF": 2,
                 "SIM_GYR1_RND": 5,
             })
             self.reboot_sitl()
