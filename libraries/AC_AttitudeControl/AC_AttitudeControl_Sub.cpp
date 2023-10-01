@@ -79,12 +79,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
 
-    // @Param: RAT_RLL_ADV
-    // @DisplayName: Roll Advanced parameters enable
-    // @Description: Roll Advanced parameters enable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-
     // @Param: RAT_RLL_D_FF
     // @DisplayName: Roll Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
@@ -93,31 +87,15 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @User: Advanced
 
     // @Param: RAT_RLL_NTF
-    // @DisplayName: Roll Target notch Filter center frequency
-    // @Description: Roll Target notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
+    // @DisplayName: Roll Target notch filter index
+    // @Description: Roll Target notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     // @Param: RAT_RLL_NEF
-    // @DisplayName: Roll Error notch Filter center frequency
-    // @Description: Roll Error notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_RLL_NBW
-    // @DisplayName: Roll notch Filter bandwidth
-    // @Description: Roll notch Filter bandwidth in Hz.
-    // @Range: 5 250
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_RLL_NATT
-    // @DisplayName: Roll notch Filter attenuation
-    // @Description: Roll notch Filter attenuation in dB.
-    // @Range: 5 50
-    // @Units: dB
+    // @DisplayName: Roll Error notch filter index
+    // @Description: Roll Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Sub, AC_PID),
@@ -194,12 +172,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
 
-    // @Param: RAT_PIT_ADV
-    // @DisplayName: Pitch Advanced parameters enable
-    // @Description: Pitch Advanced parameters enable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-
     // @Param: RAT_PIT_D_FF
     // @DisplayName: Pitch Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
@@ -208,31 +180,15 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @User: Advanced
 
     // @Param: RAT_PIT_NTF
-    // @DisplayName: Pitch Target notch Filter center frequency
-    // @Description: Pitch Target notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
+    // @DisplayName: Pitch Target notch filter index
+    // @Description: Pitch Target notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     // @Param: RAT_PIT_NEF
-    // @DisplayName: Pitch Error notch Filter center frequency
-    // @Description: Pitch Error notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_PIT_NBW
-    // @DisplayName: Pitch notch Filter bandwidth
-    // @Description: Pitch notch Filter bandwidth in Hz.
-    // @Range: 5 250
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_PIT_NATT
-    // @DisplayName: Pitch notch Filter attenuation
-    // @Description: Pitch notch Filter attenuation in dB.
-    // @Range: 5 50
-    // @Units: dB
+    // @DisplayName: Pitch Error notch filter index
+    // @Description: Pitch Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Sub, AC_PID),
@@ -309,12 +265,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
 
-    // @Param: RAT_YAW_ADV
-    // @DisplayName: Yaw Advanced parameters enable
-    // @Description: Yaw Advanced parameters enable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-
     // @Param: RAT_YAW_D_FF
     // @DisplayName: Yaw Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
@@ -323,31 +273,15 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @User: Advanced
 
     // @Param: RAT_YAW_NTF
-    // @DisplayName: Yaw Target notch Filter center frequency
-    // @Description: Yaw Target notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
+    // @DisplayName: Yaw Target notch filter index
+    // @Description: Yaw Target notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
-    // @DisplayName: Yaw Error notch Filter center frequency
-    // @Description: Yaw Error notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_YAW_NBW
-    // @DisplayName: Yaw notch Filter bandwidth
-    // @Description: Yaw notch Filter bandwidth in Hz.
-    // @Range: 5 250
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: RAT_YAW_NATT
-    // @DisplayName: Yaw notch Filter attenuation
-    // @Description: Yaw notch Filter attenuation in dB.
-    // @Range: 5 50
-    // @Units: dB
+    // @DisplayName: Yaw Error notch filter index
+    // @Description: Yaw Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Sub, AC_PID),
@@ -552,7 +486,7 @@ void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_r
 
 void AC_AttitudeControl_Sub::set_notch_sample_rate(float sample_rate)
 {
-#if AC_PID_ADVANCED_ENABLED
+#if AP_FILTER_ENABLED
     _pid_rate_roll.set_notch_sample_rate(sample_rate);
     _pid_rate_pitch.set_notch_sample_rate(sample_rate);
     _pid_rate_yaw.set_notch_sample_rate(sample_rate);
