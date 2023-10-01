@@ -759,4 +759,14 @@ int lua_get_current_ref()
     return scripting->get_current_ref();
 }
 
+// Simple print to GCS or over CAN
+int lua_print(lua_State *L) {
+    // Only support a single argument
+    binding_argcheck(L, 1);
+
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s", luaL_checkstring(L, 1));
+
+    return 0;
+}
+
 #endif  // AP_SCRIPTING_ENABLED
