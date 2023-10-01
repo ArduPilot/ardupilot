@@ -9,15 +9,12 @@
 #include <cmath>
 #include <Filter/SlewLimiter.h>
 #include <Filter/NotchFilter.h>
+#include <Filter/AP_Filter.h>
 
 #define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_DFILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PID_RESET_TC          0.16f   // Time constant for integrator reset decay to zero
-
-#ifndef AC_PID_ADVANCED_ENABLED
-#define AC_PID_ADVANCED_ENABLED 0
-#endif
 
 #include "AP_PIDInfo.h"
 
@@ -153,10 +150,8 @@ public:
 
     const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
-#if AC_PID_ADVANCED_ENABLED
     AP_Float &kDff() { return _kdff; }
     void kDff(const float v) { _kdff.set(v); }
-#endif
     void set_notch_sample_rate(float);
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -180,13 +175,10 @@ protected:
     AP_Float _filt_E_hz;         // PID error filter frequency in Hz
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
     AP_Float _slew_rate_max;
-#if AC_PID_ADVANCED_ENABLED
-    AP_Int8  _adv_enable;
     AP_Float _kdff;
-    AP_Float _notch_T_center_freq_hz;
-    AP_Float _notch_E_center_freq_hz;
-    AP_Float _notch_bandwidth_hz;
-    AP_Float _notch_attenuation_dB;
+#if AP_FILTER_ENABLED
+    AP_Int8 _notch_T_filter;
+    AP_Int8 _notch_E_filter;
 #endif
     SlewLimiter _slew_limiter{_slew_rate_max, _slew_rate_tau};
 
@@ -202,9 +194,9 @@ protected:
     float _derivative;        // derivative value to enable filtering
     int8_t _slew_limit_scale;
     float _target_derivative; // target derivative value to enable dff
-#if AC_PID_ADVANCED_ENABLED
-    NotchFilterFloat _target_notch;
-    NotchFilterFloat _error_notch;
+#if AP_FILTER_ENABLED
+    NotchFilterFloat* _target_notch;
+    NotchFilterFloat* _error_notch;
 #endif
 
     AP_PIDInfo _pid_info;
