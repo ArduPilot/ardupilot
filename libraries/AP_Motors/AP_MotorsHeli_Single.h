@@ -80,6 +80,9 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+    // Helper function for param conversions to be done in motors class
+    void heli_motors_param_conversions(void) override;
+
     // Thrust Linearization handling
     Thrust_Linearization thr_lin {*this};
 
@@ -100,8 +103,8 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
-    // calculate the motor output for DDFP tails from yaw_out
-    uint16_t calculate_ddfp_output(float yaw_out);
+    // handle output limit flags and send throttle to servos lib
+    void output_to_ddfp_tail(float throttle);
 
     // servo_test - move servos through full range of movement
     void servo_test() override;
@@ -118,9 +121,6 @@ protected:
     float _pitch_test = 0.0f;                   // over-ride for pitch output, used by servo_test function
     float _yaw_test = 0.0f;                     // over-ride for yaw output, used by servo_test function
     float _servo4_out = 0.0f;                   // output value sent to motor
-    uint16_t _ddfp_pwm_min = 0;                 // minimum ddfp servo min
-    uint16_t _ddfp_pwm_max = 0;                 // minimum ddfp servo max
-    uint16_t _ddfp_pwm_trim = 0;                // minimum ddfp servo trim
 
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
@@ -129,6 +129,7 @@ protected:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
     AP_Float        _collective_yaw_scale;      // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
+    AP_Float        _yaw_trim;                  // Fixed offset applied to yaw output to reduce yaw I.
 
     bool            _acro_tail = false;
 };
