@@ -120,45 +120,23 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
 
-    // @Param: _RATE_ADV
-    // @DisplayName: Roll Advanced parameters enable
-    // @Description: Roll Advanced parameters enable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-
     // @Param: _RATE_D_FF
     // @DisplayName: Roll Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
-    // @Range: 0.001 0.03
+    // @Range: 0 0.03
     // @Increment: 0.001
     // @User: Advanced
 
     // @Param: _RATE_NTF
-    // @DisplayName: Roll Target notch Filter center frequency
-    // @Description: Roll Target notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
+    // @DisplayName: Roll Target notch filter index
+    // @Description: Roll Target notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     // @Param: _RATE_NEF
-    // @DisplayName: Roll Error notch Filter center frequency
-    // @Description: Roll Error notch Filter center frequency in Hz.
-    // @Range: 10 495
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: _RATE_NBW
-    // @DisplayName: Roll notch Filter bandwidth
-    // @Description: Roll notch Filter bandwidth in Hz.
-    // @Range: 5 250
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: _RATE_NATT
-    // @DisplayName: Roll notch Filter attenuation
-    // @Description: Roll notch Filter attenuation in dB.
-    // @Range: 5 50
-    // @Units: dB
+    // @DisplayName: Roll Error notch filter index
+    // @Description: Roll Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
