@@ -260,9 +260,9 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-	
+
     // allow use of external governor autorotation bailout
-    if (_heliflags.in_autorotation) {        
+    if (_heliflags.in_autorotation) {
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         // set bailout ramp time
         _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
@@ -270,7 +270,7 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
             _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
             _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
         }
-    }else { 
+    } else {
         _main_rotor.set_autorotation_flag(false);
         if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
             _tail_rotor.set_autorotation_flag(false);
@@ -484,7 +484,7 @@ void AP_MotorsHeli_Single::output_to_motors()
     // Write swashplate outputs
     _swashplate.output();
 
-    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
+    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW) {
         rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
     }
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
@@ -500,7 +500,7 @@ void AP_MotorsHeli_Single::output_to_motors()
         _servo4_out = -_servo4_out;
     }
 
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW) {
         // calc filtered battery voltage and lift_max
         thr_lin.update_lift_max_from_batt_voltage();
     }
