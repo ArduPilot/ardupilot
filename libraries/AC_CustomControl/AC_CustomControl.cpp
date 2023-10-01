@@ -186,7 +186,7 @@ void AC_CustomControl::log_switch(void) {
 
 void AC_CustomControl::set_notch_sample_rate(float sample_rate)
 {
-#if AC_PID_ADVANCED_ENABLED
+#if AP_FILTER_ENABLED
     if (_backend != nullptr) {
         _backend->set_notch_sample_rate(sample_rate);
     }
