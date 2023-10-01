@@ -2053,6 +2053,67 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    def CompassMot(self):
+        '''test code that adjust mag field for motor interference'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            0,  # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            1,  # p6
+            0  # p7
+        )
+        self.context_collect("STATUSTEXT")
+        self.wait_statustext("Starting calibration", check_context=True)
+        self.wait_statustext("Current", check_context=True)
+        rc3_min = self.get_parameter('RC3_MIN')
+        rc3_max = self.get_parameter('RC3_MAX')
+        rc3_dz = self.get_parameter('RC3_DZ')
+
+        def set_rc3_for_throttle_pct(thr_pct):
+            value = int((rc3_min+rc3_dz) + (thr_pct/100.0) * (rc3_max-(rc3_min+rc3_dz)))
+            self.progress("Setting rc3 to %u" % value)
+            self.set_rc(3, value)
+
+        throttle_in_pct = 0
+        set_rc3_for_throttle_pct(throttle_in_pct)
+        self.assert_received_message_field_values("COMPASSMOT_STATUS", {
+            "interference": 0,
+            "throttle": throttle_in_pct
+        }, verbose=True, very_verbose=True)
+        tstart = self.get_sim_time()
+        delta = 5
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("did not run through entire range")
+            throttle_in_pct += delta
+            self.progress("Using throttle %f%%" % throttle_in_pct)
+            set_rc3_for_throttle_pct(throttle_in_pct)
+            self.wait_message_field_values("COMPASSMOT_STATUS", {
+                "throttle": throttle_in_pct * 10.0,
+            }, verbose=True, very_verbose=True, epsilon=1)
+            if throttle_in_pct == 0:
+                # finished counting down
+                break
+            if throttle_in_pct == 100:
+                # start counting down
+                delta = -delta
+
+        m = self.wait_message_field_values("COMPASSMOT_STATUS", {
+            "throttle": 0,
+        }, verbose=True)
+        for axis in "X", "Y", "Z":
+            fieldname = "Compensation" + axis
+            if getattr(m, fieldname) <= 0:
+                raise NotAchievedException("Expected non-zero %s" % fieldname)
+
+        # it's kind of crap - but any command-ack will stop the
+        # calibration
+        self.mav.mav.command_ack_send(0, 1)
+        self.wait_statustext("Calibration successful")
+
     def MagFail(self):
         '''test failover of compass in EKF'''
         # we want both EK2 and EK3
@@ -10412,6 +10473,7 @@ class AutoTestCopter(AutoTest):
             self.BrakeZ,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
+            self.CompassMot,
         ])
         return ret
 
