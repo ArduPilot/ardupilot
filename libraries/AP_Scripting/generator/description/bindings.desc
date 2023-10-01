@@ -760,6 +760,7 @@ userdata uint32_t manual tofloat uint32_t_tofloat 0
 
 global manual dirlist lua_dirlist 1
 global manual remove lua_removefile 1
+global manual print lua_print 1
 
 singleton mavlink depends HAL_GCS_ENABLED
 singleton mavlink manual init lua_mavlink_init 2
