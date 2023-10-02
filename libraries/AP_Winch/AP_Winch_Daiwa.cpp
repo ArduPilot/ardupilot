@@ -6,6 +6,11 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 
+#define AP_WINCH_DAIWA_STUCK_TIMEOUT_MS 1000    // winch is considered stuck if unmoving for this many milliseconds
+#define AP_WINCH_DAIWA_STUCK_CENTER_MS  1000    // stuck protection outputs zero rate for this many milliseconds
+#define AP_WINCH_DAIWA_STUCK_LENGTH_MIN 0.1     // stuck protection active when line length is more than this many meters
+#define AP_WINCH_DAIWA_STUCK_RATE_MIN   0.2     // stuck protection active when desired rate is at least this value (+ve or -ve)
+
 extern const AP_HAL::HAL& hal;
 
 const char* AP_Winch_Daiwa::send_text_prefix = "Winch:";
@@ -217,7 +222,10 @@ void AP_Winch_Daiwa::control_winch()
     }
 
     // apply acceleration limited to rate
-    const float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
+    float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
+
+    // apply stuck protection to rate
+    rate_limited = get_stuck_protected_rate(now_ms, rate_limited);
 
     // use linear interpolation to calculate output to move winch at desired rate
     float scaled_output = 0;
@@ -225,6 +233,78 @@ void AP_Winch_Daiwa::control_winch()
         scaled_output = linear_interpolate(output_dz, 1000, fabsf(rate_limited), 0, config.rate_max) * (is_positive(rate_limited) ? 1.0f : -1.0f);
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
+}
+
+// returns the rate which may be modified to unstick the winch
+// if the winch stops, the rate is temporarily set to zero
+// now_ms should be set to the current system time
+// rate should be the rate used to calculate the final PWM output to the winch
+float AP_Winch_Daiwa::get_stuck_protected_rate(uint32_t now_ms, float rate)
+{
+    // exit immediately if stuck protection disabled
+    if (!option_enabled(AP_Winch::Options::RetryIfStuck)) {
+        return rate;
+    }
+
+    // check for timeout
+    bool timeout = (now_ms - stuck_protection.last_update_ms) > 1000;
+    stuck_protection.last_update_ms = now_ms;
+
+    // check if winch is nearly fully pulled in
+    const bool near_thread_start = (latest.line_length < AP_WINCH_DAIWA_STUCK_LENGTH_MIN) && is_negative(rate);
+
+    // check if rate is near zero (winch may not move with very low desired rates)
+    const bool rate_near_zero = fabsf(rate) < AP_WINCH_DAIWA_STUCK_RATE_MIN;
+
+    // return rate unchanged if this protection has not been called recently or winch is unhealthy
+    // or if winch is moving, desired rate is near zero or winch has stopped at thread start or thread end
+    if (timeout || !healthy() || latest.moving || rate_near_zero || near_thread_start || latest.thread_end) {
+        // notify user when winch becomes unstuck
+        if (option_enabled(AP_Winch::Options::VerboseOutput) && (stuck_protection.stuck_start_ms != 0) && (stuck_protection.user_notified)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s unstuck", send_text_prefix);
+        }
+        // reset stuck protection state
+        stuck_protection.stuck_start_ms = 0;
+        return rate;
+    }
+
+    // winch is healthy, with non-zero requested rate but not moving
+    // record when winch became stuck
+    if (stuck_protection.stuck_start_ms == 0) {
+        stuck_protection.stuck_start_ms = now_ms;
+        stuck_protection.user_notified = false;
+    }
+
+    // if stuck for between 1 to 2 seconds return zero rate
+    const uint32_t stuck_time_ms = (now_ms - stuck_protection.stuck_start_ms);
+    if (stuck_time_ms > AP_WINCH_DAIWA_STUCK_TIMEOUT_MS) {
+        // notify user
+        if (!stuck_protection.user_notified) {
+            stuck_protection.user_notified = true;
+            if (option_enabled(AP_Winch::Options::VerboseOutput)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s stuck", send_text_prefix);
+            }
+        }
+
+        // return zero rate for 1 second
+        if (stuck_time_ms <= (AP_WINCH_DAIWA_STUCK_TIMEOUT_MS+AP_WINCH_DAIWA_STUCK_CENTER_MS)) {
+            return 0;
+        }
+
+        // rate has been set to zero for 1 sec so release and restart stuck detection
+        stuck_protection.stuck_start_ms = 0;
+
+        // rate used for acceleration limiting also reset to zero
+        set_previous_rate(0.0f);
+
+        // update user
+        if (option_enabled(AP_Winch::Options::VerboseOutput)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s retrying", send_text_prefix);
+        }
+    }
+
+    // give winch more time to start moving
+    return rate;
 }
 
 // update user with changes to winch state via send text messages
