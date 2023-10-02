@@ -134,6 +134,7 @@ private:
     static const char* _param_names[];              // array of Xacti parameter strings
 
     // get parameter name for a particular param enum value
+    // returns an empty string if not found (which should never happen)
     const char* get_param_name_str(Param param) const;
 
     // helper function to get and set parameters
