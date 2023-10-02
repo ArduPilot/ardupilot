@@ -36,9 +36,9 @@ const AP_Param::GroupInfo AP_Winch::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Winch options
     // @Description: Winch options
-    // @Bitmask:  0:Spin freely on startup, 1:Verbose output
+    // @Bitmask:  0:Spin freely on startup, 1:Verbose output, 2:Retry if stuck (Daiwa only)
     // @User: Standard
-    AP_GROUPINFO("_OPTIONS", 4, AP_Winch, config.options, 3.0f),
+    AP_GROUPINFO("_OPTIONS", 4, AP_Winch, config.options, 7.0f),
 
     // 4 was _RATE_PID
 
