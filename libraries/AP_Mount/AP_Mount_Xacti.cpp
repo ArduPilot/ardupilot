@@ -47,7 +47,7 @@ void AP_Mount_Xacti::init()
     // instantiate parameter queue, return on failure so init fails
     _set_param_int32_queue = new ObjectArray<SetParamQueueItem>(XACTI_SET_PARAM_QUEUE_SIZE);
     if (_set_param_int32_queue == nullptr) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "%s init failed", send_text_prefix);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s init failed", send_text_prefix);
         return;
     }
     _initialised = true;
@@ -197,7 +197,7 @@ bool AP_Mount_Xacti::take_picture()
 {
     // fail if camera errored
     if (_camera_error) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "%s unable to take pic", send_text_prefix);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s unable to take pic", send_text_prefix);
         return false;
     }
 
@@ -358,7 +358,7 @@ void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     // return immediately if DroneCAN is unavailable
     if (ap_dronecan == nullptr) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s DroneCAN subscribe failed", send_text_prefix);
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s DroneCAN subscribe failed", send_text_prefix);
         return;
     }
 
@@ -501,39 +501,39 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
     const char* err_prefix_str = "Xacti: failed to";
     if (strcmp(name, get_param_name_str(Param::SingleShot)) == 0) {
         if (value < 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s take pic", err_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s take pic", err_prefix_str);
         }
         return false;
     }
     if (strcmp(name, get_param_name_str(Param::Recording)) == 0) {
         if (value < 0) {
             _recording_video = false;
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s record", err_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s record", err_prefix_str);
         } else {
             _recording_video = (value == 1);
-            gcs().send_text(MAV_SEVERITY_INFO, "%s recording %s", send_text_prefix, _recording_video ? "ON" : "OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s recording %s", send_text_prefix, _recording_video ? "ON" : "OFF");
         }
         return false;
     }
     if (strcmp(name, get_param_name_str(Param::FocusMode)) == 0) {
         if (value < 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s change focus", err_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change focus", err_prefix_str);
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s %s focus", send_text_prefix, value == 0 ? "manual" : "auto");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s focus", send_text_prefix, value == 0 ? "manual" : "auto");
         }
         return false;
     }
     if (strcmp(name, get_param_name_str(Param::SensorMode)) == 0) {
         if (value < 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s change lens", err_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change lens", err_prefix_str);
         } else if ((uint32_t)value < ARRAY_SIZE(sensor_mode_str)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, sensor_mode_str[(uint8_t)value]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, sensor_mode_str[(uint8_t)value]);
         }
         return false;
     }
     if (strcmp(name, get_param_name_str(Param::DigitalZoomMagnification)) == 0) {
         if (value < 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s change zoom", err_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s change zoom", err_prefix_str);
             // disable zoom rate control (if active) to avoid repeated failures
             _zoom_rate_control.enabled = false;
         } else if (value >= 100 && value <= 1000) {
@@ -542,7 +542,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         return false;
     }
     // unhandled parameter get or set
-    gcs().send_text(MAV_SEVERITY_INFO, "%s get/set %s res:%ld", send_text_prefix, name, (long int)value);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set %s res:%ld", send_text_prefix, name, (long int)value);
     return false;
 }
 
@@ -553,7 +553,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         _firmware_version.received = true;
         const uint8_t len = MIN(value.len, ARRAY_SIZE(_firmware_version.str)-1);
         memcpy(_firmware_version.str, (const char*)value.data, len);
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: Xacti fw:%s", _firmware_version.str);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Xacti fw:%s", _firmware_version.str);
 
         // firmware str from gimbal is of the format YYMMDD[b]xx.  Convert to uint32 for reporting to GCS
         if (len >= 9) {
@@ -570,7 +570,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         return false;
     } else if (strcmp(name, get_param_name_str(Param::DateTime)) == 0) {
         // display when time and date have been set
-        gcs().send_text(MAV_SEVERITY_INFO, "%s datetime set %s", send_text_prefix, (const char*)value.data);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s datetime set %s", send_text_prefix, (const char*)value.data);
         return false;
     } else if (strcmp(name, get_param_name_str(Param::Status)) == 0) {
         // check for expected length
@@ -588,29 +588,29 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         uint32_t changed_bits = last_error_status ^ _status.error_status;
         const char* ok_str = "OK";
         if (changed_bits & (uint32_t)ErrorStatus::TIME_NOT_SET) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s time %sset", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TIME_NOT_SET ? "not " : "");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s time %sset", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TIME_NOT_SET ? "not " : "");
             if (_status.error_status & (uint32_t)ErrorStatus::TIME_NOT_SET) {
                 // try to set time again
                 _datetime.set = false;
             }
         }
         if (changed_bits & (uint32_t)ErrorStatus::MEDIA_ERROR) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s media %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MEDIA_ERROR ? error_str : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s media %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MEDIA_ERROR ? error_str : ok_str);
         }
         if (changed_bits & (uint32_t)ErrorStatus::LENS_ERROR) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s lens %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::LENS_ERROR ? error_str : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s lens %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::LENS_ERROR ? error_str : ok_str);
         }
         if (changed_bits & (uint32_t)ErrorStatus::MOTOR_INIT_ERROR) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s motor %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_INIT_ERROR ? "init error" : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s motor %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_INIT_ERROR ? "init error" : ok_str);
         }
         if (changed_bits & (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s motor op %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR ? error_str : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s motor op %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR ? error_str : ok_str);
         }
         if (changed_bits & (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s control %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR ? error_str : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s control %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR ? error_str : ok_str);
         }
         if (changed_bits & (uint32_t)ErrorStatus::TEMP_WARNING) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s temp %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TEMP_WARNING ? "warning" : ok_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s temp %s", send_text_prefix, _status.error_status & (uint32_t)ErrorStatus::TEMP_WARNING ? "warning" : ok_str);
         }
 
         // set motor error for health reporting
@@ -620,7 +620,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
     }
 
     // unhandled parameter get or set
-    gcs().send_text(MAV_SEVERITY_INFO, "%s get/set string %s res:%s", send_text_prefix, name, (const char*)value.data);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set string %s res:%s", send_text_prefix, name, (const char*)value.data);
     return false;
 }
 
@@ -628,7 +628,7 @@ void AP_Mount_Xacti::handle_param_save_response(AP_DroneCAN* ap_dronecan, const 
 {
     // display failure to save parameter
     if (!success) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "%s CAM%u failed to set param", send_text_prefix, (int)_instance+1);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s CAM%u failed to set param", send_text_prefix, (int)_instance+1);
     }
 }
 
@@ -856,7 +856,7 @@ bool AP_Mount_Xacti::set_datetime(uint32_t now_ms)
     datetime_string.len = num_bytes;
     _datetime.set = set_param_string(Param::DateTime, datetime_string);
     if (!_datetime.set) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to set date/time", send_text_prefix);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to set date/time", send_text_prefix);
     }
 
     return _datetime.set;
