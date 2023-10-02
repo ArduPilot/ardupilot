@@ -84,8 +84,8 @@ private:
 
     // enum for OPTIONS parameter
     enum class Options : int16_t {
-        SpinFreelyOnStartup = (1U << 0),
-        VerboseOutput = (1U << 1),
+        SpinFreelyOnStartup = (1U << 0),    // winch allows line to be manually pulled out soon after startup
+        VerboseOutput = (1U << 1),          // verbose output of winch state sent to GCS
     };
 
     // winch states
