@@ -2199,6 +2199,9 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+        float distance_cm = copter.wp_nav->get_wp_distance_to_destination();
+        uint32_t distance_m = constrain_uint16(distance_cm / 100, 0, UINT16_MAX);
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
         return false;
     }
 
