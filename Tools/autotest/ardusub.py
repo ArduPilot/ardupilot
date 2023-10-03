@@ -422,6 +422,7 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
             "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
+            "MAV_CMD_DO_CHANGE_SPEED": "Doesn't work",
         })
         return ret
 
@@ -454,6 +455,26 @@ class AutoTestSub(AutoTest):
             self.assert_mode('AUTO')
         self.disarm_vehicle()
 
+    def MAV_CMD_DO_CHANGE_SPEED(self):
+        '''ensure vehicle changes speeds when DO_CHANGE_SPEED received'''
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ]
+        items = []
+        for i in range(0, 2000, 10):
+            items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, i, 0, 0))
+        self.upload_simple_relhome_mission(items)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            for speed in [1, 2, 3, 1]:
+                run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+                self.wait_groundspeed(speed-0.02, speed+0.02, minimum_duration=2)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -472,6 +493,7 @@ class AutoTestSub(AutoTest):
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_LAND,
             self.MAV_CMD_MISSION_START,
+            self.MAV_CMD_DO_CHANGE_SPEED,
         ])
 
         return ret
