@@ -49,7 +49,9 @@ AP_ESC_Telem::AP_ESC_Telem()
         AP_HAL::panic("Too many AP_ESC_Telem instances");
     }
     _singleton = this;
+#if !defined(IOMCU_FW)
     AP_Param::setup_object_defaults(this, var_info);
+#endif
 }
 
 // return the average motor RPM
@@ -416,7 +418,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     // can only get slightly more up-to-date information that perhaps they were expecting or might
     // read data that has just gone stale - both of these are safe and avoid the overhead of locking
 
-    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+    if (esc_index >= ESC_TELEM_MAX_ESCS || data_mask == 0) {
         return;
     }
 
