@@ -10,7 +10,7 @@ jobs:
     runs-on: 'windows-latest'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       - name: Install cygwin
@@ -26,9 +26,14 @@ jobs:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
           C:\Cygwin\bin\bash --login -c "Tools/scripts/cygwin_build.sh"
-
+      - name: Check build files
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "artifacts/*"
+          fail: true
       - name: Archive build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
            name: binaries
            path: artifacts
