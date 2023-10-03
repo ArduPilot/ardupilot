@@ -2056,6 +2056,9 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
+        float distance_cm = copter.wp_nav->get_wp_distance_to_destination();
+        uint32_t distance_m = constrain_uint16(distance_cm / 100, 0, UINT16_MAX);
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
         return false;
     }
 
@@ -2064,8 +2067,11 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         loiter_time = millis();
     }
 
+    const uint16_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+    mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
