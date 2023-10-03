@@ -131,11 +131,27 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     /* note the number of channels decoded */
     *num_values = chancount;
 
+    /*
+      as SBUS is such a weak protocol we additionally check if any of
+      the first 4 channels are at or below the minimum value of
+      875. We consider the frame as a failsafe in that case, which
+      means we log the data but won't use it
+     */
+    bool invalid_data = false;
+    for (uint8_t i=0; i<4; i++) {
+        if (values[i] <= SBUS_SCALE_OFFSET) {
+            invalid_data = true;
+        }
+    }
+
     /* decode and handle failsafe and frame-lost flags */
     if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
         /* report that we failed to read anything valid off the receiver */
         *sbus_failsafe = true;
         *sbus_frame_drop = true;
+    } else if (invalid_data) {
+        *sbus_failsafe = true;
+        *sbus_frame_drop = false;
     } else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
         /* set a special warning flag
          *
