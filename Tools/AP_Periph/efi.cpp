@@ -8,6 +8,11 @@
 
 #include <dronecan_msgs.h>
 
+#ifndef AP_PERIPH_EFI_MAX_RATE
+// default to 2x the AP_Vehicle rate
+#define AP_PERIPH_EFI_MAX_RATE 100U
+#endif
+
 /*
   update CAN EFI
  */
@@ -16,6 +21,15 @@ void AP_Periph_FW::can_efi_update(void)
     if (!efi.enabled()) {
         return;
     }
+
+#if AP_PERIPH_EFI_MAX_RATE > 0
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_efi_update_ms < (1000U / AP_PERIPH_EFI_MAX_RATE)) {
+        return;
+    }
+    last_efi_update_ms = now_ms;
+#endif
+
     efi.update();
     const uint32_t update_ms = efi.get_last_update_ms();
     if (!efi.is_healthy() || efi_update_ms == update_ms) {
