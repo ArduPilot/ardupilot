@@ -371,13 +371,26 @@ public:
 
     static const AP_Param::Info var_info[];
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    uint32_t last_efi_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_MAG
     uint32_t last_mag_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_GPS
     uint32_t last_gps_update_ms;
     uint32_t last_gps_yaw_ms;
+#endif
     uint32_t last_relposheading_ms;
+#ifdef HAL_PERIPH_ENABLE_BARO
     uint32_t last_baro_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     uint32_t last_airspeed_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_GPS
     bool saw_gps_lock_once;
+#endif
 
     static AP_Periph_FW *_singleton;
 
