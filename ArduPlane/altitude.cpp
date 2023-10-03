@@ -191,6 +191,12 @@ void Plane::set_target_altitude_location(const Location &loc)
         target_altitude.amsl_cm += home.alt;
     }
 #if AP_TERRAIN_AVAILABLE
+    if (target_altitude.terrain_following_pending) {
+        /* we didn't get terrain data to init when we started on this
+           target, retry
+        */
+        setup_terrain_target_alt(next_WP_loc);
+    }
     /*
       if this location has the terrain_alt flag set and we know the
       terrain altitude of our current location then treat it as a
@@ -448,12 +454,16 @@ bool Plane::above_location_current(const Location &loc)
   modify a destination to be setup for terrain following if
   TERRAIN_FOLLOW is enabled
  */
-void Plane::setup_terrain_target_alt(Location &loc) const
+void Plane::setup_terrain_target_alt(Location &loc)
 {
 #if AP_TERRAIN_AVAILABLE
     if (terrain_enabled_in_current_mode()) {
-        loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
+        if (!loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+            target_altitude.terrain_following_pending = true;
+            return;
+        }
     }
+    target_altitude.terrain_following_pending = false;
 #endif
 }
 

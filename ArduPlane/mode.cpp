@@ -91,6 +91,10 @@ bool Mode::enter()
     quadplane.mode_enter();
 #endif
 
+#if AP_TERRAIN_AVAILABLE
+    plane.target_altitude.terrain_following_pending = false;
+#endif
+
     bool enter_result = _enter();
 
     if (enter_result) {

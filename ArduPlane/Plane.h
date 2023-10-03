@@ -723,6 +723,9 @@ private:
         // are we trying to follow terrain?
         bool terrain_following;
 
+        // are we waiting to load terrain data to init terrain following
+        bool terrain_following_pending;
+
         // target altitude above terrain in cm, valid if terrain_following
         // is set
         int32_t terrain_alt_cm;
@@ -836,7 +839,7 @@ private:
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &start_loc, const Location &destination_loc);
     bool above_location_current(const Location &loc);
-    void setup_terrain_target_alt(Location &loc) const;
+    void setup_terrain_target_alt(Location &loc);
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
