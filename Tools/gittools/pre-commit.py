@@ -38,7 +38,7 @@ class PreCommitFlake8(object):
     def split_git_diff_output(self, output):
         '''split output from git-diff into a list of (status, filepath) tuples'''
         ret = []
-        if type(output) == bytes:
+        if isinstance(output, bytes):
             output = output.decode('utf-8')
         for line in output.split("\n"):
             if len(line) == 0:
