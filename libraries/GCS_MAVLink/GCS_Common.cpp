@@ -651,13 +651,16 @@ void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t
     }
 
     const uint8_t mission_mode = AP::vehicle()->current_mode_requires_mission() ? 1 : 0;
+    const AP_Mission::ItemProgress progress = mission.get_item_progress(seq);
 
     mavlink_msg_mission_current_send(
         chan,
         seq,
         num_commands, // total
         mission_state(mission), // mission_state
-        mission_mode);  // mission_mode
+        mission_mode, // mission_mode
+        progress.units, progress.percentage, progress.remaining
+    );
 }
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
