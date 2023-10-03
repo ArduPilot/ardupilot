@@ -259,6 +259,11 @@ AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
 
+AP_HW_VIMDRONES_FLOW                 1404
+AP_HW_VIMDRONES_MOSAIC_X5            1405
+AP_HW_VIMDRONES_MOSAIC_H             1406
+AP_HW_VIMDRONES_PERIPH               1407
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 6000-6099 reserved for SpektreWorks
