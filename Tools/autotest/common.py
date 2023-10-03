@@ -3788,8 +3788,11 @@ class AutoTest(ABC):
     def run_auxfunc(self,
                     function,
                     level,
+                    run_cmd=None,
                     want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.run_cmd(
+        if run_cmd is None:
+            run_cmd = self.run_cmd
+        run_cmd(
             mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
             p1=function,
             p2=level,
