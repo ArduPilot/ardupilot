@@ -36,6 +36,7 @@
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
+#include "SIM_HobbyWing_Platinum_PRO_v3.h"
 
 #ifndef USE_PICOJSON
 #define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
@@ -146,12 +147,15 @@ public:
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
+    void set_tmotordatalink(class TMotorDataLink *_tmotordatalink) { tmotordatalink = _tmotordatalink; }
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 #if AP_TEST_DRONECAN_DRIVERS
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
 #endif
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
+
+    HobbyWing_Platinum_PRO_v3s hwing_escs;
 
 protected:
     SIM *sitl;
@@ -342,6 +346,8 @@ private:
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice *dronecan;
 #endif
+
+    class TMotorDataLink *tmotordatalink;
 };
 
 } // namespace SITL

@@ -634,8 +634,8 @@ public:
     }
 
 private:
-    void osd_thread();
 #if OSD_ENABLED
+    void osd_thread();
     void update_osd();
     void update_stats();
     void update_current_screen();
