@@ -139,6 +139,18 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const;
 
+    enum AirspeedEstimateType : uint8_t {
+        NO_NEW_ESTIMATE = 0,
+        AIRSPEED_SENSOR = 1,
+        DCM_SYNTHETIC = 2,
+        EKF3_SYNTHETIC = 3,
+        SIM = 4,
+    };
+
+    // return an airspeed estimate if available. return true
+    // if we have an estimate
+    bool airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &type) const;
+
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool airspeed_estimate_true(float &airspeed_ret) const;
@@ -833,7 +845,7 @@ private:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool _airspeed_estimate(float &airspeed_ret) const;
+    bool _airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &status) const;
 
     // return secondary attitude solution if available, as eulers in radians
     bool _get_secondary_attitude(Vector3f &eulers) const;
@@ -926,6 +938,7 @@ private:
         float EAS2TAS;
         bool airspeed_ok;
         float airspeed;
+        AirspeedEstimateType airspeed_estimate_type;
         bool airspeed_true_ok;
         float airspeed_true;
         Vector3f airspeed_vec;
