@@ -115,6 +115,7 @@ void AP_Mission::start()
 void AP_Mission::stop()
 {
     _flags.state = MISSION_STOPPED;
+    clear_item_progress(0);
 }
 
 /// resume - continues the mission execution from where we last left off
@@ -2876,6 +2877,37 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
         memcpy(packed_content.bytes, (void*)&new_fmt, sizeof(new_fmt));
     }
 #endif
+}
+
+void AP_Mission::set_item_progress_completed(uint16_t index, MISSION_ITEM_PROGRESS_UNITS units, uint16_t completed, uint16_t total)
+{
+#if AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+    _current_item_progress.index = index;
+    _current_item_progress.units = units;
+
+    // We can't calculate remaining without a total...
+    if (total > 0) {
+        bool is_complete = completed >= total;
+        _current_item_progress.percentage = is_complete ? 100 : ((completed * 100.0f) / total);
+        _current_item_progress.remaining  = is_complete ?   0 : (total - completed);
+    } else {
+        // TODO: assert here?
+        _current_item_progress.percentage = 0;
+        _current_item_progress.remaining  = 0;
+    }
+#endif // AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+}
+
+void AP_Mission::set_item_progress_remaining(uint16_t index, MISSION_ITEM_PROGRESS_UNITS units, uint16_t remaining, uint16_t total)
+{
+#if AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+    _current_item_progress.index = index;
+    _current_item_progress.units = units;
+    _current_item_progress.remaining = remaining;
+
+    const uint16_t completed = (total > remaining) ? total - remaining : 0;
+    _current_item_progress.percentage = (total > 0) ? ((completed * 100.0f) / total) : 0;
+#endif // AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
 }
 
 // singleton instance

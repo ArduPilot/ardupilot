@@ -416,6 +416,64 @@ public:
         bool operator !=(const Mission_Command &b) const { return !operator==(b); }
     };
 
+    struct ItemProgress {
+        uint16_t index;
+        uint16_t remaining;
+        uint8_t percentage;
+        MISSION_ITEM_PROGRESS_UNITS units;
+    };
+
+    ItemProgress get_item_progress(uint16_t index) const {
+#if AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+        if (index && (index == _current_item_progress.index)) {
+            return _current_item_progress;
+        }
+#endif // AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+        return ItemProgress{};
+    };
+
+    // Populate the item_progress fields of the MISSION_CURRENT message with distance traveled.
+    // Note: This gets converted to a distance remaining, so requires a total greater than 0.
+    void set_item_progress_distance_traveled(uint16_t index, uint16_t traveled_m, uint16_t total_m)
+    {
+        set_item_progress_completed(index, MISSION_ITEM_PROGRESS_UNITS_DISTANCE, traveled_m, total_m);
+    };
+    // Populate the item_progress fields of the MISSION_CURRENT message with time elapsed.
+    // Note: This gets converted to a time remaining, so requires a total greater than 0.
+    void set_item_progress_time_elapsed(uint16_t index, uint16_t elapsed_s, uint16_t total_s)
+    {
+        set_item_progress_completed(index, MISSION_ITEM_PROGRESS_UNITS_TIME, elapsed_s, total_s);
+    };
+    // Populate the item_progress fields of the MISSION_CURRENT message with count completed.
+    // Note: This gets converted to a count remaining, so requires a total greater than 0.
+    void set_item_progress_count_completed(uint16_t index, uint16_t completed, uint16_t total)
+    {
+        set_item_progress_completed(index, MISSION_ITEM_PROGRESS_UNITS_COUNT, completed, total);
+    };
+
+    // Populate the item_progress fields of the MISSION_CURRENT message with distance remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to zero.
+    void set_item_progress_distance_remaining(uint16_t index, uint16_t remaining_m, uint16_t total_m=0)
+    {
+        set_item_progress_remaining(index, MISSION_ITEM_PROGRESS_UNITS_DISTANCE, remaining_m, total_m);
+    };
+    // Populate the item_progress fields of the MISSION_CURRENT message with time remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to zero.
+    void set_item_progress_time_remaining(uint16_t index, uint16_t remaining_s, uint16_t total_s=0)
+    {
+        set_item_progress_remaining(index, MISSION_ITEM_PROGRESS_UNITS_TIME, remaining_s, total_s);
+    };
+    // Populate the item_progress fields of the MISSION_CURRENT message with count remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to zero.
+    void set_item_progress_count_remaining(uint16_t index, uint16_t remaining, uint16_t total=0)
+    {
+        set_item_progress_remaining(index, MISSION_ITEM_PROGRESS_UNITS_COUNT, remaining, total);
+    };
+
+    void clear_item_progress(uint16_t index)
+    {
+        set_item_progress_completed(index, MISSION_ITEM_PROGRESS_UNITS_NOT_USED, 0, 0);
+    }
 
     // main program function pointers
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
@@ -894,6 +952,13 @@ private:
       format to take advantage of new packing
      */
     void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
+
+#if AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+    ItemProgress _current_item_progress;
+#endif // AP_MISSION_CURRENT_ITEM_PROGRESS_ENABLED
+    void set_item_progress_completed(uint16_t index, MISSION_ITEM_PROGRESS_UNITS units, uint16_t completed, uint16_t total);
+    void set_item_progress_remaining(uint16_t index, MISSION_ITEM_PROGRESS_UNITS units, uint16_t remaining, uint16_t total=0);
+
 };
 
 namespace AP
