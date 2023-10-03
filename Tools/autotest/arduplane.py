@@ -3793,28 +3793,35 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
-    def MAV_DO_AUX_FUNCTION(self):
+    def _MAV_CMD_DO_AUX_FUNCTION(self, run_cmd):
         '''Test triggering Auxiliary Functions via mavlink'''
         self.context_collect('STATUSTEXT')
-        self.run_auxfunc(64, 2)  # 64 == reverse throttle
+        self.run_auxfunc(64, 2, run_cmd=run_cmd)  # 64 == reverse throttle
         self.wait_statustext("RevThrottle: ENABLE", check_context=True)
-        self.run_auxfunc(64, 0)
+        self.run_auxfunc(64, 0, run_cmd=run_cmd)
         self.wait_statustext("RevThrottle: DISABLE", check_context=True)
-        self.run_auxfunc(65, 2)  # 65 == GPS_DISABLE
+        self.run_auxfunc(65, 2, run_cmd=run_cmd)  # 65 == GPS_DISABLE
 
         self.start_subtest("Bad auxfunc")
         self.run_auxfunc(
             65231,
             2,
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            run_cmd=run_cmd,
         )
 
         self.start_subtest("Bad switchpos")
         self.run_auxfunc(
             62,
             17,
-            want_result=mavutil.mavlink.MAV_RESULT_DENIED
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+            run_cmd=run_cmd,
         )
+
+    def MAV_CMD_DO_AUX_FUNCTION(self):
+        '''Test triggering Auxiliary Functions via mavlink'''
+        self._MAV_CMD_DO_AUX_FUNCTION(run_cmd=self.run_cmd)
+        self._MAV_CMD_DO_AUX_FUNCTION(run_cmd=self.run_cmd_int)
 
     def FlyEachFrame(self):
         '''Fly each supported internal frame'''
@@ -5005,7 +5012,7 @@ class AutoTestPlane(AutoTest):
             self.RTL_CLIMB_MIN,
             self.ClimbBeforeTurn,
             self.IMUTempCal,
-            self.MAV_DO_AUX_FUNCTION,
+            self.MAV_CMD_DO_AUX_FUNCTION,
             self.SmartBattery,
             self.FlyEachFrame,
             self.RCDisableAirspeedUse,
