@@ -2235,7 +2235,14 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+    const uint32_t delay_time_elapsed_ms = millis() - nav_delay_time_start_ms;
+    mission.set_item_progress_time_elapsed(
+        cmd.index,
+        constrain_uint32(delay_time_elapsed_ms / 1000, 0, UINT16_MAX),
+        constrain_uint32(nav_delay_time_max_ms / 1000, 0, UINT16_MAX)
+    );
+
+    if (delay_time_elapsed_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
         return true;
     }
