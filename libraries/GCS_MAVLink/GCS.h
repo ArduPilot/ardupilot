@@ -522,7 +522,7 @@ protected:
     virtual bool set_home(const Location& loc, bool lock) = 0;
 
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_aux_function(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
     void handle_mission_request(const mavlink_message_t &msg);
