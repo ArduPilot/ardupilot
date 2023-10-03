@@ -4716,6 +4716,8 @@ class AutoTest(ABC):
             self.check_fence_items_same(items, downloaded_items, strict=strict)
         elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
             self.check_mission_waypoint_items_same(items, downloaded_items, strict=strict)
+        elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_RALLY:
+            self.check_mission_waypoint_items_same(items, downloaded_items, strict=strict)
         else:
             raise NotAchievedException("Unhandled")
 
@@ -4731,6 +4733,13 @@ class AutoTest(ABC):
             "waypoints",
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             strict=strict)
+
+    def check_rally_upload_download(self, items):
+        self.check_mission_item_upload_download(
+            items,
+            "rally",
+            mavutil.mavlink.MAV_MISSION_TYPE_RALLY
+        )
 
     def check_dflog_message_rates(self, log_filepath, message_rates):
         reader = self.dfreader_for_path(log_filepath)
@@ -11120,6 +11129,22 @@ Also, ignores heartbeats not from our target system'''
                 items.append(item)
 
         self.check_fence_upload_download(items)
+
+    def rally_MISSION_ITEM_INT_from_loc(self, loc):
+        return self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
+            x=int(loc.lat*1e7),
+            y=int(loc.lng*1e7),
+            z=loc.alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mission_type=mavutil.mavlink.MAV_MISSION_TYPE_RALLY
+        )
+
+    def upload_rally_points_from_locations(self, rally_point_locs):
+        '''takes a sequence of locations, sets vehicle rally points to those locations'''
+        items = [self.rally_MISSION_ITEM_INT_from_loc(x) for x in rally_point_locs]
+        self.correct_wp_seq_numbers(items)
+        self.check_rally_upload_download(items)
 
     def wait_for_initial_mode(self):
         '''wait until we get a heartbeat with an expected initial mode (the
