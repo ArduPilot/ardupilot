@@ -2834,7 +2834,7 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int_t &packet)
 {
     if (packet.param2 > 2) {
         return MAV_RESULT_DENIED;
@@ -4838,10 +4838,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         }
         break;
 
-    case MAV_CMD_DO_AUX_FUNCTION:
-        result = handle_command_do_aux_function(packet);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5094,6 +5090,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
 #endif
+
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return handle_command_do_aux_function(packet);
 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
