@@ -2180,11 +2180,18 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
             // start circling
             circle_start();
         }
+        float distance_cm = copter.wp_nav->get_wp_distance_to_destination();
+        uint32_t distance_m = constrain_uint16(distance_cm / 100, 0, UINT16_MAX);
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
         return false;
     }
 
+    const uint8_t num_turns = LOWBYTE(cmd.p1);
+    const float turns_completed = fabsf(copter.circle_nav->get_angle_total()/float(M_2PI));
+    mission.set_item_progress_count_completed(cmd.index, turns_completed, num_turns);
+
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
+    return turns_completed >= num_turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
