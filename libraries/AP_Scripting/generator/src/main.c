@@ -368,6 +368,7 @@ struct method_alias {
   int line;
   int num_args;
   enum alias_type type;
+  char *dependency;
 };
 
 struct userdata_field {
@@ -887,6 +888,20 @@ void handle_manual(struct userdata *node, enum alias_type type) {
     }
     alias->num_args = atoi(num_args);
   }
+
+  char *depends_keyword = next_token();
+  if (depends_keyword != NULL) {
+    if (strcmp(depends_keyword, keyword_depends) != 0) {
+      error(ERROR_SINGLETON, "Expected depends keyword for manual method %s %s, got: %s", node->name, name, depends_keyword);
+    } else {
+      char *dependency = strtok(NULL, "");
+      if (dependency == NULL) {
+        error(ERROR_USERDATA, "Expected dependency string for global %s on line", name, state.line_num);
+      }
+      string_copy(&(alias->dependency), dependency);
+    }
+  }
+
   alias->next = node->method_aliases;
   node->method_aliases = alias;
 }
@@ -2414,7 +2429,9 @@ void emit_sandbox(void) {
       if (manual_aliases->type != ALIAS_TYPE_MANUAL) {
         error(ERROR_GLOBALS, "Globals only support manual methods");
       }
+      start_dependency(source, manual_aliases->dependency);
       fprintf(source, "    {\"%s\", %s},\n", manual_aliases->alias, manual_aliases->name);
+      end_dependency(source, manual_aliases->dependency);
       manual_aliases = manual_aliases->next;
     }
   }

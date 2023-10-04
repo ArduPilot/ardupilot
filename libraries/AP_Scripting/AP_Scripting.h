@@ -90,6 +90,7 @@ public:
     ScriptingCANSensor *_CAN_dev2;
 #endif
 
+#if AP_MISSION_ENABLED
     // mission item buffer
     static const int mission_cmd_queue_size = 5;
     struct scripting_mission_cmd {
@@ -100,6 +101,7 @@ public:
         uint32_t time_ms;
     };
     ObjectBuffer<struct scripting_mission_cmd> * mission_data;
+#endif
 
     // PWMSource storage
     uint8_t num_pwm_source;
