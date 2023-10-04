@@ -72,13 +72,13 @@ void GCS_MAVLINK::send_fence_status() const
     // traslate fence library breach types to mavlink breach types
     uint8_t mavlink_breach_type = FENCE_BREACH_NONE;
     const uint8_t breaches = fence->get_breaches();
-    if ((breaches & AC_FENCE_TYPE_ALT_MIN) != 0) {
+    if ((breaches & AC_Fence::Type::ALT_MIN) != 0) {
         mavlink_breach_type = FENCE_BREACH_MINALT;
     }
-    if ((breaches & AC_FENCE_TYPE_ALT_MAX) != 0) {
+    if ((breaches & AC_Fence::Type::ALT_MAX) != 0) {
         mavlink_breach_type = FENCE_BREACH_MAXALT;
     }
-    if ((breaches & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) != 0) {
+    if ((breaches & (AC_Fence::Type::CIRCLE | AC_Fence::Type::POLYGON)) != 0) {
         mavlink_breach_type = FENCE_BREACH_BOUNDARY;
     }
 
