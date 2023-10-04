@@ -1,7 +1,8 @@
 #include "ifci.hpp"
 
-IFCI::IFCI() : 
-telemetry_(kTypeIFCI, 63, kTelemetry)
+IFCI::IFCI() :
+telemetry_(kTypeIFCI, 63, kTelemetry),
+last_telemetry_received_id_(63)
 {
 };
 

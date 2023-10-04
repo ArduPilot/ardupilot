@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_MotorsPulsing.h"
+#include "AP_MotorsPulsing_Coax.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -15,55 +15,48 @@ const AP_Param::GroupInfo AP_MotorsPulsing::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("YAW_DIR", 1, AP_MotorsPulsing, _yaw_dir, 1),
 
-    // @Param: ROTOR_YAW_FF
-    // @DisplayName: Rotor torque FF gain
-    // @Description: Used to add a feed forward term to yaw that can compensate for rotor torque
-    // @Range: ? ?
-    // @Units: ?
-    // @Increment: float
-    // @User: Standard
-    AP_GROUPINFO("ROTOR_YAW_FF", 2, AP_MotorsPulsing, _rotor_yaw_ff, 0),
-    
-    // @Param: GYRO_FF
-    // @DisplayName: Rotor gyroscopic FF gain
-    // @Description: Used to add a feed forward term to compensate for the rotor's gyroscopic torque
-    // @Range: ? ?
-    // @Units: ?
-    // @Increment: float
-    // @User: Standard
-    AP_GROUPINFO("GYRO_FF", 3, AP_MotorsPulsing, _gyro_ff_gain, 0),
-
     AP_GROUPEND
 };
 // init
 void AP_MotorsPulsing::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    
+    // 1 - Bottom Throttle
+    // 2 - Top Throttle
+    // 3 - Bottom Pitch
+    // 4 - Top Pitch
+    // 5 - Bottom Roll
+    // 6 - Top Roll 
     // make sure 4 output channels are mapped
-    for (uint8_t i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 6; i++) {
         add_motor_num(CH_1 + i);
     }
 
 
     // setup actuator scaling
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(1), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(2), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-
     motor_enabled[AP_MOTORS_MOT_1] = true;
-    motor_enabled[AP_MOTORS_MOT_4] = true;
+    motor_enabled[AP_MOTORS_MOT_2] = true;
+    motor_enabled[AP_MOTORS_MOT_3] = false;
+    motor_enabled[AP_MOTORS_MOT_4] = false;
+    motor_enabled[AP_MOTORS_MOT_5] = false;
+    motor_enabled[AP_MOTORS_MOT_6] = false;
+
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(3), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(4), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(5), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(6), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
 
 
     _mav_type = MAV_TYPE_QUADROTOR;
     rpm = AP_RPM::get_singleton();
     // record successful initialisation if what we setup was the desired frame_class
     // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
-    set_initialised_ok(frame_class == MOTOR_FRAME_PULSING);
+    set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsPulsing::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    set_initialised_ok(frame_class == MOTOR_FRAME_PULSING);
+    set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
 }
 
 // set update rate to motors - a value in hertz
@@ -73,8 +66,8 @@ void AP_MotorsPulsing::set_update_rate(uint16_t speed_hz)
     _speed_hz = speed_hz;
 
     uint32_t mask =
-        1U << AP_MOTORS_MOT_5 |
-        1U << AP_MOTORS_MOT_6 ;
+        1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 ;
     rc_set_freq(mask, _speed_hz);
 }
 
@@ -83,30 +76,43 @@ void AP_MotorsPulsing::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
-            rc_write(AP_MOTORS_MOT_1, output_to_pwm(0)); // rotor
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(0)); // tail
-            rc_write_angle(AP_MOTORS_MOT_2, 0); // pitch
-            rc_write_angle(AP_MOTORS_MOT_3, 0); // roll
+            rc_write(AP_MOTORS_MOT_1, output_to_pwm(0)); // bottom rotor
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(0)); // top rotor
+            rc_write_angle(AP_MOTORS_MOT_3, 0); // pitch
+            rc_write_angle(AP_MOTORS_MOT_4, 0); // pitch
+            rc_write_angle(AP_MOTORS_MOT_5, 0); // roll
+            rc_write_angle(AP_MOTORS_MOT_6, 0); // roll
             break;
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
-            rc_write_angle(AP_MOTORS_MOT_2, 0);
             rc_write_angle(AP_MOTORS_MOT_3, 0);
+            rc_write_angle(AP_MOTORS_MOT_4, 0);
+            rc_write_angle(AP_MOTORS_MOT_5, 0);
+            rc_write_angle(AP_MOTORS_MOT_6, 0);
             set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], actuator_spin_up_to_ground_idle()); // spin up motors
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_2], actuator_spin_up_to_ground_idle());
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
+            
             break;
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
             // set motor output based on thrust requests
-            rc_write_angle(AP_MOTORS_MOT_2, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
-            rc_write_angle(AP_MOTORS_MOT_3, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_rotor_thrust));
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], thrust_to_actuator(_tail_thrust));
+            rc_write_angle(AP_MOTORS_MOT_3, -_pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
+            rc_write_angle(AP_MOTORS_MOT_4, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
+            rc_write_angle(AP_MOTORS_MOT_5, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
+            rc_write_angle(AP_MOTORS_MOT_6, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_bottom_thrust));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_2], thrust_to_actuator(_top_thrust));
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
+            // if ( AP_HAL::millis() > _last_update + 500)
+            // {
+            //     _last_update =  AP_HAL::millis();
+            //     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "t:%.2f\tr:%.2f\tp:%.2f\ty:%.2f", _throttle_out, _roll_action, _pitch_action, yaw_thrust);
+
+            // }
             break;
     }
     
@@ -118,7 +124,7 @@ uint32_t AP_MotorsPulsing::get_motor_mask()
 {
     uint32_t motor_mask =
         1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_4;
+        1U << AP_MOTORS_MOT_2;
     uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
@@ -136,26 +142,14 @@ void AP_MotorsPulsing::output_armed_stabilizing()
     float   throttle_avg_max;           // throttle thrust average maximum value, 0.0 - 1.0
     float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
-    // gyro ff and yaw ff. Also need rotor height above COM
-    Vector3f gyro_latest = _ahrs_view->get_gyro_latest();
-    float velocity_0 = 0;
-    rpm->get_rpm(0, velocity_0);
-    float rotor_yaw_ff = _rotor_yaw_ff * velocity_0 * velocity_0;
-    Vector3f blade_omega(gyro_latest.x, gyro_latest.y, gyro_latest.z-velocity_0);
-
-    Vector3f omega_cross = gyro_latest%blade_omega;
-
-    float gyro_x_ff = omega_cross.x * _gyro_ff_gain;
-    float gyro_y_ff = omega_cross.y * _gyro_ff_gain;
-
 
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain();
-    roll_thrust = (_roll_in + _roll_in_ff + gyro_x_ff) * compensation_gain;
-    pitch_thrust = (_pitch_in + _pitch_in_ff + gyro_y_ff) * compensation_gain;
-    yaw_thrust = (_yaw_in + _yaw_in_ff + rotor_yaw_ff) * compensation_gain;
-    throttle_thrust = get_throttle() * compensation_gain;
-    throttle_avg_max = _throttle_avg_max * compensation_gain;
+    // const float compensation_gain = get_compensation_gain();
+    roll_thrust = _roll_in + _roll_in_ff;
+    pitch_thrust = _pitch_in + _pitch_in_ff;
+    yaw_thrust = _yaw_in + _yaw_in_ff;
+    throttle_thrust = get_throttle();
+    throttle_avg_max = _throttle_avg_max;
 
 
     // sanity check throttle is above zero and below current limited throttle
@@ -170,32 +164,15 @@ void AP_MotorsPulsing::output_armed_stabilizing()
 
     throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
-    float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
-
-    // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
-    if (rp_thrust_max >= 1.0f) {
-        rp_scale = constrain_float(1.0f / rp_thrust_max, 0.0f, 1.0f);
-        if (rp_scale < 1.0f) {
-            limit.roll = true;
-            limit.pitch = true;
-        }
-    }
-
-    if (fabsf(yaw_thrust) > 1.0f) {
-        yaw_thrust = constrain_float(1.0f / yaw_thrust, -1.0f, 1.0f);
-        limit.yaw = true;
-    }
-
-
-    // calculate the throttle setting for the lift fan
-    // compensation_gain can never be zero
-    _throttle_out = throttle_avg_max / compensation_gain;
+    
+    _throttle_out = throttle_avg_max;
 
     _roll_action = roll_thrust * rp_scale;
     _pitch_action = pitch_thrust * rp_scale;
 
-    _rotor_thrust = _throttle_out;
-    _tail_thrust = _yaw_dir * yaw_thrust;
+    _bottom_thrust = _throttle_out - _yaw_dir * yaw_thrust;
+    _top_thrust = _throttle_out + _yaw_dir * yaw_thrust;
+    
 }
 
 
