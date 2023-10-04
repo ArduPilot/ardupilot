@@ -29,10 +29,10 @@ def configure(cfg):
             elif host_machine == 'arm64':
                 distro = 'uros-macos-13.4-arm64'
         elif host_system == 'Linux':
-            if host_machine == 'amd64':
-                distro = 'uros-ubuntu-22-amd64'
-            elif host_machine == 'arm64':
-                distro = 'uros-ubuntu-22-arm64'
+            if host_machine == 'x86_64':
+                distro = 'uros-ubuntu-22-x86_64'
+            elif host_machine == 'aarch64':
+                distro = 'uros-ubuntu-22-aarch64'
         else:
             print('Cannot configure AP_UROS. Unsupported host: {}'.format(host_system))
             return
