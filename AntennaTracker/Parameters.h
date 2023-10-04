@@ -130,6 +130,8 @@ public:
         k_param_disarm_pwm,
 
         k_param_auto_opts,
+        k_param_NavEKF2,
+        k_param_NavEKF3,
 
         k_param_logger = 253, // 253 - Logging Group
 
