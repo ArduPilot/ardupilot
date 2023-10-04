@@ -5015,6 +5015,16 @@ class AutoTestPlane(AutoTest):
 
         self.mavproxy.interact()
 
+    def MAV_CMD_MISSION_START(self):
+        '''test MAV_CMD_MISSION_START starts AUTO'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 0),
+        ])
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('LOITER')
+            run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_mode('AUTO')
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5114,6 +5124,7 @@ class AutoTestPlane(AutoTest):
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
             self.InteractTest,
+            self.MAV_CMD_MISSION_START,
         ])
         return ret
 
