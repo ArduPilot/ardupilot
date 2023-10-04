@@ -475,6 +475,47 @@ class AutoTestSub(AutoTest):
                 self.wait_groundspeed(speed-0.02, speed+0.02, minimum_duration=2)
         self.disarm_vehicle()
 
+    def _MAV_CMD_CONDITION_YAW(self, run_cmd):
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+        for angle in 5, 30, 60, 10:
+            angular_rate = 10
+            direction = 1
+            relative_or_absolute = 0
+            run_cmd(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=angle,
+                p2=angular_rate,
+                p3=direction,
+                p4=relative_or_absolute,  # 1 for relative, 0 for absolute
+            )
+            self.wait_heading(angle, minimum_duration=2)
+
+        self.start_subtest('Relative angle')
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=0,
+            p2=10,
+            p3=1,
+            p4=0,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(0, minimum_duration=2)
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=20,
+            p2=10,
+            p3=1,
+            p4=1,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(20, minimum_duration=2)
+
+        self.disarm_vehicle()
+
+    def MAV_CMD_CONDITION_YAW(self):
+        '''ensure vehicle yaws according to GCS command'''
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd)
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -494,6 +535,7 @@ class AutoTestSub(AutoTest):
             self.MAV_CMD_NAV_LAND,
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_CONDITION_YAW,
         ])
 
         return ret
