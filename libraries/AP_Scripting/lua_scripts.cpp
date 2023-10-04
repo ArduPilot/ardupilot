@@ -132,6 +132,7 @@ void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_me
                                             (int)total_mem,
                                             (int)run_mem);
     }
+#if HAL_LOGGING_ENABLED
     if ((_debug_options.get() & uint8_t(DebugLevel::LOG_RUNTIME)) != 0) {
         struct log_Scripting pkt {
             LOG_PACKET_HEADER_INIT(LOG_SCRIPTING_MSG),
@@ -149,6 +150,7 @@ void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_me
         }
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#endif // HAL_LOGGING_ENABLED
 }
 
 lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename) {
