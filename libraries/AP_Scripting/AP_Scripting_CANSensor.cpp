@@ -17,7 +17,7 @@
  */
 #include "AP_Scripting_CANSensor.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
 
 // handler for outgoing frames, using uint32
 bool ScriptingCANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
@@ -79,4 +79,4 @@ void ScriptingCANBuffer::add_buffer(ScriptingCANBuffer* new_buff) {
     next->add_buffer(new_buff);
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED

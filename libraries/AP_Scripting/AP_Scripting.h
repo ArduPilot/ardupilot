@@ -84,7 +84,7 @@ public:
     uint8_t num_i2c_devices;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
     // Scripting CAN sensor
     ScriptingCANSensor *_CAN_dev;
     ScriptingCANSensor *_CAN_dev2;
