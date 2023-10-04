@@ -388,7 +388,7 @@ void Copter::allocate_motors(void)
             motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
-        case AP_Motors::MOTOR_FRAME_PULSING:
+        case AP_Motors::MOTOR_FRAME_PULSING_COAX:
             motors = new AP_MotorsPulsing(ahrs_view, copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsPulsing::var_info;
             break;

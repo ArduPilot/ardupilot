@@ -30,17 +30,17 @@ protected:
     // output - sends commands to the motors
     void            output_armed_stabilizing() override;
 
-    float           _rotor_thrust;
-    float           _tail_thrust;
+    float           _bottom_thrust;
+    float           _top_thrust;
     float           _pitch_action;
     float           _roll_action;
+
+    uint32_t        _last_update;
 
     AP_AHRS_View    *_ahrs_view;
     AP_RPM          *rpm;
     
     AP_Int8         _yaw_dir;
-    AP_Float        _rotor_yaw_ff;
-    AP_Float        _gyro_ff_gain;
 
     const char*     _get_frame_string() const override { return "PULSE"; }
 

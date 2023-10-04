@@ -11,10 +11,10 @@ public:
   uint8_t get_last_telemetry_receeived_id();
   ClientEntry<IFCITelemetryData>  telemetry_;
 private:
-  const uint8_t kPackedControlMessage =  0;
-  const uint8_t kTelemetry =  1;
-  const uint8_t kTypeIFCI = 88;
-  const uint8_t kBroadcastID = 63;
+  static const uint8_t kPackedControlMessage =  0;
+  static const uint8_t kTelemetry = 1;
+  static const uint8_t kTypeIFCI = 88;
+  static const uint8_t kBroadcastID = 63;
   uint8_t last_telemetry_received_id_ = 63;
   
 };
