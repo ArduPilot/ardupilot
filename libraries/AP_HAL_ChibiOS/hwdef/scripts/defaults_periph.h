@@ -152,6 +152,10 @@
 #define AP_RELAY_ENABLED 0
 #endif
 
+#ifndef AP_RTC_ENABLED
+#define AP_RTC_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
