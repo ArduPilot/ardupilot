@@ -476,9 +476,9 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if AP_RELAY_ENABLED
-    // @Group: RELAY_
+    // @Group: RELAY
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY_", AP_Relay),
+    GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
     // @Group: COMPASS_
