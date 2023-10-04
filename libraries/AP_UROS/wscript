@@ -17,11 +17,15 @@ def configure(cfg):
     print('host_release:    {}'.format(host_release))
     print('toolchain:       {}'.format(toolchain))
 
+    # suggestion for alternative package names
+    # - uros-darwin-22.6.0-x86_64
+    # - uros-darwin-22.5.0-arm64
+
     distro = None
     if toolchain == 'native':
         if host_system == 'Darwin':
-            if host_machine == 'amd64':
-                distro = 'uros-macos-13.4-amd64'
+            if host_machine == 'x86_64':
+                distro = 'uros-macos-13.4-x86_64'
             elif host_machine == 'arm64':
                 distro = 'uros-macos-13.4-arm64'
         elif host_system == 'Linux':
