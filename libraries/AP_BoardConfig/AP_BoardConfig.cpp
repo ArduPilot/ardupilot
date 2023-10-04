@@ -238,9 +238,11 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 
+#if AP_RTC_ENABLED
     // @Group: RTC
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+#endif
 
 #if HAL_HAVE_BOARD_VOLTAGE
     // @Param: VBUS_MIN
@@ -378,7 +380,9 @@ void AP_BoardConfig::init()
 
     board_setup();
 
+#if AP_RTC_ENABLED
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
+#endif
 
     if (_boot_delay_ms > 0) {
         uint16_t delay_ms = uint16_t(_boot_delay_ms.get());
