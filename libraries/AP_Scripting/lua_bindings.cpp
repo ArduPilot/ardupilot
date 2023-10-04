@@ -630,7 +630,7 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
     // Allow : and . access
@@ -680,7 +680,7 @@ int lua_get_CAN_device2(lua_State *L) {
 
     return 1;
 }
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
 
 /*
   directory listing, return table of files in a directory
