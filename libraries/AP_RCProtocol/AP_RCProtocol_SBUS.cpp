@@ -97,7 +97,7 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
 
     uint16_t chancount = SBUS_INPUT_CHANNELS;
 
-    decode_11bit_channels((const uint8_t*)(&frame[1]), SBUS_INPUT_CHANNELS, values,
+    decode_11bit_channels((const uint8_t*)(&frame[1]), max_values, values,
         SBUS_TARGET_RANGE, SBUS_RANGE_RANGE, SBUS_SCALE_OFFSET);
 
     /* decode switch channels if data fields are wide enough */
