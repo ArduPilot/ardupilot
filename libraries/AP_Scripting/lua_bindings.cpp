@@ -215,6 +215,7 @@ int lua_mavlink_block_command(lua_State *L) {
 }
 #endif // HAL_GCS_ENABLED
 
+#if AP_MISSION_ENABLED
 int lua_mission_receive(lua_State *L) {
     binding_argcheck(L, 0);
 
@@ -242,6 +243,7 @@ int lua_mission_receive(lua_State *L) {
 
     return 5;
 }
+#endif // AP_MISSION_ENABLED
 
 #if HAL_LOGGING_ENABLED
 int AP_Logger_Write(lua_State *L) {
