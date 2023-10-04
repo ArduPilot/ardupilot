@@ -4830,14 +4830,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_set_ekf_source_set(packet);
         break;
 
-    case MAV_CMD_PREFLIGHT_STORAGE:
-        if (is_equal(packet.param1, 2.0f)) {
-            AP_Param::erase_all();
-            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
-            result= MAV_RESULT_ACCEPTED;
-        }
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5140,6 +5132,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         return handle_command_preflight_calibration(packet, msg);
+
+    case MAV_CMD_PREFLIGHT_STORAGE:
+        if (is_equal(packet.param1, 2.0f)) {
+            AP_Param::erase_all();
+            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_DENIED;
 
     case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
         return handle_preflight_reboot(packet, msg);
