@@ -475,9 +475,9 @@ public:
 
 #if AP_SIM_ENABLED
     SITL::SIM sitl;
+#endif
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
-#endif
 #endif
 };
 
