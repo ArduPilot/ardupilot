@@ -2776,6 +2776,11 @@ void emit_index_helpers(void) {
   fprintf(source, "    return false;\n");
   fprintf(source, "}\n\n");
 
+  // If enough stuff is defined out we can end up with no enums.
+  // Rather than work out which defines we would need, just ignore the unused function error.
+  fprintf(source, "#pragma GCC diagnostic push\n");
+  fprintf(source, "#pragma GCC diagnostic ignored \"-Wunused-function\"\n");
+
   fprintf(source, "static bool load_enum(lua_State *L, const userdata_enum *list, const uint8_t length, const char* name) {\n");
   fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
   fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
@@ -2784,7 +2789,10 @@ void emit_index_helpers(void) {
   fprintf(source, "        }\n");
   fprintf(source, "    }\n");
   fprintf(source, "    return false;\n");
-  fprintf(source, "}\n\n");
+  fprintf(source, "}\n");
+
+  fprintf(source, "#pragma GCC diagnostic pop\n\n");
+
 }
 
 void emit_structs(void) {
