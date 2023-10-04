@@ -2132,6 +2132,8 @@ void emit_operators(struct userdata *data) {
 
   assert(data->ud_type == UD_USERDATA);
 
+  start_dependency(source, data->dependency);
+
   for (uint32_t i = 1; i < OP_LAST; i = (i << 1)) {
     const char * op_name = get_name_for_operation((data->operations) & i);
     if (op_name == NULL) {
@@ -2171,6 +2173,8 @@ void emit_operators(struct userdata *data) {
     fprintf(source, "}\n\n");
 
   }
+
+  end_dependency(source, data->dependency);
 }
 
 void emit_methods(struct userdata *node) {
