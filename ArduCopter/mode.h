@@ -38,6 +38,7 @@ private:
 #if AC_PAYLOAD_PLACE_ENABLED
 class PayloadPlace {
 public:
+    void init(float _descent_max_m);
     void run();
     void start_descent();
     bool verify();
@@ -55,10 +56,17 @@ public:
 
     // these are set by the Mission code:
     State state = State::Descent_Start; // records state of payload place
-    float descent_max_m;
+
+    // these methods are called by some of the above methods, but may
+    // be useful separately:
+    void init_horizontal_control();
+    void run_horizontal_control();
+    void init_vertical_control();
+    void run_vertical_control();
 
 private:
 
+    float descent_max_m;
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
     uint32_t release_time_ms; // milliseconds

@@ -691,8 +691,7 @@ bool ModeAuto::is_taking_off() const
 }
 
 #if AC_PAYLOAD_PLACE_ENABLED
-// PayloadPlace::start_descent - initialise the position controllers for the payload place descent
-void PayloadPlace::start_descent()
+void PayloadPlace::init_horizontal_control()
 {
     auto *pos_control = copter.pos_control;
     auto *wp_nav = copter.wp_nav;
@@ -705,6 +704,12 @@ void PayloadPlace::start_descent()
     if (!pos_control->NE_is_active()) {
         pos_control->NE_init_controller();
     }
+}
+
+void PayloadPlace::init_vertical_control()
+{
+    auto *pos_control = copter.pos_control;
+    auto *wp_nav = copter.wp_nav;
 
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
@@ -714,10 +719,21 @@ void PayloadPlace::start_descent()
     if (!pos_control->D_is_active()) {
         pos_control->D_init_controller();
     }
+}
+
+// start_descent - initialise controllers ready to be run
+void PayloadPlace::start_descent()
+{
+    init_horizontal_control();
+    init_vertical_control();
 
     // initialise yaw
     copter.flightmode->auto_yaw.set_mode(Mode::AutoYaw::Mode::HOLD);
+}
 
+void PayloadPlace::init(float _descent_max_m)
+{
+    descent_max_m = _descent_max_m;
     state = PayloadPlace::State::Descent_Start;
 }
 #endif
@@ -1343,10 +1359,10 @@ void ModeAuto::payload_place_run()
     }
 }
 
+const char* prefix_str = "PayloadPlace:";
+
 void PayloadPlace::run()
 {
-    const char* prefix_str = "PayloadPlace:";
-
     if (copter.flightmode->is_disarmed_or_landed()) {
         copter.flightmode->make_safe_ground_handling();
         return;
@@ -1355,6 +1371,12 @@ void PayloadPlace::run()
     // set motors to full range
     copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+    run_horizontal_control();
+    run_vertical_control();
+}
+
+void PayloadPlace::run_vertical_control()
+{
     const uint32_t descent_thrust_cal_duration_ms = 2000; // milliseconds
     const uint32_t placed_check_duration_ms = 500; // how long we have to be below a throttle threshold before considering placed
 
@@ -1534,7 +1556,6 @@ void PayloadPlace::run()
     switch (state) {
     case State::Descent_Start:
     case State::Descent:
-        copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
         pos_control->D_set_pos_target_from_climb_rate_ms(-descent_speed_ms, true);
         break;
@@ -1542,7 +1563,6 @@ void PayloadPlace::run()
     case State::Releasing:
     case State::Delay:
     case State::Ascent_Start:
-        copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
         pos_control->D_set_pos_target_from_climb_rate_ms(0.0);
         break;
@@ -1555,6 +1575,11 @@ void PayloadPlace::run()
         break;
     }
     pos_control->D_update_controller();
+}
+
+void PayloadPlace::run_horizontal_control()
+{
+    copter.flightmode->land_run_horizontal_control();
 }
 #endif
 
@@ -2135,8 +2160,6 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
-    payload_place.descent_max_m = cmd.p1 * 0.01;
-
     // if location provided we fly to that location first
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0 || cmd.content.location.alt != 0) {
         // set state to fly to location
@@ -2155,6 +2178,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         }
     } else {
         // initialise placing controller
+        payload_place.init(cmd.p1 * 0.01);
         payload_place.start_descent();
         payload_place_state = PayloadPlaceState::Placing;
     }
