@@ -154,7 +154,7 @@ void ModeAuto::run()
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
     case SubMode::NAV_PAYLOAD_PLACE:
-        payload_place.run();
+        payload_place_run();
         break;
 #endif
 
@@ -927,7 +927,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        cmd_complete = payload_place.verify();
+        cmd_complete = verify_payload_place();
         break;
 #endif
 
@@ -1234,6 +1234,49 @@ void ModeAuto::nav_attitude_time_run()
 #if AC_PAYLOAD_PLACE_ENABLED
 // auto_payload_place_run - places an object in auto mode
 //      called by auto_run at 100hz or more
+void ModeAuto::payload_place_run()
+{
+    // run controllers for state:
+    switch (payload_place_state) {
+    case PayloadPlaceState::FlyToLocation:
+        copter.mode_auto.wp_run();
+        break;
+    case PayloadPlaceState::Placing:
+        payload_place.run();
+        break;
+    case PayloadPlaceState::Done:
+        // we should not be in this case long, but in the meantime, do
+        // nothing:
+        Vector2f vel;
+        Vector2f accel;
+        pos_control->input_vel_accel_xy(vel, accel);
+        pos_control->update_xy_controller();
+
+        // call attitude controller
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
+
+        pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
+        pos_control->update_z_controller();
+        break;
+    }
+
+    // determine new state:
+    switch (payload_place_state) {
+    case PayloadPlaceState::FlyToLocation:
+        if (copter.wp_nav->reached_wp_destination()) {
+            payload_place_state = PayloadPlaceState::Placing;
+        }
+        break;
+    case PayloadPlaceState::Placing:
+        if (payload_place.verify()) {
+            payload_place_state = PayloadPlaceState::Done;
+        }
+        break;
+    case PayloadPlaceState::Done:
+        break;
+    }
+}
+
 void PayloadPlace::run()
 {
     const char* prefix_str = "PayloadPlace:";
@@ -1264,9 +1307,6 @@ void PayloadPlace::run()
     if (copter.ap.land_complete || copter.ap.land_complete_maybe) {
         pos_control->soften_for_landing_xy();
         switch (state) {
-        case State::FlyToLocation:
-            // this is handled in wp_run()
-            break;
         case State::Descent_Start:
             // do nothing on this loop
             break;
@@ -1288,7 +1328,6 @@ void PayloadPlace::run()
     // if pilot releases load manually:
     if (AP::gripper().valid() && AP::gripper().released()) {
         switch (state) {
-        case State::FlyToLocation:
         case State::Descent_Start:
             gcs().send_text(MAV_SEVERITY_INFO, "%s Abort: Gripper Open", prefix_str);
             // Descent_Start has not run so we must also initalise descent_start_altitude_cm
@@ -1311,12 +1350,6 @@ void PayloadPlace::run()
 #endif
 
     switch (state) {
-    case State::FlyToLocation:
-        if (copter.wp_nav->reached_wp_destination()) {
-            start_descent();
-        }
-        break;
-
     case State::Descent_Start:
         descent_established_time_ms = now_ms;
         descent_start_altitude_cm = pos_control->get_pos_desired_z_cm();
@@ -1433,9 +1466,6 @@ void PayloadPlace::run()
     }
 
     switch (state) {
-    case State::FlyToLocation:
-        // this should never happen
-        return copter.mode_auto.wp_run();
     case State::Descent_Start:
     case State::Descent:
         copter.flightmode->land_run_horizontal_control();
@@ -2018,10 +2048,12 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
+    payload_place.descent_max_cm = cmd.p1;
+
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        payload_place.state = PayloadPlace::State::FlyToLocation;
+        payload_place_state = PayloadPlaceState::FlyToLocation;
 
         // convert cmd to location class
         Location target_loc(cmd.content.location);
@@ -2040,8 +2072,8 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     } else {
         // initialise placing controller
         payload_place.start_descent();
+        payload_place_state = PayloadPlaceState::Placing;
     }
-    payload_place.descent_max_cm = cmd.p1;
 
     // set submode
     set_submode(SubMode::NAV_PAYLOAD_PLACE);
@@ -2118,10 +2150,22 @@ bool ModeAuto::verify_land()
 
 #if AC_PAYLOAD_PLACE_ENABLED
 // verify_payload_place - returns true if placing has been completed
+bool ModeAuto::verify_payload_place()
+{
+    switch (payload_place_state) {
+    case PayloadPlaceState::FlyToLocation:
+    case PayloadPlaceState::Placing:
+        return false;
+    case PayloadPlaceState::Done:
+        return true;
+    }
+    // should never get here
+    return true;
+}
+
 bool PayloadPlace::verify()
 {
     switch (state) {
-    case State::FlyToLocation:
     case State::Descent_Start:
     case State::Descent:
     case State::Release:
