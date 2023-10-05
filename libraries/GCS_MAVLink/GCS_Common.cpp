@@ -1931,7 +1931,9 @@ void GCS_MAVLINK::log_mavlink_stats()
 void GCS_MAVLINK::send_system_time() const
 {
     uint64_t time_unix = 0;
+#if AP_RTC_ENABLED
     AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+#endif
 
     mavlink_msg_system_time_send(
         chan,
@@ -3435,6 +3437,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
                   msg.compid);
 }
 
+#if AP_RTC_ENABLED
 void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 {
     mavlink_system_time_t packet;
@@ -3442,6 +3445,7 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
 }
+#endif
 
 #if AP_CAMERA_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
@@ -4064,9 +4068,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif  // HAL_VISUALODOM_ENABLED
 
+#if AP_RTC_ENABLED
     case MAVLINK_MSG_ID_SYSTEM_TIME:
         handle_system_time_message(msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
         handle_rc_channels_override(msg);
