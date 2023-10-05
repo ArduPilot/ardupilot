@@ -70,8 +70,8 @@
             __LINE__, (int)temp_rc);\
         /* will be empty when RCUTILS_AVOID_DYNAMIC_ALLOCATION is defined */\
         const rcutils_error_state_t *err = rcutils_get_error_state();\
-        uros_error("UROS: error: %s, file: %s, line: %llu, ",\
-            err->message, err->file, err->line_number);\
+        uros_error("UROS: error: %s, file: %s, line: %u, ",\
+            err->message, err->file, (uint32_t)err->line_number);\
         return false;\
     } else {\
         uros_debug("UROS: " msg"... OK");\
@@ -688,10 +688,10 @@ bool AP_UROS_Client::on_parameter_changed(
             case RCLC_PARAMETER_INT:
                 uros_info(
                     "UROS: parameter %s modified: "
-                    "old value: %lld, new value: %lld (int)",
+                    "old value: %d, new value: %d (int)",
                     old_param->name.data,
-                    old_param->value.integer_value,
-                    new_param->value.integer_value);
+                    (int32_t)old_param->value.integer_value,
+                    (int32_t)new_param->value.integer_value);
                 break;
             case RCLC_PARAMETER_DOUBLE:
                 uros_info(
