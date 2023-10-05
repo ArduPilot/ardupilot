@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_RTC_config.h"
+
 #include <AP_Param/AP_Param.h>
 
 #include <stdint.h>
