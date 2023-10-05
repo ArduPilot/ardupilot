@@ -1055,6 +1055,8 @@ void AP_GPS::update_instance(uint8_t instance)
     if (data_should_be_logged && should_log()) {
         Write_GPS(instance);
     }
+#else
+    (void)data_should_be_logged;
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -1064,8 +1066,6 @@ void AP_GPS::update_instance(uint8_t instance)
             AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
         }
     }
-#else
-    (void)data_should_be_logged;
 #endif
 }
 
