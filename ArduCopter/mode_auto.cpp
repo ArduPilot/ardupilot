@@ -1357,36 +1357,24 @@ void PayloadPlace::run()
         return copter.mode_auto.wp_run();
     case State::Descent_Start:
     case State::Descent:
-        return run_descent();
+        copter.flightmode->land_run_horizontal_control();
+        // update altitude target and call position controller
+        pos_control->land_at_climb_rate_cm(-descent_speed_cms, true);
+        pos_control->update_z_controller();
+        return;
     case State::Release:
     case State::Releasing:
     case State::Delay:
     case State::Ascent_Start:
-        return run_hover();
+        copter.flightmode->land_run_horizontal_control();
+        // update altitude target and call position controller
+        pos_control->land_at_climb_rate_cm(0.0, false);
+        pos_control->update_z_controller();
+        return;
     case State::Ascent:
     case State::Done:
         return copter.mode_auto.takeoff_run();
     }
-}
-
-void PayloadPlace::run_hover()
-{
-    const auto &pos_control = copter.pos_control;
-
-    copter.flightmode->land_run_horizontal_control();
-    // update altitude target and call position controller
-    pos_control->land_at_climb_rate_cm(0.0, false);
-    pos_control->update_z_controller();
-}
-
-void PayloadPlace::run_descent()
-{
-    const auto &pos_control = copter.pos_control;
-
-    copter.flightmode->land_run_horizontal_control();
-    // update altitude target and call position controller
-    pos_control->land_at_climb_rate_cm(-descent_speed_cms, true);
-    pos_control->update_z_controller();
 }
 
 // sets the target_loc's alt to the vehicle's current alt but does not change target_loc's frame
