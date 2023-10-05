@@ -502,9 +502,14 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     // get date and time
     uint16_t year, ms;
     uint8_t month, day, hour, min, sec;
+#if AP_RTC_ENABLED
     if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
         year = month = day = hour = min = sec = 0;
     }
+#else
+    year = month = day = hour = min = sec = 0;
+    (void)ms;
+#endif
 
     // send xacti specific gnss status message
     com_xacti_GnssStatus xacti_gnss_status_msg {};
@@ -938,9 +943,14 @@ bool AP_Mount_Xacti::set_datetime(uint32_t now_ms)
     // get date and time
     uint16_t year, ms;
     uint8_t month, day, hour, min, sec;
+#if AP_RTC_ENABLED
     if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
         return false;
     }
+#else
+    (void)ms;
+    return false;
+#endif
 
     // date time is of the format YYYYMMDDHHMMSS (14 bytes)
     // convert month from 0~11 to 1~12 range
