@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @Param: SHUNT
     // @DisplayName: Battery monitor shunt resistor
     // @Description: This sets the shunt resistor used in the device
-    // @Range: 0.0001 to 0.01
+    // @Range: 0.0001 0.01
     // @Units: Ohm
     // @User: Advanced
     AP_GROUPINFO("SHUNT", 28, AP_BattMonitor_INA2XX, rShunt, DEFAULT_BATTMON_INA2XX_SHUNT),
