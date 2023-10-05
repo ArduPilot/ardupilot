@@ -668,6 +668,7 @@ bool AP_Mount_Viewpro::send_m_ahrs()
         return false;
     }
 
+#if AP_RTC_ENABLED
     // get date and time
     uint16_t year, ms;
     uint8_t month, day, hour, min, sec;
@@ -676,6 +677,10 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     }
     uint16_t date = ((year-2000) & 0x7f) | (((month+1) & 0x0F) << 7) | ((day & 0x1F) << 11);
     uint64_t second_hundredths = (((hour * 60 * 60) + (min * 60) + sec) * 100) + (ms * 0.1);
+#else
+    const uint16_t date = 0;
+    const uint64_t second_hundredths = 0;
+#endif
 
     // get vehicle velocity in m/s in NED Frame
     Vector3f vel_NED;
