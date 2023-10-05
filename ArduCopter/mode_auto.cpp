@@ -1333,16 +1333,21 @@ void PayloadPlace::run()
         FALLTHROUGH;
 
     case State::Ascent_Start:
-        copter.flightmode->auto_takeoff.start(descent_start_altitude_cm, false);
         state = State::Ascent;
-        break;
+        FALLTHROUGH;
 
-    case State::Ascent:
-        if (copter.flightmode->auto_takeoff.complete) {
+    case State::Ascent: {
+        // Ascent complete when we are less than 10% of the stopping
+        // distance from the target altitude stopping distance from
+        // vel_threshold_fraction * max velocity
+        const float vel_threshold_fraction = 0.1;
+        const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
+        bool reached_altitude = copter.pos_control->get_pos_target_z_cm() >= descent_start_altitude_cm - stop_distance;
+        if (reached_altitude) {
             state = State::Done;
         }
         break;
-
+    }
     case State::Done:
         break;
     default:
@@ -1373,7 +1378,10 @@ void PayloadPlace::run()
         return;
     case State::Ascent:
     case State::Done:
-        return copter.mode_auto.takeoff_run();
+        float vel = 0.0;
+        copter.flightmode->land_run_horizontal_control();
+        pos_control->input_pos_vel_accel_z(descent_start_altitude_cm, vel, 0.0);
+        break;
     }
 }
 
