@@ -2149,6 +2149,7 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 #endif
 }
 
+#if AP_RTC_ENABLED
 void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
 {
     AP_RTC &rtc = AP::rtc();
@@ -2160,6 +2161,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%02u:%02u", SYMBOL(SYM_CLK), hour, min);
     }
 }
+#endif
 
 #if HAL_PLUSCODE_ENABLE
 void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
@@ -2329,7 +2331,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
+#if AP_RTC_ENABLED
     DRAW_SETTING(clk);
+#endif
 #if AP_VIDEOTX_ENABLED
     DRAW_SETTING(vtx_power);
 #endif
