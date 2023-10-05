@@ -2,6 +2,8 @@
 
 #include "AP_RTC_config.h"
 
+#if AP_RTC_ENABLED
+
 #include <AP_Param/AP_Param.h>
 
 #include <stdint.h>
@@ -73,3 +75,5 @@ private:
 namespace AP {
     AP_RTC &rtc();
 };
+
+#endif  // AP_RTC_ENABLED
