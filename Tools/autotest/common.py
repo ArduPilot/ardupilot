@@ -227,6 +227,8 @@ class TeeBoth(object):
         self.file = None
 
     def write(self, data):
+        if isinstance(data, bytes):
+            data = data.decode('ascii')
         self.file.write(data)
         if not self.suppress_stdout:
             self.stdout.write(data)
