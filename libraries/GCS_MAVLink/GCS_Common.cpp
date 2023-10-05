@@ -4895,6 +4895,21 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     return false;
 }
 
+// returns a value suitable for COMMAND_INT.x or y based on a value
+// coming in from COMMAND_LONG.p5 or p6:
+static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
+{
+    if (isnan(param)) {
+        return 0;
+    }
+
+    if (stores_location) {
+        return param *1e7;
+    }
+
+    return param;
+}
+
 void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
@@ -4908,13 +4923,9 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    if (command_long_stores_location((MAV_CMD)in.command)) {
-        out.x = in.param5 *1e7;
-        out.y = in.param6 *1e7;
-    } else {
-        out.x = in.param5;
-        out.y = in.param6;
-    }
+    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
+    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
+    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
     out.z = in.param7;
 }
 
