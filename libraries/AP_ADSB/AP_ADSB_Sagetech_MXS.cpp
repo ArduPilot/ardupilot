@@ -681,6 +681,7 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
 
     gps.gpsValid = (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) ? false : true;  // If the status is not OK, gpsValid is false.
 
+#if AP_RTC_ENABLED
     uint64_t time_usec;
     if (AP::rtc().get_utc_usec(time_usec)) {
         const time_t time_sec = time_usec * 1E-6;
@@ -690,6 +691,9 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
     } else {
         strncpy(gps.timeOfFix, "      .   ", 11);
     }
+#else
+    strncpy(gps.timeOfFix, "      .   ", 11);
+#endif
 
     int32_t height;
     if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height)) {
