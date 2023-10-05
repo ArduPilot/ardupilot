@@ -54,7 +54,6 @@ public:
 private:
     void run_hover();
     void run_descent();
-    void run_release();
 
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
