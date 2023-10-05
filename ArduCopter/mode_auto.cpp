@@ -1164,8 +1164,8 @@ void PayloadPlace::run()
 {
     const char* prefix_str = "PayloadPlace:";
 
-    if (!run_should_run()) {
-        copter.flightmode->zero_throttle_and_relax_ac();
+    if (copter.flightmode->is_disarmed_or_landed()) {
+        copter.flightmode->make_safe_ground_handling();
         return;
     }
 
@@ -1367,29 +1367,6 @@ void PayloadPlace::run()
     case State::Done:
         return copter.mode_auto.takeoff_run();
     }
-}
-
-bool PayloadPlace::run_should_run()
-{
-    // must be armed
-    if (!copter.motors->armed()) {
-        return false;
-    }
-    // must be auto-armed
-    if (!copter.ap.auto_armed) {
-        return false;
-    }
-    // must not be landed
-    if (copter.ap.land_complete &&
-        (state == State::FlyToLocation || state == State::Descent_Start)) {
-        return false;
-    }
-    // interlock must be enabled (i.e. unsafe)
-    if (!copter.motors->get_interlock()) {
-        return false;
-    }
-
-    return true;
 }
 
 void PayloadPlace::run_hover()

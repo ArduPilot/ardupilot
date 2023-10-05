@@ -52,7 +52,6 @@ public:
     float descent_max_cm;
 
 private:
-    bool run_should_run();
     void run_hover();
     void run_descent();
     void run_release();
