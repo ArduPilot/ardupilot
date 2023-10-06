@@ -337,19 +337,10 @@ void Tiltrotor::continuous_update(void)
             const float tilt_angle_range = 90.0f * get_forward_flight_tilt() - (float)max_angle_deg;
             if (is_positive(tilt_angle_range)) {
                 // Tilt immediately to Q_TILT_MAX. Then tilt forward from Q_TILT_MAX to the forward flight value.
-                // If when tilting forward past Q_TILT_MAX, the throttle for any tilting motor exceeds 90%, the
+                // If when tilting forward past Q_TILT_MAX, the throttle for any tilting motor is saturating, the
                 // tilt angle is reduced to prevent loss of attitude control.
-                float max_throttle = 0.0f;
-                for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                    float throttle_demand;
-                    if (is_motor_tilting(i) && motors->get_motor_demand(i, throttle_demand)) {
-                        if (throttle_demand > max_throttle) {
-                            max_throttle = throttle_demand;
-                        }
-                    }
-                }
-                // get_motor_demand returns a value that clips at 0.95
-                if (max_throttle < 0.90f) {
+                const float max_throttle = max_tilting_motor_thrust_demand();
+                if (max_throttle < 0.95f) {
                     // Tilt the rotors forward if the maximum throttle of the tilting motors is not saturating.
                     float tilt_rate_dps;
                     if (_transition_fwd_tilt_frac < (1/90.0f) * (float)max_angle_deg) {
@@ -561,6 +552,8 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
             thrust[i] *= scale;
         }
     }
+
+    _max_tilting_motor_thrust_demand = largest_tilted;
 }
 
 /*

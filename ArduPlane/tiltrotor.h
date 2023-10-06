@@ -49,6 +49,10 @@ public:
         return tilt_mask.get() & (1U<<motor);
     }
 
+    float max_tilting_motor_thrust_demand () const{
+        return _max_tilting_motor_thrust_demand;
+    }
+
     bool fully_fwd() const;
     bool fully_up() const;
     float tilt_max_change(bool up, bool in_flap_range = false) const;
@@ -125,6 +129,8 @@ private:
     // true if the current tilt angle is equal to the desired
     // with slow tilt rates the tilt angle can lag
     bool angle_achieved;
+
+    float _max_tilting_motor_thrust_demand; // normalised thrust demand between 0 and 1 for the largest thrust titling motor
 
     // refences for convenience
     QuadPlane& quadplane;
