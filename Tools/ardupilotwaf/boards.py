@@ -864,6 +864,7 @@ class sitl_periph_gps(sitl):
             HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
+            AP_RTC_ENABLED = 0,
         )
 
 
