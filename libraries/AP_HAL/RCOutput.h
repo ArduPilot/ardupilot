@@ -154,6 +154,11 @@ public:
      */
     virtual uint16_t get_erpm(uint8_t chan) const { return 0; }
     virtual float get_erpm_error_rate(uint8_t chan) const { return 100.0f; }
+    /*
+      allow all erpm values to be read and for new updates to be detected - primarily for IOMCU
+     */
+    virtual bool  new_erpm() { return false; }
+    virtual uint32_t  read_erpm(uint16_t* erpm, uint8_t len) { return 0; }
 
     /*
       enable PX4IO SBUS out at the given rate
