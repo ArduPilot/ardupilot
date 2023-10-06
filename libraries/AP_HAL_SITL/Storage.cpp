@@ -16,8 +16,10 @@
 #define HAL_STORAGE_FILE "eeprom-replay.bin"
 #elif APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 #define HAL_STORAGE_FILE "eeprom-periph.bin"
+#define HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING "eeprom-periph-%u.bin"
 #else
 #define HAL_STORAGE_FILE "eeprom.bin"
+#define HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING "eeprom-%u.bin"
 #endif
 #endif
 
@@ -88,7 +90,14 @@ void Storage::_storage_open(void)
             return;
         }
 
-        log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT, 0644);
+        char storage_file[80]{};
+        if (hal.get_instance() == 0) {
+            strncpy(storage_file, HAL_STORAGE_FILE, ARRAY_SIZE(storage_file));
+        } else {
+            snprintf(storage_file, ARRAY_SIZE(storage_file), HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING, hal.get_instance());
+        }
+
+        log_fd = open(storage_file, O_RDWR|O_CREAT, 0644);
         if (log_fd == -1) {
             hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
             return;
