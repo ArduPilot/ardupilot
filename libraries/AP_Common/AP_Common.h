@@ -171,6 +171,9 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n);
 // return the numeric value of an ascii hex character
 uint8_t char_to_hex(char a);
 
+// returns offset into buffer where byte is found, -1 if not found:
+int16_t offset_of_byte_in_buffer(uint8_t byte, const uint8_t *buffer, uint16_t buffer_len);
+
 /*
   Bit manipulation
  */
