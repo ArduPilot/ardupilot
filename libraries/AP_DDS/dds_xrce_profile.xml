@@ -239,7 +239,7 @@
     </topic>
   </data_reader>
   <topic profile_name="dynamictf__t">
-    <name>rt/tf</name>
+    <name>rt/ap/tf</name>
     <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -249,7 +249,7 @@
   <data_reader profile_name="dynamictf__dr">
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/tf</name>
+      <name>rt/ap/tf</name>
       <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
     </topic>
   </data_reader>
