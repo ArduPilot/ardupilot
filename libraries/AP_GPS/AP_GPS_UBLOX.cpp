@@ -594,11 +594,10 @@ AP_GPS_UBLOX::read(void)
     for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        const int16_t rdata = port->read();
-        if (rdata < 0) {
+        uint8_t data;
+        if (!port->read(data)) {
             break;
         }
-        const uint8_t data = rdata;
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&data, 1);
 #endif
