@@ -333,6 +333,7 @@ void AP_Baro::calibrate(bool save)
             if (AP_HAL::millis() - tstart > 500) {
                 AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
+            hal.scheduler->delay(10);
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
             if (healthy(i)) {
