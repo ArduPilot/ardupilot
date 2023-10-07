@@ -46,7 +46,7 @@
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
-#include <AP_ExternalControl/AP_ExternalControl.h>
+#include "AP_ExternalControl_Rover.h"
 #endif
 
 // Configuration
@@ -83,6 +83,9 @@ public:
     friend class AP_Arming_Rover;
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Rover;
+#endif
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Rover;
 #endif
     friend class GCS_Rover;
     friend class Mode;
@@ -147,9 +150,9 @@ private:
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 
-    // dummy external control implementation
+    // external control implementation
 #if AP_EXTERNAL_CONTROL_ENABLED
-    AP_ExternalControl external_control;
+    AP_ExternalControl_Rover external_control;
 #endif
 
 #if AP_OPTICALFLOW_ENABLED
