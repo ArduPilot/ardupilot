@@ -659,7 +659,7 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
-    // update ch6 in flight tuning
+    //update transmitter based in flight tuning
     tuning();
 
     // check if avoidance should be enabled based on alt
