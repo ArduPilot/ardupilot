@@ -39,6 +39,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_RTC/AP_RTC.h>
 
+#include <ctype.h>
+
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_SQUAWK_OCTAL_DEFAULT       1200
 
@@ -778,8 +780,7 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
                 break;
             }
 
-        } else if (('A' <= str[i] && str[i] <= 'Z') ||
-                   ('0' <= str[i] && str[i] <= '9')) {
+        } else if (isupper(str[i]) || isdigit(str[i])) {
             // valid as-is
             // spaces are also allowed but are handled in the last else
             out_state.cfg.callsign[i] = str[i];
