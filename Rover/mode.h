@@ -488,6 +488,9 @@ protected:
 class ModeGuided : public Mode
 {
 public:
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Rover;
+#endif
 
     Number mode_number() const override { return Number::GUIDED; }
     const char *name4() const override { return "GUID"; }
