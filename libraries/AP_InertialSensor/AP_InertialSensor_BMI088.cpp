@@ -400,7 +400,7 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
     }
     const float scale = radians(2000.0f) / 32767.0f;
     const uint8_t max_frames = 8;
-    const Vector3i bad_frame{INT16_MIN,INT16_MIN,INT16_MIN};
+    const Vector3i bad_frame{INT16_MIN+1,INT16_MIN+1,INT16_MIN+1};
     Vector3i data[max_frames];
 
     if (num_frames & 0x80) {
