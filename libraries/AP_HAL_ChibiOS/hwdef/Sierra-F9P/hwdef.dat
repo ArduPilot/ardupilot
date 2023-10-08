@@ -131,6 +131,7 @@ define GPS_MOVING_BASELINE 1
 
 # Logging
 define HAL_LOGGING_ENABLED 1
+define HAL_PERIPH_ENABLE_RTC 1
 define HAL_OS_FATFS_IO 1
 
 # SD Card pins
