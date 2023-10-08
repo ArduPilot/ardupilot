@@ -608,6 +608,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_mirror_ports, "CAN_MIRROR_PORTS", 0),
 #endif // HAL_PERIPH_CAN_MIRROR
 
+#ifdef HAL_PERIPH_ENABLE_RTC
+    // @Group: RTC
+    // @Path: ../libraries/AP_RTC/AP_RTC.cpp
+    GOBJECT(rtc,                   "RTC",    AP_RTC),
+#endif
+
     AP_VAREND
 };
 
