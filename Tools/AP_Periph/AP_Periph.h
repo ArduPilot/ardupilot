@@ -359,6 +359,10 @@ public:
     AP_Networking networking;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RTC
+    AP_RTC rtc;
+#endif
+
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
