@@ -1,23 +1,30 @@
-# Serious Pro Racing H6 Extreme Flight Controller
+# Serious Pro Racing H7 RF Flight Controller
 
-The SPRacingH7 Extreme is a flight controller produced by [Seriously Pro Racing](http://www.seriouslypro.com/).
+The SPRacingH7 RF Extreme is a flight controller produced by [Seriously Pro Racing](http://www.seriouslypro.com/).
+
+![SPRacingH7 RF Top](spracingh7rf.jpg "SPRacingH7-top")
 
 ## Features
 
- - MCU - STM32H750 32-bit processor running at 400 MHz
- - 16MByte Serial NOR flash via QuadSPI
- - IMUs - 2x ICM20602
+ - MCU - STM32H730 32-bit processor running at 520 MHz
+ - 2MByte Serial NOR flash via QuadSPI for firmware
+ - IMUs - ICM42688
  - Barometer - BMP388
- - OSD - AT7456E
+ - OSD - Pixel, not supported currently by ArduPilot
+ - I2C port
  - Onboard Flash: 128Mbits
- - 7x UARTs (1,2,3,4,5,6,8)
- - 11x PWM Outputs (10 Motor Output, 1 LED)
- - Battery input voltage: 2S-6S
- - BEC 5V 1A
+ - Integrated ELRS receiver, not supported currently by ArduPilot 
+ - microSD card socket
+ - 5x UARTs (2,3,4,5,8)
+ - 9x PWM Outputs (8 Motor Output, 1 LED)
+ - Battery input voltage: 2S-8S
+ - BEC 5V ?A
 
 ## Pinout
 
-![SPRacingH7 Board](SPRacingH7_Board.JPG "SPRacingH7")
+![SPRacingH7 RF Top](spracingh7rf_top.jpg "SPRacingH7-top")
+![SPRacingH7 RF Bottom](spracingh7rf_bottom.jpg "SPRacingH7-bottom")
+![SPRacingH7 RF onnectors](spracingh7rf_connectors.jpg "SPRacingH7-connectors")
 
 ## UART Mapping
 
@@ -25,67 +32,65 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DMA-enabled)
- - SERIAL2 -> UART2 (RCIN one wire, DMA-enabled)
- - SERIAL3 -> UART3 (DMA-enabled)
- - SERIAL4 -> UART4 (DMA-enabled)
- - SERIAL5 -> UART5 (DMA-enabled)
- - SERIAL6 -> UART6 (On motor pads 7/8, with alt config 1, DMA-enabled)
- - SERIAL8 -> UART8 (DMA-enabled)
+ - SERIAL2 -> UART2 (RC input)
+ - SERIAL3 -> UART3 (DJI)
+ - SERIAL4 -> UART4 (GPS)
+ - SERIAL5 -> UART5 (ESC Telemetry, RX only)
+ - SERIAL8 -> UART8 (USER)
+ 
+ All UARTS are DMA capable
 
 ## RC Input
 
-RC input is configured on the T2 (UART2_TX) pin. It supports all serial RC
-protocols. For protocols requiring half-duplex serial to transmit
-telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
-with half-duplex, pin-swap and inversion enabled.
- 
-## FrSky Telemetry
- 
-FrSky Telemetry is supported using the T2 pin (UART2 transmit). You need to set the following parameters to enable support for FrSky S.PORT
- 
-  - SERIAL2_PROTOCOL 10
-  - SERIAL2_OPTIONS 7
-  
-## OSD Support
+Ardupilot does not currently support the integrated ELRS chip.
 
-The SPRacingH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+RC input is configured on the R2 pin. It supports all serial RC
+protocols. PPM is not supoorted. For protocols requiring half-duplex serial to transmit
+telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
+with half-duplex, pin-swap and inversion enabled. For duplex protocols, like CRSF/ELRS, T2 must also be connected to the receiver.
+ 
+  
+## Pixel OSD Support
+
+Ardupilot does not currently support the integrated OSD chip. UART3 is setup fir use with DisplayPort goggles with OSD.
 
 ## PWM Output
 
-The SPRacingH7 supports up to 11 PWM outputs. The pads for motor output
-M1 to M4 on the motor connectors and M5 to M8 on separate pads, plus
-M11 for LED strip or another PWM output. M9 and M10 are only available on the stacking connector.
+The SPRacingH7 RF supports up to 9 PWM outputs. PWM 1-8 support DShot and Bi-Directional DShot. The pads for motor output
+M1 to M4 on ESC connector 1, and M5 to M8 on ESC connector 2, plus
+M9 for LED strip or another PWM output.
 
 The PWM is in 5 groups:
 
  - PWM 1-4   in group1
- - PWM 5, 6  in group2
- - PWM 7, 8  in group3
- - PWM 9, 10 in group4
- - PWM 11    in group5
+ - PWM 5-8  in group2
+ - PWM 9 (LED)  in group3
+
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
-to use DShot. Channels 1-4 support bi-directional dshot.
+to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
-sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
+The board has a built-in voltage sesnor and current sensor input from the ESC connectors. The voltage sensor can handle up to 8S
 LiPo batteries.
 
 The correct battery setting parameters are:
 
  - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
+ - BATT_VOLT_PIN 13
  - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 11.1
- - BATT_AMP_PERVLT 59.5
+ - BATT_VOLT_MULT 10.9
+ - BATT_AMP_PERVLT 28.5 (will need adjustment for the current sensor range of the ESC)
 
 ## Compass
 
-The SPRacingH7 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The SPRacingH7 RF does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+
+## User Manual
+
+http://seriouslypro.com/files/SPRacingH7RF-Manual-latest.pdf
 
 ## Loading Firmware
 
