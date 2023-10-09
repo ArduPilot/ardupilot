@@ -3250,6 +3250,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_disarmed()
             self.delay_sim_time(20)
 
+    def MissionIndexValidity(self):
+        '''Confirm that attempting to select an invalid mission item is rejected.'''
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        num_wp = self.get_mission_count()
+        accepted_indices = [0, 1, num_wp-1]
+        denied_indices = [-1, num_wp]
+
+        for seq in accepted_indices:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+                         p1=seq,
+                         timeout=1,
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+
+        for seq in denied_indices:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+                         p1=seq,
+                         timeout=1,
+                         want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
         self.customise_SITL_commandline(["--uartF=sim:vicon:"])
@@ -10569,6 +10594,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptMountPOI,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
+            self.MissionIndexValidity,
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.GuidedYawRate,
