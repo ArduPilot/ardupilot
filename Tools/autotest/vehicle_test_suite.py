@@ -5911,10 +5911,12 @@ class TestSuite(ABC):
     def set_current_waypoint_using_mav_cmd_do_set_mission_current(
             self,
             seq,
+            reset=0,
             target_sysid=1,
             target_compid=1):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
                      p1=seq,
+                     p2=reset,
                      timeout=1,
                      target_sysid=target_sysid,
                      target_compid=target_compid)
