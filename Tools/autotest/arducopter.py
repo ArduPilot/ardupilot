@@ -3275,6 +3275,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                          timeout=1,
                          want_result=mavutil.mavlink.MAV_RESULT_DENIED)
 
+    def InvalidJumpTags(self):
+        '''Verify the behaviour when selecting invalid jump tags.'''
+
+        MAX_TAG_NUM = 65535
+        # Jump tag is not present, so expect FAILED
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+                     p1=MAX_TAG_NUM,
+                     timeout=1,
+                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        # Jump tag is too big, so expect DENIED
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+                     p1=MAX_TAG_NUM+1,
+                     timeout=1,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
         self.customise_SITL_commandline(["--uartF=sim:vicon:"])
@@ -10595,6 +10611,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
+            self.InvalidJumpTags,
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.GuidedYawRate,
