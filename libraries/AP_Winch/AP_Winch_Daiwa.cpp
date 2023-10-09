@@ -344,7 +344,7 @@ void AP_Winch_Daiwa::update_user()
         if (latest.moving < ARRAY_SIZE(moving_str)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, moving_str[latest.moving]);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s move state uknown", send_text_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s move state unknown", send_text_prefix);
         }
         update_sent = true;
     }
@@ -357,7 +357,7 @@ void AP_Winch_Daiwa::update_user()
         if (user_update.clutch < ARRAY_SIZE(clutch_str)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch %s", send_text_prefix, clutch_str[latest.moving]);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch state uknown", send_text_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch state unknown", send_text_prefix);
         }
         update_sent = true;
     }
