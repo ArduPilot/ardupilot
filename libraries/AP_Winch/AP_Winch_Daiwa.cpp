@@ -326,7 +326,7 @@ void AP_Winch_Daiwa::update_user()
     const bool now_healthy = healthy();
     if (user_update.healthy != now_healthy) {
         user_update.healthy = now_healthy;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, now_healthy ? "healthy" : "not healthy");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %shealthy", send_text_prefix, now_healthy ? "" : "not ");
         update_sent = true;
     }
 
