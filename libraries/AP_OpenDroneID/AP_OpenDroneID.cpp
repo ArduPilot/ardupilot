@@ -554,7 +554,7 @@ void AP_OpenDroneID::send_operator_id_message()
 */
 MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 18520.0) {
         return MAV_ODID_HOR_ACC_UNKNOWN;
     }
@@ -595,7 +595,7 @@ MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy)
 */
 MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 150.0) {
         return MAV_ODID_VER_ACC_UNKNOWN;
     }
@@ -630,7 +630,7 @@ MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) c
 */
 MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 10.0) {
         return MAV_ODID_SPEED_ACC_UNKNOWN;
     }
@@ -657,7 +657,7 @@ MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) co
 */
 MAV_ODID_TIME_ACC AP_OpenDroneID::create_enum_timestamp_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 1.5) {
         return MAV_ODID_TIME_ACC_UNKNOWN;
     }
