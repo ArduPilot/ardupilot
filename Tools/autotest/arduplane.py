@@ -6110,12 +6110,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             1, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
-    def renumber_mission_items(self, mission):
-        count = 0
-        for item in mission:
-            item.seq = count
-            count += 1
-
     def MissionJumpTags_missing_jump_target(self, target_system=1, target_component=1):
         self.start_subtest("Check missing-jump-tag behaviour")
         jump_target = 2
