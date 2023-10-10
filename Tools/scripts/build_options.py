@@ -190,6 +190,8 @@ BUILD_OPTIONS = [
     Feature('Rover', 'ROVER_AUTO_ARM_ONCE', 'AP_ROVER_AUTO_ARM_ONCE_ENABLED', 'Make Auto-Arm-Once functionality available', 0, None),  # NOQA: 501
 
     Feature('Mission', 'MISSION_NAV_PAYLOAD_PLACE', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'Enable NAV_PAYLOAD_PLACE', 0, None),  # noqa
+    Feature('Mission', 'MISSION_WPNEXT_OFFSET', 'AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED', 'Enable SET_ROI_WPNEXT_OFFSET command', 0, None),  # noqa
+
     Feature('Copter', 'AC_PAYLOAD_PLACE_ENABLED', 'AC_PAYLOAD_PLACE_ENABLED', 'Enable Copter Payload Place', 0, 'MISSION_NAV_PAYLOAD_PLACE'),  # noqa
 
     Feature('Compass', 'AK09916', 'AP_COMPASS_AK09916_ENABLED', 'Enable AK0991x compasses', 1, None),
@@ -230,6 +232,7 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'XACTI', 'HAL_MOUNT_XACTI_ENABLED', 'Enable Xacti gimbal', 0, "MOUNT,DroneCAN"),
     Feature('Gimbal', 'XFROBOT', 'HAL_MOUNT_XFROBOT_ENABLED', 'Enable XFRobot gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'VIEWPRO', 'HAL_MOUNT_VIEWPRO_ENABLED', 'Enable Viewpro gimbal', 0, "MOUNT"),
+    Feature('Gimbal', 'MOUNT_WPNEXT_OFFSET', 'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'Enable tracking next waypoint with offset', 0, None),  # noqa
 
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
