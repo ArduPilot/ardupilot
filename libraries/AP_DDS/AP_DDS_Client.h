@@ -73,7 +73,8 @@ private:
     HAL_Semaphore csem;
 
     // connection parametrics
-    bool connected = true;
+    bool status_ok{false};
+    bool connected{false};
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
     bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;
@@ -143,17 +144,25 @@ private:
         SocketAPM *socket;
     } udp;
 #endif
+    // pointer to transport's communication structure
+    uxrCommunication *comm{nullptr};
 
     // client key we present
-    static constexpr uint32_t uniqueClientKey = 0xAAAABBBB;
+    static constexpr uint32_t key = 0xAAAABBBB;
 
 public:
+    ~AP_DDS_Client();
+
     bool start(void);
     void main_loop(void);
 
-    //! @brief Initialize the client's transport, uxr session, and IO stream(s)
+    //! @brief Initialize the client's transport
     //! @return True on successful initialization, false on failure
-    bool init() WARN_IF_UNUSED;
+    bool init_transport() WARN_IF_UNUSED;
+
+    //! @brief Initialize the client's uxr session and IO stream(s)
+    //! @return True on successful initialization, false on failure
+    bool init_session() WARN_IF_UNUSED;
 
     //! @brief Set up the client's participants, data read/writes,
     //         publishers, subscribers
