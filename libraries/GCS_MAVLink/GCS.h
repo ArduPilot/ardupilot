@@ -638,7 +638,7 @@ protected:
 
     MAV_RESULT handle_command_battery_reset(const mavlink_command_long_t &packet);
     void handle_command_long(const mavlink_message_t &msg);
-    MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet);
 
 #if HAL_MOUNT_ENABLED
     virtual MAV_RESULT handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg);

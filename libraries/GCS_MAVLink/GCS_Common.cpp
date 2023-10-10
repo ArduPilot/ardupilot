@@ -4635,7 +4635,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_comm
 #endif
 
 #if HAL_INS_ACCELCAL_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet)
 {
     if (AP::ins().get_acal() == nullptr ||
         !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
@@ -4726,12 +4726,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
-
-#if HAL_INS_ACCELCAL_ENABLED
-    case MAV_CMD_ACCELCAL_VEHICLE_POS:
-        result = handle_command_accelcal_vehicle_pos(packet);
-        break;
-#endif
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
@@ -5087,6 +5081,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if HAL_INS_ACCELCAL_ENABLED
+    case MAV_CMD_ACCELCAL_VEHICLE_POS:
+        return handle_command_accelcal_vehicle_pos(packet);
+#endif
+
 #if AP_LANDINGGEAR_ENABLED
     case MAV_CMD_AIRFRAME_CONFIGURATION:
         return handle_command_airframe_configuration(packet);
