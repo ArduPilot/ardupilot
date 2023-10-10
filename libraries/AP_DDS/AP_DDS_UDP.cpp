@@ -83,7 +83,7 @@ bool AP_DDS_Client::ddsUdpInit()
     if (!uxr_init_custom_transport(&udp.transport, (void*)this)) {
         return false;
     }
-    uxr_init_session(&session, &udp.transport.comm, uniqueClientKey);
+    comm = &udp.transport.comm;
     return true;
 }
 #endif // AP_DDS_UDP_ENABLED
