@@ -18,6 +18,9 @@ import signal
 import sys
 import time
 import traceback
+from datetime import datetime
+from typing import List
+
 import pexpect
 import fnmatch
 import operator
@@ -1466,6 +1469,7 @@ class Result(object):
         self.reason = None
         self.exception = None
         self.debug_filename = None
+        self.time_elapsed = 0.0
         # self.passed = False
 
     def __str__(self):
@@ -1478,7 +1482,8 @@ class Result(object):
             ret += " (" + str(self.exception) + ")"
         if self.debug_filename is not None:
             ret += " (see " + self.debug_filename + ")"
-
+        if self.time_elapsed is not None:
+            ret += " (duration " + self.time_elapsed + "s)"
         return ret
 
 
@@ -1512,6 +1517,7 @@ class TestSuite(ABC):
                  ubsan_abort=False,
                  num_aux_imus=0,
                  dronecan_tests=False,
+                 generate_junit=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1540,6 +1546,12 @@ class TestSuite(ABC):
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
         self.num_aux_imus = num_aux_imus
+        self.generate_junit = generate_junit
+        if generate_junit:
+            try:
+                import junitparser
+            except ImportError as e:
+                raise ImportError(f"Junit export need junitparser package.\n {e} \nTry: python -m pip install junitparser")
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -8070,6 +8082,7 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         result = Result(test)
+        result.time_elapsed = self.test_timings[desc]
 
         ardupilot_alive = False
         try:
@@ -11351,7 +11364,7 @@ switch value'''
         if not self.current_onboard_log_contains_message(messagetype):
             raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
 
-    def run_tests(self, tests):
+    def run_tests(self, tests) -> List[Result]:
         """Autotest vehicle in SITL."""
         if self.run_tests_called:
             raise ValueError("run_tests called twice")
@@ -13577,7 +13590,7 @@ SERIAL5_BAUD 128
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
 
-    def autotest(self, tests=None, allow_skips=True):
+    def autotest(self, tests=None, allow_skips=True, step_name=None):
         """Autotest used by ArduPilot autotest CI."""
         if tests is None:
             tests = self.tests()
@@ -13618,8 +13631,40 @@ SERIAL5_BAUD 128
                 print(str(failure))
 
         self.post_tests_announcements()
+        if self.generate_junit:
+            if step_name is None:
+                step_name = "Unknown_step_name"
+            step_name.replace(".", "_")
+            self.create_junit_report(step_name, results, skip_list)
 
         return len(self.fail_list) == 0
+
+    def create_junit_report(self, test_name: str, results: List[Result], skip_list: list[tuple[Test, dict[str, str]]]) -> None:
+        """Generate Junit report from the autotest results"""
+        from junitparser import TestCase, TestSuite, JUnitXml, Skipped, Failure
+        frame = self.vehicleinfo_key()
+        xml_filename = f"autotest_result_{frame}_{test_name}_junit.xml"
+        self.progress(f"Writing test result in jUnit format to {xml_filename}\n")
+
+        suites = TestSuite("ArduPilot Autotest")
+        suites.timestamp = datetime.now().replace(microsecond=0).isoformat()
+        suite = TestSuite(f"Autotest {frame} {test_name}")
+        for result in results:
+            case = TestCase(f"{result.test.name}", f"{frame}", result.time_elapsed)
+            # f"{result.test.description}"
+            # case.file ## TODO : add file properties to match test location
+            if not result.passed:
+                case.result = [Failure(f"see {result.debug_filename}", f"{result.exception}")]
+            suite.add_testcase(case)
+        for skipped in skip_list:
+            (test, reason) = skipped
+            case = TestCase(f"{test.name}", f"{test.function}")
+            case.result = [Skipped(f"Skipped : {reason}")]
+        # Add suite to JunitXml
+        xml = JUnitXml()
+        xml.add_testsuite(suites)
+        xml.add_testsuite(suite)
+        xml.write(xml_filename, pretty=True)
 
     def mavfft_fttd(self, sensor_type, sensor_instance, since, until):
         '''display fft for raw ACC data in current logfile'''
