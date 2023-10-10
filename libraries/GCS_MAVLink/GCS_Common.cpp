@@ -4541,7 +4541,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_long_t &
     return MAV_RESULT_UNSUPPORTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_int_t &packet)
 {
     // source set must be between 1 and 3
     uint32_t source_set = uint32_t(packet.param1);
@@ -4824,10 +4824,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_DEBUG_TRAP:
         result = handle_command_debug_trap(packet);
-        break;
-
-    case MAV_CMD_SET_EKF_SOURCE_SET:
-        result = handle_command_set_ekf_source_set(packet);
         break;
 
     default:
@@ -5162,6 +5158,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
             return scripting->handle_command_int_packet(packet);
         }
 #endif // AP_SCRIPTING_ENABLED
+
+    case MAV_CMD_SET_EKF_SOURCE_SET:
+        return handle_command_set_ekf_source_set(packet);
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
     case MAV_CMD_STORAGE_FORMAT:
