@@ -152,7 +152,7 @@ bool AP_FlashStorage::switch_full_sector(void)
 }
 
 // protected_switch_full_sector is protected by switch_full_sector to
-// avoid an infinite recursion problem; switch_full_sectory calls
+// avoid an infinite recursion problem; switch_full_sector calls
 // write() which can call switch_full_sector.  This has been seen in
 // practice, and while it might be caused by corruption... corruption
 // happens.
