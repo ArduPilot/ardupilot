@@ -34,7 +34,7 @@
 const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
-    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
+    // @Description: RunCam device type used to determine OSD menu structure and shutter options.
     // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro, 5:Runcam 2 4k
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
@@ -264,7 +264,7 @@ void AP_RunCam::update_osd()
 {
     bool use_armed_state_machine = hal.util->get_soft_armed();
 #if OSD_ENABLED
-    // prevent runcam stick gestures interferring with osd stick gestures
+    // prevent runcam stick gestures interfering with osd stick gestures
     if (!use_armed_state_machine) {
         const AP_OSD* osd = AP::osd();
         if (osd != nullptr) {
@@ -580,7 +580,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 
     case Event::IN_MENU_EXIT:
         // if we are in a sub-menu this will move us out, if we are in the root menu this will
-        // exit causing the state machine to get out of sync. the OSD menu hierachy is consistently
+        // exit causing the state machine to get out of sync. the OSD menu hierarchy is consistently
         // 2 deep so we can count and be reasonably confident of where we are.
         // the only exception is if someone hits save and exit on the root menu - then we are lost.
         if (_in_menu > 0) {
