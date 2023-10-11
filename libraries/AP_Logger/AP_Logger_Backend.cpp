@@ -561,6 +561,7 @@ bool AP_Logger_Backend::Write_VER()
         patch: fwver.patch,
         fw_type: fwver.fw_type,
         git_hash: fwver.fw_hash,
+        build_type: fwver.vehicle_type,
     };
     strncpy(pkt.fw_string, fwver.fw_string, ARRAY_SIZE(pkt.fw_string)-1);
 
