@@ -9,7 +9,7 @@ bool ModeQAcro::_enter()
     quadplane.transition->force_transition_complete();
     attitude_control->relax_attitude_controllers();
 
-    // disable yaw rate time contant to mantain old behaviour
+    // disable yaw rate time constant to maintain old behaviour
     quadplane.disable_yaw_rate_time_constant();
 
     IGNORE_RETURN(ahrs.get_quaternion(plane.mode_acro.acro_state.q));

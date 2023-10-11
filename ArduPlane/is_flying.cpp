@@ -261,7 +261,7 @@ void Plane::crash_detection_update(void)
                 if (g.takeoff_throttle_min_accel > 0 &&
                         !throttle_suppressed) {
                     // if you have an acceleration holding back throttle, but you met the
-                    // accel threshold but still not fying, then you either shook/hit the
+                    // accel threshold but still not flying, then you either shook/hit the
                     // plane or it was a failed launch.
                     crashed = true;
                     crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;

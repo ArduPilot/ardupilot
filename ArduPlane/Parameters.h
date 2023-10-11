@@ -421,7 +421,7 @@ public:
     AP_Int8 flight_mode6;
     AP_Int8 initial_mode;
 
-    // Navigational maneuvering limits
+    // Navigational manoeuvring limits
     //
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
@@ -541,7 +541,7 @@ public:
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
 
-    // Forward throttle battery voltage compenstaion
+    // Forward throttle battery voltage compensation
     AP_Float fwd_thr_batt_voltage_max;
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
