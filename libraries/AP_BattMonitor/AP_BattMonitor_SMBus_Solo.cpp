@@ -57,7 +57,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
         // accumulate the pack voltage out of the total of the cells
         // because the Solo's I2C bus is so noisy, it's worth not spending the
-        // time and bus bandwidth to request the pack voltage as a seperate
+        // time and bus bandwidth to request the pack voltage as a separate
         // transaction
         _state.voltage = pack_voltage_mv * 1e-3f;
         _state.last_time_micros = tnow;
@@ -79,7 +79,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
         _state.voltage = pack_voltage_mv * 1e-3f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
-        // stop reqesting 4-cell packets.
+        // stop requesting 4-cell packets.
         _use_extended = true;
     }
 

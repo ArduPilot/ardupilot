@@ -810,7 +810,7 @@ void AP_BattMonitor::check_failsafes(void)
 #endif
             state[i].failsafe = type;
 
-            // map the desired failsafe action to a prioritiy level
+            // map the desired failsafe action to a priority level
             int8_t priority = 0;
             if (_failsafe_priorities != nullptr) {
                 while (_failsafe_priorities[priority] != -1) {
