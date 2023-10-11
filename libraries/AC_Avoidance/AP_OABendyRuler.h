@@ -74,7 +74,7 @@ private:
     // BendyRuler parameters
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
     AP_Float _bendy_ratio;          // object avoidance will avoid major directional change if change in margin ratio is less than this param
-    AP_Int16 _bendy_angle;          // object avoidance will try avoding change in direction over this much angle
+    AP_Int16 _bendy_angle;          // object avoidance will try avoiding change in direction over this much angle
     AP_Int8  _bendy_type;           // Type of BendyRuler to run
     
     // internal variables used by background thread
