@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: OFFSET_LAT
     // @DisplayName: GPS antenna lateral offset
-    // @Description: GPS antenna lateral offset. This describes the physical location offest from center of the GPS antenna on the aircraft.
+    // @Description: GPS antenna lateral offset. This describes the physical location offset from center of the GPS antenna on the aircraft.
 	// @Values: 0:NoData,1:Left2m,2:Left4m,3:Left6m,4:Center,5:Right2m,6:Right4m,7:Right6m
     // @User: Advanced
     AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsOffsetLat, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M),
