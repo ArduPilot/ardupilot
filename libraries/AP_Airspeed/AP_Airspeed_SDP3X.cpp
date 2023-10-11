@@ -261,7 +261,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         flow_SDP3X = 0.0f;
     }
 
-    // diffential pressure through pitot tube
+    // differential pressure through pitot tube
     float dp_pitot = 28557670.0f * (1.0f - 1.0f / (1.0f + (float)powf((flow_SDP3X / 5027611.0f), 1.227924f)));
 
     // uncorrected pressure

@@ -42,7 +42,7 @@ public:
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
 
-    // true if sensor reads airspeed directly, not via pressue
+    // true if sensor reads airspeed directly, not via pressure
     virtual bool has_airspeed() {return false;}
 
     // return airspeed in m/s if available
