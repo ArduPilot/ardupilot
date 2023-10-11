@@ -107,7 +107,7 @@ bool ModeSystemId::init(bool ignore_checks)
 // systemId_exit - clean up systemId controller before exiting
 void ModeSystemId::exit()
 {
-    // reset the feedfoward enabled parameter to the initialized state
+    // reset the feedforward enabled parameter to the initialized state
     attitude_control->bf_feedforward(att_bf_feedforward);
 }
 
