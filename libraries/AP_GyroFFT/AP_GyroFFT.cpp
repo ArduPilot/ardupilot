@@ -362,8 +362,8 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     }
 }
 
-// sample the gyros either by using a gyro window sampled at the gyro rate or making invdividual samples
-// called from fast_loop thread - this function does not take out a sempahore to avoid waiting on the FFT thread
+// sample the gyros either by using a gyro window sampled at the gyro rate or making individual samples
+// called from fast_loop thread - this function does not take out a semaphore to avoid waiting on the FFT thread
 void AP_GyroFFT::sample_gyros()
 {
     if (!analysis_enabled()) {
