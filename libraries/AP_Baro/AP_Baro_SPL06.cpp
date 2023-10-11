@@ -179,7 +179,7 @@ int32_t AP_Baro_SPL06::raw_value_scale_factor(uint8_t oversampling)
     }
 }
 
-// acumulate a new sensor reading
+// accumulate a new sensor reading
 void AP_Baro_SPL06::_timer(void)
 {
     uint8_t buf[3];

@@ -246,7 +246,7 @@ void AP_Baro_DPS280::check_health(void)
     }
 }
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_DPS280::timer(void)
 {
     uint8_t buf[6];

@@ -179,7 +179,7 @@ void AP_Baro_FBM320::calculate_PT(int32_t UT, int32_t UP, int32_t &pressure, int
     pressure = ((X31 + X32) >> 15) + PP4 + 99880;
 }
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_FBM320::timer(void)
 {
     uint8_t buf[3];
