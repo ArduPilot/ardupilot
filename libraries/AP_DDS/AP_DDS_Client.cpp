@@ -300,7 +300,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     // Z - Up
     // https://www.ros.org/reps/rep-0103.html#axis-orientation
     // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
-    // as well as invert Z (NED to ENU convertion) as well as a 90 degree rotation in the Z axis
+    // as well as invert Z (NED to ENU conversion) as well as a 90 degree rotation in the Z axis
     // for x to point forward
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
@@ -377,7 +377,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     // Z - Up
     // https://www.ros.org/reps/rep-0103.html#axis-orientation
     // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
-    // as well as invert Z (NED to ENU convertion) as well as a 90 degree rotation in the Z axis
+    // as well as invert Z (NED to ENU conversion) as well as a 90 degree rotation in the Z axis
     // for x to point forward
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
