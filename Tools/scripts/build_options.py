@@ -247,7 +247,7 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'XFROBOT', 'HAL_MOUNT_XFROBOT_ENABLED', 'Enable XFRobot gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'VIEWPRO', 'HAL_MOUNT_VIEWPRO_ENABLED', 'Enable Viewpro gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'POILOCK', 'AP_MOUNT_POI_LOCK_ENABLED', 'Enable Aux Switch POI lock', 0, "MOUNT"),
-    Feature('Gimbal', 'MOUNT_WPNEXT_OFFSET', 'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'Enable tracking next waypoint with offset', 0, None),  # noqa
+    Feature('Gimbal', 'MOUNT_WPNEXT_OFFSET', 'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'Enable tracking next waypoint with offset', 0, "MOUNT"),  # noqa
 
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
