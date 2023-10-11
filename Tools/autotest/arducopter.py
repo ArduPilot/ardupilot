@@ -8653,9 +8653,10 @@ class AutoTestCopter(AutoTest):
                 if m.yawspeed > yawspeed_thresh_rads:
                     raise NotAchievedException("Excessive yaw on takeoff: %f deg/s > %f deg/s (frame=%s)" %
                                                (math.degrees(m.yawspeed), math.degrees(yawspeed_thresh_rads), frame))
-            self.install_message_hook(verify_yaw)
+            self.context_push()
+            self.install_message_hook_context(verify_yaw)
             self.takeoff(10)
-            self.remove_message_hook(verify_yaw)
+            self.context_pop()
             self.hover()
             self.change_mode('ALT_HOLD')
             self.delay_sim_time(1)
@@ -8671,13 +8672,14 @@ class AutoTestCopter(AutoTest):
                 if m.roll > roll_thresh_rad:
                     raise NotAchievedException("Excessive roll %f deg > %f deg" %
                                                (math.degrees(m.roll), math.degrees(roll_thresh_rad)))
-            self.install_message_hook(verify_rollpitch)
+            self.context_push()
+            self.install_message_hook_context(verify_rollpitch)
             for i in range(5):
                 self.set_rc(4, 2000)
                 self.delay_sim_time(0.5)
                 self.set_rc(4, 1500)
                 self.delay_sim_time(5)
-            self.remove_message_hook(verify_rollpitch)
+            self.context_pop()
 
             self.do_RTL()
 
