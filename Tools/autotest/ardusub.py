@@ -422,7 +422,6 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
             "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
-            "MAV_CMD_DO_CHANGE_SPEED": "Doesn't work",
         })
         return ret
 
@@ -455,24 +454,47 @@ class AutoTestSub(AutoTest):
             self.assert_mode('AUTO')
         self.disarm_vehicle()
 
-    def MAV_CMD_DO_CHANGE_SPEED(self):
-        '''ensure vehicle changes speeds when DO_CHANGE_SPEED received'''
-        items = [
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
-            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-        ]
-        items = []
-        for i in range(0, 2000, 10):
-            items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, i, 0, 0))
-        self.upload_simple_relhome_mission(items)
+    def send_guided_mission_item(self, loc, target_system=1, target_component=1):
+        self.mav.mav.mission_item_send(
+            target_system,
+            target_component,
+            0,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            2, # current
+            0, # autocontinue
+            0, # param1
+            0, # param2
+            0, # param3
+            0, # param4
+            loc.lat, # x
+            loc.lng, # y
+            0 # z
+        )
 
+    def MAV_CMD_DO_CHANGE_SPEED(self):
+        """ tests changing speed using MAV_CMD_DO_CHANGE_SPEED"""
+        self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
-        for run_cmd in self.run_cmd, self.run_cmd_int:
-            for speed in [1, 2, 3, 1]:
-                run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
-                self.wait_groundspeed(speed-0.02, speed+0.02, minimum_duration=2)
+
+        original_loc = self.mav.location()
+        here = original_loc
+        target_loc = self.offset_location_ne(here, 2000, 0)
+        self.send_guided_mission_item(target_loc)
+        self.wait_distance_to_home(100, 110, timeout=300)
+
+        speeds = 1, 2, 0.5
+
+        for speed in speeds:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+            self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5, timeout=60)
+
+        self.send_guided_mission_item(original_loc)
+
+        for speed in speeds:
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+            self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5, timeout=60)
         self.disarm_vehicle()
 
     def _MAV_CMD_CONDITION_YAW(self, run_cmd):
