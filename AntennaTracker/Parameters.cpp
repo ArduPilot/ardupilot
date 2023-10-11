@@ -130,7 +130,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: ONOFF_PITCH_MINT
     // @DisplayName: Pitch minimum movement time
-    // @Description: Minimim amount of time in seconds to move in pitch
+    // @Description: Minimum amount of time in seconds to move in pitch
     // @Units: s
     // @Increment: 0.01
     // @Range: 0 2
