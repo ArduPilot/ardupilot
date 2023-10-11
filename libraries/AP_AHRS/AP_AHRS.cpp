@@ -242,7 +242,7 @@ void AP_AHRS::init()
 #endif
 
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
-    // convert to new custom rotaton
+    // convert to new custom rotation
     // PARAMETER_CONVERSION - Added: Nov-2021
     if (_board_orientation == ROTATION_CUSTOM_OLD) {
         _board_orientation.set_and_save(ROTATION_CUSTOM_1);
@@ -590,7 +590,7 @@ void AP_AHRS::update_EKF2(void)
             float &abias = state.accel_bias.z;
             EKF2.getAccelZBias(abias);
 
-            // This EKF is currently using primary_imu, and abias applies to only that IMU
+            // This EKF is currently using primary_imu, and a bias applies to only that IMU
             Vector3f accel = _ins.get_accel(primary_accel);
             accel.z -= abias;
             state.accel_ef = state.dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
@@ -653,7 +653,7 @@ void AP_AHRS::update_EKF3(void)
             // use the same IMU as the primary EKF and correct for gyro drift
             state.gyro_estimate = _ins.get_gyro(primary_gyro) + state.gyro_drift;
 
-            // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
+            // get 3-axis accel bias estimates for active EKF (this is usually for the primary IMU)
             Vector3f &abias = state.accel_bias;
             EKF3.getAccelBias(-1,abias);
 
@@ -821,7 +821,7 @@ bool AP_AHRS::airspeed_sensor_enabled(void) const
         // special case for when backend is rejecting airspeed data in
         // an armed fly_forward state and not dead reckoning. Then the
         // airspeed data is highly suspect and will be rejected. We
-        // will use the synthentic airspeed instead
+        // will use the synthetic airspeed instead
         return false;
     }
     return true;
@@ -1507,7 +1507,7 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 }
 
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
-// This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+// This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
 bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 {
     switch (active_EKF_type()) {
@@ -2118,7 +2118,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     // Always check external AHRS if enabled
-    // it is a source for IMU data even if not being used as direct AHRS replacment
+    // it is a source for IMU data even if not being used as direct AHRS replacement
     if (AP::externalAHRS().enabled() || (ekf_type() == EKFType::EXTERNAL)) {
         if (!AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len)) {
             return false;
@@ -2923,7 +2923,7 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #endif
 }
 
-// return the innovations for the primariy EKF
+// return the innovations for the primarily EKF
 // boolean false is returned if innovations are not available
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
@@ -2987,7 +2987,7 @@ bool AP_AHRS::is_vibration_affected() const
 
 // get_variances - provides the innovations normalised using the innovation variance where a value of 0
 // indicates prefect consistency between the measurement and the EKF solution and a value of 1 is the maximum
-// inconsistency that will be accpeted by the filter
+// inconsistency that will be accepted by the filter
 // boolean false is returned if variances are not available
 bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
