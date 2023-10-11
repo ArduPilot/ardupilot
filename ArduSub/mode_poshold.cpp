@@ -93,7 +93,7 @@ void ModePoshold::run()
 
     } else { // hold current heading
 
-        // this check is required to prevent bounce back after very fast yaw maneuvers
+        // this check is required to prevent bounce back after very fast yaw manoeuvres
         // the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
         if (tnow < sub.last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
             target_yaw_rate = 0; // Stop rotation on yaw axis
