@@ -332,7 +332,7 @@ public:
 
     const static uint32_t ALL_CHANNELS = 255;
     /*
-      Send a dshot command, if command timout is 0 then 10 commands are sent
+      Send a dshot command, if command timeout is 0 then 10 commands are sent
       chan is the servo channel to send the command to
      */
     virtual void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) {}

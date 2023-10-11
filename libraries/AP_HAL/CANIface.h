@@ -179,7 +179,7 @@ public:
     // fill read select with true if a frame is available in Rx buffer
     // fill write select with true if space is available in Tx buffer
     // Also waits for Rx or Tx event depending on read_select and write_select values
-    // passed to the method until timeout. Returns true if the Rx/Tx even occured
+    // passed to the method until timeout. Returns true if the Rx/Tx even occurred
     // while waiting, false if timedout
     virtual bool select(bool &read_select, bool &write_select,
                         const CANFrame* const pending_tx, uint64_t timeout)
@@ -192,11 +192,11 @@ public:
         return true;
     }
 
-    // Put frame in queue to be sent, return negative if error occured, 0 if no space, and 1 if successful
+    // Put frame in queue to be sent, return negative if error occurred, 0 if no space, and 1 if successful
     // must be called on child class
     virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags);
 
-    // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured, 
+    // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occurred, 
     // 0 if no frame available, 1 if successful
     // must be called on child class
     virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
