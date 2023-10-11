@@ -190,7 +190,7 @@ private:
     float update_tl_noise_center_bandwidth_hz(FrequencyPeak peak, uint8_t axis, float value) {
         return (_thread_state._center_bandwidth_hz_filtered[peak][axis] = _center_bandwidth_filter[peak].apply(axis, value));
     }
-    // write single log mesages
+    // write single log messages
     void log_noise_peak(uint8_t id, FrequencyPeak peak) const;
     // calculate the peak noise frequency
     void calculate_noise(bool calibrating, const EngineConfig& config);
