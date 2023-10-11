@@ -230,7 +230,7 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
     return 0x0;
 }
 
-// returns true when there's more work inthe queue to do
+// returns true when there's more work in the queue to do
 bool AP_OADatabase::process_queue()
 {
     if (!healthy()) {
