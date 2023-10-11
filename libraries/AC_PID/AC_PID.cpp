@@ -172,6 +172,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     P_out *= boost;
     D_out *= boost;
 
+    _pid_info.PD_limit = false;
     // Apply PD sum limit if enabled
     if (is_positive(_kpdmax)) {
         const float PD_sum_abs = fabsf(P_out + D_out);
