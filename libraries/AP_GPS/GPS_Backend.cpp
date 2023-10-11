@@ -350,14 +350,14 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
         const float min_dist = MIN(offset_dist, reported_distance);
 
         if (offset_dist < minimum_antenna_seperation) {
-            // offsets have to be sufficently large to get a meaningful angle off of them
+            // offsets have to be sufficiently large to get a meaningful angle off of them
             Debug("Insufficent antenna offset (%f, %f, %f)", (double)offset.x, (double)offset.y, (double)offset.z);
             goto bad_yaw;
         }
 
         if (reported_distance < minimum_antenna_seperation) {
-            // if the reported distance is less then the minimum seperation it's not sufficently robust
-            Debug("Reported baseline distance (%f) was less then the minimum antenna seperation (%f)",
+            // if the reported distance is less then the minimum separation it's not sufficiently robust
+            Debug("Reported baseline distance (%f) was less then the minimum antenna separation (%f)",
                   (double)reported_distance, (double)minimum_antenna_seperation);
             goto bad_yaw;
         }

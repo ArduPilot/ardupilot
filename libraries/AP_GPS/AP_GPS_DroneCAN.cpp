@@ -800,7 +800,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 {
     // we only handle this if we are the first DroneCAN GPS or we are
     // using a different uavcan instance than the first GPS, as we
-    // send the data as broadcast on all DroneCAN devive ports and we
+    // send the data as broadcast on all DroneCAN device ports and we
     // don't want to send duplicates
     const uint32_t now_ms = AP_HAL::millis();
     if (_detected_module == 0 ||
