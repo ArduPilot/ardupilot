@@ -41,7 +41,7 @@ PA9 USART1_TX USART1
 
 # Alt config to allow RCIN on UART
 PA10 USART1_RX USART1 ALT(1)
-define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
+define HAL_SERIAL1_PROTOCOL SerialProtocol_RCIN
 
 # SBUS inversion control pin, active low
 PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
