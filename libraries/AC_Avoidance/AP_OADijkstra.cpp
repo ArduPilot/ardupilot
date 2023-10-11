@@ -925,7 +925,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
             }
         }
     }
-    // report error incase path not found
+    // report error in case path not found
     if (!success) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
     }
