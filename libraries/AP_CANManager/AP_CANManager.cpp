@@ -442,7 +442,7 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
             buffer_size /= 2;
         }
         if (frame_buffer == nullptr) {
-            // disard the frames
+            // discard the frames
             return;
         }
     }
