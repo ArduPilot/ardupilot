@@ -44,7 +44,7 @@ public:
     // This is where we tell the battery monitor 'we have current' if we want to report a fuel level remaining
     bool has_current(void) const override;
 
-    // This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
+    // This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel level remaining
     bool has_consumed_energy(void) const override;
 };
 #endif
