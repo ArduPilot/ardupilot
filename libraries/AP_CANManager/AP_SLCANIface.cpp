@@ -715,7 +715,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         }
     }
 
-    // We found nothing in HAL's CANIface recieve, so look in SLCANIface
+    // We found nothing in HAL's CANIface receive, so look in SLCANIface
     if (_port == nullptr) {
         return 0;
     }
