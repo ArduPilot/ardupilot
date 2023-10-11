@@ -56,7 +56,7 @@ public:
 
 private:
     // state of kalman filter for airspeed ratio estimation
-    Matrix3f P; // covarience matrix
+    Matrix3f P; // covariance matrix
     const float Q0; // process noise matrix top left and middle element
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
