@@ -87,7 +87,7 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // udpate at 10Hz to log telemetry
+    // update at 10Hz to log telemetry
     void update();
 
     // is rpm telemetry configured for the provided channel mask
