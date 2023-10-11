@@ -241,7 +241,7 @@ private:
     bool _is_external;                      // true if compass is external (provided by caller)
     bool _check_orientation;                // true if orientation should be automatically checked
     bool _fix_orientation;                  // true if orientation should be fixed if necessary
-    bool _always_45_deg;                    // true if orentation should considder 45deg with equal tolerance
+    bool _always_45_deg;                    // true if orientation should consider 45deg with equal tolerance
     float _orientation_confidence;          // measure of confidence in automatic orientation detection
     CompassSample _last_sample;
 

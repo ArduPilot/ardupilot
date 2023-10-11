@@ -92,7 +92,7 @@ protected:
      * 2. publish_raw_field - this provides an uncorrected point-sample for
      *      calibration libraries
      * 3. correct_field - this corrects the measurement in-place for hard iron,
-     *      soft iron, motor interference, and non-orthagonality errors
+     *      soft iron, motor interference, and non-orthogonality errors
      * 4. publish_filtered_field - legacy filtered magnetic field
      *
      * All those functions expect the mag field to be in milligauss.
