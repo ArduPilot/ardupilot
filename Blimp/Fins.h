@@ -50,7 +50,7 @@ protected:
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
 
-    float               _time;                       //current timestep
+    float               _time;                       // current timestamp
 
     bool _armed;             // 0 if disarmed, 1 if armed
 
