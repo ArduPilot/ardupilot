@@ -83,7 +83,7 @@ void ModeQStabilize::set_tailsitter_roll_pitch(const float roll_input, const flo
     plane.quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd);
 }
 
-// set the desired roll and pitch for normal quadplanes, also limited by forward flight limtis
+// set the desired roll and pitch for normal quadplanes, also limited by forward flight limits
 void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float pitch_input)
 {
     plane.nav_roll_cd = roll_input * MIN(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);

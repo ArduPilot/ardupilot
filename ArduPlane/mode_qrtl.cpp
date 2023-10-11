@@ -126,7 +126,7 @@ void ModeQRTL::run()
 
             ftype alt_diff;
             if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
-                // climb finshed or cant get alt diff, head home
+                // climb finished or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
 
