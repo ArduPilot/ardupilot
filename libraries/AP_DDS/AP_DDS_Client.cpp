@@ -597,6 +597,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
     }
+
+    // flush buffers
+    status_ok = uxr_run_session_time(&session, 1);
 }
 
 /*
