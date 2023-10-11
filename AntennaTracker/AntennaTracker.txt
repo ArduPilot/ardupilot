@@ -109,7 +109,7 @@ around. It might even damage itself.
 AntennaTracker (like other ardupilot software such as ArduPlane, ArduRover
 etc) has configuration values that control and tailor its operation, and which
 are stored in EEPROM on the processor. The configuration is restored from
-EEPROM every time the processsor starts.
+EEPROM every time the processor starts.
 
 You can use MissionPlanner, mavproxy or apm_planner or other mavlink compatible
 software to check and change the configuration of your AntennaTracker.
@@ -219,7 +219,7 @@ the vehicle, cd to the ArduPlane directory and run this:
 
   ../Tools/autotest/sim_arduplane.sh -T --aircraft test
 
-The -T flag tells sim_arduplane.sh to start an entenna tracker
+The -T flag tells sim_arduplane.sh to start an antenna tracker
 simulator and also start a virtual antenna tracker in a window.
 
 To start the antenna tracker running run "tracker start" in the
