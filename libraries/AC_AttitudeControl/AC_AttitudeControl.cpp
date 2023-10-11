@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // @Param: RATE_FF_ENAB
     // @DisplayName: Rate Feedforward Enable
-    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled
+    // @Description: Controls whether body-frame rate feedforward is enabled or disabled
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("RATE_FF_ENAB", 5, AC_AttitudeControl, _rate_bf_ff_enabled, AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT),
@@ -785,7 +785,7 @@ void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitud
     // The direction of thrust is [0,0,-1] is any body-fixed frame, inc. body frame and target frame.
     const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
 
-    // attitude_target and attitute_body are passive rotations from target / body frames to the NED frame
+    // attitude_target and attitude_body are passive rotations from target / body frames to the NED frame
     
     // Rotating [0,0,-1] by attitude_target expresses (gets a view of) the target thrust vector in the inertial frame
     Vector3f att_target_thrust_vec = attitude_target * thrust_vector_up; // target thrust vector
