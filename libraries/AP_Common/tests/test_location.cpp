@@ -371,7 +371,7 @@ TEST(Location, Line)
 }
 
 /*
-  check if we obey basic euclidian geometry rules of position
+  check if we obey basic euclidean geometry rules of position
   addition/subtraction
  */
 TEST(Location, OffsetError)

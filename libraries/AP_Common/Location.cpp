@@ -485,7 +485,7 @@ int32_t Location::diff_longitude(int32_t lon1, int32_t lon2)
 }
 
 /*
-  limit lattitude to -90e7 to 90e7
+  limit latitude to -90e7 to 90e7
  */
 int32_t Location::limit_lattitude(int32_t lat)
 {
