@@ -404,7 +404,7 @@ void AP_Vehicle::setup()
 
 #if AP_DDS_ENABLED
     if (!init_dds_client()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Failed to Initialize", AP_DDS_Client::msg_prefix);
     }
 #endif
 }
