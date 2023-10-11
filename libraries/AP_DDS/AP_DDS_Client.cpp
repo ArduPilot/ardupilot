@@ -629,13 +629,14 @@ void AP_DDS_Client::main_loop(void)
         // create session
         if (!init_session() || !create()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
-            return;
-        }
-        connected = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
+            connected = false;
+        } else {
+            connected = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
-        populate_static_transforms(tx_static_transforms_topic);
-        write_static_transforms();
+            populate_static_transforms(tx_static_transforms_topic);
+            write_static_transforms();
+        }
 
         uint64_t last_ping_ms{0};
         uint8_t num_pings_missed{0};
