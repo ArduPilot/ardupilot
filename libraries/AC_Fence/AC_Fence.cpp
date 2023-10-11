@@ -494,7 +494,7 @@ bool AC_Fence::check_fence_polygon()
 /// check_fence_circle - returns true if the circle fence (defined via
 /// parameters) has been freshly breached.  May also set up a backup
 /// fence outside the fence and return a fresh breach if that backup
-/// fence is breaced.
+/// fence is breached.
 bool AC_Fence::check_fence_circle()
 {
     if (!(_enabled_fences & AC_FENCE_TYPE_CIRCLE)) {
