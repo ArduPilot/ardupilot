@@ -464,8 +464,8 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
     field = get_field(instance);
 
 #if AP_COMPASS_DIAGONALS_ENABLED
-    // form eliptical correction matrix and invert it. This is
-    // needed to remove the effects of the eliptical correction
+    // form elliptical correction matrix and invert it. This is
+    // needed to remove the effects of the elliptical correction
     // when calculating new offsets
     const Vector3f &diagonals = get_diagonals(instance);
     if (!diagonals.is_zero()) {

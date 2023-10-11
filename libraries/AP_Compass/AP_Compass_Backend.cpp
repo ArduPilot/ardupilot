@@ -89,7 +89,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     }
 
 #if AP_COMPASS_DIAGONALS_ENABLED
-    // apply eliptical correction
+    // apply elliptical correction
     if (!diagonals.is_zero()) {
         Matrix3f mat(
             diagonals.x,    offdiagonals.x, offdiagonals.y,
@@ -123,7 +123,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     }
 
     /*
-      we apply the motor offsets after we apply the eliptical
+      we apply the motor offsets after we apply the elliptical
       correction. This is needed to match the way that the motor
       compensation values are calculated, as they are calculated based
       on final field outputs, not on the raw outputs
@@ -251,7 +251,7 @@ void AP_Compass_Backend::set_rotation(uint8_t instance, enum Rotation rotation)
 static constexpr float FILTER_KOEF = 0.1f;
 
 /* Check that the compass value is valid by using a mean filter. If
- * the value is further than filtrer_range from mean value, it is
+ * the value is further than filter_range from mean value, it is
  * rejected. 
 */
 bool AP_Compass_Backend::field_ok(const Vector3f &field)

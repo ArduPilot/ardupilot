@@ -51,7 +51,7 @@ AP_Compass_SITL::AP_Compass_SITL()
 
 
 /*
-  create correction matrix for diagnonals and off-diagonals
+  create correction matrix for diagonals and off-diagonals
 */
 void AP_Compass_SITL::_setup_eliptical_correcion(uint8_t i)
 {
