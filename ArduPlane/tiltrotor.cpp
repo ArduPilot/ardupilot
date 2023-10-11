@@ -39,7 +39,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrottor must use the tailsitter frame class (10)
+    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrotor must use the tailsitter frame class (10)
     // @Values: 0:Continuous,1:Binary,2:VectoredYaw,3:Bicopter
     AP_GROUPINFO("TYPE", 5, Tiltrotor, type, TILT_TYPE_CONTINUOUS),
 
@@ -115,7 +115,7 @@ void Tiltrotor::setup()
                         && (type != TILT_TYPE_BICOPTER));
 
 
-    // check if there are any perminant VTOL motors
+    // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
             // enabled motor not set in tilt mask
@@ -193,7 +193,7 @@ void Tiltrotor::slew(float newtilt)
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * current_tilt);
 }
 
-// return the current tilt value that represens forward flight
+// return the current tilt value that represents forward flight
 // tilt wings can sustain forward flight with some amount of wing tilt
 float Tiltrotor::get_fully_forward_tilt() const
 {

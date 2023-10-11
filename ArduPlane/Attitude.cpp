@@ -32,7 +32,7 @@ float Plane::calc_speed_scaler(void)
                 speed_scaler = MIN(speed_scaler, new_scaler);
 
                 // we also decay the integrator to prevent an integrator from before
-                // we were at low speed persistint at high speed
+                // we were at low speed persistent at high speed
                 rollController.decay_I();
                 pitchController.decay_I();
                 yawController.decay_I();
@@ -51,7 +51,7 @@ float Plane::calc_speed_scaler(void)
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
         (plane.flight_option_enabled(FlightOptions::SURPRESS_TKOFF_SCALING)) &&
-        (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is suppressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
     return speed_scaler;
@@ -486,7 +486,7 @@ int16_t Plane::calc_nav_yaw_coordinated()
         // user is doing an AUTOTUNE with yaw rate control
         const float rudd_expo = rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
-        // add in the corrdinated turn yaw rate to make it easier to fly while tuning the yaw rate controller
+        // add in the coordinated turn yaw rate to make it easier to fly while tuning the yaw rate controller
         const float coordination_yaw_rate = degrees(GRAVITY_MSS * tanf(radians(nav_roll_cd*0.01f))/MAX(aparm.airspeed_min,smoothed_airspeed));
         commanded_rudder = yawController.get_rate_out(yaw_rate+coordination_yaw_rate,  speed_scaler, false);
         using_rate_controller = true;
@@ -658,11 +658,11 @@ void Plane::update_load_factor(void)
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
         roll_limit_cd = MIN(roll_limit_cd, 2500);
     } else if (max_load_factor < aerodynamic_load_factor) {
-        // the demanded nav_roll would take us past the aerodymamic
+        // the demanded nav_roll would take us past the aerodynamic
         // load limit. Limit our roll to a bank angle that will keep
         // the load within what the airframe can handle. We always
         // allow at least 25 degrees of roll however, to ensure the
-        // aircraft can be maneuvered with a bad airspeed estimate. At
+        // aircraft can be manoeuvred with a bad airspeed estimate. At
         // 25 degrees the load factor is 1.1 (10%)
         int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
         if (roll_limit < 2500) {

@@ -284,7 +284,7 @@ of changes. Many thanks to all the people who have contributed!
     - Gimbal/Mount2 can be moved to retracted or neutral position
     - Gremsy ZIO support
     - IMAGE_START_CAPTURE, SET_CAMERA_ZOOM/FOCUS, VIDEO_START/STOP_CAPTURE command support
-    - Paramters renamed and rescaled
+    - Parameters renamed and rescaled
         i) CAM_TRIGG_TYPE renamed to CAM1_TYPE and options have changed
         ii) CAM_DURATION renamed to CAM1_DURATION and scaled in seconds
         iii) CAM_FEEDBACK_PIN/POL renamed to CAM1_FEEBAK_PIN/POL

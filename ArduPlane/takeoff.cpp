@@ -238,7 +238,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
             return auto_state.takeoff_pitch_cd * scalar;
         }
 
-        // are we entering the region where we want to start leveling off before we reach takeoff alt?
+        // are we entering the region where we want to start levelling off before we reach takeoff alt?
         if (auto_state.sink_rate < -0.1f) {
             float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
             if (sec_to_target > 0 &&

@@ -924,7 +924,7 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
         channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
         if (!SRV_Channels::function_assigned(SRV_Channel::k_rudder) && !SRV_Channels::function_assigned(SRV_Channel::k_vtail_left)) {
-            // if no rudder indication possible, neutral elevons during wait becuase on takeoff stance they are usually both full up
+            // if no rudder indication possible, neutral elevons during wait because on takeoff stance they are usually both full up
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, 0);        
         }
