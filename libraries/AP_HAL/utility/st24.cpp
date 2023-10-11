@@ -125,7 +125,7 @@ typedef struct {
  */
 typedef struct {
 	uint16_t t;			///< packet counter or clock
-	int32_t	lat;			///< lattitude (degrees)	+/- 90 deg
+	int32_t	lat;			///< latitude (degrees)	+/- 90 deg
 	int32_t	lon;			///< longitude (degrees)	+/- 180 deg
 	int32_t	alt;			///< 0.01m resolution, altitude (meters)
 	int16_t	vx, vy, vz; 		///< velocity 0.01m res, +/-320.00 North-East- Down

@@ -20,7 +20,7 @@ void setup(void)
     st->init();
 
     /*
-      Calculate XOR of the full conent of memory
+      Calculate XOR of the full content of memory
       Do it by block of 8 bytes
     */
     unsigned char buff[8], XOR_res = 0;
@@ -35,7 +35,7 @@ void setup(void)
     /*
       print XORed result
      */
-    hal.console->printf("XORed ememory: %u\r\n", (unsigned) XOR_res);
+    hal.console->printf("XORed memory: %u\r\n", (unsigned) XOR_res);
 }
 
 // In main loop do nothing
