@@ -11,7 +11,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for MicroStrain CX5/GX5-45 serially connected AHRS Systems
+  support for MicroStrain CX5/GX5-45 serially connected AHRS Systems
  */
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
