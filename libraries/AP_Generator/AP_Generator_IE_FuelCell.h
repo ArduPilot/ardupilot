@@ -91,7 +91,7 @@ protected:
     // Returns true if a complete sentence was successfully decoded or if the buffer is full.
     bool decode(char c);
 
-    // Unit specific decoding to process characters recieved and build sentence
+    // Unit specific decoding to process characters received and build sentence
     virtual void decode_latest_term(void) = 0;
 
     // Check if we should notify on any change of fuel cell state
