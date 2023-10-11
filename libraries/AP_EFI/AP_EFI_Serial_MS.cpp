@@ -62,7 +62,7 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
 {
     // Data is parsed directly from the buffer, otherwise we would need to allocate
     // several hundred bytes for the entire realtime data table or request every
-    // value individiually
+    // value individually
     uint16_t message_length = 0;
 
     // reset checksum before reading new data
