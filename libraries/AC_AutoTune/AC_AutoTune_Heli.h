@@ -60,7 +60,7 @@ protected:
     // load test gains
     void load_test_gains() override;
 
-    // reset the test vaariables for heli
+    // reset the test variables for heli
     void reset_vehicle_test_variables() override;
 
     // reset the update gain variables for heli
@@ -111,7 +111,7 @@ protected:
     void Log_AutoTuneSweep() override;
     void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
 
-    // send intermittant updates to user on status of tune
+    // send intermittent updates to user on status of tune
     void do_gcs_announcements() override;
 
     // send post test updates to user
@@ -161,7 +161,7 @@ private:
     void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase, DwellType dwell_type);
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
-    // FF is adjusted until rate requested is acheived
+    // FF is adjusted until rate requested is achieved
     void updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command);
 
     // updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
@@ -185,7 +185,7 @@ private:
     // exceeded_freq_range - ensures tuning remains inside frequency range
     bool exceeded_freq_range(float frequency);
 
-    // report gain formating helper
+    // report gain formatting helper
     void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const;
 
     // updating rate FF variables
