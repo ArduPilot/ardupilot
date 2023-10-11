@@ -174,7 +174,7 @@ bool AC_Circle::update(float climb_rate_cms)
         _angular_vel = MAX(_angular_vel, _angular_vel_max);
     }
 
-    // update the target angle and total angle traveled
+    // update the target angle and total angle travelled
     float angle_change = _angular_vel * dt;
     _angle += angle_change;
     _angle = wrap_PI(_angle);
