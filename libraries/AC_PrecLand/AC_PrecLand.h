@@ -188,7 +188,7 @@ private:
     AP_Float                    _xy_max_dist_desc;  // Vehicle doing prec land will only descent vertically when horizontal error (in m) is below this limit
     AP_Int8                     _strict;            // PrecLand strictness
     AP_Int8                     _retry_max;         // PrecLand Maximum number of retires to a failed landing
-    AP_Float                    _retry_timeout_sec; // Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attemp a landing retry depending on PLND_STRICT param.
+    AP_Float                    _retry_timeout_sec; // Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attempt a landing retry depending on PLND_STRICT param.
     AP_Int8                     _retry_behave;      // Action to do when trying a landing retry
     AP_Float                    _sensor_min_alt;     // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt;     // PrecLand maximum height the sensor can detect target
