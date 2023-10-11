@@ -873,7 +873,7 @@ bool AP_Arming::mission_checks(bool report)
             }
             RallyLocation rally_loc = {};
             if (!rally->find_nearest_rally_point(ahrs_loc, rally_loc)) {
-                check_failed(ARMING_CHECK_MISSION, report, "No sufficently close rally point located");
+                check_failed(ARMING_CHECK_MISSION, report, "No sufficiently close rally point located");
                 return false;
             }
 #else
