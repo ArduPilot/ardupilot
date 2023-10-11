@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 
     // @Param: TIMEOUT
     // @DisplayName: PrecLand retry timeout
-    // @Description: Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attemp a landing retry depending on PLND_STRICT parameter.
+    // @Description: Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attempt a landing retry depending on PLND_STRICT parameter.
     // @Range: 0 20
     // @Units: s
     AP_GROUPINFO("TIMEOUT", 13, AC_PrecLand, _retry_timeout_sec, 4),
@@ -400,7 +400,7 @@ bool AC_PrecLand::target_acquired()
 {
     if ((AP_HAL::millis()-_last_update_ms) > LANDING_TARGET_TIMEOUT_MS) {
         if (_target_acquired) {
-            // just lost the landing target, inform the user. This message will only be sent once everytime target is lost
+            // just lost the landing target, inform the user. This message will only be sent once every time target is lost
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PrecLand: Target Lost");
         }
         // not had a sensor update since a long time
@@ -622,7 +622,7 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
         }
 
 
-        // rotate vector based on sensor oriention to get correct body frame vector
+        // rotate vector based on sensor orientation to get correct body frame vector
         if (_orient != ROTATION_PITCH_270) {
             // by default, the vector is constructed downwards in body frame
             // hence, we do not do any rotation if the orientation is downwards
