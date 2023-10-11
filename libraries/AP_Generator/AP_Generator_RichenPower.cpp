@@ -190,7 +190,7 @@ bool AP_Generator_RichenPower::generator_ok_to_run() const
 constexpr float AP_Generator_RichenPower::heat_required_for_run()
 {
     // assume that heat is proportional to RPM.  Return a number
-    // proportial to RPM.  Reduce it to account for the cooling some%/s
+    // proportional to RPM.  Reduce it to account for the cooling some%/s
     // cooling
     return (45 * IDLE_RPM) * heat_environment_loss_30s;
 }
