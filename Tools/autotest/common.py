@@ -7085,6 +7085,35 @@ class AutoTest(ABC):
             raise NotAchievedException("Expected %s to be %u got %u" %
                                        (channel, value, m_value))
 
+    def do_reposition(self,
+                      loc,
+                      frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT):
+        '''send a DO_REPOSITION command for a location'''
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            0,
+            0,
+            0,
+            int(loc.lat*1e7), # lat* 1e7
+            int(loc.lng*1e7), # lon* 1e7
+            loc.alt,
+            frame=frame
+        )
+
+    def add_rally_point(self, loc, seq, total):
+        '''add a rally point at the given location'''
+        self.mav.mav.rally_point_send(1, # target system
+                                      0, # target component
+                                      seq, # sequence number
+                                      total, # total count
+                                      int(loc.lat * 1e7),
+                                      int(loc.lng * 1e7),
+                                      loc.alt, # relative alt
+                                      0, # "break" alt?!
+                                      0, # "land dir"
+                                      0) # flags
+
     def wait_location(self,
                       loc,
                       accuracy=5.0,
