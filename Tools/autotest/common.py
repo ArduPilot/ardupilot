@@ -6081,10 +6081,13 @@ class AutoTest(ABC):
     def run_cmd_do_set_mode(self,
                             mode,
                             timeout=30,
+                            run_cmd=None,
                             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        if run_cmd is None:
+            run_cmd = self.run_cmd
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
         custom_mode = self.get_mode_from_mode_mapping(mode)
-        self.run_cmd(
+        run_cmd(
             mavutil.mavlink.MAV_CMD_DO_SET_MODE,
             p1=base_mode,
             p2=custom_mode,
@@ -6092,7 +6095,7 @@ class AutoTest(ABC):
             timeout=timeout,
         )
 
-    def do_set_mode_via_command_long(self, mode, timeout=30):
+    def do_set_mode_via_command_XYZZY(self, mode, run_cmd, timeout=30):
         """Set mode with a command long message."""
         tstart = self.get_sim_time()
         want_custom_mode = self.get_mode_from_mode_mapping(mode)
@@ -6100,11 +6103,17 @@ class AutoTest(ABC):
             remaining = timeout - (self.get_sim_time_cached() - tstart)
             if remaining <= 0:
                 raise AutoTestTimeoutException("Failed to change mode")
-            self.run_cmd_do_set_mode(mode, timeout=10)
+            self.run_cmd_do_set_mode(mode, run_cmd=run_cmd, timeout=10)
             m = self.wait_heartbeat()
             self.progress("Got mode=%u want=%u" % (m.custom_mode, want_custom_mode))
             if m.custom_mode == want_custom_mode:
                 return
+
+    def do_set_mode_via_command_long(self, mode, timeout=30):
+        self.do_set_mode_via_command_XYZZY(mode, self.run_cmd, timeout=timeout)
+
+    def do_set_mode_via_command_int(self, mode, timeout=30):
+        self.do_set_mode_via_command_XYZZY(mode, self.run_cmd_int, timeout=timeout)
 
     def mavproxy_do_set_mode_via_command_long(self, mavproxy, mode, timeout=30):
         """Set mode with a command long message with Mavproxy."""

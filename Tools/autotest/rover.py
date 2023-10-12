@@ -1256,6 +1256,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Set mode via MAV_COMMAND_DO_SET_MODE'''
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
+        self.do_set_mode_via_command_int("HOLD")
+        self.do_set_mode_via_command_int("MANUAL")
 
     def RoverInitialMode(self):
         '''test INITIAL_MODE parameter works'''
