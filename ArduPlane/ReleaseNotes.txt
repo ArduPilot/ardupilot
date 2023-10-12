@@ -1,3 +1,31 @@
+Release 4.4.2-beta1 13th October 2023
+-------------------------------------
+
+Changes from 4.4.1
+
+- BETAFPV-F405 support
+- MambaF405v2 battery and serial setup corrected
+- mRo Control Zero OEM H7 bdshot support
+- SpeedyBee-F405-Wing gets VTX power control
+- SpeedyBee-F405-Mini support
+- T-Motor H743 Mini support
+- EKF3 supports baroless boards
+- INA battery monitor supports config of shunt resistor used (see BATTx_SHUNT)
+- BMI088 IMU error value handling fixed to avoid occasional negative spike
+- Dev environment CI autotest stability improvements
+- OSD correct DisplayPort BF MSP symbols
+- OSD option to correct direction arrows for BF font set
+- Sensor status reporting to GCS fixed for baroless boards
+- added opendroneid option to auto-store IDs in persistent flash
+- fixed TECS bug that could cause inability to climb or descend
+- fixed race condition when starting TECS controlled mode
+- fixed RTL with rally point and terrain follow
+- protect against invalid data in SBUS for first 4 channels
+- added build type to VER message
+- allow moving baseline rover at 3Hz
+- use RC deadzones in stick mixing
+
+
 Release 4.4.1 26th September 2023
 ---------------------------------
 
