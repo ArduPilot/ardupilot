@@ -132,9 +132,6 @@ void AP_OpenDroneID::set_basic_id() {
     if (pkt_basic_id.id_type != MAV_ODID_ID_TYPE_NONE) {
         return;
     }
-    if ((id_len == 0) && (_options & LockUASIDOnFirstBasicIDRx)) {
-        load_UAS_ID_from_persistent_memory();
-    }
     if (id_len > 0) {
         // prepare basic id pkt
         uint8_t val = gcs().sysid_this_mav();
