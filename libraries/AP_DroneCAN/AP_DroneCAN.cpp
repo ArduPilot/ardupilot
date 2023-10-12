@@ -391,7 +391,7 @@ void AP_DroneCAN::loop(void)
         send_node_status();
         _dna_server.verify_nodes();
 
-#if AP_DRONECAN_SEND_GPS
+#if AP_DRONECAN_SEND_GPS && AP_GPS_DRONECAN_ENABLED
         if (option_is_set(AP_DroneCAN::Options::SEND_GNSS) && !AP_GPS_DroneCAN::instance_exists(this)) {
             // send if enabled and this interface/driver is not used by the AP_GPS driver
             gnss_send_fix();
