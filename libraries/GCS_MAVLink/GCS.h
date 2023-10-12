@@ -525,7 +525,9 @@ protected:
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
     void handle_mission_request(const mavlink_message_t &msg);
+#endif
     void handle_mission_request_int(const mavlink_message_t &msg);
     void handle_mission_clear_all(const mavlink_message_t &msg);
 
