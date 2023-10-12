@@ -4515,7 +4515,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
     const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
     const uint32_t _custom_mode = (uint32_t)packet.param2;
@@ -4731,10 +4731,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
-
-    case MAV_CMD_DO_SET_MODE:
-        result = handle_command_do_set_mode(packet);
-        break;
 
     case MAV_CMD_DO_SEND_BANNER:
         result = handle_command_do_send_banner(packet);
@@ -5104,6 +5100,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
+
+    case MAV_CMD_DO_SET_MODE:
+        return handle_command_do_set_mode(packet);
 
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
