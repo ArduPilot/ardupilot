@@ -78,3 +78,11 @@
 #ifndef AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
 #define AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED HAL_GCS_ENABLED
 #endif
+
+// GCS should be using MISSION_REQUEST_INT instead; this is a waste of
+// flash.  MISSION_REQUEST was deprecated in June 2020.  We started
+// sending warnings to the GCS in Sep 2022 if this command was used.
+// Copter 4.4.0 sends this warning.
+#ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
+#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
+#endif

@@ -608,6 +608,7 @@ void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
         prot->handle_mission_request_int(*this, packet, msg);
 }
 
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 {
         // decode
@@ -620,6 +621,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
         }
         prot->handle_mission_request(*this, packet, msg);
 }
+#endif
 
 // returns a MISSION_STATE numeration value best describing out
 // current mission state.
@@ -4179,9 +4181,12 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
         handle_mission_request_int(msg);
         break;
+
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_MISSION_REQUEST:
         handle_mission_request(msg);
         break;
+#endif
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
