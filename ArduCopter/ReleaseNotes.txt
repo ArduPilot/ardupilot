@@ -1,5 +1,23 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.4.2-beta1 13-Oct-2023
+Changes from 4.4.1
+1) Autopilot related enhancements and fixes
+    - BETAFPV-F405 support
+    - MambaF405v2 battery and serial setup corrected
+    - mRo Control Zero OEM H7 bdshot support
+    - SpeedyBee-F405-Wing gets VTX power control
+    - SpeedyBee-F405-Mini support
+    - T-Motor H743 Mini support
+2) EKF3 supports baroless boards
+3) INA battery monitor supports config of shunt resistor used (see BATTx_SHUNT)
+4) Bug fixes
+    - BMI088 IMU error value handling fixed to avoid occasional negative spike
+    - Dev environment CI autotest stability improvements
+    - OSD correct DisplayPort BF MSP symbols
+    - OSD option to correct direction arrows for BF font set
+    - Sensor status reporting to GCS fixed for baroless boards
+------------------------------------------------------------------
 Copter 4.4.1 26-Sep-2023 / 4.4.1-beta2 14-Sep-2023
 Changes from 4.4.1-beta1
 1) Autopilot related enhancements
