@@ -27,10 +27,11 @@
  * and DroneCAN
  */
 
-#include "AP_OpenDroneID.h"
+#include "AP_OpenDroneID_config.h"
 
 #if AP_OPENDRONEID_ENABLED
 
+#include "AP_OpenDroneID.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
