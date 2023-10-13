@@ -45,17 +45,6 @@ bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
     return airspeed_EAS(airspeed_ret);
 }
 
-Vector2f AP_AHRS_SIM::groundspeed_vector(void)
-{
-    if (_sitl == nullptr) {
-        return Vector2f{};
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-
-    return Vector2f(fdm.speedN, fdm.speedE);
-}
-
 bool AP_AHRS_SIM::get_hagl(float &height) const
 {
     if (_sitl == nullptr) {
@@ -220,6 +209,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.velocity_NED.y = fdm.speedE;
     results.velocity_NED.z = fdm.speedD;
     results.velocity_NED_valid = true;
+
+    results.groundspeed_vector = Vector2f(fdm.speedN, fdm.speedE);
 
     // kinematically-consistent down-rate:
     results.vert_pos_rate_D = _sitl->state.speedD;

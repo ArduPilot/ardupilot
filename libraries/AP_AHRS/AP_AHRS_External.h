@@ -50,9 +50,6 @@ public:
         return false;
     }
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override {
         // this is actually never called at the moment; we use dcm's
         // return value.
