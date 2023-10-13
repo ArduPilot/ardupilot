@@ -592,7 +592,7 @@ private:
 #endif
     void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
-    bool verify_takeoff();
+    bool verify_takeoff(const AP_Mission::Mission_Command& cmd);
     bool verify_land();
     bool verify_payload_place();
     bool verify_loiter_unlimited();

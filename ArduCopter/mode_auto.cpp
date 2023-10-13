@@ -853,7 +853,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     //
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
-        cmd_complete = verify_takeoff();
+        cmd_complete = verify_takeoff(cmd);
         break;
 
     case MAV_CMD_NAV_WAYPOINT:
@@ -1970,15 +1970,17 @@ void ModeAuto::do_RTL(void)
 /********************************************************************************/
 
 // verify_takeoff - check if we have completed the takeoff
-bool ModeAuto::verify_takeoff()
+bool ModeAuto::verify_takeoff(const AP_Mission::Mission_Command& cmd)
 {
-#if AP_LANDINGGEAR_ENABLED
     // if we have reached our destination
     if (auto_takeoff_complete) {
+#if AP_LANDINGGEAR_ENABLED
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
-    }
 #endif
+        // notify user
+        sendtext_command_complete(cmd.index);
+    }
 
     return auto_takeoff_complete;
 }
