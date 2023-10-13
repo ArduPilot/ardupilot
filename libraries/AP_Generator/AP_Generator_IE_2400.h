@@ -34,6 +34,9 @@ private:
     // Check if we have received an error code and populate message with error code
     bool check_for_err_code(char* msg_txt, uint8_t msg_len) const override;
 
+    // Check if we have received an warning code and populate message with warning code
+    bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const override;
+
     // Check for error codes that are deemed critical
     bool is_critical_error(const uint32_t err_in) const;
 
