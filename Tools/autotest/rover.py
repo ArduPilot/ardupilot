@@ -6055,7 +6055,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             timeout=1,
             target_sysid=target_sysid,
             target_compid=target_compid,
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
     def FlashStorage(self):
