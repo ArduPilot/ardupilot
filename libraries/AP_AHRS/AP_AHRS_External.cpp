@@ -22,16 +22,10 @@ bool AP_AHRS_External::healthy() const {
 
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
-    Quaternion quat;
-    auto &extahrs = AP::externalAHRS();
     const AP_InertialSensor &_ins = AP::ins();
-    if (!extahrs.get_quaternion(quat)) {
-        results.attitude_valid = false;
-        return;
-    }
-    results.quat = quat;
+    results.attitude_valid = AP::externalAHRS().get_quaternion(results.quat);
 
-    quat.rotation_matrix(results.dcm_matrix);
+    results.quat.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
