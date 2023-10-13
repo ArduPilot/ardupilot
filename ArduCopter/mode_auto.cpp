@@ -2066,7 +2066,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
     // check if loiter timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        sendtext_command_complete(cmd.index);
         return true;
     }
 
@@ -2149,7 +2149,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        sendtext_command_complete(cmd.index);
         return true;
     }
     return false;
@@ -2186,7 +2186,7 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        sendtext_command_complete(cmd.index);
         return true;
     }
     return false;
@@ -2234,6 +2234,12 @@ bool ModeAuto::verify_nav_script_time()
 bool ModeAuto::verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
 {
     return ((AP_HAL::millis() - nav_attitude_time.start_ms) > (cmd.content.nav_attitude_time.time_sec * 1000));
+}
+
+// send text to GCS when command completes
+void ModeAuto::sendtext_command_complete(uint16_t cmd_index)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached command #%i", cmd_index);
 }
 
 // pause - Prevent aircraft from progressing along the track
