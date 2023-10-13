@@ -1551,15 +1551,24 @@ bool AP_AHRS::_get_velocity_NED(Vector3f &vec) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_velocity_NED(vec);
+        if (sim_estimates.velocity_NED_valid) {
+            vec = sim_estimates.velocity_NED;
+        }
+        return sim_estimates.velocity_NED_valid;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_velocity_NED(vec);
+        if (external_estimates.velocity_NED_valid) {
+            vec = external_estimates.velocity_NED;
+        }
+        return external_estimates.velocity_NED_valid;
 #endif
     }
 #if AP_AHRS_DCM_ENABLED
-    return dcm.get_velocity_NED(vec);
+    if (dcm_estimates.velocity_NED_valid) {
+        vec = dcm_estimates.velocity_NED;
+    }
+    return dcm_estimates.velocity_NED_valid;
 #endif
     return false;
 }
@@ -1636,7 +1645,8 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.get_vert_pos_rate_D(velocity);
+        velocity = dcm_estimates.vert_pos_rate_D;
+        return dcm_estimates.vert_pos_rate_D_valid;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1653,11 +1663,13 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_vert_pos_rate_D(velocity);
+        velocity = sim_estimates.vert_pos_rate_D;
+        return sim_estimates.vert_pos_rate_D_valid;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_vert_pos_rate_D(velocity);
+        velocity = external_estimates.vert_pos_rate_D;
+        return external_estimates.vert_pos_rate_D_valid;
 #endif
     }
     // since there is no default case above, this is unreachable
