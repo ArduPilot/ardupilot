@@ -248,6 +248,7 @@ AP_HW_PixFlamingoH743V               1133
 
 AP_HW_AR-F407SmartBat                1134
 AP_HW_SPEEDYBEEF4MINI                1135
+AP_HW_SPEEDYBEEF4V4                  1136
 AP_HW_FlywooF405Pro                  1137
 AP_HW_TMOTORH7                       1138
 
