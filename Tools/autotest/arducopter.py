@@ -7678,6 +7678,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Did not find expected GEN message")
 
     def IE24(self):
+        '''Test IntelligentEnergy 2.4kWh generator with V1 and V2 telemetry protocols'''
+        protocol_ver = (1, 2)
+        for ver in protocol_ver:
+            self.run_IE24(ver)
+
+    def run_IE24(self, proto_ver):
         '''Test IntelligentEnergy 2.4kWh generator'''
         elec_battery_instance = 2
         fuel_battery_instance = 1
@@ -7687,14 +7693,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GEN_TYPE": 2,
             "BATT%u_MONITOR" % (fuel_battery_instance + 1): 18,  # fuel-based generator
             "BATT%u_MONITOR" % (elec_battery_instance + 1): 17,
-            "SIM_IE24_ENABLE": 1,
+            "SIM_IE24_ENABLE": proto_ver,
             "LOG_DISARMED": 1,
         })
 
         self.customise_SITL_commandline(["--uartF=sim:ie24"])
 
-        self.start_subtest("ensure that BATTERY_STATUS for electrical generator message looks right")
-        self.start_subsubtest("Checking original voltage (electrical)")
+        self.start_subtest("Protocol %i: ensure that BATTERY_STATUS for electrical generator message looks right" % proto_ver)
+        self.start_subsubtest("Protocol %i: Checking original voltage (electrical)" % proto_ver)
         # ArduPilot spits out essentially uninitialised battery
         # messages until we read things fromthe battery:
         self.delay_sim_time(30)
@@ -7712,13 +7718,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "battery_remaining": original_elec_m.battery_remaining - 1,
         }, instance=elec_battery_instance)
 
-        self.start_subtest("ensure that BATTERY_STATUS for fuel generator message looks right")
-        self.start_subsubtest("Checking original voltage (fuel)")
+        self.start_subtest("Protocol %i: ensure that BATTERY_STATUS for fuel generator message looks right" % proto_ver)
+        self.start_subsubtest("Protocol %i: Checking original voltage (fuel)" % proto_ver)
         # ArduPilot spits out essentially uninitialised battery
         # messages until we read things fromthe battery:
         if original_fuel_m.battery_remaining <= 90:
             raise NotAchievedException("Bad original percentage (want=>%f got %f" % (90, original_fuel_m.battery_remaining))
-        self.start_subsubtest("Ensure percentage is counting down")
+        self.start_subsubtest("Protocol %i: Ensure percentage is counting down" % proto_ver)
         self.wait_message_field_values('BATTERY_STATUS', {
             "battery_remaining": original_fuel_m.battery_remaining - 1,
         }, instance=fuel_battery_instance)
@@ -7728,7 +7734,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
 
         # Test for pre-arm check fail when state is not running
-        self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+        self.start_subtest("Protocol %i: Without takeoff generator error should cause failsafe and disarm" % proto_ver)
         self.set_parameter("SIM_IE24_STATE", 8)
         self.wait_statustext("Status not running", timeout=40)
         self.try_arm(result=False,
@@ -7736,7 +7742,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
 
         # Test that error code does result in failsafe
-        self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+        self.start_subtest("Protocol %i: Without taken off generator error should cause failsafe and disarm" % proto_ver)
         self.change_mode("STABILIZE")
         self.set_parameter("DISARM_DELAY", 0)
         self.arm_vehicle()
