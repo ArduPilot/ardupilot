@@ -1523,9 +1523,11 @@ INCLUDE common.ld
         for dev in self.spi_list:
             n = int(dev[3:])
             devlist.append('HAL_SPI%u_CONFIG' % n)
+            sck_pin = self.bylabel['SPI%s_SCK' % n]
+            sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
             f.write(
-                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS }\n'
-                % (n, n, n, n))
+                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS, %s }\n'
+                % (n, n, n, n, sck_line))
         f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
         self.write_SPI_table(f)
 
