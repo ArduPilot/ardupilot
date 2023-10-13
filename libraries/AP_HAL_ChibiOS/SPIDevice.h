@@ -35,7 +35,6 @@ public:
     SPIConfig spicfg;
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
-    bool spi_started;
     uint8_t slowdown;
 
     // we need an additional lock in the dma_allocate and
@@ -43,6 +42,19 @@ public:
     // have two DMA channels that we are handling with the shared_dma
     // code
     mutex_t dma_lock;
+
+    // store the last spi mode for stop_peripheral()
+    uint32_t spi_mode;
+
+    // start and stop the hardware peripheral
+    void start_peripheral(void);
+    void stop_peripheral(void);
+
+private:
+    bool spi_started;
+
+    // mode line for SCK pin
+    iomode_t sck_mode;
 };
 
 struct SPIDesc {
