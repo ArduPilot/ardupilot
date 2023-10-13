@@ -2060,7 +2060,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
     }
 
     // start our loiter timer
-    if ( loiter_time == 0 ) {
+    if (loiter_time == 0) {
         loiter_time = millis();
     }
 
@@ -2130,7 +2130,7 @@ bool ModeAuto::verify_yaw()
 bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if ( !copter.wp_nav->reached_wp_destination() ) {
+    if (!copter.wp_nav->reached_wp_destination()) {
         return false;
     }
 
@@ -2175,7 +2175,7 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if ( !copter.wp_nav->reached_wp_destination() ) {
+    if (!copter.wp_nav->reached_wp_destination()) {
         return false;
     }
 
