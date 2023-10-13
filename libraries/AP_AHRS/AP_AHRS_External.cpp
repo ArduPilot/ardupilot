@@ -29,6 +29,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
         results.attitude_valid = false;
         return;
     }
+    results.quat = quat;
+
     quat.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
@@ -51,11 +53,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
 
     results.location_valid = AP::externalAHRS().get_location(results.location);
-}
-
-bool AP_AHRS_External::get_quaternion(Quaternion &quat) const
-{
-    return AP::externalAHRS().get_quaternion(quat);
 }
 
 Vector2f AP_AHRS_External::groundspeed_vector()

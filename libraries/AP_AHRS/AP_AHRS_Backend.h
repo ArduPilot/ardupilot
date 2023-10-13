@@ -58,7 +58,16 @@ public:
         float pitch_rad;
         float yaw_rad;
         Matrix3f dcm_matrix;
+        Quaternion quat;
+
         bool attitude_valid;
+
+        // return the quaternion defining the rotation from NED to XYZ
+        // (body) axes
+        bool get_quaternion(Quaternion &_quat) const WARN_IF_UNUSED {
+            _quat = quat;
+            return attitude_valid;
+        }
 
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
@@ -245,9 +254,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
