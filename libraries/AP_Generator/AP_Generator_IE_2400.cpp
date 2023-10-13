@@ -359,6 +359,12 @@ AP_BattMonitor::Failsafe AP_Generator_IE_2400::update_failsafes() const
 // Check for error codes that are deemed critical
 bool AP_Generator_IE_2400::is_critical_error(const uint32_t err_in) const
 {
+    // V2 protocol
+    if (_version == ProtocolVersion::V2) {
+        return err_in > 30;
+    }
+
+    // V1 protocol
     switch ((ErrorCode)err_in) {
         // Error codes that lead to critical action battery monitor failsafe
         case ErrorCode::BATTERY_CRITICAL:
@@ -375,6 +381,12 @@ bool AP_Generator_IE_2400::is_critical_error(const uint32_t err_in) const
 // Check for error codes that are deemed severe and would be cause to trigger a battery monitor low failsafe action
 bool AP_Generator_IE_2400::is_low_error(const uint32_t err_in) const
 {
+    // V2 protocol
+    if (_version == ProtocolVersion::V2) {
+        return (err_in >= 10) && (err_in <= 30);
+    }
+
+    // V1 protocol
     switch ((ErrorCode)err_in) {
         // Error codes that lead to critical action battery monitor failsafe
         case ErrorCode::START_DENIED:
@@ -382,7 +394,6 @@ bool AP_Generator_IE_2400::is_low_error(const uint32_t err_in) const
         case ErrorCode::BATTERY_LOW:
         case ErrorCode::PRESSURE_LOW:
         case ErrorCode::SPM_LOST:
-        case ErrorCode::REDUCED_POWER:
             return true;
 
         default:
@@ -399,12 +410,44 @@ bool AP_Generator_IE_2400::check_for_err_code(char* msg_txt, uint8_t msg_len) co
         return false;
     }
 
-    if ((_version == ProtocolVersion::V2) && (strlen(_valid_V2.info_str) > 0)) {
+    if (_version == ProtocolVersion::V2) {
         hal.util->snprintf(msg_txt, msg_len, "Fuel cell err %u.%u: %s", (unsigned)_err_code, (unsigned)_sub_err_code, _valid_V2.info_str);
         return true;
     }
 
     hal.util->snprintf(msg_txt, msg_len, "Fuel cell err code <%u>", (unsigned)_err_code);
+    return true;
+}
+
+bool AP_Generator_IE_2400::check_for_warning_code(char* msg_txt, uint8_t msg_len) const
+{
+    if (_err_code == 0) {
+        // No error nothing to do.
+        return false;
+    }
+    if (is_critical_error(_err_code) || is_low_error(_err_code)) {
+        // Critical or low error are already reported
+        return false;
+    }
+
+    switch (_version) {
+        case ProtocolVersion::DETECTING:
+        case ProtocolVersion::UNKNOWN:
+            break;
+
+        case ProtocolVersion::LEGACY:
+            if ((ErrorCode)_err_code == ErrorCode::REDUCED_POWER) {
+                hal.util->snprintf(msg_txt, msg_len, "Fuel cell reduced power <%u>", (unsigned)_err_code);
+                return true;
+            }
+            break;
+
+        case ProtocolVersion::V2:
+            hal.util->snprintf(msg_txt, msg_len, "Fuel cell warning %u.%u: %s", (unsigned)_err_code, (unsigned)_sub_err_code, _valid_V2.info_str);
+            return true;
+    }
+
+    hal.util->snprintf(msg_txt, msg_len, "Fuel cell warning code <%u>", (unsigned)_err_code);
     return true;
 }
 

@@ -182,7 +182,7 @@ bool AP_Generator_IE_FuelCell::check_for_err_code_if_changed(char* msg_txt, uint
         return false;
     }
 
-    if (check_for_err_code(msg_txt, msg_len)) {
+    if (check_for_err_code(msg_txt, msg_len) || check_for_warning_code(msg_txt, msg_len)) {
         _last_err_code = _err_code;
         _last_sub_err_code = _sub_err_code;
         return true;

@@ -105,6 +105,9 @@ protected:
     // Check error codes and populate message with error code
     virtual bool check_for_err_code(char* msg_txt, uint8_t msg_len) const = 0;
 
+    // Check if we have received an warning code and populate message with warning code
+    virtual bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const { return false; }
+
     // Only check the error code if it has changed since we last checked
     bool check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len);
 
