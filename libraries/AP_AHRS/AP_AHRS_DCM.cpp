@@ -121,6 +121,8 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    results = {};
+
     results.roll_rad = roll;
     results.pitch_rad = pitch;
     results.yaw_rad = yaw;
@@ -131,6 +133,16 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
     results.accel_ef = _accel_ef;
+
+    // NED velocity only valid if we have GPS lock:
+    const AP_GPS &_gps = AP::gps();
+    if (_gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        results.velocity_NED = _gps.velocity();
+        results.velocity_NED_valid = true;
+        // and a supposedly-kinematically-consistent vertical position
+        // rate:
+        results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
+    }
 
     results.location_valid = get_location(results.location);
 }
@@ -1135,19 +1147,6 @@ bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
-}
-
-/*
-  return NED velocity if we have GPS lock
- */
-bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
-{
-    const AP_GPS &_gps = AP::gps();
-    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-        return false;
-    }
-    vec = _gps.velocity();
-    return true;
 }
 
 // return a ground speed estimate in m/s
