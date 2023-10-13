@@ -95,9 +95,6 @@ public:
         return true;
     }
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override;
 
     void estimate_wind(void);
@@ -277,6 +274,9 @@ private:
     Vector2f _lp; // ground vector low-pass filter
     Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input
+
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector();
 
     // pre-calculated trig cache:
     float _sin_yaw;

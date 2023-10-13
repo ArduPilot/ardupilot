@@ -74,9 +74,6 @@ public:
     // if we have an estimate from a specific sensor index
     bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override { return true; }
 
     // is the AHRS subsystem healthy?

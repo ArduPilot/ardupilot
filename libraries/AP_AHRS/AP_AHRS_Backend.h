@@ -85,6 +85,9 @@ public:
             return vert_pos_rate_D_valid;
         }
 
+        // ground vector estimate in meters/second, in North/East order
+        Vector2f groundspeed_vector;
+
         bool get_location(Location &loc) const WARN_IF_UNUSED {
             loc = location;
             return location_valid;
@@ -206,9 +209,6 @@ public:
     #endif
     }
 
-    // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
-
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
         return false;
@@ -245,11 +245,6 @@ public:
     // Return true if estimate is valid
     virtual bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
         return false;
-    }
-
-    // return ground speed estimate in meters/second. Used by ground vehicles.
-    float groundspeed(void) {
-        return groundspeed_vector().length();
     }
 
     // return true if we will use compass for yaw

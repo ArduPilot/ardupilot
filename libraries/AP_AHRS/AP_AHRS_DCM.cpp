@@ -145,6 +145,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
         results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
     }
 
+    results.groundspeed_vector = groundspeed_vector();
+
     results.location_valid = get_location(results.location);
 }
 

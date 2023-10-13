@@ -354,7 +354,7 @@ void AP_AHRS::update_state(void)
     state.location_ok = _get_location(state.location);
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = _groundspeed_vector();
-    state.ground_speed = _groundspeed();
+    state.ground_speed = state.ground_speed_vec.length();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
     state.origin_ok = _get_origin(state.origin);
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
@@ -1344,7 +1344,7 @@ Vector2f AP_AHRS::_groundspeed_vector(void)
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.groundspeed_vector();
+        return dcm_estimates.groundspeed_vector;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1365,42 +1365,15 @@ Vector2f AP_AHRS::_groundspeed_vector(void)
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.groundspeed_vector();
+        return sim_estimates.groundspeed_vector;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL: {
-        return external.groundspeed_vector();
+        return external_estimates.groundspeed_vector;
     }
 #endif
     }
     return Vector2f();
-}
-
-float AP_AHRS::_groundspeed(void)
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.groundspeed();
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-        break;
-    }
-    return groundspeed_vector().length();
 }
 
 // set the EKF's origin location in 10e7 degrees.  This should only

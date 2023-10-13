@@ -46,14 +46,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // kinematically-consistent down-rate:
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
 
+    results.groundspeed_vector = AP::externalAHRS().get_groundspeed_vector();
+
     results.location_valid = AP::externalAHRS().get_location(results.location);
 }
-
-Vector2f AP_AHRS_External::groundspeed_vector()
-{
-    return AP::externalAHRS().get_groundspeed_vector();
-}
-
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
 {
