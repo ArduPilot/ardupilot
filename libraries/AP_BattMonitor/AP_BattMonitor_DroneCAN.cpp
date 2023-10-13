@@ -157,7 +157,6 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
 
     _has_cell_voltages = true;
     _has_time_remaining = true;
-    _has_consumed_energy = true;
     _has_battery_info_aux = true;
 }
 
