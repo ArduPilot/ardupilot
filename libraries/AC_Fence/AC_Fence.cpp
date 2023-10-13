@@ -350,7 +350,9 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 
     // check no limits are currently breached
     if (_breached_fences) {
-        fail_msg =  "vehicle outside fence";
+        static char msg[25];
+        hal.util->snprintf(msg, sizeof(msg), "vehicle outside fence %d", _breached_fences);
+        fail_msg =  msg;
         return false;
     }
 
