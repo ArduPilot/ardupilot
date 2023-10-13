@@ -171,6 +171,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
         results.velocity_NED_valid = true;
     }
 
+    results.groundspeed_vector = groundspeed_vector();
+
     results.location_valid = get_location(results.location);
 }
 
