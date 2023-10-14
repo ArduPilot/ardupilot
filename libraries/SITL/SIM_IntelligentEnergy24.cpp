@@ -64,7 +64,7 @@ void IntelligentEnergy24::update(const struct sitl_input &input)
     if (!enabled.get()) {
         return;
     }
-    // gcs().send_text(MAV_SEVERITY_INFO, "fuelcell update");
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "fuelcell update");
     update_send();
 }
 
