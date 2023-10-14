@@ -96,6 +96,7 @@ public:
         NoopLoop_P = 37,
         TOFSenseP_CAN = 38,
         NRA24_CAN = 39,
+        TOFSenseF_I2C = 40,
         SIM = 100,
     };
 
