@@ -55,6 +55,7 @@
 #include "AP_RangeFinder_NoopLoop.h"
 #include "AP_RangeFinder_TOFSenseP_CAN.h"
 #include "AP_RangeFinder_NRA24_CAN.h"
+#include "AP_RangeFinder_TOFSenseF_I2C.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -556,6 +557,22 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         _add_backend(new AP_RangeFinder_NRA24_CAN(state[instance], params[instance]), instance);
 #endif
         break;
+    case Type::TOFSenseF_I2C: {
+#if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
+        uint8_t addr = TOFSENSEP_I2C_DEFAULT_ADDR;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_TOFSenseF_I2C::detect(state[instance], params[instance],
+                                                                  hal.i2c_mgr->get_device(i, addr)),
+                             instance)) {
+                break;
+            }
+        }
+        break;
+#endif
+    }
 
     case Type::NONE:
         break;
