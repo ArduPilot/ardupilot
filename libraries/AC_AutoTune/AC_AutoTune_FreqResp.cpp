@@ -88,7 +88,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
             push_to_meas_buffer(0, 0.0f, 0);
             push_to_tgt_buffer(0, 0.0f, 0);
-            // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
 
             if (meas_cnt == tgt_cnt && meas_cnt != 0) {
                 if (tgt_ampl > 0.0f) {
@@ -135,7 +135,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
 
         curr_test_freq = tgt_freq;
         cycle_complete = true;
-        // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
         return;
     }
 
