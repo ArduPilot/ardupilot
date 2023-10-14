@@ -39,12 +39,12 @@ bool AP_OSD_MSP_DisplayPort::init(void)
     // check if we have a DisplayPort backend to use
     const AP_MSP *msp = AP::msp();
     if (msp == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"MSP backend not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"MSP backend not available");
         return false;
     }
     _displayport = msp->find_protocol(AP_SerialManager::SerialProtocol_MSP_DisplayPort);
     if (_displayport == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
         return false;
     }
     // re-init port here for use in this thread
