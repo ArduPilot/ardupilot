@@ -104,6 +104,11 @@ elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
@@ -157,7 +162,8 @@ fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
-if [ ${RELEASE_CODENAME} == 'lunar' ]; then
+if [ ${RELEASE_CODENAME} == 'lunar' ] ||
+   [ ${RELEASE_CODENAME} == 'mantic' ]; then
     # on Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
@@ -167,7 +173,8 @@ fi
 
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'lunar' ]; then
+    if [ ${RELEASE_CODENAME} == 'lunar' ] ||
+       [ ${RELEASE_CODENAME} == 'mantic' ]; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
   else
@@ -258,7 +265,7 @@ elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-else
+elif [ ${RELEASE_CODENAME} != 'mantic' ]; then
   SITL_PKGS+=" python-argparse"
 fi
 
@@ -272,6 +279,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     SITL_PKGS+=" libjpeg8-dev"
   elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+  elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
   elif apt-cache search python-wxgtk3.0 | grep wx; then
       SITL_PKGS+=" python-wxgtk3.0"
   elif apt-cache search python3-wxgtk4.0 | grep wx; then
@@ -285,6 +295,10 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
 
   if [ ${RELEASE_CODENAME} == 'lunar' ]; then
       PYTHON_PKGS+=" opencv-python"
+      SITL_PKGS+=" python3-wxgtk4.0"
+      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
+      PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
@@ -329,7 +343,8 @@ fi
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-if [ ${RELEASE_CODENAME} == 'lunar' ]; then
+if [ ${RELEASE_CODENAME} == 'lunar' ] ||
+   [ ${RELEASE_CODENAME} == 'mantic' ]; then
     $APT_GET install python3.11-venv
     python3 -m venv $HOME/venv-ardupilot
 
@@ -354,7 +369,8 @@ if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
 fi
 
-if [ ${RELEASE_CODENAME} == 'lunar' ]; then
+if [ ${RELEASE_CODENAME} == 'lunar' ] ||
+   [ ${RELEASE_CODENAME} == 'mantic' ]; then
     # must do this ahead of wxPython pip3 run :-/
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
