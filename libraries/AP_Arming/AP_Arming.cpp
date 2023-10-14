@@ -1647,7 +1647,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     running_arming_checks = false;
 
     if (armed && do_arming_checks && checks_to_perform == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
     
 #if HAL_GYROFFT_ENABLED
@@ -1676,7 +1676,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
             // If a fence is set to auto-enable, turn on the fence
             if (fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
                 fence->enable(true);
-                gcs().send_text(MAV_SEVERITY_INFO, "Fence: auto-enabled");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fence: auto-enabled");
             }
         }
     }
