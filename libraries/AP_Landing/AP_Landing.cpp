@@ -253,7 +253,7 @@ bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc,
     default:
         // returning TRUE while executing verify_land() will increment the
         // mission index which in many cases will trigger an RTL for end-of-mission
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
         success = true;
         break;
     }
@@ -486,14 +486,14 @@ bool AP_Landing::restart_landing_sequence()
             mission.set_current_cmd(current_index+1))
     {
         // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)cmd.content.location.alt/100);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)cmd.content.location.alt/100);
         success =  true;
     }
     else if (do_land_start_index != 0 &&
             mission.set_current_cmd(do_land_start_index))
     {
         // look for a DO_LAND_START and use that index
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
         success =  true;
     }
     else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
@@ -501,10 +501,10 @@ bool AP_Landing::restart_landing_sequence()
     {
         // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
         // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
         success =  true;
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
         success =  false;
     }
 
