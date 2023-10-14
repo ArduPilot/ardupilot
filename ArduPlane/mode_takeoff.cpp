@@ -85,12 +85,12 @@ void ModeTakeoff::update()
         // see if we will skip takeoff as already flying
         if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
             if (altitude >= alt) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
                 plane.next_WP_loc = plane.current_loc;
                 takeoff_started = true;
                 plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
             } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "Climbing to TKOFF alt then loitering");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Climbing to TKOFF alt then loitering");
                 plane.next_WP_loc = plane.current_loc;
                 plane.next_WP_loc.alt += ((alt - altitude) *100);
                 plane.next_WP_loc.offset_bearing(direction, dist);
@@ -114,7 +114,7 @@ void ModeTakeoff::update()
             plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
 
             if (!plane.throttle_suppressed) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 takeoff_started = true;
             }

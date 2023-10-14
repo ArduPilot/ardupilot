@@ -47,7 +47,7 @@ void Plane::update_soaring() {
 
             // Test for switch into THERMAL mode
             if (g2.soaring_controller.check_thermal_criteria()) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
                 set_mode(mode_thermal, ModeReason::SOARING_THERMAL_DETECTED);
             }
         }

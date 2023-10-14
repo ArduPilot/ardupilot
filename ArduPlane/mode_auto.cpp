@@ -9,7 +9,7 @@ bool ModeAuto::_enter()
     if (plane.previous_mode == &plane.mode_guided &&
         quadplane.guided_wait_takeoff_on_mode_enter) {
         if (!plane.mission.starts_with_takeoff_cmd()) {
-            gcs().send_text(MAV_SEVERITY_ERROR,"Takeoff waypoint required");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"Takeoff waypoint required");
             quadplane.guided_wait_takeoff = true;
             return false;
         }
@@ -29,7 +29,7 @@ bool ModeAuto::_enter()
 
     if (hal.util->was_watchdog_armed()) {
         if (hal.util->persistent_data.waypoint_num != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Watchdog: resume WP %u", hal.util->persistent_data.waypoint_num);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Watchdog: resume WP %u", hal.util->persistent_data.waypoint_num);
             plane.mission.set_current_cmd(hal.util->persistent_data.waypoint_num);
             hal.util->persistent_data.waypoint_num = 0;
         }
@@ -66,7 +66,7 @@ void ModeAuto::update()
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
         plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
-        gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
 

@@ -292,7 +292,7 @@ void Plane::control_failsafe()
         // throttle has dropped below the mark
         failsafe.throttle_counter++;
         if (failsafe.throttle_counter == 10) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe %s", "on");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Throttle failsafe %s", "on");
             failsafe.rc_failsafe = true;
             AP_Notify::flags.failsafe_radio = true;
         }
@@ -307,7 +307,7 @@ void Plane::control_failsafe()
             failsafe.throttle_counter = 3;
         }
         if (failsafe.throttle_counter == 1) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe %s", "off");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Throttle failsafe %s", "off");
         } else if(failsafe.throttle_counter == 0) {
             failsafe.rc_failsafe = false;
             AP_Notify::flags.failsafe_radio = false;
@@ -323,7 +323,7 @@ void Plane::trim_radio()
     }
 
     if (plane.control_mode != &mode_manual) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "trim failed, not in manual mode");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "trim failed, not in manual mode");
         return;
     }
 
@@ -333,13 +333,13 @@ void Plane::trim_radio()
         // more than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
         // problems with starting APM with the TX off
-        gcs().send_text(MAV_SEVERITY_ERROR, "trim failed, large roll and pitch input");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "trim failed, large roll and pitch input");
         return;
     }
 
     if (degrees(ahrs.get_gyro().length()) > 30.0) {
         // rotating more than 30 deg/second
-        gcs().send_text(MAV_SEVERITY_ERROR, "trim failed, large movement");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "trim failed, large movement");
         return;
     }
 
@@ -376,7 +376,7 @@ void Plane::trim_radio()
     channel_pitch->set_and_save_trim();
     channel_rudder->set_and_save_trim();
 
-    gcs().send_text(MAV_SEVERITY_NOTICE, "trim complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "trim complete");
 }
 
 /*

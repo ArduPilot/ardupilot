@@ -315,9 +315,9 @@ void Plane::crash_detection_update(void)
             arming.disarm(AP_Arming::Method::CRASH);
         }
         if (crashed_near_land_waypoint) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Hard landing detected");
         } else {
-            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
+            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Crash detected");
         }
     }
 }

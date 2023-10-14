@@ -99,9 +99,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         break;
     }
     if (failsafe.saved_mode_number != control_mode->mode_number()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe: switched to %s", control_mode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RC Short Failsafe: switched to %s", control_mode->name());
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
     }
 }
 
@@ -208,18 +208,18 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::INITIALISING:
         break;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
 }
 
 void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
        set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
-       gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+       GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
     }
 }
 
@@ -228,10 +228,10 @@ void Plane::failsafe_long_off_event(ModeReason reason)
     long_failsafe_pending = false;
     // We're back in radio contact with RC or GCS
     if (reason == ModeReason:: GCS_FAILSAFE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Off");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GCS Failsafe Off");
     }
     else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
     }
     failsafe.state = FAILSAFE_NONE;
 }

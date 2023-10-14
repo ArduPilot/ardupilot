@@ -60,17 +60,17 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
         case AuxSwitchPos::HIGH:
-            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "QAssist: Force enabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE);
             break;
 
         case AuxSwitchPos::MIDDLE:
-            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "QAssist: Enabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
             break;
 
         case AuxSwitchPos::LOW:
-            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "QAssist: Disabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
             break;
     }
@@ -82,15 +82,15 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
         switch(ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.crow_mode = Plane::CrowMode::CROW_DISABLED;
-            gcs().send_text(MAV_SEVERITY_INFO, "Crow Flaps Disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Crow Flaps Disabled");
             break;
         case AuxSwitchPos::MIDDLE:
-            gcs().send_text(MAV_SEVERITY_INFO, "Progressive Crow Flaps"); 
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Progressive Crow Flaps"); 
             plane.crow_mode = Plane::CrowMode::PROGRESSIVE;   
             break;
         case AuxSwitchPos::LOW:
             plane.crow_mode = Plane::CrowMode::NORMAL;
-            gcs().send_text(MAV_SEVERITY_INFO, "Normal Crow Flaps");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Normal Crow Flaps");
             break;
         }    
 }
@@ -221,7 +221,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
 
     case AUX_FUNC::REVERSE_THROTTLE:
         plane.reversed_throttle = (ch_flag == AuxSwitchPos::HIGH);
-        gcs().send_text(MAV_SEVERITY_INFO, "RevThrottle: %s", plane.reversed_throttle?"ENABLE":"DISABLE");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RevThrottle: %s", plane.reversed_throttle?"ENABLE":"DISABLE");
         break;
 
     case AUX_FUNC::AUTO:
@@ -277,7 +277,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         const bool enable = (ch_flag == AuxSwitchPos::HIGH);
         if (enable != plane.quadplane.vfwd_enable_active) {
             plane.quadplane.vfwd_enable_active = enable;
-            gcs().send_text(MAV_SEVERITY_INFO, "QFwdThr: %s", enable?"ON":"OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "QFwdThr: %s", enable?"ON":"OFF");
         }
         break;
     }
@@ -318,7 +318,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
                 }
                 break;
             }
-            gcs().send_text(MAV_SEVERITY_INFO, "NON AUTO TERRN: %s", plane.non_auto_terrain_disable?"OFF":"ON");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NON AUTO TERRN: %s", plane.non_auto_terrain_disable?"OFF":"ON");
         break;
 
     case AUX_FUNC::CROW_SELECT:

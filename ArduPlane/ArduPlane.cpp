@@ -513,7 +513,7 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
     landing.handle_flight_stage_change(fs == AP_FixedWing::FlightStage::LAND);
 
     if (fs == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                         int(auto_state.takeoff_altitude_rel_cm/100));
     }
 
@@ -609,7 +609,7 @@ void Plane::update_flight_stage(void)
                     set_flight_stage(AP_FixedWing::FlightStage::ABORT_LANDING);
                 } else if (landing.get_abort_throttle_enable() && get_throttle_input() >= 90 &&
                            landing.request_go_around()) {
-                    gcs().send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_FixedWing::FlightStage::ABORT_LANDING);
                 } else {
                     set_flight_stage(AP_FixedWing::FlightStage::LAND);
@@ -658,7 +658,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
             if (arming.disarm(AP_Arming::Method::AUTOLANDED)) {
-                gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
     }

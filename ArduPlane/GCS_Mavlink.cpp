@@ -1087,11 +1087,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_
         case PARACHUTE_RELEASE:
             // treat as a manual release which performs some additional check of altitude
             if (plane.parachute.released()) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute already released");
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Parachute already released");
                 return MAV_RESULT_FAILED;
             }
             if (!plane.parachute.enabled()) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute not enabled");
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Parachute not enabled");
                 return MAV_RESULT_FAILED;
             }
             if (!plane.parachute_manual_release()) {
@@ -1248,7 +1248,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 
         // just do altitude for now
         plane.next_WP_loc.alt += -packet.z*100.0;
-        gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Change alt to %.1f",
                         (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
         
         break;
@@ -1295,7 +1295,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
                     cmd.content.location.terrain_alt = true;
                     break;
                 default:
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
                     msg_valid = false;
                     break;
             }    

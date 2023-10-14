@@ -517,15 +517,15 @@ bool Tailsitter::transition_fw_complete(void)
         return true;
     }
     if (labs(quadplane.ahrs_view->pitch_sensor) > transition_angle_fw*100) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Transition FW done");
         return true;
     }
     if (labs(quadplane.ahrs_view->roll_sensor) > MAX(4500, plane.roll_limit_cd + 500)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
         return true;
     }
     if (AP_HAL::millis() - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
         return true;
     }
     // still waiting
@@ -547,13 +547,13 @@ bool Tailsitter::transition_vtol_complete(void) const
         // if we are not moving (hence on the ground?) or don't know
         // transition immediately to tilt motors up and prevent prop strikes
         if (quadplane.ahrs.groundspeed() < 1.0f) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done, zero throttle");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Transition VTOL done, zero throttle");
             return true;
         }
     }
     const float trans_angle = get_transition_angle_vtol();
     if (labs(plane.ahrs.pitch_sensor) > trans_angle*100) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Transition VTOL done");
         return true;
     }
     int32_t roll_cd = labs(plane.ahrs.roll_sensor);
@@ -561,11 +561,11 @@ bool Tailsitter::transition_vtol_complete(void) const
         roll_cd = 18000 - roll_cd;
     }
     if (roll_cd > MAX(4500, plane.roll_limit_cd + 500)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
         return true;
     }
     if (AP_HAL::millis() - transition->vtol_transition_start_ms >  ((trans_angle-(transition->vtol_transition_initial_pitch*0.01f))/transition_rate_vtol)*1500) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
     return false;

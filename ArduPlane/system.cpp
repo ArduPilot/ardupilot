@@ -163,10 +163,10 @@ void Plane::startup_ground(void)
     set_mode(mode_initializing, ModeReason::INITIALISED);
 
 #if (GROUND_START_DELAY > 0)
-    gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Ground start with delay");
     delay(GROUND_START_DELAY * 1000);
 #else
-    gcs().send_text(MAV_SEVERITY_INFO,"Ground start");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Ground start");
 #endif
 
     //INS ground start
@@ -267,7 +267,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 #if HAL_QUADPLANE_ENABLED
     if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
         // dont try and switch to a Q mode if quadplane is not enabled and initalized
-        gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Q_ENABLE 0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
             AP_Notify::events.user_mode_change_failed = 1;
@@ -278,7 +278,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 #else
     if (new_mode.is_vtol_mode()) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        gcs().send_text(MAV_SEVERITY_INFO,"HAL_QUADPLANE_ENABLED=0");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"HAL_QUADPLANE_ENABLED=0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
             AP_Notify::events.user_mode_change_failed = 1;
@@ -295,7 +295,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         fence.get_breaches() &&
         in_fence_recovery() &&
         !mode_reason_is_landing_sequence(reason)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
         AP_Notify::events.user_mode_change_failed = 1;
         return false;
     }
@@ -303,7 +303,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(new_mode.mode_number())) {
-        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name());
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name());
         return false;
     }
 
@@ -322,7 +322,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     // attempt to enter new mode
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
-        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Flight mode change failed");
 
         // we failed entering new mode, roll back to old
         previous_mode = &old_previous_mode;
@@ -440,9 +440,9 @@ void Plane::check_short_failsafe()
 void Plane::startup_INS_ground(void)
 {
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
     } else {
-        gcs().send_text(MAV_SEVERITY_ALERT, "Skipping INS calibration");
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Skipping INS calibration");
     }
 
     ahrs.init();

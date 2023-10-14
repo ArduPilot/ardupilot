@@ -37,7 +37,7 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.waiting_for_rudder_neutral = true;
         // warn if we have been waiting a long time
         if (now - takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
             takeoff_state.rudder_takeoff_warn_ms = now;
         }
         // since we are still waiting, dont takeoff
@@ -89,7 +89,7 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.launchTimerStarted = true;
         takeoff_state.last_tkoff_arm_time = now;
         if (now - takeoff_state.last_report_ms > 2000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
                               (double)TECS_controller.get_VXdot(), (double)(wait_time_ms*0.001f));
             takeoff_state.last_report_ms = now;
         }
@@ -98,7 +98,7 @@ bool Plane::auto_takeoff_check(void)
     // Only perform velocity check if not timed out
     if ((now - takeoff_state.last_tkoff_arm_time) > wait_time_ms+100U) {
         if (now - takeoff_state.last_report_ms > 2000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Timeout AUTO");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Timeout AUTO");
             takeoff_state.last_report_ms = now;
         }
         goto no_launch;
@@ -108,7 +108,7 @@ bool Plane::auto_takeoff_check(void)
         // Check aircraft attitude for bad launch
         if (ahrs.pitch_sensor <= -3000 || ahrs.pitch_sensor >= 4500 ||
             (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Bad launch AUTO");
             takeoff_state.accel_event_counter = 0;
             goto no_launch;
         }
@@ -117,7 +117,7 @@ bool Plane::auto_takeoff_check(void)
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
@@ -245,7 +245,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
                 relative_alt_cm >= 1000 &&
                 sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
                 // make a note of that altitude to use it as a start height for scaling
-                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
             }
         }
@@ -290,7 +290,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

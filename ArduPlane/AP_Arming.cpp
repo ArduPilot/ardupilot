@@ -277,7 +277,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
         // in-flight arming if we were armed before the reset. This
         // allows a reset on a BVLOS flight to return home if the
         // operator can command arming over telemetry
-        gcs().send_text(MAV_SEVERITY_WARNING, "watchdog: Bypassing arming checks");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "watchdog: Bypassing arming checks");
         return true;
     }
 
@@ -319,7 +319,7 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     // rising edge of delay_arming oneshot
     delay_arming = true;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throttle armed");
 
     return true;
 }
@@ -341,7 +341,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     if (do_disarm_checks && method == AP_Arming::Method::RUDDER) {
         // option must be enabled:
         if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
             return false;
         }
     }
@@ -380,7 +380,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     // DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
     
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     return true;
 }
@@ -416,10 +416,10 @@ void AP_Arming_Plane::update_soft_armed()
             hal.rcout->force_safety_on();
             AP_Param::set_by_name("RC_PROTOCOLS", 0);
             arm(Method::BLACKBOX, false);
-            gcs().send_text(MAV_SEVERITY_WARNING, "BlackBox: arming at %.1f m/s", speed3d);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BlackBox: arming at %.1f m/s", speed3d);
         }
         if (_armed && now - last_over_3dspeed_ms > 20000U) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "BlackBox: disarming at %.1f m/s", speed3d);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BlackBox: disarming at %.1f m/s", speed3d);
             disarm(Method::BLACKBOX, false);
         }
     }

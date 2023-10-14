@@ -45,7 +45,7 @@ void ModeThermal::update_soaring()
         sq(position.x)+sq(position.y) > sq(plane.g2.soaring_controller.max_radius) &&
         plane.previous_mode->mode_number()!=Mode::Number::AUTO) {
         // Some other loiter status, and outside of maximum soaring radius, and previous mode wasn't AUTO
-        gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Outside SOAR_MAX_RADIUS, RTL");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: Outside SOAR_MAX_RADIUS, RTL");
         plane.set_mode(plane.mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED);
         return;
     }
@@ -143,7 +143,7 @@ bool ModeThermal::exit_heading_aligned() const
 
 void ModeThermal::restore_mode(const char *reason, ModeReason modereason)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, plane.previous_mode->name());
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, plane.previous_mode->name());
     plane.set_mode(*plane.previous_mode, modereason);
 }
 

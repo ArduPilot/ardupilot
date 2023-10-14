@@ -77,7 +77,7 @@ void Plane::ekf_check()
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF variance");
                     ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();

@@ -56,7 +56,7 @@ bool ModeQRTL::_enter()
             }
 
             // we're close to destination and already running VTOL motors, don't transition and don't climb
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
             poscontrol.set_state(QuadPlane::QPOS_POSITION1);
         }
     }
@@ -140,7 +140,7 @@ void ModeQRTL::run()
                     if (plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_abs_cm)) {
                         RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, target_alt_abs_cm);
                     }
-                    gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
                     poscontrol.set_state(QuadPlane::QPOS_POSITION1);
                 }
 

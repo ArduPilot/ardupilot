@@ -23,9 +23,9 @@ void Plane::parachute_release()
         return;
     }
     if (parachute.released()) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released again");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Parachute: Released again");
     } else {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Parachute: Released");
     }
 
     // release parachute
@@ -52,7 +52,7 @@ bool Plane::parachute_manual_release()
     if (parachute.alt_min() > 0 && relative_ground_altitude(false) < parachute.alt_min() &&
             auto_state.last_flying_ms > 0) {
         // Allow manual ground tests by only checking if flying too low if we've taken off
-        gcs().send_text(MAV_SEVERITY_WARNING, "Parachute: Too low");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
     }
 
