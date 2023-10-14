@@ -29,13 +29,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu
-            name: bionic
-          - os: ubuntu
             name: focal
           - os: ubuntu
             name: jammy
           - os: ubuntu
             name: lunar
+          - os: ubuntu
+            name: mantic
           - os: archlinux
             name: latest
           - os: debian
@@ -77,7 +77,7 @@ jobs:
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
-        timeout-minutes: 30
+        timeout-minutes: 45
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
