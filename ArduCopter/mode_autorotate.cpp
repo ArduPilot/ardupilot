@@ -26,13 +26,13 @@ bool ModeAutorotate::init(bool ignore_checks)
 
     // Check that mode is enabled
     if (!g2.arot.is_enable()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Autorot Mode Not Enabled");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Autorot Mode Not Enabled");
         return false;
     }
 
     // Check that interlock is disengaged
     if (motors->get_interlock()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Autorot Mode Change Fail: Interlock Engaged");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Autorot Mode Change Fail: Interlock Engaged");
         return false;
     }
 
@@ -45,7 +45,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     _initial_rpm = g2.arot.get_rpm(true);
 
     // Display message 
-    gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Autorotation initiated");
 
      // Set all intial flags to on
     _flags.entry_initial = 1;
@@ -117,7 +117,7 @@ void ModeAutorotate::run()
             if (_flags.entry_initial == 1) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Entry Phase");
                 #endif
 
                 // Set following trim low pass cut off frequency
@@ -163,7 +163,7 @@ void ModeAutorotate::run()
             if (_flags.ss_glide_initial == 1) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SS Glide Phase");
                 #endif
 
                 // Set following trim low pass cut off frequency
@@ -206,7 +206,7 @@ void ModeAutorotate::run()
                 // Functions and settings to be done once are done here.
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
                 #endif
 
                 // Set bail out timer remaining equal to the parameter value, bailout time 
@@ -311,8 +311,8 @@ void ModeAutorotate::warning_message(uint8_t message_n)
         {
             if (_msg_flags.bad_rpm) {
                 // Bad rpm sensor health.
-                gcs().send_text(MAV_SEVERITY_INFO, "Warning: Poor RPM Sensor Health");
-                gcs().send_text(MAV_SEVERITY_INFO, "Action: Minimum Collective Applied");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Warning: Poor RPM Sensor Health");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Action: Minimum Collective Applied");
                 _msg_flags.bad_rpm = false;
             }
             break;

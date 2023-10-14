@@ -25,17 +25,17 @@ void Copter::set_simple_mode(SimpleMode b)
         switch (b) {
             case SimpleMode::NONE:
                 AP::logger().Write_Event(LogEvent::SET_SIMPLE_OFF);
-                gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode off");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIMPLE mode off");
                 break;
             case SimpleMode::SIMPLE:
                 AP::logger().Write_Event(LogEvent::SET_SIMPLE_ON);
-                gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode on");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIMPLE mode on");
                 break;
             case SimpleMode::SUPERSIMPLE:
                 // initialise super simple heading
                 update_super_simple_bearing(true);
                 AP::logger().Write_Event(LogEvent::SET_SUPERSIMPLE_ON);
-                gcs().send_text(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
                 break;
         }
         simple_mode = b;

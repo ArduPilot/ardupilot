@@ -52,7 +52,7 @@ void Copter::arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim start");
             auto_trim_counter = 250;
             auto_trim_started = false;
             // ensure auto-disarm doesn't trigger immediately
@@ -198,7 +198,7 @@ void Copter::lost_vehicle_check()
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
-                gcs().send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
             }
         } else {
             soundalarm_counter++;

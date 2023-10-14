@@ -43,7 +43,7 @@ void ModeRTL::restart_without_terrain()
     terrain_following_allowed = false;
     _state = SubMode::STARTING;
     _state_complete = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
 }
 
 ModeRTL::RTLAltType ModeRTL::get_alt_type() const
@@ -133,7 +133,7 @@ void ModeRTL::climb_start()
     // set the destination
     if (!wp_nav->set_wp_destination_loc(rtl_path.climb_target) || !wp_nav->set_wp_destination_next_loc(rtl_path.return_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"RTL: unexpected error setting climb target");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"RTL: unexpected error setting climb target");
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         copter.set_mode(Mode::Number::LAND, ModeReason::TERRAIN_FAILSAFE);
         return;
@@ -426,7 +426,7 @@ void ModeRTL::compute_return_target()
         case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
             alt_type = ReturnTargetAltType::RELATIVE;
             AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::RTL_MISSING_RNGFND);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "RTL: no terrain data, using alt-above-home");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "RTL: no terrain data, using alt-above-home");
             break;
         case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
             alt_type = ReturnTargetAltType::RANGEFINDER;
@@ -445,7 +445,7 @@ void ModeRTL::compute_return_target()
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "RTL: rangefinder unhealthy, using alt-above-home");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "RTL: rangefinder unhealthy, using alt-above-home");
             AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::RTL_MISSING_RNGFND);
         }
     }
@@ -463,7 +463,7 @@ void ModeRTL::compute_return_target()
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
             AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "RTL: no terrain data, using alt-above-home");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "RTL: no terrain data, using alt-above-home");
         }
     }
 
@@ -472,7 +472,7 @@ void ModeRTL::compute_return_target()
         if (!rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
             // this should never happen but just in case
             rtl_path.return_target.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
-            gcs().send_text(MAV_SEVERITY_WARNING, "RTL: unexpected error calculating target alt");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RTL: unexpected error calculating target alt");
         }
     }
 

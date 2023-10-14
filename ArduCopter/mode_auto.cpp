@@ -26,7 +26,7 @@ bool ModeAuto::init(bool ignore_checks)
     if (mission.num_commands() > 1 || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
 
@@ -99,10 +99,10 @@ void ModeAuto::run()
             // if mission is running restart the current command if it is a waypoint or spline command
             if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
                 if (mission.restart_current_nav_cmd()) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
                 } else {
                     // failed to restart mission for some reason
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
                 }
             }
         }
@@ -226,9 +226,9 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
         // mode change failed, revert force resume flag
         mission.set_force_resume(false);
 
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
     }
 
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
@@ -711,10 +711,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { //disable
             copter.fence.enable(false);
-            gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fence Disabled");
         } else { //enable fence
             copter.fence.enable(true);
-            gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fence Enabled");
         }
 #endif //AP_FENCE_ENABLED
         break;
@@ -941,7 +941,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         cmd_complete = true;
         break;
@@ -1189,7 +1189,7 @@ void ModeAuto::payload_place_run()
             // do nothing on this loop
             break;
         case PayloadPlaceStateType_Descent:
-            gcs().send_text(MAV_SEVERITY_INFO, "%s landed", prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s landed", prefix_str);
             nav_payload_place.state = PayloadPlaceStateType_Release;
             break;
         case PayloadPlaceStateType_Release:
@@ -1209,11 +1209,11 @@ void ModeAuto::payload_place_run()
         case PayloadPlaceStateType_FlyToLocation:
         case PayloadPlaceStateType_Descent_Start:
             set_submode(SubMode::NAV_PAYLOAD_PLACE);
-            gcs().send_text(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
             nav_payload_place.state = PayloadPlaceStateType_Done;
             break;
         case PayloadPlaceStateType_Descent:
-            gcs().send_text(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
             nav_payload_place.state = PayloadPlaceStateType_Release;
             break;
         case PayloadPlaceStateType_Release:
@@ -1248,7 +1248,7 @@ void ModeAuto::payload_place_run()
         if (!is_zero(nav_payload_place.descent_max_cm) &&
             nav_payload_place.descent_start_altitude_cm - inertial_nav.get_position_z_up_cm() > nav_payload_place.descent_max_cm) {
             nav_payload_place.state = PayloadPlaceStateType_Ascent_Start;
-            gcs().send_text(MAV_SEVERITY_WARNING, "%s Reached maximum descent", prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Reached maximum descent", prefix_str);
             break;
         }
         // calibrate the decent thrust after aircraft has reached constant decent rate and release if threshold is reached
@@ -1269,7 +1269,7 @@ void ModeAuto::payload_place_run()
             if (!copter.rangefinder_state.enabled) {
                 // abort payload place because rangefinder is not enabled
                 nav_payload_place.state = PayloadPlaceStateType_Ascent_Start;
-                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MIN set and rangefinder not enabled", prefix_str);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MIN set and rangefinder not enabled", prefix_str);
                 break;
             } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_minimum_m * 100.0)) {
                 // range finder altitude is above minimum
@@ -1289,7 +1289,7 @@ void ModeAuto::payload_place_run()
 
         if (now_ms - nav_payload_place.place_start_time_ms > placed_check_duration_ms) {
             nav_payload_place.state = PayloadPlaceStateType_Release;
-            gcs().send_text(MAV_SEVERITY_INFO, "%s payload release thrust threshold: %f", prefix_str, static_cast<double>(g2.pldp_thrust_placed_fraction * nav_payload_place.descent_thrust_level));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s payload release thrust threshold: %f", prefix_str, static_cast<double>(g2.pldp_thrust_placed_fraction * nav_payload_place.descent_thrust_level));
         }
         break;
 
@@ -1298,7 +1298,7 @@ void ModeAuto::payload_place_run()
         pos_control->init_z_controller_no_descent();
 #if AP_GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
             g2.gripper.release();
             nav_payload_place.state = PayloadPlaceStateType_Releasing;
         } else {
@@ -1567,7 +1567,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
             AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
         }
 
         if (!wp_start(target_loc)) {
@@ -1673,7 +1673,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, loiter_to_alt.alt)) {
         loiter_to_alt.reached_destination_xy = true;
         loiter_to_alt.reached_alt = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");
         return;
     }
     loiter_to_alt.reached_destination_xy = false;
@@ -1788,7 +1788,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay_time_max_ms = 0;
 #endif
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
 #if AP_SCRIPTING_ENABLED
@@ -1942,7 +1942,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
             AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
         }
         if (!wp_start(target_loc)) {
             // failure to set next destination can only be because of missing terrain data
@@ -2066,7 +2066,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
     // check if loiter timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
 
@@ -2149,7 +2149,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
     return false;
@@ -2186,7 +2186,7 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
     return false;

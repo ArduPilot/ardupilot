@@ -105,7 +105,9 @@ void Copter::SurfaceTracking::set_surface(Surface new_surface)
         return;
     }
     if ((new_surface == Surface::CEILING) && !copter.rangefinder.has_orientation(ROTATION_PITCH_90)) {
+#if !defined(HAL_BUILD_AP_PERIPH)
         copter.gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking: no upward rangefinder");
+#endif
         AP_Notify::events.user_mode_change_failed = 1;
         return;
     }

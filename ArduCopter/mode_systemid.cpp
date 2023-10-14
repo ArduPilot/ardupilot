@@ -76,7 +76,7 @@ bool ModeSystemId::init(bool ignore_checks)
 {
     // check if enabled
     if (axis == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "No axis selected, SID_AXIS = 0");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No axis selected, SID_AXIS = 0");
         return false;
     }
 
@@ -97,7 +97,7 @@ bool ModeSystemId::init(bool ignore_checks)
 
     chirp_input.init(time_record, frequency_start, frequency_stop, time_fade_in, time_fade_out, time_const_freq);
 
-    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)axis);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)axis);
 
     copter.Log_Write_SysID_Setup(axis, waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
 
@@ -177,7 +177,7 @@ void ModeSystemId::run()
     if ((systemid_state == SystemIDModeState::SYSTEMID_STATE_TESTING) &&
         (!is_positive(frequency_start) || !is_positive(frequency_stop) || is_negative(time_fade_in) || !is_positive(time_record) || is_negative(time_fade_out) || (time_record <= time_const_freq))) {
         systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-        gcs().send_text(MAV_SEVERITY_INFO, "SystemID Parameter Error");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Parameter Error");
     }
 
     waveform_time += G_Dt;
@@ -192,24 +192,24 @@ void ModeSystemId::run()
 
             if (copter.ap.land_complete) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
             if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
                 break;
             }
             if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Finished");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Finished");
                 break;
             }
 
             switch ((AxisType)axis.get()) {
                 case AxisType::NONE:
                     systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
                     break;
                 case AxisType::INPUT_ROLL:
                     target_roll += waveform_sample*100.0f;

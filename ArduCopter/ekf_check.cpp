@@ -83,7 +83,7 @@ void Copter::ekf_check()
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF variance");
                     ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
@@ -191,7 +191,7 @@ void Copter::failsafe_ekf_event()
 
     // set true if ekf action is triggered
     AP_Notify::flags.failsafe_ekf = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
@@ -205,7 +205,7 @@ void Copter::failsafe_ekf_off_event(void)
     failsafe.ekf = false;
     if (AP_Notify::flags.failsafe_ekf) {
         AP_Notify::flags.failsafe_ekf = false;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
     }
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
@@ -240,7 +240,7 @@ void Copter::check_ekf_reset()
         attitude_control->inertial_frame_reset();
         ekf_primary_core = ahrs.get_primary_core_index();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
 }
 
@@ -286,7 +286,7 @@ void Copter::check_vibration()
             vibration_check.high_vibes = true;
             pos_control->set_vibe_comp(true);
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
         }
     } else {
         // initialise timer
@@ -301,7 +301,7 @@ void Copter::check_vibration()
             pos_control->set_vibe_comp(false);
             vibration_check.clear_ms = 0;
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
         }
     }
 

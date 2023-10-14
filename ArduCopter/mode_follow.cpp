@@ -17,7 +17,7 @@
 bool ModeFollow::init(const bool ignore_checks)
 {
     if (!g2.follow.enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
 

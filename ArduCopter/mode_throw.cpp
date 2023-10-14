@@ -47,11 +47,11 @@ void ModeThrow::run()
         stage = Throw_Disarmed;
 
     } else if (stage == Throw_Disarmed && motors->armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"waiting for throw");
         stage = Throw_Detecting;
 
     } else if (stage == Throw_Detecting && throw_detected()){
-        gcs().send_text(MAV_SEVERITY_INFO,"throw detected - spooling motors");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"throw detected - spooling motors");
         copter.set_land_complete(false);
         stage = Throw_Wait_Throttle_Unlimited;
 
@@ -60,10 +60,10 @@ void ModeThrow::run()
 
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
         stage = Throw_Uprighting;
     } else if (stage == Throw_Uprighting && throw_attitude_good()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
 
         // initialise the z controller
@@ -81,7 +81,7 @@ void ModeThrow::run()
         copter.set_auto_armed(true);
 
     } else if (stage == Throw_HgtStabilise && throw_height_good()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"height achieved - controlling position");
         stage = Throw_PosHold;
 
         // initialise position controller

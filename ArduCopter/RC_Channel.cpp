@@ -541,12 +541,12 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
                 case AuxSwitchPos::HIGH:
                     copter.standby_active = true;
                     AP::logger().Write_Event(LogEvent::STANDBY_ENABLE);
-                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Enabled");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Stand By Enabled");
                     break;
                 default:
                     copter.standby_active = false;
                     AP::logger().Write_Event(LogEvent::STANDBY_DISABLE);
-                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Disabled");
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Stand By Disabled");
                     break;
                 }
             break;
@@ -607,7 +607,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
         case AUX_FUNC::SIMPLE_HEADING_RESET:
             if (ch_flag == AuxSwitchPos::HIGH) {
                 copter.init_simple_bearing();
-                gcs().send_text(MAV_SEVERITY_INFO, "Simple heading reset");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Simple heading reset");
             }
             break;
 
@@ -684,7 +684,7 @@ void Copter::save_trim()
     float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     AP::logger().Write_Event(LogEvent::SAVE_TRIM);
-    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim saved");
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
@@ -693,7 +693,7 @@ void Copter::auto_trim_cancel()
 {
     auto_trim_counter = 0;
     AP_Notify::flags.save_trim = false;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim cancelled");
 }
 
 void Copter::auto_trim()
@@ -737,7 +737,7 @@ void Copter::auto_trim()
         // on last iteration restore leds and accel gains to normal
         if (auto_trim_counter == 0) {
             AP_Notify::flags.save_trim = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim: Trims saved");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim: Trims saved");
         }
     }
 }

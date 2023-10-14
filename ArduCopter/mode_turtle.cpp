@@ -173,7 +173,7 @@ void ModeTurtle::output_to_motors()
     if (is_zero(channel_throttle->norm_input_dz())) {
         const uint32_t now = AP_HAL::millis();
         if (now - last_throttle_warning_output_ms > 5000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Turtle: raise throttle to arm");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Turtle: raise throttle to arm");
             last_throttle_warning_output_ms = now;
         }
 

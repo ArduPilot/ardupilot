@@ -186,7 +186,7 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 // called when an attempt to change into a mode is unsuccessful:
 void Copter::mode_change_failed(const Mode *mode, const char *reason)
 {
-    gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
     // make sad noise
     if (copter.ap.initialised) {
