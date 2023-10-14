@@ -261,7 +261,7 @@ uint64_t Util::get_hw_rtc() const
 #if AP_BOOTLOADER_FLASHING_ENABLED
 
 #if HAL_GCS_ENABLED
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#define Debug(fmt, args ...)  do { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
 #ifndef Debug
