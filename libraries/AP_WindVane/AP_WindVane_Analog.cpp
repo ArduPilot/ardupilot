@@ -55,7 +55,7 @@ void AP_WindVane_Analog::calibrate()
         _cal_start_ms = AP_HAL::millis();
         _cal_volt_max = _current_analog_voltage;
         _cal_volt_min = _current_analog_voltage;
-        gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration started, rotate wind vane");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: Calibration started, rotate wind vane");
     }
 
     // record min and max voltage
@@ -70,11 +70,11 @@ void AP_WindVane_Analog::calibrate()
             // save min and max voltage
             _frontend._dir_analog_volt_max.set_and_save(_cal_volt_max);
             _frontend._dir_analog_volt_min.set_and_save(_cal_volt_min);
-            gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration complete (volt min:%.1f max:%1.f)",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: Calibration complete (volt min:%.1f max:%1.f)",
             (double)_cal_volt_min,
             (double)_cal_volt_max);
         } else {
-             gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration failed (volt diff %.1f below %.1f)",
+             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: Calibration failed (volt diff %.1f below %.1f)",
             (double)volt_diff,
             (double)WINDVANE_CALIBRATION_VOLT_DIFF_MIN);
         }
