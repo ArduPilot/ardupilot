@@ -32,19 +32,19 @@ bool Sub::init_motor_test()
     // Ten second cooldown period required with no do_set_motor requests required
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
         return false;
     }
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Disarm hardware safety switch before testing motors.");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Disarm hardware safety switch before testing motors.");
         return false;
     }
 
     // Make sure we are on the ground
     if (!motors.armed()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Arm motors before testing motors.");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Arm motors before testing motors.");
         return false;
     }
 
@@ -64,7 +64,7 @@ bool Sub::verify_motor_test()
 
     // Require at least 2 Hz incoming do_set_motor requests
     if (AP_HAL::millis() > last_do_motor_test_ms + 500) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Motor test timed out!");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Motor test timed out!");
         pass = false;
     }
 
@@ -89,7 +89,7 @@ bool Sub::handle_do_motor_test(mavlink_command_int_t command) {
         // instead of spamming error messages
         if (AP_HAL::millis() > (tLastInitializationFailed + 2000)) {
             if (!init_motor_test()) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "motor test initialization failed!");
                 tLastInitializationFailed = AP_HAL::millis();
                 return false; // init fail
             }
@@ -106,12 +106,12 @@ bool Sub::handle_do_motor_test(mavlink_command_int_t command) {
     const uint32_t test_type = command.y;
 
     if (test_type != MOTOR_TEST_ORDER_BOARD) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "bad test type %0.2f", (double)test_type);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "bad test type %0.2f", (double)test_type);
         return false; // test type not supported here
     }
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PILOT)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "bad throttle type %0.2f", (double)throttle_type);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "bad throttle type %0.2f", (double)throttle_type);
 
         return false; // throttle type not supported here
     }

@@ -423,7 +423,7 @@ bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {
     if (sub.motors.armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Disarm before calibration.");
         return MAV_RESULT_FAILED;
     }
 
@@ -440,7 +440,7 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_
     if (packet.y == 1) {
         // compassmot calibration
         //result = sub.mavlink_compassmot(chan);
-        gcs().send_text(MAV_SEVERITY_INFO, "#CompassMot calibration not supported");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "#CompassMot calibration not supported");
         return MAV_RESULT_UNSUPPORTED;
     }
 

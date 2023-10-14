@@ -16,13 +16,13 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
         return false;
     }
 
     // only tested/supported alt frame so far is AltFrame::ABOVE_HOME, where Home alt is always water's surface ie zero depth
     if (target_loc.get_alt_frame() != Location::AltFrame::ABOVE_HOME) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV AltFrame %d", (int8_t)target_loc.get_alt_frame());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BAD NAV AltFrame %d", (int8_t)target_loc.get_alt_frame());
         return false;
     }
 
@@ -194,7 +194,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -407,7 +407,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay_time_max_ms = 0;
 #endif
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
 #if NAV_GUIDED == ENABLED
@@ -443,7 +443,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
 

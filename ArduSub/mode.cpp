@@ -85,7 +85,7 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
 
     if (new_flightmode->requires_GPS() &&
         !sub.position_ok()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
@@ -95,13 +95,13 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     if (!sub.control_check_barometer() && // maybe use ekf_alt_ok() instead?
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(false)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }

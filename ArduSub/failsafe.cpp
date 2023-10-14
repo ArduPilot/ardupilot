@@ -85,7 +85,7 @@ void Sub::failsafe_sensors_check()
     }
 
     failsafe.sensor_health = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Depth sensor error!");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Depth sensor error!");
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::BAD_DEPTH);
 
     if (control_mode == Mode::Number::ALT_HOLD || control_mode == Mode::Number::SURFACE || sub.flightmode->requires_GPS()) {
@@ -141,7 +141,7 @@ void Sub::failsafe_ekf_check()
 
     if (AP_HAL::millis() > failsafe.last_ekf_warn_ms + 20000) {
         failsafe.last_ekf_warn_ms = AP_HAL::millis();
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF bad");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF bad");
     }
 
     if (g.fs_ekf_action == FS_EKF_ACTION_DISARM) {
@@ -188,7 +188,7 @@ void Sub::failsafe_pilot_input_check()
     failsafe.pilot_input = true;
 
     AP::logger().Write_Error(LogErrorSubsystem::PILOT_INPUT, LogErrorCode::FAILSAFE_OCCURRED);
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
     set_neutral_controls();
 
@@ -226,7 +226,7 @@ void Sub::failsafe_internal_pressure_check()
     // Warn every 30 seconds
     if (failsafe.internal_pressure && tnow > last_pressure_warn_ms + 30000) {
         last_pressure_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Internal pressure critical!");
     }
 }
 
@@ -258,7 +258,7 @@ void Sub::failsafe_internal_temperature_check()
     // Warn every 30 seconds
     if (failsafe.internal_temperature && tnow > last_temperature_warn_ms + 30000) {
         last_temperature_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Internal temperature critical!");
     }
 }
 
@@ -285,7 +285,7 @@ void Sub::failsafe_leak_check()
     // Always send a warning every 20 seconds
     if (tnow > failsafe.last_leak_warn_ms + 20000) {
         failsafe.last_leak_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Leak Detected");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Leak Detected");
     }
 
     // Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
@@ -337,7 +337,7 @@ void Sub::failsafe_gcs_check()
     // Send a warning every 30 seconds
     if (tnow - failsafe.last_gcs_warn_ms > 30000) {
         failsafe.last_gcs_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", g.sysid_my_gcs.get());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", g.sysid_my_gcs.get());
     }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
@@ -403,7 +403,7 @@ void Sub::failsafe_crash_check()
     // Send warning to GCS
     if (tnow > failsafe.last_crash_warn_ms + 20000) {
         failsafe.last_crash_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING,"Crash detected");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Crash detected");
     }
 
     // Only perform failsafe action once
@@ -432,7 +432,7 @@ void Sub::failsafe_terrain_check()
     // check for clearing of event
     if (trigger_event != failsafe.terrain) {
         if (trigger_event) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe terrain triggered");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe terrain triggered");
             failsafe_terrain_on_event();
         } else {
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);

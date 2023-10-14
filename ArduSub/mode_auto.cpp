@@ -461,7 +461,7 @@ bool ModeAuto::auto_terrain_recover_start()
     position_control->set_max_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
     position_control->set_correction_speed_accel_z(sub.wp_nav.get_default_speed_down(), sub.wp_nav.get_default_speed_up(), sub.wp_nav.get_accel_z());
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
 }
 
@@ -510,7 +510,7 @@ void ModeAuto::auto_terrain_recover_run()
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
             if (AP_HAL::millis() > rangefinder_recovery_ms + 1500) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
                 sub.failsafe_terrain_set_status(true); // Reset failsafe timers
                 sub.failsafe.terrain = false; // Clear flag
                 sub.auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
@@ -525,7 +525,7 @@ void ModeAuto::auto_terrain_recover_run()
     default:
         // Terrain failsafe recovery has failed, terrain data is not available
         // and rangefinder is not connected, or has stopped responding
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
         sub.failsafe_terrain_act();
         rangefinder_recovery_ms = 0;
         return;
@@ -534,7 +534,7 @@ void ModeAuto::auto_terrain_recover_run()
     // exit on failure (timeout)
     if (AP_HAL::millis() > sub.fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {
         // Recovery has failed, revert to failsafe action
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
         sub.failsafe_terrain_act();
     }
 

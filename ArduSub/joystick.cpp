@@ -203,10 +203,10 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             video_toggle = !video_toggle;
             if (video_toggle) {
                 video_switch = 1900;
-                gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
             } else {
                 video_switch = 1100;
-                gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
             }
         }
         break;
@@ -295,7 +295,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             } else {
                 gain = 1.0f;
             }
-            gcs().send_text(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",(double)gain*100);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_gain_inc:
@@ -311,7 +311,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
                 gain = constrain_float(gain + (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
             }
 
-            gcs().send_text(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_gain_dec:
@@ -327,7 +327,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
                 gain = constrain_float(gain - (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
             }
 
-            gcs().send_text(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_trim_roll_inc:
@@ -353,9 +353,9 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             bool input_hold_engaged_last = input_hold_engaged;
             input_hold_engaged = zTrim || xTrim || yTrim;
             if (input_hold_engaged) {
-                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"#Input Hold Set");
             } else if (input_hold_engaged_last) {
-                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"#Input Hold Disabled");
             }
             controls_reset_since_input_hold = !input_hold_engaged;
         }
@@ -567,10 +567,10 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         if (!held) {
             roll_pitch_flag = !roll_pitch_flag;
             if (roll_pitch_flag) {
-                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "#Attitude Control");
             }
             else {
-                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "#Movement Control");
             }
         }
         break;

@@ -133,21 +133,21 @@ void ModeMotordetect::run()
         Vector3f directions(roll, pitch, yaw);
         // Good read, not inverted
         if (directions == motors.get_motor_angular_factors(current_motor)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is ok!", current_motor + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Thruster %d is ok!", current_motor + 1);
         }
         // Good read, inverted
         else if (-directions == motors.get_motor_angular_factors(current_motor)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is reversed! Saving it!", current_motor + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Thruster %d is reversed! Saving it!", current_motor + 1);
             motors.set_reversed(current_motor, true);
         }
         // Bad read!
         else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Bad thrust read, trying to push the other way...");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bad thrust read, trying to push the other way...");
             // If we got here, we couldn't identify anything that made sense.
             // Let's try pushing the thruster the other way, maybe we are in too shallow waters or hit something
             if (current_direction == DOWN) {
                 // The reading for the second direction was also bad, we failed.
-                gcs().send_text(MAV_SEVERITY_WARNING, "Failed! Please check Thruster %d and frame setup!", current_motor + 1);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed! Please check Thruster %d and frame setup!", current_motor + 1);
                 md_state = DONE;
                 break;
             }
@@ -162,7 +162,7 @@ void ModeMotordetect::run()
         current_direction = UP;
         if (!motors.motor_is_enabled(current_motor)) {
             md_state = DONE;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Motor direction detection is complete.");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Motor direction detection is complete.");
         }
         break;
     }

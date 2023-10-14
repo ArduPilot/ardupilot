@@ -321,10 +321,10 @@ bool Sub::control_check_barometer()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
-        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
         return false;
     } else if (failsafe.sensor_health) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Depth sensor error.");
         return false;
     }
 #endif
