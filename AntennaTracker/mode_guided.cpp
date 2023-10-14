@@ -11,7 +11,7 @@ void ModeGuided::update()
     _target_att.to_euler(target_roll, target_pitch, target_yaw);
     if (now - last_debug > 5000) {
         last_debug = now;
-        gcs().send_text(MAV_SEVERITY_INFO, "target_yaw=%f target_pitch=%f", degrees(target_yaw), degrees(target_pitch));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "target_yaw=%f target_pitch=%f", degrees(target_yaw), degrees(target_pitch));
     }
     calc_angle_error(degrees(target_pitch)*100, degrees(target_yaw)*100, false);
     float bf_pitch;
