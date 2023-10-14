@@ -144,7 +144,7 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
                 rover.mode_auto.mission.clear();
-                gcs().send_text(MAV_SEVERITY_NOTICE, "SaveWP: Mission cleared!");
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "SaveWP: Mission cleared!");
                 if (!rover.set_home_to_current_location(false)) {
                     // ignored
                 }
@@ -243,7 +243,7 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
             (rover.control_mode != &rover.mode_loiter)
             && (rover.control_mode != &rover.mode_hold) && ch_flag == AuxSwitchPos::HIGH) {
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
         break;
 

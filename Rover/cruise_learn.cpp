@@ -7,7 +7,7 @@ void Rover::cruise_learn_start()
     float speed;
     if (!arming.is_armed() || !g2.attitude_control.get_forward_speed(speed)) {
         cruise_learn.learn_start_ms = 0;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning NOT started");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learning NOT started");
         return;
     }
     // start learning
@@ -16,7 +16,7 @@ void Rover::cruise_learn_start()
     cruise_learn.learn_start_ms = AP_HAL::millis();
     cruise_learn.log_count = 0;
     log_write_cruise_learn();
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
 }
 
 // update cruise learning with latest speed and throttle
@@ -51,9 +51,9 @@ void Rover::cruise_learn_complete()
         if (thr >= 10.0f && thr <= 100.0f && is_positive(speed)) {
             g.throttle_cruise.set_and_save(thr);
             g.speed_cruise.set_and_save(speed);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learned: Thr:%d Speed:%3.1f", (int)g.throttle_cruise, (double)g.speed_cruise);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learned: Thr:%d Speed:%3.1f", (int)g.throttle_cruise, (double)g.speed_cruise);
         } else {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
         }
         cruise_learn.learn_start_ms = 0;
         log_write_cruise_learn();

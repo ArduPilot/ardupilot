@@ -256,7 +256,7 @@ void ModeCircle::check_config_speed()
 
     if (config.speed > speed_max) {
         config.speed = speed_max;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
     }
 }
 
@@ -268,6 +268,6 @@ void ModeCircle::check_config_radius()
     // ensure radius is at least as large as vehicle's turn radius
     if (config.radius < rover.g2.turn_radius) {
         config.radius = rover.g2.turn_radius;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)rover.g2.turn_radius);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)rover.g2.turn_radius);
     }
 }
