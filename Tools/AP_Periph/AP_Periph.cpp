@@ -113,7 +113,7 @@ void AP_Periph_FW::init()
 #if HAL_GCS_ENABLED
     gcs().setup_console();
     gcs().setup_uarts();
-    gcs().send_text(MAV_SEVERITY_INFO, "AP_Periph GCS Initialised!");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_Periph GCS Initialised!");
 #endif
 
     stm32_watchdog_pat();
