@@ -123,10 +123,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.mission.get_in_landing_sequence_flag() &&
-        !plane.mission.starts_with_takeoff_cmd()) {
+        !plane.mission.starts_with_takeoff_cmd() && plane.control_mode->does_auto_throttle()) {
         check_failed(display_failure,"In landing sequence");
         ret = false;
     }
+
 
     char failure_msg[50] {};
     if (!plane.control_mode->pre_arm_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
