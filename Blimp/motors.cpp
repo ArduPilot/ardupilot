@@ -43,7 +43,7 @@ void Blimp::arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && control_mode == Mode::Number::MANUAL) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim start");
             auto_trim_counter = 250;
             auto_trim_started = false;
         }

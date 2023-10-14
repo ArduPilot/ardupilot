@@ -133,7 +133,7 @@ void Blimp::save_trim()
     float pitch_trim = ToRad((float)channel_front->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     AP::logger().Write_Event(LogEvent::SAVE_TRIM);
-    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim saved");
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
@@ -142,7 +142,7 @@ void Blimp::auto_trim_cancel()
 {
     auto_trim_counter = 0;
     AP_Notify::flags.save_trim = false;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim cancelled");
 }
 
 void Blimp::auto_trim()
@@ -186,7 +186,7 @@ void Blimp::auto_trim()
         // on last iteration restore leds and accel gains to normal
         if (auto_trim_counter == 0) {
             AP_Notify::flags.save_trim = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim: Trims saved");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTrim: Trims saved");
         }
     }
 }

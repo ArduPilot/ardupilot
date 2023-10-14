@@ -32,22 +32,22 @@ void Blimp::failsafe_radio_on_event()
     // Conditions to deviate from FS_THR_ENABLE selection and send specific GCS warning
     if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
-        gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Disarming");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio Failsafe - Disarming");
         arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
         desired_action = Failsafe_Action_None;
 
     } else if (flightmode->is_landing() && ((battery.has_failsafed() && battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY))) {
         // Allow landing to continue when battery failsafe requires it (not a user option)
-        gcs().send_text(MAV_SEVERITY_WARNING, "Radio + Battery Failsafe - Continuing Landing");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio + Battery Failsafe - Continuing Landing");
         desired_action = Failsafe_Action_Land;
 
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
         // Allow landing to continue when FS_OPTIONS is set to continue landing
-        gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
         desired_action = Failsafe_Action_Land;
 
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio Failsafe");
     }
 
     // Call the failsafe action handler
@@ -60,7 +60,7 @@ void Blimp::failsafe_radio_off_event()
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
-    gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
 
 void Blimp::handle_battery_failsafe(const char *type_str, const int8_t action)
@@ -74,14 +74,14 @@ void Blimp::handle_battery_failsafe(const char *type_str, const int8_t action)
         // should immediately disarm when we're on the ground
         arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
         desired_action = Failsafe_Action_None;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Disarming");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery Failsafe - Disarming");
 
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING) && desired_action != Failsafe_Action_None) {
         // Allow landing to continue when FS_OPTIONS is set to continue when landing
         desired_action = Failsafe_Action_Land;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Continuing Landing");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery Failsafe - Continuing Landing");
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery Failsafe");
     }
 
     // Battery FS options already use the Failsafe_Options enum. So use them directly.
@@ -169,10 +169,10 @@ void Blimp::gpsglitch_check()
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"GPS Glitch");
         } else {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
         }
     }
 }

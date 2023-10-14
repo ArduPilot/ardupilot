@@ -72,7 +72,7 @@ void Blimp::ekf_check()
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF variance");
                     ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
@@ -189,7 +189,7 @@ void Blimp::check_ekf_reset()
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         ekf_primary_core = ahrs.get_primary_core_index();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
 }
 
@@ -233,7 +233,7 @@ void Blimp::check_vibration()
                 vibration_check.high_vibes = false;
                 vibration_check.clear_ms = 0;
                 AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
             }
         }
         vibration_check.start_ms = 0;
@@ -253,7 +253,7 @@ void Blimp::check_vibration()
             // switch ekf to use resistant gains
             vibration_check.high_vibes = true;
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
         }
     }
 }

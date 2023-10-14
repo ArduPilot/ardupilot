@@ -77,7 +77,7 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
     if (!ignore_checks &&
         new_flightmode->requires_GPS() &&
         !blimp.position_ok()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
@@ -88,13 +88,13 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         !blimp.ekf_alt_ok() &&
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
