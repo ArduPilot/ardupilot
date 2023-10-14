@@ -125,7 +125,14 @@ bool AP_Mount_Servo::has_pan_control() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
 {
-    att_quat.from_euler(_angle_bf_output_rad);
+    // no feedback from gimbal so simply report targets
+    // mnt_target.angle_rad always holds latest angle targets
+
+    // ensure yaw target is in body-frame with limits applied
+    const float yaw_bf = constrain_float(mnt_target.angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+
+    // convert to quaternion
+    att_quat.from_euler(Vector3f{mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, yaw_bf});
     return true;
 }
 
