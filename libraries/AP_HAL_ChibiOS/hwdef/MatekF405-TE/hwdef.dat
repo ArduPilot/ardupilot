@@ -176,9 +176,10 @@ define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
 # save some flash
+include ../include/minimize_fpv_osd.inc
 include ../include/save_some_flash.inc
 include ../include/no_bootloader_DFU.inc
-define AP_BATTERY_SMBUS_ENABLED 0
+
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 define AP_GRIPPER_ENABLED 0
@@ -188,4 +189,4 @@ define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_BUTTON_ENABLED 0
 define AP_NOTIFY_OREOLED_ENABLED 0
 define HAL_PICCOLO_CAN_ENABLE 0
-define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+
