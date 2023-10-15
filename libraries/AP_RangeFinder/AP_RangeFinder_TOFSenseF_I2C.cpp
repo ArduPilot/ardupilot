@@ -17,6 +17,9 @@
 
 #if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
 
+#define TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING 0x24
+#define TOFSENSEP_I2C_COMMAND_SIGNAL_STATUS 0x28
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -49,7 +52,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TOFSenseF_I2C::detect(RangeFinder::RangeF
         return nullptr;
     }
 
-    if (!sensor->_init()) {
+    if (!sensor->init()) {
         delete sensor;
         return nullptr;
     }
@@ -58,7 +61,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TOFSenseF_I2C::detect(RangeFinder::RangeF
 }
 
 // initialise sensor
-bool AP_RangeFinder_TOFSenseF_I2C::_init(void)
+bool AP_RangeFinder_TOFSenseF_I2C::init(void)
 {
     _dev->get_semaphore()->take_blocking();
 
@@ -70,8 +73,11 @@ bool AP_RangeFinder_TOFSenseF_I2C::_init(void)
     // give time for the sensor to process the request
     hal.scheduler->delay(100);
 
-    uint16_t reading_cm;
-    if (!get_reading(reading_cm)) {
+    uint32_t reading_mm;
+    uint16_t status;
+    uint16_t signal_strength;
+
+    if (!get_reading(reading_mm, signal_strength, status)) {
         _dev->get_semaphore()->give();
         return false;
     }
@@ -79,7 +85,7 @@ bool AP_RangeFinder_TOFSenseF_I2C::_init(void)
     _dev->get_semaphore()->give();
 
     _dev->register_periodic_callback(100000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TOFSenseF_I2C::_timer, void));
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TOFSenseF_I2C::timer, void));
 
     return true;
 }
@@ -87,40 +93,52 @@ bool AP_RangeFinder_TOFSenseF_I2C::_init(void)
 // start_reading() - ask sensor to make a range reading
 bool AP_RangeFinder_TOFSenseF_I2C::start_reading()
 {
-    uint8_t cmd = TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING;
+    uint8_t cmd[] = {TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING, TOFSENSEP_I2C_COMMAND_SIGNAL_STATUS};
 
     // send command to take reading
-    return _dev->transfer(&cmd, sizeof(cmd), nullptr, 0);
+    return _dev->transfer(cmd, sizeof(cmd), nullptr, 0);
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_TOFSenseF_I2C::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_TOFSenseF_I2C::get_reading(uint32_t &reading_mm, uint16_t &signal_strength, uint16_t &status)
 {
-    le32_t val;
+
+    struct PACKED {
+        uint32_t distance_mm;
+        uint32_t signal_strength_and_status;
+    } packet;
 
     // take range reading and read back results
-    bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
+    const bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &packet, sizeof(packet));
 
     if (ret) {
         // combine results into distance
-        reading_cm = le32toh(val);
-
-        // trigger a new reading
-        start_reading();
+        reading_mm = packet.distance_mm;
+        signal_strength = (uint16_t)(packet.signal_strength_and_status >> 16);
+        status = (uint16_t)(packet.signal_strength_and_status);
     }
+
+    // trigger a new reading
+    start_reading();
 
     return ret;
 }
 
 //  timer called at 10Hz
-void AP_RangeFinder_TOFSenseF_I2C::_timer(void)
+void AP_RangeFinder_TOFSenseF_I2C::timer(void)
 {
-    uint16_t d;
-    if (get_reading(d)) {
+    uint32_t dist_mm;
+    uint16_t status;
+    uint16_t signal_strength;
+
+    if (get_reading(dist_mm, signal_strength, status)) {
         WITH_SEMAPHORE(_sem);
-        distance = d;
-        new_distance = true;
-        state.last_reading_ms = AP_HAL::millis();
+        if (status == 1) {
+            // healthy data
+            distance_mm = dist_mm;
+            new_distance = true;
+            state.last_reading_ms = AP_HAL::millis();
+        }
     }
 }
 
@@ -129,7 +147,7 @@ void AP_RangeFinder_TOFSenseF_I2C::update(void)
 {
     WITH_SEMAPHORE(_sem);
     if (new_distance) {
-        state.distance_m = distance * 0.01f;
+        state.distance_m = distance_mm * 0.001f;
         new_distance = false;
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 300) {

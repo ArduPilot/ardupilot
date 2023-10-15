@@ -10,7 +10,6 @@
 #include <AP_HAL/I2CDevice.h>
 
 #define TOFSENSEP_I2C_DEFAULT_ADDR   0x08
-#define TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING 0x24
 
 class AP_RangeFinder_TOFSenseF_I2C : public AP_RangeFinder_Backend
 {
@@ -35,15 +34,15 @@ private:
     								AP_RangeFinder_Params &_params,
                                  AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
-    bool _init(void);
-    void _timer(void);
+    bool init(void);
+    void timer(void);
 
-    uint16_t distance;
-    bool new_distance;
+    uint32_t distance_mm;
+    bool new_distance; // true if we have a new distance
 
-    // start a reading
+    // get a reading
     bool start_reading(void);
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint32_t &reading_mm, uint16_t &signal_strength, uint16_t &status);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
 
