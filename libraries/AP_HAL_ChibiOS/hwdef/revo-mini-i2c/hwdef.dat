@@ -153,3 +153,5 @@ define HAL_GYROFFT_ENABLED 0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+include ../include/minimize_fpv_osd.inc
+
