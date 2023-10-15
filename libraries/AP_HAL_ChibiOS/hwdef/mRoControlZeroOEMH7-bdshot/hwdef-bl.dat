@@ -1,0 +1,4 @@
+include ../mRoControlZeroOEMH7/hwdef-bl.dat
+
+define CHIBIOS_SHORT_BOARD_NAME "mRoCZeroOEMH7-bdshot"
+
