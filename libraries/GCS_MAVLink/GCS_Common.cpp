@@ -5086,12 +5086,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
 
+    case MAV_CMD_DO_SET_ROI_NONE: {
+        const Location zero_loc = Location();
+        return handle_command_do_set_roi(zero_loc);
+    }
+
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
+
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_SYSID:
-    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_MOUNT_CONFIGURE:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
