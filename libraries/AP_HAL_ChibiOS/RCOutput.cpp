@@ -2732,9 +2732,10 @@ void RCOutput::timer_info(ExpandingString &str)
 {
     // a header to allow for machine parsers to determine format
     str.printf("TIMERV1\n");
-
+#if HAL_DSHOT_ENABLED
     for (auto &group : pwm_group_list) {
         uint32_t target_freq;
+        bool at_least_freq;
 #if HAL_SERIAL_ESC_COMM_ENABLED
         if (&group == serial_group) {
             target_freq = 19200 * 10;
@@ -2742,14 +2743,18 @@ void RCOutput::timer_info(ExpandingString &str)
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
         if (is_dshot_protocol(group.current_mode)) {
             target_freq = protocol_bitrate(group.current_mode) * DSHOT_BIT_WIDTH_TICKS;
+            if (_dshot_esc_type == DSHOT_ESC_BLHELI_S || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S) {
+                at_least_freq = true;
+            }
         } else {
             target_freq = protocol_bitrate(group.current_mode) * NEOP_BIT_WIDTH_TICKS;
         }
-        const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_freq, is_dshot_protocol(group.current_mode));
+        const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_freq, at_least_freq);
         str.printf("TIM%-2u CLK=%4uMhz MODE=%5s FREQ=%8u TGT=%8u\n", group.timer_id, unsigned(group.pwm_drv->clock / 1000000),
             get_output_mode_string(group.current_mode),
-            unsigned(group.pwm_drv->clock / prescaler), unsigned(target_freq));
+            unsigned(group.pwm_drv->clock / (prescaler + 1)), unsigned(target_freq));
     }
+#endif
 }
 
 #endif // HAL_USE_PWM
