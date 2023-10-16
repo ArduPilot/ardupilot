@@ -12,7 +12,7 @@
 #endif
 
 #ifndef RPM_MAX_INSTANCES
-#define RPM_MAX_INSTANCES 2
+#define RPM_MAX_INSTANCES 4
 #endif
 
 #ifndef AP_RPM_BACKEND_DEFAULT_ENABLED
