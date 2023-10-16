@@ -749,7 +749,8 @@ class ChibiOSHWDef(object):
 
     def get_ram_map(self):
         '''get RAM_MAP. May be different for bootloader'''
-        self.env_vars['APP_RAM_START'] = None
+        if 'APP_RAM_START' not in self.env_vars:
+            self.env_vars['APP_RAM_START'] = None
         if args.bootloader:
             ram_map = self.get_mcu_config('RAM_MAP_BOOTLOADER', False)
             if ram_map is not None:
@@ -757,7 +758,7 @@ class ChibiOSHWDef(object):
                 if app_ram_map is not None and app_ram_map[0][0] != ram_map[0][0]:
                     # we need to find the location of app_ram_map[0] in ram_map
                     for i in range(len(ram_map)):
-                        if app_ram_map[0][0] == ram_map[i][0]:
+                        if app_ram_map[0][0] == ram_map[i][0] and self.env_vars['APP_RAM_START'] is None:
                             self.env_vars['APP_RAM_START'] = i
                 return ram_map
         elif self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
@@ -1099,16 +1100,17 @@ class ChibiOSHWDef(object):
         cc_regions = []
         total_memory = 0
         for (address, size, flags) in ram_map:
-            cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
+            size *= 1024
+            cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size))
             if self.env_vars['APP_RAM_START'] is not None and address == ram_map[self.env_vars['APP_RAM_START']][0]:
                 ram_reserve_start = self.get_ram_reserve_start()
                 address += ram_reserve_start
                 size -= ram_reserve_start
-            regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+            regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size, flags))
             total_memory += size
         f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
         f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
-        f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
+        f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % (total_memory/1024))
 
         if self.env_vars['APP_RAM_START'] is not None:
             f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[self.env_vars['APP_RAM_START']][0])
@@ -3029,6 +3031,8 @@ INCLUDE common.ld
             value = ' '.join(a[2:])
             if name == 'AP_PERIPH' and value != "1":
                 raise ValueError("AP_PERIPH may only have value 1")
+            if name == 'APP_RAM_START':
+                value = int(value, 0)
             self.env_vars[name] = value
 
     def process_file(self, filename):
