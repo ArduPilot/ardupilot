@@ -301,7 +301,7 @@ void AP_Spektrum_Telem::calc_rpm()
     _telem.rpm.identifier = TELE_DEVICE_RPM;
     _telem.rpm.sID = 0;
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.voltage(0) * 100.0f)));
+    _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.telem_voltage(0) * 100.0f)));
     _telem.rpm.temperature = htobe16(int16_t(roundf(32.0f + AP::baro().get_temperature(0) * 9.0f / 5.0f)));
 #if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
@@ -331,7 +331,7 @@ void AP_Spektrum_Telem::calc_batt_volts(uint8_t instance)
     const AP_BattMonitor &_battery = AP::battery();
 
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    _telem.hv.volts = htobe16(uint16_t(roundf(_battery.voltage(instance) * 100.0f)));
+    _telem.hv.volts = htobe16(uint16_t(roundf(_battery.telem_voltage(instance) * 100.0f)));
     _telem.hv.identifier = TELE_DEVICE_VOLTAGE;
     _telem.hv.sID = 0;
     _telem_pending = true;

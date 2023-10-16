@@ -111,10 +111,10 @@ void AP_Hott_Telem::send_EAM(void)
 
     const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
-        msg.batt1_voltage = uint16_t(battery.voltage(0) * 10);
+        msg.batt1_voltage = uint16_t(battery.telem_voltage(0) * 10);
     }
     if (battery.num_instances() > 1) {
-        msg.batt2_voltage = uint16_t(battery.voltage(1) * 10);
+        msg.batt2_voltage = uint16_t(battery.telem_voltage(1) * 10);
     }
     float current;
     if (battery.current_amps(current)) {

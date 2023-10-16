@@ -705,10 +705,23 @@ float AP_BattMonitor::gcs_voltage(uint8_t instance) const
     if (instance >= _num_instances || drivers[instance] == nullptr) {
         return 0.0f;
     }
-    if (drivers[instance]->option_is_set(AP_BattMonitor_Params::Options::GCS_Resting_Voltage)) {
+    if (drivers[instance]->option_is_set(AP_BattMonitor_Params::Options::Telem_Resting_Voltage)) {
         return voltage_resting_estimate(instance);
     }
     return state[instance].voltage;
+}
+
+/// Get voltage for telemetry, which will be resting voltage if option is enabled.
+/// Will not use resting voltage if disarmed.
+float AP_BattMonitor::telem_voltage(uint8_t instance) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return 0.0f;
+    }
+    if (hal.util->get_soft_armed() && drivers[instance]->option_is_set(AP_BattMonitor_Params::Options::Telem_Resting_Voltage)) {
+        return voltage_resting_estimate(instance);
+    }
+    return voltage(instance);
 }
 
 /// current_amps - returns the instantaneous current draw in amperes
