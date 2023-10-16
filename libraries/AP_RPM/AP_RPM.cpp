@@ -41,6 +41,12 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Group: 2_
     // @Path: AP_RPM_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 15, AP_RPM, AP_RPM_Params),
+    // @Group: 3_
+    // @Path: AP_RPM_Params.cpp
+    AP_SUBGROUPINFO(_params[2], "3_", 16, AP_RPM, AP_RPM_Params),
+    // @Group: 4_
+    // @Path: AP_RPM_Params.cpp
+    AP_SUBGROUPINFO(_params[3], "4_", 17, AP_RPM, AP_RPM_Params),
 #endif
 
     AP_GROUPEND
@@ -158,6 +164,7 @@ void AP_RPM::convert_params(void)
             {4, 4, 1}, // MIN_QUAL (Previously the min quality of the 1st RPM instance was used for all RPM instances.)
             {12, 5, 1}, // PIN
             {13, 6, 1}, // ESC_MASK
+
     };
 
     char param_name[17] = {0};
@@ -208,7 +215,7 @@ void AP_RPM::update(void)
     }
 
 #if HAL_LOGGING_ENABLED
-    if (enabled(0) || enabled(1)) {
+    if (enabled(0) || enabled(1) || enabled(2) || enabled(3)) {
         Log_RPM();
     }
 #endif
@@ -289,16 +296,20 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 #if HAL_LOGGING_ENABLED
 void AP_RPM::Log_RPM() const
 {
-    float rpm1 = -1, rpm2 = -1;
+    float rpm1 = -1, rpm2 = -1, rpm3 = -1, rpm4 = -1;
 
     get_rpm(0, rpm1);
     get_rpm(1, rpm2);
+    get_rpm(2, rpm3);
+    get_rpm(3, rpm4);
 
     const struct log_RPM pkt{
         LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
         time_us     : AP_HAL::micros64(),
         rpm1        : rpm1,
-        rpm2        : rpm2
+        rpm2        : rpm2,
+        rpm3        : rpm3,
+        rpm4        : rpm4
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
