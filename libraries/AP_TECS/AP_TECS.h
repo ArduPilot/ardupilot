@@ -183,6 +183,7 @@ private:
     AP_Float _vertAccLim;
     AP_Float _rollComp;
     AP_Float _spdWeight;
+    AP_Float _spdWeightSlewLimit;
     AP_Float _spdWeightLand;
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
@@ -415,6 +416,7 @@ private:
     bool _need_reset;
 
     float _SKE_weighting;
+    float _SKE_weighting_prev;
 
     AP_Int8 _use_synthetic_airspeed;
     
