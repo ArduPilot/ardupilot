@@ -4299,9 +4299,17 @@ class AutoTest(ABC):
                                mav=None,
                                condition=None,
                                delay_fn=None,
-                               instance=None):
+                               instance=None,
+                               check_context=False):
         if mav is None:
             mav = self.mav
+
+        if check_context:
+            collection = self.context_collection(type)
+            if len(collection) > 0:
+                # return the most-recently-received message:
+                return collection[-1]
+
         m = None
         tstart = time.time()  # timeout in wallclock
         while True:
@@ -4311,8 +4319,10 @@ class AutoTest(ABC):
                     continue
             if m is not None:
                 break
-            if time.time() - tstart > timeout:
-                raise NotAchievedException("Did not get %s" % type)
+            elapsed_time = time.time() - tstart
+            if elapsed_time > timeout:
+                raise NotAchievedException("Did not get %s after %s seconds" %
+                                           (type, elapsed_time))
             if delay_fn is not None:
                 delay_fn()
         if verbose:
