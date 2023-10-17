@@ -163,6 +163,9 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 
 BARO DPS310 I2C:0:0x76
 
+# probe external compasses (same bus as internal)
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
 
