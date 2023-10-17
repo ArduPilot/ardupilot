@@ -5806,6 +5806,40 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def SET_ATTITUDE_TARGET_heading(self, target_sysid=None, target_compid=1):
+        '''Test handling of SET_ATTITUDE_TARGET'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        for angle in 0, 290, 70, 180, 0:
+            self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
+        self.disarm_vehicle()
+
+    def SET_ATTITUDE_TARGET_heading_test_target(self, angle, target_sysid, target_compid):
+        if target_sysid is None:
+            target_sysid = self.sysid_thismav()
+
+        def poke_set_attitude(value, target):
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                target_sysid,
+                target_compid,
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE,
+                mavextra.euler_to_quat([
+                    math.radians(0),
+                    math.radians(0),
+                    math.radians(angle)
+                ]), # att
+                0, # roll rate (rad/s)
+                0, # pitch rate
+                0, # yaw rate
+                1) # thrust
+
+        self.wait_heading(angle, called_function=poke_set_attitude, minimum_duration=5)
+
     def SET_POSITION_TARGET_LOCAL_NED(self, target_sysid=None, target_compid=1):
         '''Test handling of SET_POSITION_TARGET_LOCAL_NED'''
         if target_sysid is None:
@@ -6548,6 +6582,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.REQUEST_MESSAGE,
             self.SYSID_ENFORCE,
             self.SET_ATTITUDE_TARGET,
+            self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
