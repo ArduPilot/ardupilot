@@ -117,4 +117,14 @@ private:
 
     float temp_filtered;
     LowPassFilter2pFloat temp_filter;
+
+    /*
+      accumulators for sensor_rate sampling
+    */
+    struct {
+        uint8_t downsample_rate;
+        uint8_t count;
+        Vector3f accel;
+        Vector3f gyro;
+    } accum;
 };
