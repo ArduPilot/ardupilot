@@ -18,7 +18,6 @@ from common import AutoTest
 from pysim import util
 
 from common import AutoTestTimeoutException
-from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
@@ -389,34 +388,18 @@ class AutoTestRover(AutoTest):
         self.wait_statustext("Mission Complete", timeout=60, check_context=True)
         self.disarm_vehicle()
 
-    def GetBanner(self):
+    def _MAV_CMD_DO_SEND_BANNER(self, run_cmd):
         '''Get Banner'''
-        target_sysid = self.sysid_thismav()
-        target_compid = 1
-        self.mav.mav.command_long_send(
-            target_sysid,
-            target_compid,
-            mavutil.mavlink.MAV_CMD_DO_SEND_BANNER,
-            1, # confirmation
-            1, # send it
-            0,
-            0,
-            0,
-            0,
-            0,
-            0)
-        start = time.time()
-        while True:
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is not None and "ArduRover" in m.text:
-                self.progress("banner received: %s" % m.text)
-                return
-            if time.time() - start > 10:
-                break
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        run_cmd(mavutil.mavlink.MAV_CMD_DO_SEND_BANNER)
+        self.wait_statustext("ArduRover", timeout=1, check_context=True)
+        self.context_pop()
 
-        raise MsgRcvTimeoutException("banner not received")
+    def MAV_CMD_DO_SEND_BANNER(self):
+        '''test MAV_CMD_DO_SEND_BANNER'''
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd)
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd_int)
 
     def drive_brake_get_stopping_distance(self, speed):
         '''measure our stopping distance'''
@@ -6578,7 +6561,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveSquare,
             self.DriveMission,
             # self.DriveBrake,  # disabled due to frequent failures
-            self.GetBanner,
+            self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
             self.MAVProxy_DO_SET_MODE,
             self.ServoRelayEvents,

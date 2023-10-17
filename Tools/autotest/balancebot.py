@@ -111,7 +111,7 @@ inherit Rover's tests!'''
             self.DriveRTL,
             self.DriveMission,
             self.TestWheelEncoder,
-            self.GetBanner,
+            self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
             self.ServoRelayEvents,
         ])
