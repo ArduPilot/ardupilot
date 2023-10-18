@@ -25,6 +25,10 @@
 #include "Scheduler.h"
 #include "Device.h"
 
+#ifndef HAL_SPI_SCK_SAVE_RESTORE
+#define HAL_SPI_SCK_SAVE_RESTORE TRUE
+#endif
+
 namespace ChibiOS {
 
 class SPIBus : public DeviceBus {
@@ -54,7 +58,9 @@ private:
     bool spi_started;
 
     // mode line for SCK pin
+#if HAL_SPI_SCK_SAVE_RESTORE
     iomode_t sck_mode;
+#endif
 };
 
 struct SPIDesc {
