@@ -475,22 +475,20 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
     switch (packet.command) {
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
+    case MAV_CMD_NAV_TAKEOFF:
+        return MAV_RESULT_ACCEPTED;
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+bool GCS_MAVLINK_Blimp::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
 {
-    switch (packet.command) {
-
-    case MAV_CMD_NAV_TAKEOFF: {
-        return MAV_RESULT_ACCEPTED;
+    if (packet_command == MAV_CMD_NAV_TAKEOFF) {
+        frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        return true;
     }
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
+    return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
 
 void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
