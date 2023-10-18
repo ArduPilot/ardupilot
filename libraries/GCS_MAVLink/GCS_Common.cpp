@@ -4727,12 +4727,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
-#if AP_FENCE_ENABLED
-    case MAV_CMD_DO_FENCE_ENABLE:
-        result = handle_command_do_fence_enable(packet);
-        break;
-#endif
-
 #if HAL_HIGH_LATENCY2_ENABLED
     case MAV_CMD_CONTROL_HIGH_LATENCY:
         result = handle_control_high_latency(packet);
@@ -5084,6 +5078,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
+
+#if AP_FENCE_ENABLED
+    case MAV_CMD_DO_FENCE_ENABLE:
+        return handle_command_do_fence_enable(packet);
+#endif
 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
