@@ -4344,6 +4344,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
         return MAV_RESULT_FAILED;
     }
     compass.set_and_save_offsets(compassNumber, Vector3f(packet.param2, packet.param3, packet.param4));
+
+#if AP_COMPASS_DIAGONALS_ENABLED
+    // zero the diagonal and off-diagonal elements:
+    const Vector3f one{1,1,1};
+    compass.set_and_save_diagonals(compassNumber, one);
+    const Vector3f zero;
+    compass.set_and_save_offdiagonals(compassNumber, zero);
+#endif
+
     return MAV_RESULT_ACCEPTED;
 }
 #endif  // AP_MAVLINK_MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS_ENABLED
