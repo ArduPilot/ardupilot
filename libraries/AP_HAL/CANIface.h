@@ -264,10 +264,17 @@ public:
     // register a frame callback function
     virtual bool register_frame_callback(FrameCb cb);
 
+    // get timestamp of last packet sent with matching mask and value
+    virtual uint64_t get_tracked_tx_timestamp() {
+        return 0;
+    }
+
+    // set mask and value on packet id to track tx timestamp for
+    virtual void set_track_tx_timestamp(uint32_t mask, uint32_t value) {}
+
 protected:
     virtual int8_t get_iface_num() const = 0;
     virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
-
     FrameCb frame_callback;
     uint32_t bitrate_;
     OperatingMode mode_;
