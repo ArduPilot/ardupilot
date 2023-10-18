@@ -6601,11 +6601,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "COMPASS_OFS3_Z": new_magic_value_z,
         }, epsilon=0.0001)
 
-        # we don't clear the ODIs or DIAs - oops, bad!
+        # we clear the ODIs and DIAs
         self.assert_parameter_values({
-            "COMPASS_ODI_X": magic_value,
-            "COMPASS_ODI_Y": magic_value,
-            "COMPASS_ODI_Z": magic_value,
+            "COMPASS_ODI_X": 0,
+            "COMPASS_ODI_Y": 0,
+            "COMPASS_ODI_Z": 0,
+            "COMPASS_DIA_X": 1,
+            "COMPASS_DIA_Y": 1,
+            "COMPASS_DIA_Z": 1,
+            "COMPASS_ODI2_X": 0,
+            "COMPASS_ODI2_Y": 0,
+            "COMPASS_ODI2_Z": 0,
+            "COMPASS_DIA2_X": 1,
+            "COMPASS_DIA2_Y": 1,
+            "COMPASS_DIA2_Z": 1,
         }, epsilon=0.0001)
 
     def tests(self):
