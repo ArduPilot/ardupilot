@@ -6546,6 +6546,68 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self._MAV_CMD_GET_HOME_POSITION(self.run_cmd)
         self._MAV_CMD_GET_HOME_POSITION(self.run_cmd_int)
 
+    def MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS(self):
+        '''test setting of calibration values via mavlink command'''
+        magic_value = 17.1
+        for magname in "", "2", "3":
+            for elementtype in "OFS", "ODI", "DIA":
+                for axis in "X", "Y", "Z":
+                    self.set_parameter(
+                        "COMPASS_%s%s_%s" % (elementtype, magname, axis),
+                        magic_value)
+        new_magic_value_x = 18.3
+        new_magic_value_y = 1.1
+        new_magic_value_z = 3.142
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+            p1=2, # param1 (compass0)
+            p2=new_magic_value_x,
+            p3=new_magic_value_y,
+            p4=new_magic_value_z,
+        )
+        self.assert_parameter_values({
+            "COMPASS_OFS_X": new_magic_value_x,
+            "COMPASS_OFS_Y": new_magic_value_y,
+            "COMPASS_OFS_Z": new_magic_value_z,
+            "COMPASS_OFS2_X": magic_value,
+            "COMPASS_OFS2_Y": magic_value,
+            "COMPASS_OFS2_Z": magic_value,
+        }, epsilon=0.0001)
+
+        # now reset other 2 compasses:
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+            p1=5, # param1 (compass1)
+            p2=new_magic_value_x,
+            p3=new_magic_value_y,
+            p4=new_magic_value_z,
+        )
+        self.assert_parameter_values({
+            "COMPASS_OFS2_X": new_magic_value_x,
+            "COMPASS_OFS2_Y": new_magic_value_y,
+            "COMPASS_OFS2_Z": new_magic_value_z,
+        }, epsilon=0.0001)
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+            p1=6, # param1 (compass2)
+            p2=new_magic_value_x,
+            p3=new_magic_value_y,
+            p4=new_magic_value_z,
+        )
+        self.assert_parameter_values({
+            "COMPASS_OFS3_X": new_magic_value_x,
+            "COMPASS_OFS3_Y": new_magic_value_y,
+            "COMPASS_OFS3_Z": new_magic_value_z,
+        }, epsilon=0.0001)
+
+        # we don't clear the ODIs or DIAs - oops, bad!
+        self.assert_parameter_values({
+            "COMPASS_ODI_X": magic_value,
+            "COMPASS_ODI_Y": magic_value,
+            "COMPASS_ODI_Z": magic_value,
+        }, epsilon=0.0001)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6628,6 +6690,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.CompassPrearms,
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
+            self.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
         ])
         return ret
 
