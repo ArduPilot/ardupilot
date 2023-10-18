@@ -4327,7 +4327,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_lo
     return MAV_RESULT_FAILED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_int_t &packet)
 {
     Compass &compass = AP::compass();
 
@@ -4805,11 +4805,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_flash_bootloader(packet);
         break;
 
-    case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
-        result = handle_command_preflight_set_sensor_offsets(packet);
-        break;
-    }
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5133,6 +5128,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         return handle_command_preflight_calibration(packet, msg);
+
+    case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
+        return handle_command_preflight_set_sensor_offsets(packet);
 
     case MAV_CMD_PREFLIGHT_STORAGE:
         if (is_equal(packet.param1, 2.0f)) {
