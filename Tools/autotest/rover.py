@@ -18,7 +18,6 @@ from common import AutoTest
 from pysim import util
 
 from common import AutoTestTimeoutException
-from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
@@ -389,34 +388,18 @@ class AutoTestRover(AutoTest):
         self.wait_statustext("Mission Complete", timeout=60, check_context=True)
         self.disarm_vehicle()
 
-    def GetBanner(self):
+    def _MAV_CMD_DO_SEND_BANNER(self, run_cmd):
         '''Get Banner'''
-        target_sysid = self.sysid_thismav()
-        target_compid = 1
-        self.mav.mav.command_long_send(
-            target_sysid,
-            target_compid,
-            mavutil.mavlink.MAV_CMD_DO_SEND_BANNER,
-            1, # confirmation
-            1, # send it
-            0,
-            0,
-            0,
-            0,
-            0,
-            0)
-        start = time.time()
-        while True:
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is not None and "ArduRover" in m.text:
-                self.progress("banner received: %s" % m.text)
-                return
-            if time.time() - start > 10:
-                break
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        run_cmd(mavutil.mavlink.MAV_CMD_DO_SEND_BANNER)
+        self.wait_statustext("ArduRover", timeout=1, check_context=True)
+        self.context_pop()
 
-        raise MsgRcvTimeoutException("banner not received")
+    def MAV_CMD_DO_SEND_BANNER(self):
+        '''test MAV_CMD_DO_SEND_BANNER'''
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd)
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd_int)
 
     def drive_brake_get_stopping_distance(self, speed):
         '''measure our stopping distance'''
@@ -5806,6 +5789,40 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def SET_ATTITUDE_TARGET_heading(self, target_sysid=None, target_compid=1):
+        '''Test handling of SET_ATTITUDE_TARGET'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        for angle in 0, 290, 70, 180, 0:
+            self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
+        self.disarm_vehicle()
+
+    def SET_ATTITUDE_TARGET_heading_test_target(self, angle, target_sysid, target_compid):
+        if target_sysid is None:
+            target_sysid = self.sysid_thismav()
+
+        def poke_set_attitude(value, target):
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                target_sysid,
+                target_compid,
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE,
+                mavextra.euler_to_quat([
+                    math.radians(0),
+                    math.radians(0),
+                    math.radians(angle)
+                ]), # att
+                0, # roll rate (rad/s)
+                0, # pitch rate
+                0, # yaw rate
+                1) # thrust
+
+        self.wait_heading(angle, called_function=poke_set_attitude, minimum_duration=5)
+
     def SET_POSITION_TARGET_LOCAL_NED(self, target_sysid=None, target_compid=1):
         '''Test handling of SET_POSITION_TARGET_LOCAL_NED'''
         if target_sysid is None:
@@ -6516,6 +6533,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_RTL()
         self.disarm_vehicle()
 
+    def _MAV_CMD_GET_HOME_POSITION(self, run_cmd):
+        '''test handling of mavlink command MAV_CMD_GET_HOME_POSITION'''
+        self.context_collect('HOME_POSITION')
+        run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        self.assert_receive_message('HOME_POSITION', check_context=True)
+
+    def MAV_CMD_GET_HOME_POSITION(self):
+        '''test handling of mavlink command MAV_CMD_GET_HOME_POSITION'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self._MAV_CMD_GET_HOME_POSITION(self.run_cmd)
+        self._MAV_CMD_GET_HOME_POSITION(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6531,7 +6561,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveSquare,
             self.DriveMission,
             # self.DriveBrake,  # disabled due to frequent failures
-            self.GetBanner,
+            self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
             self.MAVProxy_DO_SET_MODE,
             self.ServoRelayEvents,
@@ -6548,6 +6578,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.REQUEST_MESSAGE,
             self.SYSID_ENFORCE,
             self.SET_ATTITUDE_TARGET,
+            self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
@@ -6596,6 +6627,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.NoArmWithoutMissionItems,
             self.CompassPrearms,
             self.MAV_CMD_DO_SET_REVERSE,
+            self.MAV_CMD_GET_HOME_POSITION,
         ])
         return ret
 
