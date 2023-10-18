@@ -162,4 +162,6 @@ include ../include/no_bootloader_DFU.inc
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
+# no space for bootloader in firmware image:
 include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc

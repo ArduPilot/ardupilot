@@ -121,3 +121,6 @@ define MAG_BOARD_ORIENTATION ROTATION_YAW_180
 
 # no ADC pins
 define HAL_USE_ADC FALSE
+
+include ../include/minimize_features.inc
+
