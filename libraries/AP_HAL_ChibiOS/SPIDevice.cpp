@@ -88,7 +88,9 @@ SPIBus::SPIBus(uint8_t _bus) :
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
 
     // remember the SCK line for stop_peripheral()/start_peripheral()
+#if HAL_SPI_SCK_SAVE_RESTORE
     sck_mode = palReadLineMode(spi_devices[bus].sck_line);
+#endif
 }
 
 /*
@@ -349,6 +351,7 @@ void SPIBus::stop_peripheral(void)
         return;
     }
     const auto &sbus = spi_devices[bus];
+#if HAL_SPI_SCK_SAVE_RESTORE
     if (spi_mode == SPIDEV_MODE0 || spi_mode == SPIDEV_MODE1) {
         // Clock polarity is 0, so we need to set the clock line low before spi reset
         palClearLine(sbus.sck_line);
@@ -357,6 +360,7 @@ void SPIBus::stop_peripheral(void)
         palSetLine(sbus.sck_line);
     }
     palSetLineMode(sbus.sck_line, PAL_MODE_OUTPUT_PUSHPULL);
+#endif
     spiStop(sbus.driver);
     spi_started = false;
 }
@@ -372,10 +376,10 @@ void SPIBus::start_peripheral(void)
 
     /* start driver and setup transfer parameters */
     spiStart(spi_devices[bus].driver, &spicfg);
-
+#if HAL_SPI_SCK_SAVE_RESTORE
     // restore sck pin mode from stop_peripheral()
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
-
+#endif
     spi_started = true;
 }
 
