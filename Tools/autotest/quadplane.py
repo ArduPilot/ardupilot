@@ -1485,6 +1485,34 @@ class AutoTestQuadPlane(AutoTest):
 
         self.reboot_sitl()  # unlock home position
 
+    def Q_GUIDED_MODE(self):
+        '''test moving in VTOL mode with SET_POSITION_TARGET_GLOBAL_INT'''
+        self.set_parameter('Q_GUIDED_MODE', 1)
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=15)
+        self.wait_altitude(14, 16, relative=True)
+
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 50, 50)
+
+        # set position target
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            1,  # reposition flags; 1 means "change to guided"
+            0,
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            30,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_location(loc, timeout=120)
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1524,5 +1552,6 @@ class AutoTestQuadPlane(AutoTest):
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
             self.MAV_CMD_NAV_TAKEOFF,
+            self.Q_GUIDED_MODE,
         ])
         return ret
