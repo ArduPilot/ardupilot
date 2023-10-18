@@ -9,7 +9,7 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_int_t &packet)
 {
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
