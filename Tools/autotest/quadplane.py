@@ -352,7 +352,8 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QLAND")
         self.wait_altitude(0, 2, relative=True, timeout=60)
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=30)
         self.mav.motors_disarmed_wait()
 
     def EXTENDED_SYS_STATE(self):
