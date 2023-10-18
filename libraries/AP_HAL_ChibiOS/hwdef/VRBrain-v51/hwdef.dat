@@ -164,4 +164,4 @@ define HAL_BATT_CURR_SCALE 17.0
 define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
-include ../include/save_some_flash.inc
+include ../include/minimize_features.inc
