@@ -46,6 +46,9 @@
 #include <time.h>
 #include <sys/time.h>
 
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+
 extern HAL_SITL& hal;
 
 using namespace HALSITL;
@@ -356,7 +359,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     bool storage_fram_enabled = false;
     bool erase_all_storage = false;
 
-    if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
+    if (asprintf(&autotest_dir, AP_BUILD_ROOT "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
     }
     _set_signal_handlers();
