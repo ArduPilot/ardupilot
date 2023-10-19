@@ -3810,21 +3810,23 @@ class AutoTest(ABC):
         self.progress("log list: %s" % str(ret))
         return ret
 
-    def assert_parameter_values(self, parameters):
+    def assert_parameter_values(self, parameters, epsilon=None):
         names = parameters.keys()
         got = self.get_parameters(names)
         for name in names:
-            if got[name] != parameters[name]:
+            equal = got[name] == parameters[name]
+            if epsilon is not None:
+                delta = abs(got[name] - parameters[name])
+                equal = delta <= epsilon
+            if not equal:
                 raise NotAchievedException("parameter %s want=%f got=%f" %
                                            (name, parameters[name], got[name]))
             self.progress("%s has expected value %f" % (name, got[name]))
 
-    def assert_parameter_value(self, parameter, required):
-        got = self.get_parameter(parameter)
-        if got != required:
-            raise NotAchievedException("%s has unexpected value; want=%f got=%f" %
-                                       (parameter, required, got))
-        self.progress("%s has value %f" % (parameter, required))
+    def assert_parameter_value(self, parameter, required, **kwargs):
+        self.assert_parameter_values({
+            parameter: required,
+        }, **kwargs)
 
     def assert_reach_imu_temperature(self, target, timeout):
         '''wait to reach a target temperature'''
