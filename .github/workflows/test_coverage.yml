@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.0
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.1
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
