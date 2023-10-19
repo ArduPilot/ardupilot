@@ -68,7 +68,7 @@ void RCOutput::dshot_send_trampoline(void *p)
  */
 void RCOutput::rcout_thread() {
     // don't start outputting until fully configured
-    while (!hal.scheduler->is_system_initialized() || _dshot_period_us == 0) {
+    while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay_microseconds(1000);
     }
 

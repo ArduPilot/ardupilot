@@ -123,6 +123,9 @@ class ChibiOSHWDef(object):
         # integer defines
         self.intdefines = {}
 
+        # list of shared up timers
+        self.shared_up = []
+
     def is_int(self, str):
         '''check if a string is an integer'''
         try:
@@ -2067,6 +2070,7 @@ INCLUDE common.ld
         rc_in_int = None
         alarm = None
         bidir = None
+        up_shared = None
         pwm_out = []
         # start with the ordered list from the dma resolver
         pwm_timers = ordered_timers
@@ -2084,6 +2088,8 @@ INCLUDE common.ld
                         pwm_out.append(p)
                     if p.has_extra('BIDIR'):
                         bidir = p
+                    if p.has_extra('UP_SHARED'):
+                        up_shared = p
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
 
@@ -2170,6 +2176,10 @@ INCLUDE common.ld
         f.write('// PWM timer config\n')
         if bidir is not None:
             f.write('#define HAL_WITH_BIDIR_DSHOT\n')
+        if up_shared is not None:
+            f.write('#define HAL_TIM_UP_SHARED\n')
+            for t in self.shared_up:
+                f.write('#define HAL_%s_SHARED true\n' % t)
         for t in pwm_timers:
             n = int(t[3:])
             f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
@@ -2225,7 +2235,10 @@ INCLUDE common.ld
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
 #endif
 ''' % (n, i, n, i, n, i, n, i, n, i, n, i)
-                hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
+                if up_shared is not None:
+                    hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
+                else:
+                    hal_icu_cfg += '}, \\'
 
             f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
@@ -2738,6 +2751,7 @@ INCLUDE common.ld
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
+        self.shared_up = []
         done = set()
         prefixes = ['SPI', 'USART', 'UART', 'I2C']
         periph_pins = self.allpins[:]
@@ -2788,6 +2802,8 @@ INCLUDE common.ld
                     (_, _, compl) = self.parse_timer(ch_label)
                     if ch_label not in peripherals and p.has_extra('BIDIR') and not compl:
                         peripherals.append(ch_label)
+                    if label not in self.shared_up and p.has_extra('UP_SHARED') and not compl:
+                        self.shared_up.append(label)
             done.add(type)
         return peripherals
 
