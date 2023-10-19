@@ -22,9 +22,6 @@ define HAL_RUNCAM_ENABLED 0
 # minimized boards don't get configuration via SmartAudio by default:
 define AP_SMARTAUDIO_ENABLED 0
 
-# can't fit Turtle mode on minimized boards:
-define MODE_TURTLE_ENABLED 0
-
 # no Spektrum telemetry:
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 
