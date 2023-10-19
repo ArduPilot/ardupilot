@@ -54,7 +54,7 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
 #if HAL_WITH_IO_MCU
     const uint32_t iomcu_mask = ((1U<<chan_offset)-1);
-    if (AP_BoardConfig::io_dshot() && (mask & iomcu_mask)) {
+    if (iomcu_dshot && (mask & iomcu_mask)) {
         iomcu.set_bidir_dshot_mask(mask & iomcu_mask);
     }
 #endif
@@ -188,21 +188,21 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
  */
 void RCOutput::bdshot_ic_dma_allocate(Shared_DMA *ctx)
 {
-    chSysLock();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         for (uint8_t icuch = 0; icuch < 4; icuch++) {
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] == nullptr) {
+                chSysLock();
                 group.bdshot.ic_dma[icuch] = dmaStreamAllocI(group.dma_ch[icuch].stream_id, 10, bdshot_dma_ic_irq_callback, &group);
 #if STM32_DMA_SUPPORTS_DMAMUX
                 if (group.bdshot.ic_dma[icuch]) {
                     dmaSetRequestSource(group.bdshot.ic_dma[icuch], group.dma_ch[icuch].channel);
                 }
 #endif
+                chSysUnlock();
             }
         }
     }
-    chSysUnlock();
 }
 
 /*
@@ -210,17 +210,17 @@ void RCOutput::bdshot_ic_dma_allocate(Shared_DMA *ctx)
  */
 void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
 {
-    chSysLock();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         for (uint8_t icuch = 0; icuch < 4; icuch++) {
+            chSysLock();
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] != nullptr) {
                 dmaStreamFreeI(group.bdshot.ic_dma[icuch]);
                 group.bdshot.ic_dma[icuch] = nullptr;
             }
+            chSysUnlock();
         }
     }
-    chSysUnlock();
 }
 
 // setup bdshot for sending and receiving the next pulse
@@ -238,7 +238,11 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
         } else {
             osalDbgAssert(!group.bdshot.curr_ic_dma_handle, "IC DMA handle has not been released");
             group.bdshot.curr_ic_dma_handle = group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan];
+#ifdef HAL_TIM_UP_SHARED
             osalDbgAssert(group.shared_up_dma || !group.bdshot.curr_ic_dma_handle->is_locked(), "IC DMA handle is already locked");
+#else
+            osalDbgAssert(!group.bdshot.curr_ic_dma_handle->is_locked(), "IC DMA handle is already locked");
+#endif
             group.bdshot.curr_ic_dma_handle->lock();
             group.bdshot.enabled = true;
         }
@@ -461,7 +465,7 @@ void RCOutput::bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t 
         break;
     }
 }
-#endif
+#endif  // !defined(STM32F1)
 
 /*
   unlock DMA channel after a bi-directional dshot transaction completes
@@ -488,13 +492,14 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     stm32_cacheBufferInvalidate(group->dma_buffer, group->bdshot.dma_tx_size);
     memcpy(group->bdshot.dma_buffer_copy, group->dma_buffer, sizeof(dmar_uint_t) * group->bdshot.dma_tx_size);
 
+#ifdef HAL_TIM_UP_SHARED
     // although it should be possible to start the next DMAR transaction concurrently with receiving 
     // telemetry, in practice it seems to interfere with the DMA engine
     if (group->shared_up_dma && group->bdshot.enabled) {
         // next dshot pulse can go out now
         chEvtSignalI(group->dshot_waiter, DSHOT_CASCADE);
     }
-
+#endif
     // if using input capture DMA and sharing the UP and CH channels then clean up
     // by assigning the source back to UP
 #if STM32_DMA_SUPPORTS_DMAMUX
@@ -508,6 +513,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     // we will not get data from active channels
     group->bdshot.curr_telem_chan = bdshot_find_next_ic_channel(*group);
 
+    // dshot commands are issued without a response coming back, this allows
+    // us to handle the next packet correctly without it looking like a failure
     if (group->bdshot.dma_tx_size > 0) {
         group->dshot_state = DshotState::RECV_COMPLETE;
     } else {
@@ -738,7 +745,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     uint8_t normalized_chan = chan;
 #endif
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot()) {
+    if (iomcu_dshot) {
         normalized_chan = chan + chan_offset;
     }
 #endif
