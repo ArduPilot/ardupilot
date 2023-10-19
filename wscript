@@ -584,12 +584,6 @@ def configure(cfg):
     else:
         cfg.env.ENABLE_HEADER_CHECKS = False
 
-    # TODO: Investigate if code could be changed to not depend on the
-    # source absolute path.
-    cfg.env.prepend_value('DEFINES', [
-        'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
-    ])
-
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
 

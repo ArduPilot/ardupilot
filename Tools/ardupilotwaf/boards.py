@@ -508,6 +508,7 @@ class Board:
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
         bld.ap_version_append_int('GIT_VERSION_INT', int("0x" + bld.git_head_hash(short=True), base=16))
+        bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath())
         import time
         ltime = time.localtime()
         if bld.env.build_dates:
