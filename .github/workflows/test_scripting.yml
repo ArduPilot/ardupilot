@@ -22,7 +22,7 @@ concurrency:
 jobs:
   test-scripting:
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-base:v0.1.0
+    container: ardupilot/ardupilot-dev-base:v0.1.1
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
