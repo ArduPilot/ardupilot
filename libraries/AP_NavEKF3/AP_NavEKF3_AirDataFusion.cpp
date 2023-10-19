@@ -198,6 +198,20 @@ void NavEKF3_core::FuseAirspeed()
 // select fusion of true airspeed measurements
 void NavEKF3_core::SelectTasFusion()
 {
+    // we don't assume zero sideslip for ground vehicles as EKF could
+    // be quite sensitive to a rapid spin of the ground vehicle if
+    // traction is lost
+    const bool dal_ff = dal.get_fly_forward() && dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
+    const uint32_t now_ms = imuSampleTime_ms;
+    if (dal_ff) {
+        if (fly_forward_start_ms == 0) {
+            fly_forward_start_ms = now_ms;
+        }
+    } else {
+        fly_forward_start_ms = 0;
+    }
+    fly_forward_active = fly_forward_start_ms != 0 && now_ms - fly_forward_start_ms > 10000U;
+
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data locking out fusion of other measurements

@@ -1306,6 +1306,10 @@ private:
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
 
+    // time when fly_forward became true
+    uint32_t fly_forward_start_ms;
+    bool fly_forward_active;
+
 #if EK3_FEATURE_BODY_ODOM
     // wheel sensor fusion
     EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
