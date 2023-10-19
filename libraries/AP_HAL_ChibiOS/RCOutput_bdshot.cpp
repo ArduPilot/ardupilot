@@ -201,6 +201,62 @@ void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
     }
 }
 
+// setup bdshot for sending and receiving the next pulse
+void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
+{
+   // assume that we won't be able to get the input capture lock
+    group.bdshot.enabled = false;
+
+    uint32_t active_channels = group.ch_mask & group.en_mask;
+    // now grab the input capture lock if we are able, we can only enable bi-dir on a group basis
+    if (((_bdshot.mask & active_channels) == active_channels) && group.has_ic()) {
+        if (group.has_shared_ic_up_dma()) {
+            // no locking required
+            group.bdshot.enabled = true;
+        } else {
+            osalDbgAssert(!group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan]->is_locked(), "DMA handle is already locked");
+            group.bdshot.ic_dma_handle[group.bdshot.curr_telem_chan]->lock();
+            group.bdshot.enabled = true;
+        }
+    }
+
+    // if the last transaction returned telemetry, decode it
+    if (group.dshot_state == DshotState::RECV_COMPLETE) {
+        uint8_t chan = group.chan[group.bdshot.prev_telem_chan];
+        uint32_t now = AP_HAL::millis();
+        if (bdshot_decode_dshot_telemetry(group, group.bdshot.prev_telem_chan)) {
+            _bdshot.erpm_clean_frames[chan]++;
+            _active_escs_mask |= (1<<chan); // we know the ESC is functional at this point
+        } else {
+            _bdshot.erpm_errors[chan]++;
+        }
+        // reset statistics periodically
+        if (now - _bdshot.erpm_last_stats_ms[chan] > 5000) {
+            _bdshot.erpm_clean_frames[chan] = 0;
+            _bdshot.erpm_errors[chan] = 0;
+            _bdshot.erpm_last_stats_ms[chan] = now;
+        }
+    }
+
+    if (group.bdshot.enabled) {
+        if (group.pwm_started) {
+            bdshot_reset_pwm(group);
+        } else {
+            pwmStart(group.pwm_drv, &group.pwm_cfg);
+        }
+        group.pwm_started = true;
+
+        // we can be more precise for capture timer
+        group.bdshot.telempsc = (uint16_t)(lrintf(((float)group.pwm_drv->clock / bdshot_get_output_rate_hz(group.current_mode) + 0.01f)/TELEM_IC_SAMPLE) - 1);
+    }
+}
+
+void RCOutput::bdshot_reset_pwm(pwm_group& group)
+{
+    pwmStop(group.pwm_drv);
+    pwmStart(group.pwm_drv, &group.pwm_cfg);
+}
+
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625
 // called from the interrupt
 #pragma GCC push_options

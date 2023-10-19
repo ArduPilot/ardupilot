@@ -644,12 +644,16 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(dmar_uint_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
+    static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
+    static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
+
     void dshot_send_groups(uint64_t time_out_us);
     void dshot_send(pwm_group &group, uint64_t time_out_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
+    sysinterval_t calc_ticks_remaining(pwm_group &group, uint64_t time_out_us, uint32_t output_period_us);
     void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(virtual_timer_t*, void *p);
@@ -675,7 +679,9 @@ private:
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
     static void bdshot_finish_dshot_gcr_transaction(virtual_timer_t* vt, void *p);
     bool bdshot_setup_group_ic_DMA(pwm_group &group);
+    void bdshot_prepare_for_next_pulse(pwm_group& group);
     static void bdshot_receive_pulses_DMAR(pwm_group* group);
+    static void bdshot_reset_pwm(pwm_group& group);
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static uint32_t bdshot_get_output_rate_hz(const enum output_mode mode);
 
