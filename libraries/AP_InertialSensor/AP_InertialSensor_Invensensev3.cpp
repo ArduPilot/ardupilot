@@ -250,7 +250,7 @@ void AP_InertialSensor_Invensensev3::start()
     // initially run the bus at low speed
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
-    enum DevTypes devtype;
+    enum DevTypes devtype = DEVTYPE_INS_ICM42688;
     fifo_config1 = 0x07;
 
     switch (inv3_type) {
@@ -282,7 +282,6 @@ void AP_InertialSensor_Invensensev3::start()
         accel_scale = ACCEL_SCALE_32G;
         break;
     case Invensensev3_Type::ICM40609:
-    default:
         devtype = DEVTYPE_INS_ICM40609;
         temp_sensitivity = 1.0 / 2.07;
         accel_scale = ACCEL_SCALE_32G;
@@ -299,7 +298,9 @@ void AP_InertialSensor_Invensensev3::start()
             case Invensensev3_Type::ICM45686: // HiRes 20bit
                 highres_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
                 break;
-            default:
+            case Invensensev3_Type::ICM40609: // No HiRes
+            case Invensensev3_Type::ICM42605:
+            case Invensensev3_Type::ICM40605:
                 break;
         }
     }
