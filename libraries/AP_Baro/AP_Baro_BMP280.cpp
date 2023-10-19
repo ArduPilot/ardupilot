@@ -34,7 +34,7 @@ extern const AP_HAL::HAL &hal;
 #define BMP280_OVERSAMPLING_P BMP280_OVERSAMPLING_16
 #define BMP280_OVERSAMPLING_T BMP280_OVERSAMPLING_2
 
-#define BMP280_FILTER_COEFFICIENT 2
+#define BMP280_FILTER_COEFFICIENT 16
 
 #define BMP280_ID            0x58
 #define BME280_ID            0x60
@@ -119,8 +119,8 @@ bool AP_Baro_BMP280::_init()
     _dev->set_device_type(DEVTYPE_BARO_BMP280);
     set_bus_id(_instance, _dev->get_bus_id());
     
-    // request 50Hz update
-    _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
+    // request 26.32Hz update
+    _dev->register_periodic_callback(38 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
 
     return true;
 }

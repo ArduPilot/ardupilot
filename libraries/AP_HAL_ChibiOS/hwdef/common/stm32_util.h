@@ -128,6 +128,7 @@ void stm32_cacheBufferFlush(const void *p, size_t size);
 #ifdef HAL_GPIO_PIN_FAULT
 // printf for fault handlers
 void fault_printf(const char *fmt, ...);
+void fault_print_byte(uint8_t b);
 #endif
 
 // halt hook for printing panic message

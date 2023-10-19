@@ -64,8 +64,8 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_TEMPERATURE_RESULT_BIT_SHIFT     (1<<3)  // necessary for temperature oversampling > 8
 
 // Don't set oversampling higher than 8 or the measurement time will be higher than 20ms (timer period)
-#define SPL06_PRESSURE_OVERSAMPLING            8
-#define SPL06_TEMPERATURE_OVERSAMPLING         8
+#define SPL06_PRESSURE_OVERSAMPLING            16
+#define SPL06_TEMPERATURE_OVERSAMPLING         2
 
 #define SPL06_OVERSAMPLING_TO_REG_VALUE(n)     (ffs(n)-1)
 
@@ -157,7 +157,7 @@ bool AP_Baro_SPL06::_init()
     
     // request 50Hz update
     _timer_counter = -1;
-    _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_SPL06::_timer, void));
+    _dev->register_periodic_callback(38 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_SPL06::_timer, void));
 
     return true;
 }

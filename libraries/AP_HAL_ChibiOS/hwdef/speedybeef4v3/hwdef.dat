@@ -74,6 +74,8 @@ PA2 USART2_TX USART2
 PA3 USART2_RX USART2
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
 
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN LOW ALT(1)
+
 # USART3 (CAM)
 PC10 USART3_TX USART3 NODMA
 PC11 USART3_RX USART3 NODMA
@@ -149,9 +151,13 @@ define HAL_OS_FATFS_IO 1
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
-ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+NODMA I2C*
+define STM32_I2C_USE_DMA FALSE
 
 # minimal drivers to reduce flash usage
+include ../include/save_some_flash.inc
 include ../include/minimal.inc
 include ../include/no_bootloader_DFU.inc
 define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
