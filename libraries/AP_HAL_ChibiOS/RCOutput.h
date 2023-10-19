@@ -331,7 +331,9 @@ private:
             uint8_t stream_id;
             uint8_t channel;
         } dma_ch[4];
+#ifdef HAL_TIM_UP_SHARED
         bool shared_up_dma; // do we need to wait for TIMx_UP DMA to be finished after use
+#endif
 #endif
         uint8_t alt_functions[4];
         ioline_t pal_lines[4];
@@ -517,6 +519,13 @@ private:
     static pwm_group pwm_group_list[];
     static const uint8_t NUM_GROUPS;
 
+#if HAL_WITH_IO_MCU
+    // cached values of AP_BoardConfig::io_enabled() and AP_BoardConfig::io_dshot()
+    // in case the user changes them
+    bool iomcu_enabled;
+    bool iomcu_dshot;
+#endif
+
     // offset of first local channel
     uint8_t chan_offset;
 
@@ -668,7 +677,11 @@ private:
     void fill_DMA_buffer_dshot(dmar_uint_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
     // event to allow dshot cascading
+#if defined(HAL_TIM_UP_SHARED)
     static const eventmask_t DSHOT_CASCADE = EVENT_MASK(16);
+#else
+    static const eventmask_t DSHOT_CASCADE = 0;
+#endif
     static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
     static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
 
