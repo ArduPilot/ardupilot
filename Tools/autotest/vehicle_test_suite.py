@@ -20,6 +20,7 @@ import time
 import traceback
 from datetime import datetime
 from typing import List
+import importlib.util
 
 import pexpect
 import fnmatch
@@ -1549,7 +1550,9 @@ class TestSuite(ABC):
         self.generate_junit = generate_junit
         if generate_junit:
             try:
-                import junitparser
+                spec = importlib.util.find_spec("junitparser")
+                if spec is None:
+                    raise ImportError
             except ImportError as e:
                 raise ImportError(f"Junit export need junitparser package.\n {e} \nTry: python -m pip install junitparser")
 
