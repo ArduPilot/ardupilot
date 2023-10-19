@@ -26,6 +26,9 @@
 
 #include <SITL/SITL.h>
 
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
@@ -34,7 +37,7 @@ using namespace SITL;
 AIS::AIS() : SerialDevice::SerialDevice()
 {
     char* file_path;
-    IGNORE_RETURN(asprintf(&file_path, SKETCHBOOK "/libraries/SITL/SIM_AIS_data.txt"));
+    IGNORE_RETURN(asprintf(&file_path, AP_BUILD_ROOT "/libraries/SITL/SIM_AIS_data.txt"));
 
     file = fopen(file_path,"r");
 
