@@ -5797,6 +5797,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         for angle in 0, 290, 70, 180, 0:
             self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
+            self.wait_message_field_values('NAV_CONTROLLER_OUTPUT', {
+                "nav_bearing":angle,
+            })
         self.disarm_vehicle()
 
     def SET_ATTITUDE_TARGET_heading_test_target(self, angle, target_sysid, target_compid):

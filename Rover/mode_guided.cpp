@@ -167,6 +167,7 @@ float ModeGuided::nav_bearing() const
     case SubMode::WP:
         return g2.wp_nav.nav_bearing_cd() * 0.01f;
     case SubMode::HeadingAndSpeed:
+        return rover.mode_loiter.nav_bearing();
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
     case SubMode::Loiter:
