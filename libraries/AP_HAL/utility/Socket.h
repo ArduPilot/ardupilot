@@ -36,6 +36,7 @@ public:
     ~SocketAPM();
 
     bool connect(const char *address, uint16_t port);
+    bool connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms);
     bool bind(const char *address, uint16_t port);
     bool reuseaddress() const;
     bool set_blocking(bool blocking) const;
