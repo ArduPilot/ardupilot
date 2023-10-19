@@ -14812,6 +14812,11 @@ SERIAL5_BAUD 128
         filepath = util.reltopdir(os.path.join("Tools", "autotest", "default_params", filename))
         self.repeatedly_apply_parameter_filepath(filepath)
 
+    def load_params_file(self, filename):
+        '''load a file from test-specific directory'''
+        filepath = os.path.join(testdir, self.current_test_name_directory, filename)
+        self.repeatedly_apply_parameter_filepath(filepath)
+
     def send_pause_command(self):
         '''pause AUTO/GUIDED modes'''
         self.run_cmd(
