@@ -87,6 +87,9 @@ public:
 #if AP_PROXIMITY_LD06_ENABLED
         LD06 = 16,
 #endif
+#if AP_PROXIMITY_LD19_ENABLED
+        LD19 = 17,
+#endif
     };
 
     enum class Status {

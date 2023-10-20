@@ -30,6 +30,7 @@
 #include "AP_Proximity_DroneCAN.h"
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
+#include "AP_Proximity_LD19.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -177,6 +178,17 @@ void AP_Proximity::init()
             }
             break;
 #endif
+
+#if AP_PROXIMITY_LD19_ENABLED
+        case Type::LD19:
+            if (AP_Proximity_LD19::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_LD19(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
+
 #if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
         case Type::SF45B:
             if (AP_Proximity_LightWareSF45B::detect(serial_instance)) {
