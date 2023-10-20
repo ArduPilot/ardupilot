@@ -192,7 +192,6 @@ define HAL_STORAGE_SIZE 16384
 
 # --------------------- save flash ----------------------
 include ../include/minimize_features.inc
-include ../include/minimal.inc
 
 # setup for OSD
 undef OSD_ENABLED

@@ -25,8 +25,12 @@ define AP_NOTIFY_NCP5623_ENABLED 0
 # HOTT telemetry is quite rare, so we don't include it on smaller boards
 define HAL_HOTT_TELEM_ENABLED 0
 
-# smaller boards lose SIRF GPS support
-define AP_GPS_SIRF_ENABLED 0
+# smaller boards lose some GPS support
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
+define AP_GPS_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
+undef HAL_MSP_GPS_ENABLED
+define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
 
 # no moving baseline support:
 define GPS_MOVING_BASELINE 0
@@ -113,3 +117,12 @@ define MODE_AUTOROTATE_ENABLED 0
 
 # don't send RELAY_STATUS messages:
 define AP_MAVLINK_MSG_RELAY_STATUS_ENABLED 0
+
+#fewer airspeed sensors
+define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 0
+define AP_AIRSPEED_MS4525_ENABLED 1
+define AP_AIRSPEED_ANALOG_ENABLED 1
+define AP_AIRSPEED_MS5525_ENABLED 1
+define AP_AIRSPEED_SDP3X_ENABLED 1
+define AP_AIRSPEED_NMEA_ENABLED 1  # additional checks for vehicle type in .cpp
+define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
