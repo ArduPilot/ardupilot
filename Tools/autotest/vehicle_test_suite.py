@@ -2359,6 +2359,7 @@ class TestSuite(ABC):
                     force=False,
                     check_position=True,
                     mark_context=True,
+                    startup_location_dist_max=1,
                     ):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
@@ -2367,7 +2368,7 @@ class TestSuite(ABC):
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
         if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
-            self.assert_simstate_location_is_at_startup_location()
+            self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().reboot_sitl_was_done = True
 
