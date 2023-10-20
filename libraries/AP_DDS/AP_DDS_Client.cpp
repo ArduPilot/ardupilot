@@ -512,13 +512,8 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             break;
         }
 
-        if (arm_motors_request.arm) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for arming received", msg_prefix);
-            arm_motors_response.result = AP::arming().arm(AP_Arming::Method::DDS);
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for disarming received", msg_prefix);
-            arm_motors_response.result = AP::arming().disarm(AP_Arming::Method::DDS);
-        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
+        arm_motors_response.result = arm_motors_request.arm ? AP::arming().arm(AP_Arming::Method::DDS) : AP::arming().disarm(AP_Arming::Method::DDS);
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id,
@@ -535,11 +530,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
-        if (arm_motors_response.result) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : SUCCESS", msg_prefix);
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : FAIL", msg_prefix);
-        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : %s", msg_prefix, arm_motors_response.result ? "SUCCESS" : "FAIL");
         break;
     }
     case services[to_underlying(ServiceIndex::MODE_SWITCH)].rep_id: {
@@ -567,11 +558,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
-        if (mode_switch_response.status) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : SUCCESS", msg_prefix);
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : FAIL", msg_prefix);
-        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
         break;
     }
     }
@@ -628,12 +615,8 @@ bool AP_DDS_Client::init()
 
     // setup reliable stream buffers
     input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    if (input_reliable_stream == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
-        return false;
-    }
     output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    if (output_reliable_stream == nullptr) {
+    if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
     }
@@ -971,5 +954,3 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
 
 #endif // AP_DDS_ENABLED
-
-
