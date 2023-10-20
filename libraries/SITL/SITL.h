@@ -27,6 +27,7 @@
 #include "SIM_Ship.h"
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
+#include "SIM_ADSB_Sagetech_MXS.h"
 
 namespace SITL {
 
@@ -319,6 +320,11 @@ public:
     AP_Int16  mag_delay; // magnetometer data delay in ms
 
     // ADSB related run-time options
+    enum class ADSBType {
+        Shortcut = 0,
+        SageTechMXS = 3,
+    };
+    AP_Enum<ADSBType> adsb_types;  // bitmask of active ADSB types
     AP_Int16 adsb_plane_count;
     AP_Float adsb_radius_m;
     AP_Float adsb_altitude_m;
