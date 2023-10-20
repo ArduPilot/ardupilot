@@ -51,7 +51,6 @@
 #define UPFLOW_PIXEL_SCALING         (1e-4)
 #define UPFLOW_TIMEOUT_SEC         0.3f
 #define UPFLOW_SENSOR_IIC_ADDR  (uint8_t)0xDC
-#define UPFLOW_INIT_FAILED      GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: Init Failed, Using LC302-3C");
 
 extern const AP_HAL::HAL& hal;
 
@@ -298,8 +297,6 @@ void AP_OpticalFlow_UPFLOW::init()
     //delay 100ms before initialization
     hal.scheduler->delay(100);
 
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: Start initialization!");
-
     // (0xAA)start configuration
     uart->write((uint8_t)0xAA);
 
@@ -316,7 +313,6 @@ void AP_OpticalFlow_UPFLOW::init()
     }
     // if failed to receive response code, you can start over from 0xAA.
     if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
-        UPFLOW_INIT_FAILED;
         return;
     }
 
@@ -334,7 +330,6 @@ void AP_OpticalFlow_UPFLOW::init()
         }
         // if failed to receive response code, you can start over from 0xBB.
         if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
-            UPFLOW_INIT_FAILED;
             return;
         }
         cfg_cnt += 2;
@@ -343,7 +338,7 @@ void AP_OpticalFlow_UPFLOW::init()
     // (0xDD)End configuration
     uart->write((uint8_t)0xDD);
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: initialized Done!");
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: initialized Done!");
 }
 
 // read latest values from sensor and fill in x,y and totals.
