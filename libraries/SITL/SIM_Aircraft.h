@@ -141,6 +141,7 @@ public:
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
+    void set_adsb(class ADSB *_adsb) { adsb = _adsb; }
     void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
@@ -152,6 +153,8 @@ public:
 #endif
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
+
+    ADSB *adsb;
 
 protected:
     SIM *sitl;
