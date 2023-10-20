@@ -5955,6 +5955,14 @@ class AutoTest(ABC):
 
         return mp_util.gps_distance(loc1.lat, lon1, loc2.lat, lon2)
 
+    def assert_distance(self, loc1, loc2, min_distance, max_distance):
+        dist = self.get_distance_accurate(loc1, loc2)
+        if dist < min_distance or dist > max_distance:
+            raise NotAchievedException("Expected distance %f to be between %f and %f" %
+                                       (dist, min_distance, max_distance))
+        self.progress("Distance %f is between %f and %f" %
+                      (dist, min_distance, max_distance))
+
     @staticmethod
     def get_latlon_attr(loc, attrs):
         '''return any found latitude attribute from loc'''

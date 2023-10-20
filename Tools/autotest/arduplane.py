@@ -5130,6 +5130,34 @@ class AutoTestPlane(AutoTest):
             self.set_current_waypoint(2)
         self.fly_home_land_and_disarm()
 
+    def location_from_ADSB_VEHICLE(self, m):
+        '''return a mavutil.location extracted from an ADSB_VEHICLE mavlink
+        message'''
+        if m.altitude_type != mavutil.mavlink.ADSB_ALTITUDE_TYPE_GEOMETRIC:
+            raise ValueError("Expected geometric alt")
+        return mavutil.location(
+            m.lat*1e-7,
+            m.lon*1e-7,
+            m.altitude/1000.0585,  # mm -> m
+            m.heading * 0.01  # centidegrees -> degrees
+        )
+
+    def SagetechMXS(self):
+        '''test Sagetech MXS ADSB device driver'''
+        sim_name = "sagetech_mxs"
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 35,
+            "ADSB_TYPE": 4,  # Sagetech-MXS
+            "SIM_ADSB_TYPES": 8,  # Sagetech-MXS
+            "SIM_ADSB_COUNT": 5,
+        })
+        self.customise_SITL_commandline(["--serial5=sim:%s" % sim_name])
+        m = self.assert_receive_message("ADSB_VEHICLE")
+        adsb_vehicle_loc = self.location_from_ADSB_VEHICLE(m)
+        self.progress("ADSB Vehicle at loc %s" % str(adsb_vehicle_loc))
+        home = self.home_position_as_mav_location()
+        self.assert_distance(home, adsb_vehicle_loc, 0, 10000)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5221,6 +5249,7 @@ class AutoTestPlane(AutoTest):
             self.NoArmWithoutMissionItems,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
+            self.SagetechMXS,
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             self.MAV_CMD_PREFLIGHT_CALIBRATION,
             self.MAV_CMD_DO_INVERTED_FLIGHT,
