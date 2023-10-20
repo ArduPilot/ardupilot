@@ -10,6 +10,7 @@
 
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
+#include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_Vicon.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
@@ -110,6 +111,10 @@ public:
 #if HAL_SIM_ADSB_ENABLED
     // simulated ADSb
     SITL::ADSB *adsb;
+#endif
+
+#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
+    SITL::ADSB_Sagetech_MXS *sagetech_mxs;
 #endif
 
 #if !defined(HAL_BUILD_AP_PERIPH)

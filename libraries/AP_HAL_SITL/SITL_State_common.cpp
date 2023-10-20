@@ -49,6 +49,7 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         if (adsb == nullptr) {
             adsb = new SITL::ADSB();
         }
+        sitl_model->set_adsb(adsb);
         return adsb;
 #endif
     } else if (streq(name, "benewake_tf03")) {
@@ -208,6 +209,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         sf45b = new SITL::PS_LightWare_SF45B();
         return sf45b;
+#endif
+#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
+    } else if (streq(name, "sagetech_mxs")) {
+        if (sagetech_mxs != nullptr) {
+            AP_HAL::panic("Only one sagetech_mxs at a time");
+        }
+        sagetech_mxs = new SITL::ADSB_Sagetech_MXS();
+        return sagetech_mxs;
 #endif
 #if !defined(HAL_BUILD_AP_PERIPH)
     } else if (streq(name, "richenpower")) {
@@ -387,6 +396,12 @@ void SITL_State_Common::sim_update(void)
 #if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     if (sf45b != nullptr) {
         sf45b->update(sitl_model->get_location());
+    }
+#endif
+
+#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
+    if (sagetech_mxs != nullptr) {
+        sagetech_mxs->update(sitl_model);
     }
 #endif
 
