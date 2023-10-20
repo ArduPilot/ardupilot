@@ -28,6 +28,7 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 namespace SITL {
 
@@ -82,10 +83,15 @@ void ADSB_Vehicle::update(float delta_t)
     }
 }
 
+bool ADSB_Vehicle::location(Location &loc) const
+{
+    return AP::ahrs().get_location_from_home_offset(loc, position);
+}
+
 /*
   update the ADSB peripheral state
 */
-void ADSB::update(const class Aircraft &aircraft)
+void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
 {
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
@@ -109,11 +115,36 @@ void ADSB::update(const class Aircraft &aircraft)
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
 
+    const Location &home = aircraft.get_home();
+
     for (uint8_t i=0; i<num_vehicles; i++) {
         vehicles[i].update(delta_t);
+
+        Location loc = home;
+
+        ADSB_Vehicle &vehicle = vehicles[i];
+        loc.offset(vehicle.position.x, vehicle.position.y);
+
+        // re-init when exceeding radius range
+        if (home.get_distance(loc) > _sitl->adsb_radius_m) {
+            vehicle.initialised = false;
+        }
     }
-    
-    // see if we should do a report
+}
+
+void ADSB::update(const class Aircraft &aircraft)
+{
+    update_simulated_vehicles(aircraft);
+
+    // see if we should do a report.
+    if ((_sitl->adsb_types & (1U << (uint8_t)SIM::ADSBType::Shortcut)) == 0) {
+        // some other simulated device is in use (e.g. MXS)
+        return;
+    }
+
+    // bakwards compatability; the parameters specify ADSB simulation,
+    // but we are not configured to use a simulated ADSB driver.
+    // Pretend to be a uAvionix mavlink device:
     send_report(aircraft);
 }
 
@@ -190,16 +221,14 @@ void ADSB::send_report(const class Aircraft &aircraft)
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
-            ADSB_Vehicle &vehicle = vehicles[i];
-            Location loc = home;
+            const ADSB_Vehicle &vehicle = vehicles[i];
+            if (!vehicle.initialised) {
+                continue;
+            }
 
+            Location loc = home;
             loc.offset(vehicle.position.x, vehicle.position.y);
 
-            // re-init when exceeding radius range
-            if (home.get_distance(loc) > _sitl->adsb_radius_m) {
-                vehicle.initialised = false;
-            }
-            
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;
 
