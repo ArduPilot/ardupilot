@@ -173,5 +173,4 @@ include ../include/save_some_flash.inc
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 
 # minimal drivers to reduce flash usage
-include ../include/minimal.inc
 include ../include/minimize_features.inc
