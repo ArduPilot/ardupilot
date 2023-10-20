@@ -157,4 +157,5 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # no space for bootloader:
+include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
