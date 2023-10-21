@@ -125,6 +125,9 @@ extern const AP_HAL::HAL& hal;
 #define INV3BANK_456_IPREG_SYS1_ADDR 0xA400
 #define INV3BANK_456_IPREG_SYS2_ADDR 0xA500
 
+// ICM42xxx specific registers
+#define INV3REG_42XXX_INTF_CONFIG1  0x4d
+
 // WHOAMI values
 #define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
@@ -650,6 +653,28 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC2, accel_aaf_delt<<1); // ACCEL_AAF_DELT | enabled bit
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC3, (accel_aaf_deltsqr & 0xFF)); // ACCEL_AAF_DELTSQR
     register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC4, ((accel_aaf_bitshift<<4) & 0xF0) | ((accel_aaf_deltsqr>>8) & 0x0F)); // ACCEL_AAF_BITSHIFT | ACCEL_AAF_DELTSQR
+
+    switch (inv3_type) {
+    case Invensensev3_Type::ICM42688:
+    case Invensensev3_Type::ICM42605:
+    case Invensensev3_Type::IIM42652:
+    case Invensensev3_Type::ICM42670: {
+        /*
+          fix for the "stuck gyro" issue, which affects all IxM42xxx
+          sensors. This disables the AFSR feature which changes the
+          noise sensitivity with angular rate. When the switch happens
+          (at around 100 deg/sec) the gyro gets stuck for around 2ms,
+          producing constant output which causes a DC gyro bias
+        */
+        const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
+        register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40, true);
+        break;
+    }
+    case Invensensev3_Type::ICM40605:
+    case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::ICM45686:
+        break;
+    }
 }
 
 /*
@@ -671,6 +696,10 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
     register_write(INV3REG_70_ACCEL_CONFIG0, 0x05);
     // AAF is not available for accels, so LPF at 180Hz
     register_write(INV3REG_70_ACCEL_CONFIG1, 0x01);
+
+    // fix "stuck" gyro issue
+    const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
+    register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40);
 }
 
 /*
@@ -826,7 +855,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
 {
     WITH_SEMAPHORE(dev->get_semaphore());
 
-    dev->setup_checked_registers(7, dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
+    dev->setup_checked_registers(8, dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
 
     // initially run the bus at low speed
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
