@@ -27,6 +27,10 @@
 // 50 Hz
 #define PWM_FREQ_DEFAULT (20 * TICK_PER_MS)
 
+// Period within which the failsafe bit has to
+// be set.
+#define FAILSAFE_PERIOD (1000 * TICK_PER_MS)
+
 // Ringbuffer size
 #define RCIN_RINGBUFFERSIZE 300
 
@@ -97,32 +101,33 @@
 
 // RAM
 #define CH_ENABLE_RAM_OFFSET (0 * 4)
-#define CH_1_PULSE_TIME_RAM_OFFSET (1 * 4)
-#define CH_1_T_TIME_RAM_OFFSET  (2 * 4)
-#define CH_2_PULSE_TIME_RAM_OFFSET (3 * 4)
-#define CH_2_T_TIME_RAM_OFFSET  (4 * 4)
-#define CH_3_PULSE_TIME_RAM_OFFSET (5 * 4)
-#define CH_3_T_TIME_RAM_OFFSET  (6 * 4)
-#define CH_4_PULSE_TIME_RAM_OFFSET (7 * 4)
-#define CH_4_T_TIME_RAM_OFFSET  (8 * 4)
-#define CH_5_PULSE_TIME_RAM_OFFSET (9 * 4)
-#define CH_5_T_TIME_RAM_OFFSET  (10 * 4)
-#define CH_6_PULSE_TIME_RAM_OFFSET (11 * 4)
-#define CH_6_T_TIME_RAM_OFFSET  (12 * 4)
-#define CH_7_PULSE_TIME_RAM_OFFSET (13 * 4)
-#define CH_7_T_TIME_RAM_OFFSET  (14 * 4)
-#define CH_8_PULSE_TIME_RAM_OFFSET (15 * 4)
-#define CH_8_T_TIME_RAM_OFFSET  (16 * 4)
-#define CH_9_PULSE_TIME_RAM_OFFSET (17 * 4)
-#define CH_9_T_TIME_RAM_OFFSET  (18 * 4)
-#define CH_10_PULSE_TIME_RAM_OFFSET (19 * 4)
-#define CH_10_T_TIME_RAM_OFFSET  (20 * 4)
-#define CH_11_PULSE_TIME_RAM_OFFSET (21 * 4)
-#define CH_11_T_TIME_RAM_OFFSET  (22 * 4)
-#define CH_12_PULSE_TIME_RAM_OFFSET (23 * 4)
-#define CH_12_T_TIME_RAM_OFFSET  (24 * 4)
-#define TIME_OFFSET (25 * 4)
-#define MAX_CYCLE_TIME_OFFSET (26 * 4)
+#define FAILSAFE_RAM_OFFSET  (1 * 4)
+#define CH_1_PULSE_TIME_RAM_OFFSET (2 * 4)
+#define CH_1_T_TIME_RAM_OFFSET  (3 * 4)
+#define CH_2_PULSE_TIME_RAM_OFFSET (4 * 4)
+#define CH_2_T_TIME_RAM_OFFSET  (5 * 4)
+#define CH_3_PULSE_TIME_RAM_OFFSET (6 * 4)
+#define CH_3_T_TIME_RAM_OFFSET  (7 * 4)
+#define CH_4_PULSE_TIME_RAM_OFFSET (8 * 4)
+#define CH_4_T_TIME_RAM_OFFSET  (9 * 4)
+#define CH_5_PULSE_TIME_RAM_OFFSET (10 * 4)
+#define CH_5_T_TIME_RAM_OFFSET  (11 * 4)
+#define CH_6_PULSE_TIME_RAM_OFFSET (12 * 4)
+#define CH_6_T_TIME_RAM_OFFSET  (13 * 4)
+#define CH_7_PULSE_TIME_RAM_OFFSET (14 * 4)
+#define CH_7_T_TIME_RAM_OFFSET  (15 * 4)
+#define CH_8_PULSE_TIME_RAM_OFFSET (16 * 4)
+#define CH_8_T_TIME_RAM_OFFSET  (17 * 4)
+#define CH_9_PULSE_TIME_RAM_OFFSET (18 * 4)
+#define CH_9_T_TIME_RAM_OFFSET  (19 * 4)
+#define CH_10_PULSE_TIME_RAM_OFFSET (20 * 4)
+#define CH_10_T_TIME_RAM_OFFSET  (21 * 4)
+#define CH_11_PULSE_TIME_RAM_OFFSET (22 * 4)
+#define CH_11_T_TIME_RAM_OFFSET  (23 * 4)
+#define CH_12_PULSE_TIME_RAM_OFFSET (24 * 4)
+#define CH_12_T_TIME_RAM_OFFSET  (25 * 4)
+#define TIME_OFFSET (26 * 4)
+#define MAX_CYCLE_TIME_OFFSET (27 * 4)
 
 
 #define RCIN_RING_HEAD_OFFSET 0x1000
@@ -194,6 +199,7 @@
    .u32 ch_10_next_time
    .u32 ch_11_next_time
    .u32 ch_12_next_time
+   .u32 next_failsafe
    .u32 time
    .u32 time_max
    .u32 time_cycle
@@ -418,11 +424,28 @@ rcin_ecap_end:
 	sbco register.temp, IEP, IEP_TMR_GLB_CFG, 2
 .endm
 
+// Without this motors would keep spinning if ardupilot disappeared.
+.macro FAILSAFE_HANDLING
+   sub register.temp, register.next_failsafe, register.time
+   mov register.temp1, 0xF0000000
+   qbgt failsafeend, register.temp, register.temp1
+   mov register.temp, FAILSAFE_PERIOD
+   add register.next_failsafe, register.time, register.temp
+   lbco register.temp, RAM, FAILSAFE_RAM_OFFSET, 4
+   qbbs failsafe_succesful, register.temp.t0
+   sbco register.temp, RAM, CH_ENABLE_RAM_OFFSET, 4
+failsafe_succesful:
+   ldi register.temp, 0
+   sbco register.temp, RAM, FAILSAFE_RAM_OFFSET, 4
+failsafeend:
+.endm
+
 .origin 0
 init:
    INIT
    RCIN_ECAP_INIT
 mainloop:
+   FAILSAFE_HANDLING
    lbco register.ch_enable, RAM, CH_ENABLE_RAM_OFFSET, 4
    lbco register.time, IEP, IEP_TMR_CNT, 4
 #ifdef DEBUG
