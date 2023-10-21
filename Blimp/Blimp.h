@@ -175,7 +175,7 @@ private:
 
     RCMapper rcmap;
 
-    // intertial nav alt when we armed
+    // inertial nav alt when we armed
     float arming_altitude_m;
 
     // Failsafe

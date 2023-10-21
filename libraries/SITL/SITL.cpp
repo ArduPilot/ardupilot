@@ -47,6 +47,15 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#if (CONFIG_HAL_BOARD != HAL_BOARD_SITL)
+// For on-hardware, set allowed relay channels to zero.
+// Requires user to change the param to allow hadware access.
+#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS 0
+#else
+// For SITL, set allowed relay channels to the full mask.
+#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS UINT16_MAX
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -105,10 +114,40 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CAN_SRV_MSK",   29, SIM,  can_servo_mask, 0),
 
+#if HAL_NUM_CAN_IFACES > 0
+    // @Param: CAN_TYPE1
+    // @DisplayName: transport type for first CAN interface
+    // @Description: transport type for first CAN interface
+    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @User: Advanced
+    AP_GROUPINFO("CAN_TYPE1", 30, SIM,  can_transport[0], uint8_t(CANTransport::MulticastUDP)),
+#endif
+
+#if HAL_NUM_CAN_IFACES > 1
+    // @Param: CAN_TYPE2
+    // @DisplayName: transport type for second CAN interface
+    // @Description: transport type for second CAN interface
+    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @User: Advanced
+    AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
+#endif
+
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // @Param: FLOW_ENABLE
+    // @DisplayName: Opflow Enable
+    // @Description: Enable simulated Optical Flow sensor
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
+    // @Param: FLOW_RATE
+    // @DisplayName: Opflow Rate
+    // @Description: Opflow Data Rate
+    // @Units: Hz
     AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
+    // @Param: FLOW_DELAY
+    // @DisplayName: Opflow Delay
+    // @Description: Opflow data delay
+    // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
@@ -121,9 +160,19 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Range: 1 10
     // @User: Advanced    
     AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
+    // @Param: IMU_POS
+    // @DisplayName: IMU Offsets
+    // @Description: XYZ position of the IMU accelerometer relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // @Param: FLOW_POS
+    // @DisplayName: Opflow Pos
+    // @Description: XYZ position of the optical flow sensor focal point relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
 #if AP_SIM_SHIP_ENABLED
@@ -200,6 +249,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("SHOVE_TIME",  33, SIM,  shove.t, 0),
     
     // optical flow sensor measurement noise in rad/sec
+    // @Param: FLOW_RND
+    // @DisplayName: Opflow noise
+    // @Description: Optical Flow sensor measurement noise in rad/sec
     AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
     AP_GROUPINFO("TWIST_X",     37, SIM,  twist.x, 0),
@@ -306,7 +358,9 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
 
-    // count of simulated IMUs
+    // @Param: IMU_COUNT
+    // @DisplayName: IMU count
+    // @Description: Number of simulated IMUs to create
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
 
     // @Path: ./SIM_FETtecOneWireESC.cpp
@@ -385,9 +439,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
-    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, SIM::AirspeedParm),
+    // @Group: ARSPD_
+    // @Path: ./SITL_Airspeed.cpp
+    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),
 #if AIRSPEED_MAX_SENSORS > 1
-    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
+    // @Group: ARSPD2_
+    // @Path: ./SITL_Airspeed.cpp
+    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, AirspeedParm),
 #endif
 
 
@@ -417,24 +475,6 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPEND
 };
 
-// user settable parameters for airspeed sensors
-const AP_Param::GroupInfo SIM::AirspeedParm::var_info[] = {
-        // user settable parameters for the 1st airspeed sensor
-    AP_GROUPINFO("RND",     1, SIM::AirspeedParm,  noise, 2.0),
-    AP_GROUPINFO("OFS",     2, SIM::AirspeedParm,  offset, 2013),
-    // @Param: ARSPD_FAIL
-    // @DisplayName: Airspeed sensor failure
-    // @Description: Simulates Airspeed sensor 1 failure
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("FAIL",    3, SIM::AirspeedParm,  fail, 0),
-    AP_GROUPINFO("FAILP",   4, SIM::AirspeedParm,  fail_pressure, 0),
-    AP_GROUPINFO("PITOT",   5, SIM::AirspeedParm,  fail_pitot_pressure, 0),
-    AP_GROUPINFO("SIGN",    6, SIM::AirspeedParm,  signflip, 0),
-    AP_GROUPINFO("RATIO",   7, SIM::AirspeedParm,  ratio, 1.99),
-    AP_GROUPEND
-};
-
 #if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
@@ -444,6 +484,11 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Values: 0:Enable, 1:GPS Disabled
     // @User: Advanced
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
+    // @Param: GPS_LAG_MS
+    // @DisplayName: GPS 1 Lag
+    // @Description: GPS 1 lag
+    // @Units: ms
+    // @User: Advanced
     AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
     // @Param: GPS_TYPE
     // @DisplayName: GPS 1 type
@@ -451,17 +496,72 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
+    // @Param: GPS_BYTELOSS
+    // @DisplayName: GPS Byteloss
+    // @Description: Percent of bytes lost from GPS 1
+    // @Units: %
+    // @User: Advanced
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
+    // @Param: GPS_NUMSATS
+    // @DisplayName: GPS 1 Num Satellites
+    // @Description: Number of satellites GPS 1 has in view
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
+    // @Param: GPS_GLITCH
+    // @DisplayName: GPS 1 Glitch
+    // @Description: Glitch offsets of simulated GPS 1 sensor
+    // @Vector3Parameter: 1
+    // @User: Advanced
     AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
+    // @Param: GPS_HZ
+    // @DisplayName: GPS 1 Hz
+    // @Description: GPS 1 Update rate
+    // @Units: Hz
     AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
+    // @Param: GPS_DRIFTALT
+    // @DisplayName: GPS 1 Altitude Drift
+    // @Description: GPS 1 altitude drift error
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("GPS_DRIFTALT",   8, SIM,  gps_drift_alt[0], 0),
+    // @Param: GPS_POS
+    // @DisplayName: GPS 1 Position
+    // @Description: GPS 1 antenna phase center position relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GPS_POS",        9, SIM,  gps_pos_offset[0], 0),
+    // @Param: GPS_NOISE
+    // @DisplayName: GPS 1 Noise
+    // @Description: Amplitude of the GPS1 altitude error
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("GPS_NOISE",     10, SIM,  gps_noise[0], 0),
+    // @Param: GPS_LOCKTIME
+    // @DisplayName: GPS 1 Lock Time
+    // @Description: Delay in seconds before GPS1 acquires lock
+    // @Units: s
+    // @User: Advanced
     AP_GROUPINFO("GPS_LOCKTIME",  11, SIM,  gps_lock_time[0], 0),
+    // @Param: GPS_ALT_OFS
+    // @DisplayName: GPS 1 Altitude Offset
+    // @Description: GPS 1 Altitude Error
+    // @Units: m
     AP_GROUPINFO("GPS_ALT_OFS",   12, SIM,  gps_alt_offset[0], 0),
+    // @Param: GPS_HDG
+    // @DisplayName: GPS 1 Heading
+    // @Description: Enable GPS1 output of NMEA heading HDT sentence or UBLOX_RELPOSNED
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
+    // @Param: GPS_ACC
+    // @DisplayName: GPS 1 Accuracy
+    // @Description: GPS 1 Accuracy
+    // @User: Advanced
     AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
+    // @Param: GPS_VERR
+    // @DisplayName: GPS 1 Velocity Error
+    // @Description: GPS 1 Velocity Error Offsets in NED
+    // @Vector3Parameter: 1
+    // @User: Advanced
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
@@ -469,29 +569,101 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Values: 0:Enable, 1:GPS Disabled
     // @User: Advanced
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
+    // @Param: GPS2_LAG_MS
+    // @DisplayName: GPS 2 Lag
+    // @Description: GPS 2 lag in ms
+    // @Units: ms
+    // @User: Advanced
     AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
     // @Param: GPS2_TYPE
     // @CopyFieldsFrom: SIM_GPS_TYPE
     // @DisplayName: GPS 2 type
     // @Description: Sets the type of simulation used for GPS 2
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
+    // @Param: GPS2_BYTELOS
+    // @DisplayName: GPS 2 Byteloss
+    // @Description: Percent of bytes lost from GPS 2
+    // @Units: %
+    // @User: Advanced
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
+    // @Param: GPS2_NUMSATS
+    // @DisplayName: GPS 2 Num Satellites
+    // @Description: Number of satellites GPS 2 has in view
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
+    // @Param: GPS2_GLTCH
+    // @DisplayName: GPS 2 Glitch
+    // @Description: Glitch offsets of simulated GPS 2 sensor
+    // @Vector3Parameter: 1
+    // @User: Advanced
     AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
+    // @Param: GPS2_HZ
+    // @DisplayName: GPS 2 Hz
+    // @Description: GPS 2 Update rate
+    // @Units: Hz
     AP_GROUPINFO("GPS2_HZ",       36, SIM,  gps_hertz[1],  5),
+    // @Param: GPS2_DRFTALT
+    // @DisplayName: GPS 2 Altitude Drift
+    // @Description: GPS 2 altitude drift error
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("GPS2_DRFTALT",  37, SIM,  gps_drift_alt[1], 0),
+    // @Param: GPS2_POS
+    // @DisplayName: GPS 2 Position
+    // @Description: GPS 2 antenna phase center position relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("GPS2_POS",      38, SIM,  gps_pos_offset[1], 0),
+    // @Param: GPS2_NOISE
+    // @DisplayName: GPS 2 Noise
+    // @Description: Amplitude of the GPS2 altitude error
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("GPS2_NOISE",    39, SIM,  gps_noise[1], 0),
+    // @Param: GPS2_LCKTIME
+    // @DisplayName: GPS 2 Lock Time
+    // @Description: Delay in seconds before GPS2 acquires lock
+    // @Units: s
+    // @User: Advanced
     AP_GROUPINFO("GPS2_LCKTIME",  40, SIM,  gps_lock_time[1], 0),
+    // @Param: GPS2_ALT_OFS
+    // @DisplayName: GPS 2 Altitude Offset
+    // @Description: GPS 2 Altitude Error
+    // @Units: m
     AP_GROUPINFO("GPS2_ALT_OFS",  41, SIM,  gps_alt_offset[1], 0),
+    // @Param: GPS2_HDG
+    // @DisplayName: GPS 2 Heading
+    // @Description: Enable GPS2 output of NMEA heading HDT sentence or UBLOX_RELPOSNED
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("GPS2_HDG",      42, SIM,  gps_hdg_enabled[1], SIM::GPS_HEADING_NONE),
+    // @Param: GPS2_ACC
+    // @DisplayName: GPS 2 Accuracy
+    // @Description: GPS 2 Accuracy
+    // @User: Advanced
     AP_GROUPINFO("GPS2_ACC",      43, SIM,  gps_accuracy[1], 0.3),
+    // @Param: GPS2_VERR
+    // @DisplayName: GPS 2 Velocity Error
+    // @Description: GPS 2 Velocity Error Offsets in NED
+    // @Vector3Parameter: 1
+    // @User: Advanced
     AP_GROUPINFO("GPS2_VERR",     44, SIM,  gps_vel_err[1], 0),
 
+    // @Param: INIT_LAT_OFS
+    // @DisplayName: Initial Latitude Offset
+    // @Description: GPS initial lat offset from origin
     AP_GROUPINFO("INIT_LAT_OFS",  45, SIM,  gps_init_lat_ofs, 0),
+    // @Param: INIT_LON_OFS
+    // @DisplayName: Initial Longitude Offset
+    // @Description: GPS initial lon offset from origin
     AP_GROUPINFO("INIT_LON_OFS",  46, SIM,  gps_init_lon_ofs, 0),
+    // @Param: INIT_ALT_OFS
+    // @DisplayName: Initial Altitude Offset
+    // @Description: GPS initial alt offset from origin
     AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
 
+    // @Param: GPS_LOG_NUM
+    // @DisplayName: GPS Log Number
+    // @Description: Log number for GPS:update_file()
     AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
 
     AP_GROUPEND
@@ -879,6 +1051,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
 #endif
 
+    // @Param: OH_RELAY_MSK
+    // @DisplayName: SIM-on_hardware Relay Enable Mask
+    // @Description: Allow relay output operation when running SIM-on-hardware
+    AP_GROUPINFO("OH_RELAY_MSK",     48, SIM, on_hardware_relay_enable_mask, SIM_DEFAULT_ENABLED_RELAY_CHANNELS),
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
@@ -960,7 +1137,9 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             0.0,
             state.speedN,
             state.speedE,
-            state.speedD);
+            state.speedD,
+	        (int32_t)(state.latitude*1.0e7),
+            (int32_t)(state.longitude*1.0e7));
 }
 
 /* report SITL state to AP_Logger */

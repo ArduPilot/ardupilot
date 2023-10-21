@@ -160,7 +160,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
-    battery.lib.init();
+    battery_lib.init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RCIN
@@ -231,7 +231,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#if HAL_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
         auto *uart = hal.serial(g.proximity_port);
         if (uart != nullptr) {
@@ -422,10 +422,8 @@ void AP_Periph_FW::update()
         rcout_init_1Hz();
 #endif
 
-#if HAL_GCS_ENABLED
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-#endif    
+        GCS_SEND_MESSAGE(MSG_HEARTBEAT);
+        GCS_SEND_MESSAGE(MSG_SYS_STATUS);
     }
 
     static uint32_t last_error_ms;
@@ -457,7 +455,7 @@ void AP_Periph_FW::update()
     if (now - battery.last_read_ms >= 100) {
         // update battery at 10Hz
         battery.last_read_ms = now;
-        battery.lib.read();
+        battery_lib.read();
     }
 #endif
 

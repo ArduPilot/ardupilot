@@ -42,6 +42,11 @@ public:
     // write log
     virtual void write_log() = 0;
 
+    // helper to check if option enabled
+    bool option_enabled(AP_Winch::Options option) const {
+        return (config.options & uint16_t(option)) != 0;
+    }
+
 protected:
 
     // calculate the pilot desired rate (+ve deploys line, -ve retracts line, 0 stops) from rc input

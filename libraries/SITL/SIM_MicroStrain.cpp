@@ -24,7 +24,7 @@
 
 using namespace SITL;
 
-MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
+MicroStrain5::MicroStrain5() :SerialDevice::SerialDevice()
 {
 }
 
@@ -48,7 +48,7 @@ static void simulation_timeval(struct timeval *tv)
     tv->tv_usec = new_usec % 1000000ULL;
 }
 
-void MicroStrain::generate_checksum(MicroStrain_Packet& packet)
+void MicroStrain5::generate_checksum(MicroStrain_Packet& packet)
 {
     uint8_t checksumByte1 = 0;
     uint8_t checksumByte2 = 0;
@@ -67,7 +67,7 @@ void MicroStrain::generate_checksum(MicroStrain_Packet& packet)
     packet.checksum[1] = checksumByte2;
 }
 
-void MicroStrain::send_packet(MicroStrain_Packet packet)
+void MicroStrain5::send_packet(MicroStrain_Packet packet)
 {
     generate_checksum(packet);
 
@@ -77,7 +77,7 @@ void MicroStrain::send_packet(MicroStrain_Packet packet)
 }
 
 
-void MicroStrain::send_imu_packet(void)
+void MicroStrain5::send_imu_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -136,7 +136,7 @@ void MicroStrain::send_imu_packet(void)
 }
 
 
-void MicroStrain::send_gnss_packet(void)
+void MicroStrain5::send_gnss_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -205,7 +205,7 @@ void MicroStrain::send_gnss_packet(void)
     send_packet(packet);
 }
 
-void MicroStrain::send_filter_packet(void)
+void MicroStrain5::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -256,7 +256,7 @@ void MicroStrain::send_filter_packet(void)
 /*
   send MicroStrain data
  */
-void MicroStrain::update(void)
+void MicroStrain5::update(void)
 {
     if (!init_sitl_pointer()) {
         return;
@@ -283,7 +283,7 @@ void MicroStrain::update(void)
     }
 }
 
-void MicroStrain::put_float(MicroStrain_Packet &packet, float f)
+void MicroStrain5::put_float(MicroStrain_Packet &packet, float f)
 {
     uint32_t fbits = 0;
     memcpy(&fbits, &f, sizeof(fbits));
@@ -291,7 +291,7 @@ void MicroStrain::put_float(MicroStrain_Packet &packet, float f)
     packet.payload_size += sizeof(float);
 }
 
-void MicroStrain::put_double(MicroStrain_Packet &packet, double d)
+void MicroStrain5::put_double(MicroStrain_Packet &packet, double d)
 {
     uint64_t dbits = 0;
     memcpy(&dbits, &d, sizeof(dbits));
@@ -299,7 +299,7 @@ void MicroStrain::put_double(MicroStrain_Packet &packet, double d)
     packet.payload_size += sizeof(double);
 }
 
-void MicroStrain::put_int(MicroStrain_Packet &packet, uint16_t t)
+void MicroStrain5::put_int(MicroStrain_Packet &packet, uint16_t t)
 {
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);

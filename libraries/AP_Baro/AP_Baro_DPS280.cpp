@@ -60,7 +60,7 @@ AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
     if (sensor) {
         sensor->is_dps310 = _is_dps310;
     }
-    if (!sensor || !sensor->init()) {
+    if (!sensor || !sensor->init(_is_dps310)) {
         delete sensor;
         return nullptr;
     }
@@ -153,7 +153,7 @@ void AP_Baro_DPS280::set_config_registers(void)
     }
 }
 
-bool AP_Baro_DPS280::init()
+bool AP_Baro_DPS280::init(bool _is_dps310)
 {
     if (!dev) {
         return false;
@@ -190,8 +190,11 @@ bool AP_Baro_DPS280::init()
     set_config_registers();
 
     instance = _frontend.register_sensor();
-
-    dev->set_device_type(DEVTYPE_BARO_DPS280);
+    if(_is_dps310) {
+	    dev->set_device_type(DEVTYPE_BARO_DPS310);
+    } else {
+	    dev->set_device_type(DEVTYPE_BARO_DPS280);
+    }
     set_bus_id(instance, dev->get_bus_id());
     
     dev->get_semaphore()->give();
@@ -243,7 +246,7 @@ void AP_Baro_DPS280::check_health(void)
     }
 }
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_DPS280::timer(void)
 {
     uint8_t buf[6];

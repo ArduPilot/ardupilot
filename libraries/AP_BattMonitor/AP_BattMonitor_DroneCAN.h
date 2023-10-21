@@ -35,7 +35,8 @@ public:
 
     bool has_current() const override { return true; }
 
-    bool has_consumed_energy() const override { return _has_consumed_energy; }
+    // Always have consumed energy, either directly from BatteryInfoAux msg or by cumulative current draw
+    bool has_consumed_energy() const override { return true; }
 
     bool has_time_remaining() const override { return _has_time_remaining; }
 
@@ -87,7 +88,6 @@ private:
     bool use_CAN_SoC() const;
 
     AP_BattMonitor::BattMonitor_State _interim_state;
-    BattMonitor_DroneCAN_Type _type;
 
     HAL_Semaphore _sem_battmon;
 
@@ -100,7 +100,6 @@ private:
     bool _has_temperature;
     bool _has_cell_voltages;
     bool _has_time_remaining;
-    bool _has_consumed_energy;
     bool _has_battery_info_aux;
     uint8_t _instance;                  // instance of this battery monitor
 

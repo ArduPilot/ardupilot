@@ -13,7 +13,7 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
@@ -21,7 +21,7 @@ protected:
     bool params_ready() const override;
     void send_banner() override;
 
-    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
+    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 
     void send_position_target_global_int() override;
 

@@ -71,5 +71,4 @@ QSPIDEV       mt25q       QUADSPI1      MODE1       120*MHZ      24            8
 PB13 VBUS INPUT OPENDRAIN
 
 
-define CAN_APP_NODE_NAME "org.cubepilot.H757"
 define BOOTLOADER_DEBUG SD1

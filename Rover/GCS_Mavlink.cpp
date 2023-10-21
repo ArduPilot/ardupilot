@@ -53,7 +53,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 
 uint32_t GCS_Rover::custom_mode() const
 {
-    return rover.control_mode->mode_number();
+    return (uint32_t)rover.control_mode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
@@ -531,7 +531,9 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
+#if AP_FENCE_ENABLED
     MSG_FENCE_STATUS,
+#endif
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
@@ -564,8 +566,10 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY_STATUS,
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
     MSG_OPTICAL_FLOW,
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if AP_RPM_ENABLED
@@ -610,15 +614,15 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
     return rover.mode_guided.set_desired_location(cmd.content.location);
 }
 
-MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    if (is_equal(packet.param6, 1.0f)) {
+    if (packet.y == 1) {
         if (rover.g2.windvane.start_direction_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
             return MAV_RESULT_FAILED;
         }
-    } else if (is_equal(packet.param6, 2.0f)) {
+    } else if (packet.y == 2) {
         if (rover.g2.windvane.start_speed_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
@@ -680,14 +684,18 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_FAILED;
 
+#if AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
     case MAV_CMD_NAV_SET_YAW_SPEED:
+        send_received_message_deprecation_warning("MAV_CMD_NAV_SET_YAW_SPEED");
         return handle_command_nav_set_yaw_speed(packet, msg);
+#endif
 
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
+#if AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
         // param1 : yaw angle (may be absolute or relative)
@@ -709,6 +717,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_nav_set_yaw_speed(const mavlink_com
         }
         return MAV_RESULT_ACCEPTED;
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {

@@ -127,7 +127,7 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
-include ../include/minimize_features.inc
+include ../include/minimize_fpv_osd.inc
 
 # disable SMBUS monitors to save flash
 undef AP_BATTERY_SMBUS_ENABLED
@@ -136,7 +136,5 @@ define AP_BATTERY_SMBUS_ENABLED 0
 # one baro
 BARO BMP280 SPI:bmp280
 
-undef OSD_ENABLED  # minimize_features.inc removes this
-define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin

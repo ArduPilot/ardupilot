@@ -1,4 +1,1 @@
-ALT_HOLD_RTL,5000
-ARMING_RUDDER,2
-# GPS RX DMA conflicts with CRSF and I2C1
-GPS_DRV_OPTIONS,4
+@include ../HEEWING-F405/defaults.parm

@@ -22,14 +22,12 @@
 #define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS   110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
 #define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS    27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
 
-#define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          1.0f    // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         1.0f    // body-frame rate controller maximum output (for yaw axis)
 #define AC_ATTITUDE_RATE_RELAX_TC                       0.16f   // This is used to decay the rate I term to 5% in half a second.
 
 #define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(30.0f) // Thrust angle error above which yaw corrections are limited
-
-#define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
+#define AC_ATTITUDE_YAW_MAX_ERROR_ANGLE                 radians(45.0f) // Thrust angle error above which yaw corrections are limited
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
@@ -86,6 +84,9 @@ public:
     virtual AC_PID& get_rate_roll_pid() = 0;
     virtual AC_PID& get_rate_pitch_pid() = 0;
     virtual AC_PID& get_rate_yaw_pid() = 0;
+    virtual const AC_PID& get_rate_roll_pid() const = 0;
+    virtual const AC_PID& get_rate_pitch_pid() const = 0;
+    virtual const AC_PID& get_rate_yaw_pid() const = 0;
 
     // get the roll acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_roll_max_cdss() const { return _accel_roll_max; }
@@ -394,8 +395,8 @@ public:
     // purposes
     void set_angle_P_scale_mult(const Vector3f &angle_P_scale) { _angle_P_scale *= angle_P_scale; }
 
-    // get the value of the angle P scale that was used in the last loop, for logging
-    const Vector3f &get_angle_P_scale_logging(void) const { return _angle_P_scale_used; }
+    // get the value of the angle P scale that was used in the last loop
+    const Vector3f &get_last_angle_P_scale(void) const { return _angle_P_scale_used; }
     
     // setup a one loop PD scale multiplier, multiplying by any
     // previously applied scale from this loop. This allows for more
@@ -530,7 +531,7 @@ protected:
     // angle P scaling vector for roll, pitch, yaw
     Vector3f            _angle_P_scale{1,1,1};
 
-    // angle scale used for last loop, used for logging
+    // angle scale used for last loop, used for logging and quadplane angle P scaling
     Vector3f            _angle_P_scale_used;
 
     // PD scaling vector for roll, pitch, yaw

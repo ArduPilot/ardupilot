@@ -67,7 +67,5 @@ define BOOTLOADER_BAUDRATE 57600
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
 
-define CAN_APP_NODE_NAME "org.ardupilot.Sierra-L431"
-
 # Add CS pins to ensure they are high in bootloader
 PB12 MAG_CS CS

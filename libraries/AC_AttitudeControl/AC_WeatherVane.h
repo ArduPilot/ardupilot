@@ -36,7 +36,7 @@ class AC_WeatherVane {
             PITCH_ENABLE = (1<<0),
         };
     
-        // Paramaters
+        // Parameters
         AP_Int8 _direction;
         AP_Float _gain;
         AP_Float _min_dz_ang_deg;

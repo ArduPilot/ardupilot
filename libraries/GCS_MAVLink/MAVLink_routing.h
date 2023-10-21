@@ -73,4 +73,7 @@ private:
     void handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     void send_to_components(const char *pkt, const mavlink_msg_entry_t *entry, uint8_t pkt_len);
+
+    // check for Gopro in Solo gimbal status
+    bool gopro_status_check; // default is none
 };

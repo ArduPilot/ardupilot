@@ -375,7 +375,7 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
 void AP_CANManager::log_retrieve(ExpandingString &str) const
 {
     if (_log_buf == nullptr) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Log buffer not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Log buffer not available");
         return;
     }
     str.append(_log_buf, _log_pos);
@@ -385,7 +385,7 @@ void AP_CANManager::log_retrieve(ExpandingString &str) const
 /*
   handle MAV_CMD_CAN_FORWARD mavlink long command
  */
-bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
@@ -442,7 +442,7 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
             buffer_size /= 2;
         }
         if (frame_buffer == nullptr) {
-            // disard the frames
+            // discard the frames
             return;
         }
     }

@@ -103,6 +103,9 @@ void ModeQRTL::run()
             // nav roll and pitch are controller by position controller
             plane.nav_roll_cd = pos_control->get_roll_cd();
             plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+            plane.quadplane.assign_tilt_to_fwd_thr();
+
             if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
                 pos_control->set_externally_limited_xy();
             }
@@ -123,7 +126,7 @@ void ModeQRTL::run()
 
             ftype alt_diff;
             if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
-                // climb finshed or cant get alt diff, head home
+                // climb finished or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
 

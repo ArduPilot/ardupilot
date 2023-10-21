@@ -395,6 +395,32 @@ private:
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
 
+    // gain from forward acceleration to forward throttle
+    AP_Float q_fwd_thr_gain;
+
+    // limit applied to forward pitch to prevent wing producing negative lift
+    AP_Float q_fwd_pitch_lim;
+
+    // which fwd throttle handling method is active
+    enum class ActiveFwdThr : uint8_t {
+        NONE = 0,
+        OLD  = 1,
+        NEW  = 2,
+    };
+    // override with AUX function
+    bool vfwd_enable_active;
+    
+    // specifies when the feature controlled by q_fwd_thr_gain and q_fwd_pitch_lim is used
+    enum class FwdThrUse : uint8_t {
+        OFF     = 0,
+        POSCTRL = 1,
+        ALL     = 2,
+    };
+    AP_Enum<FwdThrUse> q_fwd_thr_use;
+
+    // return which vfwd method to use
+    ActiveFwdThr get_vfwd_method(void) const;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
@@ -410,6 +436,9 @@ private:
     bool initialised;
 
     Location last_auto_target;
+
+    float q_fwd_throttle; // forward throttle used in q modes
+    float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -581,6 +610,7 @@ private:
         TRANS_FAIL_TO_FW=(1<<19),
         FS_RTL=(1<<20),
         DISARMED_TILT_UP=(1<<21),
+        SCALE_FF_ANGLE_P=(1<<22),
     };
     bool option_is_set(OPTION option) const {
         return (options.get() & int32_t(option)) != 0;
@@ -681,6 +711,11 @@ private:
       change spool state, providing easy hook for catching changes in debug
      */
     void set_desired_spool_state(AP_Motors::DesiredSpoolState state);
+
+    /*
+      limit forward pitch demand if using rotor tilt or forward flight motor to provide forward acceleration.
+     */
+    void assign_tilt_to_fwd_thr(void);
 
     /*
       get a scaled Q_WP_SPEED based on direction of movement

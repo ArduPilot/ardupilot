@@ -16,6 +16,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "GCS_config.h"
+#include <AP_Mission/AP_Mission_config.h>
+
+#if HAL_GCS_ENABLED && AP_MISSION_ENABLED
+
 #include "MissionItemProtocol_Waypoints.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -139,3 +144,5 @@ void MissionItemProtocol_Waypoints::truncate(const mavlink_mission_count_t &pack
     // new mission arriving, truncate mission to be the same length
     mission.truncate(packet.count);
 }
+
+#endif  // HAL_GCS_ENABLED && AP_MISSION_ENABLED

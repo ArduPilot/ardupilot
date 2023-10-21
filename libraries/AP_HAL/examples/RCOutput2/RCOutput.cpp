@@ -28,12 +28,12 @@ void drive(uint16_t hz_speed);
 class Menu_Commands {
 public:
     /* Menu commands to drive a SERVO type with
-     * repective PWM output freq defined by SERVO_HZ
+     * respective PWM output freq defined by SERVO_HZ
      */
     int8_t menu_servo(uint8_t argc, const Menu::arg *argv);
 
     /* Menu commands to drive a ESC type with
-     * repective PWM output freq defined by ESC_HZ
+     * respective PWM output freq defined by ESC_HZ
      */
     int8_t menu_esc(uint8_t argc, const Menu::arg *argv);
 };
@@ -45,7 +45,7 @@ Menu_Commands commands;
 static uint16_t pwm = 1500;
 static int8_t delta = 1;
 
-/* Function to drive a RC output TYPE especified */
+/* Function to drive a RC output TYPE specified */
 void drive(uint16_t hz_speed) {
     hal.rcout->set_freq(0xFF, hz_speed);
 

@@ -133,8 +133,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

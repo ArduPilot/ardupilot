@@ -151,6 +151,7 @@ public:
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
 #endif
     float get_battery_voltage() const { return battery_voltage; }
+    float get_battery_temperature() const { return battery.get_temperature(); }
 
 protected:
     SIM *sitl;
@@ -224,6 +225,7 @@ protected:
     uint64_t frame_time_us;
     uint64_t last_wall_time_us;
     uint32_t last_fps_report_ms;
+    float achieved_rate_hz;  // achieved speedup rate
     int64_t sleep_debt_us;
     uint32_t last_frame_count;
     uint8_t instance;

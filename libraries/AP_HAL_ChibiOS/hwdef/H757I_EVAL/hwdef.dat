@@ -81,8 +81,6 @@ PG6 QUADSPI_BK1_NCS QUADSPI1
 PB2 QUADSPI_CLK QUADSPI1
 
 
-define CAN_APP_NODE_NAME "org.cubepilot.H757"
-
 EXT_FLASH_SIZE_MB 32
 
 # bootloader embedding / bootloader flashing not available

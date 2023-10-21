@@ -11,7 +11,7 @@ public:
 
     // Auto Pilot modes
     // ----------------
-    enum Number : uint8_t {
+    enum class Number : uint8_t {
         MANUAL       = 0,
         ACRO         = 1,
         STEERING     = 3,
@@ -43,7 +43,7 @@ public:
     void exit();
 
     // returns a unique number specific to this mode
-    virtual uint32_t mode_number() const = 0;
+    virtual Number mode_number() const = 0;
 
     // returns short text name (up to 4 bytes)
     virtual const char *name4() const = 0;
@@ -218,7 +218,7 @@ class ModeAcro : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return ACRO; }
+    Number mode_number() const override { return Number::ACRO; }
     const char *name4() const override { return "ACRO"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -240,7 +240,7 @@ class ModeAuto : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return AUTO; }
+    Number mode_number() const override { return Number::AUTO; }
     const char *name4() const override { return "AUTO"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -251,7 +251,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     // return if external control is allowed in this mode (Guided or Guided-within-Auto)
-    bool in_guided_mode() const override { return _submode == Auto_Guided || _submode == Auto_NavScriptTime; }
+    bool in_guided_mode() const override { return _submode == SubMode::Guided || _submode == SubMode::NavScriptTime; }
 
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
@@ -294,15 +294,15 @@ protected:
     bool _enter() override;
     void _exit() override;
 
-    enum AutoSubMode {
-        Auto_WP,                // drive to a given location
-        Auto_HeadingAndSpeed,   // turn to a given heading
-        Auto_RTL,               // perform RTL within auto mode
-        Auto_Loiter,            // perform Loiter within auto mode
-        Auto_Guided,            // handover control to external navigation system from within auto mode
-        Auto_Stop,              // stop the vehicle as quickly as possible
-        Auto_NavScriptTime,     // accept targets from lua scripts while NAV_SCRIPT_TIME commands are executing
-        Auto_Circle,            // circle a given location
+    enum SubMode: uint8_t {
+        WP,                // drive to a given location
+        HeadingAndSpeed,   // turn to a given heading
+        RTL,               // perform RTL within auto mode
+        Loiter,            // perform Loiter within auto mode
+        Guided,            // handover control to external navigation system from within auto mode
+        Stop,              // stop the vehicle as quickly as possible
+        NavScriptTime,     // accept targets from lua scripts while NAV_SCRIPT_TIME commands are executing
+        Circle,            // circle a given location
     } _submode;
 
 private:
@@ -405,7 +405,7 @@ public:
     // Does not allow copies
     CLASS_NO_COPY(ModeCircle);
 
-    uint32_t mode_number() const override { return CIRCLE; }
+    Number mode_number() const override { return Number::CIRCLE; }
     const char *name4() const override { return "CIRC"; }
 
     // initialise with specific center location, radius (in meters) and direction
@@ -489,7 +489,7 @@ class ModeGuided : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return GUIDED; }
+    Number mode_number() const override { return Number::GUIDED; }
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -544,13 +544,13 @@ public:
 
 protected:
 
-    enum GuidedMode {
-        Guided_WP,
-        Guided_HeadingAndSpeed,
-        Guided_TurnRateAndSpeed,
-        Guided_Loiter,
-        Guided_SteeringAndThrottle,
-        Guided_Stop
+    enum class SubMode: uint8_t {
+        WP,
+        HeadingAndSpeed,
+        TurnRateAndSpeed,
+        Loiter,
+        SteeringAndThrottle,
+        Stop
     };
 
     // enum for GUID_OPTIONS parameter
@@ -564,7 +564,7 @@ protected:
     // scurves provide path planning and object avoidance but cannot handle fast updates to the destination (for fast updates use position controller input shaping)
     bool use_scurves_for_navigation() const;
 
-    GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
+    SubMode _guided_mode;    // stores which GUIDED mode the vehicle is in
 
     // attitude control
     bool have_attitude_target;  // true if we have a valid attitude target
@@ -593,7 +593,7 @@ class ModeHold : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return HOLD; }
+    Number mode_number() const override { return Number::HOLD; }
     const char *name4() const override { return "HOLD"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -611,7 +611,7 @@ class ModeLoiter : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return LOITER; }
+    Number mode_number() const override { return Number::LOITER; }
     const char *name4() const override { return "LOIT"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -643,7 +643,7 @@ class ModeManual : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return MANUAL; }
+    Number mode_number() const override { return Number::MANUAL; }
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -667,7 +667,7 @@ class ModeRTL : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return RTL; }
+    Number mode_number() const override { return Number::RTL; }
     const char *name4() const override { return "RTL"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -702,7 +702,7 @@ class ModeSmartRTL : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return SMART_RTL; }
+    Number mode_number() const override { return Number::SMART_RTL; }
     const char *name4() const override { return "SRTL"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -719,7 +719,7 @@ public:
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() const override { return smart_rtl_state == SmartRTL_StopAtHome; }
+    bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
     // set desired speed in m/s
     bool set_desired_speed(float speed) override;
@@ -730,11 +730,11 @@ public:
 protected:
 
     // Safe RTL states
-    enum SmartRTLState {
-        SmartRTL_WaitForPathCleanup,
-        SmartRTL_PathFollow,
-        SmartRTL_StopAtHome,
-        SmartRTL_Failure
+    enum class SmartRTLState: uint8_t {
+        WaitForPathCleanup,
+        PathFollow,
+        StopAtHome,
+        Failure
     } smart_rtl_state;
 
     bool _enter() override;
@@ -748,7 +748,7 @@ class ModeSteering : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return STEERING; }
+    Number mode_number() const override { return Number::STEERING; }
     const char *name4() const override { return "STER"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -773,7 +773,7 @@ class ModeInitializing : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return INITIALISING; }
+    Number mode_number() const override { return Number::INITIALISING; }
     const char *name4() const override { return "INIT"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -794,7 +794,7 @@ class ModeFollow : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return FOLLOW; }
+    Number mode_number() const override { return Number::FOLLOW; }
     const char *name4() const override { return "FOLL"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -830,7 +830,7 @@ class ModeSimple : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return SIMPLE; }
+    Number mode_number() const override { return Number::SIMPLE; }
     const char *name4() const override { return "SMPL"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -860,7 +860,7 @@ public:
     // Does not allow copies
     CLASS_NO_COPY(ModeDock);
 
-    uint32_t mode_number() const override { return DOCK; }
+    Number mode_number() const override { return Number::DOCK; }
     const char *name4() const override { return "DOCK"; }
 
     // methods that affect movement of the vehicle in this mode

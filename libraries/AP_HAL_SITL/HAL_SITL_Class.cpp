@@ -64,11 +64,11 @@ static UARTDriver sitlUart7Driver(7, &sitlState);
 static UARTDriver sitlUart8Driver(8, &sitlState);
 static UARTDriver sitlUart9Driver(9, &sitlState);
 
+static I2CDeviceManager i2c_mgr_instance;
+
 #if defined(HAL_BUILD_AP_PERIPH)
-static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager spi_mgr_instance;
 #else
-static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);

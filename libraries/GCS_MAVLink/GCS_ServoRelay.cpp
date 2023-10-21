@@ -2,9 +2,9 @@
 
 #include "AP_ServoRelayEvents/AP_ServoRelayEvents.h"
 
-#if AP_SERVORELAYEVENTS_ENABLED
+#if AP_MAVLINK_SERVO_RELAY_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_servorelay_message(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_servorelay_message(const mavlink_command_int_t &packet)
 {
     AP_ServoRelayEvents *handler = AP::servorelayevents();
     if (handler == nullptr) {
@@ -48,4 +48,4 @@ MAV_RESULT GCS_MAVLINK::handle_servorelay_message(const mavlink_command_long_t &
     return result;
 }
 
-#endif
+#endif  // AP_MAVLINK_SERVO_RELAY_ENABLED

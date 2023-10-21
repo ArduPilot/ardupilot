@@ -12,6 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
@@ -49,6 +53,7 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
+#include "AP_GPS_FixType.h"
 
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
@@ -106,6 +111,16 @@ static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
 #endif
+
+// ensure that our own enum-class status is equivalent to the
+// ArduPilot-scoped AP_GPS_FixType enumeration:
+static_assert((uint32_t)AP_GPS::GPS_Status::NO_GPS == (uint8_t)AP_GPS_FixType::NO_GPS, "NO_GPS incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::NO_FIX == (uint8_t)AP_GPS_FixType::NONE, "NO_FIX incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_2D == (uint8_t)AP_GPS_FixType::FIX_2D, "FIX_2D incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint8_t)AP_GPS_FixType::FIX_3D, "FIX_3D incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint8_t)AP_GPS_FixType::DGPS, "FIX_DGPS incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint8_t)AP_GPS_FixType::RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint8_t)AP_GPS_FixType::RTK_FIXED, "FIX_RTK_FIXED incorrect");
 
 AP_GPS *AP_GPS::_singleton;
 
@@ -334,7 +349,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL for uBlox driver
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -728,7 +743,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_UAVCAN_RTK_BASE:
     case GPS_TYPE_UAVCAN_RTK_ROVER:
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if AP_GPS_DRONECAN_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         return AP_GPS_DroneCAN::probe(*this, state[instance]);
 #endif
@@ -1040,17 +1055,17 @@ void AP_GPS::update_instance(uint8_t instance)
     if (data_should_be_logged && should_log()) {
         Write_GPS(instance);
     }
+#else
+    (void)data_should_be_logged;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RTC_ENABLED
     if (state[instance].status >= GPS_OK_FIX_3D) {
         const uint64_t now = time_epoch_usec(instance);
         if (now != 0) {
             AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
         }
     }
-#else
-    (void)data_should_be_logged;
 #endif
 }
 
@@ -1149,8 +1164,18 @@ void AP_GPS::update(void)
 void AP_GPS::update_primary(void)
 {
 #if defined(GPS_BLENDED_INSTANCE)
-    // if blending is requested, attempt to calculate weighting for each GPS
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND) {
+    /*
+      if blending is requested, attempt to calculate weighting for
+      each GPS
+      we do not do blending if using moving baseline yaw as the rover is
+      significant lagged and gives no more information on position or
+      velocity
+    */
+    const bool using_moving_base = (_type[0] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[0] == GPS_TYPE_UBLOX_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UBLOX_RTK_BASE);
+    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
         if (!_output_is_blended) {
@@ -1457,7 +1482,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         ground_speed(0)*100,  // cm/s
         ground_course(0)*100, // 1/100 degrees,
         num_sats(0),
-        height_elipsoid_mm,   // Elipsoid height in mm
+        height_elipsoid_mm,   // Ellipsoid height in mm
         hacc * 1000,          // one-sigma standard deviation in mm
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
@@ -1500,7 +1525,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         state[1].rtk_num_sats,
         state[1].rtk_age_ms,
         gps_yaw_cdeg(1),
-        height_elipsoid_mm,   // Elipsoid height in mm
+        height_elipsoid_mm,   // Ellipsoid height in mm
         hacc * 1000,          // one-sigma standard deviation in mm
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
@@ -1678,7 +1703,7 @@ void AP_GPS::Write_AP_Logger_Log_Startup_messages()
  */
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
-    // always enusre a lag is provided
+    // always ensure a lag is provided
     lag_sec = 0.1f;
 
     if (instance >= GPS_MAX_INSTANCES) {
@@ -2130,12 +2155,14 @@ bool AP_GPS::is_healthy(uint8_t instance) const
      */
     /*
       allow two lost frames before declaring the GPS unhealthy, but
-      require the average frame rate to be close to 5Hz. We allow for
-      a bit higher average for a rover due to the packet loss that
-      happens with the RTCMv3 data
+      require the average frame rate to be close to 5Hz.
+
+      We allow for a rate of 3Hz average for a moving baseline rover
+      due to the packet loss that happens with the RTCMv3 data and the
+      fact that the rate of yaw data is not critical
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = ((_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER))?245:215;
+    const float delay_avg_max = ((_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER))?333:215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
@@ -2167,7 +2194,7 @@ bool AP_GPS::prepare_for_arming(void) {
 
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if AP_GPS_DRONECAN_ENABLED
         if (_type[i] == GPS_TYPE_UAVCAN ||
             _type[i] == GPS_TYPE_UAVCAN_RTK_BASE ||
             _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
@@ -2330,3 +2357,5 @@ AP_GPS &gps()
 }
 
 };
+
+#endif  // AP_GPS_ENABLED

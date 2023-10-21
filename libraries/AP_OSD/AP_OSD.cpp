@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows, 6:AviationStyleAH
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -352,8 +352,8 @@ bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
         _backends[instance]->init_symbol_set(AP_OSD_AbstractScreen::symbols_lookup_table, AP_OSD_NUM_SYMBOLS);
         return true;
     }
-    return false;
 #endif
+    return false;
 }
 
 #if OSD_ENABLED

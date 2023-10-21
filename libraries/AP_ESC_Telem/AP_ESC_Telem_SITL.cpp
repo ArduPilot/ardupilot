@@ -67,7 +67,7 @@ void AP_ESC_Telem_SITL::update()
 
         // some fake values so that is_telemetry_active() returns true
         TelemetryData t {
-            .temperature_cdeg = 32,
+            .temperature_cdeg = 3200,
             .voltage = 16.8f,
             .current = 0.8f,
             .consumption_mah = 1.0f,

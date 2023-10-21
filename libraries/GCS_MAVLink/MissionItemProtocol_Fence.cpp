@@ -1,10 +1,13 @@
+#include "GCS_config.h"
+#include <AC_Fence/AC_Fence_config.h>
+
+#if HAL_GCS_ENABLED && AP_FENCE_ENABLED
+
 #include "MissionItemProtocol_Fence.h"
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
-
-#if AP_FENCE_ENABLED
 
 /*
   public function to format mission item as mavlink_mission_item_int_t
@@ -244,4 +247,4 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
     return MAV_MISSION_ACCEPTED;
 }
 
-#endif // AP_FENCE_ENABLED
+#endif // HAL_GCS_ENABLED && AP_FENCE_ENABLED

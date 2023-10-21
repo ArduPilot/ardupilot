@@ -1,5 +1,5 @@
 /**
- * C preprocesor enumeration of the boards supported by the AP_HAL.
+ * C preprocessor enumeration of the boards supported by the AP_HAL.
  * This list exists so HAL_BOARD == HAL_BOARD_xxx preprocessor blocks
  * can be used to exclude HAL boards from the build when appropriate.
  * It's not an elegant solution but we can improve it in future.
@@ -318,7 +318,8 @@
 #else
 // Enough for a notch per motor on an octa quad using two IMUs and one harmonic
 // plus one static notch with one harmonic
-#define HAL_HNF_MAX_FILTERS 18
+// Or triple-notch per motor on one IMU with one harmonic
+#define HAL_HNF_MAX_FILTERS 24
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2023 ArduPilot.org.
 #
 # This program is free software: you can redistribute it and/or modify

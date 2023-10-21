@@ -321,7 +321,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
  */
 void AP_GPS_DroneCAN::handle_velocity(const float vx, const float vy, const float vz)
 {
-    if (!isnanf(vx)) {
+    if (!isnan(vx)) {
         const Vector3f vel(vx, vy, vz);
         interim_state.velocity = vel;
         velocity_to_speed_course(interim_state);
@@ -383,29 +383,30 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         Location loc = { };
         loc.lat = msg.latitude_deg_1e8 / 10;
         loc.lng = msg.longitude_deg_1e8 / 10;
-        loc.alt = msg.height_msl_mm / 10;
+        const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         interim_state.have_undulation = true;
         interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
+        set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
         handle_velocity(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
 
         if (msg.covariance.len == 6) {
-            if (!isnanf(msg.covariance.data[0])) {
+            if (!isnan(msg.covariance.data[0])) {
                 interim_state.horizontal_accuracy = sqrtf(msg.covariance.data[0]);
                 interim_state.have_horizontal_accuracy = true;
             } else {
                 interim_state.have_horizontal_accuracy = false;
             }
-            if (!isnanf(msg.covariance.data[2])) {
+            if (!isnan(msg.covariance.data[2])) {
                 interim_state.vertical_accuracy = sqrtf(msg.covariance.data[2]);
                 interim_state.have_vertical_accuracy = true;
             } else {
                 interim_state.have_vertical_accuracy = false;
             }
-            if (!isnanf(msg.covariance.data[3]) &&
-                !isnanf(msg.covariance.data[4]) &&
-                !isnanf(msg.covariance.data[5])) {
+            if (!isnan(msg.covariance.data[3]) &&
+                !isnan(msg.covariance.data[4]) &&
+                !isnan(msg.covariance.data[5])) {
                 interim_state.speed_accuracy = sqrtf((msg.covariance.data[3] + msg.covariance.data[4] + msg.covariance.data[5])/3);
                 interim_state.have_speed_accuracy = true;
             } else {
@@ -479,12 +480,12 @@ void AP_GPS_DroneCAN::handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg)
 {
     WITH_SEMAPHORE(sem);
 
-    if (!isnanf(msg.hdop)) {
+    if (!isnan(msg.hdop)) {
         seen_aux = true;
         interim_state.hdop = msg.hdop * 100.0;
     }
 
-    if (!isnanf(msg.vdop)) {
+    if (!isnan(msg.vdop)) {
         seen_aux = true;
         interim_state.vdop = msg.vdop * 100.0;
     }
@@ -799,7 +800,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 {
     // we only handle this if we are the first DroneCAN GPS or we are
     // using a different uavcan instance than the first GPS, as we
-    // send the data as broadcast on all DroneCAN devive ports and we
+    // send the data as broadcast on all DroneCAN device ports and we
     // don't want to send duplicates
     const uint32_t now_ms = AP_HAL::millis();
     if (_detected_module == 0 ||

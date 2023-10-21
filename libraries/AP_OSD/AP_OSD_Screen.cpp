@@ -1354,7 +1354,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     case VoltageType::RESTING_CELL: { 
         blinkvolt = osd->warn_avgcellrestvolt;
         v = battery.voltage_resting_estimate(instance);
-         FALLTHROUGH;
+        FALLTHROUGH;
     }
     case VoltageType::AVG_CELL: {         
        if (type == VoltageType::AVG_CELL) { //for fallthrough of RESTING_CELL
@@ -1376,10 +1376,18 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     }    
     if (!show_remaining_pct) {
         // Do not show battery percentage
-        backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+            backend->write(x,y, v < blinkvolt, "%1.2f%c", (double)v, SYMBOL(SYM_VOLT));
+        } else {
+            backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        }
         return;
     }
-    backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+        backend->write(x,y, v < blinkvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    } else {
+        backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    }
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
@@ -1573,10 +1581,18 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     float roll;
     float pitch;
+    bool inverted = false;
     AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
     pitch *= -1;
-
-    //inverted roll AH
+    // Are we inverted? then flash horizon line
+    if (abs(roll) >= radians(90)) {
+       inverted = true;
+    }
+    // Aviation style AH instead of Betaflight FPV style
+    if (inverted && check_option(AP_OSD::OPTION_AVIATION_AH)) {
+        pitch = -pitch;            
+    }
+    //inverted roll AH (Russian HUD emulation)
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
         roll = -roll;
     }
@@ -1595,7 +1611,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             //chars in font in reversed order
             c = SYMBOL(SYM_AH_H_START) + ((SYMBOL(SYM_AH_H_COUNT) - 1) - c);
             if (dy >= -4 && dy <= 4) {
-                backend->write(x + dx, y - dy, false, "%c", c);
+                backend->write(x + dx, y - dy, inverted, "%c", c);
             }
         }
     } else {
@@ -1605,7 +1621,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             char c = (fx - dx) * SYMBOL(SYM_AH_V_COUNT);
             c = SYMBOL(SYM_AH_V_START) + c;
             if (dx >= -4 && dx <=4) {
-                backend->write(x + dx, y - dy, false, "%c", c);
+                backend->write(x + dx, y - dy, inverted, "%c", c);
             }
         }
     }
@@ -2133,6 +2149,7 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 #endif
 }
 
+#if AP_RTC_ENABLED
 void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
 {
     AP_RTC &rtc = AP::rtc();
@@ -2144,6 +2161,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%02u:%02u", SYMBOL(SYM_CLK), hour, min);
     }
 }
+#endif
 
 #if HAL_PLUSCODE_ENABLE
 void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
@@ -2313,7 +2331,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
+#if AP_RTC_ENABLED
     DRAW_SETTING(clk);
+#endif
 #if AP_VIDEOTX_ENABLED
     DRAW_SETTING(vtx_power);
 #endif

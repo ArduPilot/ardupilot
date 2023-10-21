@@ -225,7 +225,11 @@ float AP_RSSI::read_pwm_pin_rssi()
 
 float AP_RSSI::read_telemetry_radio_rssi()
 {
+#if HAL_GCS_ENABLED
     return GCS_MAVLINK::telemetry_radio_rssi();
+#else
+    return 0;
+#endif
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 

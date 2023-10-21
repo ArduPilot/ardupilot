@@ -302,8 +302,10 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
@@ -425,7 +427,7 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlin
     return MAV_RESULT_UNSUPPORTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Tracker::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch(packet.command) {
 
@@ -444,7 +446,7 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command
         return MAV_RESULT_ACCEPTED;
 
     default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+        return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 

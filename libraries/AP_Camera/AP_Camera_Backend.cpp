@@ -154,6 +154,12 @@ void AP_Camera_Backend::take_multiple_pictures(uint32_t time_interval_ms, int16_
     time_interval_settings = {time_interval_ms, total_num};
 }
 
+// stop capturing multiple image sequence
+void AP_Camera_Backend::stop_capture()
+{
+    time_interval_settings = {0, 0};
+}
+
 // handle camera control
 void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
@@ -318,7 +324,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
-    gcs().send_message(MSG_CAMERA_FEEDBACK);
+    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
 }
 
 // log picture

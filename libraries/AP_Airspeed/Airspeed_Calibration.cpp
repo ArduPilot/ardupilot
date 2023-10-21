@@ -168,6 +168,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 }
 
 
+#if HAL_GCS_ENABLED
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
@@ -189,5 +190,6 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
                                   (const char *)&packet);
 #endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }
+#endif  // HAL_GCS_ENABLED
 
 #endif  // AP_AIRSPEED_ENABLED

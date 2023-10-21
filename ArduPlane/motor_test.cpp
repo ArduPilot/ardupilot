@@ -67,7 +67,7 @@ void QuadPlane::motor_test_output()
 
     // sanity check throttle values
     if (pwm >= RC_Channel::RC_MIN_LIMIT_PWM && pwm <= RC_Channel::RC_MAX_LIMIT_PWM) {
-        // turn on motor to specified pwm vlaue
+        // turn on motor to specified pwm value
         motors->output_test_seq(motor_test.seq, pwm);
     } else {
         motor_test_stop();

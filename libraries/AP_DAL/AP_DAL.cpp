@@ -377,7 +377,7 @@ void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSta
 
 }
 
-// log wheel odomotry data
+// log wheel odometry data
 void AP_DAL::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     end_frame();
@@ -478,22 +478,22 @@ void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 }
 
 /*
-  handle wheel odomotry data
+  handle wheel odometry data
  */
 void AP_DAL::handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RWOH = msg;
-    // note that EKF2 does not support wheel odomotry
+    // note that EKF2 does not support wheel odometry
     ekf3.writeWheelOdom(msg.delAng, msg.delTime, msg.timeStamp_ms, msg.posOffset, msg.radius);
 }
 
 /*
-  handle body frame odomotry
+  handle body frame odometry
  */
 void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RBOH = msg;
-    // note that EKF2 does not support body frame odomotry
+    // note that EKF2 does not support body frame odometry
     ekf3.writeBodyFrameOdom(msg.quality, msg.delPos, msg.delAng, msg.delTime, msg.timeStamp_ms, msg.delay_ms, msg.posOffset);
 }
 
@@ -503,7 +503,7 @@ void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RSLL = msg;
-    // note that EKF2 does not support body frame odomotry
+    // note that EKF2 does not support body frame odometry
     const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
 }

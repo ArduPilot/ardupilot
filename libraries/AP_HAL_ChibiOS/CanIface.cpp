@@ -77,7 +77,7 @@
 #define Debug(fmt, args...)
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
 #define PERF_STATS(x) (x++)
 #else
 #define PERF_STATS(x)
@@ -292,6 +292,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     if (frame.isErrorFrame() || frame.dlc > 8) {
         return -1;
     }
+    PERF_STATS(stats.tx_requests);
 
     /*
      * Normally we should perform the same check as in @ref canAcceptNewTxFrame(), because
@@ -323,7 +324,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         } else if ((can_->TSR & bxcan::TSR_TME2) == bxcan::TSR_TME2) {
             txmailbox = 2;
         } else {
-            PERF_STATS(stats.tx_rejected);
+            PERF_STATS(stats.tx_overflow);
             return 0;       // No transmission for you.
         }
 
@@ -496,6 +497,9 @@ void CANIface::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
     if (txok && !txi.pushed) {
         txi.pushed = true;
         PERF_STATS(stats.tx_success);
+#if !defined(HAL_BOOTLOADER_BUILD)
+        stats.last_transmit_us = timestamp_us;
+#endif
     }
 }
 

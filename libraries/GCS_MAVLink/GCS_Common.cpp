@@ -14,6 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
@@ -389,7 +394,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         return;
     }
 
-    uint8_t quality_pct = 0;
+    int8_t quality_pct;
     uint8_t quality;
     if (sensor->get_signal_quality_pct(quality_pct)) {
         // mavlink defines this field as 0 is unknown, 1 is invalid, 100 is perfect
@@ -603,6 +608,7 @@ void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
         prot->handle_mission_request_int(*this, packet, msg);
 }
 
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 {
         // decode
@@ -615,6 +621,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
         }
         prot->handle_mission_request(*this, packet, msg);
 }
+#endif
 
 // returns a MISSION_STATE numeration value best describing out
 // current mission state.
@@ -1772,7 +1779,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         bool parsed_packet = false;
 
         // Try to get a new message
-        if (mavlink_parse_char(chan, c, &msg, &status)) {
+        if (mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status) == MAVLINK_FRAMING_OK) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
             packetReceived(status, msg);
             parsed_packet = true;
@@ -1926,7 +1933,9 @@ void GCS_MAVLINK::log_mavlink_stats()
 void GCS_MAVLINK::send_system_time() const
 {
     uint64_t time_unix = 0;
+#if AP_RTC_ENABLED
     AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+#endif
 
     mavlink_msg_system_time_send(
         chan,
@@ -2751,6 +2760,7 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
     mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
 }
 
+#if AP_AHRS_ENABLED
 void GCS_MAVLINK::send_home_position() const
 {
     if (!AP::ahrs().home_is_set()) {
@@ -2796,6 +2806,7 @@ void GCS_MAVLINK::send_gps_global_origin() const
         ekf_origin.alt * 10,
         AP_HAL::micros64());
 }
+#endif  // AP_AHRS_ENABLED
 
 MAV_STATE GCS_MAVLINK::system_status() const
 {
@@ -2827,7 +2838,7 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int_t &packet)
 {
     if (packet.param2 > 2) {
         return MAV_RESULT_DENIED;
@@ -2842,7 +2853,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_lon
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_int_t &packet)
 {
     return set_message_interval((uint32_t)packet.param1, (int32_t)packet.param2);
 }
@@ -2912,7 +2923,7 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
     return UINT8_MAX;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int_t &packet)
 {
     const uint32_t mavlink_id = (uint32_t)packet.param1;
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
@@ -2944,7 +2955,7 @@ bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) 
     return false;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_command_int_t &packet)
 {
     if (txspace() < PAYLOAD_SIZE(chan, MESSAGE_INTERVAL) + PAYLOAD_SIZE(chan, COMMAND_ACK)) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -3115,7 +3126,7 @@ void GCS_MAVLINK::send_vfr_hud()
   motors. That can be dangerous when a preflight reboot is done with
   the pilot close to the aircraft and can also damage the aircraft
  */
-MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
@@ -3203,8 +3214,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     // refuse reboot when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
-        const float magic_force_reboot_value = 20190226;
-        if (!is_equal(packet.param6, magic_force_reboot_value)) {
+        const uint32_t magic_force_reboot_value = 20190226;
+        if (packet.y != magic_force_reboot_value) {
             return MAV_RESULT_FAILED;
         }
     }
@@ -3255,7 +3266,7 @@ void GCS_MAVLINK::deadlock_sem(void)
 /*
   handle a flight termination request
  */
-MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &packet)
 {
 #if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe *failsafe = AP::advancedfailsafe();
@@ -3428,6 +3439,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
                   msg.compid);
 }
 
+#if AP_RTC_ENABLED
 void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 {
     mavlink_system_time_t packet;
@@ -3435,6 +3447,7 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
 }
+#endif
 
 #if AP_CAMERA_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
@@ -3757,17 +3770,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_int_t &pack
 }
 #endif  // COMPASS_CAL_ENABLED
 
+#if HAL_CANMANAGER_ENABLED
 /*
   handle MAV_CMD_CAN_FORWARD
  */
-MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-#if HAL_CANMANAGER_ENABLED
     return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif
 
 /*
   handle CAN_FRAME messages
@@ -3874,12 +3885,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_set_gps_global_origin(msg);
         break;
 
+#if AP_MAVLINK_MSG_DEVICE_OP_ENABLED
     case MAVLINK_MSG_ID_DEVICE_OP_READ:
         handle_device_op_read(msg);
         break;
     case MAVLINK_MSG_ID_DEVICE_OP_WRITE:
         handle_device_op_write(msg);
         break;
+#endif
+
     case MAVLINK_MSG_ID_TIMESYNC:
         handle_timesync(msg);
         break;
@@ -3948,14 +3962,18 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 #endif
 
 #if HAL_MOUNT_ENABLED
+#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
         send_received_message_deprecation_warning("MOUNT_CONFIGURE");
         handle_mount_message(msg);
         break;
+#endif
+#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
         send_received_message_deprecation_warning("MOUNT_CONTROL");
         handle_mount_message(msg);
         break;
+#endif
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
@@ -3969,9 +3987,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_param_value(msg);
         break;
 
+#if AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
@@ -4050,9 +4070,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif  // HAL_VISUALODOM_ENABLED
 
+#if AP_RTC_ENABLED
     case MAVLINK_MSG_ID_SYSTEM_TIME:
         handle_system_time_message(msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
         handle_rc_channels_override(msg);
@@ -4159,9 +4181,12 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
         handle_mission_request_int(msg);
         break;
+
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_MISSION_REQUEST:
         handle_mission_request(msg);
         break;
+#endif
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
@@ -4343,7 +4368,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
     return MAV_RESULT_IN_PROGRESS;
 }
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
 
@@ -4366,7 +4391,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     rc().calibrating(is_positive(packet.param4));
 
 #if HAL_INS_ACCELCAL_ENABLED
-    if (is_equal(packet.param5,1.0f)) {
+    if (packet.x == 1) {
         // start with gyro calibration
         if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4379,11 +4404,11 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if AP_INERTIALSENSOR_ENABLED
-    if (is_equal(packet.param5,2.0f)) {
+    if (packet.x == 2) {
         return AP::ins().calibrate_trim();
     }
 
-    if (is_equal(packet.param5,4.0f)) {
+    if (packet.x == 4) {
         // simple accel calibration
         return AP::ins().simple_accel_cal();
     }
@@ -4393,7 +4418,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
       compass to be written as valid. This is useful when reloading
       parameters after a full parameter erase
      */
-    if (is_equal(packet.param5,76.0f)) {
+    if (packet.x == 76) {
         // force existing accel calibration to be accepted as valid
         AP::ins().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
@@ -4409,7 +4434,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
@@ -4483,14 +4508,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 }
 #endif
 
-
-MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long_t &packet)
-{
-    send_banner();
-    return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
     const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
     const uint32_t _custom_mode = (uint32_t)packet.param2;
@@ -4498,7 +4516,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t 
     return _set_mode_common(_base_mode, _custom_mode);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_long_t &packet)
+#if AP_AHRS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_int_t &packet)
 {
     if (!AP::ahrs().home_is_set()) {
         return MAV_RESULT_FAILED;
@@ -4514,8 +4533,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
 
     return MAV_RESULT_ACCEPTED;
 }
+#endif  // AP_AHRS_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_int_t &packet)
 {
     // magic number must be supplied to trap; you must *really* mean it.
     if (uint32_t(packet.param1) != 32451) {
@@ -4527,7 +4547,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_long_t &
     return MAV_RESULT_UNSUPPORTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_int_t &packet)
 {
     // source set must be between 1 and 3
     uint32_t source_set = uint32_t(packet.param1);
@@ -4593,7 +4613,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 /*
   handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
  */
-MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_int_t &packet)
 {
     // Param 1: Select which gear, not used in ArduPilot
     // Param 2: 0 = Deploy, 1 = Retract
@@ -4615,7 +4635,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_comm
 #endif
 
 #if HAL_INS_ACCELCAL_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet)
 {
     if (AP::ins().get_acal() == nullptr ||
         !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
@@ -4707,20 +4727,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
-#if HAL_INS_ACCELCAL_ENABLED
-    case MAV_CMD_ACCELCAL_VEHICLE_POS:
-        result = handle_command_accelcal_vehicle_pos(packet);
-        break;
-#endif
-
-    case MAV_CMD_DO_SET_MODE:
-        result = handle_command_do_set_mode(packet);
-        break;
-
-    case MAV_CMD_DO_SEND_BANNER:
-        result = handle_command_do_send_banner(packet);
-        break;
-
 #if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
         result = handle_command_do_fence_enable(packet);
@@ -4744,6 +4750,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_CAMERA_TRACK_POINT:
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
     case MAV_CMD_CAMERA_STOP_TRACKING:
@@ -4803,73 +4810,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         break;
     }
 
-    case MAV_CMD_GET_HOME_POSITION:
-        result = handle_command_get_home_position(packet);
-        break;
-
-    case MAV_CMD_DEBUG_TRAP:
-        result = handle_command_debug_trap(packet);
-        break;
-
-    case MAV_CMD_SET_EKF_SOURCE_SET:
-        result = handle_command_set_ekf_source_set(packet);
-        break;
-
-    case MAV_CMD_PREFLIGHT_STORAGE:
-        if (is_equal(packet.param1, 2.0f)) {
-            AP_Param::erase_all();
-            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
-            result= MAV_RESULT_ACCEPTED;
-        }
-        break;
-
-    case MAV_CMD_DO_AUX_FUNCTION:
-        result = handle_command_do_aux_function(packet);
-        break;
-
-    case MAV_CMD_SET_MESSAGE_INTERVAL:
-        result = handle_command_set_message_interval(packet);
-        break;
-
-    case MAV_CMD_GET_MESSAGE_INTERVAL:
-        result = handle_command_get_message_interval(packet);
-        break;
-
-    case MAV_CMD_REQUEST_MESSAGE:
-        result = handle_command_request_message(packet);
-        break;
-
-#if AP_SERVORELAYEVENTS_ENABLED
-    case MAV_CMD_DO_SET_SERVO:
-    case MAV_CMD_DO_REPEAT_SERVO:
-    case MAV_CMD_DO_SET_RELAY:
-    case MAV_CMD_DO_REPEAT_RELAY:
-        result = handle_servorelay_message(packet);
-        break;
-#endif
-
-    case MAV_CMD_DO_FLIGHTTERMINATION:
-        result = handle_flight_termination(packet);
-        break;
-
-#if AP_LANDINGGEAR_ENABLED
-        case MAV_CMD_AIRFRAME_CONFIGURATION:
-            result = handle_command_airframe_configuration(packet);
-            break;
-#endif
-
-    case MAV_CMD_CAN_FORWARD:
-        result = handle_can_forward(packet, msg);
-        break;
-
-    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-        result = handle_preflight_reboot(packet, msg);
-        break;
-
-    case MAV_CMD_PREFLIGHT_CALIBRATION:
-        result = handle_command_preflight_calibration(packet, msg);
-        break;
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -4927,6 +4867,21 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     return false;
 }
 
+// returns a value suitable for COMMAND_INT.x or y based on a value
+// coming in from COMMAND_LONG.p5 or p6:
+static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
+{
+    if (isnan(param)) {
+        return 0;
+    }
+
+    if (stores_location) {
+        return param *1e7;
+    }
+
+    return param;
+}
+
 void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
@@ -4940,13 +4895,9 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    if (command_long_stores_location((MAV_CMD)in.command)) {
-        out.x = in.param5 *1e7;
-        out.y = in.param6 *1e7;
-    } else {
-        out.x = in.param5;
-        out.y = in.param6;
-    }
+    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
+    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
+    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
     out.z = in.param7;
 }
 
@@ -5114,6 +5065,32 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if HAL_INS_ACCELCAL_ENABLED
+    case MAV_CMD_ACCELCAL_VEHICLE_POS:
+        return handle_command_accelcal_vehicle_pos(packet);
+#endif
+
+#if AP_LANDINGGEAR_ENABLED
+    case MAV_CMD_AIRFRAME_CONFIGURATION:
+        return handle_command_airframe_configuration(packet);
+#endif
+#if HAL_CANMANAGER_ENABLED
+    case MAV_CMD_CAN_FORWARD:
+        return handle_can_forward(packet, msg);
+#endif
+
+    case MAV_CMD_DEBUG_TRAP:
+        return handle_command_debug_trap(packet);
+
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return handle_command_do_aux_function(packet);
+
+    case MAV_CMD_DO_FLIGHTTERMINATION:
+        return handle_flight_termination(packet);
+
+    case MAV_CMD_DO_SET_MODE:
+        return handle_command_do_set_mode(packet);
+
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
@@ -5126,6 +5103,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
         return handle_command_mount(packet, msg);
 #endif  // HAL_MOUNT_ENABLED
+
+    case MAV_CMD_DO_SEND_BANNER:
+        send_banner();
+        return MAV_RESULT_ACCEPTED;
+
     case MAV_CMD_DO_SET_HOME:
         return handle_command_do_set_home(packet);
 #if AP_AHRS_POSITION_RESET_ENABLED
@@ -5144,6 +5126,33 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_mag_cal(packet);
 #endif
 
+#if AP_AHRS_ENABLED
+    case MAV_CMD_GET_HOME_POSITION:
+        return handle_command_get_home_position(packet);
+#endif
+
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        return handle_command_preflight_calibration(packet, msg);
+
+    case MAV_CMD_PREFLIGHT_STORAGE:
+        if (is_equal(packet.param1, 2.0f)) {
+            AP_Param::erase_all();
+            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_DENIED;
+
+    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+        return handle_preflight_reboot(packet, msg);
+
+#if AP_MAVLINK_SERVO_RELAY_ENABLED
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_RELAY:
+        return handle_servorelay_message(packet);
+#endif
+
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
         {
@@ -5155,10 +5164,25 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         }
 #endif // AP_SCRIPTING_ENABLED
 
+    case MAV_CMD_SET_EKF_SOURCE_SET:
+        return handle_command_set_ekf_source_set(packet);
+
 #if AP_FILESYSTEM_FORMAT_ENABLED
     case MAV_CMD_STORAGE_FORMAT:
         return handle_command_storage_format(packet, msg);
 #endif
+
+    // support for dealing with streamrate for a specific message and
+    // requesting a message instance:
+    case MAV_CMD_SET_MESSAGE_INTERVAL:
+        return handle_command_set_message_interval(packet);
+
+    case MAV_CMD_GET_MESSAGE_INTERVAL:
+        return handle_command_get_message_interval(packet);
+
+    case MAV_CMD_REQUEST_MESSAGE:
+        return handle_command_request_message(packet);
+
     }
 
     return MAV_RESULT_UNSUPPORTED;
@@ -5644,6 +5668,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_global_position_int();
         break;
 
+#if AP_AHRS_ENABLED
     case MSG_HOME:
         CHECK_PAYLOAD_SIZE(HOME_POSITION);
         send_home_position();
@@ -5653,6 +5678,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
         send_gps_global_origin();
         break;
+#endif  // AP_AHRS_ENABLED
 
 #if AP_RPM_ENABLED
     case MSG_RPM:
@@ -5742,7 +5768,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             if (camera == nullptr) {
                 break;
             }
-            CHECK_PAYLOAD_SIZE(CAMERA_INFORMATION);
+            CHECK_PAYLOAD_SIZE(CAMERA_SETTINGS);
             camera->send_camera_settings(chan);
         }
         break;
@@ -6701,3 +6727,5 @@ MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t
     return MAV_RESULT_ACCEPTED;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+#endif  // HAL_GCS_ENABLED

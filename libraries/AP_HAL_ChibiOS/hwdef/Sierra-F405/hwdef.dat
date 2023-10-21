@@ -67,8 +67,6 @@ CAN_ORDER 1
 
 # use DNA for node allocation
 
-define CAN_APP_NODE_NAME "org.ardupilot.Sierra-F405"
-
 # order of UARTs
 SERIAL_ORDER USART1 EMPTY EMPTY USART2
 

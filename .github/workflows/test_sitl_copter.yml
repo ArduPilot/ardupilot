@@ -160,8 +160,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -205,9 +205,9 @@ jobs:
 
   autotest:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-base:v0.0.29
+      image: ardupilot/ardupilot-dev-base:v0.1.0
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -273,9 +273,9 @@ jobs:
            retention-days: 7
 
   build-gcc-heli:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-base:v0.0.29
+      image: ardupilot/ardupilot-dev-base:v0.1.0
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     steps:
       # git checkout the PR
@@ -309,8 +309,8 @@ jobs:
 
   autotest-heli:
     needs: build-gcc-heli  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-base:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.1.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

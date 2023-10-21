@@ -91,7 +91,10 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
+#include <AP_Tuning/AP_Tuning_config.h>
+#if AP_TUNING_ENABLED
 #include "tuning.h"
+#endif
 
 // Configuration
 #include "config.h"
@@ -243,7 +246,7 @@ private:
 #endif
 
 #if HAL_RALLY_ENABLED
-    // Rally Ponints
+    // Rally Points
     AP_Rally rally;
 #endif
 
@@ -309,7 +312,7 @@ private:
 
     // Failsafe
     struct {
-        // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
+        // Used to track if the value on channel 3 (throttle) has fallen below the failsafe threshold
         // RC receiver should be set up to output a low throttle value when signal is lost
         bool rc_failsafe;
 
@@ -553,8 +556,7 @@ private:
         float target_heading_accel_limit;
         uint32_t target_heading_time_ms;
         guided_heading_type_t target_heading_type;
-        bool target_heading_limit_low;
-        bool target_heading_limit_high;
+        bool target_heading_limit;
 #endif // OFFBOARD_GUIDED == ENABLED
     } guided_state;
 
@@ -616,7 +618,7 @@ private:
     // The instantaneous desired pitch angle.  Hundredths of a degree
     int32_t nav_pitch_cd;
 
-    // the aerodymamic load factor. This is calculated from the demanded
+    // the aerodynamic load factor. This is calculated from the demanded
     // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
     float aerodynamic_load_factor = 1.0f;
 
@@ -733,6 +735,9 @@ private:
         // are we trying to follow terrain?
         bool terrain_following;
 
+        // are we waiting to load terrain data to init terrain following
+        bool terrain_following_pending;
+
         // target altitude above terrain in cm, valid if terrain_following
         // is set
         int32_t terrain_alt_cm;
@@ -769,7 +774,7 @@ private:
     AP_Mount camera_mount;
 #endif
 
-    // Arming/Disarming mangement class
+    // Arming/Disarming management class
     AP_Arming_Plane arming;
 
     AP_Param param_loader {var_info};
@@ -793,8 +798,10 @@ private:
     QuadPlane quadplane{ahrs};
 #endif
 
+#if AP_TUNING_ENABLED
     // support for transmitter tuning
     AP_Tuning_Plane tuning;
+#endif
 
     static const struct LogStructure log_structure[];
 
@@ -851,7 +858,7 @@ private:
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &start_loc, const Location &destination_loc);
     bool above_location_current(const Location &loc);
-    void setup_terrain_target_alt(Location &loc) const;
+    void setup_terrain_target_alt(Location &loc);
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
@@ -940,22 +947,14 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
-    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-
     bool is_land_command(uint16_t cmd) const;
 
+    bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
     /*
       return true if in a specific AUTO mission command
     */
     bool in_auto_mission_id(uint16_t command) const;
-    
-    // Delay the next navigation command
-    struct {
-        uint32_t time_max_ms;
-        uint32_t time_start_ms;
-    } nav_delay;
-    
+
 #if AP_SCRIPTING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);

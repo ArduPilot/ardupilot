@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "GCS_config.h"
+
+#if AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include "GCS.h"
@@ -199,3 +202,5 @@ more_data:
         goto more_data;
     }
 }
+
+#endif  // AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED

@@ -60,6 +60,9 @@ public:
     // total_num is number of pictures to be taken, -1 means capture forever
     void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
 
+    // stop capturing multiple image sequence
+    void stop_capture();
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 

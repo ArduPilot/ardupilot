@@ -614,7 +614,7 @@ Please use a replacement build as follows:
 ''' % ctx.env.BOARD)
 
         boards = _board_classes.keys()
-        if not ctx.env.BOARD in boards:
+        if ctx.env.BOARD not in boards:
             ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(sorted(boards, key=str.lower))))
         _board = _board_classes[ctx.env.BOARD]()
     return _board
@@ -626,10 +626,7 @@ Please use a replacement build as follows:
 class sitl(Board):
 
     def __init__(self):
-        if Utils.unversioned_sys_platform().startswith("linux"):
-            self.with_can = True
-        else:
-            self.with_can = False
+        self.with_can = True
 
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
@@ -654,8 +651,16 @@ class sitl(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
-                                CANARD_ENABLE_CANFD = 1,
-                                CANARD_ENABLE_ASSERTS = 1)
+                               CANARD_ENABLE_CANFD = 1,
+                               CANARD_ENABLE_ASSERTS = 1)
+            if not cfg.options.force_32bit:
+                # needed for cygwin
+                env.CXXFLAGS += [ '-DCANARD_64_BIT=1' ]
+                env.CFLAGS += [ '-DCANARD_64_BIT=1' ]
+            if Utils.unversioned_sys_platform().startswith("linux"):
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 1)
+            else:
+                cfg.define('HAL_CAN_WITH_SOCKETCAN', 0)
 
         env.CXXFLAGS += [
             '-Werror=float-equal',
@@ -824,6 +829,7 @@ class sitl_periph_gps(sitl):
             HAL_PERIPH_ENABLE_EFI = 1,
             HAL_PERIPH_ENABLE_RPM = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
+            HAL_PERIPH_ENABLE_ADSB = 1,
             AP_AIRSPEED_ENABLED = 1,
             AP_AIRSPEED_AUTOCAL_ENABLE = 0,
             AP_AHRS_ENABLED = 1,
@@ -832,6 +838,7 @@ class sitl_periph_gps(sitl):
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
             HAL_GCS_ENABLED = 0,
+            HAL_MAVLINK_BINDINGS_ENABLED = 1,
             HAL_LOGGING_ENABLED = 0,
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             AP_MISSION_ENABLED = 0,
@@ -857,6 +864,7 @@ class sitl_periph_gps(sitl):
             HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
+            AP_RTC_ENABLED = 0,
         )
 
 

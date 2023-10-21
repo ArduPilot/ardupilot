@@ -105,7 +105,6 @@ define HAL_PERIPH_ENABLE_NETWORKING
 #Communications and debug
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
-define CAN_APP_NODE_NAME "com.kha.eth"
 #################################
 
 # Multi-purpose pins like SPI, I2C, GPIO, PWMs, LEDs, ADC

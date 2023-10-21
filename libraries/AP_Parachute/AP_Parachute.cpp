@@ -103,7 +103,7 @@ void AP_Parachute::release()
         return;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Parachute: Released");
     AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
 
     // set release time to current system time

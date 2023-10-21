@@ -399,6 +399,7 @@ void AP_PiccoloCAN::update()
     }
 }
 
+#if HAL_GCS_ENABLED
 // send ESC telemetry messages over MAVLink
 void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
@@ -473,7 +474,7 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         }
     }
 }
-
+#endif
 
 // send servo messages over CAN
 void AP_PiccoloCAN::send_servo_messages(void)

@@ -343,17 +343,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     }
 
     // 5us
-#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
-    if (!_imu.batchsampler.doing_post_filter_logging()) {
-        log_gyro_raw(instance, sample_us, gyro);
-    }
-    else {
-        log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
-    }
-#else
-    // assume pre-filter logging if batchsampler is not enabled
-    log_gyro_raw(instance, sample_us, gyro);
-#endif
+    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
 }
 
 /*
@@ -440,20 +430,10 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         _imu._new_gyro_data[instance] = true;
     }
 
-#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
-    if (!_imu.batchsampler.doing_post_filter_logging()) {
-        log_gyro_raw(instance, sample_us, gyro);
-    }
-    else {
-        log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
-    }
-#else
-    // assume we're doing pre-filter logging:
-    log_gyro_raw(instance, sample_us, gyro);
-#endif
+    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
 }
 
-void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
+void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &raw_gyro, const Vector3f &filtered_gyro)
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -461,12 +441,30 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
         // should not have been called
         return;
     }
-    if (should_log_imu_raw()) {
-        Write_GYR(instance, sample_us, gyro);
+
+    if (_imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::ALL_GYROS) ||
+        (_imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRIMARY_GYRO_ONLY) && (instance == AP::ahrs().get_primary_gyro_index())) ||
+        should_log_imu_raw()) {
+
+        if (_imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::PRE_AND_POST_FILTER)) {
+            // Both pre and post, offset post instance as batch sampler does
+            Write_GYR(instance, sample_us, raw_gyro);
+            Write_GYR(instance + _imu._gyro_count, sample_us, filtered_gyro);
+
+        } else if (_imu.raw_logging_option_set(AP_InertialSensor::RAW_LOGGING_OPTION::POST_FILTER)) {
+            // Just post
+            Write_GYR(instance, sample_us, filtered_gyro);
+
+        } else {
+            // Just pre
+            Write_GYR(instance, sample_us, raw_gyro);
+
+        }
     } else {
 #if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
-            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us,
+                                     !_imu.batchsampler.doing_post_filter_logging() ? raw_gyro : filtered_gyro);
         }
 #endif
     }

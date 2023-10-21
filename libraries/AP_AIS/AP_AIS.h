@@ -125,7 +125,7 @@ private:
     // decode each term
     bool decode_latest_term() WARN_IF_UNUSED;
 
-    // varables for decoding NMEA sentence
+    // variables for decoding NMEA sentence
     char _term[AIVDM_PAYLOAD_SIZE]; // buffer for the current term within the current sentence
     uint8_t _term_offset;           // offset within the _term buffer where the next character should be placed
     uint8_t _term_number;           // term index within the current sentence

@@ -36,12 +36,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f accel = AP::externalAHRS().get_accel();
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
-}
 
-
-bool AP_AHRS_External::get_location(struct Location &loc) const
-{
-    return AP::externalAHRS().get_location(loc);
+    results.location_valid = AP::externalAHRS().get_location(results.location);
 }
 
 bool AP_AHRS_External::get_quaternion(Quaternion &quat) const

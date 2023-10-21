@@ -1,5 +1,7 @@
-/// @file    AP_Rally.h
-/// @brief   Handles rally point storage and retrieval.
+#include "AP_Rally_config.h"
+
+#if HAL_RALLY_ENABLED
+
 #include "AP_Rally.h"
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -7,7 +9,6 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 

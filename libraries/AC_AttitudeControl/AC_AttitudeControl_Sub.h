@@ -36,6 +36,9 @@ public:
     AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
     AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
+    const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
+    const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;

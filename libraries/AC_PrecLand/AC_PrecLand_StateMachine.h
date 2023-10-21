@@ -23,7 +23,7 @@ public:
     // Do not allow copies
     CLASS_NO_COPY(AC_PrecLand_StateMachine);
 
-    // Initialize the state machine. This is called everytime vehicle switches mode
+    // Initialize the state machine. This is called every time vehicle switches mode
     void init();
 
     // Current status of the precland state machine
@@ -78,7 +78,7 @@ private:
     // Vector3f "retry_pos_m" is filled with the required location.
     Status retry_landing(Vector3f &retry_pos_m);
 
-    // Reset the landing statemachine. This needs to be called everytime the landing target is back in sight.
+    // Reset the landing statemachine. This needs to be called every time the landing target is back in sight.
     // So that if the landing target goes out of sight again, we can start the failed landing procedure back from the beginning stage
     void reset_failed_landing_statemachine();
 

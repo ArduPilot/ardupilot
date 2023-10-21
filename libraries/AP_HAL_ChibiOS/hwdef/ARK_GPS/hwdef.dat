@@ -123,7 +123,6 @@ define HAL_PERIPH_ENABLE_NOTIFY
 # GPS on 2nd port
 define HAL_PERIPH_GPS_PORT_DEFAULT 1
 
-define CAN_APP_NODE_NAME "org.ardupilot.ARK_GPS"
 
 
 

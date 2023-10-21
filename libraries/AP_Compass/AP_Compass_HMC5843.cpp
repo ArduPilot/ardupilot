@@ -38,7 +38,7 @@
 extern const AP_HAL::HAL& hal;
 
 /*
- * Defaul address: 0x1E
+ * Default address: 0x1E
  */
 
 #define HMC5843_REG_CONFIG_A 0x00

@@ -80,7 +80,9 @@ def build(bld):
                      'AP_SBusOut',
                      'AP_RobotisServo',
                      'AP_FETtecOneWire',
+                     'GCS_MAVLink',
                      ]
+
     bld.ap_stlib(
         name= 'AP_Periph_libs',
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',

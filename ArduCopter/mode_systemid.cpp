@@ -107,7 +107,7 @@ bool ModeSystemId::init(bool ignore_checks)
 // systemId_exit - clean up systemId controller before exiting
 void ModeSystemId::exit()
 {
-    // reset the feedfoward enabled parameter to the initialized state
+    // reset the feedforward enabled parameter to the initialized state
     attitude_control->bf_feedforward(att_bf_feedforward);
 }
 
@@ -261,11 +261,7 @@ void ModeSystemId::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle
-    if (copter.is_tradheli()) {
-        attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
-    } else {
-        attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
-    }
+    attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
 
     if (log_subsample <= 0) {
         log_data();

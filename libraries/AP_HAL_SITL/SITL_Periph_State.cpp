@@ -117,6 +117,9 @@ void SITL_State::init(int argc, char * const argv[]) {
     sitl_model = new SimMCast("");
 
     _sitl = AP::sitl();
+
+    _sitl->i2c_sim.init();
+    sitl_model->set_i2c(&_sitl->i2c_sim);
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
@@ -267,6 +270,12 @@ void SimMCast::multicast_read(void)
         base_time_us += (_sitl->state.timestamp_us - state.timestamp_us);
     }
     _sitl->state = state;
+    location.lat = state.latitude*1.0e7;
+    location.lng = state.longitude*1.0e7;
+    location.alt = state.altitude*1.0e2;
+    if (home.is_zero()) {
+        home = location;
+    }
     hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
     HALSITL::Scheduler::timer_event();
     if (servo_fd == -1) {
@@ -285,6 +294,12 @@ SimMCast::SimMCast(const char *frame_str) :
 void SimMCast::update(const struct sitl_input &input)
 {
     multicast_read();
+    update_external_payload(input);
+
+    auto *_sitl = AP::sitl();
+    if (_sitl != nullptr) {
+        battery_voltage = _sitl->batt_voltage;
+    }
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_BUILD_AP_PERIPH)

@@ -82,7 +82,7 @@ public:
     //    ret indicates the functor must return void
     //    pin is the pin which has triggered the interrupt
     //    state is the new state of the pin
-    //    timestamp is the time in microseconds the interrupt occured
+    //    timestamp is the time in microseconds the interrupt occurred
     FUNCTOR_TYPEDEF(irq_handler_fn_t, void, uint8_t, bool, uint32_t);
     virtual bool    attach_interrupt(uint8_t pin,
                                      irq_handler_fn_t fn,

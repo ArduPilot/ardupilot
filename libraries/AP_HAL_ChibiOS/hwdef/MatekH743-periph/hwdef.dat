@@ -26,8 +26,6 @@ define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_BATTERY
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekH743-periph"
-
 # single GPS, compass and RF for peripherals
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1

@@ -16,13 +16,16 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "GCS_config.h"
+#include <AP_Rally/AP_Rally_config.h>
+
+#if HAL_GCS_ENABLED && HAL_RALLY_ENABLED
+
 #include "MissionItemProtocol_Rally.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/GCS.h>
-
-#if HAL_RALLY_ENABLED
 
 MAV_MISSION_RESULT MissionItemProtocol_Rally::append_item(const mavlink_mission_item_int_t &cmd)
 {
@@ -139,4 +142,4 @@ void MissionItemProtocol_Rally::truncate(const mavlink_mission_count_t &packet)
     rally.truncate(packet.count);
 }
 
-#endif  // HAL_RALLY_ENABLED
+#endif  // HAL_GCS_ENABLED && HAL_RALLY_ENABLED

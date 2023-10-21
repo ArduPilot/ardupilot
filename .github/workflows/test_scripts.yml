@@ -8,8 +8,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-base:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.1.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -30,6 +30,4 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
-          sudo apt update
-          sudo apt-get install -y astyle
           Tools/scripts/build_ci.sh

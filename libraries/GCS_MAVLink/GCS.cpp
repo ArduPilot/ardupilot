@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
@@ -180,10 +184,12 @@ void GCS::update_sensor_status_flags()
 
 #if AP_BARO_ENABLED
     const AP_Baro &barometer = AP::baro();
-    control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    if (barometer.all_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    if (barometer.num_instances() > 0) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        if (barometer.all_healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        }
     }
 #endif
 
@@ -375,3 +381,5 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     }
     return true;
 }
+
+#endif  // HAL_GCS_ENABLED

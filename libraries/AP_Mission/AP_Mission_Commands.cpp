@@ -43,12 +43,12 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
     case GRIPPER_ACTION_RELEASE:
         gripper->release();
         // Log_Write_Event(DATA_GRIPPER_RELEASE);
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Released");
         return true;
     case GRIPPER_ACTION_GRAB:
         gripper->grab();
         // Log_Write_Event(DATA_GRIPPER_GRAB);
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Grabbed");
         return true;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -163,8 +163,35 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         return false;
 
     case MAV_CMD_IMAGE_START_CAPTURE:
-        camera->take_picture();
-        return true;
+        // check if this is a single picture request (e.g. total images is 1 or interval and total images are zero)
+        if ((cmd.content.image_start_capture.total_num_images == 1) ||
+            (cmd.content.image_start_capture.total_num_images == 0 && is_zero(cmd.content.image_start_capture.interval_s))) {
+            if (cmd.content.image_start_capture.instance == 0) {
+                // take pictures for every backend
+                return camera->take_picture();
+            }
+            return camera->take_picture(cmd.content.image_start_capture.instance-1);
+        } else if (cmd.content.image_start_capture.total_num_images == 0) {
+            // multiple picture request, take pictures forever
+            if (cmd.content.image_start_capture.instance == 0) {
+                // take pictures for every backend
+                return camera->take_multiple_pictures(cmd.content.image_start_capture.interval_s*1000, -1);
+            }
+            return camera->take_multiple_pictures(cmd.content.image_start_capture.instance-1, cmd.content.image_start_capture.interval_s*1000, -1);
+        } else {
+            if (cmd.content.image_start_capture.instance == 0) {
+                // take pictures for every backend
+                return camera->take_multiple_pictures(cmd.content.image_start_capture.interval_s*1000, cmd.content.image_start_capture.total_num_images);
+            }
+            return camera->take_multiple_pictures(cmd.content.image_start_capture.instance-1, cmd.content.image_start_capture.interval_s*1000, cmd.content.image_start_capture.total_num_images);
+        }
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        if (cmd.p1 == 0) {
+            // stop capture for each backend
+            camera->stop_capture();
+            return true;
+        }
+        return camera->stop_capture(cmd.p1 - 1);
 
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
@@ -220,7 +247,7 @@ bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
 bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd)
 {
     _repeat_dist = cmd.p1;
-    gcs().send_text(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
     return true;
 }
 

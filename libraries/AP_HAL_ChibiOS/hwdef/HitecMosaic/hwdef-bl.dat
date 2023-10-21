@@ -73,9 +73,6 @@ PB2 GPIO_CAN1_SILENT OUTPUT PUSHPULL LOW GPIO(72)
 # reset for GPS
 PB6 nGNSS_RESET OUTPUT HIGH GPIO(73)
 
-define HAL_USE_CAN TRUE
-define STM32_CAN_USE_CAN1 TRUE
-
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600
 
@@ -90,5 +87,3 @@ define HAL_STAY_IN_BOOTLOADER_VALUE 0
 # Add CS pins to ensure they are high in bootloader
 PB1 MAG_CS CS
 
-
-define CAN_APP_NODE_NAME "org.ardupilot.HitecMosaic"

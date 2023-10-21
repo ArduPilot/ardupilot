@@ -350,7 +350,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff_start(alt_target_cm, alt_target_terrain);
+    auto_takeoff.start(alt_target_cm, alt_target_terrain);
 
     // set submode
     set_submode(SubMode::TAKEOFF);
@@ -364,7 +364,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
         Vector3f stopping_point;
         if (_mode == SubMode::TAKEOFF) {
             Vector3p takeoff_complete_pos;
-            if (auto_takeoff_get_position(takeoff_complete_pos)) {
+            if (auto_takeoff.get_position(takeoff_complete_pos)) {
                 stopping_point = takeoff_complete_pos.tofloat();
             }
         }
@@ -536,7 +536,7 @@ bool ModeAuto::is_landing() const
 
 bool ModeAuto::is_taking_off() const
 {
-    return ((_mode == SubMode::TAKEOFF) && !auto_takeoff_complete);
+    return ((_mode == SubMode::TAKEOFF) && !auto_takeoff.complete);
 }
 
 // auto_payload_place_start - initialises controller to implement a placing
@@ -965,7 +965,7 @@ void ModeAuto::takeoff_run()
     if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
         copter.set_auto_armed(true);
     }
-    auto_takeoff_run();
+    auto_takeoff.run();
 }
 
 // auto_wp_run - runs the auto waypoint controller
@@ -1326,13 +1326,13 @@ void ModeAuto::payload_place_run()
         FALLTHROUGH;
 
     case PayloadPlaceStateType_Ascent_Start: {
-        auto_takeoff_start(nav_payload_place.descent_start_altitude_cm, false);
+        auto_takeoff.start(nav_payload_place.descent_start_altitude_cm, false);
         nav_payload_place.state = PayloadPlaceStateType_Ascent;
         }
         break;
 
     case PayloadPlaceStateType_Ascent:
-        if (auto_takeoff_complete) {
+        if (auto_takeoff.complete) {
             nav_payload_place.state = PayloadPlaceStateType_Done;
         }
         break;
@@ -1782,7 +1782,11 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
+#if AP_RTC_ENABLED
         nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+#else
+        nav_delay_time_max_ms = 0;
+#endif
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
@@ -1970,13 +1974,13 @@ bool ModeAuto::verify_takeoff()
 {
 #if AP_LANDINGGEAR_ENABLED
     // if we have reached our destination
-    if (auto_takeoff_complete) {
+    if (auto_takeoff.complete) {
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
 #endif
 
-    return auto_takeoff_complete;
+    return auto_takeoff.complete;
 }
 
 // verify_land - returns true if landing has been completed

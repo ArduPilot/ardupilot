@@ -551,6 +551,7 @@ public:
         OPTION_IMPERIAL_MILES = 1U<<3,
         OPTION_DISABLE_CROSSHAIR = 1U<<4,
         OPTION_BF_ARROWS = 1U<<5,
+        OPTION_AVIATION_AH = 1U<<6,
     };
 
     enum {

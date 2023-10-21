@@ -114,6 +114,13 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Roll axis rate controller PD sum maximum
+    // @Description: Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
 
     AP_GROUPEND
@@ -165,7 +172,8 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(rate_pid.get_ff() / (scaler * eas2tas));
+    const float ff = degrees(ff_scale * rate_pid.get_ff() / (scaler * eas2tas));
+    ff_scale = 1.0;
 
     if (disable_integrator) {
         rate_pid.reset_I();

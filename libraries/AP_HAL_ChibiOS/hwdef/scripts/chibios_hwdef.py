@@ -23,7 +23,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO' ]
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -1258,6 +1258,7 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
+#define STM32_FLASH_DISABLE_ISR 0
 ''')
             if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
                 f.write('''
@@ -1522,9 +1523,11 @@ INCLUDE common.ld
         for dev in self.spi_list:
             n = int(dev[3:])
             devlist.append('HAL_SPI%u_CONFIG' % n)
+            sck_pin = self.bylabel['SPI%s_SCK' % n]
+            sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
             f.write(
-                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS }\n'
-                % (n, n, n, n))
+                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS, %s }\n'
+                % (n, n, n, n, sck_line))
         f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
         self.write_SPI_table(f)
 
@@ -1826,6 +1829,19 @@ INCLUDE common.ld
         if uart_list is None:
             return
         f.write('\n// UART configuration\n')
+
+        # write out which serial ports we actually have
+        idx = 0
+        nports = 0
+        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        for serial in serial_order:
+            if serial == 'EMPTY':
+                f.write('#define HAL_HAVE_SERIAL%u 0\n' % idx)
+            else:
+                f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
+                nports = nports + 1
+            idx += 1
+        f.write('#define HAL_NUM_SERIAL_PORTS %u\n' % nports)
 
         # write out driver declarations for HAL_ChibOS_Class.cpp
         devnames = "ABCDEFGHIJ"
@@ -3009,7 +3025,11 @@ INCLUDE common.ld
             print("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
                 self.error("Bad env line for %s" % a[0])
-            self.env_vars[a[1]] = ' '.join(a[2:])
+            name = a[1]
+            value = ' '.join(a[2:])
+            if name == 'AP_PERIPH' and value != "1":
+                raise ValueError("AP_PERIPH may only have value 1")
+            self.env_vars[name] = value
 
     def process_file(self, filename):
         '''process a hwdef.dat file'''
@@ -3068,7 +3088,7 @@ INCLUDE common.ld
 ''' % (description, content, description))
 
     def is_io_fw(self):
-        return self.env_vars.get('IOMCU_FW', 0) != 0
+        return int(self.env_vars.get('IOMCU_FW', 0)) != 0
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3079,16 +3099,16 @@ INCLUDE common.ld
         self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
     def is_periph_fw(self):
-        return self.env_vars.get('AP_PERIPH', 0) != 0
+        return int(self.env_vars.get('AP_PERIPH', 0)) != 0
 
     def is_normal_fw(self):
-        if self.env_vars.get('IOMCU_FW', 0) != 0:
+        if self.is_io_fw():
             # IOMCU firmware
             return False
         if self.is_periph_fw():
             # Periph firmware
             return False
-        if args.bootloader:
+        if self.is_bootloader_fw():
             # guess
             return False
         return True

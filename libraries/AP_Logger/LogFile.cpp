@@ -1,3 +1,7 @@
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include <stdlib.h>
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -155,28 +159,21 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-    const uint16_t override_mask = rc().get_override_mask();
-
-    // don't waste logging bandwidth if we haven't seen non-zero
-    // channels 15/16:
-    if (!should_log_rcin2) {
-        if (values[14] || values[15]) {
-            should_log_rcin2 = true;
-        } else if (override_mask != 0) {
-            should_log_rcin2 = true;
-        }
+    uint8_t flags = 0;
+    if (rc().has_valid_input()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::HAS_VALID_INPUT;
+    }
+    if (rc().in_rc_failsafe()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::IN_RC_FAILSAFE;
     }
 
-    if (!should_log_rcin2) {
-        return;
-    }
-
-    const struct log_RCIN2 pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_RCIN2_MSG),
+    const struct log_RCI2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_RCI2_MSG),
         time_us       : AP_HAL::micros64(),
         chan15         : values[14],
         chan16         : values[15],
-        override_mask  : override_mask,
+        override_mask  : rc().get_override_mask(),
+        flags          : flags,
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
@@ -476,6 +473,19 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
+    enum class log_PID_Flags : uint8_t {
+        LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
+        PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
+    };
+
+    uint8_t flags = 0;
+    if (info.limit) {
+        flags |= (uint8_t)log_PID_Flags::LIMIT;
+    }
+    if (info.PD_limit) {
+        flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
+    }
+
     const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
@@ -488,7 +498,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
         FF              : info.FF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
-        limit           : info.limit
+        flags           : flags
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -561,3 +571,5 @@ void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float
 {
     Write_PSCx(LOG_PSCD_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
 }
+
+#endif  // HAL_LOGGING_ENABLED

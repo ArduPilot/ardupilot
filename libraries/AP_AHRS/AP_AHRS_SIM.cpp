@@ -255,6 +255,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f &accel = _ins.get_accel();
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
+    results.location_valid = get_location(results.location);
+
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz

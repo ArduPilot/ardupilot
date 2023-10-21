@@ -1,3 +1,16 @@
+Release 1.6.0 8th September 2023
+--------------------------------
+
+This is a major release with the following changes:
+
+ - much faster CAN bootloader for faster firmware update
+ - improved handling of peripherals with 2 or more CAN interfaces
+ - support most AP_Periph features in SITL testing
+ - added RC input support
+ - added battery balance plug support
+ - support sending RPM over DroneCAN
+ - support for pitot temperature reporting
+
 Release 1.5.1 23rd July 2023
 ---------------------------
 

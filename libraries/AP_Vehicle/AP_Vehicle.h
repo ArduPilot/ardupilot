@@ -22,6 +22,7 @@
 #include "ModeReason.h" // reasons can't be defined in this header due to circular loops
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
@@ -288,7 +289,9 @@ protected:
     float G_Dt;
 
     // sensor drivers
+#if AP_GPS_ENABLED
     AP_GPS gps;
+#endif
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;

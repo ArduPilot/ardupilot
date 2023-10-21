@@ -49,7 +49,7 @@ public:
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-        k_param_software_type, // unusued
+        k_param_software_type, // unused
 
         k_param_g2, // 2nd block of parameters
 

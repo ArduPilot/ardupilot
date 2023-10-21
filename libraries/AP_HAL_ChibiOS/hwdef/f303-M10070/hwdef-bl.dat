@@ -3,6 +3,3 @@ include ../f303-periph/hwdef-bl.inc
 # mRo Location One CAN GPS
 # M10084
 
-# start as DNA
-
-define CAN_APP_NODE_NAME "io.mrobotics.m10070_loc1_BL"

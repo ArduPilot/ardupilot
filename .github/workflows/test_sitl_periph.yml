@@ -159,8 +159,8 @@ concurrency:
 
 jobs:
   build-gcc-ap_periph:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-periph:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-periph:v0.1.0
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
@@ -199,9 +199,9 @@ jobs:
 
   autotest-can:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: 
-      image: ardupilot/ardupilot-dev-periph:v0.0.29
+      image: ardupilot/ardupilot-dev-periph:v0.1.0
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -230,15 +230,6 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
-      - name: setup can-utils
-        run: |
-          kernel_ver=`uname -r`
-          if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
-          sudo apt-get update
-          sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
-          sudo modprobe vcan
-          sudo ip link add dev vcan0 type vcan
-          sudo ip link set up vcan0
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}

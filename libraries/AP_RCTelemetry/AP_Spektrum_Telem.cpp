@@ -544,7 +544,15 @@ void AP_Spektrum_Telem::calc_gps_status()
     _telem.gpsstat.speed = ((knots % 10000 / 1000) << 12) | ((knots % 1000 / 100) << 8) | ((knots % 100 / 10) << 4) | (knots % 10); // BCD, knots, format 3.1
     uint16_t ms;
     uint8_t h, m, s;
+#if AP_RTC_ENABLED
     AP::rtc().get_system_clock_utc(h, m, s, ms);                    // BCD, format HH:MM:SS.S, format 6.1
+    // FIXME: the above call can fail!
+#else
+    h = 0;
+    m = 0;
+    s = 0;
+    ms = 0;
+#endif
     _telem.gpsstat.UTC = ((((h / 10) << 4) | (h % 10)) << 20) | ((((m / 10) << 4) | (m % 10)) << 12) | ((((s / 10) << 4) | (s % 10)) << 4) | (ms / 100) ;
     uint8_t nsats =  AP::gps().num_sats();
     _telem.gpsstat.numSats = ((nsats / 10) << 4) | (nsats % 10);    // BCD, 0-99

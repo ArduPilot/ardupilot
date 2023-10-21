@@ -77,7 +77,7 @@ Parameters_RCIN::Parameters_RCIN(void)
 
 void AP_Periph_FW::rcin_init()
 {
-    if (g_rcin.rcin1_port == 0) {
+    if (g_rcin.rcin1_port < 0) {
         return;
     }
 

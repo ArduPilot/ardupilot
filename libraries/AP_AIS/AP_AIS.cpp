@@ -141,7 +141,7 @@ void AP_AIS::update()
                 uint8_t msg_parts[_incoming.num - 1];
                 for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE; i++) {
                     // look for the rest of the message from the start of the buffer
-                    // we assume the mesage has be received in the correct order
+                    // we assume the message has be received in the correct order
                     if (_AIVDM_buffer[i].num == (index + 1) && _AIVDM_buffer[i].total == _incoming.total && _AIVDM_buffer[i].ID == _incoming.ID) {
                         msg_parts[index] = i;
                         index++;
@@ -349,11 +349,11 @@ void AP_AIS::clear_list_item(uint16_t index)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Functions for decoding AIVDM payload mesages
+// Functions for decoding AIVDM payload messages
 
 bool AP_AIS::payload_decode(const char *payload)
 {
-    // the mesage type is defined by the first character
+    // the message type is defined by the first character
     const uint8_t type = payload_char_decode(payload[0]);
 
     switch (type) {
@@ -674,7 +674,7 @@ uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
 }
 
 // read the specified bits from the char array each char giving 6 bits
-// As the values are a arbitrary length the sign bit is in the wrong place for standard length varables
+// As the values are a arbitrary length the sign bit is in the wrong place for standard length variables
 int32_t AP_AIS::get_bits_signed(const char *payload, uint16_t low, uint16_t high)
 {
     uint32_t value = get_bits(payload, low, high);
@@ -829,7 +829,7 @@ AP_AIS *AP_AIS::get_singleton() {
 
 #else
 // Dummy methods are required to allow functionality to be enabled for Rover.
-// It is not posible to compile in or out the full code based on vehicle type due to limitations
+// It is not possible to compile in or out the full code based on vehicle type due to limitations
 // of the handling of `APM_BUILD_TYPE` define.
 // These dummy methods minimise flash cost in that case.
 

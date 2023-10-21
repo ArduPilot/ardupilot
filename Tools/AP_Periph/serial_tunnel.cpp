@@ -58,7 +58,7 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
         uart_num = g.adsb_port;
     }
 #endif
-#if HAL_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     if (uart_num == -1) {
         uart_num = g.proximity_port;
     }

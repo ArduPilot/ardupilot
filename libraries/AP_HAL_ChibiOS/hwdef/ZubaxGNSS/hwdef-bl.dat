@@ -16,9 +16,6 @@ env AP_PERIPH 1
 
 define HAL_BOARD_AP_PERIPH_ZUBAXGNSS
 
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
-
-
 # crystal frequency
 OSCILLATOR_HZ 16000000
 

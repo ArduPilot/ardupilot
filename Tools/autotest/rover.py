@@ -18,7 +18,6 @@ from common import AutoTest
 from pysim import util
 
 from common import AutoTestTimeoutException
-from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
@@ -389,34 +388,18 @@ class AutoTestRover(AutoTest):
         self.wait_statustext("Mission Complete", timeout=60, check_context=True)
         self.disarm_vehicle()
 
-    def GetBanner(self):
+    def _MAV_CMD_DO_SEND_BANNER(self, run_cmd):
         '''Get Banner'''
-        target_sysid = self.sysid_thismav()
-        target_compid = 1
-        self.mav.mav.command_long_send(
-            target_sysid,
-            target_compid,
-            mavutil.mavlink.MAV_CMD_DO_SEND_BANNER,
-            1, # confirmation
-            1, # send it
-            0,
-            0,
-            0,
-            0,
-            0,
-            0)
-        start = time.time()
-        while True:
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is not None and "ArduRover" in m.text:
-                self.progress("banner received: %s" % m.text)
-                return
-            if time.time() - start > 10:
-                break
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        run_cmd(mavutil.mavlink.MAV_CMD_DO_SEND_BANNER)
+        self.wait_statustext("ArduRover", timeout=1, check_context=True)
+        self.context_pop()
 
-        raise MsgRcvTimeoutException("banner not received")
+    def MAV_CMD_DO_SEND_BANNER(self):
+        '''test MAV_CMD_DO_SEND_BANNER'''
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd)
+        self._MAV_CMD_DO_SEND_BANNER(self.run_cmd_int)
 
     def drive_brake_get_stopping_distance(self, speed):
         '''measure our stopping distance'''
@@ -582,61 +565,105 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ServoRelayEvents(self):
         '''Test ServoRelayEvents'''
-        self.do_set_relay(0, 0)
-        off = self.get_parameter("SIM_PIN_MASK")
-        self.do_set_relay(0, 1)
-        on = self.get_parameter("SIM_PIN_MASK")
-        if on == off:
-            raise NotAchievedException(
-                "Pin mask unchanged after relay cmd")
-        self.progress("Pin mask changed after relay command")
-        self.do_set_relay(0, 0)
+        for method in self.run_cmd, self.run_cmd_int:
+            self.context_push()
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
+            off = self.get_parameter("SIM_PIN_MASK")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
+            on = self.get_parameter("SIM_PIN_MASK")
+            if on == off:
+                raise NotAchievedException(
+                    "Pin mask unchanged after relay cmd")
+            self.progress("Pin mask changed after relay command")
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
 
-        self.set_message_rate_hz("RELAY_STATUS", 10)
+            self.set_message_rate_hz("RELAY_STATUS", 10)
 
-        # default configuration for relays in sim have one relay:
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 3,
-            "on": 0,
-        })
-        self.do_set_relay(0, 1)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 3,
-            "on": 1,
-        })
-        self.do_set_relay(1, 1)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 3,
-            "on": 3,
-        })
-        self.do_set_relay(0, 0)
-        self.do_set_relay(1, 0)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 3,
-            "on": 0,
-        })
+            # default configuration for relays in sim have one relay:
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 3,
+                "on": 0,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 3,
+                "on": 1,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=1, p2=1)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 3,
+                "on": 3,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=1, p2=0)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 3,
+                "on": 0,
+            })
 
-        # add another servo:
-        self.set_parameter("RELAY_PIN6", 14)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 35,
-            "on": 0,
-        })
-        self.do_set_relay(5, 1)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 35,
-            "on": 32,
-        })
-        self.do_set_relay(0, 1)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 35,
-            "on": 33,
-        })
-        self.do_set_relay(5, 0)
-        self.assert_received_message_field_values('RELAY_STATUS', {
-            "present": 35,
-            "on": 1,
-        })
+            # add another servo:
+            self.set_parameter("RELAY_PIN6", 14)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 35,
+                "on": 0,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=5, p2=1)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 35,
+                "on": 32,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 35,
+                "on": 33,
+            })
+            method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=5, p2=0)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "present": 35,
+                "on": 1,
+            })
+
+            self.start_subtest("test MAV_CMD_DO_REPEAT_RELAY")
+            self.context_push()
+            self.set_parameter("SIM_SPEEDUP", 1)
+            method(
+                mavutil.mavlink.MAV_CMD_DO_REPEAT_RELAY,
+                p1=0,  # servo 1
+                p2=5,  # 5 times
+                p3=0.5,  # 1 second between being on
+            )
+            for value in 0, 1, 0, 1, 0, 1, 0, 1:
+                self.wait_message_field_values('RELAY_STATUS', {
+                    "on": value,
+                })
+            self.context_pop()
+            self.delay_sim_time(3)
+            self.assert_received_message_field_values('RELAY_STATUS', {
+                "on": 1,  # back to initial state
+            })
+            self.context_pop()
+
+            self.start_subtest("test MAV_CMD_DO_SET_SERVO")
+            for value in 1678, 2300, 0:
+                method(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=13, p2=value)
+                self.wait_servo_channel_value(13, value)
+
+            self.start_subtest("test MAV_CMD_DO_REPEAT_SERVO")
+
+            self.context_push()
+            self.set_parameter("SIM_SPEEDUP", 1)
+            trim = self.get_parameter("SERVO13_TRIM")
+            value = 2000
+            method(
+                mavutil.mavlink.MAV_CMD_DO_REPEAT_SERVO,
+                p1=12,  # servo12
+                p2=value,  # pwm
+                p3=5,  # count
+                p4=0.5,  # cycle time (1 second between high and high)
+            )
+            for value in trim, value, trim, value, trim, value, trim, value:
+                self.wait_servo_channel_value(12, value)
+            self.context_pop()
 
         self.set_message_rate_hz("RELAY_STATUS", 0)
 
@@ -1212,6 +1239,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Set mode via MAV_COMMAND_DO_SET_MODE'''
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
+        self.do_set_mode_via_command_int("HOLD")
+        self.do_set_mode_via_command_int("MANUAL")
 
     def RoverInitialMode(self):
         '''test INITIAL_MODE parameter works'''
@@ -1309,7 +1338,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def Rally(self):
         '''Test Rally Points'''
-        self.load_rally("rover-test-rally.txt")
+        self.load_rally_using_mavproxy("rover-test-rally.txt")
+        self.assert_parameter_value('RALLY_TOTAL', 2)
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -5759,6 +5789,40 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def SET_ATTITUDE_TARGET_heading(self, target_sysid=None, target_compid=1):
+        '''Test handling of SET_ATTITUDE_TARGET'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        for angle in 0, 290, 70, 180, 0:
+            self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
+        self.disarm_vehicle()
+
+    def SET_ATTITUDE_TARGET_heading_test_target(self, angle, target_sysid, target_compid):
+        if target_sysid is None:
+            target_sysid = self.sysid_thismav()
+
+        def poke_set_attitude(value, target):
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                target_sysid,
+                target_compid,
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE,
+                mavextra.euler_to_quat([
+                    math.radians(0),
+                    math.radians(0),
+                    math.radians(angle)
+                ]), # att
+                0, # roll rate (rad/s)
+                0, # pitch rate
+                0, # yaw rate
+                1) # thrust
+
+        self.wait_heading(angle, called_function=poke_set_attitude, minimum_duration=5)
+
     def SET_POSITION_TARGET_LOCAL_NED(self, target_sysid=None, target_compid=1):
         '''Test handling of SET_POSITION_TARGET_LOCAL_NED'''
         if target_sysid is None:
@@ -6469,6 +6533,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_RTL()
         self.disarm_vehicle()
 
+    def _MAV_CMD_GET_HOME_POSITION(self, run_cmd):
+        '''test handling of mavlink command MAV_CMD_GET_HOME_POSITION'''
+        self.context_collect('HOME_POSITION')
+        run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        self.assert_receive_message('HOME_POSITION', check_context=True)
+
+    def MAV_CMD_GET_HOME_POSITION(self):
+        '''test handling of mavlink command MAV_CMD_GET_HOME_POSITION'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self._MAV_CMD_GET_HOME_POSITION(self.run_cmd)
+        self._MAV_CMD_GET_HOME_POSITION(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6484,7 +6561,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveSquare,
             self.DriveMission,
             # self.DriveBrake,  # disabled due to frequent failures
-            self.GetBanner,
+            self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
             self.MAVProxy_DO_SET_MODE,
             self.ServoRelayEvents,
@@ -6497,9 +6574,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.Gripper,
             self.GripperMission,
             self.SET_MESSAGE_INTERVAL,
+            self.MESSAGE_INTERVAL_COMMAND_INT,
             self.REQUEST_MESSAGE,
             self.SYSID_ENFORCE,
             self.SET_ATTITUDE_TARGET,
+            self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_CHANGE_SPEED,
@@ -6548,6 +6627,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.NoArmWithoutMissionItems,
             self.CompassPrearms,
             self.MAV_CMD_DO_SET_REVERSE,
+            self.MAV_CMD_GET_HOME_POSITION,
         ])
         return ret
 

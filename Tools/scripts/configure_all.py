@@ -43,7 +43,7 @@ def get_board_list():
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef) and not d in omit:
+        if os.path.exists(hwdef) and d not in omit:
             board_list.append(d)
     return board_list
 

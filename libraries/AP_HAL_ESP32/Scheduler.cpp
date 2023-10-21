@@ -28,6 +28,7 @@
 #include "esp_task_wdt.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <stdio.h>
 
 //#define SCHEDULERDEBUG 1
@@ -50,6 +51,7 @@ void disableCore0WDT()
         //print("Failed to remove Core 0 IDLE task from WDT");
     }
 }
+
 void disableCore1WDT()
 {
     TaskHandle_t idle_1 = xTaskGetIdleTaskHandleForCPU(1);
@@ -292,9 +294,14 @@ void Scheduler::_timer_thread(void *arg)
     printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
+
+#if HAL_INS_DEFAULT != HAL_INS_NONE
+    // wait to ensure INS system inits unless using HAL_INS_NONE
     while (!_initialized) {
         sched->delay_microseconds(1000);
     }
+#endif
+
 #ifdef SCHEDDEBUG
     printf("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
@@ -507,17 +514,25 @@ void Scheduler::print_stats(void)
     // printf("loop_rate_hz: %d",get_loop_rate_hz());
 }
 
+// Run every 10s
+void Scheduler::print_main_loop_rate(void)
+{
+    static int64_t last_run = 0;
+    if (AP_HAL::millis64() - last_run > 10000) {
+        last_run = AP_HAL::millis64();
+        const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+        const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
+        hal.console->printf("loop_rate: actual: %uHz, expected: %uHz\n",
+            (uint16_t)actual_loop_rate, (uint16_t)expected_loop_rate);
+    }
+}
+
 void IRAM_ATTR Scheduler::_main_thread(void *arg)
 {
 #ifdef SCHEDDEBUG
     printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
-    hal.serial(0)->begin(115200);
-    hal.serial(1)->begin(57600);
-    hal.serial(2)->begin(57600);
-    //hal.uartC->begin(921600);
-    hal.serial(3)->begin(115200);
 
 #ifndef HAL_DISABLE_ADC_DRIVER
     hal.analogin->init();
@@ -535,7 +550,9 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
         sched->callbacks->loop();
         sched->delay_microseconds(250);
 
-        sched->print_stats(); // only runs every 60 seconds.
+        // run stats periodically
+        sched->print_stats();
+        sched->print_main_loop_rate();
     }
 }
 

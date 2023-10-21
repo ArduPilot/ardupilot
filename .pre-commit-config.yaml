@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.2.0
+      rev: v4.4.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -24,6 +24,11 @@ repos:
             name: Check line ending character (LF)
             args: ["--fix=lf"]
             types_or: [python, c, c++, shell]
+            exclude: |
+              (?x)^(
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.cpp |
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.h
+              )$
         -   id: check-added-large-files
         -   id: check-executables-have-shebangs
         -   id: check-shebang-scripts-are-executable
@@ -37,12 +42,12 @@ repos:
         -   id: check-yaml
 
   -   repo: https://github.com/lsst-ts/pre-commit-xmllint
-      rev: v1.0.0
+      rev: 6f36260b537bf9a42b6ea5262c915ae50786296e
       hooks:
         - id: format-xmllint
           files: libraries/AP_DDS/dds_xrce_profile.xml
   -   repo: https://github.com/psf/black
-      rev: 23.1.0
+      rev: 23.7.0
       hooks:
         - id: black
           files: libraries\/AP_DDS\/(wscript|.*\.py)$
