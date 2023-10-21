@@ -5795,7 +5795,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        for angle in 0, 290, 70, 180, 0:
+        for angle in 0, -70, 70.0, 180, 0:
             self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
             self.wait_message_field_values('NAV_CONTROLLER_OUTPUT', {
                 "nav_bearing":angle,
