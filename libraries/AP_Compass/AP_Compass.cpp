@@ -1901,31 +1901,55 @@ Compass::get_declination() const
 float
 Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 {
-    float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
+/*
+    This extracts a roll/pitch-only rotation which is then used to rotate the body frame field into earth frame so the heading can be calculated.
+    One could do:
+        float roll, pitch, yaw;
+        dcm_matrix.to_euler(roll, pitch, yaw)
+        Matrix3f rp_rot;
+        rp_rot.from_euler(roll, pitch, 0)
+        Vector3f ef = rp_rot * field
+
+    Because only the X and Y components are needed it's more efficient to manually calculate:
+
+        rp_rot = [ cos(pitch), sin(roll) * sin(pitch),  cos(roll) * sin(pitch)
+                            0,              cos(roll),              -sin(roll)]
+
+    If the whole matrix is multiplied by cos(pitch) the required trigonometric values can be extracted directly from the existing dcm matrix.
+    This multiplication has no effect on the calculated heading as it changes the length of the North/East vector but not its angle.
+
+        rp_rot = [ cos(pitch)^2, sin(roll) * sin(pitch) * cos(pitch),  cos(roll) * sin(pitch) * cos(pitch)
+                              0,              cos(roll) * cos(pitch),              -sin(roll) * cos(pitch)]
+
+    Preexisting values can be substituted in:
+
+        dcm_matrix.c.x = -sin(pitch)
+        dcm_matrix.c.y =  sin(roll) * cos(pitch)
+        dcm_matrix.c.z =  cos(roll) * cos(pitch)
+
+        rp_rot = [ cos(pitch)^2, dcm_matrix.c.y * -dcm_matrix.c.x,  dcm_matrix.c.z * -dcm_matrix.c.x
+                              0,                   dcm_matrix.c.z,                   -dcm_matrix.c.y]
+
+    cos(pitch)^2 is stil needed. This is the same as 1 - sin(pitch)^2.
+    sin(pitch) is avalable as dcm_matrix.c.x
+*/
+
+    const float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
     const Vector3f &field = get_field(i);
 
-    float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
+    const float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
+    const float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
+    const float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
-    // Declination correction (if supplied)
-    if ( fabsf(_declination) > 0.0f ) {
-        heading = heading + _declination;
-        if (heading > M_PI) {  // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * M_PI);
-        } else if (heading < -M_PI) {
-            heading += (2.0f * M_PI);
-        }
-    }
-
-    return heading;
+    // Declination correction
+    return wrap_PI(heading + _declination);
 }
 
 /// Returns True if the compasses have been configured (i.e. offsets saved)
