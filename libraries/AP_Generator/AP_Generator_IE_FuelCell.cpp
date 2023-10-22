@@ -168,27 +168,29 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     update_state_msg();
 
     // Check error codes
-    char msg_txt[64];
-    if (check_for_err_code_if_changed(msg_txt, sizeof(msg_txt))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
-    }
+    check_for_err_code_if_changed();
 }
 
 // Check error codes and populate message with error code
-bool AP_Generator_IE_FuelCell::check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len)
+void AP_Generator_IE_FuelCell::check_for_err_code_if_changed()
 {
     // Only check if there has been a change in error code
     if ((_err_code == _last_err_code) && (_sub_err_code == _last_sub_err_code)) {
-        return false;
+        return;
     }
 
-    if (check_for_err_code(msg_txt, msg_len) || check_for_warning_code(msg_txt, msg_len)) {
-        _last_err_code = _err_code;
-        _last_sub_err_code = _sub_err_code;
-        return true;
+    char msg_txt[64];
+    if (check_for_err_code(msg_txt, sizeof(msg_txt)) || check_for_warning_code(msg_txt, sizeof(msg_txt))) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
+
+    } else if ((_err_code == 0) && (_sub_err_code == 0)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fuel cell error cleared");
+
     }
 
-    return false;
+    _last_err_code = _err_code;
+    _last_sub_err_code = _sub_err_code;
+
 }
 
 // Return true is fuel cell is in running state suitable for arming
