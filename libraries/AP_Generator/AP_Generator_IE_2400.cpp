@@ -361,7 +361,7 @@ bool AP_Generator_IE_2400::is_critical_error(const uint32_t err_in) const
 {
     // V2 protocol
     if (_version == ProtocolVersion::V2) {
-        return err_in > 30;
+        return err_in >= 30;
     }
 
     // V1 protocol
@@ -383,7 +383,7 @@ bool AP_Generator_IE_2400::is_low_error(const uint32_t err_in) const
 {
     // V2 protocol
     if (_version == ProtocolVersion::V2) {
-        return (err_in >= 10) && (err_in <= 30);
+        return (err_in > 20) && (err_in < 30);
     }
 
     // V1 protocol
