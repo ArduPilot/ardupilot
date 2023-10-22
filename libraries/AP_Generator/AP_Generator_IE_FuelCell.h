@@ -109,7 +109,7 @@ protected:
     virtual bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const { return false; }
 
     // Only check the error code if it has changed since we last checked
-    bool check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len);
+    void check_for_err_code_if_changed();
 
     // Return true is fuel cell is in running state suitable for arming
     virtual bool is_running() const;
