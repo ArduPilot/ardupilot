@@ -389,3 +389,6 @@ float int32_to_float_le(const uint32_t& value) WARN_IF_UNUSED;
   Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
 */
 double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;
+
+
+double mapValue(double inputValue, double inputMin, double inputMax, double outputMin, double outputMax);
