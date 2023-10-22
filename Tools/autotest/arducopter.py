@@ -5121,7 +5121,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Pitching vehicle")
             self.do_pitch(despitch)
             self.wait_pitch(despitch, despitch_tolerance)
-            self.test_mount_pitch(-despitch, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
             # point gimbal at specified angle
             self.progress("Point gimbal using GIMBAL_MANAGER_PITCHYAW (ANGLE)")
