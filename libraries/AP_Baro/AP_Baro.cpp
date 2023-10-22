@@ -17,6 +17,11 @@
  *       APM_Baro.cpp - barometer driver
  *
  */
+
+#include "AP_Baro_config.h"
+
+#if AP_BARO_ENABLED
+
 #include "AP_Baro.h"
 
 #include <utility>
@@ -1102,3 +1107,5 @@ AP_Baro &baro()
 }
 
 };
+
+#endif  // AP_BARO_ENABLED
