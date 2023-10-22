@@ -20,6 +20,10 @@
  *
  */
 
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include "AP_AHRS.h"
 
 // fwd declarations to avoid include errors
@@ -218,3 +222,5 @@ private:
     float y_angle;
     float _pitch_trim_deg;
 };
+
+#endif  // AP_AHRS_ENABLED
