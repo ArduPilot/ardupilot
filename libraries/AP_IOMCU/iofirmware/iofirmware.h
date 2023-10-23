@@ -140,6 +140,7 @@ public:
 #endif
 #ifdef HAL_WITH_BIDIR_DSHOT
     struct page_dshot_erpm dshot_erpm;
+    uint32_t last_erpm_us;
     struct page_dshot_telem dshot_telem[IOMCU_MAX_CHANNELS/4];
     uint32_t last_telem_ms;
 #if HAL_WITH_ESC_TELEM

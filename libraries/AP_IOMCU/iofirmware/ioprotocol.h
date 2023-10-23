@@ -189,14 +189,14 @@ struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t output_mask;
 };
 
-struct __attribute__((packed, aligned(2))) page_mode_out {
+struct page_mode_out {
     uint16_t mask;
     uint16_t mode;
     uint16_t bdmask;
     uint16_t esc_type;
 };
 
-struct __attribute__((packed, aligned(2))) page_dshot {
+struct page_dshot {
     uint16_t telem_mask;
     uint8_t command;
     uint8_t chan;
@@ -205,13 +205,13 @@ struct __attribute__((packed, aligned(2))) page_dshot {
     uint8_t priority;
 };
 
-struct __attribute__((packed, aligned(2))) page_dshot_erpm {
+struct page_dshot_erpm {
     uint16_t erpm[IOMCU_MAX_CHANNELS];
     uint32_t update_mask;
 };
 
 // separate telemetry packet because (a) it's too big otherwise and (b) slower update rate
-struct __attribute__((packed, aligned(2))) page_dshot_telem {
+struct page_dshot_telem {
     uint16_t  error_rate[4]; // as a centi-percentage
     uint16_t  voltage_cvolts[4];
     uint16_t  current_camps[4];
