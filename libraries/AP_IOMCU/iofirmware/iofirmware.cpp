@@ -622,8 +622,13 @@ void AP_IOMCU_FW::rcin_update()
 #ifdef HAL_WITH_BIDIR_DSHOT
 void AP_IOMCU_FW::erpm_update()
 {
+    uint32_t now_us = AP_HAL::micros();
+
     if (hal.rcout->new_erpm()) {
         dshot_erpm.update_mask |= hal.rcout->read_erpm(dshot_erpm.erpm, IOMCU_MAX_CHANNELS);
+        last_erpm_us = now_us;
+    } else if (now_us - last_erpm_us > ESC_RPM_DATA_TIMEOUT_US) {
+        dshot_erpm.update_mask = 0;
     }
 }
 
@@ -640,7 +645,7 @@ void AP_IOMCU_FW::telem_update()
             dshot_telem[i].error_rate[j] = uint16_t(roundf(hal.rcout->get_erpm_error_rate(esc_id) * 100.0));
 #if HAL_WITH_ESC_TELEM
             const volatile AP_ESC_Telem_Backend::TelemetryData& telem = esc_telem.get_telem_data(esc_id);
-            // if data is stale the set to zero to avoidn phantom data appearing in mavlink
+            // if data is stale then set to zero to avoid phantom data appearing in mavlink
             if (now_ms - telem.last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS) {
                 dshot_telem[i].voltage_cvolts[j] = 0;
                 dshot_telem[i].current_camps[j] = 0;
@@ -1146,6 +1151,10 @@ void AP_IOMCU_FW::rcout_config_update(void)
             }
         }
         last_channel_mask = reg_setup.channel_mask;
+        // channel enablement will affect the reported output mode
+        uint32_t output_mask = 0;
+        reg_status.rcout_mode = hal.rcout->get_output_mode(output_mask);
+        reg_status.rcout_mask = uint8_t(0xFF & output_mask);
     }
 
     // see if there is anything to do, we only support setting the mode for a particular channel once
