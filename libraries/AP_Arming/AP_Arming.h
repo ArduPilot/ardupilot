@@ -139,11 +139,14 @@ public:
     
     // enum for ARMING_OPTIONS parameter
     enum class Option : int32_t {
-        DISABLE_PREARM_DISPLAY   = (1U << 0),
+        DISABLE_PREARM_DISPLAY             = (1U << 0),
+        DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
     }
+
+    void send_arm_disarm_statustext(const char *string) const;
 
     static bool method_is_GCS(Method method) {
         return (method == Method::MAVLINK || method == Method::DDS);
