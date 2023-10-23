@@ -2718,6 +2718,12 @@ function battery:healthy(instance) end
 ---@return integer
 function battery:num_instances() end
 
+-- get individual cell voltage
+---@param instance integer
+---@param cell integer
+---@return number|nil
+function battery:get_cell_voltage(instance, cell) end
+
 
 -- desc
 ---@class arming
