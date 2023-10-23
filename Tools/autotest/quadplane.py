@@ -918,7 +918,7 @@ class AutoTestQuadPlane(AutoTest):
             raise NotAchievedException("Unexpected altitude; expected=%f got=%f" %
                                        (expected_alt, m.alt))
         self.assert_mode('LOITERALTQLAND')
-        self.wait_mode('QLAND')
+        self.wait_mode('QRTL')
         alt = self.get_altitude(relative=True)
         if abs(alt - q_rtl_alt) > 2:
             raise NotAchievedException("qland too late; want=%f got=%f" %
@@ -981,7 +981,7 @@ class AutoTestQuadPlane(AutoTest):
             raise NotAchievedException("Unexpected altitude; expected=%f got=%f" %
                                        (expected_alt, m.alt))
         self.assert_mode('LOITERALTQLAND')
-        self.wait_mode('QLAND')
+        self.wait_mode('QRTL')
         alt = initial_altitude + self.get_altitude(relative=True)
         if abs(alt - expected_alt) > 10:
             raise NotAchievedException("qland too late; want=%f got=%f" %
