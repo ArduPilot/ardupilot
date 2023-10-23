@@ -20,6 +20,7 @@
 #if HAL_OS_SOCKETS
 
 #include "Socket.h"
+#include <errno.h>
 
 /*
   constructor
@@ -72,6 +73,36 @@ bool SocketAPM::connect(const char *address, uint16_t port)
         return false;
     }
     return true;
+}
+
+/*
+  connect the socket with a timeout
+ */
+bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms)
+{
+    struct sockaddr_in sockaddr;
+    make_sockaddr(address, port, sockaddr);
+
+    set_blocking(false);
+
+    int ret = ::connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == 0) {
+        // instant connect?
+        return true;
+    }
+    if (errno != EINPROGRESS) {
+        return false;
+    }
+    bool pollret = pollout(timeout_ms);
+    if (!pollret) {
+        return false;
+    }
+    int sock_error = 0;
+    socklen_t len = sizeof(sock_error);
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void*)&sock_error, &len) != 0) {
+        return false;
+    }
+    return sock_error == 0;
 }
 
 /*
