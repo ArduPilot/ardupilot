@@ -18,10 +18,11 @@
 
 #define AP_INLINE_VECTOR_OPS
 
-#include "AP_InertialSensor_tempcal.h"
 #include "AP_InertialSensor_config.h"
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
+
+#include "AP_InertialSensor_tempcal.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Common/ExpandingString.h>
