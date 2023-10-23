@@ -115,6 +115,9 @@ private:
     // The last ms timestamp AP_DDS wrote a Clock message
     uint64_t last_clock_time_ms;
 
+    int16_t  radio_min_val;
+    int16_t  radio_max_val;
+
     // functions for serial transport
     bool ddsSerialInit();
     static bool serial_transport_open(uxrCustomTransport* args);
