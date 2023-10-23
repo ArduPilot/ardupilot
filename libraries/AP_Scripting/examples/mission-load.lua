@@ -1,6 +1,9 @@
 -- Example of loading a mission from the SD card using Scripting
 -- Would be trivial to select a mission based on scripting params or RC switch
 -- luacheck: only 0
+--Copy this "mission-load.lua" script to the "scripts" directory of the simulation or autopilot's SD card. 
+--The "mission1.txt" file containing the mission items should be placed in the directory above the "scripts" directory. 
+--In case of placing it on SD Card, mission1.txt file should be placed in the APM directory root.
 
 
 
