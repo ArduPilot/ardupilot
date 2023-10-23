@@ -874,6 +874,23 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
     }
 }
 
+// get once cell voltage (for scripting)
+bool AP_BattMonitor::get_cell_voltage(uint8_t instance, uint8_t cell, float &voltage) const
+{
+    if (!has_cell_voltages(instance) ||
+        cell >= AP_BATT_MONITOR_CELLS_MAX) {
+        return false;
+    }
+    const auto &cell_voltages = get_cell_voltages(instance);
+    const uint16_t voltage_mv = cell_voltages.cells[cell];
+    if (voltage_mv == 0 || voltage_mv == UINT16_MAX) {
+        // UINT16_MAX is used as invalid indicator
+        return false;
+    }
+    voltage = voltage_mv*0.001;
+    return true;
+}
+
 // returns true if there is a temperature reading
 bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
 {
