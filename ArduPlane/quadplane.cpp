@@ -1475,7 +1475,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
     if ((have_airspeed && aspeed < assist_speed) && 
-       (!option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || ahrs.airspeed_sensor_enabled())) {
+       (!option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || ahrs.using_airspeed_sensor())) {
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return true;

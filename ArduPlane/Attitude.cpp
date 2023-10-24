@@ -49,7 +49,7 @@ float Plane::calc_speed_scaler(void)
         // no speed estimate and not armed, use a unit scaling
         speed_scaler = 1;
     }
-    if (!plane.ahrs.airspeed_sensor_enabled()  && 
+    if (!plane.ahrs.using_airspeed_sensor()  && 
         (plane.flight_option_enabled(FlightOptions::SURPRESS_TKOFF_SCALING)) &&
         (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is suppressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
