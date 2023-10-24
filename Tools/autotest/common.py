@@ -8624,19 +8624,16 @@ Also, ignores heartbeats not from our target system'''
     def zero_mag_offset_parameters(self, compass_count=3):
         self.progress("Zeroing Mag OFS parameters")
         self.get_sim_time()
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
-            p1=2, # param1 (compass0)
-        )
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
-            p1=5, # param1 (compass1)
-        )
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
-            p1=6, # param1 (compass2)
-        )
+        zero_offset_parameters_hash = {}
+        for num in "", "2", "3":
+            for axis in "X", "Y", "Z":
+                name = "COMPASS_OFS%s_%s" % (num, axis)
+                zero_offset_parameters_hash[name] = 0
+        self.set_parameters(zero_offset_parameters_hash)
+        # force-save the calibration values:
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, p2=76)
         self.progress("zeroed mag parameters")
+
         params = [
             [("SIM_MAG1_OFS1_X", "COMPASS_OFS_X", 0),
              ("SIM_MAG1_OFS1_Y", "COMPASS_OFS_Y", 0),
