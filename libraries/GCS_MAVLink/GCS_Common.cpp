@@ -230,19 +230,15 @@ void GCS_MAVLINK::send_mcu_status(void)
 }
 #endif
 
+#if AP_BATTERY_ENABLED
 // returns the battery remaining percentage if valid, -1 otherwise
 int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
-#if AP_BATTERY_ENABLED
     uint8_t percentage;
     return AP::battery().capacity_remaining_pct(percentage, instance) ? MIN(percentage, INT8_MAX) : -1;
-#else
-    return -1;
-#endif
 }
 
 void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
-#if AP_BATTERY_ENABLED
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
                   "Not enough battery cells for the MAVLink message");
@@ -360,15 +356,11 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     cell_mvolts_ext, // Cell 11..14 voltages
                                     0, // battery mode
                                     battery.get_mavlink_fault_bitmask(instance));   // fault_bitmask
-#else
-    (void)instance;
-#endif
 }
 
 // returns true if all battery instances were reported
 bool GCS_MAVLINK::send_battery_status()
 {
-#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
 
     for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
@@ -383,10 +375,8 @@ bool GCS_MAVLINK::send_battery_status()
         }
     }
     return true;
-#else
-    return false;
-#endif
 }
+#endif  // AP_BATTERY_ENABLED
 
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
 {
@@ -2518,11 +2508,10 @@ void GCS::setup_uarts()
 #endif
 }
 
-#if AP_MAVLINK_BATTERY2_ENABLED
+#if AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED
 // report battery2 state
 void GCS_MAVLINK::send_battery2()
 {
-#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
 
     if (battery.num_instances() > 1) {
@@ -2534,9 +2523,8 @@ void GCS_MAVLINK::send_battery2()
         }
         mavlink_msg_battery2_send(chan, battery.voltage(1)*1000, current);
     }
-#endif
 }
-#endif  // AP_MAVLINK_BATTERY2_ENABLED
+#endif  // AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED
 
 /*
   handle a SET_MODE MAVLink message
@@ -4464,17 +4452,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_BATTERY_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_t &packet)
 {
-#if AP_BATTERY_ENABLED
     const uint16_t battery_mask = packet.param1;
     const float percentage = packet.param2;
     if (AP::battery().reset_remaining_mask(battery_mask, percentage)) {
         return MAV_RESULT_ACCEPTED;
     }
-#endif
     return MAV_RESULT_FAILED;
 }
+#endif
 
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
@@ -4758,10 +4746,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_do_set_mission_current(packet);
         break;
 
+#if AP_BATTERY_ENABLED
     case MAV_CMD_BATTERY_RESET:
         result = handle_command_battery_reset(packet);
         break;
-        
+#endif
+
 #if HAL_ADSB_ENABLED
     case MAV_CMD_DO_ADSB_OUT_IDENT:
         if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
@@ -5686,6 +5676,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
+#if AP_BATTERY_ENABLED
     case MSG_BATTERY_STATUS:
         send_battery_status();
         break;
@@ -5696,6 +5687,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_battery2();
         break;
 #endif
+#endif // AP_BATTERY_ENABLED
 
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
