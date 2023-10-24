@@ -134,7 +134,7 @@ bool Plane::suppress_throttle(void)
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
 #if AP_AIRSPEED_ENABLED
-        if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
+        if ((!ahrs.using_airspeed_sensor()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             throttle_suppressed = false;
             return false;        
@@ -605,7 +605,7 @@ void Plane::set_servos_flaps(void)
 
     if (control_mode->does_auto_throttle()) {
         int16_t flapSpeedSource = 0;
-        if (ahrs.airspeed_sensor_enabled()) {
+        if (ahrs.using_airspeed_sensor()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
         } else {
             flapSpeedSource = aparm.throttle_cruise;
