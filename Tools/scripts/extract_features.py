@@ -24,9 +24,14 @@ else:
 
 class ExtractFeatures(object):
 
-    def __init__(self, filename, nm="arm-none-eabi-nm"):
+    class FindString(object):
+        def __init__(self, string):
+            self.string = string
+
+    def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
         self.filename = filename
         self.nm = nm
+        self.strings = strings
 
         # feature_name should match the equivalent feature in
         # build_options.py ('FEATURE_NAME', 'EXPECTED_SYMBOL').
@@ -130,7 +135,7 @@ class ExtractFeatures(object):
             ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
-
+            ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
             ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
             ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
@@ -365,36 +370,53 @@ class ExtractFeatures(object):
 
         return ret
 
+    def extract_strings_from_elf(self, filename):
+        """Runs strings on filename, returns as a list"""
+        text_output = self.run_program('EF', [
+            self.strings,
+            filename
+        ], show_output=False)
+        return text_output.split("\n")
+
     def extract(self):
         '''returns two sets - compiled_in and not_compiled_in'''
 
         build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
 
         symbols = self.extract_symbols_from_elf(self.filename)
+        strings = self.extract_strings_from_elf(self.filename)
 
         remaining_build_options_defines = build_options_defines
         compiled_in_feature_defines = []
         for (feature_define, symbol) in self.features:
-            some_dict = symbols.dict_for_symbol(symbol)
-            # look for symbols without arguments
-            # print("Looking for (%s)" % str(name))
-            for s in some_dict.keys():
-                m = re.match(symbol, s)
-                # print("matching %s with %s" % (symbol, s))
-                if m is None:
-                    continue
-                d = m.groupdict()
-                for key in d.keys():
-                    d[key] = d[key].upper()
-                # filter to just the defines present in
-                # build_options.py - otherwise we end up with (e.g.)
-                # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
-                # doesn't exist in the ArduPilot codebase.
-                some_define = feature_define.format(**d)
-                if some_define not in build_options_defines:
-                    continue
-                compiled_in_feature_defines.append(some_define)
-                remaining_build_options_defines.discard(some_define)
+            if isinstance(symbol, ExtractFeatures.FindString):
+                if symbol.string in strings:
+                    some_define = feature_define
+                    if some_define not in build_options_defines:
+                        continue
+                    compiled_in_feature_defines.append(some_define)
+                    remaining_build_options_defines.discard(some_define)
+            else:
+                some_dict = symbols.dict_for_symbol(symbol)
+                # look for symbols without arguments
+                # print("Looking for (%s)" % str(name))
+                for s in some_dict.keys():
+                    m = re.match(symbol, s)
+                    # print("matching %s with %s" % (symbol, s))
+                    if m is None:
+                        continue
+                    d = m.groupdict()
+                    for key in d.keys():
+                        d[key] = d[key].upper()
+                    # filter to just the defines present in
+                    # build_options.py - otherwise we end up with (e.g.)
+                    # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
+                    # doesn't exist in the ArduPilot codebase.
+                    some_define = feature_define.format(**d)
+                    if some_define not in build_options_defines:
+                        continue
+                    compiled_in_feature_defines.append(some_define)
+                    remaining_build_options_defines.discard(some_define)
         return (compiled_in_feature_defines, remaining_build_options_defines)
 
     def create_string(self):
