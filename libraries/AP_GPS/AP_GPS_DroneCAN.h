@@ -56,6 +56,8 @@ public:
     static void handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
     static void handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
+    static void handle_timesync_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_protocol_GlobalTimeSync& msg);
+
     static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
@@ -81,6 +83,9 @@ private:
     };
     uint8_t cfg_step;
     bool requires_save_and_reboot;
+    bool timesync_correction;
+    uint64_t last_timesync_timestamp_us;
+    int64_t timesync_correction_us;
 
     // returns true once configuration has finished
     bool do_config(void);

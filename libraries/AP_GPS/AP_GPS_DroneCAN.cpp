@@ -116,6 +116,10 @@ void AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
         AP_BoardConfig::allocation_error("relposheading_sub");
     }
 #endif
+
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_timesync_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("timesync_sub");
+    }
 }
 
 AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
@@ -428,25 +432,29 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         // hdop from pdop. Some GPS modules don't provide the Aux message
         interim_state.hdop = interim_state.vdop = msg.pdop * 100.0;
     }
-
-    if ((msg.timestamp.usec > msg.gnss_timestamp.usec) && (msg.gnss_timestamp.usec > 0)) {
+    uint64_t gps_message_timestamp_usec = msg.timestamp.usec;
+    if (timesync_correction) {
+       // we have gps time synchronized even more accurately with the timesync message
+       gps_message_timestamp_usec = timestamp_usec + timesync_correction_us;
+    }
+    // fallback to using the timestamp from the message for correction
+    if ((gps_message_timestamp_usec > msg.gnss_timestamp.usec) && (msg.gnss_timestamp.usec > 0)) {
         // we have a valid timestamp based on gnss_timestamp timescale, we can use that to correct our gps message time
-        interim_state.last_corrected_gps_time_us = jitter_correction.correct_offboard_timestamp_usec(msg.timestamp.usec, (timestamp_usec + NATIVE_TIME_OFFSET));
+        interim_state.last_corrected_gps_time_us = jitter_correction.correct_offboard_timestamp_usec(gps_message_timestamp_usec, (timestamp_usec + NATIVE_TIME_OFFSET));
         interim_state.last_gps_time_ms = interim_state.last_corrected_gps_time_us/1000U;
-        interim_state.last_corrected_gps_time_us -= msg.timestamp.usec - msg.gnss_timestamp.usec;
+        interim_state.last_corrected_gps_time_us -= gps_message_timestamp_usec - msg.gnss_timestamp.usec;
         // this is also the time the message was received on the UART on other end.
         interim_state.corrected_timestamp_updated = true;
     } else {
-        interim_state.last_gps_time_ms = jitter_correction.correct_offboard_timestamp_usec(msg.timestamp.usec, timestamp_usec + NATIVE_TIME_OFFSET)/1000U;
+        interim_state.last_gps_time_ms = jitter_correction.correct_offboard_timestamp_usec(gps_message_timestamp_usec, timestamp_usec + NATIVE_TIME_OFFSET)/1000U;
     }
 
 #if GPS_PPS_EMULATION
     // Emulates a PPS signal, can be used to check how close are we to real GPS time
     static virtual_timer_t timeout_vt;
-    hal.gpio->pinMode(51, 1);
-    auto handle_timeout = [](void *arg)
+    hal.gpio->pinMode(51, HAL_GPIO_OUTPUT);
+    auto handle_timeout = [](virtual_timer_t*,void *)
     {
-        (void)arg;
         //we are called from ISR context
         chSysLockFromISR();
         hal.gpio->toggle(51);
@@ -455,7 +463,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
 
     static uint64_t next_toggle, last_toggle;
     
-    next_toggle = (msg.timestamp.usec) + (1000000ULL - ((msg.timestamp.usec) % 1000000ULL));
+    next_toggle = (gps_message_timestamp_usec) + (1000000ULL - ((gps_message_timestamp_usec) % 1000000ULL));
 
     next_toggle += jitter_correction.get_link_offset_usec();
     if (next_toggle != last_toggle) {
@@ -660,6 +668,21 @@ void AP_GPS_DroneCAN::handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronec
     }
 }
 #endif
+
+// precise time synchronisation
+void AP_GPS_DroneCAN::handle_timesync_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_protocol_GlobalTimeSync& msg)
+{
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
+    if (driver != nullptr) {
+        if ((driver->last_timesync_timestamp_us != 0) && (msg.previous_transmission_timestamp_usec != 0)) {
+            driver->timesync_correction_us = msg.previous_transmission_timestamp_usec - (driver->last_timesync_timestamp_us + NATIVE_TIME_OFFSET);
+        }
+        driver->last_timesync_timestamp_us = transfer.timestamp_usec;
+        driver->timesync_correction = true;
+    }
+}
 
 bool AP_GPS_DroneCAN::do_config()
 {
