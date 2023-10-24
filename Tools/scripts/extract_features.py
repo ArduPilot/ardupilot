@@ -129,6 +129,7 @@ class ExtractFeatures(object):
             ('HAL_RALLY_ENABLED', r'AP_Rally::get_rally_max\b',),
             ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
+            ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
 
             ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
