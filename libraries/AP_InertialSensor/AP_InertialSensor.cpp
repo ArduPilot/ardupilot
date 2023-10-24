@@ -986,7 +986,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
         if (!notch.params.enabled() && !fft_enabled) {
             continue;
         }
-        notch.calculated_notch_freq_hz[0] = notch.params.center_freq_hz();
+        for (uint8_t i = 0; i < ARRAY_SIZE(notch.calculated_notch_freq_hz); i++) {
+            notch.calculated_notch_freq_hz[i] = notch.params.center_freq_hz();
+        }
         notch.num_calculated_notch_frequencies = 1;
         notch.num_dynamic_notches = 1;
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
