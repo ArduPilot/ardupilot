@@ -4734,12 +4734,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
-#if HAL_HIGH_LATENCY2_ENABLED
-    case MAV_CMD_CONTROL_HIGH_LATENCY:
-        result = handle_control_high_latency(packet);
-        break;
-#endif // HAL_HIGH_LATENCY2_ENABLED
-
     case MAV_CMD_START_RX_PAIR:
         result = handle_rc_bind(packet);
         break;
@@ -5080,6 +5074,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_CAN_FORWARD:
         return handle_can_forward(packet, msg);
 #endif
+
+#if HAL_HIGH_LATENCY2_ENABLED
+    case MAV_CMD_CONTROL_HIGH_LATENCY:
+        return handle_control_high_latency(packet);
+#endif // HAL_HIGH_LATENCY2_ENABLED
 
     case MAV_CMD_DEBUG_TRAP:
         return handle_command_debug_trap(packet);
@@ -6714,7 +6713,7 @@ int8_t GCS_MAVLINK::high_latency_air_temperature() const
 
   Enable or disable any marked (via SERIALn_PROTOCOL) high latency connections
  */
-MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_int_t &packet)
 {
     // high latency mode is enabled if param1=1 or disabled if param1=0
     if (is_equal(packet.param1, 0.0f)) {
