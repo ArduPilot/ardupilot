@@ -1478,7 +1478,7 @@ INCLUDE common.ld
         devlist = []
         for dev in self.spidev:
             if len(dev) != 7:
-                print("Badly formed SPIDEV line %s" % dev)
+                self.error("Badly formed SPIDEV line %s" % dev)
             name = '"' + dev[0] + '"'
             bus = dev[1]
             devid = dev[2]
