@@ -1050,10 +1050,30 @@ void AP_TECS::_update_pitch(void)
     _last_pitch_dem = _pitch_dem;
 
     if (AP::logger().should_log(_log_bitmask)){
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
-                                    "Qffffffffffff",
+        // log to AP_Logger
+        // @LoggerMessage: TEC2
+        // @Vehicles: Plane
+        // @Description: Additional information about the Total Energy Control System
+        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: PEW: Potential energy weighting
+        // @Field: KEW: Kinetic energy weighting
+        // @Field: EBD: Energy balance demand
+        // @Field: EBE: Energy balance error
+        // @Field: EBDD: Energy balance rate demand
+        // @Field: EBDE: Energy balance rate error
+        // @Field: EBDDT: Energy balance rate demand + Energy balance rate error*pitch_damping
+        // @Field: Imin: Minimum integrator value
+        // @Field: Imax: Maximum integrator value
+        // @Field: I: Energy balance error integral
+        // @Field: KI: Pitch demand kinetic energy integral
+        // @Field: pmin: Pitch min
+        // @Field: pmax: Pitch max
+        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
+                                    "Qfffffffffffff",
                                     AP_HAL::micros64(),
                                     (double)SPE_weighting,
+                                    (double)_SKE_weighting,
                                     (double)SEB_dem,
                                     (double)SEB_est,
                                     (double)SEBdot_dem,

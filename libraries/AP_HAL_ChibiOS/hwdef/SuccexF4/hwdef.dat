@@ -132,5 +132,5 @@ define HAL_SPRAYER_ENABLED 0
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # minimal drivers to reduce flash usage
-include ../include/minimal.inc
+include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc

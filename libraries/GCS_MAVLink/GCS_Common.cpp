@@ -4684,32 +4684,39 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
     return MAV_RESULT_UNSUPPORTED;
 }
 
+// when conveyed via COMMAND_LONG, a command doesn't come with an
+// explicit frame.  When conveying a location they do have an assumed
+// frame in ArduPilot, and this function returns that frame.
+bool GCS_MAVLINK::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
+{
+    static const struct {
+        uint32_t command;
+        MAV_FRAME frame;
+    } frame_map[] {
+        { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        { MAV_CMD_DO_SET_HOME, MAV_FRAME_GLOBAL },
+    };
+
+    // map from command to frame:
+    for (const auto &map : frame_map) {
+        if (map.command != packet_command) {
+            continue;
+        }
+        frame = map.frame;
+        return true;
+    }
+
+    return false;
+}
+
 MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     if (command_long_stores_location((MAV_CMD)packet.command)) {
         // we must be able to supply a frame for the location:
-        static const struct {
-            uint32_t command;
-            MAV_FRAME frame;
-        } frame_map[] {
-            { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
-            { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
-            { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
-            { MAV_CMD_DO_SET_HOME, MAV_FRAME_GLOBAL },
-        };
-
-        // map from command to frame:
-        bool found = false;
-        for (const auto &map : frame_map) {
-            if (map.command != packet.command) {
-                continue;
-            }
-            frame = map.frame;
-            found = true;
-            break;
-        }
-        if (!found) {
+        if (!mav_frame_for_command_long(frame, (MAV_CMD)packet.command)) {
             return MAV_RESULT_UNSUPPORTED;
         }
     }
@@ -4726,12 +4733,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
-
-#if AP_FENCE_ENABLED
-    case MAV_CMD_DO_FENCE_ENABLE:
-        result = handle_command_do_fence_enable(packet);
-        break;
-#endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     case MAV_CMD_CONTROL_HIGH_LATENCY:
@@ -4857,7 +4858,8 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
-    case MAV_CMD_NAV_TAKEOFF:
+    // case MAV_CMD_NAV_TAKEOFF:  // technically yes, but we don't do lat/lng
+    // case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return true;
@@ -5084,6 +5086,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
+
+#if AP_FENCE_ENABLED
+    case MAV_CMD_DO_FENCE_ENABLE:
+        return handle_command_do_fence_enable(packet);
+#endif
 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);

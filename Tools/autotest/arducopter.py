@@ -10370,6 +10370,84 @@ class AutoTestCopter(AutoTest):
         self._MAV_CMD_SET_EKF_SOURCE_SET(self.run_cmd)
         self._MAV_CMD_SET_EKF_SOURCE_SET(self.run_cmd_int)
 
+    def MAV_CMD_NAV_TAKEOFF(self):
+        '''test issuing takeoff command via mavlink'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
+        self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        self.start_subtest("Check NAV_TAKEOFF is above home location, not current location")
+        # reset home 20 metres above current location
+        current_alt_abs = self.get_altitude(relative=False)
+
+        loc = self.mav.location()
+
+        home_z_ofs = 20
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=current_alt_abs + home_z_ofs,
+        )
+
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+        takeoff_alt = 5
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=takeoff_alt)
+        self.wait_altitude(
+            current_alt_abs + home_z_ofs + takeoff_alt - 0.5,
+            current_alt_abs + home_z_ofs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def MAV_CMD_NAV_TAKEOFF_command_int(self):
+        '''test issuing takeoff command via mavlink and command_int'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Check NAV_TAKEOFF is above home location, not current location")
+        # reset home 20 metres above current location
+        current_alt_abs = self.get_altitude(relative=False)
+
+        loc = self.mav.location()
+
+        home_z_ofs = 20
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=current_alt_abs + home_z_ofs,
+        )
+
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+        takeoff_alt = 5
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=takeoff_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            current_alt_abs + home_z_ofs + takeoff_alt - 0.5,
+            current_alt_abs + home_z_ofs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10437,6 +10515,8 @@ class AutoTestCopter(AutoTest):
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
+            self.MAV_CMD_NAV_TAKEOFF,
+            self.MAV_CMD_NAV_TAKEOFF_command_int,
         ])
         return ret
 

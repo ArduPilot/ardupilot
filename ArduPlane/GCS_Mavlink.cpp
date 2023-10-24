@@ -997,6 +997,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 
     case MAV_CMD_DO_VTOL_TRANSITION:
         return handle_command_DO_VTOL_TRANSITION(packet);
+
+    case MAV_CMD_NAV_TAKEOFF:
+        return handle_command_MAV_CMD_NAV_TAKEOFF(packet);
 #endif
 
     case MAV_CMD_DO_GO_AROUND:
@@ -1045,26 +1048,56 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         return MAV_RESULT_FAILED;
 }
 
-MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
-{
-    switch(packet.command) {
-
 #if HAL_QUADPLANE_ENABLED
-    case MAV_CMD_NAV_TAKEOFF: {
-        // user takeoff only works with quadplane code for now
-        // param7 : altitude [metres]
-        float takeoff_alt = packet.param7;
-        if (plane.quadplane.available() && plane.quadplane.do_user_takeoff(takeoff_alt)) {
-            return MAV_RESULT_ACCEPTED;
-        }
+void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out)
+{
+    // convert to MAV_FRAME_LOCAL_OFFSET_NED, "NED local tangent frame
+    // with origin that travels with the vehicle"
+    out = {};
+    out.target_system = in.target_system;
+    out.target_component = in.target_component;
+    out.frame = MAV_FRAME_LOCAL_OFFSET_NED;
+    out.command = in.command;
+    // out.current = 0;
+    // out.autocontinue = 0;
+    // out.param1 = in.param1;  // we only use the "z" parameter in this command:
+    // out.param2 = in.param2;
+    // out.param3 = in.param3;
+    // out.param4 = in.param4;
+    // out.x = 0;  // we don't handle positioning when doing takeoffs
+    // out.y = 0;
+    out.z = -in.param7;  // up -> down
+}
+
+void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+{
+    switch (in.command) {
+    case MAV_CMD_NAV_TAKEOFF:
+        convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(in, out);
+        return;
+    }
+    return GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(in, out, frame);
+}
+
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
+{
+    float takeoff_alt = packet.z;
+    switch (packet.frame) {
+    case MAV_FRAME_LOCAL_OFFSET_NED:  // "NED local tangent frame with origin that travels with the vehicle"
+        takeoff_alt = -takeoff_alt;  // down -> up
+        break;
+    default:
+        return MAV_RESULT_DENIED; // "is supported but has invalid parameters"
+    }
+    if (!plane.quadplane.available()) {
         return MAV_RESULT_FAILED;
     }
-#endif  // HAL_QUADPLANE_ENABLED
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
+    if (!plane.quadplane.do_user_takeoff(takeoff_alt)) {
+        return MAV_RESULT_FAILED;
     }
+    return MAV_RESULT_ACCEPTED;
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_AUTOTUNE_ENABLE(const mavlink_command_int_t &packet)
 {
