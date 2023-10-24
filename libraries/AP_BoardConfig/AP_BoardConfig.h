@@ -67,6 +67,7 @@ public:
         PX4_BOARD_FMUV6    = 39,
         FMUV6_BOARD_HOLYBRO_6X = 40,
         FMUV6_BOARD_CUAV_6X = 41,
+        FMUV6_BOARD_HOLYBRO_6X_REV6 = 42,
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
