@@ -4,7 +4,7 @@ Hello esteemed users,
 
 ## What's New?
 
-We are pleased to announce the implementation of "Altitude Control for Waypoints." This feature empowers users to dynamically adjust the altitude of waypoints through throttle input, providing enhanced control during flights.
+I am pleased to announce the implementation of "Altitude Control for Waypoints." This feature empowers users to dynamically adjust the altitude of waypoints through throttle input, providing enhanced control during flights.
 
 ## How Does It Work?
 
