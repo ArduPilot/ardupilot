@@ -61,28 +61,39 @@ void AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     }
 }
 
+/*
+  match a battery ID to driver serial number
+  when serial number is negative, all batteries are accepted, otherwise it must match
+*/
+bool AP_BattMonitor_DroneCAN::match_battery_id(uint8_t instance, uint8_t battery_id)
+{
+    const auto serial_num = AP::battery().get_serial_number(instance);
+    return serial_num < 0 || serial_num == (int32_t)battery_id;
+}
+
 AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
-    for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
-        if (AP::battery().drivers[i] == nullptr ||
-            AP::battery().get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+    const auto &batt = AP::battery();
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        if (batt.drivers[i] == nullptr ||
+            batt.get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
-        AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
+        AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
         if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
             return driver;
         }
     }
     // find empty uavcan driver
-    for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
-        if (AP::battery().drivers[i] != nullptr &&
-            AP::battery().get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        if (batt.drivers[i] != nullptr &&
+            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
             match_battery_id(i, battery_id)) {
 
-            AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
+            AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
             if(batmon->_ap_dronecan != nullptr || batmon->_node_id != 0) {
                 continue;
             }
