@@ -1901,12 +1901,14 @@ class AutoTest(ABC):
     def run_cmd_run_prearms(self):
         self.run_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS)
 
-    def run_cmd_enable_high_latency(self, new_state):
+    def run_cmd_enable_high_latency(self, new_state, run_cmd=None):
+        if run_cmd is None:
+            run_cmd = self.run_cmd
         p1 = 0
         if new_state:
             p1 = 1
 
-        self.run_cmd(
+        run_cmd(
             mavutil.mavlink.MAV_CMD_CONTROL_HIGH_LATENCY,
             p1=p1, # enable/disable
         )
@@ -3384,16 +3386,17 @@ class AutoTest(ABC):
                 self.assert_not_receive_message('HIGH_LATENCY2', mav=mav, timeout=10)
 
             self.start_subsubtest("Get HIGH_LATENCY2 upon link enabled only on HL link")
-            self.run_cmd_enable_high_latency(True)
-            self.assert_receive_message("HIGH_LATENCY2", mav=mav2, timeout=10)
-            self.assert_not_receive_message("HIGH_LATENCY2", mav=self.mav, timeout=10)
+            for run_cmd in self.run_cmd, self.run_cmd_int:
+                self.run_cmd_enable_high_latency(True, run_cmd=run_cmd)
+                self.assert_receive_message("HIGH_LATENCY2", mav=mav2, timeout=10)
+                self.assert_not_receive_message("HIGH_LATENCY2", mav=self.mav, timeout=10)
 
-            self.start_subsubtest("Not get HIGH_LATENCY2 upon HL disable")
-            self.run_cmd_enable_high_latency(False)
-            self.delay_sim_time(10)
-            self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
-            self.drain_mav(mav2)
-            self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
+                self.start_subsubtest("Not get HIGH_LATENCY2 upon HL disable")
+                self.run_cmd_enable_high_latency(False, run_cmd=run_cmd)
+                self.delay_sim_time(10)
+                self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
+                self.drain_mav(mav2)
+                self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
 
             self.start_subsubtest("Stream rate adjustments")
             self.run_cmd_enable_high_latency(True)
