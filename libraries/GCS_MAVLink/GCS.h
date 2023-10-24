@@ -706,7 +706,7 @@ protected:
     virtual uint8_t high_latency_wind_direction() const { return 0; }
     int8_t high_latency_air_temperature() const;
 
-    MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
