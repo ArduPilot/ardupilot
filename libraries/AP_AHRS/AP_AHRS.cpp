@@ -806,11 +806,19 @@ bool AP_AHRS::_wind_estimate(Vector3f &wind) const
 }
 
 /*
-  return true if a real airspeed sensor is enabled
+  return true if the current AHRS airspeed estimate is directly derived from an airspeed sensor
  */
-bool AP_AHRS::airspeed_sensor_enabled(void) const
+bool AP_AHRS::using_airspeed_sensor() const
 {
-    if (!AP_AHRS_Backend::airspeed_sensor_enabled()) {
+    return state.airspeed_estimate_type == AirspeedEstimateType::AIRSPEED_SENSOR;
+}
+
+/*
+    Return true if a airspeed sensor should be used for the AHRS airspeed estimate
+ */
+bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
+{
+    if (!airspeed_sensor_enabled(airspeed_index)) {
         return false;
     }
     nav_filter_status filter_status;
@@ -831,9 +839,11 @@ bool AP_AHRS::airspeed_sensor_enabled(void) const
 // if we have an estimate
 bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
+#if AP_AHRS_DCM_ENABLED || (AP_AIRSPEED_ENABLED && AP_GPS_ENABLED)
+    const uint8_t idx = get_active_airspeed_index();
+#endif
 #if AP_AIRSPEED_ENABLED && AP_GPS_ENABLED
-    if (airspeed_sensor_enabled()) {
-        uint8_t idx = get_active_airspeed_index();
+    if (_should_use_airspeed_sensor(idx)) {
         airspeed_ret = AP::airspeed()->get_airspeed(idx);
 
         if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
@@ -866,7 +876,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+        return dcm.airspeed_estimate(idx, airspeed_ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -879,7 +889,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
     case EKFType::TWO:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+        return dcm.airspeed_estimate(idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -893,8 +903,12 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
+#if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+        return dcm.airspeed_estimate(idx, airspeed_ret);
+#else
+        return false;
+#endif
 #endif
     }
 
@@ -919,7 +933,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 #if AP_AHRS_DCM_ENABLED
     // fallback to DCM
     airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+    return dcm.airspeed_estimate(idx, airspeed_ret);
 #endif
 
     return false;
@@ -3079,7 +3093,7 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
         uint8_t ret = EKF3.getActiveAirspeed();
-        if (ret != 255 && airspeed->healthy(ret)) {
+        if (ret != 255 && airspeed->healthy(ret) && airspeed->use(ret)) {
             return ret;
         }
     }
