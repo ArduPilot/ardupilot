@@ -217,7 +217,33 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dro
 
 void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
-    AP_BattMonitor_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    const auto &batt = AP::battery();
+    AP_BattMonitor_DroneCAN *driver = nullptr;
+
+    /*
+      check for a backend with AllowSplitAuxInfo set, allowing InfoAux
+      from a different CAN node than the base battery information
+     */
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        const auto *drv = batt.drivers[i];
+        if (drv != nullptr &&
+            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+            drv->option_is_set(AP_BattMonitor_Params::Options::AllowSplitAuxInfo) &&
+            batt.get_serial_number(i) == int32_t(msg.battery_id)) {
+            driver = (AP_BattMonitor_DroneCAN *)batt.drivers[i];
+            if (driver->_ap_dronecan == nullptr) {
+                /* we have not received the main battery information
+                   yet. Discard InfoAux until we do so we can init the
+                   backend with the right node ID
+                 */
+                return;
+            }
+            break;
+        }
+    }
+    if (driver == nullptr) {
+        driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    }
     if (driver == nullptr) {
         return;
     }

@@ -25,6 +25,7 @@ public:
         MPPT_Power_Off_At_Boot              = (1U<<4),  // MPPT Disabled at startup (aka boot), if HW supports it
         MPPT_Power_On_At_Boot               = (1U<<5),  // MPPT Enabled at startup (aka boot), if HW supports it. If Power_Off_at_Boot is also set, the behavior is Power_Off_at_Boot
         GCS_Resting_Voltage                 = (1U<<6),  // send resistance resting voltage to GCS
+        AllowSplitAuxInfo                   = (1U<<7),  // allow different node to provide aux info for DroneCAN
     };
 
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
