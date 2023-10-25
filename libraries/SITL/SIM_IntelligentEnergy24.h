@@ -60,6 +60,8 @@ private:
 
     void update_send();
 
+    const char * get_error_string(const uint32_t code);
+
     AP_Int8 enabled;  // enable sim
     AP_Int8 set_state;
     AP_Int32 err_code;
