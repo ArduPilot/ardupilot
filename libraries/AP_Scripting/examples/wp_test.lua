@@ -1,12 +1,9 @@
 -- Example script for accessing waypoint info
--- luacheck: only 0
 
 local wp_index
 local wp_distance
 local wp_bearing
 local wp_error
-local wp_max_distance = 0
-local last_log_ms = millis()
 
 
 function on_wp_change(index, distance)
