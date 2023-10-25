@@ -1908,7 +1908,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                            accuracy=200,
                            target_altitude=None,
                            timeout=600)
-        self.progress("Reached rally point")
+        self.progress("Reached rally point with TERRAIN_FOLLOW")
+
+        # Fly back to guided location
+        self.change_mode("GUIDED")
+        self.do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.progress("Flying to back to guided location")
+
+        # Disable terrain following and re-load rally point with relative to terrain altitude
+        self.set_parameter("TERRAIN_FOLLOW", 0)
+
+        rally_item = [self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
+            x=int(rally_loc.lat*1e7),
+            y=int(rally_loc.lng*1e7),
+            z=rally_loc.alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            mission_type=mavutil.mavlink.MAV_MISSION_TYPE_RALLY
+        )]
+        self.correct_wp_seq_numbers(rally_item)
+        self.check_rally_upload_download(rally_item)
+
+        # Once back at guided location re-trigger RTL
+        self.wait_location(guided_loc,
+                           accuracy=200,
+                           target_altitude=None,
+                           timeout=600)
+
+        self.change_mode("RTL")
+        self.progress("Flying to rally point")
+        self.wait_location(rally_loc,
+                           accuracy=200,
+                           target_altitude=None,
+                           timeout=600)
+        self.progress("Reached rally point with terrain alt frame")
 
         self.context_pop()
         self.disarm_vehicle(force=True)
