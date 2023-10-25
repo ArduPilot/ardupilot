@@ -593,7 +593,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  10),
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  50),
 
     // @Param: ADSB
     // @DisplayName: ADSB stream rate
