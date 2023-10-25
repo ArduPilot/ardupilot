@@ -151,6 +151,5 @@ include ../include/minimize_fpv_osd.inc
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
-define AP_BATTERY_SMBUS_ENABLED 0
 
 include ../include/no_bootloader_DFU.inc
