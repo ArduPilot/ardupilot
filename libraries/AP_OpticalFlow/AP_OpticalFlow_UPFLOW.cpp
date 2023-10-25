@@ -34,7 +34,6 @@
  */
 
 #include "AP_OpticalFlow_UPFLOW.h"
-#include <GCS_MAVLink/GCS.h>
 
 #if AP_OPTICALFLOW_UPFLOW_ENABLED
 
@@ -337,8 +336,6 @@ void AP_OpticalFlow_UPFLOW::init()
 
     // (0xDD)End configuration
     uart->write((uint8_t)0xDD);
-
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: initialized Done!");
 }
 
 // read latest values from sensor and fill in x,y and totals.
