@@ -52,7 +52,7 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 # Now we need to specify the APJ_BOARD_ID. This is the ID that the
 # bootloader presents to GCS software so it knows if this firmware is
 # suitable for the board. Please see
-# https://github.com/ArduPilot/Bootloader/blob/master/hw_config.h for
+# https://github.com/ArduPilot/ardupilot/blob/master/Tools/AP_Bootloader/board_types.txt for
 # a list of current board IDs. If you add a new board type then please
 # get it added to that repository so we don't get conflicts.
 
