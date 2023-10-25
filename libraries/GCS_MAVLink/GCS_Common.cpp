@@ -3791,25 +3791,23 @@ void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 #endif
 }
 
+#if HAL_PROXIMITY_ENABLED
 void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 {
-#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
-#endif
 }
 
 void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 {
-#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
-#endif
 }
+#endif
 
 #if HAL_ADSB_ENABLED
 void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
@@ -4076,13 +4074,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_distance_sensor(msg);
         break;
 
+#if HAL_PROXIMITY_ENABLED
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
         handle_obstacle_distance(msg);
         break;
-    
+
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE_3D:
         handle_obstacle_distance_3d(msg);
         break;
+#endif
 
 #if OSD_PARAM_ENABLED
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
