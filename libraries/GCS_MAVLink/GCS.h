@@ -23,6 +23,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 #include "ap_message.h"
 
@@ -338,7 +339,9 @@ public:
     void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
+#if AP_RANGEFINDER_ENABLED
     virtual void send_rangefinder() const;
+#endif
     void send_proximity();
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
