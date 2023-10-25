@@ -43,13 +43,13 @@ const AP_Param::GroupInfo IntelligentEnergy24::var_info[] = {
 
     // @Param: STATE
     // @DisplayName: Explicitly set state
-    // @Description: Explicity specify a state for the generator to be in
+    // @Description: Explicitly specify a state for the generator to be in
     // @User: Advanced
     AP_GROUPINFO("STATE", 2, IntelligentEnergy24, set_state, -1),
 
     // @Param: ERROR
     // @DisplayName: Explicitly set error code
-    // @Description: Explicity specify an error code to send to the generator
+    // @Description: Explicitly specify an error code to send to the generator
     // @User: Advanced
     AP_GROUPINFO("ERROR", 3, IntelligentEnergy24, err_code, 0),
 
@@ -66,7 +66,6 @@ void IntelligentEnergy24::update(const struct sitl_input &input)
     if (!enabled.get()) {
         return;
     }
-    // gcs().send_text(MAV_SEVERITY_INFO, "fuelcell update");
     update_send();
 }
 
@@ -147,7 +146,7 @@ void IntelligentEnergy24::update_send()
         memset(&message, 0, sizeof(message));
         int8_t tank_remaining_pct = (float)tank_bar / MAX_TANK_PRESSURE * 100.0;
 
-        hal.util->snprintf(message, ARRAY_SIZE(message), "<%i,%.2f,%.1f,%i,%u,%i,%i,%u,%u,%i,,", // last blank , is for fuel cell to send info string up to 32 char ASCII
+        hal.util->snprintf(message, ARRAY_SIZE(message), "<%i,%.2f,%.1f,%i,%u,%i,%i,%u,%u,%i,%s,", // last blank , is for fuel cell to send info string up to 32 char ASCII
              tank_remaining_pct,
              0.67f, // inlet pressure (bar)
              battery_voltage,
@@ -157,7 +156,8 @@ void IntelligentEnergy24::update_send()
              (signed)battery_pwr,
              (unsigned)state,
              (unsigned)err_code,
-             0); // fault state 2 (0 = no fault)
+             0, // fault state 2 (0 = no fault)
+             get_error_string(err_code)); 
 
         // calculate the checksum
         uint8_t checksum = 0;
@@ -180,4 +180,17 @@ void IntelligentEnergy24::update_send()
     if ((unsigned)write_to_autopilot(message, strlen(message)) != strlen(message)) {
         AP_HAL::panic("Failed to write to autopilot: %s", strerror(errno));
     }
+}
+
+const char * IntelligentEnergy24::get_error_string(const uint32_t code)
+{
+    switch (code) {
+        case 20:
+            return "THERMAL MNGMT";
+
+        default:
+            break;
+    }
+
+    return "";
 }
