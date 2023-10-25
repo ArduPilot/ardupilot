@@ -1205,11 +1205,14 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
 {
     Vector3f velned;
-    if (!get_velocity_NED(velned)) {
-        return false;
+    if (get_velocity_NED(velned)) {
+        velocity = velned.z;
+        return true;
+    } else if (AP::baro().healthy()) {
+        velocity = -AP::baro().get_climb_rate();
+        return true;
     }
-    velocity = velned.z;
-    return true;
+    return false;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
