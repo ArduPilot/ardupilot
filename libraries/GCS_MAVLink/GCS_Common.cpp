@@ -3821,15 +3821,15 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 }
 #endif
 
+#if OSD_PARAM_ENABLED
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
-#if OSD_PARAM_ENABLED
     AP_OSD *osd = AP::osd();
     if (osd != nullptr) {
         osd->handle_msg(msg, *this);
     }
-#endif
 }
+#endif
 
 void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
@@ -4084,10 +4084,12 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_obstacle_distance_3d(msg);
         break;
 
+#if OSD_PARAM_ENABLED
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
         break;
+#endif
 
 #if HAL_ADSB_ENABLED
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
