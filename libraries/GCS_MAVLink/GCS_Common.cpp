@@ -5987,16 +5987,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif // HAL_HIGH_LATENCY2_ENABLED
         break;
 
-    case MSG_AIS_VESSEL: {
 #if AP_AIS_ENABLED
+    case MSG_AIS_VESSEL: {
         AP_AIS *ais = AP_AIS::get_singleton();
         if (ais) {
             ais->send(chan);
         }
-#endif
         break;
     }
-
+#endif
 
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
 #if HAL_ADSB_ENABLED
