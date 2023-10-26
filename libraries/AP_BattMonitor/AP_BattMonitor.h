@@ -65,6 +65,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_INA2XX;
     friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
+    friend class AP_BattMonitor_AD7091R5;
 
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
@@ -107,7 +108,7 @@ public:
         Analog_Volt_Synthetic_Current  = 25,
         INA239_SPI                     = 26,
         EFI                            = 27,
-        // AD7091R5_I2C_Analog         = 28, reserve ID for future use
+        AD7091R5                       = 28,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
