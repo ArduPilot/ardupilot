@@ -536,7 +536,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 
     case Type::Lua_Scripting:
-#if AP_SCRIPTING_ENABLED
+#if AP_RANGEFINDER_LUA_ENABLED
         _add_backend(new AP_RangeFinder_Lua(state[instance], params[instance]), instance);
 #endif
         break;
