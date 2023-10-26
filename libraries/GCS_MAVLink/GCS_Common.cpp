@@ -4311,9 +4311,9 @@ void GCS_MAVLINK::send_sim_state() const
 #endif
 
 #if AP_BOOTLOADER_FLASHING_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_int_t &packet)
 {
-    if (uint32_t(packet.param5) != 290876) {
+    if (packet.x != 290876) {
         gcs().send_text(MAV_SEVERITY_INFO, "Magic not set");
         return MAV_RESULT_FAILED;
     }
@@ -4784,12 +4784,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_run_prearm_checks(packet);
         break;
 
-#if AP_BOOTLOADER_FLASHING_ENABLED
-    case MAV_CMD_FLASH_BOOTLOADER:
-        result = handle_command_flash_bootloader(packet);
-        break;
-#endif
-
     default:
         result = try_command_long_as_command_int(packet, msg);
         break;
@@ -5120,6 +5114,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_ACCEPT_MAG_CAL:
     case MAV_CMD_DO_CANCEL_MAG_CAL:
         return handle_command_mag_cal(packet);
+#endif
+
+#if AP_BOOTLOADER_FLASHING_ENABLED
+    case MAV_CMD_FLASH_BOOTLOADER:
+        return handle_command_flash_bootloader(packet);
 #endif
 
 #if AP_AHRS_ENABLED
