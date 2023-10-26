@@ -265,7 +265,7 @@ void AP_Mission::reset()
 }
 
 /// clear - clears out mission
-///     returns true if mission was running so it could not be cleared
+///     returns false if mission was running so it could not be cleared
 bool AP_Mission::clear()
 {
     // do not allow clearing the mission while it is running unless disarmed
