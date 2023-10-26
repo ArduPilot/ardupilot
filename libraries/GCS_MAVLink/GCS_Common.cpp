@@ -6031,8 +6031,8 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
         break;
 
-    case MSG_RELAY_STATUS:
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
+    case MSG_RELAY_STATUS:
         ret = send_relay_status();
         break;
 #endif
