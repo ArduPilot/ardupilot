@@ -384,6 +384,26 @@ uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
     return crc;
 }
 
+// CRC16_CCITT algorithm using right shift
+uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t out)
+{
+	for (uint32_t i = 0; i < len; i++) {
+		crc ^= *buf++;                      // XOR byte into least sig. byte of crc
+		for (uint8_t j = 0; j < 8; j++) {   // loop over each bit
+            if ((crc & 0x0001) != 0) {      // if the LSB is set
+                crc >>= 1;                  // shift right and XOR 0x8408
+                crc ^= 0x8408;
+            } else {
+                crc >>= 1;                  // just shift right
+            }
+		}
+	}
+
+    // output xor
+    crc = crc ^ out;
+	return crc;
+}
+
 uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
     for (uint32_t i = 0; i < len; i++) {
