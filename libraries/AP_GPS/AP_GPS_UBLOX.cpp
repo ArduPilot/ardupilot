@@ -635,6 +635,68 @@ AP_GPS_UBLOX::_request_port(void)
     _send_message(CLASS_CFG, MSG_CFG_PRT, nullptr, 0);
 }
 
+int16_t AP_GPS_UBLOX::discard_byte_return(const uint8_t *buffer, uint16_t len)
+{
+    auto preamble_offset = offset_of_byte_in_buffer(PREAMBLE1, &buffer[1], len-1);
+    if (preamble_offset == -1) {
+        return -len;
+    }
+    return -preamble_offset;
+}
+
+int16_t AP_GPS_UBLOX::find_ublox(const uint8_t *buffer, uint16_t buffer_len)
+{
+    if (buffer_len < 6) {
+        // don't bother unless we have enough data to make all this worth-while:
+        return 0;
+    }
+
+    auto preamble_offset = offset_of_byte_in_buffer(PREAMBLE1, buffer, buffer_len);
+    if (preamble_offset == -1) {
+        return -buffer_len;
+    }
+    if (preamble_offset > 0) {
+        return -preamble_offset;
+    }
+    if (buffer[1] != PREAMBLE2) {
+        return discard_byte_return(buffer, buffer_len);
+    }
+    const struct UBLOXBuffer *ublox_buffer = (UBLOXBuffer*)buffer;
+
+    // 2 header
+    // 1 class
+    // 1 id
+    // 2 length
+    // variable payload
+    // 2 checksum
+    const uint16_t required_buffer_len = ublox_buffer->payload_length + 8;
+
+    if (required_buffer_len > 300) {
+        // probably corrupt
+        return discard_byte_return(buffer, buffer_len);
+    }
+
+    if (buffer_len < required_buffer_len) {
+        // not enough data yet....
+        return 0;
+    }
+
+    // buffer is long enough; calculate checksum of received data:
+    uint8_t _ck_a = 0;
+    uint8_t _ck_b = 0;
+    for (uint8_t i=2; i<required_buffer_len-2; i++) {
+        _ck_b += (_ck_a += buffer[i]);
+    }
+
+    // check calculated vs received checksum:
+    if (_ck_a != buffer[required_buffer_len-2] ||
+        _ck_b != buffer[required_buffer_len-1]) {
+        return discard_byte_return(buffer, buffer_len);
+    }
+
+    return required_buffer_len;
+}
+
 // Ensure there is enough space for the largest possible outgoing message
 // Process bytes available from the stream
 //
@@ -648,7 +710,6 @@ AP_GPS_UBLOX::_request_port(void)
 bool
 AP_GPS_UBLOX::read(void)
 {
-    bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
 
     // walk through the gps configuration at 1 message per second
@@ -684,141 +745,78 @@ AP_GPS_UBLOX::read(void)
         }
     }
 
-    const uint16_t numc = MIN(port->available(), 8192U);
-    for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
-
-        // read the next byte
-        uint8_t data;
-        if (!port->read(data)) {
-            break;
-        }
-#if AP_GPS_DEBUG_LOGGING_ENABLED
-        log_data(&data, 1);
-#endif
-
+    // consider discarding the buffer; this can happen on corruption
+    // or on a completed packet:
+    uint16_t num_bytes_to_discard = ublox_discard;
 #if GPS_MOVING_BASELINE
-        if (rtcm3_parser) {
-            if (rtcm3_parser->read(data)) {
-                // we've found a RTCMv3 packet. We stop parsing at
-                // this point and reset u-blox parse state. We need to
-                // stop parsing to give the higher level driver a
-                // chance to send the RTCMv3 packet to another (rover)
-                // GPS
-                _step = 0;
-                break;
-            }
-        }
-#endif
-
-	reset:
-        switch(_step) {
-
-        // Message preamble detection
-        //
-        // If we fail to match any of the expected bytes, we reset
-        // the state machine and re-consider the failed byte as
-        // the first byte of the preamble.  This improves our
-        // chances of recovering from a mismatch and makes it less
-        // likely that we will be fooled by the preamble appearing
-        // as data in some other message.
-        //
-        case 1:
-            if (PREAMBLE2 == data) {
-                _step++;
-                break;
-            }
-            _step = 0;
-            Debug("reset %u", __LINE__);
-            FALLTHROUGH;
-        case 0:
-            if(PREAMBLE1 == data)
-                _step++;
-            break;
-
-        // Message header processing
-        //
-        // We sniff the class and message ID to decide whether we
-        // are going to gather the message bytes or just discard
-        // them.
-        //
-        // We always collect the length so that we can avoid being
-        // fooled by preamble bytes in messages.
-        //
-        case 2:
-            _step++;
-            _class = data;
-            _ck_b = _ck_a = data;                       // reset the checksum accumulators
-            break;
-        case 3:
-            _step++;
-            _ck_b += (_ck_a += data);                   // checksum byte
-            _msg_id = data;
-            break;
-        case 4:
-            _step++;
-            _ck_b += (_ck_a += data);                   // checksum byte
-            _payload_length = data;                     // payload length low byte
-            break;
-        case 5:
-            _step++;
-            _ck_b += (_ck_a += data);                   // checksum byte
-
-            _payload_length += (uint16_t)(data<<8);
-            if (_payload_length > sizeof(_buffer)) {
-                Debug("large payload %u", (unsigned)_payload_length);
-                // assume any payload bigger then what we know about is noise
-                _payload_length = 0;
-                _step = 0;
-				goto reset;
-            }
-            _payload_counter = 0;                       // prepare to receive payload
-            if (_payload_length == 0) {
-                // bypass payload and go straight to checksum
-                _step++;
-            }
-            break;
-
-        // Receive message data
-        //
-        case 6:
-            _ck_b += (_ck_a += data);                   // checksum byte
-            if (_payload_counter < sizeof(_buffer)) {
-                _buffer[_payload_counter] = data;
-            }
-            if (++_payload_counter == _payload_length)
-                _step++;
-            break;
-
-        // Checksum and message processing
-        //
-        case 7:
-            _step++;
-            if (_ck_a != data) {
-                Debug("bad cka %x should be %x", data, _ck_a);
-                _step = 0;
-				goto reset;
-            }
-            break;
-        case 8:
-            _step = 0;
-            if (_ck_b != data) {
-                Debug("bad ckb %x should be %x", data, _ck_b);
-                break;                                                  // bad checksum
-            }
-
-#if GPS_MOVING_BASELINE
-            if (rtcm3_parser) {
-                // this is a uBlox packet, discard any partial RTCMv3 state
-                rtcm3_parser->reset();
-            }
-#endif
-            if (_parse_gps()) {
-                parsed = true;
-            }
-            break;
+    if (rtcm3_parser) {
+        if (message_parsed) {
+            num_bytes_to_discard = MAX(ublox_discard, rtcm_discard);
+        } else {
+            num_bytes_to_discard = MIN(ublox_discard, rtcm_discard);
         }
     }
-    return parsed;
+#endif
+
+    uint8_t *buf_ptr = (uint8_t*)&_outer_buffer;
+    if (num_bytes_to_discard > 0) {
+        memmove(
+            buf_ptr,
+            &buf_ptr[num_bytes_to_discard],
+            _buffer_ofs-num_bytes_to_discard);
+        _buffer_ofs -= num_bytes_to_discard;
+#if GPS_MOVING_BASELINE
+        rtcm_discard = 0;
+#endif
+        ublox_discard = 0;
+        message_parsed = false;
+    }
+
+    // populate the read buffer:
+    const uint16_t numc = port->read(&buf_ptr[_buffer_ofs], sizeof(_outer_buffer) - _buffer_ofs);
+    if (numc == 0) {
+        return false;
+    }
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+    log_data(&_buffer[_buffer_ofs], numc);
+#endif
+    _buffer_ofs += numc;
+
+    // does RTCM see a packet?
+#if GPS_MOVING_BASELINE
+    if (rtcm3_parser && rtcm_discard == 0) {
+        const int16_t result = rtcm3_parser->find_packet(buf_ptr, _buffer_ofs);
+        if (result > 0) {
+            // RTCM found a packet!
+            memcpy(rtcm3_packet, buf_ptr, MIN(ARRAY_SIZE(rtcm3_packet), uint16_t(result)));
+            message_parsed = true;
+            rtcm_discard = result;
+        } else if (result < 0) {
+            // RTCM thinks we should discard bytes
+            rtcm_discard = -result;
+        } else {
+            // result is zero; rtcm3 *may* have a packet forming....
+        }
+    }
+#endif
+
+    // is there a uBlox packet there?
+    if (ublox_discard == 0) {
+        const int16_t result = find_ublox(buf_ptr, _buffer_ofs);
+        if (result > 0) {
+            ublox_discard = result;
+            _class = _outer_buffer.message_class;
+            _msg_id = _outer_buffer.id;
+            return _parse_gps();
+        } else if (result < 0) {
+            // ublox thinks we should discard bytes
+            ublox_discard = -result;
+        } else {
+            // result is zero; ublox *may* have a packet forming....
+        }
+    }
+
+    return false;
 }
 
 // Private Methods /////////////////////////////////////////////////////////////
@@ -2268,7 +2266,7 @@ bool AP_GPS_UBLOX::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 {
 #if GPS_MOVING_BASELINE
     if (rtcm3_parser) {
-        len = rtcm3_parser->get_len(bytes);
+        // len = rtcm3_parser->get_len(bytes);
         return len > 0;
     }
 #endif
@@ -2280,7 +2278,7 @@ void AP_GPS_UBLOX::clear_RTCMV3(void)
 {
 #if GPS_MOVING_BASELINE
     if (rtcm3_parser) {
-        rtcm3_parser->clear_packet();
+        // rtcm3_parser->clear_packet();
     }
 #endif
 }

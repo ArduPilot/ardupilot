@@ -25,37 +25,16 @@
 
 class RTCM3_Parser {
 public:
-    // process one byte, return true if packet found
-    bool read(uint8_t b);
 
-    // reset internal state
-    void reset(void);
-
-    // clear previous packet
-    void clear_packet(void);
-    
-    // return length of found packet
-    uint16_t get_len(const uint8_t *&bytes) const;
+    // returns 0 if there's no packet.
+    // returns positive packet length if packet is found
+    // returns a negative number containing number of bytes to discard if packet not found
+    int16_t find_packet(const uint8_t *buffer, uint8_t buffer_len) const;
 
     // return ID of found packet
-    uint16_t get_id(void) const;
-    
+    uint16_t get_id(const uint8_t *pkt, uint8_t len) const;
+
 private:
     const uint8_t RTCMv3_PREAMBLE = 0xD3;
 
-    // raw packet, we shouldn't need over 600 bytes for the MB configs we use
-    uint8_t pkt[RTCM3_MAX_PACKET_LEN];
-
-    // number of bytes in pkt[]
-    uint16_t pkt_bytes;
-
-    // length from header
-    uint16_t pkt_len;
-
-    // length of found packet
-    uint16_t found_len;
-    
-    bool parse(void);
-    void resync(void);
 };
-

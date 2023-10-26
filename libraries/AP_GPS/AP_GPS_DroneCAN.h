@@ -130,7 +130,12 @@ private:
 
 #if GPS_MOVING_BASELINE
     // RTCM3 parser for when in moving baseline base mode
-    RTCM3_Parser *rtcm3_parser;
+    struct {
+        RTCM3_Parser parser;
+        uint8_t *packet;
+        uint16_t packet_length;
+        const uint16_t packet_max_length{300};
+    } rtcm3;
 #endif
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
