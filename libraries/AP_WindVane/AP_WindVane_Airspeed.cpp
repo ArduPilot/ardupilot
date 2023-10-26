@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_Airspeed.h"
 
+#if AP_WINDVANE_AIRSPEED_ENABLED
+
 void AP_WindVane_Airspeed::update_speed()
 {
 #if AP_AIRSPEED_ENABLED
@@ -24,3 +26,5 @@ void AP_WindVane_Airspeed::update_speed()
     }
 #endif
 }
+
+#endif // AP_WINDVANE_AIRSPEED_ENABLED

@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_SITL.h"
 
+#if AP_WINDVANE_SITL_ENABLED
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <SITL/SITL.h>
@@ -72,3 +74,5 @@ void AP_WindVane_SITL::update_speed()
     }
 }
 #endif
+
+#endif // AP_WINDVANE_SITL_ENABLED

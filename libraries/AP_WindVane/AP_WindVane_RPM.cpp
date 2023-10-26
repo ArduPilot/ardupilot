@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_RPM.h"
 
+#if AP_WINDVANE_RPM_ENABLED
+
 #include <AP_RPM/AP_RPM.h>
 
 void AP_WindVane_RPM::update_speed()
@@ -30,3 +32,5 @@ void AP_WindVane_RPM::update_speed()
     }
 #endif  // AP_RPM_ENABLED
 }
+
+#endif // AP_WINDVANE_RPM_ENABLED

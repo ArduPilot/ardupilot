@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_Home.h"
 
+#if AP_WINDVANE_HOME_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 
 void AP_WindVane_Home::update_direction()
@@ -30,3 +32,5 @@ void AP_WindVane_Home::update_direction()
 
     _frontend._direction_apparent_raw = wrap_PI(direction_apparent_ef - AP::ahrs().yaw);
 }
+
+#endif // AP_WINDVANE_HOME_ENABLED

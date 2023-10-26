@@ -16,6 +16,8 @@
 
 #include "AP_WindVane_Backend.h"
 
+#if AP_WINDVANE_NMEA_ENABLED
+
 class AP_WindVane_NMEA : public AP_WindVane_Backend
 {
 public:
@@ -54,3 +56,5 @@ private:
     bool _sentence_valid;      // is current sentence valid so far
     bool _sentence_done;       // true if this sentence has already been decoded
 };
+
+#endif // AP_WINDVANE_NMEA_ENABLED

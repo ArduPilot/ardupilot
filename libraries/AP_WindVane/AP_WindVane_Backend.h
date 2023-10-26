@@ -16,6 +16,8 @@
 
 #include "AP_WindVane.h"
 
+#if AP_WINDVANE_BACKEND_ENABLED
+
 class AP_WindVane_Backend
 {
 public:
@@ -39,3 +41,5 @@ protected:
     AP_WindVane &_frontend;
 
 };
+
+#endif // AP_WINDVANE_BACKEND_ENABLEDs

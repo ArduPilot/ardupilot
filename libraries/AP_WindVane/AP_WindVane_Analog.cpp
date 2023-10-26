@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_Analog.h"
 
+#if AP_WINDVANE_ANALOG_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -82,3 +84,5 @@ void AP_WindVane_Analog::calibrate()
         _cal_start_ms = 0;
     }
 }
+
+#endif // AP_WINDVANE_ANALOG_ENABLED

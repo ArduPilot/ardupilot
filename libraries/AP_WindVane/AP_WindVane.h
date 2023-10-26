@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -190,3 +194,5 @@ private:
 namespace AP {
     AP_WindVane *windvane();
 };
+
+#endif // AP_WINDVANE_ENABLED

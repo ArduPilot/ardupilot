@@ -15,6 +15,8 @@
 
 #include "AP_WindVane.h"
 
+#if AP_WINDVANE_ENABLED
+
 #include "AP_WindVane_Home.h"
 #include "AP_WindVane_Analog.h"
 #include "AP_WindVane_ModernDevice.h"
@@ -476,3 +478,5 @@ namespace AP {
         return AP_WindVane::get_singleton();
     }
 };
+
+#endif  // AP_WINDVANE_ENABLED

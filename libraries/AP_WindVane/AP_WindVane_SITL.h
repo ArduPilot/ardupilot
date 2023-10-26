@@ -16,6 +16,8 @@
 
 #include "AP_WindVane_Backend.h"
 
+#if AP_WINDVANE_SITL_ENABLED
+
 class AP_WindVane_SITL : public AP_WindVane_Backend
 {
 public:
@@ -29,3 +31,5 @@ public:
         void update_speed() override;
     #endif
 };
+
+#endif // AP_WINDVANE_SITL_ENABLED

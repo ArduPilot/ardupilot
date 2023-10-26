@@ -15,6 +15,9 @@
 #pragma once
 
 #include "AP_WindVane_Backend.h"
+
+#if AP_WINDVANE_HOME_ENABLED
+
 #include <RC_Channel/RC_Channel.h>
 
 class AP_WindVane_Home : public AP_WindVane_Backend
@@ -26,3 +29,5 @@ public:
     // update state
     void update_direction() override;
 };
+
+#endif // AP_WINDVANE_HOME_ENABLED

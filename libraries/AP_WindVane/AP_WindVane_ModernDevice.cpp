@@ -14,6 +14,9 @@
  */
 
 #include "AP_WindVane_ModernDevice.h"
+
+#if AP_WINDVANE_MODERNDEVICE_ENABLED
+
 // read wind speed from Modern Device rev p wind sensor
 // https://moderndevice.com/news/calibrating-rev-p-wind-sensor-new-regression/
 
@@ -70,3 +73,5 @@ void AP_WindVane_ModernDevice::calibrate()
     _frontend._speed_sensor_voltage_offset.set_and_save(_current_analog_voltage);
     _frontend._calibration.set_and_save(0);
 }
+
+#endif // AP_WINDVANE_MODERNDEVICE_ENABLED

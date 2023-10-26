@@ -16,6 +16,8 @@
 
 #include "AP_WindVane_Backend.h"
 
+#if AP_WINDVANE_ANALOG_ENABLED
+
 class AP_WindVane_Analog : public AP_WindVane_Backend
 {
 public:
@@ -35,3 +37,5 @@ private:
     float _cal_volt_min;
     float _cal_volt_max;
 };
+
+#endif // AP_WINDVANE_ANALOG_ENABLED

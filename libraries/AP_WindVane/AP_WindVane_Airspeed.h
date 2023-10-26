@@ -16,6 +16,8 @@
 
 #include "AP_WindVane_Backend.h"
 
+#if AP_WINDVANE_AIRSPEED_ENABLED
+
 #include <AP_Airspeed/AP_Airspeed.h>
 
 class AP_WindVane_Airspeed : public AP_WindVane_Backend
@@ -27,3 +29,5 @@ public:
     // update state
     void update_speed() override;
 };
+
+#endif // AP_WINDVANE_AIRSPEED_ENABLED
