@@ -6021,10 +6021,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 #endif
 
+#if AP_WINCH_ENABLED
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
         break;
+#endif
 
     case MSG_WATER_DEPTH:
 #if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
