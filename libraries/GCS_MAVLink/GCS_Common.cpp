@@ -6004,11 +6004,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_autopilot_version();
         break;
 
-    case MSG_ESC_TELEMETRY:
 #if HAL_WITH_ESC_TELEM
+    case MSG_ESC_TELEMETRY:
         AP::esc_telem().send_esc_telemetry_mavlink(uint8_t(chan));
-#endif
         break;
+#endif
 
     case MSG_EFI_STATUS: {
 #if HAL_EFI_ENABLED
