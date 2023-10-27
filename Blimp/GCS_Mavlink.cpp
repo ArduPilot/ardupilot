@@ -376,7 +376,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_RPM,
 #endif
     MSG_ESC_TELEMETRY,
+#if HAL_GENERATOR_ENABLED
     MSG_GENERATOR_STATUS,
+#endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
