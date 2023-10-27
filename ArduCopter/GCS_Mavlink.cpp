@@ -311,17 +311,17 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
     }
 }
 
+#if AP_WINCH_ENABLED
 // send winch status message
 void GCS_MAVLINK_Copter::send_winch_status() const
 {
-#if AP_WINCH_ENABLED
     AP_Winch *winch = AP::winch();
     if (winch == nullptr) {
         return;
     }
     winch->send_status(*this);
-#endif
 }
+#endif
 
 uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
 {
