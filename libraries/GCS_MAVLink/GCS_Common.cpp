@@ -6010,16 +6010,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-    case MSG_EFI_STATUS: {
 #if HAL_EFI_ENABLED
+    case MSG_EFI_STATUS: {
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {
             efi->send_mavlink_status(chan);
         }
-#endif
         break;
     }
+#endif
 
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
