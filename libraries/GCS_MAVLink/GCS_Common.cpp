@@ -5856,12 +5856,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif  // HAL_MOUNT_ENABLED
 
-    case MSG_OPTICAL_FLOW:
 #if AP_OPTICALFLOW_ENABLED
+    case MSG_OPTICAL_FLOW:
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
-#endif
         break;
+#endif
 
     case MSG_ATTITUDE_TARGET:
         CHECK_PAYLOAD_SIZE(ATTITUDE_TARGET);
