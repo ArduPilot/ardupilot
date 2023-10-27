@@ -657,7 +657,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_AOA_SSA,
     MSG_PID_TUNING,
     MSG_LANDING,
+#if HAL_WITH_ESC_TELEM
     MSG_ESC_TELEMETRY,
+#endif
 #if HAL_EFI_ENABLED
     MSG_EFI_STATUS,
 #endif
