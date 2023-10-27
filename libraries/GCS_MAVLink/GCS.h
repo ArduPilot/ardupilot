@@ -814,7 +814,9 @@ private:
     } deferred_message[3] = {
         { MSG_HEARTBEAT, },
         { MSG_NEXT_PARAM, },
+#if HAL_HIGH_LATENCY2_ENABLED
         { MSG_HIGH_LATENCY2, },
+#endif
     };
     // returns index of id in deferred_message[] or -1 if not present
     int8_t get_deferred_message_index(const ap_message id) const;
