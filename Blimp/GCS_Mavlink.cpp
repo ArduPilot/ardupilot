@@ -2,6 +2,7 @@
 
 #include "GCS_Mavlink.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 
 MAV_TYPE GCS_Blimp::frame_type() const
 {
@@ -360,7 +361,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #if HAL_MOUNT_ENABLED
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
 #endif
+#if AP_OPTICALFLOW_ENABLED
     MSG_OPTICAL_FLOW,
+#endif
 #if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
