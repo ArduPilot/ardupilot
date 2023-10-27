@@ -83,7 +83,9 @@ private:
 
     void send_pid_tuning() override;
 
+#if AP_WINCH_ENABLED
     void send_winch_status() const override;
+#endif
 
     void send_wind() const;
 
