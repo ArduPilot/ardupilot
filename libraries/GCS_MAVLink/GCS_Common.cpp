@@ -5940,19 +5940,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_servo_output_raw();
         break;
 
-    case MSG_SIMSTATE:
 #if AP_SIM_ENABLED
+    case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
-#endif
         break;
 
     case MSG_SIM_STATE:
-#if AP_SIM_ENABLED
         CHECK_PAYLOAD_SIZE(SIM_STATE);
         send_sim_state();
-#endif
         break;
+#endif
 
     case MSG_SYS_STATUS:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
