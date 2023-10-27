@@ -1089,7 +1089,9 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     switch (id) {
     case MSG_NEXT_PARAM:
     case MSG_HEARTBEAT:
+#if HAL_HIGH_LATENCY2_ENABLED
     case MSG_HIGH_LATENCY2:
+#endif
     case MSG_AUTOPILOT_VERSION:
         return true;
     default:
@@ -1676,7 +1678,11 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
 // mavlink work!)
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
-    if (id == MSG_HEARTBEAT || id == MSG_HIGH_LATENCY2) {
+    switch (id) {
+    case MSG_HEARTBEAT:
+#if HAL_HIGH_LATENCY2_ENABLED
+    case MSG_HIGH_LATENCY2:
+#endif
         save_signing_timestamp(false);
         // update the mask of all streaming channels
         if (is_streaming()) {
@@ -1684,6 +1690,9 @@ void GCS_MAVLINK::send_message(enum ap_message id)
         } else {
             GCS_MAVLINK::chan_is_streaming &= ~(1U<<(chan-MAVLINK_COMM_0));
         }
+        break;
+    default:
+        break;
     }
 
     pushed_ap_message_ids.set(id);
@@ -6035,12 +6044,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-    case MSG_HIGH_LATENCY2:
 #if HAL_HIGH_LATENCY2_ENABLED
+    case MSG_HIGH_LATENCY2:
         CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
         send_high_latency2();
-#endif // HAL_HIGH_LATENCY2_ENABLED
         break;
+#endif // HAL_HIGH_LATENCY2_ENABLED
 
 #if AP_AIS_ENABLED
     case MSG_AIS_VESSEL: {
@@ -6311,11 +6320,13 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
         return true;
     }
 
+#if HAL_HIGH_LATENCY2_ENABLED
     if (id == MSG_HIGH_LATENCY2) {
         // handle HL2 requests as a special case because HL2 is not "streamed"
         interval = 5000;
         return true;
     }
+#endif
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
     // a user can specify default rates in files, which are read close
