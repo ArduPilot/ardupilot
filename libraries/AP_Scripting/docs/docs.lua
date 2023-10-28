@@ -1998,6 +1998,11 @@ function vehicle:set_rudder_offset(rudder_pct, run_yaw_rate_control) end
 function vehicle:has_ekf_failsafed() end
 
 -- desc
+---@return integer|nil
+---@return mavlink_mission_item_int_t_ud|nil
+function vehicle:nav_script() end
+
+-- desc
 ---@return number|nil
 ---@return number|nil
 function vehicle:get_pan_tilt_norm() end
@@ -2876,6 +2881,10 @@ function ahrs:get_gyro() end
 -- desc
 ---@return Location_ud
 function ahrs:get_home() end
+
+-- desc
+---@return Location_ud|nil
+function ahrs:get_position() end
 
 -- desc
 ---@return Location_ud|nil

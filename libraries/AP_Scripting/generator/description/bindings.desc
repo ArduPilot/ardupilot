@@ -304,6 +304,7 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method nav_script boolean uint16_t'Null mavlink_mission_item_int_t'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
