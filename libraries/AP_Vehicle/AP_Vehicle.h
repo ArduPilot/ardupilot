@@ -189,6 +189,7 @@ public:
 
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) { return false; }
+    virtual bool nav_script(uint16_t &id, mavlink_mission_item_int_t &cmd) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
 
     // allow for VTOL velocity matching of a target
