@@ -1307,6 +1307,13 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
+#if AP_COMPASS_DRONECAN_ENABLED
+    // probe DroneCAN before I2C and SPI so that DroneCAN compasses
+    // default to first in the list for a new board
+    probe_dronecan_compasses();
+    CHECK_UNREG_LIMIT_RETURN;
+#endif
+
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
@@ -1321,11 +1328,9 @@ void Compass::_detect_backends(void)
     }
 #endif
 
+    // finally look for i2c and spi compasses not found yet
+    CHECK_UNREG_LIMIT_RETURN;
     probe_i2c_spi_compasses();
-
-#if AP_COMPASS_DRONECAN_ENABLED
-    probe_dronecan_compasses();
-#endif
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
