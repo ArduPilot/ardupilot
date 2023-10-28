@@ -47,11 +47,6 @@
 #define LSM9DS1M_INT_THS_L_M        0x32
 #define LSM9DS1M_INT_THS_H_M        0x33
 
-struct PACKED sample_regs {
-    uint8_t status;
-    int16_t val[3];
-};
-
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(AP_HAL::OwnPtr<AP_HAL::Device> dev,
