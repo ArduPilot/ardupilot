@@ -371,7 +371,14 @@ void Plane::set_servos_idle(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
     SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
+    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
+    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
 
 }
 
