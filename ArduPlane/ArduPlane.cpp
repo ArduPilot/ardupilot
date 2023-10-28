@@ -545,7 +545,7 @@ void Plane::update_alt()
     update_flight_stage();
 
 #if AP_SCRIPTING_ENABLED
-    if (nav_scripting_active()) {
+    if (nav_script_time_active()) {
         // don't call TECS while we are in a trick
         return;
     }

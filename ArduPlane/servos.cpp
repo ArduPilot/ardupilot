@@ -343,41 +343,6 @@ void Plane::airbrake_update(void)
 }
 
 /*
-  setup servos for idle mode
-  Idle mode is used during balloon launch to keep servos still, apart
-  from occasional wiggle to prevent freezing up
- */
-void Plane::set_servos_idle(void)
-{
-    int16_t servo_value;
-    // move over full range for 2 seconds
-    if (auto_state.idle_wiggle_stage != 0) {
-        auto_state.idle_wiggle_stage += 2;
-    }
-    if (auto_state.idle_wiggle_stage == 0) {
-        servo_value = 0;
-    } else if (auto_state.idle_wiggle_stage < 50) {
-        servo_value = auto_state.idle_wiggle_stage * (4500 / 50);
-    } else if (auto_state.idle_wiggle_stage < 100) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
-    } else if (auto_state.idle_wiggle_stage < 150) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
-    } else if (auto_state.idle_wiggle_stage < 200) {
-        servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);        
-    } else {
-        auto_state.idle_wiggle_stage = 0;
-        servo_value = 0;
-    }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
-    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
-
-    SRV_Channels::output_ch_all();
-}
-
-
-/*
   Scale the throttle to conpensate for battery voltage drop
  */
 void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const
@@ -536,7 +501,7 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
 #if AP_SCRIPTING_ENABLED
-    } else if (nav_scripting_active()) {
+    } else if (nav_script_time_active()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
 #endif
     } else if (control_mode == &mode_stabilize ||
@@ -811,13 +776,6 @@ void Plane::set_servos(void)
 #if HAL_QUADPLANE_ENABLED
     quadplane.update();
 #endif
-
-    if (control_mode == &mode_auto && auto_state.idle_mode) {
-        // special handling for balloon launch
-        set_servos_idle();
-        servos_output();
-        return;
-    }
 
     if (control_mode != &mode_manual) {
         set_servos_controlled();

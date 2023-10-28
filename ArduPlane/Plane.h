@@ -494,11 +494,6 @@ private:
         // have we checked for an auto-land?
         bool checked_for_autoland;
 
-        // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-        // are we in idle mode? used for balloon launch to stop servo
-        // movement until altitude is reached
-        bool idle_mode;
-
         // are we in VTOL mode in AUTO?
         bool vtol_mode;
 
@@ -523,6 +518,7 @@ private:
         float throttle_pct;
         uint32_t start_ms;
         uint32_t current_ms;
+        uint32_t read_ms;
         float rudder_offset_pct;
         bool run_yaw_rate_controller;
     } nav_scripting;
@@ -914,7 +910,6 @@ private:
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
     bool verify_within_distance();
-    bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     bool verify_loiter_heading(bool init);
     void exit_mission_callback();
@@ -930,7 +925,6 @@ private:
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
-    void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
@@ -957,8 +951,8 @@ private:
 
 #if AP_SCRIPTING_ENABLED
     // nav scripting support
-    void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
+    void do_nav_scripting(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_scripting(const AP_Mission::Mission_Command& cmd);
 #endif
 
     // commands.cpp
@@ -1093,7 +1087,6 @@ private:
     void avoidance_adsb_update(void);
 
     // servos.cpp
-    void set_servos_idle(void);
     void set_servos();
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
@@ -1153,8 +1146,9 @@ private:
 
 #if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command
-    bool nav_scripting_active(void);
+    bool nav_script_time_active(void);
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
+    bool nav_script(uint16_t &id, mavlink_mission_item_int_t &cmd) override;
     void nav_script_time_done(uint16_t id) override;
 
     // command throttle percentage and roll, pitch, yaw target

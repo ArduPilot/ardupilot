@@ -402,7 +402,7 @@ void Plane::stabilize()
             control_mode == &mode_manual) {
         plane.control_mode->run();
 #if AP_SCRIPTING_ENABLED
-    } else if (nav_scripting_active()) {
+    } else if (nav_script_time_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();
         const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);

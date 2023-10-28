@@ -23,9 +23,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // except in a takeoff
         auto_state.takeoff_complete = true;
 
-        // start non-idle
-        auto_state.idle_mode = false;
-        
         nav_controller->set_data_is_stale();
 
         // reset loiter start time. New command is a new loiter
@@ -90,10 +87,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         do_continue_and_change_alt(cmd);
-        break;
-
-    case MAV_CMD_NAV_ALTITUDE_WAIT:
-        do_altitude_wait(cmd);
         break;
 
 #if HAL_QUADPLANE_ENABLED
@@ -206,7 +199,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
-        do_nav_script_time(cmd);
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        do_nav_scripting(cmd);
         break;
 #endif
 
@@ -285,9 +279,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         return verify_continue_and_change_alt();
 
-    case MAV_CMD_NAV_ALTITUDE_WAIT:
-        return verify_altitude_wait(cmd);
-
 #if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return quadplane.verify_vtol_takeoff(cmd);
@@ -312,7 +303,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
-        return verify_nav_script_time(cmd);
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        return verify_nav_scripting(cmd);
 #endif
 
      case MAV_CMD_NAV_DELAY:
@@ -517,12 +509,6 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
     condition_value = cmd.p1;
     reset_offset_altitude();
-}
-
-void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
-{
-    // set all servos to trim until we reach altitude or descent speed
-    auto_state.idle_mode = true;
 }
 
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
@@ -864,34 +850,6 @@ bool Plane::verify_continue_and_change_alt()
     return false;
 }
 
-/*
-  see if we have reached altitude or descent speed
- */
-bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
-{
-    if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
-        gcs().send_text(MAV_SEVERITY_INFO,"Reached altitude");
-        return true;
-    }
-    if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
-        return true;        
-    }
-
-    // if requested, wiggle servos
-    if (cmd.content.altitude_wait.wiggle_time != 0) {
-        static uint32_t last_wiggle_ms;
-        if (auto_state.idle_wiggle_stage == 0 &&
-            AP_HAL::millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
-            auto_state.idle_wiggle_stage = 1;
-            last_wiggle_ms = AP_HAL::millis();
-        }
-        // idle_wiggle_stage is updated in set_servos_idle()
-    }
-
-    return false;
-}
-
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
@@ -1193,39 +1151,73 @@ float Plane::get_wp_radius() const
 /*
   support for scripted navigation, with verify operation for completion
  */
-void Plane::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
+void Plane::do_nav_scripting(const AP_Mission::Mission_Command& cmd)
 {
+    switch (cmd.id) {
+        case MAV_CMD_NAV_SCRIPT_TIME:
+            // start with current roll rate, pitch rate and throttle
+            nav_scripting.roll_rate_dps = plane.rollController.get_pid_info().target;
+            nav_scripting.pitch_rate_dps = plane.pitchController.get_pid_info().target;
+            nav_scripting.yaw_rate_dps = degrees(ahrs.get_gyro().z);
+            nav_scripting.throttle_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+            break;
+
+        case MAV_CMD_NAV_ALTITUDE_WAIT:
+            // No init needed
+            break;
+
+        default:
+            // Invalid command, make sure scripting is disabled
+            nav_scripting.enabled = false;
+            return;
+    }
+
     nav_scripting.enabled = true;
     nav_scripting.id++;
     nav_scripting.start_ms = AP_HAL::millis();
     nav_scripting.current_ms = nav_scripting.start_ms;
-
-    // start with current roll rate, pitch rate and throttle
-    nav_scripting.roll_rate_dps = plane.rollController.get_pid_info().target;
-    nav_scripting.pitch_rate_dps = plane.pitchController.get_pid_info().target;
-    nav_scripting.yaw_rate_dps = degrees(ahrs.get_gyro().z);
-    nav_scripting.throttle_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
 }
 
 /*
   wait for scripting to say that the mission item is complete
  */
-bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
+bool Plane::verify_nav_scripting(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.nav_script_time.timeout_s > 0) {
-        const uint32_t now = AP_HAL::millis();
-        if (now - nav_scripting.start_ms > cmd.content.nav_script_time.timeout_s*1000U) {
-            gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
-            nav_scripting.enabled = false;
-            nav_scripting.rudder_offset_pct = 0;
-            nav_scripting.run_yaw_rate_controller = true;
+    const uint32_t now = AP_HAL::millis();
+    const uint32_t run_time = now - nav_scripting.start_ms;
+    const uint32_t read_time = now - nav_scripting.read_ms;
+    if ((run_time > read_time) && (run_time > 1000)) {
+        // Scripting must read command within 1 second of it starting
+        gcs().send_text(MAV_SEVERITY_INFO, "Nav Scripting not read by script");
+        nav_scripting.enabled = false;
+        return true;
+    }
+
+    switch (cmd.id) {
+        case MAV_CMD_NAV_SCRIPT_TIME: {
+            if (cmd.content.nav_script_time.timeout_s > 0) {
+                if (run_time > cmd.content.nav_script_time.timeout_s*1000U) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
+                    nav_scripting.enabled = false;
+                    nav_scripting.rudder_offset_pct = 0;
+                    nav_scripting.run_yaw_rate_controller = true;
+                }
+            }
+            break;
         }
+
+        case MAV_CMD_NAV_ALTITUDE_WAIT:
+            break;
+
+        default:
+            nav_scripting.enabled = false;
+            break;
     }
     return !nav_scripting.enabled;
 }
 
 // check if we are in a NAV_SCRIPT_* command
-bool Plane::nav_scripting_active(void)
+bool Plane::nav_script_time_active(void)
 {
     if (nav_scripting.enabled && AP_HAL::millis() - nav_scripting.current_ms > 1000) {
         // set_target_throttle_rate_rpy has not been called from script in last 1000ms
@@ -1245,10 +1237,12 @@ bool Plane::nav_scripting_active(void)
 // support for NAV_SCRIPTING mission command
 bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-    if (!nav_scripting_active()) {
+    if (!nav_script_time_active()) {
         // not in NAV_SCRIPT_TIME
         return false;
     }
+    nav_scripting.read_ms = AP_HAL::millis();
+
     const auto &c = mission.get_current_nav_cmd().content.nav_script_time;
     id = nav_scripting.id;
     cmd = c.command;
@@ -1257,6 +1251,23 @@ bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
     arg3 = c.arg3;
     arg4 = c.arg4;
     return true;
+}
+
+// support for generic scripting nav mission command
+bool Plane::nav_script(uint16_t &id, mavlink_mission_item_int_t &cmd)
+{
+    if (!nav_scripting.enabled || (control_mode != &mode_auto)) {
+        // Nav scripting disabled or not in auto mode
+        return false;
+    }
+    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_ALTITUDE_WAIT) {
+        // Not in a altitude wait
+        return false;
+    }
+    nav_scripting.read_ms = AP_HAL::millis();
+
+    id = nav_scripting.id;
+    return mission.mission_cmd_to_mavlink_int(mission.get_current_nav_cmd(), cmd);
 }
 
 // called when script has completed the command

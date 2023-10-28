@@ -127,7 +127,7 @@ void ModeAuto::navigate()
 bool ModeAuto::does_auto_navigation() const
 {
 #if AP_SCRIPTING_ENABLED
-   return (!plane.nav_scripting_active());
+   return (!plane.nav_script_time_active());
 #endif
    return true;
 }
@@ -135,7 +135,7 @@ bool ModeAuto::does_auto_navigation() const
 bool ModeAuto::does_auto_throttle() const
 {
 #if AP_SCRIPTING_ENABLED
-   return (!plane.nav_scripting_active());
+   return (!plane.nav_script_time_active());
 #endif
    return true;
 }
