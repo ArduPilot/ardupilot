@@ -49,11 +49,6 @@
 
 #define AK8963_MILLIGAUSS_SCALE 10.0f
 
-struct PACKED sample_regs {
-    int16_t val[3];
-    uint8_t st2;
-};
-
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_AK8963::AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
@@ -379,7 +374,7 @@ bool AP_AK8963_BusDriver_Auxiliary::configure()
 
 bool AP_AK8963_BusDriver_Auxiliary::start_measurements()
 {
-    if (_bus->register_periodic_read(_slave, AK8963_HXL, sizeof(sample_regs)) < 0) {
+    if (_bus->register_periodic_read(_slave, AK8963_HXL, sizeof(AP_Compass_AK8963::sample_regs)) < 0) {
         return false;
     }
 
