@@ -556,7 +556,7 @@ void AP_AutoTune::update_rmax(void)
 
     if (level == 0) {
         // this level means to keep current values of RMAX and TCONST
-        target_rmax = constrain_float(current.rmax_pos, 75, 720);
+        target_rmax = constrain_float(current.rmax_pos, 20, 720);
         target_tau = constrain_float(current.tau, 0.1, 2);
     } else {
         target_rmax = tuning_table[level-1].rmax;
