@@ -225,6 +225,8 @@ public:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+    void run() override;
+
 protected:
 
     bool _enter() override;
