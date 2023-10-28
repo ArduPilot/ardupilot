@@ -5061,6 +5061,52 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_NAV_ALTITUDE_WAIT(self):
+        '''test MAV_CMD_NAV_ALTITUDE_WAIT mission item, wiggling only'''
+
+        # Load a single waypoint
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_ALTITUDE_WAIT,
+                p1=1000, # 1000m alt threshold, this should not trigger
+                p2=10, # 10m/s descent rate, this should not trigger
+                p3=10 # servo wiggle every 10 seconds
+            )
+        ])
+
+        def look_for_wiggle(mav, m):
+            if m.get_type() == 'SERVO_OUTPUT_RAW':
+                # Throttle must be zero
+                if m.servo3_raw != 1000:
+                    raise NotAchievedException(
+                        "Throttle must be 0 in altitude wait, got %f" % m.servo3_raw)
+                # Aileron, elevator and rudder must all be the same
+                # However, aileron is revered, so we must un-reverse it
+                value = 1500 - (m.servo1_raw - 1500)
+                if (m.servo2_raw != value) or (m.servo4_raw != value):
+                    raise NotAchievedException(
+                        "Aileron, elevator and rudder must be the same")
+
+        # Start mission
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Check outputs
+        self.context_push()
+        self.install_message_hook_context(look_for_wiggle)
+
+        # Wait for a bit to let message hook sample
+        self.delay_sim_time(60)
+
+        self.context_pop()
+
+        # If the mission item completes as there is no other waypoints we will end up in RTL
+        if not self.mode_is('AUTO'):
+            raise NotAchievedException("Must still be in AUTO")
+
+        self.disarm_vehicle()
+
     def start_flying_simple_rehome_mission(self, items):
         '''uploads items, changes mode to auto, waits ready to arm and arms
         vehicle.  If the first item it a takeoff you can expect the
@@ -5259,6 +5305,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_GO_AROUND,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
+            self.MAV_CMD_NAV_ALTITUDE_WAIT,
             self.InteractTest,
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,
