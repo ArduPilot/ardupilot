@@ -85,7 +85,7 @@
 #error "Unsupported MCU for FDCAN"
 #endif
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 #define STR(x) #x
 #define XSTR(x) STR(x)
