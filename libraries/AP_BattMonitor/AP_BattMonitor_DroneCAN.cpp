@@ -153,21 +153,22 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
 {
     WITH_SEMAPHORE(_sem_battmon);
     uint8_t cell_count = MIN(ARRAY_SIZE(_interim_state.cell_voltages.cells), msg.voltage_cell.len);
-    float remaining_capacity_ah = _remaining_capacity_wh / msg.nominal_voltage;
-    float full_charge_capacity_ah = _full_charge_capacity_wh / msg.nominal_voltage;
 
     _cycle_count = msg.cycle_count;
     for (uint8_t i = 0; i < cell_count; i++) {
         _interim_state.cell_voltages.cells[i] = msg.voltage_cell.data[i] * 1000;
     }
     _interim_state.is_powering_off = msg.is_powering_off;
-    _interim_state.consumed_mah = (full_charge_capacity_ah - remaining_capacity_ah) * 1000;
-    _interim_state.consumed_wh = _full_charge_capacity_wh - _remaining_capacity_wh;
-    _interim_state.time_remaining =  is_zero(_interim_state.current_amps) ? 0 : (remaining_capacity_ah / _interim_state.current_amps * 3600);
-    _interim_state.has_time_remaining = true;
+    if (!isnan(msg.nominal_voltage) && msg.nominal_voltage > 0) {
+        float remaining_capacity_ah = _remaining_capacity_wh / msg.nominal_voltage;
+        float full_charge_capacity_ah = _full_charge_capacity_wh / msg.nominal_voltage;
+        _interim_state.consumed_mah = (full_charge_capacity_ah - remaining_capacity_ah) * 1000;
+        _interim_state.consumed_wh = _full_charge_capacity_wh - _remaining_capacity_wh;
+        _interim_state.time_remaining =  is_zero(_interim_state.current_amps) ? 0 : (remaining_capacity_ah / _interim_state.current_amps * 3600);
+        _interim_state.has_time_remaining = true;
+    }
 
     _has_cell_voltages = true;
-    _has_time_remaining = true;
     _has_battery_info_aux = true;
 }
 
