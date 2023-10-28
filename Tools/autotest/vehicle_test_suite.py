@@ -5669,7 +5669,7 @@ class TestSuite(ABC):
             y=0,
             z=0,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
-            autocontinue=1,
+            autocontinue=0,
             current=0,
             target_system=1,
             target_component=1,
@@ -5682,12 +5682,12 @@ class TestSuite(ABC):
                 seq, # seq
                 frame,
                 t,
-                0, # current
-                0, # autocontinue
+                current, # current
+                autocontinue, # autocontinue
                 p1, # p1
-                0, # p2
-                0, # p3
-                0, # p4
+                p2, # p2
+                p3, # p3
+                p4, # p4
                 x, # latitude
                 y, # longitude
                 z, # altitude
