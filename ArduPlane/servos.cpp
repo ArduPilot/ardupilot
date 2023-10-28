@@ -373,7 +373,6 @@ void Plane::set_servos_idle(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
     SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
 
-    SRV_Channels::output_ch_all();
 }
 
 
@@ -814,13 +813,6 @@ void Plane::set_servos(void)
 #if HAL_QUADPLANE_ENABLED
     quadplane.update();
 #endif
-
-    if (control_mode == &mode_auto && auto_state.idle_mode) {
-        // special handling for balloon launch
-        set_servos_idle();
-        servos_output();
-        return;
-    }
 
     if (control_mode != &mode_manual) {
         set_servos_controlled();
