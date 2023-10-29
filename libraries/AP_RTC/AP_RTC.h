@@ -34,6 +34,11 @@ public:
      */
     bool get_utc_usec(uint64_t &usec) const;
 
+    /*
+      convert microseconds since boot to UTC time in microseconds.  Returns false if it is not available.
+     */
+    bool get_utc_usec_from_boottime(uint64_t &usec, const uint64_t boottime_us) const;
+
     // set the system time.  If the time has already been set by
     // something better (according to source_type), this set will be
     // ignored.

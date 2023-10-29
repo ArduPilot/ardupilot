@@ -998,6 +998,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
         { MAVLINK_MSG_ID_CAMERA_INFORMATION,    MSG_CAMERA_INFORMATION},
         { MAVLINK_MSG_ID_CAMERA_SETTINGS,       MSG_CAMERA_SETTINGS},
+        { MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED, MSG_CAMERA_IMAGE_CAPTURED},
 #endif
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
@@ -5746,6 +5747,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
 #if AP_CAMERA_ENABLED
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     case MSG_CAMERA_FEEDBACK:
         {
             AP_Camera *camera = AP::camera();
@@ -5756,6 +5758,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             camera->send_feedback(chan);
         }
         break;
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     case MSG_CAMERA_INFORMATION:
         {
             AP_Camera *camera = AP::camera();
@@ -5774,6 +5777,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             }
             CHECK_PAYLOAD_SIZE(CAMERA_SETTINGS);
             camera->send_camera_settings(chan);
+        }
+        break;
+    case MSG_CAMERA_IMAGE_CAPTURED:
+        {
+            AP_Camera *camera = AP::camera();
+            if (camera == nullptr) {
+                break;
+            }
+            CHECK_PAYLOAD_SIZE(CAMERA_IMAGE_CAPTURED);
+
+            camera->send_camera_image_captured(chan);
         }
         break;
 #endif

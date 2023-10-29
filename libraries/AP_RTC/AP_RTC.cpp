@@ -87,10 +87,15 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const
 {
+    return get_utc_usec_from_boottime(usec, AP_HAL::micros64());
+}
+
+bool AP_RTC::get_utc_usec_from_boottime(uint64_t &usec, const uint64_t boottime_us) const
+{
     if (rtc_source_type == SOURCE_NONE) {
         return false;
     }
-    usec = AP_HAL::micros64() + rtc_shift;
+    usec = boottime_us + rtc_shift;
     return true;
 }
 

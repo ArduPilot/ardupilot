@@ -86,14 +86,19 @@ public:
     // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);
+
+    // send camera image captured message to GCS
+    void send_camera_image_captured(mavlink_channel_t chan);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
@@ -174,6 +179,11 @@ public:
     bool get_state(uint8_t instance, camera_state_t& cam_state);
 #endif
 
+    enum class Option: uint8_t {
+        FEEDBACK_MESSAGE = (1 << 0),   // Send the deprecated CAMERA_FEEDBACK message as well as the CAMERA_IMAGE_CAPTURED message
+    };
+    bool option_is_enabled(Option option) const { return ((uint8_t)_options.get() & (uint8_t)option) != 0; }
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore() { return _rsem; }
 
@@ -199,8 +209,9 @@ private:
     static AP_Camera *_singleton;
 
     // parameters
-    AP_Int8 _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
-    AP_Int16 _max_roll;         // Maximum acceptable roll angle when trigging camera
+    AP_Int8 _auto_mode_only;  // if 1: trigger by distance only if in AUTO mode.
+    AP_Int16 _max_roll;       // Maximum acceptable roll angle when trigging camera
+    AP_Int8 _options;
 
     // check instance number is valid
     AP_Camera_Backend *get_instance(uint8_t instance) const;

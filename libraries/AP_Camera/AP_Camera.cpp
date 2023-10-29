@@ -32,6 +32,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Camera options
+    // @Description: Camera options bitmask
+    // @Bitmask: 0:Enable deprecated CAMERA_FEEDBACK message
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 11, AP_Camera, _options, 0),
+
     // @Group: 1
     // @Path: AP_Camera_Params.cpp
     AP_SUBGROUPINFO(_params[0], "1", 12, AP_Camera, AP_Camera_Params),
@@ -485,6 +492,7 @@ void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float z
     backend->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 /*
   Send camera feedback to the GCS
  */
@@ -499,6 +507,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         }
     }
 }
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
 
 // send camera information message to GCS
 void AP_Camera::send_camera_information(mavlink_channel_t chan)
@@ -522,6 +531,17 @@ void AP_Camera::send_camera_settings(mavlink_channel_t chan)
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_camera_settings(chan);
+        }
+    }
+}
+
+// send camera image captured message to GCS
+void AP_Camera::send_camera_image_captured(mavlink_channel_t chan) {
+    WITH_SEMAPHORE(_rsem);
+
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] != nullptr) {
+            _backends[i]->send_camera_image_captured(chan);
         }
     }
 }

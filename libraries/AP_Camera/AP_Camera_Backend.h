@@ -106,6 +106,10 @@ public:
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const;
 
+    // send camera image captured message to GCS
+    // to override the contents of this message, use prep_mavlink_msg_camera_image_captured()
+    void send_camera_image_captured(mavlink_channel_t chan) const;
+
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
@@ -124,8 +128,11 @@ protected:
     void feedback_pin_timer();
     void check_feedback();
 
+    void prep_capture_feedback(uint64_t timestamp_us);
+
+#if AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
     // store vehicle location and attitude for use in camera_feedback message to GCS
-    void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us);
+    void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us, Location &camera_location);
     struct {
         uint64_t timestamp_us;      // system time of most recent image
         Location location;          // location where most recent image was taken
@@ -134,6 +141,10 @@ protected:
         int32_t yaw_sensor;         // vehicle yaw in centi-degrees
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
+#endif // AP_CAMERA_MAVLINK_FEEDBACK_MESSAGE_ENABLED
+
+    virtual void prep_mavlink_msg_camera_image_captured(uint64_t timestamp_us, Location &camera_location);
+    mavlink_camera_image_captured_t camera_image_captured;
 
     // Picture settings
     struct {
