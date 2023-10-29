@@ -7,6 +7,7 @@ class Parameters;
 class ParametersG2;
 
 class GCS_Copter;
+//
 
 // object shared by both Guided and Auto for takeoff.
 // position controller controls vehicle but the user can control the yaw.
