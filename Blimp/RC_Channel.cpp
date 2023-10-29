@@ -36,6 +36,11 @@ void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 }
 
+bool RC_Channels_Blimp::in_rc_failsafe() const
+{
+    return blimp.failsafe.radio;
+}
+
 bool RC_Channels_Blimp::has_valid_input() const
 {
     if (blimp.failsafe.radio) {
@@ -101,7 +106,7 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::SAVE_TRIM:
         if ((ch_flag == AuxSwitchPos::HIGH) &&
             (blimp.control_mode <= Mode::Number::MANUAL) &&
-            (blimp.channel_down->get_control_in() == 0)) {
+            (blimp.channel_up->get_control_in() == 0)) {
             blimp.save_trim();
         }
         break;

@@ -99,9 +99,6 @@ I2C_ORDER I2C1
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # if the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU
 
@@ -383,10 +380,6 @@ SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 # define. Any line starting with 'define' is copied literally as
 # a #define in the hwdef.h header
 define HAL_CHIBIOS_ARCH_FMUV3 1
-
-# now some defines for logging and terrain data files
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)

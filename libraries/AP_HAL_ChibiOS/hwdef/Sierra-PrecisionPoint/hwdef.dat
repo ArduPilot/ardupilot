@@ -1,0 +1,146 @@
+# hw definition file for processing by chibios_pins.py
+
+# Sierra-PrecisionPoint
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load
+APJ_BOARD_ID 1095
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+STM32_ST_USE_TIMER 5
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# USB
+PA11 USB_FS_DM OTG1
+PA12 USB_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# USB setup
+USB_STRING_MANUFACTURER "Sierra Aerospace"
+USB_STRING_PRODUCT "Sierra-PrecisionPoint"
+
+# order of UARTs
+SERIAL_ORDER OTG1 USART1 USART2
+
+# USART1 for debug
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+
+# USART2 for GPS
+PA2 USART2_TX USART2 SPEED_HIGH
+PA3 USART2_RX USART2 SPEED_HIGH
+
+# GPS on 2nd port
+define HAL_PERIPH_GPS_PORT_DEFAULT 1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins
+PC0 RM3100_CS CS
+PC1 DPS310_CS CS
+PC4 ICM42688_CS CS
+
+# --------------------- SPI1 ICM42688 -----------------------
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PC5 ICM42688_DRDY INPUT
+
+SPIDEV icm42688 SPI1 DEVID1 ICM42688_CS MODE3 2*MHZ 8*MHZ
+IMU Invensensev3 SPI:icm42688 ROTATION_YAW_90
+
+# SPI1 FSYNC for ICM42688p
+# PB0 TIM3_CH3 TIM3
+
+# --------------------- SPI2 DPS310+RM3100 -----------------------
+PB10 SPI2_SCK SPI2
+PC2  SPI2_MISO SPI2
+PC3  SPI2_MOSI SPI2
+
+# Baro probe
+SPIDEV dps310 SPI2 DEVID2 DPS310_CS MODE3 5*MHZ 5*MHZ
+BARO DPS310 SPI:dps310
+
+# Mag probe
+SPIDEV  rm3100 SPI2 DEVID1 RM3100_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_YAW_180
+# define AP_RM3100_REVERSAL_MASK 7
+
+# WS2812 LEDs
+PA15 TIM2_CH1 TIM2 PWM(1)
+
+# Board voltage ADC
+define HAL_USE_ADC TRUE
+PA0 VDD_5V_SENS ADC1 SCALE(2)
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB14 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
+
+define CAN_APP_NODE_NAME "in.sierraaerospace.PrecisionPoint"
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# disable dual GPS and GPS blending to save flash space
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+# GPS+MAG+BARO+NeoPixels
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+
+# PB5  GPS_PPS INPUT FLOATING GPIO(6)
+# define CONFIGURE_PPS_PIN TRUE
+# define HAL_GPIO_PPS 6
+# PB4 F9P_TX_READY INPUT
+
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+define GPS_MAX_RATE_MS 200
+
+# Logging
+define HAL_LOGGING_ENABLED 1
+define HAL_PERIPH_ENABLE_RTC 1
+define HAL_OS_FATFS_IO 1
+
+# SD Card pins
+PC8 SDIO_D0 SDIO
+PC9 SDIO_D1 SDIO
+PC10 SDIO_D2 SDIO
+PC11 SDIO_D3 SDIO
+PC12 SDIO_CK SDIO
+PD2 SDIO_CMD SDIO
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# USB select
+PC6 USB_SEL OUTPUT PUSHPULL SPEED_LOW HIGH

@@ -149,6 +149,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
             },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": ["default_params/copter-heli.parm",
@@ -183,6 +188,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
             },
+            "quad-can": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm", "default_params/quad-can.parm"],
+                "periph_params_filename": ["default_params/periph.parm", "default_params/quad-periph.parm"],
+            },
         },
     },
     "Helicopter": {
@@ -191,6 +201,11 @@ class VehicleInfo(object):
             "heli": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
+            },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
             },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
@@ -249,6 +264,11 @@ class VehicleInfo(object):
             "quadplane-ice": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["default_params/quadplane.parm", "default_params/plane-ice.parm", "default_params/quadplane-ice.parm"],
+            },
+            "quadplane-can": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/quadplane.parm", "default_params/quadplane-can.parm"],
+                "periph_params_filename": ["default_params/periph.parm", "default_params/quadplane-periph.parm"],
             },
             "firefly": {
                 "waf_target": "bin/arduplane",
@@ -409,6 +429,7 @@ class VehicleInfo(object):
             "gps": {
                 "configure_target": "sitl_periph_gps",
                 "waf_target": "bin/AP_Periph",
+                "default_params_filename": "default_params/periph.parm",
                 },
             }
     },

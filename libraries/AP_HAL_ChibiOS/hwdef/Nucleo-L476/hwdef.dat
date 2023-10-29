@@ -94,11 +94,6 @@ define HAL_NO_MONITOR_THREAD
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
 
-
-
-
-define CAN_APP_NODE_NAME "org.ardupilot.Nucleo-L476"
-
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_GPS_PORT_DEFAULT 0
 
@@ -109,3 +104,5 @@ define HAL_I2C_INTERNAL_MASK 0
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_AIRSPEED
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

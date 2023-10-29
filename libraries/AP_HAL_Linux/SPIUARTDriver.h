@@ -9,7 +9,7 @@ namespace Linux {
 class SPIUARTDriver : public UARTDriver {
 public:
     SPIUARTDriver();
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
     void _timer_tick(void) override;
 
 protected:

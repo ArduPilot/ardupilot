@@ -4,30 +4,23 @@
 
 Empty::UARTDriver::UARTDriver() {}
 
-void Empty::UARTDriver::begin(uint32_t b) {}
-void Empty::UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) {}
-void Empty::UARTDriver::end() {}
-void Empty::UARTDriver::flush() {}
+/* Empty implementations of virtual methods */
+void Empty::UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS) {}
+void Empty::UARTDriver::_end() {}
+void Empty::UARTDriver::_flush() {}
 bool Empty::UARTDriver::is_initialized() { return false; }
-void Empty::UARTDriver::set_blocking_writes(bool blocking) {}
 bool Empty::UARTDriver::tx_pending() { return false; }
 
-/* Empty implementations of Stream virtual methods */
-uint32_t Empty::UARTDriver::available() { return 0; }
+uint32_t Empty::UARTDriver::_available() { return 0; }
 uint32_t Empty::UARTDriver::txspace() { return 1; }
-bool Empty::UARTDriver::read(uint8_t &b) { return false; }
-bool Empty::UARTDriver::discard_input() { return false; }
-
-/* Empty implementations of Print virtual methods */
-size_t Empty::UARTDriver::write(uint8_t c) { return 0; }
-
-size_t Empty::UARTDriver::write(const uint8_t *buffer, size_t size)
+bool Empty::UARTDriver::_discard_input() { return false; }
+size_t Empty::UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
-    size_t n = 0;
-    while (size--) {
-        n += write(*buffer++);
-    }
-    return n;
+    return size;
+}
+ssize_t Empty::UARTDriver::_read(uint8_t *buffer, uint16_t size)
+{
+    return 0;
 }
 
 #if HAL_UART_STATS_ENABLED

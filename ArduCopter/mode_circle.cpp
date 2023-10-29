@@ -26,9 +26,13 @@ bool ModeCircle::init(bool ignore_checks)
 
     // Check if the CIRCLE_OPTIONS parameter have roi_at_center
     if (copter.circle_nav->roi_at_center()) {
-        Vector3p loc = copter.circle_nav->get_center();
-        loc.z = 0;
-        Location circle_center(loc, Location::AltFrame::ABOVE_TERRAIN);
+        const Vector3p &pos { copter.circle_nav->get_center() };
+        Location circle_center;
+        if (!AP::ahrs().get_location_from_origin_offset(circle_center, pos * 0.01)) {
+            return false;
+        }
+        // point at the ground:
+        circle_center.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
         s->set_roi_target(circle_center);
     }
 #endif

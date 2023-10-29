@@ -215,95 +215,20 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << (AP_MOTORS_MOT_7);
-    }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << (AP_MOTORS_MOT_8);
-    }
+    uint32_t mask = _swashplate1.get_output_mask() | _swashplate2.get_output_mask();
 
     rc_set_freq(mask, _speed_hz);
 }
 
 // init_outputs
-bool AP_MotorsHeli_Dual::init_outputs()
+void AP_MotorsHeli_Dual::init_outputs()
 {
     if (!initialised_ok()) {
-        // make sure 6 output channels are mapped
-        for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-            add_motor_num(CH_1+i);
-        }
-        if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_7);
-        }
-        if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_8);
-        }
-
         // set rotor servo range
         _main_rotor.init_servo();
-
-    }
-
-    // reset swash servo range and endpoints
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        reset_swash_servo(SRV_Channels::get_motor_function(i));
-    }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(6));
-    }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(7));
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
-
-    return true;
-}
-
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Dual::_output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // output to motors and servos
-    switch (motor_seq) {
-    case 1:
-        // swash servo 1
-        rc_write(AP_MOTORS_MOT_1, pwm);
-        break;
-    case 2:
-        // swash servo 2
-        rc_write(AP_MOTORS_MOT_2, pwm);
-        break;
-    case 3:
-        // swash servo 3
-        rc_write(AP_MOTORS_MOT_3, pwm);
-        break;
-    case 4:
-        // swash servo 4
-        rc_write(AP_MOTORS_MOT_4, pwm);
-        break;
-    case 5:
-        // swash servo 5
-        rc_write(AP_MOTORS_MOT_5, pwm);
-        break;
-    case 6:
-        // swash servo 6
-        rc_write(AP_MOTORS_MOT_6, pwm);
-        break;
-    case 7:
-        // main rotor
-        rc_write(AP_MOTORS_HELI_RSC, pwm);
-        break;
-    default:
-        // do nothing
-        break;
-    }
 }
 
 // calculate_armed_scalars
@@ -317,7 +242,6 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
     if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
         _main_rotor.reset_rsc_mode_param();
         _heliflags.save_rsc_mode = true;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
     }
     // saves rsc mode parameter when disarmed if it had been reset while armed
     if (_heliflags.save_rsc_mode && !armed()) {
@@ -369,11 +293,9 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     // configure swashplate 1 and update scalars
     _swashplate1.configure();
-    _swashplate1.calculate_roll_pitch_collective_factors();
 
     // configure swashplate 2 and update scalars
     _swashplate2.configure();
-    _swashplate2.calculate_roll_pitch_collective_factors();
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
@@ -602,21 +524,9 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     float swash2_roll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
     float swash2_coll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
  
-    // get servo positions from swashplate library
-    _servo_out[CH_1] = _swashplate1.get_servo_out(CH_1,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_2] = _swashplate1.get_servo_out(CH_2,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_3] = _swashplate1.get_servo_out(CH_3,swash1_pitch,swash1_roll,swash1_coll);
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_7] = _swashplate1.get_servo_out(CH_4,swash1_pitch,swash1_roll,swash1_coll);
-    }
-
-    // get servo positions from swashplate library
-    _servo_out[CH_4] = _swashplate2.get_servo_out(CH_1,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_5] = _swashplate2.get_servo_out(CH_2,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_6] = _swashplate2.get_servo_out(CH_3,swash2_pitch,swash2_roll,swash2_coll);
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_8] = _swashplate2.get_servo_out(CH_4,swash2_pitch,swash2_roll,swash2_coll);
-    }
+    // Calculate servo positions in swashplate library
+    _swashplate1.calculate(swash1_roll, swash1_pitch, swash1_coll);
+    _swashplate2.calculate(swash2_roll, swash2_pitch, swash2_coll);
 
 }
 
@@ -625,19 +535,10 @@ void AP_MotorsHeli_Dual::output_to_motors()
     if (!initialised_ok()) {
         return;
     }
-    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        rc_write_swash(i, _servo_out[CH_1+i]);
-    }
 
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_7, _servo_out[CH_7]);
-    }
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_8, _servo_out[CH_8]);
-    }
+    // Write swashplate outputs
+    _swashplate1.output();
+    _swashplate2.output();
 
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
@@ -706,25 +607,25 @@ void AP_MotorsHeli_Dual::servo_test()
     _pitch_in = constrain_float(_pitch_test, -1.0f, 1.0f);
 }
 
-// parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli_Dual::parameter_check(bool display_msg) const
+// Run arming checks
+bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
 {
+    // run base class checks
+    if (!AP_MotorsHeli::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     // returns false if Phase Angle is outside of range for H3 swashplate 1
     if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate1.get_phase_angle() > 30 || _swashplate1.get_phase_angle() < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_SW1_H3_PHANG out of range");
-        }
+        hal.util->snprintf(buffer, buflen, "H_SW1_H3_PHANG out of range");
         return false;
     }
 
     // returns false if Phase Angle is outside of range for H3 swashplate 2
     if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate2.get_phase_angle() > 30 || _swashplate2.get_phase_angle() < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_SW2_H3_PHANG out of range");
-        }
+        hal.util->snprintf(buffer, buflen, "H_SW2_H3_PHANG out of range");
         return false;
     }
 
-    // check parent class parameters
-    return AP_MotorsHeli::parameter_check(display_msg);
+    return true;
 }

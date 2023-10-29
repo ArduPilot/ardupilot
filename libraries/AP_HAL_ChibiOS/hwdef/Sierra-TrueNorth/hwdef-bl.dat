@@ -1,0 +1,57 @@
+# HW definition file for Sierra-TrueNorth
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1093
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# Flash info
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 36
+FLASH_SIZE_KB 256
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# a fault LED
+PB14 LED_BOOTLOADER OUTPUT LOW # amber
+define HAL_LED_ON 1
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA10 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB12 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
+
+CAN_ORDER 1
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+define HAL_USE_SERIAL FALSE
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
+define PORT_INT_REQUIRED_STACK 64
+define DMA_RESERVE_SIZE 0
+
+MAIN_STACK 0x800
+PROCESS_STACK 0x800
+
+define HAL_DISABLE_LOOP_DELAY
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNorth"
+PA4 RM3100_CS CS

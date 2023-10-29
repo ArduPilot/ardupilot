@@ -105,7 +105,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
+    send_arm_disarm_statustext("Arming motors");
 #endif
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -134,7 +134,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     sub.motors.armed(true);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
+    AP::logger().Write_Mode((uint8_t)sub.control_mode, sub.control_mode_reason);
 
     // reenable failsafe
     sub.mainloop_failsafe_enable();
@@ -161,7 +161,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    send_arm_disarm_statustext("Disarming motors");
 #endif
 
     auto &ahrs = AP::ahrs();

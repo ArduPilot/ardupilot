@@ -54,8 +54,10 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command(const mavlink_command_long
         case MAV_CMD_DO_SET_MODE:
             return handle_command_do_set_mode(mav_command_long);
         //case MAV_CMD_DO_SET_HOME:
+#if AP_FENCE_ENABLED
         case MAV_CMD_DO_FENCE_ENABLE:
             return handle_command_do_fence_enable(mav_command_long);
+#endif
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             return handle_command_preflight_reboot(mav_command_long);
         //case MAV_CMD_DO_START_MAG_CAL:
@@ -127,9 +129,9 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
         return MAV_RESULT_DENIED;
     }
     // fast barometer calibration
-    gcs().send_text(MAV_SEVERITY_INFO, "Updating barometer calibration");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
 #if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -141,9 +143,9 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_FENCE_ENABLED
 MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavlink_command_long_t &mav_command_long)
 {
-#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -159,10 +161,8 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavl
         default:
             return MAV_RESULT_FAILED;
     }
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif // AP_FENCE_ENABLED
 }
+#endif // AP_FENCE_ENABLED
 
 /*
  * Handle the PARAM_REQUEST_READ mavlite message
@@ -177,7 +177,7 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_request_read(const AP_Frsky_MAVlit
     }
     // find existing param
     if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
     AP_Frsky_MAVlite_Message txmsg;
@@ -223,13 +223,13 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
         }
     }
     if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
     } else if (!AP_Param::set_and_save_by_name(param_name, param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
     }
     // let's read back the last value, either the readonly one or the updated one
     if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
     AP_Frsky_MAVlite_Message txmsg;

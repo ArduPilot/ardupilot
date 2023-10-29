@@ -106,9 +106,9 @@ void AP_AHRS::write_video_stabilisation() const
     const struct log_Video_Stabilisation pkt {
         LOG_PACKET_HEADER_INIT(LOG_VIDEO_STABILISATION_MSG),
         time_us         : AP_HAL::micros64(),
-        gyro_x          : _gyro_estimate.x,
-        gyro_y          : _gyro_estimate.y,
-        gyro_z          : _gyro_estimate.z,
+        gyro_x          : state.gyro_estimate.x,
+        gyro_y          : state.gyro_estimate.y,
+        gyro_z          : state.gyro_estimate.z,
         accel_x         : accel.x,
         accel_y         : accel.y,
         accel_z         : accel.z,
@@ -168,7 +168,7 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
     /*
       log P/PD gain scale if not == 1.0
      */
-    const Vector3f &scale = attitude_control.get_angle_P_scale_logging();
+    const Vector3f &scale = attitude_control.get_last_angle_P_scale();
     const Vector3f &pd_scale = attitude_control.get_PD_scale_logging();
     if (scale != AC_AttitudeControl::VECTORF_111 || pd_scale != AC_AttitudeControl::VECTORF_111) {
         const struct log_ATSC pkt_ATSC {

@@ -247,10 +247,6 @@ BARO MS56XX SPI:ms5611
 define HAL_CHIBIOS_ARCH_FMUV3 1
 define BOARD_TYPE_DEFAULT 3
 
-# Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # We need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes).
 define HAL_STORAGE_SIZE 16384
@@ -286,7 +282,3 @@ DMA_PRIORITY USART6* SPI*
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
-
-# for users running fmuv3 on their Solo:
-define HAL_OREO_LED_ENABLED (BOARD_FLASH_SIZE > 1024)
-define HAL_SOLO_GIMBAL_ENABLED (HAL_MOUNT_ENABLED && BOARD_FLASH_SIZE > 1024)

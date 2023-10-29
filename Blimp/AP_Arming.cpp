@@ -107,7 +107,7 @@ bool AP_Arming_Blimp::parameter_checks(bool display_failure)
         // failsafe parameter checks
         if (blimp.g.failsafe_throttle) {
             // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
-            if (blimp.channel_down->get_radio_min() <= blimp.g.failsafe_throttle_value+10 || blimp.g.failsafe_throttle_value < 910) {
+            if (blimp.channel_up->get_radio_min() <= blimp.g.failsafe_throttle_value+10 || blimp.g.failsafe_throttle_value < 910) {
                 check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check FS_THR_VALUE");
                 return false;
             }
@@ -312,7 +312,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         AP::notify().update();
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors"); //MIR kept in - usually only in SITL
+    send_arm_disarm_statustext("Arming motors"); //MIR kept in - usually only in SITL
 
     auto &ahrs = AP::ahrs();
 
@@ -371,8 +371,7 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
         return false;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors"); //MIR keeping in - usually only in SITL
-
+    send_arm_disarm_statustext("Disarming motors"); //MIR keeping in - usually only in SITL
 
     auto &ahrs = AP::ahrs();
 

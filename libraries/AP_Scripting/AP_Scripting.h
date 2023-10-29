@@ -16,6 +16,7 @@
 
 #if AP_SCRIPTING_ENABLED
 
+#include <GCS_MAVLink/GCS_config.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -43,13 +44,20 @@ public:
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
 
+#if HAL_GCS_ENABLED
     void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
+
+    // Check if command ID is blocked
+    bool is_handling_command(uint16_t cmd_id);
+#endif
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if HAL_GCS_ENABLED
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+#endif
 
     void handle_mission_command(const class AP_Mission::Mission_Command& cmd);
 
@@ -76,12 +84,13 @@ public:
     uint8_t num_i2c_devices;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
     // Scripting CAN sensor
     ScriptingCANSensor *_CAN_dev;
     ScriptingCANSensor *_CAN_dev2;
 #endif
 
+#if AP_MISSION_ENABLED
     // mission item buffer
     static const int mission_cmd_queue_size = 5;
     struct scripting_mission_cmd {
@@ -92,6 +101,7 @@ public:
         uint32_t time_ms;
     };
     ObjectBuffer<struct scripting_mission_cmd> * mission_data;
+#endif
 
     // PWMSource storage
     uint8_t num_pwm_source;
@@ -111,6 +121,13 @@ public:
         uint16_t accept_msg_ids_size;
         HAL_Semaphore sem;
     } mavlink_data;
+
+    struct command_block_list {
+        uint16_t id;
+        command_block_list *next;
+    };
+    command_block_list *mavlink_command_block_list;
+    HAL_Semaphore mavlink_command_block_list_sem;
 
 private:
 

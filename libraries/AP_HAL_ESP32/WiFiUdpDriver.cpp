@@ -44,12 +44,7 @@ WiFiUdpDriver::WiFiUdpDriver()
     accept_socket = -1;
 }
 
-void WiFiUdpDriver::begin(uint32_t b)
-{
-    begin(b, 0, 0);
-}
-
-void WiFiUdpDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void WiFiUdpDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (_state == NOT_INITIALIZED) {
         initialize_wifi();
@@ -69,12 +64,12 @@ void WiFiUdpDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
-void WiFiUdpDriver::end()
+void WiFiUdpDriver::_end()
 {
     //TODO
 }
 
-void WiFiUdpDriver::flush()
+void WiFiUdpDriver::_flush()
 {
 }
 
@@ -83,17 +78,12 @@ bool WiFiUdpDriver::is_initialized()
     return true;
 }
 
-void WiFiUdpDriver::set_blocking_writes(bool blocking)
-{
-    //blocking writes do not used anywhere
-}
-
 bool WiFiUdpDriver::tx_pending()
 {
     return (_writebuf.available() > 0);
 }
 
-uint32_t WiFiUdpDriver::available()
+uint32_t WiFiUdpDriver::_available()
 {
     return _readbuf.available();
 }
@@ -105,18 +95,16 @@ uint32_t WiFiUdpDriver::txspace()
     return MAX(result, 0);
 }
 
-bool WiFiUdpDriver::read(uint8_t &c)
+ssize_t WiFiUdpDriver::_read(uint8_t *buf, uint16_t count)
 {
     if (!_read_mutex.take_nonblocking()) {
         return false;
     }
 
-    if (!_readbuf.read_byte(&c)) {
-        return false;
-    }
+    auto ret = _readbuf.read(buf, count);
 
     _read_mutex.give();
-    return true;
+    return ret;
 }
 
 bool WiFiUdpDriver::start_listen()
@@ -212,12 +200,7 @@ void WiFiUdpDriver::initialize_wifi()
     esp_wifi_start();
 }
 
-size_t WiFiUdpDriver::write(uint8_t c)
-{
-    return write(&c,1);
-}
-
-size_t WiFiUdpDriver::write(const uint8_t *buffer, size_t size)
+size_t WiFiUdpDriver::_write(const uint8_t *buffer, size_t size)
 {
     if (!_write_mutex.take_nonblocking()) {
         return 0;
@@ -247,7 +230,7 @@ void WiFiUdpDriver::_wifi_thread2(void *arg)
     }
 }
 
-bool WiFiUdpDriver::discard_input()
+bool WiFiUdpDriver::_discard_input()
 {
     return false;
 }

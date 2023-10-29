@@ -270,7 +270,9 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
+#if AP_INTERNALERROR_ENABLED
         AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
+#endif
         return (low + high) / 2;
     }
 
@@ -531,7 +533,7 @@ int32_t double_to_int32(const double v)
 int32_t float_to_int32_le(const float& value)
 {
     int32_t out;
-    static_assert(sizeof(value) == sizeof(out));
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
 
     // Use memcpy because it's the most portable.
     // It might not be the fastest way on all hardware.
@@ -543,7 +545,7 @@ int32_t float_to_int32_le(const float& value)
 float int32_to_float_le(const uint32_t& value)
 {
     float out;
-    static_assert(sizeof(value) == sizeof(out));
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
 
     // Use memcpy because it's the most portable.
     // It might not be the fastest way on all hardware.
@@ -555,7 +557,7 @@ float int32_to_float_le(const uint32_t& value)
 double uint64_to_double_le(const uint64_t& value)
 {
     double out;
-    static_assert(sizeof(value) == sizeof(out));
+    static_assert(sizeof(value) == sizeof(out), "mismatched sizes");
 
     // Use memcpy because it's the most portable.
     // It might not be the fastest way on all hardware.

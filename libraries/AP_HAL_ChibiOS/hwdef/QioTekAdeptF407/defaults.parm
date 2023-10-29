@@ -1,0 +1,23 @@
+# setup serial2 port defaults for ESP8266
+SERIAL2_BAUD 921
+
+# setup the parameter for the ADC power module
+BATT_VOLT_PIN 2
+BATT_CURR_PIN 3
+BATT_VOLT_MULT 20.000
+BATT_AMP_PERVLT 60.000
+BATT2_VOLT_PIN 14
+BATT2_CURR_PIN 15
+BATT2_VOLT_MULT 20.000
+BATT2_AMP_PERVLT 60.000
+
+# setup the parameter for the two Relays GPIO others for reserve
+RELAY_PIN  1
+RELAY_PIN2 2
+RELAY_PIN3 3
+RELAY_PIN4 4
+RELAY_PIN5 5
+RELAY_PIN6 6
+
+# Disable the safety switch by default
+BRD_SAFETY_DEFLT 0

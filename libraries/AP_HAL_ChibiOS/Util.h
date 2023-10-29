@@ -30,10 +30,6 @@ class ExpandingString;
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS (defined(STM32F7) || defined(STM32H7))
 #endif
 
-#ifndef AP_BOOTLOADER_FLASHING_ENABLED
-#define AP_BOOTLOADER_FLASHING_ENABLED 0
-#endif
-
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
@@ -93,6 +89,7 @@ public:
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // save/load key persistent parameters in bootloader sector
     bool load_persistent_params(ExpandingString &str) const override;
+    bool get_persistent_param_by_name(const char *name, char* value, size_t& len) const override;
 #endif
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O

@@ -49,6 +49,8 @@ public:
     bool     is_system_initialized() override;
 
     void     print_stats(void) ;
+    void     print_main_loop_rate(void);
+
     uint16_t get_loop_rate_hz(void);
     AP_Int16 _active_loop_rate_hz;
     AP_Int16 _loop_rate_hz;

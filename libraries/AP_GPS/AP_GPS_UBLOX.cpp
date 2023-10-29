@@ -594,11 +594,10 @@ AP_GPS_UBLOX::read(void)
     for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        const int16_t rdata = port->read();
-        if (rdata < 0) {
+        uint8_t data;
+        if (!port->read(data)) {
             break;
         }
-        const uint8_t data = rdata;
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&data, 1);
 #endif
@@ -994,6 +993,40 @@ AP_GPS_UBLOX::_parse_gps(void)
                 }
             }
         }
+        if(_msg_id == MSG_ACK_NACK) {
+            switch(_buffer.nack.clsID) {
+            case CLASS_CFG:
+                switch(_buffer.nack.msgID) {
+                case MSG_CFG_VALGET:
+                    if (active_config.list != nullptr) {
+                        /*
+                          likely this device does not support fetching multiple keys at once, go one at a time
+                        */
+                        if (active_config.fetch_index == -1) {
+                            Debug("NACK starting %u", unsigned(active_config.count));
+                            active_config.fetch_index = 0;
+                        } else {
+                            // the device does not support the config key we asked for,
+                            // consider the bit as done
+                            active_config.done_mask |= (1U<<active_config.fetch_index);
+                            Debug("NACK %d 0x%x done=0x%x",
+                                     int(active_config.fetch_index),
+                                     unsigned(active_config.list[active_config.fetch_index].key),
+                                     unsigned(active_config.done_mask));
+                            if (active_config.done_mask == (1U<<active_config.count)-1) {
+                                // all done!
+                                _unconfigured_messages &= ~active_config.unconfig_bit;
+                            }
+                            active_config.fetch_index++;
+                        }
+                        if (active_config.fetch_index < active_config.count) {
+                            _configure_valget(active_config.list[active_config.fetch_index].key);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
         return false;
     }
 
@@ -1069,7 +1102,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                             }
                             if(GNSS_GALILEO ==_buffer.gnss.configBlock[i].gnssId) {
                                 _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
-                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eigh
+                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eight
                             }
                         }
                         _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
@@ -1226,6 +1259,16 @@ AP_GPS_UBLOX::_parse_gps(void)
                             _unconfigured_messages &= ~active_config.unconfig_bit;
                         }
                     }
+                    if (active_config.fetch_index >= 0 &&
+                        active_config.fetch_index < active_config.count &&
+                        id == active_config.list[active_config.fetch_index].key) {
+                        active_config.fetch_index++;
+                        if (active_config.fetch_index < active_config.count) {
+                            _configure_valget(active_config.list[active_config.fetch_index].key);
+                            Debug("valget %d 0x%x", int(active_config.fetch_index),
+                                  unsigned(active_config.list[active_config.fetch_index].key));
+                        }
+                    }
                 }
 
                 // step over the value
@@ -1324,13 +1367,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.posllh.itow;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.posllh.altitude_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.posllh.altitude_msl / 10;
-        }
         state.have_undulation = true;
         state.undulation = (_buffer.posllh.altitude_msl - _buffer.posllh.altitude_ellipsoid) * 0.001;
+        set_alt_amsl_cm(state, _buffer.posllh.altitude_msl / 10);
 
         state.status          = next_fix;
         _new_position = true;
@@ -1488,13 +1527,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.pvt.h_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.pvt.h_msl / 10;
-        }
         state.have_undulation = true;
         state.undulation = (_buffer.pvt.h_msl - _buffer.pvt.h_ellipsoid) * 0.001;
+        set_alt_amsl_cm(state, _buffer.pvt.h_msl / 10);
         switch (_buffer.pvt.fix_type)
         {
             case 0:
@@ -1823,6 +1858,11 @@ AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint
     active_config.done_mask = 0;
     active_config.unconfig_bit = unconfig_bit;
     active_config.layers = layers;
+    // we start by fetching multiple values at once (with fetch_index
+    // -1) then if we get a NACK for VALGET we switch to fetching one
+    // value at a time. This copes with the M10S which can only fetch
+    // one value at a time
+    active_config.fetch_index = -1;
 
     uint8_t buf[sizeof(ubx_cfg_valget)+count*sizeof(ConfigKey)];
     struct ubx_cfg_valget msg {};

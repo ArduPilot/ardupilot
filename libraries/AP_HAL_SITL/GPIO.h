@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AP_HAL_SITL.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 class HALSITL::GPIO : public AP_HAL::GPIO {
 public:

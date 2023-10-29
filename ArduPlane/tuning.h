@@ -1,3 +1,9 @@
+#pragma once
+
+#include <AP_Tuning/AP_Tuning_config.h>
+
+#if AP_TUNING_ENABLED
+
 #include <AP_Tuning/AP_Tuning.h>
 
 /*
@@ -70,6 +76,8 @@ private:
         TUNING_PIT_I =                        55,
         TUNING_PIT_D =                        56,
         TUNING_PIT_FF =                       57,
+
+        TUNING_Q_FWD_THR =                    58,
     };
 
     /*
@@ -108,3 +116,5 @@ private:
     // mask of what params have been set
     uint64_t have_set;
 };
+
+#endif  // AP_TUNING_ENABLED

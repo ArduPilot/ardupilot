@@ -29,6 +29,7 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 using namespace HALSITL;
 
@@ -37,15 +38,13 @@ HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL();
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
-#if !defined(HAL_BUILD_AP_PERIPH)
-static RCInput  sitlRCInput(&sitlState);
-static RCOutput sitlRCOutput(&sitlState);
-static GPIO sitlGPIO(&sitlState);
+#if AP_RCPROTOCOL_ENABLED
+static RCInput sitlRCInput(&sitlState);
 #else
 static Empty::RCInput  sitlRCInput;
-static Empty::RCOutput sitlRCOutput;
-static Empty::GPIO sitlGPIO;
 #endif
+static RCOutput sitlRCOutput(&sitlState);
+static GPIO sitlGPIO(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
 static DSP dspDriver;
 
@@ -65,11 +64,11 @@ static UARTDriver sitlUart7Driver(7, &sitlState);
 static UARTDriver sitlUart8Driver(8, &sitlState);
 static UARTDriver sitlUart9Driver(9, &sitlState);
 
+static I2CDeviceManager i2c_mgr_instance;
+
 #if defined(HAL_BUILD_AP_PERIPH)
-static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager spi_mgr_instance;
 #else
-static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);

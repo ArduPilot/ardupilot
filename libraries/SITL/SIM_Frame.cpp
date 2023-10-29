@@ -407,7 +407,7 @@ void Frame::load_frame_params(const char *model_json)
     char label_name[20];
     for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
         for (uint8_t j=0; j<12; j++) {
-            sprintf(label_name, "motor%i_%s", j+1, per_motor_vars[i].label);
+            snprintf(label_name, 20, "motor%i_%s", j+1, per_motor_vars[i].label);
             auto v = obj->get(label_name);
             if (v.is<picojson::null>()) {
                 // use default value
@@ -553,15 +553,14 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_air_ef();
 
-    float current = 0;
+    const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
         motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
-        current += motors[i].get_current();
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
-        if (!is_zero(AP::sitl()->vibe_motor)) {
+        if (!is_zero(_sitl->vibe_motor)) {
             rpm[motor_offset+i] = motors[i].get_command() * AP::sitl()->vibe_motor * 60.0f;
         }
     }

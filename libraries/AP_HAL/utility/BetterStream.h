@@ -36,11 +36,11 @@ public:
 
     virtual size_t write(uint8_t) = 0;
     virtual size_t write(const uint8_t *buffer, size_t size) = 0;
-    size_t write(const char *str);
+    virtual size_t write(const char *str);
 
     virtual uint32_t available() = 0;
 
-    int16_t read();  // old function; prefer calling the boolean method
+    virtual int16_t read(void);
     virtual bool read(uint8_t &b) WARN_IF_UNUSED = 0;
 
     // no base-class implementation to force descendants to

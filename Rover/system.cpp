@@ -107,7 +107,9 @@ void Rover::init_ardupilot()
     optflow.init(MASK_LOG_OPTFLOW);
 #endif      // AP_OPTICALFLOW_ENABLED
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
@@ -186,10 +188,6 @@ void Rover::startup_ground(void)
 #if AP_SCRIPTING_ENABLED
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
-
-    // we don't want writes to the serial port to cause us to pause
-    // so set serial ports non-blocking once we are ready to drive
-    serial_manager.set_blocking_writes_all(false);
 }
 
 // update the ahrs flyforward setting which can allow
@@ -221,11 +219,41 @@ void Rover::update_ahrs_flyforward()
     ahrs.set_fly_forward(flyforward);
 }
 
+// Check if this mode can be entered from the GCS
+bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
+{
+    // List of modes that can be blocked, index is bit number in parameter bitmask
+    static const uint8_t mode_list [] {
+        (uint8_t)Mode::Number::MANUAL,
+        (uint8_t)Mode::Number::ACRO,
+        (uint8_t)Mode::Number::STEERING,
+        (uint8_t)Mode::Number::LOITER,
+        (uint8_t)Mode::Number::FOLLOW,
+        (uint8_t)Mode::Number::SIMPLE,
+        (uint8_t)Mode::Number::CIRCLE,
+        (uint8_t)Mode::Number::AUTO,
+        (uint8_t)Mode::Number::RTL,
+        (uint8_t)Mode::Number::SMART_RTL,
+        (uint8_t)Mode::Number::GUIDED,
+#if MODE_DOCK_ENABLED == ENABLED
+        (uint8_t)Mode::Number::DOCK
+#endif
+    };
+
+    return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
+}
+
 bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 {
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
         return true;
+    }
+
+    // Check if GCS mode change is disabled via parameter
+    if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled((Mode::Number)new_mode.mode_number())) {
+        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
+        return false;
     }
 
     Mode &old_mode = *control_mode;
@@ -253,7 +281,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     old_mode.exit();
 
     control_mode_reason = reason;
-    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode((uint8_t)control_mode->mode_number(), control_mode_reason);
     gcs().send_message(MSG_HEARTBEAT);
 
     notify_mode(control_mode);
@@ -263,9 +291,14 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 bool Rover::set_mode(const uint8_t new_mode, ModeReason reason)
 {
     static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
-    Mode *mode = rover.mode_from_mode_num((enum Mode::Number)new_mode);
+    return rover.set_mode(static_cast<Mode::Number>(new_mode), reason);
+}
+
+bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
+{
+    Mode *mode = rover.mode_from_mode_num(new_mode);
     if (mode == nullptr) {
-        notify_no_such_mode(new_mode);
+        notify_no_such_mode((uint8_t)new_mode);
         return false;
     }
     return rover.set_mode(*mode, reason);
@@ -289,7 +322,7 @@ void Rover::startup_INS_ground(void)
 void Rover::notify_mode(const Mode *mode)
 {
     AP_Notify::flags.autopilot_mode = mode->is_autopilot_mode();
-    notify.flags.flight_mode = mode->mode_number();
+    notify.flags.flight_mode = (uint8_t)mode->mode_number();
     notify.set_flight_mode_str(mode->name4());
 }
 

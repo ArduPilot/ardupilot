@@ -53,10 +53,12 @@ private:
 
     const bool inverted;
 
+#if AP_FRSKY_SPORT_TELEM_ENABLED
     struct {
         bool available = false;
         AP_Frsky_SPort::sport_packet_t packet;
     } telem_data;
+#endif // AP_FRSKY_SPORT_TELEM_ENABLED
 
     // receiver sends 0x10 when ready to receive telemetry frames (R-XSR)
     bool rx_driven_frame_rate = false;

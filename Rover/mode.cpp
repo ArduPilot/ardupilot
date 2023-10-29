@@ -531,9 +531,11 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
+#if MODE_FOLLOW_ENABLED == ENABLED
     case Mode::Number::FOLLOW:
         ret = &mode_follow;
         break;
+#endif
     case Mode::Number::SIMPLE:
         ret = &mode_simple;
         break;

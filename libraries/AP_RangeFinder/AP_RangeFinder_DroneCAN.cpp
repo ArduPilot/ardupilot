@@ -65,7 +65,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
                 if (driver == nullptr) {
                     break;
                 }
-                gcs().send_text(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u addr %u",
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u addr %u",
                                 unsigned(i), unsigned(node_id), unsigned(address));
                 //Assign node id and respective uavcan driver, for identification
                 if (driver->_ap_dronecan == nullptr) {

@@ -152,9 +152,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
@@ -166,3 +163,4 @@ define HAL_MOUNT_ENABLED 0
 
 # save some flash
 include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc

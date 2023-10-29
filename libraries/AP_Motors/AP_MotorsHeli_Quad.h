@@ -52,7 +52,7 @@ public:
 protected:
 
     // init_outputs
-    bool init_outputs () override;
+    void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
@@ -62,9 +62,6 @@ protected:
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
-
-    // output_test_seq - spin a motor at the pwm value specified
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     const char* _get_frame_string() const override { return "HELI_QUAD"; }
 

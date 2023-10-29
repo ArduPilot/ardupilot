@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for serial connected AHRS systems
+  support for serial connected AHRS systems
  */
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
@@ -31,6 +31,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -282,8 +283,8 @@ reset:
     return true;
 }
 
-// Send command to read given register number and wait for responce
-// Only run from thread! This blocks until a responce is received
+// Send command to read given register number and wait for response
+// Only run from thread! This blocks until a response is received
 #define READ_REQUEST_RETRY_MS 500
 void AP_ExternalAHRS_VectorNav::wait_register_responce(const uint8_t register_num)
 {
@@ -581,8 +582,10 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
                                 Location::AltFrame::ABSOLUTE};
         state.have_origin = true;
     }
-
-    AP::gps().handle_external(gps);
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
 }
 
 /*

@@ -6,7 +6,7 @@
 // CIRCLE_INCLUSION_INT stores the radius an a 32-bit integer in
 // metres.  This was a bug, and CIRCLE_INCLUSION was created to store
 // as a 32-bit float instead.  We save as _INT in the case that the
-// radius looks like an integer as a backwards-compatability measure.
+// radius looks like an integer as a backwards-compatibility measure.
 // For 4.2 we might consider only loading _INT and always saving as
 // float, and in 4.3 considering _INT invalid
 enum class AC_PolyFenceType {
@@ -39,15 +39,14 @@ public:
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
-
 class AC_PolyFence_loader
 {
 
 public:
 
-    AC_PolyFence_loader(AP_Int8 &total) :
-        _total(total) {}
+    AC_PolyFence_loader(AP_Int8 &total, const AP_Int16 &options) :
+        _total(total),
+        _options(options) {}
 
     /* Do not allow copies */
     CLASS_NO_COPY(AC_PolyFence_loader);
@@ -173,12 +172,10 @@ public:
     // call @10Hz to check for fence load being valid
     void update();
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     // get_return_point - returns latitude/longitude of return point.
     // This works with storage - the returned vector is absolute
     // lat/lon.
     bool get_return_point(Vector2l &ret) WARN_IF_UNUSED;
-#endif
 
     // return total number of fences - polygons and circles
     uint16_t total_fence_count() const {
@@ -353,21 +350,9 @@ private:
                                    Vector2f *&next_storage_point,
                                    Vector2l *&next_storage_point_lla) WARN_IF_UNUSED;
 
-    /*
-     * Upgrade functions - attempt to keep user's fences when
-     * upgrading to new firmware
-     */
-    // convert_to_new_storage - will attempt to change a pre-existing
-    // stored fence to the new storage format (so people don't lose
-    // their fences when upgrading)
-    bool convert_to_new_storage() WARN_IF_UNUSED;
-    // load boundary point from eeprom, returns true on successful load
-    bool load_point_from_eeprom(uint16_t i, Vector2l& point) const WARN_IF_UNUSED;
-
-
 #if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     /*
-     * FENCE_POINT protocol compatability
+     * FENCE_POINT protocol compatibility
      */
     void handle_msg_fetch_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
     void handle_msg_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
@@ -395,8 +380,9 @@ private:
     bool write_eos_to_storage(uint16_t &offset);
 
     // _total - reference to FENCE_TOTAL parameter.  This is used
-    // solely for compatability with the FENCE_POINT protocol
+    // solely for compatibility with the FENCE_POINT protocol
     AP_Int8 &_total;
+    const AP_Int16 &_options;
     uint8_t _old_total;
 
 

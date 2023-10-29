@@ -13,6 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "AP_Follow_config.h"
+
+#if AP_FOLLOW_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -142,7 +145,6 @@ private:
     AP_Int16    _options;           // options for mount behaviour follow mode
 
     // local variables
-    bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
@@ -161,3 +163,5 @@ private:
 namespace AP {
     AP_Follow &follow();
 };
+
+#endif

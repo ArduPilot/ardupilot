@@ -10,17 +10,21 @@
     - readdir loop of 511 entry directory ~62,000 microseconds
  */
 
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
+#include "AP_Logger.h"
 #include "AP_Logger_File.h"
-
-#if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
@@ -579,11 +583,15 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
             // it is the file we are currently writing
             free(fname);
             write_fd_semaphore.give();
+#if AP_RTC_ENABLED
             uint64_t utc_usec;
             if (!AP::rtc().get_utc_usec(utc_usec)) {
                 return 0;
             }
             return utc_usec / 1000000U;
+#else
+            return 0;
+#endif
         }
         write_fd_semaphore.give();
     }
@@ -763,7 +771,7 @@ void AP_Logger_File::PrepForArming_start_logging()
         if (logging_started()) {
             break;
         }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !APM_BUILD_TYPE(APM_BUILD_Replay) && AP_AHRS_ENABLED
         // keep the EKF ticking over
         AP::ahrs().update();
 #endif
@@ -836,8 +844,10 @@ void AP_Logger_File::start_new_log(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // remember if we had utc time when we opened the file
+#if AP_RTC_ENABLED
     uint64_t utc_usec;
     _need_rtc_update = !AP::rtc().get_utc_usec(utc_usec);
+#endif
 #endif
 
     // create the log directory if need be
@@ -1030,7 +1040,7 @@ void AP_Logger_File::io_timer(void)
         last_io_operation = "";
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // ChibiOS does not update mtime on writes, so if we opened
         // without knowing the time we should update it later
         if (_need_rtc_update) {

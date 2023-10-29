@@ -48,21 +48,21 @@ TEST(NotchFilterTest, SineTest)
         const float v = filter.apply(sample);
         if (i >= 2*period_samples) {
             integral1_in += sample * dt;
-            integral2_in += fabsf(sample) * dt;
+            integral2_in += fabsF(sample) * dt;
             integral1_out += v * dt;
-            integral2_out += fabsf(v) * dt;
+            integral2_out += fabsF(v) * dt;
         }
     }
 
     // we expect both absolute integrals to be zero
-    EXPECT_LE(fabsf(integral1_in), 0.01);
-    EXPECT_LE(fabsf(integral1_out), 0.01);
+    EXPECT_LE(fabsF(integral1_in), 0.01);
+    EXPECT_LE(fabsF(integral1_out), 0.01);
 
     // we expect the output abs integral to be smaller than input
     // integral by the attenuation
     const float ratio1 = integral2_in / integral2_out;
     ::printf("ratio1=%f expected_ratio=%f\n", ratio1, expected_ratio);
-    const float err_pct = 100 * fabsf(ratio1 - expected_ratio) / ratio1;
+    const float err_pct = 100 * fabsF(ratio1 - expected_ratio) / ratio1;
     EXPECT_LE(err_pct, 1);
 }
 
@@ -122,8 +122,8 @@ TEST(NotchFilterTest, HarmonicNotchTest)
                 v = f.apply(v);
             }
             if (s >= s/10) {
-                integrals[i].in += fabsf(sample) * dt;
-                integrals[i].out += fabsf(v) * dt;
+                integrals[i].in += fabsF(sample) * dt;
+                integrals[i].out += fabsF(v) * dt;
             }
             if (sample >= 0 && integrals[i].last_in < 0) {
                 integrals[i].last_crossing = s;

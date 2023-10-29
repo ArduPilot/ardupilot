@@ -1,13 +1,11 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
-
-#ifndef AP_RANGEFINDER_MAVLINK_ENABLED
-#define AP_RANGEFINDER_MAVLINK_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_MAVLINK_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 
 // Data timeout
 #define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500
@@ -33,6 +31,10 @@ public:
     int16_t max_distance_cm() const override;
     int16_t min_distance_cm() const override;
 
+    // Get the reading confidence
+    // 100 is best quality, 0 is worst
+    WARN_IF_UNUSED bool get_signal_quality_pct(int8_t &quality_pct) const override;
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -45,6 +47,7 @@ private:
     uint16_t distance_cm;
     uint16_t _max_distance_cm;
     uint16_t _min_distance_cm;
+    int8_t signal_quality;
 
     // start a reading
     static bool start_reading(void);

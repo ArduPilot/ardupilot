@@ -1,5 +1,6 @@
 #include "mode.h"
 #include "Plane.h"
+#include <GCS_MAVLink/GCS.h>
 
 /*
   mode takeoff parameters
@@ -34,7 +35,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: DIST
     // @DisplayName: Takeoff mode distance
-    // @Description: This is the distance from the takeoff location where the plane will loiter. The loiter point will be in the direction of takeoff (the direction the plane is facing when the motor starts)
+    // @Description: This is the distance from the takeoff location where the plane will loiter. The loiter point will be in the direction of takeoff (the direction the plane is facing when the plane begins takeoff)
     // @Range: 0 500
     // @Increment: 1
     // @Units: m
@@ -150,6 +151,11 @@ void ModeTakeoff::update()
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();
+        //check if in long failsafe, if it is recall long failsafe now to get fs action via events call
+        if (plane.long_failsafe_pending) {
+        plane.long_failsafe_pending = false;
+        plane.failsafe_long_on_event(FAILSAFE_LONG, ModeReason::MODE_TAKEOFF_FAILSAFE);
+        }
     }
 }
 

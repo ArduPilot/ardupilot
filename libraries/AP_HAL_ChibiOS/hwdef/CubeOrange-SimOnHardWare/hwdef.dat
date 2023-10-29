@@ -6,4 +6,7 @@ include ../include/SimOnHW.inc
 # short board name override (23 chars)
 define CHIBIOS_SHORT_BOARD_NAME "CubeOrangeSimOnHardWare"
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
 AUTOBUILD_TARGETS Copter

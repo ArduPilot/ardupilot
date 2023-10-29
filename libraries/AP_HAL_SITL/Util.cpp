@@ -1,6 +1,9 @@
 #include "Util.h"
 #include <sys/time.h>
 #include <AP_Param/AP_Param.h>
+#include "RCOutput.h"
+
+extern const AP_HAL::HAL& hal;
 
 #ifdef WITH_SITL_TONEALARM
 HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
@@ -143,11 +146,12 @@ void *HALSITL::Util::heap_realloc(void *heap_ptr, void *ptr, size_t old_size, si
 #if !defined(HAL_BUILD_AP_PERIPH)
 enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
 {
-    const SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return AP_HAL::Util::SAFETY_NONE;
-    }
-    return sitl->safety_switch_state();
+#define HAL_USE_PWM 1
+#if HAL_USE_PWM
+    return ((RCOutput *)hal.rcout)->_safety_switch_state();
+#else
+    return SAFETY_NONE;
+#endif
 }
 
 void HALSITL::Util::set_cmdline_parameters()

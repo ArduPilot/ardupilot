@@ -130,7 +130,7 @@ for t in $CI_BUILD_TARGET; do
     fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
-        $waf configure --board sitl --force-32bit
+        $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
         continue
@@ -161,6 +161,10 @@ for t in $CI_BUILD_TARGET; do
     fi
     if [ "$t" == "sitltest-sub" ]; then
         run_autotest "Sub" "build.Sub" "test.Sub"
+        continue
+    fi
+    if [ "$t" == "sitltest-blimp" ]; then
+        run_autotest "Blimp" "build.Blimp" "test.Blimp"
         continue
     fi
 
@@ -267,7 +271,7 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         continue
     fi
-    
+
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
         $waf configure --Werror --board mRoX21-777
@@ -336,9 +340,10 @@ for t in $CI_BUILD_TARGET; do
         $waf clean
         $waf copter
         $waf plane
+        $waf tests
         continue
     fi
-    
+
     if [ "$t" == "fmuv2-plane" ]; then
         echo "Building fmuv2 plane"
         $waf configure --board fmuv2
@@ -366,11 +371,11 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
-        
+
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
-        
+
         $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
@@ -406,7 +411,7 @@ for t in $CI_BUILD_TARGET; do
         ./Tools/scripts/build_bootloaders.py --signing-key testkey_public_key.dat MatekL431-DShot
         continue
     fi
-    
+
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
@@ -415,7 +420,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "astyle-cleanliness" ]; then
         echo "Checking AStyle code cleanliness"
-        ./Tools/scripts/run_astyle.py
+        ./Tools/scripts/run_astyle.py --dry-run
         continue
     fi
 

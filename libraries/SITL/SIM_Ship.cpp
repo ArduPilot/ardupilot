@@ -16,9 +16,11 @@
   simulate ship takeoff/landing
 */
 
-#include "SIM_Ship.h"
+#include "SIM_config.h"
 
 #if AP_SIM_SHIP_ENABLED
+
+#include "SIM_Ship.h"
 
 #include "SITL.h"
 
@@ -176,9 +178,10 @@ void ShipSim::send_report(void)
             0,
             0};
         mavlink_message_t msg;
-        mavlink_msg_heartbeat_encode(
+        mavlink_msg_heartbeat_encode_status(
             sys_id.get(),
             component_id,
+            &mav_status,
             &msg,
             &heartbeat);
         uint8_t buf[300];
@@ -219,9 +222,10 @@ void ShipSim::send_report(void)
             uint16_t(ship.heading_deg*100)
         };
         mavlink_message_t msg;
-        mavlink_msg_global_position_int_encode(
+        mavlink_msg_global_position_int_encode_status(
             sys_id,
             component_id,
+            &mav_status,
             &msg,
             &global_position_int);
         uint8_t buf[300];
@@ -238,9 +242,10 @@ void ShipSim::send_report(void)
             0, 0, ship.yaw_rate
         };
         mavlink_message_t msg;
-        mavlink_msg_attitude_encode(
+        mavlink_msg_attitude_encode_status(
             sys_id,
             component_id,
+            &mav_status,
             &msg,
             &attitude);
         uint8_t buf[300];

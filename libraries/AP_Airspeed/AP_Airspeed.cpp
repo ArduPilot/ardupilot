@@ -16,6 +16,10 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include "AP_Airspeed.h"
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -152,7 +156,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
     // @Param: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
-    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibraions before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
     // @Units: %
     // @User: Advanced
@@ -605,6 +609,14 @@ void AP_Airspeed::read(uint8_t i)
         return;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
+    /*
+      get the healthy state before we call get_pressure() as
+      get_pressure() overwrites the healthy state
+     */
+    bool prev_healthy = state[i].healthy;
+#endif
+
     float raw_pressure = get_pressure(i);
     float airspeed_pressure = raw_pressure - get_offset(i);
 
@@ -612,7 +624,6 @@ void AP_Airspeed::read(uint8_t i)
     state[i].corrected_pressure = airspeed_pressure;
 
 #ifndef HAL_BUILD_AP_PERIPH
-    bool prev_healthy = state[i].healthy;
     if (state[i].cal.start_ms != 0) {
         update_calibration(i, raw_pressure);
     }
@@ -621,7 +632,7 @@ void AP_Airspeed::read(uint8_t i)
     if (!prev_healthy) {
         // if the previous state was not healthy then we should not
         // use an IIR filter, otherwise a bad reading will last for
-        // some time after the sensor becomees healthy again
+        // some time after the sensor becomes healthy again
         state[i].filtered_pressure = airspeed_pressure;
     } else {
         state[i].filtered_pressure = 0.7f * state[i].filtered_pressure + 0.3f * airspeed_pressure;
@@ -921,3 +932,5 @@ AP_Airspeed *airspeed()
 }
 
 };
+
+#endif  // AP_AIRSPEED_ENABLED

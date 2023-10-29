@@ -101,7 +101,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 #if HAL_GCS_ENABLED
-    bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_can_frame(const mavlink_message_t &msg);
     void handle_can_filter_modify(const mavlink_message_t &msg);
 #endif
@@ -141,7 +141,6 @@ private:
 
     private:
         AP_Int8 _driver_type;
-        AP_CANDriver* _testcan;
         AP_CANDriver* _uavcan;
         AP_CANDriver* _piccolocan;
     };

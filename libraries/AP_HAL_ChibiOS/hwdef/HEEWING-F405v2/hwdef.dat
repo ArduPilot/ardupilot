@@ -1,0 +1,11 @@
+# hw definition file for HEEWING F405
+
+include ../HEEWING-F405/hwdef.dat
+
+# v2 has onboard dataflash logging
+
+PC14 FLASH_CS  CS
+
+SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ  32*MHZ
+
+define HAL_LOGGING_DATAFLASH_ENABLED 1

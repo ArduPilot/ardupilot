@@ -21,9 +21,36 @@
 class AC_PID {
 public:
 
+    struct Defaults {
+        float p;
+        float i;
+        float d;
+        float ff;
+        float imax;
+        float filt_T_hz;
+        float filt_E_hz;
+        float filt_D_hz;
+        float srmax;
+        float srtau;
+    };
+
     // Constructor for PID
     AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
            float initial_srmax=0, float initial_srtau=1.0);
+    AC_PID(const AC_PID::Defaults &defaults) :
+        AC_PID(
+            defaults.p,
+            defaults.i,
+            defaults.d,
+            defaults.ff,
+            defaults.imax,
+            defaults.filt_T_hz,
+            defaults.filt_E_hz,
+            defaults.filt_D_hz,
+            defaults.srmax,
+            defaults.srtau
+            )
+        { }
 
     CLASS_NO_COPY(AC_PID);
 
@@ -71,10 +98,12 @@ public:
     void operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz);
 
     // get accessors
+    const AP_Float &kP() const { return _kp; }
     AP_Float &kP() { return _kp; }
     AP_Float &kI() { return _ki; }
     AP_Float &kD() { return _kd; }
     AP_Float &kIMAX() { return _kimax; }
+    AP_Float &kPDMAX() { return _kpdmax; }
     AP_Float &ff() { return _kff;}
     AP_Float &filt_T_hz() { return _filt_T_hz; }
     AP_Float &filt_E_hz() { return _filt_E_hz; }
@@ -82,6 +111,7 @@ public:
     AP_Float &slew_limit() { return _slew_rate_max; }
 
     float imax() const { return _kimax.get(); }
+    float pdmax() const { return _kpdmax.get(); }
     float get_filt_T_alpha(float dt) const;
     float get_filt_E_alpha(float dt) const;
     float get_filt_D_alpha(float dt) const;
@@ -92,6 +122,7 @@ public:
     void kD(const float v) { _kd.set(v); }
     void ff(const float v) { _kff.set(v); }
     void imax(const float v) { _kimax.set(fabsf(v)); }
+    void pdmax(const float v) { _kpdmax.set(fabsf(v)); }
     void filt_T_hz(const float v);
     void filt_E_hz(const float v);
     void filt_D_hz(const float v);
@@ -132,6 +163,7 @@ protected:
     AP_Float _kd;
     AP_Float _kff;
     AP_Float _kimax;
+    AP_Float _kpdmax;
     AP_Float _filt_T_hz;         // PID target filter frequency in Hz
     AP_Float _filt_E_hz;         // PID error filter frequency in Hz
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz

@@ -2,10 +2,12 @@
   block based logging, for boards with flash logging
  */
 
-#include "AP_Logger_Block.h"
+#include "AP_Logger_config.h"
 
 #if HAL_LOGGING_BLOCK_ENABLED
 
+#include "AP_Logger_Block.h"
+#include "AP_Logger.h"
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
@@ -880,9 +882,7 @@ void AP_Logger_Block::io_timer(void)
             io_timer_heartbeat = AP_HAL::millis();
             next_sector++;
         }
-        uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
-            blocks_erased++;
             SectorErase(next_sector / sectors_in_block);
             io_timer_heartbeat = AP_HAL::millis();
             next_sector += sectors_in_block;

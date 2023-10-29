@@ -1,3 +1,152 @@
+Release 4.4.2 23th October 2023
+-------------------------------
+
+Changes from 4.4.1
+
+- BETAFPV-F405 support
+- MambaF405v2 battery and serial setup corrected
+- mRo Control Zero OEM H7 bdshot support
+- SpeedyBee-F405-Wing gets VTX power control
+- SpeedyBee-F405-Mini support
+- T-Motor H743 Mini support
+- EKF3 supports baroless boards
+- INA battery monitor supports config of shunt resistor used (see BATTx_SHUNT)
+- BMI088 IMU error value handling fixed to avoid occasional negative spike
+- Dev environment CI autotest stability improvements
+- OSD correct DisplayPort BF MSP symbols
+- OSD option to correct direction arrows for BF font set
+- Sensor status reporting to GCS fixed for baroless boards
+- added opendroneid option to auto-store IDs in persistent flash
+- fixed TECS bug that could cause inability to climb or descend
+- fixed race condition when starting TECS controlled mode
+- fixed RTL with rally point and terrain follow
+- protect against invalid data in SBUS for first 4 channels
+- added build type to VER message
+- allow moving baseline rover at 3Hz
+- use RC deadzones in stick mixing
+
+
+Release 4.4.1 26th September 2023
+---------------------------------
+
+No changes from beta2
+
+Release 4.4.1-beta2 12th September 2023
+--------------------------------------
+
+Changes from 4.4.1-beta1
+
+- Airbotf4 features minimised to build for 4.4
+- ChibiOS clock fix for 480Mhz H7 boards (affected FDCAN)
+- H750 external flash optimisations for to lower CPU load
+- MambaF405Mini fixes to match manufacturer's recommended wiring
+- RADIX2 HD support
+- RPI hardware version check fix
+- YJUAV_A6SE support
+
+Release 4.4.1-beta1 5th September 2023
+--------------------------------------
+
+Changes from 4.4.1
+
+- support Himark DroneCAN servos
+- support Hobbywing DroneCAN ESCs
+- fixed control surface deflection on quadplanes in VTOL takeoff wait
+- fixed bug in parameter default handling in SITL
+- allow selection of mission sdcard storage on custom.ardupilot.org
+- added support for SDMODELH7V1
+- fixed battery monitor default for QiotekZealotF427 and QiotekZealotH743
+- support 8 bit directional dshot channels on KakuteH7-wing
+- improved handling of high vibration in EKF3 with new EK3_GLITCH_RADIUS options
+- allow reset of battery SoC for DroneCAN battery monitors
+- update GPIOs for Navigator board in HAL_Linux
+- pull RTS lines low on Pixhawk6C on startup
+- added log_file_content in scripting for aerobatics
+- added asymmetry factor for skid steering on rovers
+- updated defaults for luminousbee5 boards
+
+Happy flying!
+
+Release 4.4.0 18th August 2023
+------------------------------
+
+No changes from beta5
+
+Release 4.4.0-beta5 11th August 2023
+------------------------------------
+
+Changes from 4.4.0-beta4
+
+- fixed handling of missing DroneCAN airspeed packet
+- fixed reset of target altitude in plane GUIDED mode
+- added SIYI N7 flight controller
+- fixed auto-enable of fence with forced arm
+- fixed race condition that caused notch filter gyro glitches
+- fixed bug with RTK injection for DroneCAN
+
+Release 4.4.0 beta4
+-------------------
+
+Changes from 4.4.0-beta3
+
+1) flight controller specific changes
+    - Diatone-Mamba-MK4-H743v2 uses SPL06 baro (was DPS280)
+    - DMA for I2C disabled on F7 and H7 boards
+    - Foxeer H743v1 default serial protocol config fixes
+    - HeeWing-F405 and F405v2 support
+    - iFlight BlitzF7 support
+2) Scripts may take action based on VTOL motor loss
+3) Bug fixes
+    - BLHeli returns battery status requested via MSP (avoids hang when using esc-configurator)
+    - CRSFv3 rescans at baudrates to avoid RX loss
+    - EK3_ABIAS_P_NSE param range fix
+    - Scripting restart memory corruption bug fixed
+    - Siyi A8/ZR10 driver fix to avoid crash if serial port not configured
+
+Release 4.4.0 beta3
+-------------------
+
+This is the third beta of plane 4.4.0. This includes some important
+fixes since beta2
+
+1) flight controller specific changes
+ - Holybro KakuteH7-Wing support
+ - JFB100 external watchdog GPIO support added
+ - Pixhawk1-bdshot support
+ - Pixhawk6X-bdshot support
+ - SpeedyBeeF4 loses bdshot support
+
+3) Camera and Gimbal related changes
+ - DO_SET_ROI_NONE command support added
+
+4) Bug fixes
+ - ADSB sensor loss of transceiver message less spammy
+ - AutoTune Yaw rate max fixed
+ - EKF vertical velocity reset fixed on loss of GPS
+ - GPS pre-arm failure message clarified
+ - SERVOx_PROTOCOL "SToRM32 Gimbal Serial" value renamed to "Gimbal" because also used by Siyi
+ - SERIALx_OPTION "Swap" renamed to "SwapTXRX" for clarity
+ - SBF GPS ellipsoid height fixed
+ - Ublox M10S GPS auto configuration fixed
+ - ZigZag mode user takeoff fixed (users could not takeoff in ZigZag mode previously)
+ - fixed memory corruption bug with scripting restart
+
+5) Device drivers
+ - added LP5562 I2C LED driver
+ - added IS31FL3195 LED driver
+
+6) Applet changes
+ - added QUIK_MAX_REDUCE parameter to VTOL quicktune lua applet
+
+7) Plane specific changes
+ - fixed takeoff mode to ensure climb to takeoff alt before turning
+ - fixed error in quadplane wait for rudder neutral
+ - improved handling of forward throttle during VTOL landing
+ - fixed TECS state reset in VTOL auto modes
+ - fixed early exit from loiter to alt
+ - fixed display of started airspeed wait on forward transition
+
+
 Release 4.4.0 beta2
 -------------------
 
@@ -163,7 +312,7 @@ of changes. Many thanks to all the people who have contributed!
     - Gimbal/Mount2 can be moved to retracted or neutral position
     - Gremsy ZIO support
     - IMAGE_START_CAPTURE, SET_CAMERA_ZOOM/FOCUS, VIDEO_START/STOP_CAPTURE command support
-    - Paramters renamed and rescaled
+    - Parameters renamed and rescaled
         i) CAM_TRIGG_TYPE renamed to CAM1_TYPE and options have changed
         ii) CAM_DURATION renamed to CAM1_DURATION and scaled in seconds
         iii) CAM_FEEDBACK_PIN/POL renamed to CAM1_FEEBAK_PIN/POL

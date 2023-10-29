@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 #include <AP_Common/AP_FWVersion.h>
 
@@ -23,10 +27,9 @@ private:
     void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
+    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
-
-    uint8_t sysid_my_gcs() const override { return 1; }
 
     // dummy information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
@@ -73,3 +76,5 @@ private:
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
+
+#endif  // HAL_GCS_ENABLED

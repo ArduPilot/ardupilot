@@ -77,9 +77,6 @@ define HAL_I2C_INTERNAL_MASK 0
 
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7 OTG2
 
-# default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 telem1
 PD3 USART2_CTS USART2
@@ -235,10 +232,6 @@ SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
 SPIDEV bmi088_g SPI5 DEVID1  BMI088_GYRO_CS  MODE3 10*MHZ 10*MHZ
 SPIDEV bmi088_a SPI5 DEVID2  BMI088_ACCEL_CS MODE3 10*MHZ 10*MHZ
-
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1

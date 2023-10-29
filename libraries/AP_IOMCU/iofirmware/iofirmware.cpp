@@ -20,7 +20,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include "iofirmware.h"
-#include "hal.h"
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include "analog.h"
@@ -39,6 +38,9 @@ static AP_IOMCU_FW iomcu;
 void setup();
 void loop();
 
+#undef CH_DBG_ENABLE_STACK_CHECK
+#define CH_DBG_ENABLE_STACK_CHECK FALSE
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
@@ -49,82 +51,199 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 */
 #define IOMCU_ENABLE_RESET_TEST 0
 
+// enable timing GPIO pings
+#ifdef IOMCU_LOOP_TIMING_DEBUG
+#undef TOGGLE_PIN_DEBUG
+#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#endif
+
 // pending events on the main thread
 enum ioevents {
-    IOEVENT_PWM=1,
+    IOEVENT_PWM = EVENT_MASK(1),
+    IOEVENT_TX_BEGIN = EVENT_MASK(2),
+    IOEVENT_TX_END = EVENT_MASK(3),
 };
 
-static void dma_rx_end_cb(UARTDriver *uart)
+// see https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx for a discussion of how to run
+// separate tx and rx streams
+static void setup_rx_dma(hal_uart_driver* uart)
 {
-    osalSysLockFromISR();
-    uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
-
-    (void)uart->usart->SR;
-    (void)uart->usart->DR;
-    (void)uart->usart->DR;
+    uart->usart->CR3 &= ~USART_CR3_DMAR;
     dmaStreamDisable(uart->dmarx);
-    dmaStreamDisable(uart->dmatx);
-
-    iomcu.process_io_packet();
-
     dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
     dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
+    dmaStreamSetPeripheral(uart->dmarx, &(uart->usart->DR));
     dmaStreamSetMode(uart->dmarx, uart->dmarxmode    | STM32_DMA_CR_DIR_P2M |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(uart->dmarx);
     uart->usart->CR3 |= USART_CR3_DMAR;
-
-    dmaStreamSetMemory0(uart->dmatx, &iomcu.tx_io_packet);
-    dmaStreamSetTransactionSize(uart->dmatx, iomcu.tx_io_packet.get_size());
-    dmaStreamSetMode(uart->dmatx, uart->dmatxmode    | STM32_DMA_CR_DIR_M2P |
-                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-    dmaStreamEnable(uart->dmatx);
-    uart->usart->CR3 |= USART_CR3_DMAT;
-    osalSysUnlockFromISR();
 }
 
-static void idle_rx_handler(UARTDriver *uart)
+static void setup_tx_dma(hal_uart_driver* uart)
 {
-    volatile uint16_t sr = uart->usart->SR;
+    uart->usart->CR3 &= ~USART_CR3_DMAT;
+    dmaStreamDisable(uart->dmatx);
+    dmaStreamSetMemory0(uart->dmatx, &iomcu.tx_io_packet);
+    dmaStreamSetTransactionSize(uart->dmatx, iomcu.tx_io_packet.get_size());
+    // starting the UART allocates the peripheral statically, so we need to reinstate it after swapping
+    dmaStreamSetPeripheral(uart->dmatx, &(uart->usart->DR));
+    dmaStreamSetMode(uart->dmatx, uart->dmatxmode    | STM32_DMA_CR_DIR_M2P |
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+    // enable transmission complete interrupt
+    uart->usart->SR = ~USART_SR_TC;
+    uart->usart->CR1 |= USART_CR1_TCIE;
+
+    dmaStreamEnable(uart->dmatx);
+
+    uart->usart->CR3 |= USART_CR3_DMAT;
+}
+
+static void dma_rx_end_cb(hal_uart_driver *uart)
+{
+    chSysLockFromISR();
+    uart->usart->CR3 &= ~USART_CR3_DMAR;
+
+    (void)uart->usart->SR;  // sequence to clear IDLE status
+    (void)uart->usart->DR;
+    (void)uart->usart->DR;
+    dmaStreamDisable(uart->dmarx);
+
+    iomcu.process_io_packet();
+
+    setup_rx_dma(uart);
+
+#if AP_HAL_SHARED_DMA_ENABLED
+    // indicate that a response needs to be sent
+    uint32_t mask = chEvtGetAndClearEventsI(IOEVENT_TX_BEGIN);
+    if (mask) {
+        iomcu.reg_status.err_lock++;
+    }
+    // the FMU code waits 10ms for a reply so this should be easily fast enough
+    chEvtSignalI(iomcu.thread_ctx, IOEVENT_TX_BEGIN);
+#else
+    setup_tx_dma(uart);
+#endif
+    chSysUnlockFromISR();
+}
+
+static void dma_tx_end_cb(hal_uart_driver *uart)
+{
+    // DMA stream has already been disabled at this point
+    uart->usart->CR3 &= ~USART_CR3_DMAT;
+
+    (void)uart->usart->SR;
+    (void)uart->usart->DR;
+    (void)uart->usart->DR;
+
+    TOGGLE_PIN_DEBUG(108);
+    TOGGLE_PIN_DEBUG(108);
+
+    chEvtSignalI(iomcu.thread_ctx, IOEVENT_TX_END);
+}
+
+/* replacement for ChibiOS uart_lld_serve_interrupt() */
+static void idle_rx_handler(hal_uart_driver *uart)
+{
+    volatile uint16_t sr;
+    sr = uart->usart->SR; /* SR reset step 1.*/
+    uint32_t cr1 = uart->usart->CR1;
 
     if (sr & (USART_SR_LBD | USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
               USART_SR_NE |		/* noise error - we have lost a byte due to noise */
               USART_SR_FE |
               USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
         /* send a line break - this will abort transmission/reception on the other end */
-        osalSysLockFromISR();
+        chSysLockFromISR();
+
         uart->usart->SR = ~USART_SR_LBD;
-        uart->usart->CR1 |= USART_CR1_SBK;
+        uart->usart->CR1 = cr1 | USART_CR1_SBK;
         iomcu.reg_status.num_errors++;
         iomcu.reg_status.err_uart++;
-        uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
-        (void)uart->usart->SR;
-        (void)uart->usart->DR;
-        (void)uart->usart->DR;
-        dmaStreamDisable(uart->dmarx);
-        dmaStreamDisable(uart->dmatx);
 
-        dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
-        dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
-        dmaStreamSetMode(uart->dmarx, uart->dmarxmode    | STM32_DMA_CR_DIR_P2M |
-                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-        dmaStreamEnable(uart->dmarx);
-        uart->usart->CR3 |= USART_CR3_DMAR;
-        osalSysUnlockFromISR();
+        uart->usart->CR3 &= ~USART_CR3_DMAR;
+
+        (void)uart->usart->SR;  // clears ORE | FE
+        (void)uart->usart->DR;
+        (void)uart->usart->DR;
+        setup_rx_dma(uart);
+
+        chSysUnlockFromISR();
         return;
     }
 
+    if ((sr & USART_SR_TC) && (cr1 & USART_CR1_TCIE)) {
+        chSysLockFromISR();
+
+        /* TC interrupt cleared and disabled.*/
+        uart->usart->SR &= ~USART_SR_TC;
+        uart->usart->CR1 = cr1 & ~USART_CR1_TCIE;
+
+        /* End of transmission, a callback is generated.*/
+        _uart_tx2_isr_code(uart);
+
+        chSysUnlockFromISR();
+    }
+
     if (sr & USART_SR_IDLE) {
+        /* the DMA size is the maximum packet size, but smaller packets are perfectly possible leading to 
+           an IDLE ISR. The data still must be processed. */
         dma_rx_end_cb(uart);
     }
 }
+
+using namespace ChibiOS;
+
+#if AP_HAL_SHARED_DMA_ENABLED
+/*
+ copy of uart_lld_serve_tx_end_irq() from ChibiOS hal_uart_lld
+ that is re-instated upon switching the DMA channel
+ */
+static void uart_lld_serve_tx_end_irq(hal_uart_driver *uart, uint32_t flags)
+{
+    dmaStreamDisable(uart->dmatx);
+
+    /* A callback is generated, if enabled, after a completed transfer.*/
+    _uart_tx1_isr_code(uart);
+}
+
+void AP_IOMCU_FW::tx_dma_allocate(Shared_DMA *ctx)
+{
+    hal_uart_driver *uart = &UARTD2;
+    chSysLock();
+    if (uart->dmatx == nullptr) {
+        uart->dmatx = dmaStreamAllocI(STM32_UART_USART2_TX_DMA_STREAM,
+                                        STM32_UART_USART2_IRQ_PRIORITY,
+                                        (stm32_dmaisr_t)uart_lld_serve_tx_end_irq,
+                                        (void *)uart);
+    }
+    chSysUnlock();
+}
+
+/*
+  deallocate DMA channel
+ */
+void AP_IOMCU_FW::tx_dma_deallocate(Shared_DMA *ctx)
+{
+    hal_uart_driver *uart = &UARTD2;
+    chSysLock();
+    if (uart->dmatx != nullptr) {
+        // defensively make sure the DMA is fully shutdown before swapping
+        uart->usart->CR3 &= ~USART_CR3_DMAT;
+        dmaStreamDisable(uart->dmatx);
+        dmaStreamSetPeripheral(uart->dmatx, nullptr);
+        dmaStreamFreeI(uart->dmatx);
+        uart->dmatx = nullptr;
+    }
+    chSysUnlock();
+}
+#endif // AP_HAL_SHARED_DMA_ENABLED
 
 /*
  * UART driver configuration structure.
  */
 static UARTConfig uart_cfg = {
     nullptr,
-    nullptr,
+    dma_tx_end_cb,
     dma_rx_end_cb,
     nullptr,
     nullptr,
@@ -140,16 +259,19 @@ void setup(void)
 {
     hal.rcin->init();
     hal.rcout->init();
-
-    for (uint8_t i = 0; i< 14; i++) {
-        hal.rcout->enable_ch(i);
-    }
-
     iomcu.init();
 
     iomcu.calculate_fw_crc();
+
     uartStart(&UARTD2, &uart_cfg);
     uartStartReceive(&UARTD2, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
+#if AP_HAL_SHARED_DMA_ENABLED
+    iomcu.tx_dma_handle->unlock();
+#endif
+    // disable the pieces from the UART which will get enabled later
+    chSysLock();
+    UARTD2.usart->CR3 &= ~USART_CR3_DMAT;
+    chSysUnlock();
 }
 
 void loop(void)
@@ -163,8 +285,25 @@ void AP_IOMCU_FW::init()
     // old NuttX based firmwares
     config.protocol_version = IOMCU_PROTOCOL_VERSION;
     config.protocol_version2 = IOMCU_PROTOCOL_VERSION2;
+    config.mcuid = (*(uint32_t *)DBGMCU_BASE);
+#if defined(STM32F103xB) || defined(STM32F103x8)
+    if (config.mcuid == 0) {
+        // Errata 2.2.2 - Debug registers cannot be read by user software
+        config.mcuid = 0x20036410;  // STM32F10x (Medium Density) rev Y
+    }
+#endif
+    config.cpuid = SCB->CPUID;
 
     thread_ctx = chThdGetSelfX();
+
+#if AP_HAL_SHARED_DMA_ENABLED
+    tx_dma_handle = new ChibiOS::Shared_DMA(STM32_UART_USART2_TX_DMA_STREAM, SHARED_DMA_NONE,
+                        FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_allocate, void, Shared_DMA *),
+                        FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_deallocate, void, Shared_DMA *));
+    tx_dma_handle->lock();
+    // deallocate so that the uart initializes correctly
+    tx_dma_deallocate(tx_dma_handle);
+#endif
 
     if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
         has_heater = true;
@@ -184,7 +323,7 @@ void AP_IOMCU_FW::init()
     palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
     SPEKTRUM_POWER(1);
 
-    // we do no allocations after setup completes
+    // we generally do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
 
     if (hal.util->was_watchdog_safety_off()) {
@@ -194,11 +333,112 @@ void AP_IOMCU_FW::init()
 }
 
 
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
+    extern uint32_t __main_stack_base__[];
+    extern uint32_t __main_stack_end__[];
+    uint32_t stklimit = (uint32_t)__main_stack_end__;
+    uint32_t stkbase  = (uint32_t)__main_stack_base__;
+    uint32_t *crawl   = (uint32_t *)stkbase;
+
+    while (*crawl == 0x55555555 && crawl < (uint32_t *)stklimit) {
+        crawl++;
+    }
+    uint32_t free = (uint32_t)crawl - stkbase;
+    chDbgAssert(free > 0, "mstack exhausted");
+    mstack = (uint16_t)free;
+
+    extern uint32_t __main_thread_stack_base__[];
+    extern uint32_t __main_thread_stack_end__[];
+    stklimit = (uint32_t)__main_thread_stack_end__;
+    stkbase  = (uint32_t)__main_thread_stack_base__;
+    crawl   = (uint32_t *)stkbase;
+
+    while (*crawl == 0x55555555 && crawl < (uint32_t *)stklimit) {
+        crawl++;
+    }
+    free = (uint32_t)crawl - stkbase;
+    chDbgAssert(free > 0, "pstack exhausted");
+    pstack = (uint16_t)free;
+}
+#endif /* CH_DBG_ENABLE_STACK_CHECK == TRUE */
+
+/*
+ Update loop design.
+
+ Considerations - the F100 is quite slow and so processing time needs to be used effectively.
+ The CPU time slices required by dshot are generally faster than those required for other processing.
+ Dshot requires even updates at at least 1Khz and generally faster if SERVO_DSHOT_RATE is used.
+ The two most time sensitive regular functions are (1) PWM updates which run at loop rate triggered from the FMU
+ (and thus require efficient code page write) and (2) rcin updates which run at a fixed 1Khz cycle (a speed
+ which is assumed by the rcin protocol handlers) and require efficient code read. The FMU sends code page
+ requests which require a response within 10ms in order to prevent the IOMCU being considered to have failed,
+ however code page requests are always initiated by the FMU and so the IOMCU only ever needs to be ready
+ to read requests - writing responses are always in response to a request. Finally, PWM channels 3-4 share a DMA
+ channel with UART TX and so access needs to be mediated.
+
+ Design -
+ 1. requests are read using circular DMA. In other words the RX side of the UART is always ready. Once
+ a request has been processed DMA is immediately set up for a new request.
+ 2. responses are only ever sent in response to a request. As soon as a request is received the ISR only
+ ever requests that a response be sent - it never actually sends a response.
+ 3. The update loop waits for four different events:
+    3a - a request has been received and should be processed. This does not require the TX DMA lock.
+    3b - a response needs to be sent. This requires the TX DMA lock.
+    3c - a response has been sent. This allows the TX DMA lock to be released.
+    3d - an out of band PWM request, usually triggered by a failsafe needs to be processed.
+ Since requests are processed continuously it is possible for 3b and 3c to occur simultaneously. Since the
+ TX lock is already held to send the previous response, there is no need to do anything with the lock in order
+ to process the next response.
+
+ Profiling shows that sending a response takes very little time - 10s of microseconds - and so a response is sent
+ if required at the beginning of the update. This means that by the end of the update there is a very high chance
+ that the response will have already been sent and this is therefore checked. If the response has been sent the
+ lock is released. If for some reason the response has not gone out, as soon as it does an event will be posted
+ and the update loop will run again.
+
+ This design means that on average the update loop is idle with the TX DMA channel unlocked. This maximises the
+ time that dshot can run uninterrupted leading to very efficient and even output.
+
+ Finally the update loop has a timeout which forces updates to progress even in the absence of requests from the
+ FMU. Since responses will always be triggered in a timely fashion, regardlesss of the timeout, this can be
+ set relatively long.
+
+ If compiled without sharing, DMA - and thus dshot - is not used on channels 3-4, there are no locks and responses
+ are always setup in the request ISR handler.
+*/
 void AP_IOMCU_FW::update()
 {
+#if CH_CFG_ST_FREQUENCY == 1000000
+    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END | IOEVENT_TX_BEGIN, TIME_US2I(1000));
+#else
     // we are not running any other threads, so we can use an
     // immediate timeout here for lowest latency
-    eventmask_t mask = chEvtWaitAnyTimeout(~0, TIME_IMMEDIATE);
+    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END, TIME_IMMEDIATE);
+#endif
+
+    TOGGLE_PIN_DEBUG(107);
+
+    iomcu.reg_status.total_ticks++;
+    if (mask) {
+        iomcu.reg_status.total_events++;
+    }
+
+#if AP_HAL_SHARED_DMA_ENABLED
+    // See discussion above
+    if ((mask & IOEVENT_TX_BEGIN) && !(mask & IOEVENT_TX_END)) {        // 3b - lock required to send response
+        tx_dma_handle->lock();
+    } else if (!(mask & IOEVENT_TX_BEGIN) && (mask & IOEVENT_TX_END)) { // 3c - response sent, lock can be released
+        tx_dma_handle->unlock();
+    }   // else 3b and 3c   - current lock required for new response
+
+    // send a response if required
+    if (mask & IOEVENT_TX_BEGIN) {
+        chSysLock();
+        setup_tx_dma(&UARTD2);
+        chSysUnlock();
+    }
+#endif
 
     // we get the timestamp once here, and avoid fetching it
     // within the DMA callbacks
@@ -209,16 +449,16 @@ void AP_IOMCU_FW::update()
         hal.scheduler->reboot(true);
         while (true) {}
     }
-
-    if ((mask & EVENT_MASK(IOEVENT_PWM)) ||
+    if ((mask & IOEVENT_PWM) ||
         (last_safety_off != reg_status.flag_safety_off)) {
         last_safety_off = reg_status.flag_safety_off;
         pwm_out_update();
     }
 
     uint32_t now = last_ms;
-    reg_status.timestamp_ms = last_ms;
+    uint32_t now_us = AP_HAL::micros();
 
+    reg_status.timestamp_ms = last_ms;
     // output SBUS if enabled
     if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) &&
         reg_status.flag_safety_off &&
@@ -227,13 +467,12 @@ void AP_IOMCU_FW::update()
         sbus_last_ms = now;
         sbus_out_write(reg_servo.pwm, IOMCU_MAX_CHANNELS);
     }
-
     // handle FMU failsafe
     if (now - fmu_data_received_time > 200) {
         // we are not getting input from the FMU. Fill in failsafe values at 100Hz
         if (now - last_failsafe_ms > 10) {
             fill_failsafe_pwm();
-            chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+            chEvtSignal(thread_ctx, IOEVENT_PWM);
             last_failsafe_ms = now;
         }
         // turn amber on
@@ -243,27 +482,46 @@ void AP_IOMCU_FW::update()
         // turn amber off
         AMBER_SET(0);
     }
-
     // update status page at 20Hz
     if (now - last_status_ms > 50) {
         last_status_ms = now;
         page_status_update();
     }
 
-    // run remaining functions at 1kHz
-    if (now != last_loop_ms) {
-        last_loop_ms = now;
+    // run fast loop functions at 1Khz
+    if (now_us - last_fast_loop_us >= 1000)
+    {
+        last_fast_loop_us = now_us;
         heater_update();
         rcin_update();
-        safety_update();
-        rcout_mode_update();
         rcin_serial_update();
+    }
+
+    // run remaining functions at 100Hz
+    // these are all relatively expensive and take ~10ms to complete
+    // so there is no way they can effectively be run faster than 100Hz
+    if (now - last_slow_loop_ms > 10) {
+        last_slow_loop_ms = now;
+        safety_update();
+        rcout_config_update();
         hal.rcout->timer_tick();
         if (dsm_bind_state) {
             dsm_bind_step();
         }
         GPIO_write();
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+        stackCheck(reg_status.freemstack, reg_status.freepstack);
+#endif
     }
+#if AP_HAL_SHARED_DMA_ENABLED
+    // check whether a response has now been sent
+    mask = chEvtGetAndClearEvents(IOEVENT_TX_END);
+
+    if (mask) {
+        tx_dma_handle->unlock();
+    }
+#endif
+    TOGGLE_PIN_DEBUG(107);
 }
 
 void AP_IOMCU_FW::pwm_out_update()
@@ -341,7 +599,7 @@ void AP_IOMCU_FW::rcin_update()
         if (override_active) {
             fill_failsafe_pwm();
         }
-        chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+        chEvtSignal(thread_ctx, IOEVENT_PWM);
     }
 }
 
@@ -513,6 +771,14 @@ bool AP_IOMCU_FW::handle_code_write()
             reg_setup.pwm_defaultrate = rx_io_packet.regs[0];
             update_default_rate = true;
             break;
+        case PAGE_REG_SETUP_DSHOT_PERIOD:
+            reg_setup.dshot_period_us = rx_io_packet.regs[0];
+            reg_setup.dshot_rate = rx_io_packet.regs[1];
+            hal.rcout->set_dshot_period(reg_setup.dshot_period_us, reg_setup.dshot_rate);
+            break;
+        case PAGE_REG_SETUP_CHANNEL_MASK:
+            reg_setup.channel_mask = rx_io_packet.regs[0];
+            break;
         case PAGE_REG_SETUP_SBUS_RATE:
             reg_setup.sbus_rate = rx_io_packet.regs[0];
             sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
@@ -539,6 +805,11 @@ bool AP_IOMCU_FW::handle_code_write()
             if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
                 has_heater = true;
             }
+            break;
+
+        case PAGE_REG_SETUP_OUTPUT_MODE:
+            mode_out.mask = rx_io_packet.regs[0];
+            mode_out.mode = rx_io_packet.regs[1];
             break;
 
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
@@ -605,7 +876,7 @@ bool AP_IOMCU_FW::handle_code_write()
             i++;
         }
         fmu_data_received_time = last_ms;
-        chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+        chEvtSignalI(thread_ctx, IOEVENT_PWM);
         break;
     }
 
@@ -632,18 +903,23 @@ bool AP_IOMCU_FW::handle_code_write()
             return false;
         }
         memcpy(&GPIO, &rx_io_packet.regs[0] + rx_io_packet.offset, sizeof(GPIO));
-        if (GPIO.channel_mask != last_GPIO_channel_mask) {
-            for (uint8_t i=0; i<8; i++) {
-                if ((GPIO.channel_mask & (1U << i)) != 0) {
-                    hal.rcout->disable_ch(i);
-                    hal.gpio->pinMode(101+i, HAL_GPIO_OUTPUT);
-                } else {
-                    hal.rcout->enable_ch(i);
-                }
-            }
-            last_GPIO_channel_mask = GPIO.channel_mask;
-        }
         break;
+
+    case PAGE_DSHOT: {
+        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(dshot)/2) {
+            return false;
+        }
+        memcpy(((uint16_t *)&dshot)+offset, &rx_io_packet.regs[0], num_values*2);
+        if(dshot.telem_mask) {
+            hal.rcout->set_telem_request_mask(dshot.telem_mask);
+        }
+        if (dshot.command) {
+            hal.rcout->send_dshot_command(dshot.command, dshot.chan, dshot.command_timeout_ms, dshot.repeat_count, dshot.priority);
+        }
+
+        break;
+    }
 
     default:
         break;
@@ -758,26 +1034,71 @@ void AP_IOMCU_FW::safety_update(void)
 /*
   update hal.rcout mode if needed
  */
-void AP_IOMCU_FW::rcout_mode_update(void)
+void AP_IOMCU_FW::rcout_config_update(void)
 {
-    bool use_oneshot = (reg_setup.features & P_SETUP_FEATURES_ONESHOT) != 0;
-    if (use_oneshot && !oneshot_enabled) {
-        oneshot_enabled = true;
-        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
-    }
-    bool use_brushed = (reg_setup.features & P_SETUP_FEATURES_BRUSHED) != 0;
-    if (use_brushed && !brushed_enabled) {
-        brushed_enabled = true;
-        if (reg_setup.pwm_rates == 0) {
-            // default to 2kHz for all channels for brushed output
-            reg_setup.pwm_rates = 0xFF;
-            reg_setup.pwm_altrate = 2000;
-            hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+    // channels cannot be changed from within a lock zone
+    // so needs to be done here
+    if (GPIO.channel_mask != last_GPIO_channel_mask) {
+        for (uint8_t i=0; i<8; i++) {
+            if ((GPIO.channel_mask & (1U << i)) != 0) {
+                hal.rcout->disable_ch(i);
+                hal.gpio->pinMode(101+i, HAL_GPIO_OUTPUT);
+            } else {
+                hal.rcout->enable_ch(i);
+            }
         }
-        hal.rcout->set_esc_scaling(1000, 2000);
-        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
-        hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+        last_GPIO_channel_mask = GPIO.channel_mask;
     }
+
+    if (last_channel_mask != reg_setup.channel_mask) {
+        for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+            if (reg_setup.channel_mask & 1U << i) {
+                hal.rcout->enable_ch(i);
+            } else {
+                hal.rcout->disable_ch(i);
+            }
+        }
+        last_channel_mask = reg_setup.channel_mask;
+    }
+
+    // see if there is anything to do, we only support setting the mode for a particular channel once
+    if ((last_output_mode_mask & ~mode_out.mask) == mode_out.mask) {
+        return;
+    }
+
+    switch (mode_out.mode) {
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
+#if defined(STM32F103xB) || defined(STM32F103x8)
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
+#endif
+        hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
+        // enabling dshot changes the memory allocation
+        reg_status.freemem = hal.util->available_memory();
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
+        // setup to use a 1Hz frequency, so we only get output when we trigger
+        hal.rcout->set_freq(mode_out.mask, 1);
+        hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    case AP_HAL::RCOutput::MODE_PWM_BRUSHED:
+        // default to 2kHz for all channels for brushed output
+        hal.rcout->set_freq(mode_out.mask, 2000);
+        hal.rcout->set_esc_scaling(1000, 2000);
+        hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_freq(mode_out.mask, reg_setup.pwm_altrate);
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    default:
+        break;
+    }
+
+    uint32_t output_mask = 0;
+    reg_status.rcout_mode = hal.rcout->get_output_mode(output_mask);
+    reg_status.rcout_mask = uint8_t(0xFF & output_mask);
 }
 
 /*

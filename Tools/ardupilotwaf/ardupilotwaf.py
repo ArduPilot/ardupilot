@@ -64,6 +64,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Module',
     'AP_Button',
     'AP_ICEngine',
+    'AP_Networking',
     'AP_Frsky_Telem',
     'AP_FlashStorage',
     'AP_Relay',
@@ -114,6 +115,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_AIS',
     'AP_OpenDroneID',
     'AP_CheckFirmware',
+    'AP_ExternalControl',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -303,6 +305,8 @@ def ap_program(bld,
     for group in program_groups:
         _grouped_programs.setdefault(group, {}).update({tg.name : tg})
 
+    return tg
+
 
 @conf
 def ap_example(bld, **kw):
@@ -354,7 +358,7 @@ def ap_stlib_target(self):
     self.target = '#%s' % os.path.join('lib', self.target)
 
 @conf
-def ap_find_tests(bld, use=[]):
+def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
     if not bld.env.HAS_GTEST:
         return
 
@@ -368,7 +372,7 @@ def ap_find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        ap_program(
+        t = ap_program(
             bld,
             features=features,
             includes=includes,
@@ -379,6 +383,16 @@ def ap_find_tests(bld, use=[]):
             use_legacy_defines=False,
             cxxflags=['-Wno-undef'],
         )
+        filename = os.path.basename(f.abspath())
+        if filename in DOUBLE_PRECISION_SOURCES:
+            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
+            single_precision_option='-fsingle-precision-constant'
+            if single_precision_option in t.env.CXXFLAGS:
+                t.env.CXXFLAGS.remove(single_precision_option)
+            single_precision_option='-cl-single-precision-constant'
+            if single_precision_option in t.env.CXXFLAGS:
+                t.env.CXXFLAGS.remove(single_precision_option)
+            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
 
 _versions = []
 

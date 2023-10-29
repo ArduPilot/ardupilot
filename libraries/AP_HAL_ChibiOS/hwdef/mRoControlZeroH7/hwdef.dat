@@ -71,9 +71,6 @@ define HAL_I2C_INTERNAL_MASK 0
 
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 telem1
 PD5 USART2_TX USART2
@@ -222,10 +219,6 @@ SPIDEV bmi088_g    SPI5 DEVID1  BMI088_GYRO_CS    MODE3  5*MHZ  5*MHZ
 SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3  5*MHZ  5*MHZ
 SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  4*MHZ
 SPIDEV icm20948    SPI1 DEVID1  ICM_20948_CS      MODE3  2*MHZ  4*MHZ
-
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # Enable RAMTROM parameter storage.
 define HAL_WITH_RAMTRON 1

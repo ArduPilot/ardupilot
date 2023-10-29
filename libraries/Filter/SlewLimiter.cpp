@@ -26,6 +26,10 @@
  */
 #include "SlewLimiter.h"
 
+#define WINDOW_MS 300                   // time in msec required for a half cycle of the slowest oscillation frequency expected
+#define MODIFIER_GAIN 1.5f              // ratio of modifier reduction to slew rate exceedance ratio
+#define DERIVATIVE_CUTOFF_FREQ 25.0f
+
 SlewLimiter::SlewLimiter(const float &_slew_rate_max, const float &_slew_rate_tau) :
     slew_rate_max(_slew_rate_max),
     slew_rate_tau(_slew_rate_tau)
@@ -85,7 +89,7 @@ float SlewLimiter::modifier(float sample, float dt)
 
     // Store a series of positive slew rate exceedance events
     if (!_pos_event_stored && slew_rate > slew_rate_max) {
-        if (_pos_event_index >= N_EVENTS) {
+        if (_pos_event_index >= SLEWLIMITER_N_EVENTS) {
             _pos_event_index = 0;
         }
         _pos_event_ms[_pos_event_index] = now_ms;
@@ -96,7 +100,7 @@ float SlewLimiter::modifier(float sample, float dt)
 
     // Store a series of negative slew rate exceedance events
     if (!_neg_event_stored && -slew_rate > slew_rate_max) {
-        if (_neg_event_index >= N_EVENTS) {
+        if (_neg_event_index >= SLEWLIMITER_N_EVENTS) {
             _neg_event_index = 0;
         }
         _neg_event_ms[_neg_event_index] = now_ms;
@@ -107,7 +111,7 @@ float SlewLimiter::modifier(float sample, float dt)
 
     // Find the oldest event time
     uint32_t oldest_ms = now_ms;
-    for (uint8_t index = 0; index < N_EVENTS; index++) {
+    for (uint8_t index = 0; index < SLEWLIMITER_N_EVENTS; index++) {
         oldest_ms = MIN(oldest_ms, _pos_event_ms[index]);
         oldest_ms = MIN(oldest_ms, _neg_event_ms[index]);
     }
@@ -116,8 +120,8 @@ float SlewLimiter::modifier(float sample, float dt)
     // specified number of exceedance events. This prevents spikes due to control mode changed, etc causing
     // unwanted gain reduction and is only applied to the slew rate used for gain reduction
     float modifier_input = limited_raw_slew_rate;
-    if (now_ms - oldest_ms > (N_EVENTS + 1) * WINDOW_MS) {
-        const float oldest_time_from_window = 0.001f*(float)(now_ms - oldest_ms - (N_EVENTS + 1) * WINDOW_MS);
+    if (now_ms - oldest_ms > (SLEWLIMITER_N_EVENTS + 1) * WINDOW_MS) {
+        const float oldest_time_from_window = 0.001f*(float)(now_ms - oldest_ms - (SLEWLIMITER_N_EVENTS + 1) * WINDOW_MS);
         modifier_input *= expf(-oldest_time_from_window / slew_rate_tau);
     }
 

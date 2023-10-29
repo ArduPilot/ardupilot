@@ -1,0 +1,14 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F103 STM32F103xB
+
+include ../iomcu-dshot/hwdef.inc
+
+undef STM32_ST_USE_TIMER
+
+# directly define DMA channels
+DMA_NOMAP 1
+
+# only four timers on F103xB so use TIM1 for system timer
+STM32_ST_USE_TIMER 1

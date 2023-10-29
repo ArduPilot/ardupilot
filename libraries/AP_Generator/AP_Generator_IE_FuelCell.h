@@ -4,6 +4,8 @@
 
 #if AP_GENERATOR_IE_ENABLED
 
+#include <AP_Logger/AP_Logger_config.h>
+
 class AP_Generator_IE_FuelCell : public AP_Generator_Backend
 {
 
@@ -81,13 +83,15 @@ protected:
     // Assigns the unit specific measurements once a valid sentence is obtained
     virtual void assign_measurements(const uint32_t now) = 0;
 
+#if HAL_LOGGING_ENABLED
     virtual void log_write(void) {}
+#endif
 
     // Add a single character to the buffer and attempt to decode.
     // Returns true if a complete sentence was successfully decoded or if the buffer is full.
     bool decode(char c);
 
-    // Unit specific decoding to process characters recieved and build sentence
+    // Unit specific decoding to process characters received and build sentence
     virtual void decode_latest_term(void) = 0;
 
     // Check if we should notify on any change of fuel cell state

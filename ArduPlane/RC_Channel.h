@@ -45,6 +45,7 @@ public:
         return &obj_channels[chan];
     }
 
+    bool in_rc_failsafe() const override;
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;

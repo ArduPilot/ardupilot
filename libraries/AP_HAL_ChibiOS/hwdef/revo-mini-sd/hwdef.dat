@@ -16,8 +16,6 @@ undef HAL_LOGGING_DATAFLASH_ENABLED
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # disable SMBUS monitors to save flash
 define AP_BATTERY_SMBUS_ENABLED 0

@@ -25,7 +25,7 @@ SPIUARTDriver::SPIUARTDriver()
 {
 }
 
-void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void SPIUARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (device_path != nullptr) {
         UARTDriver::begin(b, rxS, txS);

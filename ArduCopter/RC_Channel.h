@@ -31,6 +31,7 @@ class RC_Channels_Copter : public RC_Channels
 public:
 
     bool has_valid_input() const override;
+    bool in_rc_failsafe() const override;
 
     RC_Channel *get_arming_channel(void) const override;
 

@@ -1,10 +1,6 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-
-#ifndef AP_RANGEFINDER_BLPING_ENABLED
-#define AP_RANGEFINDER_BLPING_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BLPING_ENABLED
 
@@ -136,6 +132,13 @@ public:
      *
      */
     void update(void) override;
+
+    /**
+     * @brief Get the reading confidence
+     * 100 is best quality, 0 is worst
+     *
+     */
+    bool get_signal_quality_pct(int8_t &quality_pct) const override WARN_IF_UNUSED;
 
 protected:
     /**

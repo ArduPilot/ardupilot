@@ -16,9 +16,11 @@
   ADSB simulator class for MAVLink ADSB peripheral
 */
 
-#include "SIM_ADSB.h"
+#include "SIM_config.h"
 
 #if HAL_SIM_ADSB_ENABLED
+
+#include "SIM_ADSB.h"
 
 #include "SITL.h"
 
@@ -26,6 +28,7 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 namespace SITL {
 
@@ -80,10 +83,15 @@ void ADSB_Vehicle::update(float delta_t)
     }
 }
 
+bool ADSB_Vehicle::location(Location &loc) const
+{
+    return AP::ahrs().get_location_from_home_offset(loc, position);
+}
+
 /*
   update the ADSB peripheral state
 */
-void ADSB::update(const class Aircraft &aircraft)
+void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
 {
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
@@ -107,11 +115,36 @@ void ADSB::update(const class Aircraft &aircraft)
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
 
+    const Location &home = aircraft.get_home();
+
     for (uint8_t i=0; i<num_vehicles; i++) {
         vehicles[i].update(delta_t);
+
+        Location loc = home;
+
+        ADSB_Vehicle &vehicle = vehicles[i];
+        loc.offset(vehicle.position.x, vehicle.position.y);
+
+        // re-init when exceeding radius range
+        if (home.get_distance(loc) > _sitl->adsb_radius_m) {
+            vehicle.initialised = false;
+        }
     }
-    
-    // see if we should do a report
+}
+
+void ADSB::update(const class Aircraft &aircraft)
+{
+    update_simulated_vehicles(aircraft);
+
+    // see if we should do a report.
+    if ((_sitl->adsb_types & (1U << (uint8_t)SIM::ADSBType::Shortcut)) == 0) {
+        // some other simulated device is in use (e.g. MXS)
+        return;
+    }
+
+    // bakwards compatability; the parameters specify ADSB simulation,
+    // but we are not configured to use a simulated ADSB driver.
+    // Pretend to be a uAvionix mavlink device:
     send_report(aircraft);
 }
 
@@ -169,17 +202,10 @@ void ADSB::send_report(const class Aircraft &aircraft)
         heartbeat.mavlink_version = 0;
         heartbeat.custom_mode = 0;
 
-        /*
-          save and restore sequence number for chan0, as it is used by
-          generated encode functions
-         */
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        chan0_status->current_tx_seq = mavlink.seq;
-        len = mavlink_msg_heartbeat_encode(vehicle_system_id,
-                                           vehicle_component_id,
-                                           &msg, &heartbeat);
-        chan0_status->current_tx_seq = saved_seq;
+        len = mavlink_msg_heartbeat_encode_status(vehicle_system_id,
+                                                  vehicle_component_id,
+                                                  &mavlink.status,
+                                                  &msg, &heartbeat);
 
         write_to_autopilot((char*)&msg.magic, len);
 
@@ -195,16 +221,14 @@ void ADSB::send_report(const class Aircraft &aircraft)
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
-            ADSB_Vehicle &vehicle = vehicles[i];
-            Location loc = home;
+            const ADSB_Vehicle &vehicle = vehicles[i];
+            if (!vehicle.initialised) {
+                continue;
+            }
 
+            Location loc = home;
             loc.offset(vehicle.position.x, vehicle.position.y);
 
-            // re-init when exceeding radius range
-            if (home.get_distance(loc) > _sitl->adsb_radius_m) {
-                vehicle.initialised = false;
-            }
-            
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;
 
@@ -233,14 +257,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
 
             adsb_vehicle.squawk = 1200;
 
-            mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-            uint8_t saved_seq = chan0_status->current_tx_seq;
-            chan0_status->current_tx_seq = mavlink.seq;
-            len = mavlink_msg_adsb_vehicle_encode(vehicle_system_id,
+            len = mavlink_msg_adsb_vehicle_encode_status(vehicle_system_id,
                                                   MAV_COMP_ID_ADSB,
+                                                  &mavlink.status,
                                                   &msg, &adsb_vehicle);
-            chan0_status->current_tx_seq = saved_seq;
-            
+
             uint8_t msgbuf[len];
             len = mavlink_msg_to_send_buffer(msgbuf, &msg);
             if (len > 0) {
@@ -253,17 +274,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
     if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
         last_tx_report_ms = now;
 
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        uint8_t saved_flags = chan0_status->flags;
-        chan0_status->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-        chan0_status->current_tx_seq = mavlink.seq;
         const mavlink_uavionix_adsb_transceiver_health_report_t health_report = {UAVIONIX_ADSB_RF_HEALTH_OK};
-        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode(vehicle_system_id,
-                                              MAV_COMP_ID_ADSB,
-                                              &msg, &health_report);
-        chan0_status->current_tx_seq = saved_seq;
-        chan0_status->flags = saved_flags;
+        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode_status(vehicle_system_id,
+                                                                                MAV_COMP_ID_ADSB,
+                                                                                &mavlink.status,
+                                                                                &msg, &health_report);
 
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);

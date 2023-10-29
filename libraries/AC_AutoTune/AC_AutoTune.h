@@ -158,7 +158,7 @@ protected:
                         AP_AHRS_View *ahrs_view,
                         AP_InertialNav *inertial_nav);
 
-    // send intermittant updates to user on status of tune
+    // send intermittent updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
 
     // send post test updates to user

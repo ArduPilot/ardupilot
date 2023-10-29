@@ -31,6 +31,10 @@
 #define HAL_COMPASS_IST8310_I2C_ADDR 0x0E
 #endif
 
+#ifndef AP_COMPASS_IST8310_DEFAULT_ROTATION
+#define AP_COMPASS_IST8310_DEFAULT_ROTATION ROTATION_PITCH_180
+#endif
+
 class AP_Compass_IST8310 : public AP_Compass_Backend
 {
 public:

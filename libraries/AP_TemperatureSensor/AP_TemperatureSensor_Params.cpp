@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Temperature Sensor Type
     // @Description: Enables temperature sensors
-    // @Values: 0:Disabled, 1:TSYS01, 2:MCP9600, 3:MAX31865
+    // @Values: 0:Disabled, 1:TSYS01, 2:MCP9600, 3:MAX31865, 4:TSYS03, 5:Analog
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_TemperatureSensor_Params, type, (float)Type::NONE, AP_PARAM_FLAG_ENABLE),
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Param: SRC
     // @DisplayName: Sensor Source
     // @Description: Sensor Source is used to designate which device's temperature report will be replaced by this temperature sensor's data. If 0 (None) then the data is only available via log. In the future a new Motor temperature report will be created for returning data directly.
-    // @Values: 0: None, 1:ESC, 2:Motor(not implemented yet), 3:Battery Index, 4:Battery ID/SerialNumber
+    // @Values: 0: None, 1:ESC, 2:Motor(not implemented yet), 3:Battery Index, 4:Battery ID/SerialNumber, 5: CAN based Pitot tube
     // @User: Standard
     AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, (float)Source::None),
 

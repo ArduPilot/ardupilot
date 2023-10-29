@@ -59,6 +59,7 @@ bool Mode::enter()
     plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
     plane.guided_state.target_airspeed_cm = -1; // same as above, although an airspeed of -1 is rare on plane.
     plane.guided_state.target_alt = -1; // same as above, although a target alt of -1 is rare on plane.
+    plane.guided_state.target_alt_time_ms = 0;
     plane.guided_state.last_target_alt = 0;
 #endif
 
@@ -88,9 +89,16 @@ bool Mode::enter()
 
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
+    
+    // clear postponed long failsafe if mode change (from GCS) occurs before recall of long failsafe
+    plane.long_failsafe_pending = false;
 
 #if HAL_QUADPLANE_ENABLED
     quadplane.mode_enter();
+#endif
+
+#if AP_TERRAIN_AVAILABLE
+    plane.target_altitude.terrain_following_pending = false;
 #endif
 
     bool enter_result = _enter();
@@ -117,6 +125,13 @@ bool Mode::enter()
         // but it should be harmless to disable the fence temporarily in these situations as well
         plane.fence.manual_recovery_start();
 #endif
+        //reset mission if in landing sequence, disarmed, not flying, and have changed to a non-autothrottle mode to clear prearm
+        if (plane.mission.get_in_landing_sequence_flag() &&
+            !plane.is_flying() && !plane.arming.is_armed_and_safety_off() &&
+            !plane.control_mode->does_auto_navigation()) {
+           GCS_SEND_TEXT(MAV_SEVERITY_INFO, "In landing sequence: mission reset");
+           plane.mission.reset();
+        }
     }
 
     return enter_result;
@@ -224,4 +239,16 @@ void Mode::reset_controllers()
     // reset steering controls
     plane.steer_state.locked_course = false;
     plane.steer_state.locked_course_err = 0;
+}
+
+bool Mode::is_taking_off() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF);
+}
+
+// Helper to output to both k_rudder and k_steering servo functions
+void Mode::output_rudder_and_steering(float val)
+{
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, val);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, val);
 }

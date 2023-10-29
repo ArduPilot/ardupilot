@@ -44,22 +44,30 @@ void AP_ESC_Telem_SITL::update()
         return;
     }
     uint32_t mask = sitl->state.motor_mask;
+
+    /*
+      mask out motors we should not be providing telemetry for. On
+      AP_Periph SIM_CAN_SRV_MSK are the outputs we will provide
+      telemetry for, on the main firmware it is the ones we don't
+      provide telemetry for
+    */
+#if defined(HAL_BUILD_AP_PERIPH)
+    mask &= uint32_t(sitl->can_servo_mask);
+#else
+    mask &= ~uint32_t(sitl->can_servo_mask);
+#endif
     uint8_t bit;
+
     while ((bit = __builtin_ffs(mask)) != 0) {
         uint8_t motor = bit-1;
         mask &= ~(1U<<motor);
 
-        if (is_zero(sitl->throttle)) {
-            if (!is_zero(sitl->esc_rpm_armed) && hal.util->get_soft_armed()) {
-                update_rpm(motor, sitl->esc_rpm_armed);
-            }
-        } else {
-            update_rpm(motor, sitl->state.rpm[motor]);
-        }
+        const float min_rpm = hal.util->get_soft_armed()? sitl->esc_rpm_armed : 0;
+        update_rpm(motor, MAX(min_rpm, sitl->state.rpm[motor]));
 
         // some fake values so that is_telemetry_active() returns true
         TelemetryData t {
-            .temperature_cdeg = 32,
+            .temperature_cdeg = 3200,
             .voltage = 16.8f,
             .current = 0.8f,
             .consumption_mah = 1.0f,

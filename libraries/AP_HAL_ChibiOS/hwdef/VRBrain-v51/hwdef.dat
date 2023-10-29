@@ -128,9 +128,6 @@ SPIDEV sdcard      SPI3 DEVID1  SDCARD_CS  MODE0 400*KHZ  25*MHZ
 
 define HAL_CHIBIOS_ARCH_BRAINV51 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 define HAL_STORAGE_SIZE   16384
 
 # enable RAMTROM parameter storage
@@ -167,4 +164,4 @@ define HAL_BATT_CURR_SCALE 17.0
 define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
-include ../include/save_some_flash.inc
+include ../include/minimize_features.inc

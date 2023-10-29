@@ -48,8 +48,6 @@ private:
     void send_packet1();
     void send_packet2();
     void nmea_printf(const char *fmt, ...);
-
-    uint64_t start_us;
 };
 
 }

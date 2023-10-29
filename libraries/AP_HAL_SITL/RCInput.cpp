@@ -1,5 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_RCPROTOCOL_ENABLED
+
 
 #include "RCInput.h"
 #include <SITL/SITL.h>

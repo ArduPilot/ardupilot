@@ -13,9 +13,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.0.29
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.0
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -56,14 +56,6 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
-      - name: Configure CAN
-        if: ${{ matrix.config == 'sitltest-can'}}
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
-          sudo modprobe vcan
-          sudo ip link add dev vcan0 type vcan
-          sudo ip link set up vcan0
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -99,7 +91,7 @@ jobs:
   finish:
     if: always()
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master

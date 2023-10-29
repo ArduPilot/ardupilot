@@ -18,6 +18,10 @@
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
 #include <AP_DDS/AP_DDS_Client.h>
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -137,6 +141,77 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(kdecan, "KDE_",  19, AP_Vehicle, AP_KDECAN),
 #endif
 
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+    // @Param: FLTMODE_GCSBLOCK
+    // @DisplayName: Flight mode block from GCS
+    // @Description: Bitmask of flight modes to disable for GCS selection. Mode can still be accessed via RC or failsafe.
+    // @Bitmask{Copter}: 0:Stabilize
+    // @Bitmask{Copter}: 1:Acro
+    // @Bitmask{Copter}: 2:AltHold
+    // @Bitmask{Copter}: 3:Auto
+    // @Bitmask{Copter}: 4:Guided
+    // @Bitmask{Copter}: 5:Loiter
+    // @Bitmask{Copter}: 6:Circle
+    // @Bitmask{Copter}: 7:Drift
+    // @Bitmask{Copter}: 8:Sport
+    // @Bitmask{Copter}: 9:Flip
+    // @Bitmask{Copter}: 10:AutoTune
+    // @Bitmask{Copter}: 11:PosHold
+    // @Bitmask{Copter}: 12:Brake
+    // @Bitmask{Copter}: 13:Throw
+    // @Bitmask{Copter}: 14:Avoid_ADSB
+    // @Bitmask{Copter}: 15:Guided_NoGPS
+    // @Bitmask{Copter}: 16:Smart_RTL
+    // @Bitmask{Copter}: 17:FlowHold
+    // @Bitmask{Copter}: 18:Follow
+    // @Bitmask{Copter}: 19:ZigZag
+    // @Bitmask{Copter}: 20:SystemID
+    // @Bitmask{Copter}: 21:Heli_Autorotate
+    // @Bitmask{Copter}: 22:Auto RTL
+    // @Bitmask{Copter}: 23:Turtle
+    // @Bitmask{Plane}: 0:Manual
+    // @Bitmask{Plane}: 1:Circle
+    // @Bitmask{Plane}: 2:Stabilize
+    // @Bitmask{Plane}: 3:Training
+    // @Bitmask{Plane}: 4:ACRO
+    // @Bitmask{Plane}: 5:FBWA
+    // @Bitmask{Plane}: 6:FBWB
+    // @Bitmask{Plane}: 7:CRUISE
+    // @Bitmask{Plane}: 8:AUTOTUNE
+    // @Bitmask{Plane}: 9:Auto
+    // @Bitmask{Plane}: 10:Loiter
+    // @Bitmask{Plane}: 11:Takeoff
+    // @Bitmask{Plane}: 12:AVOID_ADSB
+    // @Bitmask{Plane}: 13:Guided
+    // @Bitmask{Plane}: 14:THERMAL
+    // @Bitmask{Plane}: 15:QSTABILIZE
+    // @Bitmask{Plane}: 16:QHOVER
+    // @Bitmask{Plane}: 17:QLOITER
+    // @Bitmask{Plane}: 18:QACRO
+    // @Bitmask{Plane}: 19:QAUTOTUNE
+    // @Bitmask{Rover}: 0:Manual
+    // @Bitmask{Rover}: 1:Acro
+    // @Bitmask{Rover}: 2:Steering
+    // @Bitmask{Rover}: 3:Loiter
+    // @Bitmask{Rover}: 4:Follow
+    // @Bitmask{Rover}: 5:Simple
+    // @Bitmask{Rover}: 6:Circle
+    // @Bitmask{Rover}: 7:Auto
+    // @Bitmask{Rover}: 8:RTL
+    // @Bitmask{Rover}: 9:SmartRTL
+    // @Bitmask{Rover}: 10:Guided
+    // @Bitmask{Rover}: 11:Dock
+    // @User: Standard
+    AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
+#endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+
+
+#if AP_NETWORKING_ENABLED
+    // @Group: NET_
+    // @Path: ../AP_Networking/AP_Networking.cpp
+    AP_SUBGROUPINFO(networking, "NET_", 21, AP_Vehicle, AP_Networking),
+#endif
+
     AP_GROUPEND
 };
 
@@ -196,15 +271,23 @@ void AP_Vehicle::setup()
     // survivability.
     set_control_channels();
 
+#if HAL_GCS_ENABLED
     // initialise serial manager as early as sensible to get
     // diagnostic output during boot process.  We have to initialise
     // the GCS singleton first as it sets the global mavlink system ID
     // which may get used very early on.
     gcs().init();
+#endif
+
+#if AP_NETWORKING_ENABLED
+    networking.init();
+#endif
 
     // initialise serial ports
     serial_manager.init();
+#if HAL_GCS_ENABLED
     gcs().setup_console();
+#endif
 
     // Register scheduler_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -218,6 +301,10 @@ void AP_Vehicle::setup()
 #if HAL_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
+#endif
+
+#if HAL_GENERATOR_ENABLED
+    generator.init();
 #endif
 
     // init_ardupilot is where the vehicle does most of its initialisation.
@@ -272,10 +359,6 @@ void AP_Vehicle::setup()
 
     send_watchdog_reset_statustext();
 
-#if HAL_GENERATOR_ENABLED
-    generator.init();
-#endif
-
 #if AP_OPENDRONEID_ENABLED
     opendroneid.init();
 #endif
@@ -317,11 +400,11 @@ void AP_Vehicle::setup()
     // initialisation
     AP_Param::invalidate_count();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
 #if AP_DDS_ENABLED
     if (!init_dds_client()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Failed to Initialize", AP_DDS_Client::msg_prefix);
     }
 #endif
 }
@@ -351,7 +434,7 @@ void AP_Vehicle::loop()
     const uint32_t new_internal_errors = AP::internalerror().errors();
     if(_last_internal_errors != new_internal_errors) {
         AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
         _last_internal_errors = new_internal_errors;
     }
 }
@@ -420,6 +503,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if AP_OPENDRONEID_ENABLED
     SCHED_TASK_CLASS(AP_OpenDroneID, &vehicle.opendroneid,  update,                   10,  50, 236),
 #endif
+#if AP_NETWORKING_ENABLED
+    SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
+#endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
 #endif
@@ -476,21 +562,23 @@ void AP_Vehicle::scheduler_delay_callback()
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
+        GCS_SEND_MESSAGE(MSG_HEARTBEAT);
+        GCS_SEND_MESSAGE(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
+#if HAL_GCS_ENABLED
         gcs().update_receive();
         gcs().update_send();
+#endif
         _singleton->notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
         if (AP_BoardConfig::in_config_error()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising ArduPilot");
         }
     }
 
@@ -504,7 +592,8 @@ void AP_Vehicle::send_watchdog_reset_statustext()
         return;
     }
     const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,
+    (void)pd;  // in case !HAL_GCS_ENABLED
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,
                     "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u TN:%.4s",
                     pd.scheduler_task,
                     pd.semaphore_line,
@@ -591,7 +680,7 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             float rpm;
             if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                notch.update_freq_hz(MAX(ref_freq, rpm * ref * (1.0/60)));
+                notch.update_freq_hz(MAX(ref_freq * notch.params.freq_min_ratio(), rpm * ref * (1.0/60)));
             } else {
                 notch.update_freq_hz(ref_freq);
             }
@@ -706,6 +795,10 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
     // delay to give the ACK a chance to get out, the LEDs to flash,
     // the IO board safety to be forced on, the parameters to flush, ...
     hal.scheduler->delay(200);
+
+#if HAL_WITH_IO_MCU
+    iomcu.soft_reboot();
+#endif
 
     hal.scheduler->reboot(hold_in_bootloader);
 }
@@ -830,7 +923,7 @@ void AP_Vehicle::check_motor_noise()
         float energy = gyro_fft.has_noise_at_frequency_hz(esc_data[i]);
         energy = esc_noise[i].apply(energy, 0.2f);
         if (energy > 40.0f && AP_HAL::millis() - last_motor_noise_ms > 5000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Noise %.fdB on motor %u at %.fHz", energy, i+1, esc_data[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Noise %.fdB on motor %u at %.fHz", energy, i+1, esc_data[i]);
             output_error = true;
         }
     }
@@ -851,6 +944,26 @@ bool AP_Vehicle::init_dds_client()
     return dds_client->start();
 }
 #endif // AP_DDS_ENABLED
+
+// Check if this mode can be entered from the GCS
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const
+{
+    if (mode_list == nullptr) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < mode_list_length; i++) {
+        // Find index of mode
+        if (mode_list[i] == mode_num) {
+            const uint32_t mask = 1U << i;
+            return (uint32_t(flight_mode_GCS_block) & mask) != 0;
+        }
+    }
+
+    return false;
+}
+#endif
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

@@ -98,8 +98,8 @@ void Blimp::failsafe_gcs_check()
 
     const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
-         return;
-     }
+        return;
+    }
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
@@ -148,7 +148,7 @@ void Blimp::do_failsafe_action(Failsafe_Action action, ModeReason reason)
     case Failsafe_Action_None:
         return;
     case Failsafe_Action_Land:
-        set_mode_land_with_pause(reason);
+        set_mode_land_failsafe(reason);
         break;
     case Failsafe_Action_Terminate: {
         arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);

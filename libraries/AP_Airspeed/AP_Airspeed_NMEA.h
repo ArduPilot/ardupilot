@@ -1,11 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-// note additional vehicle restrictions are made in the .cpp file!
-#ifndef AP_AIRSPEED_NMEA_ENABLED
-#define AP_AIRSPEED_NMEA_ENABLED AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_NMEA_ENABLED
 

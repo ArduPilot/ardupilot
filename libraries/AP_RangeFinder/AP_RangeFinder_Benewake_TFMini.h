@@ -1,12 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder_Benewake.h"
-
-#ifndef AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
-#define AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED (AP_RANGEFINDER_BENEWAKE_ENABLED && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
+
+#include "AP_RangeFinder_Benewake.h"
 
 class AP_RangeFinder_Benewake_TFMini : public AP_RangeFinder_Benewake
 {

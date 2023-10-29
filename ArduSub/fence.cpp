@@ -16,7 +16,7 @@ void Sub::fence_check()
     const uint8_t orig_breaches = fence.get_breaches();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check();
+    const uint8_t new_breaches = sub.fence.check();
 
     // if there is a new breach take action
     if (new_breaches) {

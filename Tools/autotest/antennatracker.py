@@ -14,15 +14,15 @@ import os
 from pymavlink import mavextra
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import NotAchievedException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 
-class AutoTestTracker(AutoTest):
+class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def log_name(self):
         return "AntennaTracker"
@@ -116,34 +116,36 @@ class AutoTestTracker(AutoTest):
                 self.set_rc(chan, pwm)
                 self.wait_servo_channel_value(chan, pwm)
 
-    def SERVOTEST(self):
+    def MAV_CMD_DO_SET_SERVO(self):
         '''Test SERVOTEST mode'''
         self.change_mode(0) # "MANUAL"
         # magically changes to SERVOTEST (3)
-        for value in 1900, 1200:
-            channel = 1
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                         channel,
-                         value,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         timeout=1)
-            self.wait_servo_channel_value(channel, value)
-        for value in 1300, 1670:
-            channel = 2
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                         channel,
-                         value,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         timeout=1)
-            self.wait_servo_channel_value(channel, value)
+        for method in self.run_cmd, self.run_cmd_int:
+            for value in 1900, 1200:
+                channel = 1
+                method(
+                    mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                    p1=channel,
+                    p2=value,
+                    timeout=1,
+                )
+                self.wait_servo_channel_value(channel, value)
+            for value in 1300, 1670:
+                channel = 2
+                method(
+                    mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                    p1=channel,
+                    p2=value,
+                    timeout=1,
+                )
+                self.wait_servo_channel_value(channel, value)
+
+    def MAV_CMD_MISSION_START(self):
+        '''test MAV_CMD_MISSION_START mavlink command'''
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode(0)  # "MANUAL"
+            method(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_mode("AUTO")
 
     def SCAN(self):
         '''Test SCAN mode'''
@@ -172,7 +174,8 @@ class AutoTestTracker(AutoTest):
         ret.extend([
             self.GUIDED,
             self.MANUAL,
-            self.SERVOTEST,
+            self.MAV_CMD_DO_SET_SERVO,
+            self.MAV_CMD_MISSION_START,
             self.NMEAOutput,
             self.SCAN,
         ])

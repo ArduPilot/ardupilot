@@ -102,11 +102,6 @@ PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
-# use DNA for node allocation
-
-define CAN_APP_NODE_NAME "org.ardupilot.f405_MatekGPS"
-
-
 # ---------------------- UARTs ---------------------------
 #           | sr0  | sr1  | sr2  | GPS | MSP |
 SERIAL_ORDER USART1 USART2 USART3 UART4 UART5

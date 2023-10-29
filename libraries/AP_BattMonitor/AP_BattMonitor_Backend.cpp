@@ -18,6 +18,10 @@
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+#include "AP_ESC_Telem/AP_ESC_Telem.h"
+#endif
+
 /*
   base class constructor.
   This incorporates initialisation as well.
@@ -231,6 +235,56 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
     } else {
         low_capacity = false;
     }
+}
+
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+void AP_BattMonitor_Backend::update_esc_telem_outbound()
+{
+    const uint8_t esc_index = _params._esc_telem_outbound_index;
+    if (esc_index == 0 || !_state.healthy) {
+        // Disabled if there's no ESC identified to route the data to or if the battery is unhealthy
+        return;
+    }
+
+    AP_ESC_Telem_Backend::TelemetryData telem {};
+
+    uint16_t type = AP_ESC_Telem_Backend::TelemetryType::VOLTAGE;
+    telem.voltage = _state.voltage; // all battery backends have voltage
+
+    if (has_current()) {
+        telem.current = _state.current_amps;
+        type |= AP_ESC_Telem_Backend::TelemetryType::CURRENT;
+    }
+
+    if (has_consumed_energy()) {
+        telem.consumption_mah = _state.consumed_mah;
+        type |= AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+    }
+
+    float temperature_c;
+    if (_mon.get_temperature(temperature_c, _state.instance)) {
+        // get the temperature from the frontend so we check for external temperature
+        telem.temperature_cdeg = temperature_c * 100;
+        type |= AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE;
+    }
+
+    AP::esc_telem().update_telem_data(esc_index-1, telem, type);
+}
+#endif
+
+// returns true if battery monitor provides temperature
+bool AP_BattMonitor_Backend::get_temperature(float &temperature) const
+{
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    if (_state.temperature_external_use) {
+        temperature = _state.temperature_external;
+        return true;
+    }
+#endif
+
+    temperature = _state.temperature;
+
+    return has_temperature();
 }
 
 /*

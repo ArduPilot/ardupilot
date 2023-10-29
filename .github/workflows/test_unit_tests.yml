@@ -44,6 +44,8 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
   pull_request:
     paths-ignore:
       # Remove markdown files as irrelevant
@@ -87,6 +89,8 @@ on:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
   workflow_dispatch:
 
 concurrency:
@@ -95,9 +99,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
+      image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
       options: --user 1001
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails

@@ -1,18 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
-
-#include <AP_BoardConfig/AP_BoardConfig.h>
-
-#ifndef AP_RANGEFINDER_BBB_PRU_ENABLED
-#define AP_RANGEFINDER_BBB_PRU_ENABLED (                            \
-        AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED &&                   \
-        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI \
-        )
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BBB_PRU_ENABLED
+
+#include "AP_RangeFinder_Backend.h"
 
 #define PRU0_CTRL_BASE 0x4a322000
 
@@ -54,4 +46,4 @@ private:
 
 };
 
-#endif
+#endif  // AP_RANGEFINDER_BBB_PRU_ENABLED

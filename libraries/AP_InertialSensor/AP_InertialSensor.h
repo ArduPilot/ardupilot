@@ -74,6 +74,10 @@ public:
     ///
     void init(uint16_t sample_rate_hz);
 
+    // get accel/gyro instance numbers that a backend will get when they register
+    bool get_accel_instance(uint8_t &instance) const;
+    bool get_gyro_instance(uint8_t &instance) const;
+
     /// Register a new gyro/accel driver, allocating an instance
     /// number
     bool register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
@@ -766,6 +770,18 @@ private:
     AP_Int32 tcal_options;
     bool tcal_learning;
 #endif
+
+    // Raw logging options bitmask and parameter
+    enum class RAW_LOGGING_OPTION {
+        PRIMARY_GYRO_ONLY   = (1U<<0),
+        ALL_GYROS           = (1U<<1),
+        POST_FILTER         = (1U<<2),
+        PRE_AND_POST_FILTER = (1U<<3),
+    };
+    AP_Int16 raw_logging_options;
+    bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
+        return (raw_logging_options.get() & int32_t(option)) != 0;
+    }
 };
 
 namespace AP {

@@ -104,7 +104,7 @@ class AP_DroneCAN_DNA_Server
     Canard::Client<uavcan_protocol_GetNodeInfoResponse> node_info_client;
 
 public:
-    AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan);
+    AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardInterface &canard_iface, uint8_t driver_index);
 
 
     // Do not allow copies

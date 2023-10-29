@@ -199,8 +199,11 @@ local function engine_control()
        
        efi_state:last_updated_ms(millis())
 
-        -- Set the EFI_State into the EFI scripting driver
-        efi_backend:handle_scripting(efi_state)
+       -- Set the EFI_State into the EFI scripting driver
+       efi_backend:handle_scripting(efi_state)
+
+       logger.write('H6K','Curr,Volt,CoolT,CylT,FuelPct', 'fffff',
+                    out_current, out_volt, cool_temp, cyl_temp, fuel_pct)
     end
 
     -- update telemetry output for extra telemetry values

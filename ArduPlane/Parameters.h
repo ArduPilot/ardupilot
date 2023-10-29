@@ -43,7 +43,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type, // unused;
-        k_param_num_resets,
+        k_param_num_resets, // unused
         k_param_NavEKF2,
         k_param_g2,
         k_param_avoidance_adsb,
@@ -356,6 +356,7 @@ public:
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
+        k_param_autotune_options,
     };
 
     AP_Int16 format_version;
@@ -420,7 +421,7 @@ public:
     AP_Int8 flight_mode6;
     AP_Int8 initial_mode;
 
-    // Navigational maneuvering limits
+    // Navigational manoeuvring limits
     //
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
@@ -434,7 +435,6 @@ public:
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
-    AP_Int16 num_resets;
     AP_Int32 log_bitmask;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
@@ -541,17 +541,17 @@ public:
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
 
-    // Forward throttle battery voltage compenstaion
+    // Forward throttle battery voltage compensation
     AP_Float fwd_thr_batt_voltage_max;
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
 
 #if OFFBOARD_GUIDED == ENABLED
     // guided yaw heading PID
-    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
     AP_Follow follow;
 #endif
 

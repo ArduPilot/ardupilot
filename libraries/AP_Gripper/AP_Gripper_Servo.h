@@ -44,7 +44,7 @@ public:
 
 protected:
 
-    // type-specific intiailisations:
+    // type-specific initializations:
     void init_gripper() override;
 
     // type-specific periodic updates:

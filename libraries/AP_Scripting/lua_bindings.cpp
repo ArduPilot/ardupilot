@@ -43,13 +43,18 @@ int lua_micros(lua_State *L) {
     return 1;
 }
 
+#if HAL_GCS_ENABLED
 int lua_mavlink_init(lua_State *L) {
-    binding_argcheck(L, 2);
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 2+arg_offset);
     WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
-    const uint32_t queue_size = get_uint32(L, -1, 0, 25);
+    const uint32_t queue_size = get_uint32(L, 1+arg_offset, 0, 25);
     // get number of msgs to accept
-    const uint32_t num_msgs = get_uint32(L, -2, 0, 25);
+    const uint32_t num_msgs = get_uint32(L, 2+arg_offset, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
     if (data.rx_buffer == nullptr) {
@@ -70,7 +75,11 @@ int lua_mavlink_init(lua_State *L) {
 }
 
 int lua_mavlink_receive_chan(lua_State *L) {
-    binding_argcheck(L, 0);
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, arg_offset);
 
     struct AP_Scripting::mavlink_msg msg;
     ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
@@ -85,7 +94,8 @@ int lua_mavlink_receive_chan(lua_State *L) {
         luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
         luaL_pushresult(&b);
         lua_pushinteger(L, msg.chan);
-        lua_pushinteger(L, msg.timestamp_ms);
+        new_uint32_t(L);
+        *check_uint32_t(L, -1) = msg.timestamp_ms;
         return 3;
     } else {
         // no MAVLink to handle, just return no results
@@ -94,9 +104,13 @@ int lua_mavlink_receive_chan(lua_State *L) {
 }
 
 int lua_mavlink_register_rx_msgid(lua_State *L) {
-    binding_argcheck(L, 1);
-    
-    const uint32_t msgid = get_uint32(L, -1, 0, (1 << 24) - 1);
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint32_t msgid = get_uint32(L, 1+arg_offset, 0, (1 << 24) - 1);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
 
@@ -129,13 +143,17 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 }
 
 int lua_mavlink_send_chan(lua_State *L) {
-    binding_argcheck(L, 3);
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 3+arg_offset);
     
-    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1+arg_offset, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
-    const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
+    const uint32_t msgid = get_uint32(L, 2+arg_offset, 0, (1 << 24) - 1);
 
-    const char *packet = luaL_checkstring(L, 3);
+    const char *packet = luaL_checkstring(L, 3+arg_offset);
 
     // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
     //        sending entirely new messages as outputs. At the moment we can only encode messages that
@@ -163,6 +181,41 @@ int lua_mavlink_send_chan(lua_State *L) {
     return 1;
 }
 
+int lua_mavlink_block_command(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint16_t id = get_uint16_t(L, 1+arg_offset);
+
+    // Check if ID is already registered
+    if (AP::scripting()->is_handling_command(id)) {
+        lua_pushboolean(L, true);
+        return 1;
+    }
+
+    // Add new list item
+    AP_Scripting::command_block_list *new_item = new AP_Scripting::command_block_list;
+    if (new_item == nullptr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    new_item->id = id;
+
+    {
+        WITH_SEMAPHORE(AP::scripting()->mavlink_command_block_list_sem);
+        new_item->next = AP::scripting()->mavlink_command_block_list;
+        AP::scripting()->mavlink_command_block_list = new_item;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+#endif // HAL_GCS_ENABLED
+
+#if AP_MISSION_ENABLED
 int lua_mission_receive(lua_State *L) {
     binding_argcheck(L, 0);
 
@@ -190,7 +243,9 @@ int lua_mission_receive(lua_State *L) {
 
     return 5;
 }
+#endif // AP_MISSION_ENABLED
 
+#if HAL_LOGGING_ENABLED
 int AP_Logger_Write(lua_State *L) {
     AP_Logger * AP_logger = AP_Logger::get_singleton();
     if (AP_logger == nullptr) {
@@ -476,6 +531,7 @@ int AP_Logger_Write(lua_State *L) {
 
     return 0;
 }
+#endif // HAL_LOGGING_ENABLED
 
 int lua_get_i2c_device(lua_State *L) {
 
@@ -576,7 +632,7 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
     // Allow : and . access
@@ -626,7 +682,7 @@ int lua_get_CAN_device2(lua_State *L) {
 
     return 1;
 }
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
 
 /*
   directory listing, return table of files in a directory
@@ -703,6 +759,16 @@ int lua_get_current_ref()
 {
     auto *scripting = AP::scripting();
     return scripting->get_current_ref();
+}
+
+// Simple print to GCS or over CAN
+int lua_print(lua_State *L) {
+    // Only support a single argument
+    binding_argcheck(L, 1);
+
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s", luaL_checkstring(L, 1));
+
+    return 0;
 }
 
 #endif  // AP_SCRIPTING_ENABLED

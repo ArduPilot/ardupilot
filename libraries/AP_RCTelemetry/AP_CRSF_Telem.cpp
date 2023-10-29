@@ -100,14 +100,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
-    if (!rc().crsf_custom_telemetry()) {
+    if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
         return;
     }
 
     // check if passthru already assigned
     const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough,0);
     if (frsky_port != -1) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;
        return;
     }
@@ -136,7 +136,7 @@ void AP_CRSF_Telem::setup_custom_telemetry()
     // setup custom telemetry for current rf_mode
     update_custom_telemetry_rates(_telem_rf_mode);
 
-    gcs().send_text(MAV_SEVERITY_DEBUG,"%s: custom telem init done, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: custom telem init done, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
 
     _custom_telem.init_done = true;
 }
@@ -192,24 +192,25 @@ bool AP_CRSF_Telem::process_rf_mode_changes()
     if (!uart->is_initialized()) {
         return false;
     }
-
-    // warn the user if their setup is sub-optimal
+#if !defined (STM32H7)
+    // warn the user if their setup is sub-optimal, H7 does not need DMA on serial port
     if (_telem_bootstrap_msg_pending && !uart->is_dma_enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "%s: running on non-DMA serial port", get_protocol_string());
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s: running on non-DMA serial port", get_protocol_string());
     }
+#endif
     // note if option was set to show LQ in place of RSSI
-    bool current_lq_as_rssi_active = bool(rc().use_crsf_lq_as_rssi());
+    bool current_lq_as_rssi_active = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
     if(_telem_bootstrap_msg_pending || _noted_lq_as_rssi_active != current_lq_as_rssi_active){
         _noted_lq_as_rssi_active = current_lq_as_rssi_active;
-        gcs().send_text(MAV_SEVERITY_INFO, "%s: RSSI now displays %s", get_protocol_string(), current_lq_as_rssi_active ? " as LQ" : "normally");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s: RSSI now displays %s", get_protocol_string(), current_lq_as_rssi_active ? " as LQ" : "normally");
     }
     _telem_bootstrap_msg_pending = false;
 
     const bool is_high_speed = is_high_speed_telemetry(current_rf_mode);
     if ((now - _telem_last_report_ms > 5000)) {
         // report an RF mode change or a change in telemetry rate if we haven't done so in the last 5s
-        if (!rc().suppress_crsf_message() && (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s: Link rate %dHz, Telemetry rate %dHz",
+        if (!rc().option_is_enabled(RC_Channels::Option::SUPPRESS_CRSF_MESSAGE) && (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s: Link rate %dHz, Telemetry rate %dHz",
                 get_protocol_string(), crsf->get_link_rate(_crsf_version.protocol), get_telemetry_rate());
         }
         // tune the scheduler based on telemetry speed high/low transitions
@@ -302,7 +303,7 @@ void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 {
     // no need to queue status text messages when crossfire
     // custom telemetry is not enabled
-    if (!rc().crsf_custom_telemetry()) {
+    if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
         return;
     }
     AP_RCTelemetry::queue_message(severity, text);
@@ -395,9 +396,9 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         return false;
 #endif
     case PASSTHROUGH:
-        return rc().crsf_custom_telemetry();
+        return rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY);
     case STATUS_TEXT:
-        return rc().crsf_custom_telemetry() && !queue_empty;
+        return rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY) && !queue_empty;
     case GENERAL_COMMAND:
         return _baud_rate_request.pending;
     case VERSION_PING:
@@ -464,10 +465,10 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
                 _crsf_version.minor = 0;
                 _crsf_version.major = 0;
                 disable_scheduler_entry(VERSION_PING);
-                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
             } else {
                 calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
-                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
             }
             break;
         case DEVICE_PING:
@@ -947,7 +948,7 @@ void AP_CRSF_Telem::calc_flight_mode()
             sizeof(AP_CRSF_Telem::FlightModeFrame), 
             "%s%s", 
             notify->get_flight_mode_str(), 
-            rc().crsf_fm_disarm_star() && !hal.util->get_soft_armed() ? "*" : ""
+            rc().option_is_enabled(RC_Channels::Option::CRSF_FM_DISARM_STAR) && !hal.util->get_soft_armed() ? "*" : ""
         );
         // Note: strlen(_telem.bcast.flightmode.flight_mode) is safe because called on a guaranteed null terminated string
         _telem_size = strlen(_telem.bcast.flightmode.flight_mode) + 1; //send the terminator as well

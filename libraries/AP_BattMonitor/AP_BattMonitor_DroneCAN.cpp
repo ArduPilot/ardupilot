@@ -33,8 +33,7 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
 
 /// Constructor
 AP_BattMonitor_DroneCAN::AP_BattMonitor_DroneCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_DroneCAN_Type type, AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params),
-    _type(type)
+    AP_BattMonitor_Backend(mon, mon_state, params)
 {
     AP_Param::setup_object_defaults(this,var_info);
     _state.var_info = var_info;
@@ -158,7 +157,6 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
 
     _has_cell_voltages = true;
     _has_time_remaining = true;
-    _has_consumed_energy = true;
     _has_battery_info_aux = true;
 }
 
@@ -256,15 +254,22 @@ void AP_BattMonitor_DroneCAN::read()
     }
 }
 
+// Return true if the DroneCAN state of charge should be used.
+// Return false if state of charge should be calculated locally by counting mah.
+bool AP_BattMonitor_DroneCAN::use_CAN_SoC() const
+{
+    // a UAVCAN battery monitor may not be able to supply a state of charge. If it can't then
+    // the user can set the option to use current integration in the backend instead.
+    // SOC of 127 is used as an invalid SOC flag ie system configuration errors or SOC estimation unavailable
+    return !(option_is_set(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC) ||
+            _mppt.is_detected ||
+            (_soc == 127));
+}
+
 /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
 bool AP_BattMonitor_DroneCAN::capacity_remaining_pct(uint8_t &percentage) const
 {
-    if ((uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC)) ||
-        _mppt.is_detected ||
-        _soc == 127) {
-        // a UAVCAN battery monitor may not be able to supply a state of charge. If it can't then
-        // the user can set the option to use current integration in the backend instead.
-        // SOC of 127 is used as an invalid SOC flag ie system configuration errors or SOC estimation unavailable
+    if (!use_CAN_SoC()) {
         return AP_BattMonitor_Backend::capacity_remaining_pct(percentage);
     }
 
@@ -274,6 +279,27 @@ bool AP_BattMonitor_DroneCAN::capacity_remaining_pct(uint8_t &percentage) const
     }
 
     percentage = _soc;
+    return true;
+}
+
+// reset remaining percentage to given value
+bool AP_BattMonitor_DroneCAN::reset_remaining(float percentage)
+{
+    if (use_CAN_SoC()) {
+        // Cannot reset external state of charge
+        return false;
+    }
+
+    WITH_SEMAPHORE(_sem_battmon);
+
+    if (!AP_BattMonitor_Backend::reset_remaining(percentage)) {
+        // Base class reset failed
+        return false;
+    }
+
+    // Reset interim state that is used internally, this is then copied back to the main state in the read() call
+    _interim_state.consumed_mah = _state.consumed_mah;
+    _interim_state.consumed_wh = _state.consumed_wh;
     return true;
 }
 

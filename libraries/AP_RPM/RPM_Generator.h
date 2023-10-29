@@ -14,11 +14,11 @@
  */
 #pragma once
 
-#include "AP_RPM.h"
-#include "RPM_Backend.h"
-#include <AP_Generator/AP_Generator.h>
+#include "AP_RPM_config.h"
 
 #if AP_RPM_GENERATOR_ENABLED
+
+#include "RPM_Backend.h"
 
 class AP_RPM_Generator : public AP_RPM_Backend
 {

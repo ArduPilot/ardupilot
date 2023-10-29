@@ -107,6 +107,7 @@ public:
         Analog_Volt_Synthetic_Current  = 25,
         INA239_SPI                     = 26,
         EFI                            = 27,
+        // AD7091R5_I2C_Analog         = 28, reserve ID for future use
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -230,6 +231,9 @@ public:
     bool has_cell_voltages(const uint8_t instance) const;
     const cells &get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     const cells &get_cell_voltages(const uint8_t instance) const;
+
+    // get once cell voltage (for scripting)
+    bool get_cell_voltage(uint8_t instance, uint8_t cell, float &voltage) const;
 
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); }

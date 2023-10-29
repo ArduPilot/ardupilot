@@ -43,9 +43,9 @@ void AP_ADSB_uAvionix_MAVLink::update()
     // send static configuration data to transceiver, every 5s
     if (_frontend.out_state.chan_last_ms > 0 && now - _frontend.out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-        // TODO: reset out_state.chan
         _frontend.out_state.chan = -1;
-        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+        _frontend.out_state.chan_last_ms = 0; // if the time isn't reset we spam the message
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_frontend.out_state.chan >= 0 && !_frontend._my_loc.is_zero() && _frontend.out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + _frontend.out_state.chan);
         if (now - _frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
@@ -140,7 +140,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
 /*
  * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
  * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
- * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
+ * this function is used to create the encoded version without ever writing to the actual ICAO number. It's created on-demand
  */
 uint32_t AP_ADSB_uAvionix_MAVLink::encode_icao(const uint32_t icao_id) const
 {
@@ -253,4 +253,4 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             (uint8_t)_frontend.out_state.cfg.rfSelect);
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED

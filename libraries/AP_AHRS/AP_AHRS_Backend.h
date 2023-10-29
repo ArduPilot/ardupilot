@@ -24,6 +24,7 @@
 #include <inttypes.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Common/Location.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -57,6 +58,14 @@ public:
         Vector3f gyro_drift;
         Vector3f accel_ef;
         Vector3f accel_bias;
+
+        Location location;
+        bool location_valid;
+
+        bool get_location(Location &loc) const {
+            loc = location;
+            return location_valid;
+        };
     };
 
     // init sets up INS board orientation
@@ -109,10 +118,6 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
 
-    // get our current position estimate. Return true if a position is available,
-    // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_location(class Location &loc) const WARN_IF_UNUSED = 0;
-
     // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
@@ -141,11 +146,11 @@ public:
     }
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const;
+    static float get_EAS2TAS(void);
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(void) const {
+    static bool airspeed_sensor_enabled(void) {
     #if AP_AIRSPEED_ENABLED
         const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
@@ -156,7 +161,7 @@ public:
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
+    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
     #if AP_AIRSPEED_ENABLED
         const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
@@ -303,12 +308,6 @@ public:
     }
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
-        ret.zero();
-        AP::ins().get_delta_velocity(ret, dt);
-    }
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return

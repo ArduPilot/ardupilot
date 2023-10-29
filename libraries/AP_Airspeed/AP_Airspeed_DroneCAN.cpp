@@ -148,7 +148,7 @@ bool AP_Airspeed_DroneCAN::get_differential_pressure(float &pressure)
 {
     WITH_SEMAPHORE(_sem_airspeed);
 
-    if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
+    if ((AP_HAL::millis() - _last_sample_time_ms) > 250) {
         return false;
     }
 

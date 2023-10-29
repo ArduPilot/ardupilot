@@ -42,6 +42,5 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_channel_t _chan = MAVLINK_COMM_0;        // mavlink channel used to communicate with gimbal
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
-    MountTarget _angle_rad;         // latest angle target
 };
 #endif // HAL_MOUNT_STORM32MAVLINK_ENABLED

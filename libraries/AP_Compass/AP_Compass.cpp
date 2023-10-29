@@ -588,6 +588,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
     // @Bitmask: 0:CalRequireGPS
+    // @Bitmask: 1: Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
 
@@ -1175,12 +1176,10 @@ void Compass::_probe_external_i2c_compasses(void)
     // IST8310 on external and internal bus
     if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5 &&
         AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
-        enum Rotation default_rotation;
+        enum Rotation default_rotation = AP_COMPASS_IST8310_DEFAULT_ROTATION;
 
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
             default_rotation = ROTATION_PITCH_180_YAW_90;
-        } else {
-            default_rotation = ROTATION_PITCH_180;
         }
         // probe all 4 possible addresses
         const uint8_t ist8310_addr[] = { 0x0C, 0x0D, 0x0E, 0x0F };
@@ -1464,56 +1463,58 @@ void Compass::_detect_backends(void)
         }
 
 #if COMPASS_MAX_UNREG_DEV > 0
-        // check if there's any uavcan compass in prio slot that's not found
-        // and replace it if there's a replacement compass
-        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-            if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
-                || _get_state(i).registered) {
-                continue;
-            }
-            // There's a UAVCAN compass missing
-            // Let's check if there's a replacement
-            for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
-                uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
-                // Check if this is a potential replacement mag
-                if (!is_replacement_mag(detected_devid)) {
+        if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT)) {
+            // check if there's any uavcan compass in prio slot that's not found
+            // and replace it if there's a replacement compass
+            for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+                if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
+                    || _get_state(i).registered) {
                     continue;
                 }
-                // We have found a replacement mag, let's replace the existing one
-                // with this by setting the priority to zero and calling uavcan probe 
-                gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
-                _priority_did_stored_list[i].set_and_save(0);
-                _priority_did_list[i] = 0;
-
-                AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
-                if (_uavcan_backend) {
-                    _add_backend(_uavcan_backend);
-                    // we also need to remove the id from unreg list
-                    remove_unreg_dev_id(detected_devid);
-                } else {
-                    // the mag has already been allocated,
-                    // let's begin the replacement
-                    bool found_replacement = false;
-                    for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                        if ((uint32_t)_state[k].dev_id == detected_devid) {
-                            if (_state[k].priority <= uint8_t(i)) {
-                                // we are already on higher priority
-                                // nothing to do
-                                break;
-                            }
-                            found_replacement = true;
-                            // reset old priority of replacement mag
-                            _priority_did_stored_list[_state[k].priority].set_and_save(0);
-                            _priority_did_list[_state[k].priority] = 0;
-                            // update new priority
-                            _state[k].priority = i;
-                        }
-                    }
-                    if (!found_replacement) {
+                // There's a UAVCAN compass missing
+                // Let's check if there's a replacement
+                for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
+                    uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
+                    // Check if this is a potential replacement mag
+                    if (!is_replacement_mag(detected_devid)) {
                         continue;
                     }
-                    _priority_did_stored_list[i].set_and_save(detected_devid);
-                    _priority_did_list[i] = detected_devid;
+                    // We have found a replacement mag, let's replace the existing one
+                    // with this by setting the priority to zero and calling uavcan probe 
+                    gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
+                    _priority_did_stored_list[i].set_and_save(0);
+                    _priority_did_list[i] = 0;
+
+                    AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
+                    if (_uavcan_backend) {
+                        _add_backend(_uavcan_backend);
+                        // we also need to remove the id from unreg list
+                        remove_unreg_dev_id(detected_devid);
+                    } else {
+                        // the mag has already been allocated,
+                        // let's begin the replacement
+                        bool found_replacement = false;
+                        for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
+                            if ((uint32_t)_state[k].dev_id == detected_devid) {
+                                if (_state[k].priority <= uint8_t(i)) {
+                                    // we are already on higher priority
+                                    // nothing to do
+                                    break;
+                                }
+                                found_replacement = true;
+                                // reset old priority of replacement mag
+                                _priority_did_stored_list[_state[k].priority].set_and_save(0);
+                                _priority_did_list[_state[k].priority] = 0;
+                                // update new priority
+                                _state[k].priority = i;
+                            }
+                        }
+                        if (!found_replacement) {
+                            continue;
+                        }
+                        _priority_did_stored_list[i].set_and_save(detected_devid);
+                        _priority_did_list[i] = detected_devid;
+                    }
                 }
             }
         }
@@ -1900,31 +1901,55 @@ Compass::get_declination() const
 float
 Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 {
-    float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
+/*
+    This extracts a roll/pitch-only rotation which is then used to rotate the body frame field into earth frame so the heading can be calculated.
+    One could do:
+        float roll, pitch, yaw;
+        dcm_matrix.to_euler(roll, pitch, yaw)
+        Matrix3f rp_rot;
+        rp_rot.from_euler(roll, pitch, 0)
+        Vector3f ef = rp_rot * field
+
+    Because only the X and Y components are needed it's more efficient to manually calculate:
+
+        rp_rot = [ cos(pitch), sin(roll) * sin(pitch),  cos(roll) * sin(pitch)
+                            0,              cos(roll),              -sin(roll)]
+
+    If the whole matrix is multiplied by cos(pitch) the required trigonometric values can be extracted directly from the existing dcm matrix.
+    This multiplication has no effect on the calculated heading as it changes the length of the North/East vector but not its angle.
+
+        rp_rot = [ cos(pitch)^2, sin(roll) * sin(pitch) * cos(pitch),  cos(roll) * sin(pitch) * cos(pitch)
+                              0,              cos(roll) * cos(pitch),              -sin(roll) * cos(pitch)]
+
+    Preexisting values can be substituted in:
+
+        dcm_matrix.c.x = -sin(pitch)
+        dcm_matrix.c.y =  sin(roll) * cos(pitch)
+        dcm_matrix.c.z =  cos(roll) * cos(pitch)
+
+        rp_rot = [ cos(pitch)^2, dcm_matrix.c.y * -dcm_matrix.c.x,  dcm_matrix.c.z * -dcm_matrix.c.x
+                              0,                   dcm_matrix.c.z,                   -dcm_matrix.c.y]
+
+    cos(pitch)^2 is stil needed. This is the same as 1 - sin(pitch)^2.
+    sin(pitch) is avalable as dcm_matrix.c.x
+*/
+
+    const float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
     const Vector3f &field = get_field(i);
 
-    float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
+    const float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
+    const float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
+    const float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
-    // Declination correction (if supplied)
-    if ( fabsf(_declination) > 0.0f ) {
-        heading = heading + _declination;
-        if (heading > M_PI) {  // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * M_PI);
-        } else if (heading < -M_PI) {
-            heading += (2.0f * M_PI);
-        }
-    }
-
-    return heading;
+    // Declination correction
+    return wrap_PI(heading + _declination);
 }
 
 /// Returns True if the compasses have been configured (i.e. offsets saved)

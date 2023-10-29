@@ -50,10 +50,25 @@ function maybe_prompt_user() {
     fi
 }
 
-sudo usermod -a -G uucp $USER
+sudo usermod -a -G uucp "$USER"
 
-sudo pacman -Sy --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
-pip3 -q install --user -U $PYTHON_PKGS
+sudo pacman -Syu --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
+
+python3 -m venv "$HOME"/venv-ardupilot
+
+# activate it:
+SOURCE_LINE="source $HOME/venv-ardupilot/bin/activate"
+$SOURCE_LINE
+
+if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?" ; then
+    DO_PYTHON_VENV_ENV=1
+fi
+
+if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
+    echo "$SOURCE_LINE" >> ~/.bashrc
+fi
+
+pip3 -q install -U $PYTHON_PKGS
 
 (
     cd /usr/lib/ccache
@@ -78,7 +93,7 @@ exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 if ! grep -Fxq "$exportline" ~/.bashrc ; then
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
         echo "$exportline" >> ~/.bashrc
-        . ~/.bashrc
+        . "$HOME/.bashrc"
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
@@ -88,7 +103,7 @@ exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
     if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
         echo "$exportline2" >> ~/.bashrc
-        . ~/.bashrc
+        . "$HOME/.bashrc"
     else
         echo "Skipping adding $CWD/$ARDUPILOT_TOOLS to PATH."
     fi
@@ -96,7 +111,7 @@ fi
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 (
-    cd $SCRIPT_DIR
+    cd "$SCRIPT_DIR"
     git submodule update --init --recursive
 )
 

@@ -16,10 +16,13 @@
 //
 //  MAVLINK GPS driver
 //
-#include "AP_GPS_MAV.h"
-#include <stdint.h>
+
+#include "AP_GPS_config.h"
 
 #if AP_GPS_MAV_ENABLED
+
+#include "AP_GPS_MAV.h"
+#include <stdint.h>
 
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume

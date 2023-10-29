@@ -37,9 +37,14 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 }
 
+bool RC_Channels_Copter::in_rc_failsafe() const
+{
+    return copter.failsafe.radio;
+}
+
 bool RC_Channels_Copter::has_valid_input() const
 {
-    if (copter.failsafe.radio) {
+    if (in_rc_failsafe()) {
         return false;
     }
     if (copter.failsafe.radio_counter != 0) {

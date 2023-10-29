@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Generator Options
     // @Description: Bitmask of options for generators
-    // @Bitmask: 0:Supress Maintenance-Required Warnings
+    // @Bitmask: 0:Suppress Maintenance-Required Warnings
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
 
@@ -65,13 +65,13 @@ void AP_Generator::init()
             // Not using a generator
             return;
 
-#if AP_GENERATOR_IE650_800_ENABLED
+#if AP_GENERATOR_IE_650_800_ENABLED
         case Type::IE_650_800:
             _driver_ptr = new AP_Generator_IE_650_800(*this);
             break;
 #endif
 
-#if AP_GENERATOR_IE2400_ENABLED
+#if AP_GENERATOR_IE_2400_ENABLED
         case Type::IE_2400:
             _driver_ptr = new AP_Generator_IE_2400(*this);
             break;
@@ -91,7 +91,7 @@ void AP_Generator::init()
 
 void AP_Generator::update()
 {
-    // Return immediatly if not enabled. Don't support run-time disabling of generator
+    // Return immediately if not enabled. Don't support run-time disabling of generator
     if (_driver_ptr == nullptr) {
         return;
     }
@@ -124,7 +124,7 @@ bool AP_Generator::pre_arm_check(char* failmsg, uint8_t failmsg_len) const
             return true;
         }
         // Don't allow arming if we have disabled the generator since boot
-        strncpy(failmsg, "Generator disabled, reboot reqired", failmsg_len);
+        strncpy(failmsg, "Generator disabled, reboot required", failmsg_len);
         return false;
     }
     if (_driver_ptr == nullptr) {

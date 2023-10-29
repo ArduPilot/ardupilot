@@ -20,11 +20,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_SCHEDULER_ENABLED
-#define AP_SCHEDULER_ENABLED 1
-#endif
+#include "AP_Scheduler_config.h"
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Semaphores.h>
@@ -32,12 +28,12 @@
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
-#if HAL_MINIMIZE_FEATURES
-#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
-#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
-#else
+#if AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
 #define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name "*",
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
 #endif
 #define LOOP_RATE 0
 

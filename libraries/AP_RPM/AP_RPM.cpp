@@ -17,6 +17,7 @@
 
 #if AP_RPM_ENABLED
 
+#include "RPM_Backend.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
@@ -199,6 +200,10 @@ void AP_RPM::update(void)
             }
 
             drivers[i]->update();
+
+#if AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
+#endif
         }
     }
 
@@ -282,7 +287,7 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 }
 
 #if HAL_LOGGING_ENABLED
-void AP_RPM::Log_RPM()
+void AP_RPM::Log_RPM() const
 {
     float rpm1 = -1, rpm2 = -1;
 

@@ -273,13 +273,13 @@ void AP_Proximity_RPLidarA2::get_readings()
             }
             // identify the payload data after the descriptor
             static const _descriptor SCAN_DATA_DESCRIPTOR[] {
-                RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81
+                { RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81 }
             };
             static const _descriptor HEALTH_DESCRIPTOR[] {
-                RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06
+                { RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06 }
             };
             static const _descriptor DEVICE_INFO_DESCRIPTOR[] {
-                RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04
+                { RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04 }
             };
             Debug(2,"LIDAR descriptor found");
             if (memcmp((void*)&_payload[0], SCAN_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {

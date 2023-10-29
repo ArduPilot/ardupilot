@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 50m further out
+#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
 #else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
 #endif
@@ -52,8 +52,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Fence Type
     // @Description: Enabled fence types held as bitmask
-    // @Bitmask{Rover}: 1:Circle,2:Polygon
-    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle,2:Polygon,3:Min altitude
+    // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
+    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_DEFAULT),
 
@@ -137,8 +137,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Plane}: OPTIONS
     // @DisplayName: Fence options
-    // @Description: 0:Disable mode change following fence action until fence breach is cleared
-    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared
+    // @Description: 0:Disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(OPTIONS::DISABLE_MODE_CHANGE), AP_PARAM_FRAME_PLANE),
 
@@ -494,7 +494,7 @@ bool AC_Fence::check_fence_polygon()
 /// check_fence_circle - returns true if the circle fence (defined via
 /// parameters) has been freshly breached.  May also set up a backup
 /// fence outside the fence and return a fresh breach if that backup
-/// fence is breaced.
+/// fence is breached.
 bool AC_Fence::check_fence_circle()
 {
     if (!(_enabled_fences & AC_FENCE_TYPE_CIRCLE)) {
@@ -518,7 +518,7 @@ bool AC_Fence::check_fence_circle()
         if (!(_breached_fences & AC_FENCE_TYPE_CIRCLE) ||
             (!is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
             // new breach
-            // create a backup fence 20m further out
+            // create a backup fence 20m or 100m further out
             record_breach(AC_FENCE_TYPE_CIRCLE);
             _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
             return true;
@@ -638,7 +638,7 @@ void AC_Fence::record_breach(uint8_t fence_type)
         // emit a message indicated we're newly-breached, but not too often
         if (now - _last_breach_notify_sent_ms > 1000) {
             _last_breach_notify_sent_ms = now;
-            gcs().send_message(MSG_FENCE_STATUS);
+            GCS_SEND_MESSAGE(MSG_FENCE_STATUS);
         }
     }
 

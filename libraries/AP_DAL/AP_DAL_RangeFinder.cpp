@@ -6,6 +6,7 @@
 #include "AP_DAL.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 AP_DAL_RangeFinder::AP_DAL_RangeFinder()
 {

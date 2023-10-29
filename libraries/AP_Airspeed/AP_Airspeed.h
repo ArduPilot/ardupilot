@@ -2,8 +2,14 @@
 
 #include "AP_Airspeed_config.h"
 
+#if AP_AIRSPEED_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+
+#if AP_AIRSPEED_MSP_ENABLED
+#include <AP_MSP/msp.h>
+#endif
 
 class AP_Airspeed_Backend;
 
@@ -50,7 +56,7 @@ public:
 
 private:
     // state of kalman filter for airspeed ratio estimation
-    Matrix3f P; // covarience matrix
+    Matrix3f P; // covariance matrix
     const float Q0; // process noise matrix top left and middle element
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
@@ -328,3 +334,5 @@ private:
 namespace AP {
     AP_Airspeed *airspeed();
 };
+
+#endif  // AP_AIRSPEED_ENABLED

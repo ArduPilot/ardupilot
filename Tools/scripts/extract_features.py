@@ -24,9 +24,14 @@ else:
 
 class ExtractFeatures(object):
 
-    def __init__(self, filename, nm="arm-none-eabi-nm"):
+    class FindString(object):
+        def __init__(self, string):
+            self.string = string
+
+    def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
         self.filename = filename
         self.nm = nm
+        self.strings = strings
 
         # feature_name should match the equivalent feature in
         # build_options.py ('FEATURE_NAME', 'EXPECTED_SYMBOL').
@@ -35,7 +40,7 @@ class ExtractFeatures(object):
         # FEATURE_NAME will have substitutions made from the match.
         # the substitutions will be upper-cased
         self.features = [
-            ('AP_ADVANCEDFAILSAFE_ENABLED', 'AP::advancedfailsafe',),
+            ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
@@ -94,6 +99,7 @@ class ExtractFeatures(object):
 
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+            ('AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', r'AP_BattMonitor_Backend::update_esc_telem_outbound\b',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
@@ -125,15 +131,17 @@ class ExtractFeatures(object):
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
+            ('HAL_RALLY_ENABLED', r'AP_Rally::get_rally_max\b',),
             ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
-
+            ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
+            ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
             ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
             ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
             ('AP_EFI_CURRAWONG_ECU_ENABLED', r'AP_EFI_Currawong_ECU::update\b',),
             ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
-            ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::update',),
+            ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::init',),
 
             ('OSD_ENABLED', 'AP_OSD::update_osd',),
             ('HAL_PLUSCODE_ENABLE', 'AP_OSD_Screen::draw_pluscode',),
@@ -144,6 +152,8 @@ class ExtractFeatures(object):
             ('AP_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
             ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
 
+            ('AP_CHECK_FIRMWARE_ENABLED', 'AP_CheckFirmware::check_signed_bootloader',),
+
             ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),
             ('QAUTOTUNE_ENABLED', 'ModeQAutotune::_enter',),
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
@@ -153,6 +163,8 @@ class ExtractFeatures(object):
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
+            ('AP_RELAY_ENABLED', 'AP_Relay::init',),
+            ('AP_SERVORELAYEVENTS_ENABLED', 'AP_ServoRelayEvents::update_events',),
 
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
@@ -162,10 +174,13 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
+            ('AP_SBUSOUTPUT_ENABLED', 'AP_SBusOut::sbus_format_frame',),
             ('AP_KDECAN_ENABLED', r'AP_KDECAN::update\b',),
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
+
+            ('AP_OPENDRONEID_ENABLED', 'AP_OpenDroneID::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
             ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
@@ -192,7 +207,29 @@ class ExtractFeatures(object):
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
+            ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
+            ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
+            ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
+            ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
+            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
+
+            ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
+            ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
+            ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
+            ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
+            ('AP_MAVLINK_BATTERY2_ENABLED', 'GCS_MAVLINK::send_battery2'),
+            ('AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'AP_Mount::handle_mount_control'),
+            ('AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'AP_Mount::handle_mount_configure'),
+            ('AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'GCS_MAVLINK::handle_device_op_write'),
+            ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
+            ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
+            ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_mission_request\b'),
+            ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
+            ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
+            ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
+            ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
         ]
 
     def progress(self, msg):
@@ -333,36 +370,53 @@ class ExtractFeatures(object):
 
         return ret
 
+    def extract_strings_from_elf(self, filename):
+        """Runs strings on filename, returns as a list"""
+        text_output = self.run_program('EF', [
+            self.strings,
+            filename
+        ], show_output=False)
+        return text_output.split("\n")
+
     def extract(self):
         '''returns two sets - compiled_in and not_compiled_in'''
 
         build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
 
         symbols = self.extract_symbols_from_elf(self.filename)
+        strings = self.extract_strings_from_elf(self.filename)
 
         remaining_build_options_defines = build_options_defines
         compiled_in_feature_defines = []
         for (feature_define, symbol) in self.features:
-            some_dict = symbols.dict_for_symbol(symbol)
-            # look for symbols without arguments
-            # print("Looking for (%s)" % str(name))
-            for s in some_dict.keys():
-                m = re.match(symbol, s)
-                # print("matching %s with %s" % (symbol, s))
-                if m is None:
-                    continue
-                d = m.groupdict()
-                for key in d.keys():
-                    d[key] = d[key].upper()
-                # filter to just the defines present in
-                # build_options.py - otherwise we end up with (e.g.)
-                # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
-                # doesn't exist in the ArduPilot codebase.
-                some_define = feature_define.format(**d)
-                if some_define not in build_options_defines:
-                    continue
-                compiled_in_feature_defines.append(some_define)
-                remaining_build_options_defines.discard(some_define)
+            if isinstance(symbol, ExtractFeatures.FindString):
+                if symbol.string in strings:
+                    some_define = feature_define
+                    if some_define not in build_options_defines:
+                        continue
+                    compiled_in_feature_defines.append(some_define)
+                    remaining_build_options_defines.discard(some_define)
+            else:
+                some_dict = symbols.dict_for_symbol(symbol)
+                # look for symbols without arguments
+                # print("Looking for (%s)" % str(name))
+                for s in some_dict.keys():
+                    m = re.match(symbol, s)
+                    # print("matching %s with %s" % (symbol, s))
+                    if m is None:
+                        continue
+                    d = m.groupdict()
+                    for key in d.keys():
+                        d[key] = d[key].upper()
+                    # filter to just the defines present in
+                    # build_options.py - otherwise we end up with (e.g.)
+                    # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
+                    # doesn't exist in the ArduPilot codebase.
+                    some_define = feature_define.format(**d)
+                    if some_define not in build_options_defines:
+                        continue
+                    compiled_in_feature_defines.append(some_define)
+                    remaining_build_options_defines.discard(some_define)
         return (compiled_in_feature_defines, remaining_build_options_defines)
 
     def create_string(self):
@@ -372,11 +426,20 @@ class ExtractFeatures(object):
 
         ret = ""
 
-        for compiled_in_feature_define in sorted(compiled_in_feature_defines):
-            ret += compiled_in_feature_define + "\n"
-        for remaining in sorted(not_compiled_in_feature_defines):
-            ret += "!" + remaining + "\n"
+        combined = {}
+        for define in sorted(compiled_in_feature_defines):
+            combined[define] = True
+        for define in sorted(not_compiled_in_feature_defines):
+            combined[define] = False
 
+        def squash_hal_to_ap(a):
+            return re.sub("^HAL_", "AP_", a)
+
+        for define in sorted(combined.keys(), key=squash_hal_to_ap):
+            bang = ""
+            if not combined[define]:
+                bang = "!"
+            ret += bang + define + "\n"
         return ret
 
     def run(self):

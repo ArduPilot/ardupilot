@@ -129,4 +129,7 @@ define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
 AUTOBUILD_TARGETS Copter

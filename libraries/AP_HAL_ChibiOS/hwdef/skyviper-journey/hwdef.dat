@@ -132,4 +132,7 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 8192
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
 
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
 AUTOBUILD_TARGETS Copter

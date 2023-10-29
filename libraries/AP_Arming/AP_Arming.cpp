@@ -29,6 +29,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -72,6 +73,7 @@
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
+#define AP_ARMING_MAGFIELD_ERROR_THRESHOLD 100
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -90,7 +92,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param{Plane, Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and sends the minimum throttle PWM value to the throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS the motor will get THR_MIN when disarmed.
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will occur using either rudder stick arming (if enabled) or GCS command when all mandatory and ARMING_CHECK items are satisfied. Note, when setting this parameter to 0, a reboot is required to immediately arm the plane.
     // @Values: 0:Disabled,1:minimum PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require, float(Required::YES_MIN_PWM),
@@ -140,9 +142,17 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
-    // @Values: 0:None,1:Disable prearm display
+    // @Values: 0:None,1:Disable prearm display,2:Do not send status text on state change
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
+
+    // @Param: MAGTHRESH
+    // @DisplayName: Compass magnetic field strength error threshold vs earth magnetic model
+    // @Description: Compass magnetic field strength error threshold vs earth magnetic model.  X and y axis are compared using this threhold, Z axis uses 2x this threshold.  0 to disable check
+    // @Units: mGauss
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("MAGTHRESH", 10, AP_Arming, magfield_error_threshold,  AP_ARMING_MAGFIELD_ERROR_THRESHOLD),
 
     AP_GROUPEND
 };
@@ -150,6 +160,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
+#endif
+
+#pragma GCC diagnostic push
+#if defined (__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
 #endif
 
 AP_Arming::AP_Arming()
@@ -326,6 +341,7 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+#if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t accel_count = ins.get_accel_count();
@@ -488,6 +504,7 @@ bool AP_Arming::ins_checks(bool report)
 
     return true;
 }
+#endif // AP_INERTIALSENSOR_ENABLED
 
 bool AP_Arming::compass_checks(bool report)
 {
@@ -553,6 +570,25 @@ bool AP_Arming::compass_checks(bool report)
             check_failed(ARMING_CHECK_COMPASS, report, "Compasses inconsistent");
             return false;
         }
+
+        // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
+        Location ahrs_loc;
+        AP_AHRS &ahrs = AP::ahrs();
+        if ((magfield_error_threshold > 0) && ahrs.use_compass() && ahrs.get_location(ahrs_loc)) {
+            const Vector3f veh_mag_field_ef = ahrs.get_rotation_body_to_ned() * _compass.get_field();
+            const Vector3f earth_field_mgauss = AP_Declination::get_earth_field_ga(ahrs_loc) * 1000.0;
+            const Vector3f diff_mgauss = veh_mag_field_ef - earth_field_mgauss;
+            if (MAX(fabsf(diff_mgauss.x), fabsf(diff_mgauss.y)) > magfield_error_threshold) {
+                check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (xy diff:%.0f>%d)",
+                             (double)MAX(fabsf(diff_mgauss.x), (double)fabsf(diff_mgauss.y)), (int)magfield_error_threshold);
+                return false;
+            }
+            if (fabsf(diff_mgauss.x) > magfield_error_threshold*2.0) {
+                check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (z diff:%.0f>%d)",
+                             (double)fabsf(diff_mgauss.z), (int)magfield_error_threshold*2);
+                return false;
+            }           
+        }
     }
 
     return true;
@@ -611,10 +647,12 @@ bool AP_Arming::gps_checks(bool report)
                          (double)distance_m);
             return false;
         }
+#if defined(GPS_BLENDED_INSTANCE)
         if (!gps.blend_health_check()) {
             check_failed(ARMING_CHECK_GPS, report, "GPS blending unhealthy");
             return false;
         }
+#endif
 
         // check AHRS and GPS are within 10m of each other
         if (gps.num_sensors() > 0) {
@@ -635,7 +673,7 @@ bool AP_Arming::gps_checks(bool report)
         if (gps.first_unconfigured_gps(first_unconfigured)) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
-                         "GPS %d failing configuration checks",
+                         "GPS %d still configuring this GPS",
                          first_unconfigured + 1);
             if (report) {
                 gps.broadcast_first_configuration_failure_reason();
@@ -700,7 +738,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
     }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
-        if (!rc().arming_skip_checks_rpy()) {
+        if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const char *names[3] = {"Roll", "Pitch", "Yaw"};
             const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
             for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
@@ -835,7 +873,7 @@ bool AP_Arming::mission_checks(bool report)
             }
             RallyLocation rally_loc = {};
             if (!rally->find_nearest_rally_point(ahrs_loc, rally_loc)) {
-                check_failed(ARMING_CHECK_MISSION, report, "No sufficently close rally point located");
+                check_failed(ARMING_CHECK_MISSION, report, "No sufficiently close rally point located");
                 return false;
             }
 #else
@@ -1047,11 +1085,13 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+#if AP_RELAY_ENABLED
         auto *relay = AP::relay();
         if (relay && !relay->arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }
+#endif
 #if HAL_PARACHUTE_ENABLED
         auto *chute = AP::parachute();
         if (chute && !chute->arming_checks(sizeof(buffer), buffer)) {
@@ -1180,13 +1220,25 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CAN::Protocol::EFI_NWPMU:
                 case AP_CAN::Protocol::USD1:
+                case AP_CAN::Protocol::TOFSenseP:
+                case AP_CAN::Protocol::NanoRadar_NRA24:
+                case AP_CAN::Protocol::Benewake:
+                {
+                    for (uint8_t j = i; j; j--) {
+                        if (AP::can().get_driver_type(i) == AP::can().get_driver_type(j-1)) {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "Same rfnd on different CAN ports");
+                            return false;
+                        }
+                    }
+                    break;
+                }
+                case AP_CAN::Protocol::EFI_NWPMU:
                 case AP_CAN::Protocol::None:
                 case AP_CAN::Protocol::Scripting:
                 case AP_CAN::Protocol::Scripting2:
-                case AP_CAN::Protocol::Benewake:
                 case AP_CAN::Protocol::KDECAN:
+
                     break;
             }
         }
@@ -1244,20 +1296,20 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_PARAM_ENABLED && OSD_ENABLED 
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
+#if OSD_ENABLED 
+    if (check_enabled(ARMING_CHECK_OSD)) {
+        // if no OSD then pass
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
             return true;
         }
-
-        // check camera is ready
+        // do osd checks for configuration
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
             return false;
         }
-    }
+   }
 #endif
     return true;
 }
@@ -1493,7 +1545,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  heater_min_temperature_checks(report)
 #endif
         &  barometer_checks(report)
+#if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)
+#endif
         &  compass_checks(report)
         &  gps_checks(report)
         &  battery_checks(report)
@@ -1537,16 +1591,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
-
-#if AP_FENCE_ENABLED
-    AC_Fence *fence = AP::fence();
-    if (fence != nullptr) {
-        // If a fence is set to auto-enable, turn on the fence
-        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
-            fence->enable(true);
-        }
-    }
-#endif
 
     // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
@@ -1625,6 +1669,19 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     }
 #endif
 
+#if AP_FENCE_ENABLED
+    if (armed) {
+        auto *fence = AP::fence();
+        if (fence != nullptr) {
+            // If a fence is set to auto-enable, turn on the fence
+            if (fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+                fence->enable(true);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence: auto-enabled");
+            }
+        }
+    }
+#endif
+
     return armed;
 }
 
@@ -1666,6 +1723,14 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 #endif
 
     return true;
+}
+
+void AP_Arming::send_arm_disarm_statustext(const char *str) const
+{
+    if (option_enabled(AP_Arming::Option::DISABLE_STATUSTEXT_ON_STATE_CHANGE)) {
+        return;
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "%s", str);
 }
 
 AP_Arming::Required AP_Arming::arming_required() const
@@ -1816,6 +1881,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::TOYMODELANDTHROTTLE:
         case Method::TOYMODELANDFORCE:
         case Method::LANDING:
+        case Method::DDS:
         case Method::UNKNOWN:
             AP::logger().set_long_log_persist(false);
             return;
@@ -1825,7 +1891,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*
- * Get the AP_InertialSensor singleton
+ * Get the AP_Arming singleton
  */
 AP_Arming *AP_Arming::get_singleton()
 {
@@ -1840,3 +1906,5 @@ AP_Arming &arming()
 }
 
 };
+
+#pragma GCC diagnostic pop

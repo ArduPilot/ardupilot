@@ -174,15 +174,8 @@ private:
     std::unordered_multiset<uint32_t> _pending_loopback_ids;
     std::vector<can_filter> _hw_filters_container;
 
-    struct {
-        uint32_t tx_requests;
-        uint32_t tx_full;
+    struct bus_stats : public AP_HAL::CANIface::bus_stats_t {
         uint32_t tx_confirmed;
-        uint32_t tx_write_fail;
-        uint32_t tx_success;
-        uint32_t tx_timedout;
-        uint32_t rx_received;
-        uint32_t rx_errors;
         uint32_t num_downs;
         uint32_t num_rx_poll_req;
         uint32_t num_tx_poll_req;

@@ -7,6 +7,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio.hpp>
+#include <cfloat>
 #include <cmath>
 
 namespace Synth
@@ -29,7 +30,13 @@ struct sTone
     double dEndFrequency = 440.0;
     double dAmplitude = 1.0;
 };
-    
+
+double w(const double dHertz);
+double osc(double dHertz, double dTime, eWaveType waveType);
+double amplitude(double dTime, sEnvelope env);
+bool generate(sf::SoundBuffer* buffer, sEnvelope env, std::vector<sTone> tones, unsigned uMasterVol, unsigned uSampleRate);
+bool generate(sf::SoundBuffer* buffer, sEnvelope env, sTone tone, unsigned uMasterVol, unsigned uSampleRate);
+
 ////////////////////////////////////////////////////////////
 // Converts frequency (Hz) to angular velocity
 ////////////////////////////////////////////////////////////
@@ -101,7 +108,7 @@ double amplitude(double dTime, sEnvelope env)
     else if (dTime > env.dAttackTime && dTime <= (env.dAttackTime + env.dDecayTime))                                                       // Decay phase
         dAmplitude = ((dTime - env.dAttackTime) / env.dDecayTime) * (env.dSustainAmplitude - env.dStartAmplitude) + env.dStartAmplitude;
 
-    else if (dTime <= env.dAttackTime)                                                                                                     // Attack phase
+    else if ((env.dAttackTime >= DBL_EPSILON) && dTime <= env.dAttackTime)                                                                                                     // Attack phase
         dAmplitude = (dTime / env.dAttackTime) * env.dStartAmplitude;
 
     // Amplitude should not be negative, check just in case

@@ -217,9 +217,9 @@ void DroneCANDevice::update_rangefinder() {
     msg.sensor_id = 0;
     msg.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_LIDAR;
     const float dist = AP::sitl()->get_rangefinder(0);
-    if (is_positive(dist)) {
+    if (!isnan(dist)) {
         msg.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE;
-        msg.range = dist;
+        msg.range = MAX(0, dist);
     } else {
         msg.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_FAR;
         msg.range = 0;

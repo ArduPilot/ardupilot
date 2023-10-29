@@ -30,10 +30,6 @@ FLASH_BOOTLOADER_LOAD_KB 128
 
 define HAL_LED_ON 0
 
-# Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1
 
@@ -159,17 +155,22 @@ PF15    I2C4_SDA    I2C4
 I2C_ORDER I2C2 I2C4
 
 # Ethernet
-# PA1    ETH_RMII_REF_CLK    ETH1
-# PA2    ETH_MDIO    ETH1
-# PA7    ETH_RMII_CRS_DV    ETH1
-# PB11    ETH_RMII_TX_EN    ETH1
-# PB12    ETH_RMII_TXD0    ETH1
-# PB13    ETH_RMII_TXD1    ETH1
-# PC1    ETH_MDC    ETH1
-# PC4    ETH_RMII_RXD0    ETH1
-# PC5    ETH_RMII_RXD1    ETH1
-# define BOARD_PHY_ID  MII_LAN8720_ID
-# define BOARD_PHY_RMII
+PC1  ETH_MDC            ETH1
+PA2  ETH_MDIO           ETH1
+PC4  ETH_RMII_RXD0      ETH1
+PC5  ETH_RMII_RXD1      ETH1
+PB12 ETH_RMII_TXD0      ETH1
+PB13 ETH_RMII_TXD1      ETH1
+PB11 ETH_RMII_TX_EN     ETH1
+PA7  ETH_RMII_CRS_DV    ETH1
+PA1  ETH_RMII_REF_CLK   ETH1
+
+define BOARD_PHY_ID  MII_LAN8720_ID
+define BOARD_PHY_RMII
+
+# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
+# Note, lower 3 bytes (ADDR3,4,5) will be replaced with the platform UUID
+define AP_NETWORKING_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
 
 # RCIN
 PB7  TIM4_CH2 TIM4 RCININT  PULLDOWN

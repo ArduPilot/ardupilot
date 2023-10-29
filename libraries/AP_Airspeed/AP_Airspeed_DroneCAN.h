@@ -1,10 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_AIRSPEED_DRONECAN_ENABLED
-#define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_DRONECAN_ENABLED
 
@@ -32,7 +28,7 @@ public:
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
-    static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance, uint32_t previous_devid);
+    static AP_Airspeed_Backend* probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid);
 
 private:
 

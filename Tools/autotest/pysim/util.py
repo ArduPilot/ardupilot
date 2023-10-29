@@ -438,6 +438,7 @@ def start_SITL(binary,
                home=None,
                model=None,
                speedup=1,
+               sim_rate_hz=None,
                defaults_filepath=None,
                unhide_parameters=False,
                gdbserver=False,
@@ -505,7 +506,7 @@ def start_SITL(binary,
                         '-d',
                         '-m',
                         '-S', 'ardupilot-gdb',
-                        'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
+                        'gdb', '--cd', os.getcwd(), '-x', '/tmp/x.gdb', binary, '--args'])
     elif lldb:
         f = open("/tmp/x.lldb", "w")
         for breakingpoint in breakpoints:
@@ -531,21 +532,24 @@ def start_SITL(binary,
         if home is not None:
             cmd.extend(['--home', home])
         cmd.extend(['--model', model])
-        if speedup != 1:
+        if speedup is not None and speedup != 1:
             cmd.extend(['--speedup', str(speedup)])
-        if defaults_filepath is not None:
-            if type(defaults_filepath) == list:
-                defaults = [reltopdir(path) for path in defaults_filepath]
-                if len(defaults):
-                    cmd.extend(['--defaults', ",".join(defaults)])
-            else:
-                cmd.extend(['--defaults', reltopdir(defaults_filepath)])
+        if sim_rate_hz is not None:
+            cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
         cmd.append('--uartC=tcp:2')
         if not enable_fgview_output:
             cmd.append("--disable-fgview")
+
+    if defaults_filepath is not None:
+        if isinstance(defaults_filepath, list):
+            defaults = [reltopdir(path) for path in defaults_filepath]
+            if len(defaults):
+                cmd.extend(['--defaults', ",".join(defaults)])
+        else:
+            cmd.extend(['--defaults', reltopdir(defaults_filepath)])
 
     cmd.extend(customisations)
 

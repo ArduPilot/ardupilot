@@ -44,7 +44,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(FocusType focus_type, float focus_value) override;
+    SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right

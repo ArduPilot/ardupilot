@@ -7,6 +7,7 @@ class AP_Motors;
 class Thrust_Linearization {
 friend class AP_MotorsMulticopter;
 friend class AP_MotorsMulticopter_test;
+friend class AP_MotorsHeli_Single;
 public:
     Thrust_Linearization(AP_Motors& _motors);
 
@@ -42,6 +43,9 @@ public:
 
     // Get lift max
     float get_lift_max() const { return lift_max; }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     AP_Float curve_expo;       // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation

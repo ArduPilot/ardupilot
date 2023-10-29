@@ -20,6 +20,7 @@
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
+#include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
 #include "NeoPixel.h"
@@ -74,6 +75,11 @@ AP_Notify *AP_Notify::_singleton;
 // all I2C_LEDS
 #define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
 
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
+#define DRONECAN_LEDS Notify_LED_DroneCAN
+#else
+#define DRONECAN_LEDS 0
+#endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -90,7 +96,7 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_DroneCAN)
+                                    DRONECAN_LEDS)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -201,7 +207,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 17: DiscreteRGB, 18: NeoPixelRGB
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -333,6 +339,7 @@ void AP_Notify::add_backends(void)
 #endif
 #if AP_NOTIFY_NEOPIXEL_ENABLED
             case Notify_LED_NeoPixel:
+            case Notify_LED_NeoPixelRGB:
                 ADD_BACKEND(new NeoPixel());
                 break;
 #endif
@@ -346,30 +353,28 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
 #endif
-            case Notify_LED_OreoLED:
 #if AP_NOTIFY_OREOLED_ENABLED
+            case Notify_LED_OreoLED:
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
-#endif
                 break;
+#endif
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
             case Notify_LED_DroneCAN:
-#if HAL_ENABLE_DRONECAN_DRIVERS
                 ADD_BACKEND(new DroneCAN_RGB_LED());
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
-
+#endif // AP_NOTIFY_DRONECAN_LED_ENABLED
+#if AP_NOTIFY_SCRIPTING_LED_ENABLED
             case Notify_LED_Scripting:
-#if AP_SCRIPTING_ENABLED
                 ADD_BACKEND(new ScriptingLED());
-#endif
                 break;
-
+#endif
+#if AP_NOTIFY_DSHOT_LED_ENABLED
             case Notify_LED_DShot:
-#if HAL_SUPPORT_RCOUT_SERIAL
                 ADD_BACKEND(new DShotLED());
-#endif
                 break;
+#endif
 #if AP_NOTIFY_LP5562_ENABLED
             case Notify_LED_LP5562_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
@@ -380,6 +385,26 @@ void AP_Notify::add_backends(void)
                 FOREACH_I2C_INTERNAL(b) {
                     ADD_BACKEND(new LP5562(b, 0x30));
                 }
+                break;
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+            case Notify_LED_IS31FL3195_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+            case Notify_LED_IS31FL3195_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+#endif
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+            case Notify_LED_DiscreteRGB:
+                ADD_BACKEND(new DiscreteRGBLed(DISCRETE_RGB_RED_PIN,
+                                               DISCRETE_RGB_GREEN_PIN,
+                                               DISCRETE_RGB_BLUE_PIN,
+                                               DISCRETE_RGB_POLARITY));
                 break;
 #endif
         }

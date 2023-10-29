@@ -18,6 +18,10 @@
   backend driver class for airspeed
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -38,7 +42,7 @@ public:
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
 
-    // true if sensor reads airspeed directly, not via pressue
+    // true if sensor reads airspeed directly, not via pressure
     virtual bool has_airspeed() {return false;}
 
     // return airspeed in m/s if available
@@ -126,3 +130,5 @@ private:
     AP_Airspeed &frontend;
     uint8_t instance;
 };
+
+#endif  // AP_AIRSPEED_ENABLED

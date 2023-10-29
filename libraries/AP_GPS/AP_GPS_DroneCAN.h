@@ -18,9 +18,12 @@
 //
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_DRONECAN_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
@@ -119,6 +122,7 @@ private:
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t instance;
+        uint32_t last_inject_ms;
         AP_GPS_DroneCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 
@@ -146,4 +150,5 @@ private:
         ByteBuffer *buf;
     } _rtcm_stream;
 };
-#endif
+
+#endif  // AP_GPS_DRONECAN_ENABLED

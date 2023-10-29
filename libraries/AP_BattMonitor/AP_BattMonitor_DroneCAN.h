@@ -35,7 +35,8 @@ public:
 
     bool has_current() const override { return true; }
 
-    bool has_consumed_energy() const override { return _has_consumed_energy; }
+    // Always have consumed energy, either directly from BatteryInfoAux msg or by cumulative current draw
+    bool has_consumed_energy() const override { return true; }
 
     bool has_time_remaining() const override { return _has_time_remaining; }
 
@@ -53,6 +54,9 @@ public:
     static void handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg);
 
     void mppt_set_powered_state(bool power_on) override;
+
+    // reset remaining percentage to given value
+    bool reset_remaining(float percentage) override;
 
 private:
     void handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg);
@@ -79,8 +83,11 @@ private:
     static const char* mppt_fault_string(const MPPT_FaultFlags fault);
 #endif
 
+    // Return true if the DroneCAN state of charge should be used.
+    // Return false if state of charge should be calculated locally by counting mah.
+    bool use_CAN_SoC() const;
+
     AP_BattMonitor::BattMonitor_State _interim_state;
-    BattMonitor_DroneCAN_Type _type;
 
     HAL_Semaphore _sem_battmon;
 
@@ -93,7 +100,6 @@ private:
     bool _has_temperature;
     bool _has_cell_voltages;
     bool _has_time_remaining;
-    bool _has_consumed_energy;
     bool _has_battery_info_aux;
     uint8_t _instance;                  // instance of this battery monitor
 

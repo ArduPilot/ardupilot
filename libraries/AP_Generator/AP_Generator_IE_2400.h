@@ -2,7 +2,7 @@
 
 #include "AP_Generator_IE_FuelCell.h"
 
-#if AP_GENERATOR_IE2400_ENABLED
+#if AP_GENERATOR_IE_2400_ENABLED
 
 class AP_Generator_IE_2400 : public AP_Generator_IE_FuelCell
 {
@@ -32,7 +32,9 @@ private:
     // Check for error codes that are deemed severe and would be cause to trigger a battery monitor low failsafe action
     bool is_low_error(const uint32_t err_in) const;
 
+#if HAL_LOGGING_ENABLED
     void log_write(void) override;
+#endif
 
     // IE 2.4kW failsafes
     enum class ErrorCode {
@@ -53,5 +55,5 @@ private:
     uint16_t _spm_pwr; // Stack Power Module (SPM) power draw (Watts)
 
 };
-#endif  // AP_GENERATOR_IE2400_ENABLED
+#endif  // AP_GENERATOR_IE_2400_ENABLED
 

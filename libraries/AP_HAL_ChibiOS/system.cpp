@@ -53,8 +53,9 @@ static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value"
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 1
 #endif
 
-#define QUOTE(str) #str
-#define EXPAND_AND_QUOTE(str) QUOTE(str)
+#define QUOTE1(str) #str
+#define QUOTE2(str) QUOTE1(str)
+#define EXPAND_AND_QUOTE(str) QUOTE2(str)
 #define ASSERT_CLOCK(clk) static_assert(HAL_EXPECTED_ ##clk == (clk), "unexpected " #clk " value: '" EXPAND_AND_QUOTE(clk) "'")
 
 #if defined(HAL_EXPECTED_STM32_SYS_CK) && defined(STM32_SYS_CK)
@@ -303,6 +304,13 @@ void __entry_hook()
 }
 #endif
 
+uint32_t chibios_rand_generate()
+{
+    uint32_t val;
+    hal.util->get_random_vals((uint8_t*)&val, sizeof(val));
+    return val;
+}
+
 }
 namespace AP_HAL {
 
@@ -378,32 +386,6 @@ __FASTRAMFUNC__ uint64_t micros64()
 __FASTRAMFUNC__ uint64_t millis64()
 {
     return hrt_micros64() / 1000U;
-}
-
-
-__FASTRAMFUNC__ uint32_t native_micros()
-{
-    return micros();
-}
-
-__FASTRAMFUNC__ uint32_t native_millis()
-{
-    return millis();
-}
-
-__FASTRAMFUNC__ uint16_t native_millis16()
-{
-    return millis16();
-}
-
-__FASTRAMFUNC__ uint64_t native_micros64()
-{
-    return micros64();
-}
-
-__FASTRAMFUNC__ uint64_t native_millis64()
-{
-    return millis64();
 }
 
 

@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Circle options
     // @Description: 0:Enable or disable using the pitch/roll stick control circle mode's radius and rate
-    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter
+    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AC_Circle, _options, 1),
 
@@ -174,7 +174,7 @@ bool AC_Circle::update(float climb_rate_cms)
         _angular_vel = MAX(_angular_vel, _angular_vel_max);
     }
 
-    // update the target angle and total angle traveled
+    // update the target angle and total angle travelled
     float angle_change = _angular_vel * dt;
     _angle += angle_change;
     _angle = wrap_PI(_angle);

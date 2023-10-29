@@ -1,4 +1,6 @@
-FROM ubuntu:20.04
+ARG BASE_IMAGE="ubuntu"
+ARG TAG="22.04"
+FROM ${BASE_IMAGE}:${TAG}
 WORKDIR /ardupilot
 
 ARG DEBIAN_FRONTEND=noninteractive

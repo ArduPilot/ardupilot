@@ -346,25 +346,23 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
 
     const float land_airspeed = tecs_Controller->get_land_airspeed();
     int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
-
+    if (land_airspeed >= 0) {
+        target_airspeed_cm = land_airspeed * 100;
+    } else {
+        target_airspeed_cm = 0.5 * (aparm.airspeed_cruise_cm * 0.01 + aparm.airspeed_min);
+    }
     switch (type_slope_stage) {
-    case SlopeStage::APPROACH:
-        if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
+    case SlopeStage::NORMAL:
+        target_airspeed_cm = aparm.airspeed_cruise_cm;
         break;
-
+    case SlopeStage::APPROACH:
+        break;
     case SlopeStage::PREFLARE:
     case SlopeStage::FINAL:
         if (pre_flare_airspeed > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
             target_airspeed_cm = pre_flare_airspeed * 100;
-        } else if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
         }
-        break;
-
-    default:
         break;
     }
 

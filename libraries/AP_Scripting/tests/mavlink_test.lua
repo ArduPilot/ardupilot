@@ -21,7 +21,7 @@ end
 function update()
     local msg,chan,timestamp_ms = mavlink.receive_chan()
     if msg then
-        gcs:send_text(6, string.format("Received message on channel %d at %d", chan, timestamp_ms))
+        gcs:send_text(6, string.format("Received message on channel %d at %s", chan, tostring(timestamp_ms)))
         local parsed_msg = mavlink_msgs.decode(msg, msg_map)
         if parsed_msg.msgid == heartbeat_msgid then
             gcs:send_text(6, string.format("Received heartbeat from %d", parsed_msg.sysid))

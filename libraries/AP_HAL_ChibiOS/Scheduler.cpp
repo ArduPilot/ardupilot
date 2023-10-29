@@ -50,6 +50,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -76,6 +77,13 @@ THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
 #ifndef HAL_NO_MONITOR_THREAD
 THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
+#endif
+
+// while the vehicle is being initialised we expect there to be random
+// delays which may exceed the watchdog timeout.  By default, We pat
+// the watchdog in the timer thread during setup to avoid the watchdog:
+#ifndef AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED
+#define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
 Scheduler::Scheduler()
@@ -371,10 +379,12 @@ void Scheduler::_rcout_thread(void *arg)
 */
 bool Scheduler::in_expected_delay(void) const
 {
+#if AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED
     if (!_initialized) {
         // until setup() is complete we expect delays
         return true;
     }
+#endif
     if (expect_delay_start != 0) {
         uint32_t now = AP_HAL::millis();
         if (now - expect_delay_start <= expect_delay_length) {
@@ -440,8 +450,26 @@ void Scheduler::_monitor_thread(void *arg)
         }
         if (loop_delay >= 500 && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
+            AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
+            /*
+              if we are armed and get this condition then it is likely
+              a lock ordering deadlock. If the main thread is waiting
+              on a mutex then we try to force release the mutex from
+              the thread that is holding it.
+            */
+            try_force_mutex();
         }
+
+#if AP_CRASHDUMP_ENABLED
+        if (loop_delay >= 1800 && using_watchdog) {
+            // we are about to watchdog, better to trigger a hardfault
+            // now and get a crash dump file
+            void *ptr = (void*)0xE000FFFF;
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *)ptr;
+            gptr();
+        }
+#endif
 
 #if HAL_LOGGING_ENABLED
     if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
@@ -765,7 +793,22 @@ void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+    ext_watchdog_pat(last_watchdog_pat_ms);
+#endif
 }
+
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+// toggle the external watchdog gpio pin
+void Scheduler::ext_watchdog_pat(uint32_t now_ms)
+{
+    // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
+    if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
+        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        last_ext_watchdog_ms = now_ms;
+    }
+}
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*
@@ -786,19 +829,61 @@ void Scheduler::check_stack_free(void)
 
     if (stack_free(&__main_stack_base__) < min_stack) {
         // use "line number" of 0xFFFF for ISR stack low
+#if AP_INTERNALERROR_ENABLED
         AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
+#endif
     }
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (stack_free(tp->wabase) < min_stack) {
             // use task priority for line number. This allows us to
             // identify the task fairly reliably
+#if AP_INTERNALERROR_ENABLED
             AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->realprio);
+#endif
         }
     }
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
 #endif // CH_CFG_USE_DYNAMIC
+
+/*
+  try to avoid watchdog during a locking deadlock by force releasing a
+  mutex that is blocking the main thread
+ */
+void Scheduler::try_force_mutex(void)
+{
+#if HAL_LOGGING_ENABLED
+    chSysLock();
+    thread_t *main_thread = get_main_thread();
+
+    if (main_thread == nullptr || main_thread->state != CH_STATE_WTMTX) {
+        chSysUnlock();
+        return;
+    }
+
+    mutex_t *wtmtx = main_thread->u.wtmtxp;
+    if (wtmtx == nullptr || wtmtx->owner == nullptr) {
+        chSysUnlock();
+        return;
+    }
+    char thdname[17] {};
+    uint16_t sem_line = hal.util->persistent_data.semaphore_line;
+    strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
+
+    // we will force release the lock
+    chMtxForceReleaseS(wtmtx);
+    chSysUnlock();
+
+    // log a DLCK message with information on the deadlock we have avoided
+    AP::logger().WriteCritical("DLCK", "TimeUS,SemLine,ThdName,MtxP", "QHNI",
+                               AP_HAL::micros64(),
+                               sem_line,
+                               thdname,
+                               unsigned(wtmtx));
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "CRITICAL Deadlock %u %s %p", sem_line, thdname, wtmtx);
+#endif
+}
 
 #endif  // HAL_SCHEDULER_ENABLED

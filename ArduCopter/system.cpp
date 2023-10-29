@@ -92,7 +92,9 @@ void Copter::init_ardupilot()
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
@@ -151,8 +153,10 @@ void Copter::init_ardupilot()
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
 
+#if RANGEFINDER_ENABLED == ENABLED
     // initialise rangefinder
     init_rangefinder();
+#endif
 
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
@@ -195,11 +199,6 @@ void Copter::init_ardupilot()
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we are
-    // ready to fly
-    serial_manager.set_blocking_writes_all(false);
 
     // enable CPU failsafe
     failsafe_enable();

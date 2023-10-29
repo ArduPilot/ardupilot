@@ -40,6 +40,7 @@ public:
     bool throttle_override(float &percent, const float base_throttle);
 
     enum ICE_State {
+        ICE_DISABLED = -1,
         ICE_OFF=0,
         ICE_START_HEIGHT_DELAY=1,
         ICE_START_DELAY=2,
@@ -48,10 +49,10 @@ public:
     };
 
     // get current engine control state
-    ICE_State get_state(void) const { return state; }
+    ICE_State get_state(void) const { return !enable?ICE_DISABLED:state; }
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
-    bool engine_control(float start_control, float cold_start, float height_delay);
+    bool engine_control(float start_control, float cold_start, float height_delay, uint32_t flags);
 
     // update min throttle for idle governor
     void update_idle_governor(int8_t &min_throttle);
@@ -137,13 +138,16 @@ private:
     // we are waiting for valid height data
     bool height_pending:1;
 
+    bool allow_single_start_while_disarmed;
+
     // idle governor
     float idle_governor_integrator;
 
     enum class Options : uint16_t {
-        DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
-        DISABLE_REDLINE_GOVERNOR = (1U << 1),
-        THROTTLE_WHILE_DISARMED = (1U << 2),
+        DISABLE_IGNITION_RC_FAILSAFE = (1U << 0),
+        DISABLE_REDLINE_GOVERNOR     = (1U << 1),
+        THROTTLE_WHILE_DISARMED      = (1U << 2),
+        NO_RUNNING_WHILE_DISARMED    = (1U << 3),
     };
     AP_Int16 options;
 

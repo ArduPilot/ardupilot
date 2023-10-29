@@ -8,23 +8,23 @@ void Blimp::default_dead_zones()
 {
     channel_right->set_default_dead_zone(20);
     channel_front->set_default_dead_zone(20);
-    channel_down->set_default_dead_zone(30);
+    channel_up->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
     rc().channel(CH_6)->set_default_dead_zone(0);
 }
 
 void Blimp::init_rc_in()
 {
-    channel_right     = rc().channel(rcmap.roll()-1);
-    channel_front    = rc().channel(rcmap.pitch()-1);
-    channel_down = rc().channel(rcmap.throttle()-1);
-    channel_yaw      = rc().channel(rcmap.yaw()-1);
+    channel_right = rc().channel(rcmap.roll()-1);
+    channel_front = rc().channel(rcmap.pitch()-1);
+    channel_up    = rc().channel(rcmap.throttle()-1);
+    channel_yaw   = rc().channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_right->set_angle(RC_SCALE);
     channel_front->set_angle(RC_SCALE);
     channel_yaw->set_angle(RC_SCALE);
-    channel_down->set_angle(RC_SCALE);
+    channel_up->set_angle(RC_SCALE);
 
     // set default dead zones
     default_dead_zones();
@@ -58,14 +58,14 @@ void Blimp::read_radio()
     if (rc().read_input()) {
         ap.new_radio_frame = true;
 
-        set_throttle_and_failsafe(channel_down->get_radio_in());
-        set_throttle_zero_flag(channel_down->get_control_in());
+        set_throttle_and_failsafe(channel_up->get_radio_in());
+        set_throttle_zero_flag(channel_up->get_control_in());
 
         // RC receiver must be attached if we've just got input
         ap.rc_receiver_present = true;
 
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(channel_down->get_control_in(), dt);
+        rc_throttle_control_in_filter.apply(channel_up->get_control_in(), dt);
         last_radio_update_ms = tnow_ms;
         return;
     }

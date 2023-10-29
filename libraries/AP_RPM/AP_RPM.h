@@ -24,9 +24,6 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_RPM_Params.h"
 
-// Maximum number of RPM measurement instances available on this platform
-#define RPM_MAX_INSTANCES 2
-
 class AP_RPM_Backend;
 
 class AP_RPM
@@ -116,9 +113,7 @@ private:
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
     uint8_t num_instances;
 
-    void detect_instance(uint8_t instance);
-
-    void Log_RPM();
+    void Log_RPM() const;
 };
 
 namespace AP {

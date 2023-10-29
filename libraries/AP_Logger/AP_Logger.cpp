@@ -15,6 +15,10 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if HAL_LOGGER_FENCE_ENABLED
+    #include <AC_Fence/AC_Fence.h>
+#endif
+
 AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
@@ -156,7 +160,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 #if HAL_LOGGING_BLOCK_ENABLED
     // @Param: _BLK_RATEMAX
     // @DisplayName: Maximum logging rate for block backend
-    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means that rate limiting is disabled.
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the block backend. A value of zero means that rate limiting is disabled.
     // @Units: Hz
     // @Range: 0 1000
     // @Increment: 0.1
@@ -907,6 +911,20 @@ void AP_Logger::Write_Fence()
     FOR_EACH_BACKEND(Write_Fence());
 }
 #endif
+
+void AP_Logger::Write_NamedValueFloat(const char *name, float value)
+{
+    WriteStreaming(
+        "NVF",
+        "TimeUS,Name,Value",
+        "s#-",
+        "F--",
+        "QNf",
+        AP_HAL::micros(),
+        name,
+        value
+        );
+}
 
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)

@@ -1,13 +1,11 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
-
-#ifndef AP_RANGEFINDER_LEDDARONE_ENABLED
-#define AP_RANGEFINDER_LEDDARONE_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_LEDDARONE_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 // defines
 #define LEDDARONE_DEFAULT_ADDRESS 0x01

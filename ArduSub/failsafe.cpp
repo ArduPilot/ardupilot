@@ -88,9 +88,9 @@ void Sub::failsafe_sensors_check()
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Depth sensor error!");
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::BAD_DEPTH);
 
-    if (control_mode == ALT_HOLD || control_mode == SURFACE || mode_requires_GPS(control_mode)) {
+    if (control_mode == Mode::Number::ALT_HOLD || control_mode == Mode::Number::SURFACE || sub.flightmode->requires_GPS()) {
         // This should always succeed
-        if (!set_mode(MANUAL, ModeReason::BAD_DEPTH)) {
+        if (!set_mode(Mode::Number::MANUAL, ModeReason::BAD_DEPTH)) {
             // We should never get here
             arming.disarm(AP_Arming::Method::BADFLOWOFCONTROL);
         }
@@ -156,7 +156,7 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 
     switch((Failsafe_Action)action) {
         case Failsafe_Action_Surface:
-            set_mode(SURFACE, ModeReason::BATTERY_FAILSAFE);
+            set_mode(Mode::Number::SURFACE, ModeReason::BATTERY_FAILSAFE);
             break;
         case Failsafe_Action_Disarm:
             arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
@@ -299,7 +299,7 @@ void Sub::failsafe_leak_check()
 
     // Handle failsafe action
     if (failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
-        set_mode(SURFACE, ModeReason::LEAK_FAILSAFE);
+        set_mode(Mode::Number::SURFACE, ModeReason::LEAK_FAILSAFE);
     }
 }
 
@@ -352,11 +352,11 @@ void Sub::failsafe_gcs_check()
     if (g.failsafe_gcs == FS_GCS_DISARM) {
         arming.disarm(AP_Arming::Method::GCSFAILSAFE);
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
-        if (!set_mode(ALT_HOLD, ModeReason::GCS_FAILSAFE)) {
+        if (!set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_FAILSAFE)) {
             arming.disarm(AP_Arming::Method::GCS_FAILSAFE_HOLDFAILED);
         }
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
-        if (!set_mode(SURFACE, ModeReason::GCS_FAILSAFE)) {
+        if (!set_mode(Mode::Number::SURFACE, ModeReason::GCS_FAILSAFE)) {
             arming.disarm(AP_Arming::Method::GCS_FAILSAFE_SURFACEFAILED);
         }
     }
@@ -380,7 +380,7 @@ void Sub::failsafe_crash_check()
     }
 
     // return immediately if we are not in an angle stabilized flight mode
-    if (control_mode == ACRO || control_mode == MANUAL) {
+    if (control_mode == Mode::Number::ACRO || control_mode == Mode::Number::MANUAL) {
         last_crash_check_pass_ms = tnow;
         failsafe.crash = false;
         return;
@@ -425,7 +425,7 @@ void Sub::failsafe_crash_check()
 void Sub::failsafe_terrain_check()
 {
     // trigger with 5 seconds of failures while in AUTO mode
-    bool valid_mode = (control_mode == AUTO || control_mode == GUIDED);
+    bool valid_mode = (control_mode == Mode::Number::AUTO || control_mode == Mode::Number::GUIDED);
     bool timeout = (failsafe.terrain_last_failure_ms - failsafe.terrain_first_failure_ms) > FS_TERRAIN_TIMEOUT_MS;
     bool trigger_event = valid_mode && timeout;
 
@@ -470,7 +470,7 @@ void Sub::failsafe_terrain_on_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     // If rangefinder is enabled, we can recover from this failsafe
-    if (!rangefinder_state.enabled || !auto_terrain_recover_start()) {
+    if (!rangefinder_state.enabled || !sub.mode_auto.auto_terrain_recover_start()) {
         failsafe_terrain_act();
     }
 
@@ -482,14 +482,14 @@ void Sub::failsafe_terrain_act()
 {
     switch (g.failsafe_terrain) {
     case FS_TERRAIN_HOLD:
-        if (!set_mode(POSHOLD, ModeReason::TERRAIN_FAILSAFE)) {
-            set_mode(ALT_HOLD, ModeReason::TERRAIN_FAILSAFE);
+        if (!set_mode(Mode::Number::POSHOLD, ModeReason::TERRAIN_FAILSAFE)) {
+            set_mode(Mode::Number::ALT_HOLD, ModeReason::TERRAIN_FAILSAFE);
         }
         AP_Notify::events.failsafe_mode_change = 1;
         break;
 
     case FS_TERRAIN_SURFACE:
-        set_mode(SURFACE, ModeReason::TERRAIN_FAILSAFE);
+        set_mode(Mode::Number::SURFACE, ModeReason::TERRAIN_FAILSAFE);
         AP_Notify::events.failsafe_mode_change = 1;
         break;
 

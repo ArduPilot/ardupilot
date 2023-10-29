@@ -150,16 +150,11 @@ SPIDEV osd       SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
-
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
@@ -170,6 +165,5 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
 include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc

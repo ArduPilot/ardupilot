@@ -159,3 +159,8 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
     // Note that this bypasses the base class checks
     return true;
 }
+
+bool ModeAuto::is_landing() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
+}

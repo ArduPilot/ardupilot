@@ -51,13 +51,6 @@ public:
         return _singleton;
     }
 
-    // Oreo LED Themes
-    enum Oreo_LED_Theme {
-        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
-        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
-        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
-    };
-
     enum Notify_LED_Type {
         Notify_LED_None                     = 0,        // not enabled
         Notify_LED_Board                    = (1 << 0), // Built in board LED's
@@ -68,8 +61,12 @@ public:
 #if AP_NOTIFY_PCA9685_ENABLED
         Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
 #endif
+#if AP_NOTIFY_OREOLED_ENABLED
         Notify_LED_OreoLED                  = (1 << 4), // Oreo
+#endif
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
         Notify_LED_DroneCAN                   = (1 << 5), // UAVCAN RGB LED
+#endif
 #if AP_NOTIFY_NCP5623_ENABLED
         Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
         Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
@@ -80,12 +77,28 @@ public:
 #if AP_NOTIFY_PROFILED_ENABLED
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
 #endif
+#if AP_NOTIFY_SCRIPTING_LED_ENABLED
         Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
+#endif
+#if AP_NOTIFY_DSHOT_LED_ENABLED
         Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
-        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED
+#endif
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
+        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED (SPI)
+#endif
 #if AP_NOTIFY_LP5562_ENABLED
-        Notify_LED_LP5562_I2C_External          = (1 << 13), // LP5562
-        Notify_LED_LP5562_I2C_Internal          = (1 << 14), // LP5562
+        Notify_LED_LP5562_I2C_External      = (1 << 13), // LP5562
+        Notify_LED_LP5562_I2C_Internal      = (1 << 14), // LP5562
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+        Notify_LED_IS31FL3195_I2C_External  = (1 << 15), // IS31FL3195
+        Notify_LED_IS31FL3195_I2C_Internal  = (1 << 16), // IS31FL3195
+#endif
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+        Notify_LED_DiscreteRGB              = (1 << 17), // DiscreteRGB
+#endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
+        Notify_LED_NeoPixelRGB              = (1 << 18), // NeoPixel AdaFruit 4544 Worldsemi WS2811
 #endif
         Notify_LED_MAX
     };
@@ -203,6 +216,7 @@ public:
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
     uint8_t get_led_len() const { return _led_len; }
+    uint32_t get_led_type() const { return _led_type; }
     int8_t get_rgb_led_brightness_percent() const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

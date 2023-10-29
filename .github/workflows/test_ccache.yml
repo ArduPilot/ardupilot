@@ -56,6 +56,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
   pull_request:
     paths-ignore:
@@ -112,6 +114,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
   workflow_dispatch:
 
@@ -121,8 +125,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -140,5 +144,5 @@ jobs:
         run: |
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
           Tools/scripts/build_tests/test_ccache.py --boards MatekF405,MatekF405-bdshot --min-cache-pct=75
-          Tools/scripts/build_tests/test_ccache.py --boards CubeOrange,Durandal --min-cache-pct=75
+          Tools/scripts/build_tests/test_ccache.py --boards Durandal,Pixhawk6X --min-cache-pct=70
 

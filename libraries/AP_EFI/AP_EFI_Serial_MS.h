@@ -46,7 +46,7 @@ private:
     uint8_t step;
     uint8_t response_flag;
     uint16_t message_counter;
-    uint32_t last_response_ms;
+    uint32_t last_request_ms;
 
     // confirmed that last command was ok
     bool last_command_confirmed;

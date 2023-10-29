@@ -1,11 +1,12 @@
 #include "AP_Camera_Backend.h"
+#include <AP_Mount/AP_Mount.h>
 
 #if AP_CAMERA_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 
-// Write a Camera packet
+// Write a Camera packet.  Also writes a Mount packet if available
 void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
 {
     // exit immediately if no logger
@@ -41,9 +42,14 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
         altitude_gps = 0;
     }
 
+    // if timestamp is zero set to current system time
+    if (timestamp_us == 0) {
+        timestamp_us = AP_HAL::micros64();
+    }
+
     const struct log_Camera pkt{
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
-        time_us     : timestamp_us ? timestamp_us : AP_HAL::micros64(),
+        time_us     : timestamp_us,
         instance    : _instance,
         image_number: image_index,
         gps_time    : gps.time_week_ms(),
@@ -58,6 +64,13 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+
+#if HAL_MOUNT_ENABLED
+    auto *mount = AP_Mount::get_singleton();
+    if (mount!= nullptr) {
+        mount->write_log(get_mount_instance(), timestamp_us);
+    }
+#endif
 }
 
 // Write a Camera packet

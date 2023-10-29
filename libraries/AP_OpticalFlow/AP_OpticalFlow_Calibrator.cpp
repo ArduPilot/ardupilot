@@ -13,7 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
+
 #include "AP_OpticalFlow_Calibrator.h"
+#include <AP_InternalError/AP_InternalError.h>
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -63,6 +69,7 @@ bool AP_OpticalFlow_Calibrator::update()
 {
     // prefix for reporting
     const char* prefix_str = "FlowCal:";
+    (void)prefix_str;  // in case !HAL_GCS_ENABLED
 
     // while running add samples
     if (_cal_state == CalState::RUNNING) {
@@ -141,7 +148,9 @@ void AP_OpticalFlow_Calibrator::add_sample(uint32_t timestamp_ms, const Vector2f
     // check enough roll or pitch movement and record sample
     const bool rates_x_sufficient = (fabsf(body_rate.x) >= AP_OPTICALFLOW_CAL_ROLLPITCH_MIN_RADS) && (fabsf(flow_rate.x) >= AP_OPTICALFLOW_CAL_ROLLPITCH_MIN_RADS);
     if (rates_x_sufficient && (_cal_data[0].num_samples < ARRAY_SIZE(_cal_data[0].samples))) {
+# if HAL_LOGGING_ENABLED
         log_sample(0, _cal_data[0].num_samples, flow_rate.x, body_rate.x, los_pred.x);
+#endif
         _cal_data[0].samples[_cal_data[0].num_samples].flow_rate = flow_rate.x;
         _cal_data[0].samples[_cal_data[0].num_samples].body_rate = body_rate.x;
         _cal_data[0].samples[_cal_data[0].num_samples].los_pred = los_pred.x;
@@ -149,7 +158,9 @@ void AP_OpticalFlow_Calibrator::add_sample(uint32_t timestamp_ms, const Vector2f
     }
     const bool rates_y_sufficient = (fabsf(body_rate.y) >= AP_OPTICALFLOW_CAL_ROLLPITCH_MIN_RADS) && (fabsf(flow_rate.y) >= AP_OPTICALFLOW_CAL_ROLLPITCH_MIN_RADS);
     if (rates_y_sufficient && (_cal_data[1].num_samples < ARRAY_SIZE(_cal_data[1].samples))) {
+# if HAL_LOGGING_ENABLED
         log_sample(1, _cal_data[1].num_samples, flow_rate.y, body_rate.y, los_pred.y);
+#endif
         _cal_data[1].samples[_cal_data[1].num_samples].flow_rate = flow_rate.y;
         _cal_data[1].samples[_cal_data[1].num_samples].body_rate = body_rate.y;
         _cal_data[1].samples[_cal_data[1].num_samples].los_pred = los_pred.y;
@@ -180,7 +191,9 @@ bool AP_OpticalFlow_Calibrator::calc_scalars(uint8_t axis, float& scalar, float&
 {
     // prefix for reporting
     const char* prefix_str = "FlowCal:";
+    (void)prefix_str;  // in case !HAL_GCS_ENABLED
     const char* axis_str = axis == 0 ? "x" : "y";
+    (void)axis_str;  // in case !HAL_GCS_ENABLED
 
     // check we have samples
     // this should never fail because this method should only be called once the sample buffer is full
@@ -298,6 +311,7 @@ float AP_OpticalFlow_Calibrator::calc_mean_squared_residuals(uint8_t axis, float
     return sum;
 }
 
+#if HAL_LOGGING_ENABLED
 // log all samples
 void AP_OpticalFlow_Calibrator::log_sample(uint8_t axis, uint8_t sample_num, float flow_rate, float body_rate, float los_pred)
 {
@@ -323,3 +337,6 @@ void AP_OpticalFlow_Calibrator::log_sample(uint8_t axis, uint8_t sample_num, flo
         (double)body_rate,
         (double)los_pred);
 }
+#endif  // HAL_LOGGING_ENABLED
+
+#endif  // AP_OPTICALFLOW_CALIBRATOR_ENABLED

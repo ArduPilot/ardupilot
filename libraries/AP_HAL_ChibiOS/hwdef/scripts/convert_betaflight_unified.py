@@ -45,6 +45,7 @@ alignment = {
     "CW90FLIP" : "ROTATION_ROLL_180",
     "CW180FLIP" : "ROTATION_ROLL_180_YAW_90",
     "CW270FLIP" : "ROTATION_PITCH_180",
+    "DEFAULT" : "ROTATION_NONE",
 }
 
 parser = argparse.ArgumentParser("convert_betaflight_unified.py")
@@ -106,8 +107,25 @@ def write_imu_config(f, n):
     f.write('''
 # IMU setup
 SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
-IMU Invensense SPI:imu%s %s
-''' % (n, bus, n, n, alignment[align]))
+''' % (n, bus, n))
+
+    c = 0
+    for define in defines:
+        for imudefine in ['USE_GYRO_SPI_', 'USE_ACCGYRO_']:
+            if define.startswith(imudefine):
+                imu = define[len(imudefine):]
+                c = c + 1
+                if c == int(n):
+                    if imu == 'ICM42688P':
+                        imudriver = 'Invensensev3'
+                    elif imu == 'BMI270':
+                        imudriver = 'BMI270'
+                    else:
+                        imudriver = 'Invensense'
+                    f.write('''
+IMU %s SPI:imu%s %s
+''' % (imudriver, n, alignment[align]))
+
     dma = "SPI" + bus + "*"
     dma_noshare[dma] = dma
 
@@ -139,6 +157,11 @@ def convert_file(fname, board_id):
         reserve_start = 96
     elif mcuclass == "H7":
         reserve_start = 384
+    else:
+        mcuclass = "F4"
+        mcu = "F405"
+        flash_size = 1024
+        reserve_start = 48
 
     # preamble
 
@@ -316,7 +339,7 @@ define HAL_BATT_VOLT_SCALE 11.0
             f.write("%s BATT_CURRENT_SENS %s SCALE(1)\n" % (adc[1], name))
             f.write('''define HAL_BATT_CURR_PIN %s
 define HAL_BATT_CURR_SCALE %.1f
-''' % (get_ADC1_chan(mcu, adc[1]), int(settings['ibata_scale']) * 59.5 / 168 )) # scale taken from KakuteH7
+''' % (get_ADC1_chan(mcu, adc[1]), 10000 / int(settings['ibata_scale'])))
         elif (adc[3] == "ADC_RSSI"):
             f.write("%s RSSI_ADC %s\n" % (adc[1], name))
             f.write("define BOARD_RSSI_ANA_PIN %s\n" % (get_ADC1_chan(mcu, adc[1])))
@@ -437,6 +460,11 @@ def convert_bootloader(fname, board_id):
         reserve_start = 96
     elif mcuclass == "H7":
         reserve_start = 384
+    else:
+        mcuclass = "F4"
+        mcu = "F405"
+        flash_size = 1024
+        reserve_start = 48
 
     # preamble
 

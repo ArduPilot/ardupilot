@@ -6,5 +6,3 @@ APJ_BOARD_ID 10140
 
 # enable and enforce OpenDroneID
 define AP_OPENDRONEID_ENABLED 1
-
-

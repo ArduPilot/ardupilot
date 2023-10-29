@@ -65,11 +65,10 @@
 /*
  * Memory attributes settings.
  */
-//  Disable ChibiOS memory protection which is fixed to SRAM1-3
-#define STM32_NOCACHE_ENABLE                FALSE
-//#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
-//#define STM32_NOCACHE_RBAR                  0x24000000U
-//#define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_16K
+// #define STM32_NOCACHE_ENABLE                TRUE
+#define STM32_NOCACHE_MPU_REGION_ETH            MPU_REGION_6
+// #define STM32_NOCACHE_RBAR                  0x30040000U
+// #define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_32K
 
 // enable memory protection on SRAM4, used for bdshot
 #define STM32_NOCACHE_MPU_REGION_1          MPU_REGION_5
@@ -199,14 +198,15 @@
 #ifdef HAL_CUSTOM_MCU_CLOCKRATE
 #if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
 #define STM32_PLL1_DIVN_VALUE               120
+#define STM32_PLL1_DIVQ_VALUE               12
 #else
 #error "Unable to configure custom clockrate"
 #endif
 #else
 #define STM32_PLL1_DIVN_VALUE               100
+#define STM32_PLL1_DIVQ_VALUE               10
 #endif
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               50
@@ -285,9 +285,15 @@
 #ifndef STM32_MCO1SEL
 #define STM32_MCO1SEL                       STM32_MCO1SEL_HSE_CK
 #endif
+#ifndef STM32_MCO1PRE_VALUE
 #define STM32_MCO1PRE_VALUE                 4
+#endif
+#ifndef STM32_MCO2SEL
 #define STM32_MCO2SEL                       STM32_MCO2SEL_SYS_CK
+#endif
+#ifndef STM32_MCO2PRE_VALUE
 #define STM32_MCO2PRE_VALUE                 4
+#endif
 #define STM32_TIMPRE_ENABLE                 TRUE
 #define STM32_HRTIMSEL                      0
 #define STM32_STOPKERWUCK                   0

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <AP_Common/AP_Common.h>
+
 /*
   common protocol definitions between AP_IOMCU and iofirmware
  */
@@ -56,6 +57,7 @@ enum iopage {
     PAGE_FAILSAFE_PWM = 55,
     PAGE_MIXING = 200,
     PAGE_GPIO = 201,
+    PAGE_DSHOT = 202,
 };
 
 // setup page registers
@@ -78,6 +80,7 @@ enum iopage {
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_OUTPUT_MODE   5
 #define PAGE_REG_SETUP_REBOOT_BL    10
 #define PAGE_REG_SETUP_CRC			11
 #define PAGE_REG_SETUP_SBUS_RATE    19
@@ -85,6 +88,8 @@ enum iopage {
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 #define PAGE_REG_SETUP_DSM_BIND     22
 #define PAGE_REG_SETUP_RC_PROTOCOLS 23 // uses 2 slots, 23 and 24
+#define PAGE_REG_SETUP_DSHOT_PERIOD 25
+#define PAGE_REG_SETUP_CHANNEL_MASK 27
 
 // config page registers
 #define PAGE_CONFIG_PROTOCOL_VERSION  0
@@ -102,21 +107,30 @@ enum iopage {
 struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
+    uint32_t mcuid;
+    uint32_t cpuid;
 };
 
 struct page_reg_status {
     uint16_t freemem;
+    uint16_t freemstack;
+    uint16_t freepstack;
     uint32_t timestamp_ms;
     uint16_t vservo;
     uint16_t vrssi;
     uint32_t num_errors;
     uint32_t total_pkts;
+    uint32_t total_ticks;
+    uint32_t total_events;
     uint8_t flag_safety_off;
+    uint8_t rcout_mask;
+    uint8_t rcout_mode;
     uint8_t err_crc;
     uint8_t err_bad_opcode;
     uint8_t err_read;
     uint8_t err_write;
     uint8_t err_uart;
+    uint8_t err_lock;
 };
 
 struct page_rc_input {
@@ -168,4 +182,13 @@ static_assert(sizeof(struct page_mixing) % 2 == 0, "page_mixing must be even siz
 struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t channel_mask;
     uint8_t output_mask;
+};
+
+struct __attribute__((packed, aligned(2))) page_dshot {
+    uint16_t telem_mask;
+    uint8_t command;
+    uint8_t chan;
+    uint32_t command_timeout_ms;
+    uint8_t repeat_count;
+    uint8_t priority;
 };

@@ -22,7 +22,7 @@ bool ModeGuided::_enter()
 void ModeGuided::update()
 {
     switch (_guided_mode) {
-        case Guided_WP:
+        case SubMode::WP:
         {
             // check if we've reached the destination
             if (!g2.wp_nav.reached_destination()) {
@@ -49,7 +49,7 @@ void ModeGuided::update()
             break;
         }
 
-        case Guided_HeadingAndSpeed:
+        case SubMode::HeadingAndSpeed:
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
@@ -73,7 +73,7 @@ void ModeGuided::update()
             break;
         }
 
-        case Guided_TurnRateAndSpeed:
+        case SubMode::TurnRateAndSpeed:
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
@@ -101,13 +101,13 @@ void ModeGuided::update()
             break;
         }
 
-        case Guided_Loiter:
+        case SubMode::Loiter:
         {
             rover.mode_loiter.update();
             break;
         }
 
-        case Guided_SteeringAndThrottle:
+        case SubMode::SteeringAndThrottle:
         {
             // handle timeout
             if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
@@ -131,7 +131,7 @@ void ModeGuided::update()
             break;
         }
 
-        case Guided_Stop:
+        case SubMode::Stop:
             stop_vehicle();
             break;
 
@@ -145,15 +145,15 @@ void ModeGuided::update()
 float ModeGuided::wp_bearing() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.wp_bearing_cd() * 0.01f;
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.wp_bearing();
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return 0.0f;
     }
 
@@ -164,15 +164,15 @@ float ModeGuided::wp_bearing() const
 float ModeGuided::nav_bearing() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.nav_bearing_cd() * 0.01f;
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.nav_bearing();
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return 0.0f;
     }
 
@@ -183,15 +183,15 @@ float ModeGuided::nav_bearing() const
 float ModeGuided::crosstrack_error() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.crosstrack_error();
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.crosstrack_error();
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return 0.0f;
     }
 
@@ -202,15 +202,15 @@ float ModeGuided::crosstrack_error() const
 float ModeGuided::get_desired_lat_accel() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.get_lat_accel();
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.get_desired_lat_accel();
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return 0.0f;
     }
 
@@ -222,15 +222,15 @@ float ModeGuided::get_desired_lat_accel() const
 float ModeGuided::get_distance_to_destination() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return _distance_to_destination;
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.get_distance_to_destination();
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return 0.0f;
     }
 
@@ -242,13 +242,13 @@ float ModeGuided::get_distance_to_destination() const
 bool ModeGuided::reached_destination() const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.reached_destination();
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
-    case Guided_Loiter:
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
+    case SubMode::Loiter:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         return true;
     }
 
@@ -260,16 +260,16 @@ bool ModeGuided::reached_destination() const
 bool ModeGuided::set_desired_speed(float speed)
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         return g2.wp_nav.set_speed_max(speed);
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         // speed is set from mavlink message
         return false;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         return rover.mode_loiter.set_desired_speed(speed);
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         // no speed control
         return false;
     }
@@ -280,21 +280,21 @@ bool ModeGuided::set_desired_speed(float speed)
 bool ModeGuided::get_desired_location(Location& destination) const
 {
     switch (_guided_mode) {
-    case Guided_WP:
+    case SubMode::WP:
         if (g2.wp_nav.is_destination_valid()) {
             destination = g2.wp_nav.get_oa_destination();
             return true;
         }
         return false;
-    case Guided_HeadingAndSpeed:
-    case Guided_TurnRateAndSpeed:
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
         // not supported in these submodes
         return false;
-    case Guided_Loiter:
+    case SubMode::Loiter:
         // get destination from loiter
         return rover.mode_loiter.get_desired_location(destination);
-    case Guided_SteeringAndThrottle:
-    case Guided_Stop:
+    case SubMode::SteeringAndThrottle:
+    case SubMode::Stop:
         // no desired location in this submode
         break;
     }
@@ -320,9 +320,9 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
     }
 
     // handle guided specific initialisation and logging
-    _guided_mode = ModeGuided::Guided_WP;
+    _guided_mode = SubMode::WP;
     send_notification = true;
-    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_speed_max(), 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_speed_max(), 0.0f, 0.0f));
     return true;
 }
 
@@ -330,7 +330,7 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
 void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
 {
     // initialisation and logging
-    _guided_mode = ModeGuided::Guided_HeadingAndSpeed;
+    _guided_mode = SubMode::HeadingAndSpeed;
     _des_att_time_ms = AP_HAL::millis();
 
     // record targets
@@ -339,14 +339,14 @@ void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_
     have_attitude_target = true;
 
     // log new target
-    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_desired_yaw_cd, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_cd, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
 }
 
 void ModeGuided::set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed)
 {
     // handle initialisation
-    if (_guided_mode != ModeGuided::Guided_HeadingAndSpeed) {
-        _guided_mode = ModeGuided::Guided_HeadingAndSpeed;
+    if (_guided_mode != SubMode::HeadingAndSpeed) {
+        _guided_mode = SubMode::HeadingAndSpeed;
         _desired_yaw_cd = ahrs.yaw_sensor;
     }
     set_desired_heading_and_speed(wrap_180_cd(_desired_yaw_cd + yaw_delta_cd), target_speed);
@@ -356,7 +356,7 @@ void ModeGuided::set_desired_heading_delta_and_speed(float yaw_delta_cd, float t
 void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed)
 {
     // handle initialisation
-    _guided_mode = ModeGuided::Guided_TurnRateAndSpeed;
+    _guided_mode = SubMode::TurnRateAndSpeed;
     _des_att_time_ms = AP_HAL::millis();
 
     // record targets
@@ -365,13 +365,13 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
     have_attitude_target = true;
 
     // log new target
-    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
 }
 
 // set steering and throttle (both in the range -1 to +1)
 void ModeGuided::set_steering_and_throttle(float steering, float throttle)
 {
-    _guided_mode = ModeGuided::Guided_SteeringAndThrottle;
+    _guided_mode = SubMode::SteeringAndThrottle;
     _strthr_time_ms = AP_HAL::millis();
     _strthr_steering = constrain_float(steering, -1.0f, 1.0f);
     _strthr_throttle = constrain_float(throttle, -1.0f, 1.0f);
@@ -381,7 +381,7 @@ void ModeGuided::set_steering_and_throttle(float steering, float throttle)
 bool ModeGuided::start_loiter()
 {
     if (rover.mode_loiter.enter()) {
-        _guided_mode = Guided_Loiter;
+        _guided_mode = SubMode::Loiter;
         return true;
     }
     return false;
@@ -391,7 +391,7 @@ bool ModeGuided::start_loiter()
 // start stopping vehicle as quickly as possible
 void ModeGuided::start_stop()
 {
-    _guided_mode = Guided_Stop;
+    _guided_mode = SubMode::Stop;
 }
 
 // set guided timeout and movement limits

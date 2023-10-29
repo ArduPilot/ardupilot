@@ -81,6 +81,12 @@ public:
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
+#if AP_PROXIMITY_SCRIPTING_ENABLED
+        Scripting = 15,
+#endif
+#if AP_PROXIMITY_LD06_ENABLED
+        LD06 = 16,
+#endif
     };
 
     enum class Status {
@@ -179,6 +185,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
+
+    // return backend object for Lua scripting
+    AP_Proximity_Backend *get_backend(uint8_t id) const;
 
     // 3D boundary
     AP_Proximity_Boundary_3D boundary;

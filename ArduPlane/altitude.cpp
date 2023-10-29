@@ -28,6 +28,27 @@ void Plane::adjust_altitude_target()
     control_mode->update_target_altitude();
 }
 
+void Plane::check_home_alt_change(void)
+{
+    int32_t home_alt_cm = ahrs.get_home().alt;
+    if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
+        // cope with home altitude changing
+        const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
+        if (next_WP_loc.terrain_alt) {
+            /*
+              next_WP_loc for terrain alt WP are quite strange. They
+              have terrain_alt=1, but also have relative_alt=0 and
+              have been calculated to be relative to home. We need to
+              adjust for the change in home alt
+             */
+            next_WP_loc.alt += alt_change_cm;
+        }
+        // reset TECS to force the field elevation estimate to reset
+        TECS_controller.reset();
+    }
+    auto_state.last_home_alt_cm = home_alt_cm;
+}
+
 /*
   setup for a gradual glide slope to the next waypoint, if appropriate
  */
@@ -191,6 +212,12 @@ void Plane::set_target_altitude_location(const Location &loc)
         target_altitude.amsl_cm += home.alt;
     }
 #if AP_TERRAIN_AVAILABLE
+    if (target_altitude.terrain_following_pending) {
+        /* we didn't get terrain data to init when we started on this
+           target, retry
+        */
+        setup_terrain_target_alt(next_WP_loc);
+    }
     /*
       if this location has the terrain_alt flag set and we know the
       terrain altitude of our current location then treat it as a
@@ -448,12 +475,16 @@ bool Plane::above_location_current(const Location &loc)
   modify a destination to be setup for terrain following if
   TERRAIN_FOLLOW is enabled
  */
-void Plane::setup_terrain_target_alt(Location &loc) const
+void Plane::setup_terrain_target_alt(Location &loc)
 {
 #if AP_TERRAIN_AVAILABLE
     if (terrain_enabled_in_current_mode()) {
-        loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
+        if (!loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+            target_altitude.terrain_following_pending = true;
+            return;
+        }
     }
+    target_altitude.terrain_following_pending = false;
 #endif
 }
 

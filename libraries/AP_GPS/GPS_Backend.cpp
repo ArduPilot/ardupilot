@@ -13,11 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 #include <time.h>
-#include <AP_RTC/AP_RTC.h>
+#include <AP_Common/time.h>
 #include <AP_InternalError/AP_InternalError.h>
 
 #define GPS_BACKEND_DEBUGGING 0
@@ -46,37 +50,6 @@ AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::
     state.have_vertical_accuracy = false;
 }
 
-int32_t AP_GPS_Backend::swap_int32(int32_t v) const
-{
-    const uint8_t *b = (const uint8_t *)&v;
-    union {
-        int32_t v;
-        uint8_t b[4];
-    } u;
-
-    u.b[0] = b[3];
-    u.b[1] = b[2];
-    u.b[2] = b[1];
-    u.b[3] = b[0];
-
-    return u.v;
-}
-
-int16_t AP_GPS_Backend::swap_int16(int16_t v) const
-{
-    const uint8_t *b = (const uint8_t *)&v;
-    union {
-        int16_t v;
-        uint8_t b[2];
-    } u;
-
-    u.b[0] = b[1];
-    u.b[1] = b[0];
-
-    return u.v;
-}
-
-
 /**
    fill in time_week_ms and time_week from BCD date and time components
    assumes MTK19 millisecond form of bcd_time
@@ -96,7 +69,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     tm.tm_hour = v % 100U;
 
     // convert from time structure to unix time
-    time_t unix_time = AP::rtc().mktime(&tm);
+    time_t unix_time = ap_mktime(&tm);
 
     // convert to time since GPS epoch
     const uint32_t unix_to_GPS_secs = 315964800UL;
@@ -197,9 +170,9 @@ bool AP_GPS_Backend::should_log() const
 }
 
 
+#if HAL_GCS_ENABLED
 void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
-#if HAL_GCS_ENABLED
     const uint8_t instance = state.instance;
     // send status
     switch (instance) {
@@ -236,8 +209,8 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
                                  state.rtk_iar_num_hypotheses);
             break;
     }
-#endif
 }
+#endif
 
 
 /*
@@ -377,14 +350,14 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
         const float min_dist = MIN(offset_dist, reported_distance);
 
         if (offset_dist < minimum_antenna_seperation) {
-            // offsets have to be sufficently large to get a meaningful angle off of them
+            // offsets have to be sufficiently large to get a meaningful angle off of them
             Debug("Insufficent antenna offset (%f, %f, %f)", (double)offset.x, (double)offset.y, (double)offset.z);
             goto bad_yaw;
         }
 
         if (reported_distance < minimum_antenna_seperation) {
-            // if the reported distance is less then the minimum seperation it's not sufficently robust
-            Debug("Reported baseline distance (%f) was less then the minimum antenna seperation (%f)",
+            // if the reported distance is less then the minimum separation it's not sufficiently robust
+            Debug("Reported baseline distance (%f) was less then the minimum antenna separation (%f)",
                   (double)reported_distance, (double)minimum_antenna_seperation);
             goto bad_yaw;
         }
@@ -397,7 +370,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             goto bad_yaw;
         }
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_AHRS_ENABLED
         {
             // get lag
             float lag = 0.1;
@@ -425,7 +398,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
                 goto bad_yaw;
             }
         }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_AHRS_ENABLED
 
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
@@ -467,6 +440,21 @@ good_yaw:
     return interim_state.have_gps_yaw;
 }
 #endif // GPS_MOVING_BASELINE
+
+/*
+  set altitude in location structure, honouring the driver option for
+  MSL vs ellipsoid height
+ */
+void AP_GPS_Backend::set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm)
+{
+    if (option_set(AP_GPS::HeightEllipsoid) && _state.have_undulation) {
+        // user has asked ArduPilot to use ellipsoid height in the
+        // canonical height for mission and navigation
+        _state.location.alt = alt_amsl_cm - _state.undulation*100;
+    } else {
+        _state.location.alt = alt_amsl_cm;
+    }
+}
 
 #if AP_GPS_DEBUG_LOGGING_ENABLED
 
@@ -540,3 +528,5 @@ void AP_GPS_Backend::logging_start(void)
     logging_loop();
 }
 #endif // AP_GPS_DEBUG_LOGGING_ENABLED
+
+#endif  // AP_GPS_ENABLED

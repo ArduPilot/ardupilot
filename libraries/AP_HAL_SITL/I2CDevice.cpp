@@ -17,7 +17,7 @@
 #include "I2CDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <SITL/SITL.h>
 
@@ -217,4 +217,4 @@ bool I2CDevice::adjust_periodic_callback(Device::PeriodicHandle h, uint32_t peri
     return false;
 }
 
-#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL

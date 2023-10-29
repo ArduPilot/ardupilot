@@ -1,0 +1,55 @@
+# hw definition file for processing by chibios_hwdef.py
+# for A6_YJUAV board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1113
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+PE12 LED_RED OUTPUT OPENDRAIN HIGH # red
+PE15 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # green 
+PB9 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # blue
+define HAL_LED_ON 0
+
+# order of UART (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 DEBUG
+PE8 UART7_TX UART7 NODMA
+PE7 UART7_RX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+define BOOTLOADER_DEBUG SD7
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PA8  IMU1_CS CS
+PD4  IMU2_CS CS
+PD11 IMU3_CS CS
+PE4  FRAM_CS CS
+PE3  BAROMETER_CS CS
+PD10 COMPASS_CS CS
+PC15 RESERVE_CS CS
+
+# Extra SPI CS
+PE10 EXT_CS CS

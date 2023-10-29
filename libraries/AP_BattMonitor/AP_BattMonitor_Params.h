@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include "AP_BattMonitor_config.h"
 
 class AP_BattMonitor_Params {
 public:
@@ -43,4 +44,7 @@ public:
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+    AP_Int8  _esc_telem_outbound_index; /// bitmask of ESCs to forward voltage, current, consumption and temperature to.
+#endif
 };

@@ -46,6 +46,7 @@ I2CDeviceManager::I2CDeviceManager(void)
             i2c_bus_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
             i2c_bus_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
             i2c_bus_config.master.clk_speed = i2c_bus_desc[i].speed;
+            i2c_bus_config.clk_flags = 0;
             i2c_port_t p = i2c_bus_desc[i].port;
             businfo[i].port = p;
             businfo[i].bus_clock = i2c_bus_desc[i].speed;

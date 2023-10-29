@@ -80,7 +80,7 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
             break;
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
+#if AP_BATTERY_ENABLED
         case AP_TemperatureSensor_Params::Source::Battery_Index:
             AP::battery().set_temperature(temperature, _params.source_id-1);
             break;
@@ -90,6 +90,7 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
 #endif
 
         case AP_TemperatureSensor_Params::Source::None:
+        case AP_TemperatureSensor_Params::Source::Pitot_tube:
         default:
             break;
     }

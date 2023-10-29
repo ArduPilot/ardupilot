@@ -100,7 +100,7 @@ void ModeGuided::run()
 bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station or scripting
-    if (method == AP_Arming::Method::MAVLINK || method == AP_Arming::Method::SCRIPTING) {
+    if (AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) {
         return true;
     }
 
@@ -153,7 +153,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff_start(alt_target_cm, alt_target_terrain);
+    auto_takeoff.start(alt_target_cm, alt_target_terrain);
 
     // record takeoff has not completed
     takeoff_complete = false;
@@ -656,8 +656,8 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 //      called by guided_run at 100hz or more
 void ModeGuided::takeoff_run()
 {
-    auto_takeoff_run();
-    if (auto_takeoff_complete && !takeoff_complete) {
+    auto_takeoff.run();
+    if (auto_takeoff.complete && !takeoff_complete) {
         takeoff_complete = true;
 #if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
@@ -1087,7 +1087,6 @@ uint32_t ModeGuided::wp_distance() const
         return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_xy_cm();
-        break;
     default:
         return 0;
     }
@@ -1102,7 +1101,6 @@ int32_t ModeGuided::wp_bearing() const
         return get_bearing_cd(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
-        break;
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:

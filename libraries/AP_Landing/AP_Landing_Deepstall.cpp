@@ -17,9 +17,11 @@
  *   AP_Landing_Deepstall.cpp - Landing logic handler for ArduPlane for deepstall landings
  */
 
-#include "AP_Landing.h"
+#include "AP_Landing_config.h"
 
 #if HAL_LANDING_DEEPSTALL_ENABLED
+
+#include "AP_Landing.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>

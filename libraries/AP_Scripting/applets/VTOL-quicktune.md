@@ -99,6 +99,17 @@ this to a non-zero value allows you to use quicktune with a 2-position
 switch, with the switch settings as low and mid positions. A zero
 value disables auto-save and you need to have a 3 position switch.
 
+## QUIK_MAX_REDUCE
+
+This controls how much quicktune is allowed to lower gains from the
+original gains. If the vehicle already has a reasonable tune and is
+not oscillating then you can set this to zero to prevent gain
+reductions. The default of 20% is reasonable for most vehicles. Using
+a maximum gain reduction lowers the chance of an angle P oscillation
+happening if quicktune gets a false positive oscillation at a low
+gain, which can result in very low rate gains and a dangerous angle P
+oscillation.
+
 # Operation
 
 First you should setup harmonic notch filtering using the guide in the
@@ -155,3 +166,19 @@ values. Parameters will also be reverted if you disarm before saving.
 
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
+
+# Using a Two Position Switch
+
+Some transitters only have 2 position switches, with no 3 position
+switches available. To support quicktune with a 2 position switch
+please set the following:
+
+ - set QUIK_OPTIONS to 1 to indicate the use of a 2 position switch
+ - set QUIK_AUTO_SAVE to 10 to automatically save the tune 10 seconds after tuning is done
+
+with these two options the tuning will start when the switch gives a
+PWM value of over 1800. Ten seconds after tuning is complete the tune
+will automatically save.
+
+
+

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_HAL_SITL.h"
 #include <AP_ESC_Telem/AP_ESC_Telem_SITL.h>
 
@@ -22,11 +22,21 @@ public:
     /*
       force the safety switch on, disabling PWM output from the IO board
      */
-    bool force_safety_on(void) override;
+    bool force_safety_on(void) override {
+        safety_state = AP_HAL::Util::SAFETY_DISARMED;
+        return true;
+    }
     /*
       force the safety switch off, enabling PWM output from the IO board
      */
-    void force_safety_off(void) override;
+    void force_safety_off(void) override {
+        safety_state = AP_HAL::Util::SAFETY_ARMED;
+    }
+
+    /*
+      get safety switch state, used by Util.cpp
+    */
+    AP_HAL::Util::safety_state _safety_switch_state(void) { return safety_state; }
 
     /*
       Serial LED emulation
@@ -43,6 +53,8 @@ private:
     uint32_t _enable_mask;
     bool _corked;
     uint16_t _pending[SITL_NUM_CHANNELS];
+
+    AP_HAL::Util::safety_state safety_state;
 };
 
 #endif
