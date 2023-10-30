@@ -455,7 +455,15 @@ private:
     void init_rc_out();
     void enable_motor_output();
     void init_joystick();
-    void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
+    void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons, uint16_t buttons2, uint8_t enabled_extensions,
+            int16_t s,
+            int16_t t,
+            int16_t aux1,
+            int16_t aux2,
+            int16_t aux3,
+            int16_t aux4,
+            int16_t aux5,
+            int16_t aux6);
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     void handle_jsbutton_release(uint8_t button, bool shift);
     JSButton* get_button(uint8_t index);
