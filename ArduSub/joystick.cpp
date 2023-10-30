@@ -17,7 +17,7 @@ int16_t xTrim = 0;
 int16_t yTrim = 0;
 int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
-uint16_t buttons_prev;
+uint32_t buttons_prev;
 
 // Servo control output channels
 // TODO: Allow selecting output channels
@@ -51,7 +51,15 @@ void Sub::init_joystick()
     gain = constrain_float(gain, 0.1, 1.0);
 }
 
-void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
+void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons, uint16_t buttons2, uint8_t enabled_extensions,
+            int16_t s,
+            int16_t t,
+            int16_t aux1,
+            int16_t aux2,
+            int16_t aux3,
+            int16_t aux4,
+            int16_t aux5,
+            int16_t aux6)
 {
 
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
@@ -65,17 +73,18 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     cam_tilt = 1500;
     cam_pan = 1500;
 
+    uint32_t all_buttons = buttons | (buttons2 << 16);
     // Detect if any shift button is pressed
-    for (uint8_t i = 0 ; i < 16 ; i++) {
-        if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
+    for (uint8_t i = 0 ; i < 32 ; i++) {
+        if ((all_buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
             shift = true;
         }
     }
 
     // Act if button is pressed
     // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
-    for (uint8_t i = 0 ; i < 16 ; i++) {
-        if ((buttons & (1 << i))) {
+    for (uint8_t i = 0 ; i < 32 ; i++) {
+        if ((all_buttons & (1 << i))) {
             handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
             // buttonDebounce = tnow_ms;
         } else if (buttons_prev & (1 << i)) {
@@ -83,7 +92,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         }
     }
 
-    buttons_prev = buttons;
+    buttons_prev = all_buttons;
 
     // attitude mode:
     if (roll_pitch_flag == 1) {
@@ -110,8 +119,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
-    RC_Channels::set_override(1, constrain_int16(rollTrim  + rpyCenter,1100,1900), tnow); // roll
+    RC_Channels::set_override(0, constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow); // pitch
+    RC_Channels::set_override(1, constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow); // roll
 
     RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
     RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
@@ -706,6 +715,40 @@ JSButton* Sub::get_button(uint8_t index)
         return &g.jbtn_14;
     case 15:
         return &g.jbtn_15;
+
+    // add 16 more cases for 32 buttons with MANUAL_CONTROL extensions
+    case 16:
+        return &g.jbtn_16;
+    case 17:
+        return &g.jbtn_17;
+    case 18:
+        return &g.jbtn_18;
+    case 19:
+        return &g.jbtn_19;
+    case 20:
+        return &g.jbtn_20;
+    case 21:
+        return &g.jbtn_21;
+    case 22:
+        return &g.jbtn_22;
+    case 23:
+        return &g.jbtn_23;
+    case 24:
+        return &g.jbtn_24;
+    case 25:
+        return &g.jbtn_25;
+    case 26:
+        return &g.jbtn_26;
+    case 27:
+        return &g.jbtn_27;
+    case 28:
+        return &g.jbtn_28;
+    case 29:
+        return &g.jbtn_29;
+    case 30:
+        return &g.jbtn_30;
+    case 31:
+        return &g.jbtn_31;
     default:
         return &g.jbtn_0;
     }
