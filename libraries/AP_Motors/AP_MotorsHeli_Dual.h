@@ -17,11 +17,6 @@
 #define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
 #define AP_MOTORS_HELI_DUAL_MODE_INTERMESHING          2 // intermeshing mode (rotors side by side)
 
-// tandem modes
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH           0 // swashplate pitch tilt axis
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL            1 // swashplate roll tilt axis
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL            2 // swashplate collective axis
-
 // default differential-collective-pitch scaler
 #define AP_MOTORS_HELI_DUAL_DCP_SCALER             0.25f
 
@@ -110,4 +105,16 @@ protected:
 
     // internal variables
     float _collective2_zero_thrst_pct;
+
+private:
+
+    // Mix and output swashplates for tandem
+    void mix_tandem(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
+    // Mix and output swashplates for transverse
+    void mix_transverse(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
+    // Mix and output swashplates for intermeshing
+    void mix_intermeshing(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
 };
