@@ -271,6 +271,10 @@ AP_HW_VIMDRONES_PERIPH               1407
 # IDs 5200-5209 reserved for Airvolute
 AP_HW_AIRVOLUTE_DCS2                 5200
 
+# IDs 5210-5219 reserved for Aocoda-RC
+AP_HW_AOCODA-RC-H743DUAL             5210
+AP_HW_AOCODA-RC-F405V3               5211
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
