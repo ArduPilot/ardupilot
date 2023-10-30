@@ -120,6 +120,15 @@ void setup()
                     exit(1);
                 }
 
+            } else if (strcmp(cmd,"dual_mode") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI_DUAL) {
+                    ::printf("dual_mode only supported by dual heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI_DUAL, frame_class);
+                    exit(1);
+                }
+
+                // look away now, more dodgy param access.
+                AP_Int8 *dual_mode = (AP_Int8*)motors + AP_MotorsHeli_Dual::var_info[1].offset;
+                dual_mode->set(value);
 
             } else if (strcmp(cmd,"frame_class") == 0) {
                 // We must have the frame_class argument 2nd as resulting class is used to determine if
