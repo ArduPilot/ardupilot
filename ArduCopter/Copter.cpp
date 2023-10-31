@@ -209,6 +209,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update,          50,  75, 111),
 #endif
+
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350, 114),
     SCHED_TASK(twentyfive_hz_logging, 25,    110, 117),

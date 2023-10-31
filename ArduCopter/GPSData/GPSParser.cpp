@@ -9,7 +9,9 @@ void GPSParser::begin(uint32_t baud) {
 
 void GPSParser::process() {
     uint32_t key = 123; // Replace with your desired key
-
+    DEV_PRINTF("PerpIk...\n");
+    printf("StrisserKnud og per \n");
+    
     while (uart->available_locked(key) > 0) {
         uint8_t received_byte;
         ssize_t bytesRead = uart->read_locked(&received_byte, 1, key);
