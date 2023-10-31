@@ -1,6 +1,12 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta8 31-Oct-2023
+
+ - Revert default Roll/Pitch P and D terms
+ - prevent multiple baro drivers on the same device
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta7 16-July-2023
 
  - Revert attitude control to 3.5 implementation, hopefully resolving the roll/pitch drift for good.
