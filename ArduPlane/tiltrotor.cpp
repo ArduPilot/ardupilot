@@ -341,7 +341,7 @@ void Tiltrotor::continuous_update(void)
     if (quadplane.assisted_flight &&
         transition->transition_state == Tiltrotor_Transition::TRANSITION_AIRSPEED_WAIT &&
         (type == TILT_TYPE_VECTORED_YAW || type == TILT_TYPE_CONTINUOUS)) {
-            const float tilt_angle_range = 90.0f * get_forward_flight_tilt() - (float)max_angle_deg;
+            const float tilt_angle_range = 90.0f * get_fully_forward_tilt() - (float)max_angle_deg;
             const bool delay_tilt_past_vtol_max = (int16_t)options.get() & (int16_t)Options::DELAY_TRANSITON_TILT;
             if (!delay_tilt_past_vtol_max && is_positive(tilt_angle_range)) {
                 // Tilt immediately to Q_TILT_MAX. Then tilt forward from Q_TILT_MAX to the forward flight value.
