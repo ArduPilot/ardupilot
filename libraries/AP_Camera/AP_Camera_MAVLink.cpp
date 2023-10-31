@@ -19,7 +19,7 @@ bool AP_Camera_MAVLink::trigger_pic()
 }
 
 // configure camera
-void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time)
+void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time)
 {
     // convert to mavlink message and send to all components
     mavlink_command_long_t mav_cmd_long = {};
@@ -39,7 +39,7 @@ void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, floa
 }
 
 // handle camera control message
-void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id)
+void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     // take picture and ignore other arguments
     if (shooting_cmd == 1) {

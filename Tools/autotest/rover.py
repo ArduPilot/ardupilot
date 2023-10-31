@@ -5620,9 +5620,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             0,
             0)
 
-        self.context_collect('COMMAND_LONG')
-
         self.progress("Sending control message")
+        self.context_push()
+        self.context_collect('COMMAND_LONG')
         self.mav.mav.digicam_control_send(
             1, # target_system
             1, # target_component
@@ -5641,6 +5641,52 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             'command': mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
             'param6': 17,
         }, timeout=2, check_context=True)
+        self.context_pop()
+
+        # test sending via commands:
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            self.progress("Sending control command")
+            self.context_push()
+            self.context_collect('COMMAND_LONG')
+            run_cmd(mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+                    p1=1, # start or keep it up
+                    p2=1, # zoom_pos
+                    p3=0, # zoom_step
+                    p4=0, # focus_lock
+                    p5=0, # 1 shot or start filming
+                    p6=37, # command id (de-dupe field)
+                    )
+
+            self.assert_received_message_field_values('COMMAND_LONG', {
+                'command': mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+                'param6': 37,
+            }, timeout=2, check_context=True)
+
+            self.context_pop()
+
+        # test sending via commands:
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            self.progress("Sending configure command")
+            self.context_push()
+            self.context_collect('COMMAND_LONG')
+            run_cmd(mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONFIGURE,
+                    p1=1,
+                    p2=1,
+                    p3=0,
+                    p4=0,
+                    p5=12,
+                    p6=37
+                    )
+
+            self.assert_received_message_field_values('COMMAND_LONG', {
+                'command': mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONFIGURE,
+                'param5': 12,
+                'param6': 37,
+            }, timeout=2, check_context=True)
+
+            self.context_pop()
+
+        self.mav.mav.srcSystem = old_srcSystem
 
     def SkidSteer(self):
         '''Check skid-steering'''
