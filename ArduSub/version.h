@@ -6,10 +6,10 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "ArduSub V4.1.1 BETA7"
+#define THISFIRMWARE "ArduSub V4.1.1 BETA8"
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,1,1,FIRMWARE_VERSION_TYPE_BETA+7
+#define FIRMWARE_VERSION 4,1,1,FIRMWARE_VERSION_TYPE_BETA+8
 
 #define FW_MAJOR 4
 #define FW_MINOR 1
