@@ -161,10 +161,10 @@ void AP_Camera_Backend::stop_capture()
 }
 
 // handle camera control
-void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id)
 {
     // take picture
-    if (is_equal(shooting_cmd, 1.0f)) {
+    if (shooting_cmd == 1) {
         take_picture();
     }
 }
