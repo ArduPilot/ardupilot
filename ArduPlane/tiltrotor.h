@@ -101,7 +101,6 @@ public:
     float transition_yaw_cd;
     uint32_t transition_yaw_set_ms;
     bool _is_vectored;
-    float _dt;
     float _transition_fwd_tilt_frac;
 
     // types of tilt mechanisms

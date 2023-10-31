@@ -809,11 +809,11 @@ void Tiltrotor::update_yaw_target(void)
     float aspeed;
     bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
     if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
-        _dt = (now - transition_yaw_set_ms) * 0.001;
+        float dt = (now - transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate
         const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
         const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;
-        transition_yaw_cd += yaw_rate_cds * _dt;
+        transition_yaw_cd += yaw_rate_cds * dt;
     }
     transition_yaw_set_ms = now;
 }
