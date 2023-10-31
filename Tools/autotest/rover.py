@@ -5619,6 +5619,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             0,
             0,
             0)
+
+        self.context_collect('COMMAND_LONG')
+
         self.progress("Sending control message")
         self.mav.mav.digicam_control_send(
             1, # target_system
@@ -5634,21 +5637,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         )
         self.mav.mav.srcSystem = old_srcSystem
 
-        self.progress("Expecting a command long")
-        tstart = self.get_sim_time_cached()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 2:
-                raise NotAchievedException("Did not receive digicam_control message")
-            m = self.mav.recv_match(type='COMMAND_LONG', blocking=True, timeout=0.1)
-            self.progress("Message: %s" % str(m))
-            if m is None:
-                continue
-            if m.command != mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL:
-                raise NotAchievedException("Did not get correct command")
-            if m.param6 != 17:
-                raise NotAchievedException("Did not get correct command_id")
-            break
+        self.assert_received_message_field_values('COMMAND_LONG', {
+            'command': mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+            'param6': 17,
+        }, timeout=2, check_context=True)
 
     def SkidSteer(self):
         '''Check skid-steering'''
