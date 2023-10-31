@@ -39,7 +39,7 @@ public:
     bool trigger_pic() override;
 
     // configure camera
-    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time) override;
+    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time) override;
 
 private:
 
