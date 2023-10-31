@@ -89,10 +89,10 @@ public:
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
     // configure camera
-    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time) {}
+    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) {}
 
     // handle camera control
-    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id);
+    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id);
 
     // set camera trigger distance in meters
     void set_trigger_distance(float distance_m) { _params.trigg_dist.set(distance_m); }

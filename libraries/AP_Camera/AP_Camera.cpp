@@ -438,7 +438,7 @@ void AP_Camera::cam_mode_toggle(uint8_t instance)
 }
 
 // configure camera
-void AP_Camera::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time)
+void AP_Camera::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -448,7 +448,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     primary->configure(shooting_mode, shutter_speed, aperture, ISO, exposure_type, cmd_id, engine_cutoff_time);
 }
 
-void AP_Camera::configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time)
+void AP_Camera::configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -462,7 +462,7 @@ void AP_Camera::configure(uint8_t instance, float shooting_mode, float shutter_s
 }
 
 // handle camera control
-void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id)
+void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -472,7 +472,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
     primary->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
-void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id)
+void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     WITH_SEMAPHORE(_rsem);
 
