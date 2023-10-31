@@ -382,7 +382,7 @@ void Tiltrotor::continuous_update(void)
                     _transition_fwd_tilt_frac = _transition_fwd_tilt_frac - tilt_frac_incr;
                     _transition_fwd_tilt_frac = MAX(_transition_fwd_tilt_frac, (1/90.0f) * (float)max_angle_deg);
                 }
-                _transition_fwd_tilt_frac = constrain_float(_transition_fwd_tilt_frac, 0.0f, 1.0f);
+                _transition_fwd_tilt_frac = constrain_float(_transition_fwd_tilt_frac, 0.0f, get_forward_flight_tilt());
 
                 new_tilt = _transition_fwd_tilt_frac;
 
