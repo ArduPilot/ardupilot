@@ -383,7 +383,7 @@ void Tiltrotor::continuous_update(void)
                         }
                     }
                     new_tilt = get_forward_flight_tilt();
-                } else if (_transition_fwd_tilt_frac > (1/90.0f) * (float)max_angle_deg) {
+                } else if (_transition_fwd_tilt_frac > deg2quad((float)max_angle_deg)) {
                     // If the maximum throttle of the tilting motors is clipping and rotors are tilted past the normal
                     // VTOL limit, tilt the rotors back faster to prevent possible loss of attitude control.
                     if (max_rate_down_transition_dps > 0) {
@@ -406,7 +406,7 @@ void Tiltrotor::continuous_update(void)
                                         (double)_transition_fwd_tilt_frac);
 
             } else {
-                new_tilt = (float)max_angle_deg * (1/90.0f);
+                new_tilt = deg2quad((float)max_angle_deg);
             }
     } else if (quadplane.assisted_flight &&
         transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
@@ -860,7 +860,7 @@ bool Tiltrotor_Transition::show_vtol_view() const
 // return true if we are tilted over the max angle threshold
 bool Tiltrotor::tilt_over_max_angle(void) const
 {
-    const float tilt_threshold = (max_angle_deg/90.0f);
+    const float tilt_threshold = deg2quad((float)max_angle_deg);
     return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
 }
 
