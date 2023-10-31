@@ -4435,7 +4435,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet, msg);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_int_t &packet)
 {
     if (hal.util->get_soft_armed()) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -4779,10 +4779,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         }
         break;
 #endif
-
-    case MAV_CMD_RUN_PREARM_CHECKS:
-        result = handle_command_run_prearm_checks(packet);
-        break;
 
     default:
         result = try_command_long_as_command_int(packet, msg);
@@ -5147,6 +5143,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_REPEAT_RELAY:
         return handle_servorelay_message(packet);
 #endif
+
+    case MAV_CMD_RUN_PREARM_CHECKS:
+        return handle_command_run_prearm_checks(packet);
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
