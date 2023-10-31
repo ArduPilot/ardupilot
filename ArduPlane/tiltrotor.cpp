@@ -400,9 +400,10 @@ void Tiltrotor::continuous_update(void)
 
                 }
 
-                AP::logger().Write("QTLT", "TimeUS,MT,TFTF", "Qff",
+                AP::logger().Write("QTLT", "TimeUS,MT,NT,TFTF", "Qfff",
                                         AP_HAL::micros64(),
                                         (double)max_throttle,
+                                        (double)new_tilt,
                                         (double)_transition_fwd_tilt_frac);
 
             } else {
