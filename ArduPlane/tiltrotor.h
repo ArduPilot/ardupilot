@@ -34,7 +34,7 @@ public:
 
     void setup();
 
-    void slew(float tilt);
+    float slew(float tilt, int16_t rate_limit_dps = 0);
     void binary_slew(bool forward);
     void update();
     void continuous_update();
@@ -55,7 +55,7 @@ public:
 
     bool fully_fwd() const;
     bool fully_up() const;
-    float tilt_max_change(bool up, bool in_flap_range = false) const;
+    float tilt_max_change(bool up, bool in_flap_range = false, int16_t rate_limit_dps = 0) const;
     float get_fully_forward_tilt() const;
     float get_forward_flight_tilt() const;
 
