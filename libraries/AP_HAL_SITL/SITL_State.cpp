@@ -346,6 +346,7 @@ void SITL_State::_fdm_input_local(void)
     multicast_servo_update(input);
 
     // update the model
+    sitl_model->update_home();
     sitl_model->update_model(input);
 
     // get FDM output from the model
