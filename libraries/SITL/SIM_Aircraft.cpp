@@ -590,7 +590,7 @@ void Aircraft::set_speedup(float speedup)
     setup_frame_time(rate_hz, speedup);
 }
 
-void Aircraft::update_model(const struct sitl_input &input)
+void Aircraft::update_home()
 {
     if (!home_is_set) {
         if (sitl == nullptr) {
@@ -602,6 +602,10 @@ void Aircraft::update_model(const struct sitl_input &input)
         loc.alt = sitl->opos.alt.get() * 1.0e2;
         set_start_location(loc, sitl->opos.hdg.get());
     }
+}
+
+void Aircraft::update_model(const struct sitl_input &input)
+{
     local_ground_level = 0.0f;
     update(input);
 }
