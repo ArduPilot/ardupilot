@@ -1930,11 +1930,11 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             should_use_gps = true;
         }
 #endif
+        const bool have_gps = AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D;
         if (hal.util->get_soft_armed() &&
             (!filt_state.flags.using_gps ||
              !filt_state.flags.horiz_pos_abs) &&
-            should_use_gps &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+            should_use_gps && have_gps) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
             // and we have a 3D lock, then plane and rover would
             // prefer to use the GPS position from DCM. This is a
@@ -1942,7 +1942,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             // out
             return EKFType::DCM;
         }
-        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode && have_gps) {
             return EKFType::DCM;
         }
         if (!filt_state.flags.attitude ||
