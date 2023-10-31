@@ -4233,10 +4233,11 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
         airspeed->calibrate(false);
+        return MAV_RESULT_IN_PROGRESS;
     }
 #endif
 
-    return MAV_RESULT_IN_PROGRESS;
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
