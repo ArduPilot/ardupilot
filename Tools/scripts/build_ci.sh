@@ -465,6 +465,13 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "pre-commit-cleanliness" ]; then
+        echo "Checking pre-commit code cleanliness"
+        pre-commit install
+        pre-commit run --all-files --verbose --show-diff-on-failure
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
