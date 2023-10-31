@@ -452,7 +452,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @DisplayName: Simulated ADSB Type mask
     // @Description: specifies which simulated ADSB types are active
     // @User: Advanced
-    // @Bitmask: 0:MAVLink,1:SageTechMXS
+    // @Bitmask: 0:MAVLink,3:SageTechMXS
     AP_GROUPINFO("ADSB_TYPES",    52, SIM,  adsb_types, 1),
 
 #ifdef SFML_JOYSTICK
