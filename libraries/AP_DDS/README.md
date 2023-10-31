@@ -220,7 +220,7 @@ Published topics:
 Subscribed topics:
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
- * /tf [tf2_msgs/msg/TFMessage] 1 subscriber
+ * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
 
 ```bash

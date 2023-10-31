@@ -126,3 +126,8 @@ define AP_AIRSPEED_MS5525_ENABLED 1
 define AP_AIRSPEED_SDP3X_ENABLED 1
 define AP_AIRSPEED_NMEA_ENABLED 1  # additional checks for vehicle type in .cpp
 define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
+
+# don't need payload place mission items on these boards, it's very niche:
+define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
+# don't need the payload place flight behaviour either:
+define AC_PAYLOAD_PLACE_ENABLED 0

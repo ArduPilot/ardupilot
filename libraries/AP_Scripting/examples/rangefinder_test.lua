@@ -1,5 +1,4 @@
 -- This script checks RangeFinder
--- luacheck: only 0
 
 local rotation_downward = 25
 local rotation_forward = 0
@@ -8,7 +7,7 @@ function update()
   local sensor_count = rangefinder:num_sensors()
   gcs:send_text(0, string.format("%d rangefinder sensors found.", sensor_count))
 
-  for i = 0, rangefinder:num_sensors() do
+  for _ = 0, rangefinder:num_sensors() do
     if rangefinder:has_data_orient(rotation_downward) then
       info(rotation_downward)
     elseif rangefinder:has_data_orient(rotation_forward) then

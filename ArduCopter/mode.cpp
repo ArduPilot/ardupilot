@@ -25,6 +25,10 @@ Mode::Mode(void) :
     G_Dt(copter.G_Dt)
 { };
 
+#if AC_PAYLOAD_PLACE_ENABLED
+PayloadPlace Mode::payload_place;
+#endif
+
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {

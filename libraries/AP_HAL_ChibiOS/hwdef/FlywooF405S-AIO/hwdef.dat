@@ -152,3 +152,5 @@ define DEFAULT_NTF_LED_TYPES 257
 
 # save some flash space
 include ../include/no_bootloader_DFU.inc
+
+AUTOBUILD_TARGETS Copter

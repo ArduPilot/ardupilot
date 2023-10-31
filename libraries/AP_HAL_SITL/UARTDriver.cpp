@@ -987,5 +987,11 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 #endif
 }
 
+uint32_t UARTDriver::bw_in_bytes_per_second() const
+{
+    // if connected, assume at least a 10/100Mbps connection
+    const uint32_t bitrate = (_connected && _tcp_client_addr != nullptr) ? 10E6 : _uart_baudrate;
+    return bitrate/10; // convert bits to bytes minus overhead
+};
 #endif // CONFIG_HAL_BOARD
 

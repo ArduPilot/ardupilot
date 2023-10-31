@@ -46,6 +46,8 @@ public:
     void set_stop_bits(int n) override;
     bool set_unbuffered_writes(bool on) override;
 
+    uint32_t bw_in_bytes_per_second() const override;
+
     void _timer_tick(void) override;
 
     /*

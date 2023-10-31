@@ -58,7 +58,9 @@ private:
 
     int16_t vfr_hud_throttle() const override;
 
+#if AP_RANGEFINDER_ENABLED
     void send_rangefinder() const override;
+#endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;

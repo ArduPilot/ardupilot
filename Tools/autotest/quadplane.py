@@ -13,9 +13,9 @@ import math
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
-from common import AutoTest
-from common import Test
-from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
+import vehicle_test_suite
+from vehicle_test_suite import Test
+from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 import operator
 
@@ -26,7 +26,7 @@ WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 
-class AutoTestQuadPlane(AutoTest):
+class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     @staticmethod
     def get_not_armable_mode_list():

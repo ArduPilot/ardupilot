@@ -1096,6 +1096,7 @@ private:
     void set_servos_idle(void);
     void set_servos();
     void set_servos_controlled(void);
+    void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
     void set_landing_gear(void);

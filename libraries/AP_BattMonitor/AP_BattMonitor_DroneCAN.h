@@ -63,10 +63,7 @@ private:
     void handle_battery_info_aux(const ardupilot_equipment_power_BatteryInfoAux &msg);
     void update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc);
 
-    static bool match_battery_id(uint8_t instance, uint8_t battery_id) {
-        // when serial number is negative, all batteries are accepted. Else, it must match
-        return (AP::battery().get_serial_number(instance) < 0) || (AP::battery().get_serial_number(instance) == (int32_t)battery_id);
-    }
+    static bool match_battery_id(uint8_t instance, uint8_t battery_id);
 
     // MPPT related enums and methods
     enum class MPPT_FaultFlags : uint8_t {

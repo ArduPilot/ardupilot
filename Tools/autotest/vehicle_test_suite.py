@@ -1482,7 +1482,7 @@ class Result(object):
         return ret
 
 
-class AutoTest(ABC):
+class TestSuite(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
     """
@@ -5937,14 +5937,14 @@ class AutoTest(ABC):
     @staticmethod
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
-        return AutoTest.get_distance_accurate(loc1, loc2)
+        return TestSuite.get_distance_accurate(loc1, loc2)
         # dlat = loc2.lat - loc1.lat
         # try:
         #     dlong = loc2.lng - loc1.lng
         # except AttributeError:
         #     dlong = loc2.lon - loc1.lon
 
-        # return math.sqrt((dlat*dlat) + (dlong*dlong)*AutoTest.longitude_scale(loc2.lat)) * 1.113195e5
+        # return math.sqrt((dlat*dlat) + (dlong*dlong)*TestSuite.longitude_scale(loc2.lat)) * 1.113195e5
 
     @staticmethod
     def get_distance_accurate(loc1, loc2):
@@ -5981,23 +5981,23 @@ class AutoTest(ABC):
     @staticmethod
     def get_lat_attr(loc):
         '''return any found latitude attribute from loc'''
-        return AutoTest.get_latlon_attr(loc, ["lat", "latitude"])
+        return TestSuite.get_latlon_attr(loc, ["lat", "latitude"])
 
     @staticmethod
     def get_lon_attr(loc):
         '''return any found latitude attribute from loc'''
-        return AutoTest.get_latlon_attr(loc, ["lng", "lon", "longitude"])
+        return TestSuite.get_latlon_attr(loc, ["lng", "lon", "longitude"])
 
     @staticmethod
     def get_distance_int(loc1, loc2):
         """Get ground distance between two locations in the normal "int" form
         - lat/lon multiplied by 1e7"""
-        loc1_lat = AutoTest.get_lat_attr(loc1)
-        loc2_lat = AutoTest.get_lat_attr(loc2)
-        loc1_lon = AutoTest.get_lon_attr(loc1)
-        loc2_lon = AutoTest.get_lon_attr(loc2)
+        loc1_lat = TestSuite.get_lat_attr(loc1)
+        loc2_lat = TestSuite.get_lat_attr(loc2)
+        loc1_lon = TestSuite.get_lon_attr(loc1)
+        loc2_lon = TestSuite.get_lon_attr(loc2)
 
-        return AutoTest.get_distance_accurate(
+        return TestSuite.get_distance_accurate(
             mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
             mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
 

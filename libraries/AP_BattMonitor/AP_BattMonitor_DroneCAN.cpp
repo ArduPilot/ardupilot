@@ -61,28 +61,39 @@ void AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     }
 }
 
+/*
+  match a battery ID to driver serial number
+  when serial number is negative, all batteries are accepted, otherwise it must match
+*/
+bool AP_BattMonitor_DroneCAN::match_battery_id(uint8_t instance, uint8_t battery_id)
+{
+    const auto serial_num = AP::battery().get_serial_number(instance);
+    return serial_num < 0 || serial_num == (int32_t)battery_id;
+}
+
 AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
-    for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
-        if (AP::battery().drivers[i] == nullptr ||
-            AP::battery().get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+    const auto &batt = AP::battery();
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        if (batt.drivers[i] == nullptr ||
+            batt.get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
-        AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
+        AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
         if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
             return driver;
         }
     }
     // find empty uavcan driver
-    for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
-        if (AP::battery().drivers[i] != nullptr &&
-            AP::battery().get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        if (batt.drivers[i] != nullptr &&
+            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
             match_battery_id(i, battery_id)) {
 
-            AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
+            AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
             if(batmon->_ap_dronecan != nullptr || batmon->_node_id != 0) {
                 continue;
             }
@@ -142,21 +153,22 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
 {
     WITH_SEMAPHORE(_sem_battmon);
     uint8_t cell_count = MIN(ARRAY_SIZE(_interim_state.cell_voltages.cells), msg.voltage_cell.len);
-    float remaining_capacity_ah = _remaining_capacity_wh / msg.nominal_voltage;
-    float full_charge_capacity_ah = _full_charge_capacity_wh / msg.nominal_voltage;
 
     _cycle_count = msg.cycle_count;
     for (uint8_t i = 0; i < cell_count; i++) {
         _interim_state.cell_voltages.cells[i] = msg.voltage_cell.data[i] * 1000;
     }
     _interim_state.is_powering_off = msg.is_powering_off;
-    _interim_state.consumed_mah = (full_charge_capacity_ah - remaining_capacity_ah) * 1000;
-    _interim_state.consumed_wh = _full_charge_capacity_wh - _remaining_capacity_wh;
-    _interim_state.time_remaining =  is_zero(_interim_state.current_amps) ? 0 : (remaining_capacity_ah / _interim_state.current_amps * 3600);
-    _interim_state.has_time_remaining = true;
+    if (!isnan(msg.nominal_voltage) && msg.nominal_voltage > 0) {
+        float remaining_capacity_ah = _remaining_capacity_wh / msg.nominal_voltage;
+        float full_charge_capacity_ah = _full_charge_capacity_wh / msg.nominal_voltage;
+        _interim_state.consumed_mah = (full_charge_capacity_ah - remaining_capacity_ah) * 1000;
+        _interim_state.consumed_wh = _full_charge_capacity_wh - _remaining_capacity_wh;
+        _interim_state.time_remaining =  is_zero(_interim_state.current_amps) ? 0 : (remaining_capacity_ah / _interim_state.current_amps * 3600);
+        _interim_state.has_time_remaining = true;
+    }
 
     _has_cell_voltages = true;
-    _has_time_remaining = true;
     _has_battery_info_aux = true;
 }
 
@@ -206,7 +218,33 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dro
 
 void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
-    AP_BattMonitor_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    const auto &batt = AP::battery();
+    AP_BattMonitor_DroneCAN *driver = nullptr;
+
+    /*
+      check for a backend with AllowSplitAuxInfo set, allowing InfoAux
+      from a different CAN node than the base battery information
+     */
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        const auto *drv = batt.drivers[i];
+        if (drv != nullptr &&
+            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+            drv->option_is_set(AP_BattMonitor_Params::Options::AllowSplitAuxInfo) &&
+            batt.get_serial_number(i) == int32_t(msg.battery_id)) {
+            driver = (AP_BattMonitor_DroneCAN *)batt.drivers[i];
+            if (driver->_ap_dronecan == nullptr) {
+                /* we have not received the main battery information
+                   yet. Discard InfoAux until we do so we can init the
+                   backend with the right node ID
+                 */
+                return;
+            }
+            break;
+        }
+    }
+    if (driver == nullptr) {
+        driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    }
     if (driver == nullptr) {
         return;
     }
