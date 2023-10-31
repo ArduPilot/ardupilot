@@ -14,13 +14,13 @@ public:
       Velocity is in earth frame, NED [m/s].
       Yaw is in earth frame, NED [rad/s].
      */
-    bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads) override;
+    bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads)override WARN_IF_UNUSED;
 private:
     /*
       Return true if Rover is ready to handle external control data.
       Currently checks mode and arm states.
     */
-    bool ready_for_external_control();
+    bool ready_for_external_control() WARN_IF_UNUSED;
 };
 
 #endif // AP_EXTERNAL_CONTROL_ENABLED
