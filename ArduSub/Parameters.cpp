@@ -271,7 +271,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: JS_THR_GAIN
     // @DisplayName: Throttle gain scalar
-    // @Description: Scalar for gain on the throttle channel
+    // @Description: Scalar for gain on the throttle channel. Gets scaled with the current JS gain
     // @User: Standard
     // @Range: 0.5 4.0
     GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
