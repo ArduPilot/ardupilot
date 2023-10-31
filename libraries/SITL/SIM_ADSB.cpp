@@ -35,19 +35,26 @@ namespace SITL {
 /*
   update a simulated vehicle
  */
-void ADSB_Vehicle::update(float delta_t)
+void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
 {
-    if (!initialised) {
-        const SIM *_sitl = AP::sitl();
-        if (_sitl == nullptr) {
-            return;
-        }
+    const SIM *_sitl = AP::sitl();
+    if (_sitl == nullptr) {
+        return;
+    }
 
+    const Location &origin { aircraft.get_origin() };
+
+    if (!initialised) {
+        // spawn another aircraft
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
         snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
-        position.x = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
-        position.y = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        Location aircraft_location = aircraft.get_location();
+        const Vector2f aircraft_offset_ne = aircraft_location.get_distance_NE(origin);
+        position.x = aircraft_offset_ne[1];
+        position.y = aircraft_offset_ne[0];
+        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
         position.z = -fabsf(_sitl->adsb_altitude_m);
 
         double vel_min = 5, vel_max = 20;
@@ -81,11 +88,16 @@ void ADSB_Vehicle::update(float delta_t)
         // it has crashed! reset
         initialised = false;
     }
+
+    Location ret = origin;
+    ret.offset(position.x, position.y);
+
+    location = ret;
 }
 
-bool ADSB_Vehicle::location(Location &loc) const
+const Location &ADSB_Vehicle::get_location() const
 {
-    return AP::ahrs().get_location_from_home_offset(loc, position);
+    return location;
 }
 
 /*
@@ -115,18 +127,15 @@ void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
 
-    const Location &home = aircraft.get_home();
+    // prune any aircraft which get too far away from our simulated vehicle:
+    const Location &aircraft_loc = aircraft.get_location();
 
     for (uint8_t i=0; i<num_vehicles; i++) {
-        vehicles[i].update(delta_t);
-
-        Location loc = home;
-
-        ADSB_Vehicle &vehicle = vehicles[i];
-        loc.offset(vehicle.position.x, vehicle.position.y);
+        auto &vehicle = vehicles[i];
+        vehicle.update(aircraft, delta_t);
 
         // re-init when exceeding radius range
-        if (home.get_distance(loc) > _sitl->adsb_radius_m) {
+        if (aircraft_loc.get_distance(vehicle.get_location()) > _sitl->adsb_radius_m) {
             vehicle.initialised = false;
         }
     }
@@ -216,8 +225,6 @@ void ADSB::send_report(const class Aircraft &aircraft)
     /*
       send a ADSB_VEHICLE messages
      */
-    const Location &home = aircraft.get_home();
-
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
@@ -226,8 +233,7 @@ void ADSB::send_report(const class Aircraft &aircraft)
                 continue;
             }
 
-            Location loc = home;
-            loc.offset(vehicle.position.x, vehicle.position.y);
+            const Location &loc { vehicle.get_location() };
 
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;
