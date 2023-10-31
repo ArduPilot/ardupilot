@@ -84,10 +84,10 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: RATE_FWD
     // @DisplayName: Transition tilt completion rate.
-    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back to Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating.  
+    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back to Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used.
     // @Units: deg/s
     // @Increment: 1
-    // @Range: 5 45
+    // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("RATE_FWD", 11, Tiltrotor, max_rate_down_transition_dps, 15),
 
@@ -352,10 +352,18 @@ void Tiltrotor::continuous_update(void)
                             tilt_rate_dps = max_rate_down_dps;
                         }
                     } else {
-                        // when tilting past the maximum VTOL tilt angle, use a different rate
-                        // which can be set slower to allow the pitch angle and height control
-                        // time to raise throttle on the tilted motors.
-                        tilt_rate_dps = max_rate_down_transition_dps;
+                        // when tilting past the maximum VTOL tilt angle set by  Q_TILT_MAX,
+                        // enable use of a different rate which can be set slower to allow the
+                        // pitch angle and height control time to raise throttle on the tilted motors.
+                        if (max_rate_down_transition_dps > 0) {
+                            tilt_rate_dps = max_rate_down_transition_dps;
+                        } else if (max_rate_down_dps > 0) {
+                            // use the VTOL flight tilt down rate if the rate to be used when past Q_TILT_MAX isn't set
+                            tilt_rate_dps = max_rate_down_dps;
+                        } else {
+                            // use the VTOL flight tilt up rate if the VTOL flight tilt down rate isn't set
+                            tilt_rate_dps = max_rate_up_dps;
+                        }
                     }
                     const float tilt_frac_incr = tilt_rate_dps * plane.G_Dt * (1/90.0f);
                     _transition_fwd_tilt_frac = _transition_fwd_tilt_frac + tilt_frac_incr;
