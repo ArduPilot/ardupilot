@@ -84,7 +84,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: RATE_FWD
     // @DisplayName: Transition tilt completion rate.
-    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back to Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used. Tilting past Q_TILT_MAX can delayed until the minimum forward flight airspeed is reached by setting bit 0 in Q_TILT_OPTIONS.
+    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back toward Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used. Tilting past Q_TILT_MAX can delayed until the minimum forward flight airspeed is reached by setting bit 0 in Q_TILT_OPTIONS.
     // @Units: deg/s
     // @Increment: 1
     // @Range: 0 45
