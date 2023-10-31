@@ -194,7 +194,7 @@ float Tiltrotor::tilt_max_change(bool up, bool in_flap_range) const
             rate = MAX(rate, 90);
         }
     }
-    return rate * plane.G_Dt * (1/90.0);
+    return deg2quad(rate * plane.G_Dt);
 }
 
 /*
@@ -215,13 +215,13 @@ void Tiltrotor::slew(float newtilt)
 // tilt wings can sustain forward flight with some amount of wing tilt
 float Tiltrotor::get_fully_forward_tilt() const
 {
-    return 1.0 - (flap_angle_deg * (1/90.0));
+    return 1.0 - (deg2quad(flap_angle_deg));
 }
 
 // return the target tilt value for forward flight
 float Tiltrotor::get_forward_flight_tilt() const
 {
-    return 1.0 - ((flap_angle_deg * (1/90.0)) * SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
+    return 1.0 - ((deg2quad(flap_angle_deg)) * SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
 }
 
 /*
@@ -319,7 +319,7 @@ void Tiltrotor::continuous_update(void)
         // set to quadplane.forward_throttle_pct()
         const float fwd_g_demand = 0.01 * quadplane.forward_throttle_pct();
         const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
-        slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
+        slew(MIN(deg2quad(fwd_tilt_deg), get_forward_flight_tilt()));
         return;
     } else if (!quadplane.assisted_flight &&
                (plane.control_mode == &plane.mode_qacro ||
@@ -332,7 +332,7 @@ void Tiltrotor::continuous_update(void)
         } else {
             // manual control of forward throttle up to max VTOL angle
             float settilt = .01f * quadplane.forward_throttle_pct();
-            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+            slew(MIN(settilt * deg2quad(max_angle_deg), get_forward_flight_tilt()));
         }
         return;
     }
@@ -351,7 +351,7 @@ void Tiltrotor::continuous_update(void)
                 if (max_throttle < 0.95f) {
                     // Tilt the rotors forward if the maximum throttle of the tilting motors is not saturating.
                     float tilt_rate_dps;
-                    if (_transition_fwd_tilt_frac < (1/90.0f) * (float)max_angle_deg) {
+                    if (_transition_fwd_tilt_frac < deg2quad((float)max_angle_deg)) {
                         // use the normal rate up to the maximum VTOL tilt angle
                         if (max_rate_down_dps <= 0) {
                             // use the up rate if the down rate isn't defined
@@ -373,7 +373,7 @@ void Tiltrotor::continuous_update(void)
                             tilt_rate_dps = max_rate_up_dps;
                         }
                     }
-                    const float tilt_frac_incr = tilt_rate_dps * plane.G_Dt * (1/90.0f);
+                    const float tilt_frac_incr = deg2quad(tilt_rate_dps * plane.G_Dt);
                     _transition_fwd_tilt_frac = _transition_fwd_tilt_frac + tilt_frac_incr;
                 } else if (_transition_fwd_tilt_frac > (1/90.0f) * (float)max_angle_deg) {
                     // If the maximum throttle of the tilting motors is clipping and rotors are tilted past the normal
@@ -406,7 +406,7 @@ void Tiltrotor::continuous_update(void)
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
        float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
-       new_tilt = MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt());
+       new_tilt = MIN(settilt * deg2quad(max_angle_deg), get_forward_flight_tilt());
     }
     slew(new_tilt);
 }
@@ -766,10 +766,10 @@ void Tiltrotor::bicopter_output(void)
     float tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
 
     if (is_negative(tilt_left)) {
-        tilt_left *= tilt_yaw_angle * (1/90.0);
+        tilt_left *= deg2quad(tilt_yaw_angle);
     }
     if (is_negative(tilt_right)) {
-        tilt_right *= tilt_yaw_angle * (1/90.0);
+        tilt_right *= deg2quad(tilt_yaw_angle);
     }
 
     // reduce authority of bicopter as motors are tilted forwards
