@@ -3111,10 +3111,11 @@ float GCS_MAVLINK::vfr_hud_airspeed() const
 float GCS_MAVLINK::vfr_hud_climbrate() const
 {
     Vector3f velned;
-    if (!AP::ahrs().get_velocity_NED(velned)) {
-      velned.zero();
+    if (AP::ahrs().get_velocity_NED(velned) || 
+        AP::ahrs().get_vert_pos_rate_D(velned.z)) {
+        return -velned.z;
     }
-    return -velned.z;
+    return 0;
 }
 
 float GCS_MAVLINK::vfr_hud_alt() const
