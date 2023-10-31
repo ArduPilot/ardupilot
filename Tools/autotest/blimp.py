@@ -237,6 +237,15 @@ class AutoTestBlimp(TestSuite):
 
         self.disarm_vehicle()
 
+    def PREFLIGHT_Pressure(self):
+        '''test triggering pressure calibration with mavlink command'''
+        # as airspeed is not instantiated on Blimp we expect to
+        # instantly get back an accepted.
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p3=1, # p3, baro
+        )
+
     def tests(self):
         '''return list of all tests'''
         # ret = super(AutoTestBlimp, self).tests()
@@ -244,6 +253,7 @@ class AutoTestBlimp(TestSuite):
         ret.extend([
             self.FlyManual,
             self.FlyLoiter,
+            self.PREFLIGHT_Pressure,
         ])
         return ret
 
