@@ -294,6 +294,7 @@ SimMCast::SimMCast(const char *frame_str) :
 void SimMCast::update(const struct sitl_input &input)
 {
     multicast_read();
+    update_home();
     update_external_payload(input);
 
     auto *_sitl = AP::sitl();
