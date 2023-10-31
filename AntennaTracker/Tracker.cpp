@@ -66,7 +66,12 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50, 70),
     SCHED_TASK(one_second_loop,         1,   3900, 80),
     SCHED_TASK(stats_update,            1,    200, 90),
+    SCHED_TASK(process_gps_data, 10, 1000, 70), // Call process_gps_data every 100 milliseconds
 };
+
+void Tracker::process_gps_data(){
+gps_parser.process();
+}
 
 void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                 uint8_t &task_count,
@@ -163,6 +168,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
     : logger(g.log_bitmask)
+    , gps_parser(&hal.uartC)
 {
 }
 

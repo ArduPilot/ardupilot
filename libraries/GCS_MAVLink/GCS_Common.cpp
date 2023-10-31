@@ -2488,6 +2488,7 @@ void GCS::setup_uarts()
             break;
         }
         AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
+        DEV_PRINTF("Klamfis\n");
         if (uart == nullptr) {
             // no more mavlink uarts
             break;
