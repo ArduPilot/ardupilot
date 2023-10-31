@@ -84,7 +84,7 @@ public:
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
     // handle MAVLink command from GCS to control the camera
-    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command(const mavlink_command_int_t &packet);
 
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
@@ -96,12 +96,12 @@ public:
     void send_camera_settings(mavlink_channel_t chan);
 
     // configure camera
-    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
-    void configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
+    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time);
+    void configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, uint32_t exposure_type, uint32_t cmd_id, float engine_cutoff_time);
 
     // handle camera control
-    void control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
-    void control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
+    void control(float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id);
+    void control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, uint32_t shooting_cmd, uint32_t cmd_id);
 
     // set camera trigger distance in a mission
     void set_trigger_distance(float distance_m);
