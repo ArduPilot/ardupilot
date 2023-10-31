@@ -84,12 +84,19 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: RATE_FWD
     // @DisplayName: Transition tilt completion rate.
-    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back to Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used.
+    // @Description: This is the angular rate that rotors will be tilted from Q_TILT_MAX to the fixed wing flight tilt angle when doing a transition from VTOL to fixed wing flight. If the maximum throttle of tilting motors starts to saturate, then the rotors will tilt back to Q_TILT_MAX at Q_RATE_UP deg/sec until the motors stop saturating. If Q_TILT_RATE_FWD is not positive, the Q_TILT_RATE_DN value is used if positive, otherwise the Q_TILT_RATE_UP value is used. Tilting past Q_TILT_MAX can delayed until the minimum forward flight airspeed is reached by setting bit 0 in Q_TILT_OPTIONS.
     // @Units: deg/s
     // @Increment: 1
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("RATE_FWD", 11, Tiltrotor, max_rate_down_transition_dps, 15),
+
+    // @Param: OPTIONS
+    // @DisplayName: Tilt rotor options
+    // @Description: Options impacting tilt rotor behaviour
+    // @Bitmask: 0:Delay tilt past Q_TILT_MAX during VTOl to FW transition
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 12, Tiltrotor, options, 0),
 
     AP_GROUPEND
 };
@@ -335,7 +342,8 @@ void Tiltrotor::continuous_update(void)
         transition->transition_state == Tiltrotor_Transition::TRANSITION_AIRSPEED_WAIT &&
         (type == TILT_TYPE_VECTORED_YAW || type == TILT_TYPE_CONTINUOUS)) {
             const float tilt_angle_range = 90.0f * get_forward_flight_tilt() - (float)max_angle_deg;
-            if (is_positive(tilt_angle_range)) {
+            const bool delay_tilt_past_vtol_max = (int16_t)options.get() & (int16_t)Options::DELAY_TRANSITON_TILT;
+            if (!delay_tilt_past_vtol_max && is_positive(tilt_angle_range)) {
                 // Tilt immediately to Q_TILT_MAX. Then tilt forward from Q_TILT_MAX to the forward flight value.
                 // If when tilting forward past Q_TILT_MAX, the throttle for any tilting motor is saturating, the
                 // tilt angle is reduced to prevent loss of attitude control.

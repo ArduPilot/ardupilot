@@ -89,6 +89,12 @@ public:
     AP_Float flap_angle_deg;
     AP_Int8  max_rate_down_transition_dps;
 
+    enum class Options {
+        DELAY_TRANSITON_TILT = (1<<0),
+    };
+
+    AP_Int16 options;
+
     float current_tilt;
     float current_throttle;
     bool _motors_active:1;
