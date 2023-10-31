@@ -429,10 +429,7 @@ void ADSB_Sagetech_MXS::send_vehicle_message_state_vector(const SITL::ADSB_Vehic
     pack_int32_into_uint8_ts(vehicle.ICAO_address, my_report.participant_address);
     my_report.address_qualifier = 0x02;  // aircraft
 
-    Location loc;
-    if (!vehicle.location(loc)) {
-        return;
-    }
+    Location loc = vehicle.get_location();
 
     // pack in latitude/longitude:
     pack_scaled_geocoord(my_report.latitude, loc.lat * 1e-7);
