@@ -1898,9 +1898,6 @@ class TestSuite(ABC):
             p1=1,  # reboot autopilot
         )
 
-    def run_cmd_run_prearms(self):
-        self.run_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS)
-
     def run_cmd_enable_high_latency(self, new_state, run_cmd=None):
         if run_cmd is None:
             run_cmd = self.run_cmd

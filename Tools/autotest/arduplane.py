@@ -191,16 +191,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect("STATUSTEXT")
         tstart = self.get_sim_time()
         success = False
-        while not success:
-            if self.get_sim_time_cached() - tstart > 60:
-                raise NotAchievedException("Did not get correct failure reason")
-            self.run_cmd_run_prearms()
-            try:
-                self.wait_statustext(".*AHRS: not using configured AHRS type.*", timeout=1, check_context=True, regex=True)
-                success = True
-                continue
-            except AutoTestTimeoutException:
-                pass
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            while not success:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("Did not get correct failure reason")
+                run_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS)
+                try:
+                    self.wait_statustext(".*AHRS: not using configured AHRS type.*", timeout=1, check_context=True, regex=True)
+                    success = True
+                    continue
+                except AutoTestTimeoutException:
+                    pass
 
         self.set_parameter("SIM_GPS_DISABLE", 0)
         self.wait_ready_to_arm()
