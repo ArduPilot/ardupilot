@@ -494,12 +494,23 @@ AP_GROUPEND
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU,
+#if INS_MAX_INSTANCES > 1
     MSG_SCALED_IMU2,
+#if INS_MAX_INSTANCES > 2
     MSG_SCALED_IMU3,
+#endif
+#endif
+#if AP_BARO_ENABLED
     MSG_SCALED_PRESSURE,
+#if BARO_MAX_INSTANCES > 1
     MSG_SCALED_PRESSURE2,
+#if BARO_MAX_INSTANCES > 2
     MSG_SCALED_PRESSURE3,
+#endif
+#endif
+#endif
 };
+
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
