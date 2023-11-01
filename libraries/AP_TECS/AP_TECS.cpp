@@ -470,11 +470,19 @@ void AP_TECS::_update_speed_demand(void)
     // Constrain speed demand, taking into account the load factor
     _TAS_dem = constrain_float(_TAS_dem, _TASmin, _TASmax);
 
+    // Determine the true cruising airspeed (m/s)
+    const float TAScruise = 0.01f * (float)aparm.airspeed_cruise_cm * _ahrs.get_EAS2TAS();
+
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
-    // Use 50% of maximum energy rate to allow margin for total energy contgroller
+    // Use 50% of maximum energy rate on gain, 90% on dissipation to allow margin for total energy controller
     const float velRateMax = 0.5f * _STEdot_max / _TAS_state;
-    const float velRateMin = 0.5f * _STEdot_min / _TAS_state;
+    // Maximum permissible rate of deceleration value at max airspeed
+    const float velRateNegMax = 0.9f * _STEdot_neg_max / _TASmax;
+    // Maximum permissible rate of deceleration value at cruise speed
+    const float velRateNegCruise = 0.9f * _STEdot_min / TAScruise;
+    // Linear interpolation between velocity rate at cruise and max speeds, capped at those speeds
+    const float velRateMin = linear_interpolate(velRateNegMax, velRateNegCruise, _TAS_state, _TASmax, TAScruise);
     const float TAS_dem_previous = _TAS_dem_adj;
 
     // Apply rate limit
@@ -1163,10 +1171,12 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 
 void AP_TECS::_update_STE_rate_lim(void)
 {
-    // Calculate Specific Total Energy Rate Limits
+    // Calculate Specific Total Energy Rate Limits & deceleration rate bounds
+	// Keep the 50% energy margin from the original velRate calculation for now
     // This is a trivial calculation at the moment but will get bigger once we start adding altitude effects
     _STEdot_max = _climb_rate_limit * GRAVITY_MSS;
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
+    _STEdot_neg_max = - _maxSinkRate * GRAVITY_MSS;
 }
 
 
