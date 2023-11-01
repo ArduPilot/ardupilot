@@ -20,10 +20,6 @@
 
 #include "NotchFilter.h"
 
-const static float NOTCH_MAX_SLEW       = 0.05f;
-const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
-const static float NOTCH_MAX_SLEW_UPPER = 1.0f / NOTCH_MAX_SLEW_LOWER;
-
 /*
    calculate the attenuation and quality factors of the filter
  */
@@ -65,12 +61,6 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
 
     float new_center_freq = center_freq_hz;
 
-    // constrain the new center frequency by a percentage of the old frequency
-    if (initialised && !need_reset && !is_zero(_center_freq_hz)) {
-        new_center_freq = constrain_float(new_center_freq, _center_freq_hz * NOTCH_MAX_SLEW_LOWER,
-                                          _center_freq_hz * NOTCH_MAX_SLEW_UPPER);
-    }
-
     if ((new_center_freq > 0.0) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
         float omega = 2.0 * M_PI * new_center_freq / sample_freq_hz;
         float alpha = sinf(omega) / (2 * Q);
@@ -92,6 +82,17 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
         _center_freq_hz = new_center_freq;
         _sample_freq_hz = sample_freq_hz;
         initialised = true;
+
+        // reset filter and replay last samples
+        // filter is left in the state it would be if coefficients
+        // had been changed and the reset was done three samples ago
+        const T input_0 = ntchsig;
+        const T input_1 = ntchsig1;
+        need_reset = true;
+        apply(ntchsig2);
+        apply(input_1);
+        apply(input_0);
+
     } else {
         // leave center_freq_hz at last value
         initialised = false;
