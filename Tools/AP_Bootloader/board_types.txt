@@ -229,6 +229,7 @@ AP_HW_ACNS_CM4PILOT                  1115
 AP_HW_ACNS_F405AIO                   1116
 AP_HW_BLITZF7                        1117
 AP_HW_YJUAV_A6SE                     1127
+AP_HW_YJUAV_A6SE_H743                1141
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
