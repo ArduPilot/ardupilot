@@ -154,6 +154,8 @@ private:
     mavlink_open_drone_id_arm_status_t arm_status;
     uint32_t last_arm_status_ms;
 
+    mavlink_uav_found_t uav_found;
+
     // last time we sent a lost transmitter message
     uint32_t last_lost_tx_ms;
 
