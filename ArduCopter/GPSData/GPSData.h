@@ -1,10 +1,21 @@
+#pragma once 
+
 #ifndef GPSDATA_H
 #define GPSDATA_H
 
-struct GPSData {
+class GPSData
+{
+private:
     double latitude;
     double longitude;
     float altitude;
+public:
+    GPSData(/* args */);
+    ~GPSData() = default;
+    double get_latitude();
+    double get_lonitude();
+    float get_altitude();
 };
+
 
 #endif // GPSDATA_H

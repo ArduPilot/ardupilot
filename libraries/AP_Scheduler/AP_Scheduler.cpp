@@ -32,8 +32,6 @@
 #include <AP_Common/ExpandingString.h>
 #include <AP_HAL/SIMState.h>
 
-#include "GPSParser.h"
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -153,8 +151,6 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
         }
         old = _vehicle_tasks[i].priority;
     }
-    
-    GPSParser gps_parser(serial3);
 }
 
 // one tick has passed

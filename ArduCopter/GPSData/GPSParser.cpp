@@ -1,9 +1,15 @@
 #include "GPSParser.h"
 
-GPSParser::GPSParser(AP_HAL::UARTDriver* uartDriver) : uart(uartDriver), mavlink_buffer_index(0) {
+GPSParser::GPSParser() {
 }
 
-void GPSParser::begin(uint32_t baud) {
+void GPSParser::init(uint8_t port)
+{
+    hal.serial(port);
+}
+
+void GPSParser::begin(uint32_t baud)
+{
     uart->begin(baud);
 }
 
@@ -56,3 +62,5 @@ bool GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length) {
     return false; // Replace with your parsing logic
     
 }
+
+

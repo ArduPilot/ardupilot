@@ -53,9 +53,6 @@
 #include "GCS_Tracker.h"
 
 #include "AP_Arming.h"
-
-#include "GPSParser.h"
-
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -75,7 +72,7 @@ public:
 
     void arm_servos();
     void disarm_servos();
-    void process_gps_data();
+  
 
 private:
     Parameters g;
@@ -237,8 +234,6 @@ private:
             FUNCTOR_BIND_MEMBER(&Tracker::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Tracker::exit_mission_callback, void)};
 
-    //GPS data
-    GPSParser gps_parser;
 };
 
 extern Tracker tracker;

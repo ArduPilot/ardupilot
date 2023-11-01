@@ -76,6 +76,7 @@
 
 #include "Copter.h"
 
+
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
@@ -84,6 +85,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
 #define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
+
 
 /*
   scheduler table - all tasks should be listed here.
@@ -258,6 +260,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
+
+//SCHED_TASK(process_gps_data, 2000, 100, 201)
+
+
 };
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -267,6 +273,12 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
     tasks = &scheduler_tasks[0];
     task_count = ARRAY_SIZE(scheduler_tasks);
     log_bit = MASK_LOG_PM;
+}
+
+void Copter::process_gps_data(){
+gpsParser.init(3);
+gpsParser.begin(57600);
+gpsParser.process();
 }
 
 constexpr int8_t Copter::_failsafe_priorities[7];
@@ -670,6 +682,8 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
+
+   process_gps_data();
 }
 
 void Copter::init_simple_bearing()

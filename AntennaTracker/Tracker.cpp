@@ -69,9 +69,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
    
 };
 
-void Tracker::process_gps_data(){
-gps_parser.process();
-}
+
 
 void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                 uint8_t &task_count,
@@ -165,12 +163,6 @@ void Tracker::stats_update(void)
 }
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
-Tracker::Tracker(void)
-    : logger(g.log_bitmask)
-    , gps_parser(&hal.uartC)
-{
-}
 
 Tracker tracker;
 AP_Vehicle& vehicle = tracker;

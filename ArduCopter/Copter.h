@@ -185,14 +185,17 @@
 
 #include "mode.h"
 
+#include "GPSData/GPSParser.h"              // Modtag signal fra gps og omdan det til noget brugbart
+
 class Copter : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Copter;
     friend class GCS_Copter;
     friend class AP_Rally_Copter;
-    friend class Parameters;
+    friend class Parameters;    
     friend class ParametersG2;
     friend class AP_Avoidance_Copter;
+    void process_gps_data();
 
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Copter;
@@ -261,6 +264,9 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
+    
+    GPSParser gpsParser();
+    //GPSParser gpsParser(hal.serial(3));  // Use the appropriate UART interface
 
     struct RangeFinderState {
         bool enabled:1;
