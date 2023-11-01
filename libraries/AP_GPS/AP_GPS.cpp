@@ -343,7 +343,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Units: s
     // @Range: 5.0 30.0
     // @User: Advanced
-    AP_GROUPINFO("_BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
+    // Had key 21, no longer used
 #endif
 
     // @Param: _DRV_OPTIONS
@@ -484,11 +484,6 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
         }
     }
     _last_instance_swap_ms = 0;
-
-#if defined(GPS_BLENDED_INSTANCE)
-    // Initialise class variables used to do GPS blending
-    _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
-#endif
 
     // prep the state instance fields
     for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
