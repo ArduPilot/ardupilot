@@ -27,7 +27,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_MOUNT_SIYI_PACKETLEN_MAX     22  // maximum number of bytes in a packet sent to or received from the gimbal
+#define AP_MOUNT_SIYI_PACKETLEN_MAX     38  // maximum number of bytes in a packet sent to or received from the gimbal
 
 class AP_Mount_Siyi : public AP_Mount_Backend
 {
