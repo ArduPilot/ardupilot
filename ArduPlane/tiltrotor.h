@@ -34,7 +34,7 @@ public:
 
     void setup();
 
-    float slew(float tilt, int16_t rate_limit_dps = 0);
+    void slew(float tilt, int16_t rate_limit_dps = 0);
     void binary_slew(bool forward);
     void update();
     void continuous_update();
@@ -101,7 +101,6 @@ public:
     float transition_yaw_cd;
     uint32_t transition_yaw_set_ms;
     bool _is_vectored;
-    float _transition_fwd_tilt_frac;
 
     // types of tilt mechanisms
     enum {TILT_TYPE_CONTINUOUS    =0,
