@@ -7,7 +7,7 @@
 // this is not enum-class as many places in the code want to check for
 // "a fix at least this good" using "<".
 
-enum AP_GPS_FixType {
+enum class AP_GPS_FixType {
     NO_GPS = 0,           ///< No GPS connected/detected
     NONE = 1,             ///< Receiving valid GPS messages but no lock
     FIX_2D = 2,           ///< Receiving valid messages and 2D lock
