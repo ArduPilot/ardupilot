@@ -260,10 +260,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
-
-//SCHED_TASK(process_gps_data, 2000, 100, 201)
-
-
+   SCHED_TASK_CLASS(GPSParser,             &copter.gpsParser,           heleMoellen,      1, 100, 201)
 };
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -275,11 +272,7 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
     log_bit = MASK_LOG_PM;
 }
 
-void Copter::process_gps_data(){
-gpsParser.init(3);
-gpsParser.begin(57600);
-gpsParser.process();
-}
+
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
@@ -683,7 +676,7 @@ void Copter::one_hz_loop()
 
     AP_Notify::flags.flying = !ap.land_complete;
 
-   process_gps_data();
+    GPSParser::heleMoellen();
 }
 
 void Copter::init_simple_bearing()

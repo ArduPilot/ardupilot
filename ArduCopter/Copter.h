@@ -195,7 +195,7 @@ public:
     friend class Parameters;    
     friend class ParametersG2;
     friend class AP_Avoidance_Copter;
-    void process_gps_data();
+    friend class GPSParser;
 
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Copter;
@@ -263,10 +263,10 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
+
     const uint8_t num_flight_modes = 6;
     
-    GPSParser gpsParser();
-    //GPSParser gpsParser(hal.serial(3));  // Use the appropriate UART interface
+    GPSParser gpsParser;
 
     struct RangeFinderState {
         bool enabled:1;

@@ -1,20 +1,50 @@
 #include "GPSParser.h"
 
+
 GPSParser::GPSParser() {
 }
 
-void GPSParser::init(uint8_t port)
-{
-    hal.serial(port);
+void GPSParser::setup_uart(AP_HAL::UARTDriver *uart, const char *name){
+    if (uart == nullptr) {
+        // that UART doesn't exist on this platform
+        return;
+    }
+    uart->begin(57600);
 }
 
-void GPSParser::begin(uint32_t baud)
+void GPSParser::setup(){
+     hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+
+    setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
+}
+
+void GPSParser::heleMoellen(){
+    gpsParser.setup();
+    gpsParser.process();
+}
+
+void GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
 {
-    uart->begin(baud);
+    if (uart == nullptr) {
+        // that UART doesn't exist on this platform
+        return;
+    }
+    uart->printf("Hello on UART %s at %.3f seconds\n",
+                 name, (double)(AP_HAL::millis() * 0.001f));
 }
 
 void GPSParser::process() {
-    uint32_t key = 123; // Replace with your desired key
+
+    test_uart(hal.serial(3), "SERIAL3");
+
+    // also do a raw printf() on some platforms, which prints to the
+    // debug console
+    ::printf("Hello on debug console at %.3f seconds\n", (double)(AP_HAL::millis() * 0.001f));
+
+    hal.scheduler->delay(1000);
+
+
+ /*   uint32_t key = 123; // Replace with your desired key
     DEV_PRINTF("PerpIk...\n");
     printf("StrisserKnud og per \n");
     
@@ -38,9 +68,11 @@ void GPSParser::process() {
                 mavlink_buffer_index = 0;
             }
         }
-    }
+    }*/
 }
 
+
+/*
 GPSData GPSParser::getGPSData() {
     return gps_data;
 }
@@ -62,5 +94,6 @@ bool GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length) {
     return false; // Replace with your parsing logic
     
 }
+*/
 
-
+AP_HAL_MAIN();

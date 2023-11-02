@@ -4,14 +4,17 @@
 #define GPSPARSER_H
 
 #include <AP_HAL/AP_HAL.h>
+#include <stdio.h>
 //#include <GPSData.h>
 
 class GPSParser {
 public:
     GPSParser();
-    void init(uint8_t port);
-    void begin(uint32_t baud);
+    void setup_uart(AP_HAL::UARTDriver *uart, const char *name);
+    void setup();
     void process();
+    void test_uart(AP_HAL::UARTDriver *uart, const char *name);
+    void heleMoellen();
    // GPSData getGPSData();
 private:
     AP_HAL::UARTDriver* uart;
