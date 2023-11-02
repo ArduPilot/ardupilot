@@ -1,15 +1,15 @@
 #pragma once
 
-#ifndef GPSPARSER_H
-#define GPSPARSER_H
+#ifndef AP_GPSParser_H
+#define AP_GPSParser_H
 
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 //#include <GPSData.h>
 
-class GPSParser {
+class AP_GPSParser {
 public:
-    GPSParser();
+    AP_GPSParser();
     void setup_uart(AP_HAL::UARTDriver *uart, const char *name);
     void setup();
     void process();
@@ -26,4 +26,4 @@ private:
     bool processMavlinkMessage(const uint8_t* buffer, uint16_t length);
 };
 
-#endif // GPSPARSER_H
+#endif // AP_GPSParser_H

@@ -1,10 +1,10 @@
-#include "GPSParser.h"
+#include "AP_GPSParser.h"
 
 
-GPSParser::GPSParser() {
+AP_GPSParser::AP_GPSParser() {
 }
 
-void GPSParser::setup_uart(AP_HAL::UARTDriver *uart, const char *name){
+void AP_GPSParser::setup_uart(AP_HAL::UARTDriver *uart, const char *name){
     if (uart == nullptr) {
         // that UART doesn't exist on this platform
         return;
@@ -12,18 +12,18 @@ void GPSParser::setup_uart(AP_HAL::UARTDriver *uart, const char *name){
     uart->begin(57600);
 }
 
-void GPSParser::setup(){
+void AP_GPSParser::setup(){
      hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
 
     setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
 }
 
-void GPSParser::heleMoellen(){
-    gpsParser.setup();
-    gpsParser.process();
+void AP_GPSParser::heleMoellen(){
+    AP_GPSParser.setup();
+    AP_GPSParser.process();
 }
 
-void GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
+void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
 {
     if (uart == nullptr) {
         // that UART doesn't exist on this platform
@@ -33,7 +33,7 @@ void GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
                  name, (double)(AP_HAL::millis() * 0.001f));
 }
 
-void GPSParser::process() {
+void AP_GPSParser::process() {
 
     test_uart(hal.serial(3), "SERIAL3");
 
@@ -73,11 +73,11 @@ void GPSParser::process() {
 
 
 /*
-GPSData GPSParser::getGPSData() {
+GPSData AP_GPSParser::getGPSData() {
     return gps_data;
 }
 
-bool GPSParser::parseMavlinkByte(uint8_t byte) {
+bool AP_GPSParser::parseMavlinkByte(uint8_t byte) {
     if (mavlink_buffer_index < sizeof(mavlink_buffer)) {
         mavlink_buffer[mavlink_buffer_index] = byte;
         mavlink_buffer_index++;
@@ -88,7 +88,7 @@ bool GPSParser::parseMavlinkByte(uint8_t byte) {
     return false;
 }
 
-bool GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length) {
+bool AP_GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length) {
     // Implement your logic to parse the MAVLink message and update gps_data
     // Return true if GPS data is successfully extracted, otherwise false
     return false; // Replace with your parsing logic

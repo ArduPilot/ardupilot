@@ -185,7 +185,7 @@
 
 #include "mode.h"
 
-#include "GPSData/GPSParser.h"              // Modtag signal fra gps og omdan det til noget brugbart
+#include "GPSData/AP_GPSParser.h"
 
 class Copter : public AP_Vehicle {
 public:
@@ -195,7 +195,6 @@ public:
     friend class Parameters;    
     friend class ParametersG2;
     friend class AP_Avoidance_Copter;
-    friend class GPSParser;
 
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Copter;
@@ -266,7 +265,7 @@ private:
 
     const uint8_t num_flight_modes = 6;
     
-    GPSParser gpsParser;
+ 
 
     struct RangeFinderState {
         bool enabled:1;
@@ -549,6 +548,9 @@ private:
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain;
 #endif
+
+    // gpsparser handling
+    AP_GPSParser gpsParser;
 
     // Precision Landing
 #if AC_PRECLAND_ENABLED
@@ -958,6 +960,9 @@ private:
     // terrain.cpp
     void terrain_update();
     void terrain_logging();
+
+    // gpsparser.cpp
+    void gpsparser_init();
 
     // tuning.cpp
     void tuning();
