@@ -13,7 +13,7 @@ public:
     GPSData(/* args */);
     ~GPSData() = default;
     double get_latitude();
-    double get_lonitude();
+    double get_longitude();
     float get_altitude();
 };
 

@@ -185,7 +185,7 @@
 
 #include "mode.h"
 
-#include "GPSData/AP_GPSParser.h"
+#include "AP_GPSParser.h"
 
 class Copter : public AP_Vehicle {
 public:

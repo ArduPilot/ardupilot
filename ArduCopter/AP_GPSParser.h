@@ -5,22 +5,21 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
-//#include <GPSData.h>
 
 class AP_GPSParser {
 public:
     AP_GPSParser();
+    /*
     void setup_uart(AP_HAL::UARTDriver *uart, const char *name);
     void setup();
-    void process();
-    void test_uart(AP_HAL::UARTDriver *uart, const char *name);
-    void heleMoellen();
-   // GPSData getGPSData();
+    */
+    //void process();
+    //void test_uart(AP_HAL::UARTDriver *uart, const char *name);
 private:
+    const AP_HAL::HAL& hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver* uart;
     uint8_t mavlink_buffer[255];
     uint16_t mavlink_buffer_index;
-    //GPSData gps_data;
 
     bool parseMavlinkByte(uint8_t byte);
     bool processMavlinkMessage(const uint8_t* buffer, uint16_t length);

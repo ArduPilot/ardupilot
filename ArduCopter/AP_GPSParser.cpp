@@ -1,10 +1,13 @@
 #include "AP_GPSParser.h"
 
 
+
 AP_GPSParser::AP_GPSParser() {
 }
 
-void AP_GPSParser::setup_uart(AP_HAL::UARTDriver *uart, const char *name){
+/*
+void AP_GPSParser::setup_uart(AP_HAL::UARTDriver *uart_param, const char *name){
+this->uart = uart_param;
     if (uart == nullptr) {
         // that UART doesn't exist on this platform
         return;
@@ -18,10 +21,6 @@ void AP_GPSParser::setup(){
     setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
 }
 
-void AP_GPSParser::heleMoellen(){
-    AP_GPSParser.setup();
-    AP_GPSParser.process();
-}
 
 void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
 {
@@ -32,7 +31,8 @@ void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart, const char *name)
     uart->printf("Hello on UART %s at %.3f seconds\n",
                  name, (double)(AP_HAL::millis() * 0.001f));
 }
-
+*/
+/*
 void AP_GPSParser::process() {
 
     test_uart(hal.serial(3), "SERIAL3");
@@ -44,7 +44,7 @@ void AP_GPSParser::process() {
     hal.scheduler->delay(1000);
 
 
- /*   uint32_t key = 123; // Replace with your desired key
+    uint32_t key = 123; // Replace with your desired key
     DEV_PRINTF("PerpIk...\n");
     printf("StrisserKnud og per \n");
     
@@ -68,9 +68,9 @@ void AP_GPSParser::process() {
                 mavlink_buffer_index = 0;
             }
         }
-    }*/
+    }
 }
-
+*/
 
 /*
 GPSData AP_GPSParser::getGPSData() {
@@ -92,8 +92,6 @@ bool AP_GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length)
     // Implement your logic to parse the MAVLink message and update gps_data
     // Return true if GPS data is successfully extracted, otherwise false
     return false; // Replace with your parsing logic
-    
+  
 }
-*/
-
-AP_HAL_MAIN();
+ */ 

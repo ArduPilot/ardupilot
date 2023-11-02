@@ -9,9 +9,9 @@ double GPSData::get_latitude()
     return latitude;
 }
 
-double GPSData::get_lonitude()
+double GPSData::get_longitude()
 {
-    return lonitude;
+    return longitude;
 }
 
 float GPSData::get_altitude()
