@@ -94,8 +94,24 @@ detect a reset of the flight controller, which implies a reset of its
 routing table.
 
 */
-bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
+bool MAVLink_routing::check_and_forward(uint8_t framing_status,
+                                        GCS_MAVLINK &in_link,
+                                        const mavlink_status_t &status,
+                                        const mavlink_message_t &msg)
 {
+    switch (framing_status) {
+    case MAVLINK_FRAMING_OK:
+        break;
+    case MAVLINK_FRAMING_BAD_CRC:
+    case MAVLINK_FRAMING_BAD_SIGNATURE:
+        if (in_link.uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_FORWARD_BAD_CRC)) {
+            forward(in_link, msg);
+        }
+        return false;  // do not process locally
+    default:
+        return false;  // do not process locally
+    }
+
 #if HAL_SOLO_GIMBAL_ENABLED
     // check if a Gopro is connected. If yes, we allow the routing
     // of mavlink messages to a private channel (Solo Gimbal case)
@@ -142,6 +158,12 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
     }
 #endif
 
+    return forward(in_link, msg);
+}
+
+bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
+                              const mavlink_message_t &msg)
+{
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;
@@ -156,6 +178,7 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
 
     // don't ever forward data from a private channel
     // unless a Gopro camera is connected to a Solo gimbal
+    const bool from_private_channel = in_link.is_private();
     bool should_process_locally = from_private_channel;
 #if HAL_SOLO_GIMBAL_ENABLED
     if (gopro_status_check) {

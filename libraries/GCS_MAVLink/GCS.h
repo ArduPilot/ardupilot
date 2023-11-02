@@ -171,6 +171,7 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+    friend class MAVLink_routing;
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
@@ -222,7 +223,8 @@ public:
     }
 
     // packetReceived is called on any successful decode of a mavlink message
-    virtual void packetReceived(const mavlink_status_t &status,
+    virtual void packetReceived(uint8_t framing_status,
+                                const mavlink_status_t &status,
                                 const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
