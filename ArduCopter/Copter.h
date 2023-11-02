@@ -184,7 +184,6 @@
 #endif
 
 #include "mode.h"
-
 #include "AP_GPSParser.h"
 
 class Copter : public AP_Vehicle {
@@ -192,7 +191,7 @@ public:
     friend class GCS_MAVLINK_Copter;
     friend class GCS_Copter;
     friend class AP_Rally_Copter;
-    friend class Parameters;    
+    friend class Parameters;
     friend class ParametersG2;
     friend class AP_Avoidance_Copter;
 
@@ -262,10 +261,9 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
-
     const uint8_t num_flight_modes = 6;
-    
- 
+
+    bool firstTimeSetup = true;
 
     struct RangeFinderState {
         bool enabled:1;
@@ -548,10 +546,9 @@ private:
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain;
 #endif
-
-    // gpsparser handling
+    
+    //GpsParser Handling
     AP_GPSParser gpsParser;
-
     // Precision Landing
 #if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
@@ -960,8 +957,6 @@ private:
     // terrain.cpp
     void terrain_update();
     void terrain_logging();
-
-    // gpsparser.cpp
     void gpsparser_init();
 
     // tuning.cpp

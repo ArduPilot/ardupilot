@@ -9,18 +9,15 @@
 class AP_GPSParser {
 public:
     AP_GPSParser();
-    /*
     void setup_uart(AP_HAL::UARTDriver *uart, const char *name);
     void setup();
-    */
-    //void process();
-    //void test_uart(AP_HAL::UARTDriver *uart, const char *name);
+    void process();
+    void test_uart(AP_HAL::UARTDriver *uart, const char *name);
 private:
     const AP_HAL::HAL& hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver* uart;
     uint8_t mavlink_buffer[255];
     uint16_t mavlink_buffer_index;
-
     bool parseMavlinkByte(uint8_t byte);
     bool processMavlinkMessage(const uint8_t* buffer, uint16_t length);
 };

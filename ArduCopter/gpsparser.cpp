@@ -1,6 +1,15 @@
 #include "Copter.h"
 
 void Copter::gpsparser_init(){
+static bool setupDone = false;
 
-    hal.console->printf("Hejsa");
+if (!setupDone)
+{
+    gpsParser.setup();  
+    setupDone = true;    
+    hal.console->printf("Setup completed");
 }
+    gpsParser.process();
+}
+
+  
