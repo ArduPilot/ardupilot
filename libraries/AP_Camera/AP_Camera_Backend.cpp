@@ -280,8 +280,8 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         poi_loc.lng,
         poi_loc.alt,
         quat_array,
-        NaN, // currently setting hfov as NaN
-        NaN  // currently setting vfov as NaN
+        horizontal_fov() > 0 ? horizontal_fov() : NaN,
+        vertical_fov() > 0 ? vertical_fov() : NaN
     );
 }
 #endif
