@@ -119,17 +119,26 @@ public:
 
     // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
+
     // set the bandwidth of the harmonic notch
     void set_bandwidth_hz(float bandwidth_hz) { _bandwidth_hz.set(bandwidth_hz); }
+
+    // set the attenuation of the harmonic notch
+    void set_attenuation(float attenuation_dB) { _attenuation_dB.set(attenuation_dB); }
+    
     // harmonics enabled on the harmonic notch
     uint32_t harmonics(void) const { return _harmonics; }
+
     // set the harmonics value
     void set_harmonics(uint32_t hmncs) { _harmonics.set(hmncs); }
+
     // has the user set the harmonics value
     void set_default_harmonics(uint32_t hmncs) { _harmonics.set_default(hmncs); }
+
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
     void set_reference(float ref) { _reference.set(ref); }
+
     // notch options
     bool hasOption(Options option) const { return _options & uint16_t(option); }
     // notch dynamic tracking mode
@@ -141,6 +150,9 @@ public:
         return _freq_min_ratio;
     }
     void set_freq_min_ratio(float ratio) { _freq_min_ratio.set(ratio); }
+
+    // set options flags
+    void set_options(uint16_t options) { _options.set(options); }
 
     // save parameters
     void save_params();
