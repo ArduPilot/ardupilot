@@ -197,12 +197,6 @@ bool GCS_MAVLINK_Blimp::try_send_message(enum ap_message id)
     return true;
 }
 
-void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
-                                       const mavlink_message_t &msg)
-{
-    GCS_MAVLINK::packetReceived(status, msg);
-}
-
 bool GCS_MAVLINK_Blimp::params_ready() const
 {
     if (AP_BoardConfig::in_config_error()) {
