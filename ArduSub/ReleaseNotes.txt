@@ -1,6 +1,32 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 2-November-2023
+
+Changes from 4.1.0:
+ - prevent multiple baro drivers on the same device
+ - Revert attitude control to 3.5 implementation, hopefully resolving the roll/pitch drift for good.
+ - Fix Python 3.11 compatibility
+ - drop MMC5xx3 sample rate to 100Hz
+ - Introduce CONTROL_FRAME parameter, allowing users to switch control frame for yaw
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+ - Fix Leak detection on Navigator
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+ - Fix GUIDED MODE bouncing back to origin after velocity command
+ - Add digital output (including relay) support for Navigator boards
+ - Fix Position Hold "bounce back" issue
+ - Improve low gain control in Position Hold and Depth Hold modes
+ - Add Pixhawk defaults for lights and camera mount tilt
+ - Changed flow_of_control error to a gcs warning
+ - Always calibrate barometer if negative depth is detected
+ - Improve Depth hold behavior when surface/bottom is reached
+ - Fix issue where changing modes caused the ROV to dive
+ - Change default PILOT_VELZ_MAX to 1 m/s
+ - Set default EK3_SRC1_VELZ to None instead of GPS to fix Depth oscilations
+ - Set default parameters for a smoother Position Hold and Depth Hold operation
+ - Add support for CPU affinity in Linux boards
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta8 31-Oct-2023
 
  - Revert default Roll/Pitch P and D terms
