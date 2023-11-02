@@ -122,6 +122,7 @@ class ExtractFeatures(object):
 
             ('AP_CAMERA_ENABLED', 'AP_Camera::var_info',),
             ('AP_CAMERA_{type}_ENABLED', 'AP_Camera_(?P<type>.*)::trigger_pic',),
+            ('AP_CAMERA_SEND_FOV_STATUS_ENABLED', 'AP_Camera::send_camera_fov_status'),
             ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PROXIMITY_ENABLED', 'AP_Proximity::AP_Proximity',),

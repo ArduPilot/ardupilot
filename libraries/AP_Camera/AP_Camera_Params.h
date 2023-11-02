@@ -23,6 +23,8 @@ public:
     AP_Float interval_min;      // minimum time (in seconds) between shots required by camera
     AP_Int8 options;            // whether to start recording when armed and stop when disarmed
     AP_Int8 mount_instance;     // mount instance to which camera is associated with
+    AP_Float hfov;              // horizontal field of view in degrees
+    AP_Float vfov;              // vertical field of view in degrees
 
     // pin number for accurate camera feedback messages
     AP_Int8 feedback_pin;

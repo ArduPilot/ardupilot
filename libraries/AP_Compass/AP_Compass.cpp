@@ -697,6 +697,25 @@ void Compass::init()
         return;
     }
 
+    /*
+      on init() if any devid is set then we set suppress_devid_save to
+      false. This is used to determine if we save device ids during
+      the init process.
+     */
+    suppress_devid_save = true;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state._priv_instance[i].dev_id != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#if COMPASS_MAX_INSTANCES > 1
+        if (_priority_did_stored_list._priv_instance[i] != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#endif
+    }
+
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
@@ -741,24 +760,26 @@ void Compass::init()
 
     // Load priority list from storage, the changes to priority list
     // by user only take effect post reboot, after this
-    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_stored_list[i] != 0) {
-            _priority_did_list[i] = _priority_did_stored_list[i];
-        } else {
-            // Maintain a list without gaps and duplicates
-            for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
-                int32_t temp;
-                if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+    if (!suppress_devid_save) {
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (_priority_did_stored_list[i] != 0) {
+                _priority_did_list[i] = _priority_did_stored_list[i];
+            } else {
+                // Maintain a list without gaps and duplicates
+                for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
+                    int32_t temp;
+                    if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+                        _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    }
+                    if (_priority_did_stored_list[j] == 0) {
+                        continue;
+                    }
+                    temp = _priority_did_stored_list[j];
                     _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    _priority_did_list[i] = temp;
+                    _priority_did_stored_list[i].set_and_save_ifchanged(temp);
+                    break;
                 }
-                if (_priority_did_stored_list[j] == 0) {
-                    continue;
-                }
-                temp = _priority_did_stored_list[j];
-                _priority_did_stored_list[j].set_and_save_ifchanged(0);
-                _priority_did_list[i] = temp;
-                _priority_did_stored_list[i].set_and_save_ifchanged(temp);
-                break;
             }
         }
     }
@@ -777,7 +798,7 @@ void Compass::init()
         // cache the extra devices detected in last boot
         // for detecting replacement mag
         _previously_unreg_mag[i] = extra_dev_id[i];
-        extra_dev_id[i].set_and_save(0);
+        extra_dev_id[i].set(0);
     }
 #endif
 
@@ -786,23 +807,15 @@ void Compass::init()
     // which are set() but not saved() during normal runtime,
     // do not move this call without ensuring that is not happening
     // read comments under set_and_save_ifchanged for details
-    _reorder_compass_params();
+    if (!suppress_devid_save) {
+        _reorder_compass_params();
+    }
 #endif
 
     if (_compass_count == 0) {
         // detect available backends. Only called once
         _detect_backends();
     }
-
-#if COMPASS_MAX_UNREG_DEV
-    // We store the list of unregistered mags detected here,
-    // We don't do this during runtime, as we don't want to detect
-    // compasses connected by user as a replacement while the system
-    // is running
-    for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        extra_dev_id[i].save();
-    }
-#endif
 
     if (_compass_count != 0) {
         // get initial health status
@@ -826,6 +839,7 @@ void Compass::init()
 #endif
 
     init_done = true;
+    suppress_devid_save = false;
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
@@ -846,7 +860,11 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
     // We are not in priority list, let's add at first empty
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_stored_list[i] == 0) {
-            _priority_did_stored_list[i].set_and_save(dev_id);
+            if (suppress_devid_save) {
+                _priority_did_stored_list[i].set(dev_id);
+            } else {
+                _priority_did_stored_list[i].set_and_save(dev_id);
+            }
             _priority_did_list[i] = dev_id;
             if (i >= _compass_count) {
                 _compass_count = uint8_t(i)+1;
@@ -1289,6 +1307,13 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
+#if AP_COMPASS_DRONECAN_ENABLED
+    // probe DroneCAN before I2C and SPI so that DroneCAN compasses
+    // default to first in the list for a new board
+    probe_dronecan_compasses();
+    CHECK_UNREG_LIMIT_RETURN;
+#endif
+
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
@@ -1303,6 +1328,21 @@ void Compass::_detect_backends(void)
     }
 #endif
 
+    // finally look for i2c and spi compasses not found yet
+    CHECK_UNREG_LIMIT_RETURN;
+    probe_i2c_spi_compasses();
+
+    if (_backend_count == 0 ||
+        _compass_count == 0) {
+        DEV_PRINTF("No Compass backends available\n");
+    }
+}
+
+/*
+  probe i2c and SPI compasses
+ */
+void Compass::probe_i2c_spi_compasses(void)
+{
 #if defined(HAL_MAG_PROBE_LIST)
     // driver probes defined by COMPASS lines in hwdef.dat
     HAL_MAG_PROBE_LIST;
@@ -1446,87 +1486,89 @@ void Compass::_detect_backends(void)
         break;
     }
 #endif
-
+}
 
 #if AP_COMPASS_DRONECAN_ENABLED
-    if (_driver_enabled(DRIVER_UAVCAN)) {
-        for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-            AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
-            if (_uavcan_backend) {
-                _add_backend(_uavcan_backend);
-            }
-#if COMPASS_MAX_UNREG_DEV > 0
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
-                break;
-            }
-#endif
+/*
+  look for DroneCAN compasses
+ */
+void Compass::probe_dronecan_compasses(void)
+{
+    if (!_driver_enabled(DRIVER_UAVCAN)) {
+        return;
+    }
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
+        if (_uavcan_backend) {
+            _add_backend(_uavcan_backend);
         }
+#if COMPASS_MAX_UNREG_DEV > 0
+        if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
+            break;
+        }
+#endif
+    }
 
 #if COMPASS_MAX_UNREG_DEV > 0
-        if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT)) {
-            // check if there's any uavcan compass in prio slot that's not found
-            // and replace it if there's a replacement compass
-            for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-                if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
-                    || _get_state(i).registered) {
+    if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT) && !suppress_devid_save) {
+        // check if there's any uavcan compass in prio slot that's not found
+        // and replace it if there's a replacement compass
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
+                || _get_state(i).registered) {
+                continue;
+            }
+            // There's a UAVCAN compass missing
+            // Let's check if there's a replacement
+            for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
+                uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
+                // Check if this is a potential replacement mag
+                if (!is_replacement_mag(detected_devid)) {
                     continue;
                 }
-                // There's a UAVCAN compass missing
-                // Let's check if there's a replacement
-                for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
-                    uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
-                    // Check if this is a potential replacement mag
-                    if (!is_replacement_mag(detected_devid)) {
+                // We have found a replacement mag, let's replace the existing one
+                // with this by setting the priority to zero and calling uavcan probe
+                gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
+                _priority_did_stored_list[i].set_and_save(0);
+                _priority_did_list[i] = 0;
+
+                AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
+                if (_uavcan_backend) {
+                    _add_backend(_uavcan_backend);
+                    // we also need to remove the id from unreg list
+                    remove_unreg_dev_id(detected_devid);
+                } else {
+                    // the mag has already been allocated,
+                    // let's begin the replacement
+                    bool found_replacement = false;
+                    for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
+                        if ((uint32_t)_state[k].dev_id == detected_devid) {
+                            if (_state[k].priority <= uint8_t(i)) {
+                                // we are already on higher priority
+                                // nothing to do
+                                break;
+                            }
+                            found_replacement = true;
+                            // reset old priority of replacement mag
+                            _priority_did_stored_list[_state[k].priority].set_and_save(0);
+                            _priority_did_list[_state[k].priority] = 0;
+                            // update new priority
+                            _state[k].priority = i;
+                        }
+                    }
+                    if (!found_replacement) {
                         continue;
                     }
-                    // We have found a replacement mag, let's replace the existing one
-                    // with this by setting the priority to zero and calling uavcan probe 
-                    gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
-                    _priority_did_stored_list[i].set_and_save(0);
-                    _priority_did_list[i] = 0;
-
-                    AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
-                    if (_uavcan_backend) {
-                        _add_backend(_uavcan_backend);
-                        // we also need to remove the id from unreg list
-                        remove_unreg_dev_id(detected_devid);
-                    } else {
-                        // the mag has already been allocated,
-                        // let's begin the replacement
-                        bool found_replacement = false;
-                        for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                            if ((uint32_t)_state[k].dev_id == detected_devid) {
-                                if (_state[k].priority <= uint8_t(i)) {
-                                    // we are already on higher priority
-                                    // nothing to do
-                                    break;
-                                }
-                                found_replacement = true;
-                                // reset old priority of replacement mag
-                                _priority_did_stored_list[_state[k].priority].set_and_save(0);
-                                _priority_did_list[_state[k].priority] = 0;
-                                // update new priority
-                                _state[k].priority = i;
-                            }
-                        }
-                        if (!found_replacement) {
-                            continue;
-                        }
-                        _priority_did_stored_list[i].set_and_save(detected_devid);
-                        _priority_did_list[i] = detected_devid;
-                    }
+                    _priority_did_stored_list[i].set_and_save(detected_devid);
+                    _priority_did_list[i] = detected_devid;
                 }
             }
         }
-#endif  // #if COMPASS_MAX_UNREG_DEV > 0
     }
+#endif  // #if COMPASS_MAX_UNREG_DEV > 0
+}
 #endif  // AP_COMPASS_DRONECAN_ENABLED
 
-    if (_backend_count == 0 ||
-        _compass_count == 0) {
-        DEV_PRINTF("No Compass backends available\n");
-    }
-}
 
 // Check if the devid is a potential replacement compass
 // Following are the checks done to ensure the compass is a replacement
@@ -1570,7 +1612,7 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
 #if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if ((uint32_t)extra_dev_id[i] == devid) {
-            extra_dev_id[i].set_and_save(0);
+            extra_dev_id[i].set(0);
             return;
         }
     }
@@ -2152,7 +2194,6 @@ void Compass::force_save_calibration(void)
         }
     }
 }
-
 
 // singleton instance
 Compass *Compass::_singleton;

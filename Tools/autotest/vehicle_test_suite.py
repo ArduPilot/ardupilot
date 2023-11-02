@@ -1898,9 +1898,6 @@ class TestSuite(ABC):
             p1=1,  # reboot autopilot
         )
 
-    def run_cmd_run_prearms(self):
-        self.run_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS)
-
     def run_cmd_enable_high_latency(self, new_state, run_cmd=None):
         if run_cmd is None:
             run_cmd = self.run_cmd
@@ -3895,10 +3892,25 @@ class TestSuite(ABC):
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
 
-    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None, poll=False):  # noqa
+    def assert_received_message_field_values(self,
+                                             message,
+                                             fieldvalues,
+                                             verbose=True,
+                                             very_verbose=False,
+                                             epsilon=None,
+                                             poll=False,
+                                             timeout=None,
+                                             check_context=False,
+                                             ):
         if poll:
             self.poll_message(message)
-        m = self.assert_receive_message(message, verbose=verbose, very_verbose=very_verbose)
+        m = self.assert_receive_message(
+            message,
+            verbose=verbose,
+            very_verbose=very_verbose,
+            timeout=timeout,
+            check_context=check_context
+        )
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
 
@@ -4298,7 +4310,7 @@ class TestSuite(ABC):
 
     def assert_receive_message(self,
                                type,
-                               timeout=1,
+                               timeout=None,
                                verbose=False,
                                very_verbose=False,
                                mav=None,
@@ -4306,6 +4318,8 @@ class TestSuite(ABC):
                                delay_fn=None,
                                instance=None,
                                check_context=False):
+        if timeout is None:
+            timeout = 1
         if mav is None:
             mav = self.mav
 
@@ -5669,7 +5683,7 @@ class TestSuite(ABC):
             y=0,
             z=0,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
-            autocontinue=1,
+            autocontinue=0,
             current=0,
             target_system=1,
             target_component=1,
@@ -5682,12 +5696,12 @@ class TestSuite(ABC):
                 seq, # seq
                 frame,
                 t,
-                0, # current
-                0, # autocontinue
+                current, # current
+                autocontinue, # autocontinue
                 p1, # p1
-                0, # p2
-                0, # p3
-                0, # p4
+                p2, # p2
+                p3, # p3
+                p4, # p4
                 x, # latitude
                 y, # longitude
                 z, # altitude

@@ -590,7 +590,7 @@ protected:
     bool get_ap_message_interval(ap_message id, uint16_t &interval_ms) const;
     MAV_RESULT handle_command_request_message(const mavlink_command_int_t &packet);
 
-    MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_START_RX_PAIR(const mavlink_command_int_t &packet);
 
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet);
 
@@ -628,8 +628,8 @@ protected:
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
 
-    MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_flash_bootloader(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_flash_bootloader(const mavlink_command_int_t &packet);
 
     // generally this should not be overridden; Plane overrides it to ensure
     // failsafe isn't triggered during calibration
@@ -654,7 +654,7 @@ protected:
     virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-    MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
     MAV_RESULT handle_command_do_gripper(const mavlink_command_long_t &packet);

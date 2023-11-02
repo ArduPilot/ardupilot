@@ -83,6 +83,8 @@ public:
 
     void update_model(const struct sitl_input &input);
 
+    void update_home();
+
     /* fill a sitl_fdm structure from the simulator state */
     void fill_fdm(struct sitl_fdm &fdm);
 
@@ -121,6 +123,8 @@ public:
         config_ = config;
     }
 
+    // return simulation origin:
+    const Location &get_origin() const { return origin; }
 
     const Location &get_location() const { return location; }
 

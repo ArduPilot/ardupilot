@@ -1,5 +1,4 @@
 -- height above terrain warning script
--- luacheck: only 0
 
 -- min altitude above terrain, script will warn if lower than this
 local terrain_min_alt = 20
@@ -15,7 +14,6 @@ local warn_ms = 10000
 
 
 local height_threshold_passed = false
-local last_warn = 0
 function update()
 
   if not arming:is_armed() then

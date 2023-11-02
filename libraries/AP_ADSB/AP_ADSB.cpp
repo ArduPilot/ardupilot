@@ -828,17 +828,17 @@ bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) 
  */
 void AP_ADSB::write_log(const adsb_vehicle_t &vehicle) const
 {
-    switch (_log) {
-        case logging::SPECIAL_ONLY:
+    switch ((Logging)_log) {
+        case Logging::SPECIAL_ONLY:
             if (!is_special_vehicle(vehicle.info.ICAO_address)) {
                 return;
             }
             break;
 
-        case logging::ALL:
+        case Logging::ALL:
             break;
 
-        case logging::NONE:
+        case Logging::NONE:
         default:
             return;
     }

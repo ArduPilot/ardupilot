@@ -20,13 +20,11 @@ public:
       Velocity is in earth frame, NED [m/s].
       Yaw is in earth frame, NED [rad/s].
      */
-    virtual bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads)
-    {
+    virtual bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads) WARN_IF_UNUSED {
         return false;
     }
 
-    static AP_ExternalControl *get_singleton(void)
-    {
+    static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
     }
 

@@ -443,3 +443,10 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     }
     return last_receive_us;
 }
+
+uint32_t UARTDriver::bw_in_bytes_per_second() const
+{
+    // if connected, assume at least a 10/100Mbps connection
+    const uint32_t bitrate = (_connected && _ip != nullptr) ? 10E6 : _baudrate;
+    return bitrate/10; // convert bits to bytes minus overhead
+}

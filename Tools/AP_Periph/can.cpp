@@ -1136,8 +1136,9 @@ void AP_Periph_FW::processTx(void)
                   active if it has had a successful transmit in the
                   last 2 seconds
                  */
-                const auto *stats = _ins.iface->get_statistics();
-                if (stats == nullptr || now_us - stats->last_transmit_us < 2000000UL) {
+                volatile const auto *stats = _ins.iface->get_statistics();
+                uint64_t last_transmit_us = stats->last_transmit_us;
+                if (stats == nullptr || AP_HAL::micros64() - last_transmit_us < 2000000UL) {
                     sent = false;
                 }
             } else {

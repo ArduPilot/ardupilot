@@ -134,7 +134,7 @@ bool Plane::suppress_throttle(void)
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
 #if AP_AIRSPEED_ENABLED
-        if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
+        if ((!ahrs.using_airspeed_sensor()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             throttle_suppressed = false;
             return false;        
@@ -371,9 +371,15 @@ void Plane::set_servos_idle(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
-    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
 
-    SRV_Channels::output_ch_all();
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
+    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
+    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
+    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
+
 }
 
 
@@ -485,28 +491,22 @@ void Plane::set_servos_controlled(void)
         min_throttle = 0;
     }
 
-    bool flight_stage_determines_max_throttle = false;
-    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || 
-        flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING
-        ) {
-        flight_stage_determines_max_throttle = true;
-    }
+    const bool use_takeoff_throttle_max =
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition()) {
-        flight_stage_determines_max_throttle = true;
-    }
+        quadplane.in_transition() ||
 #endif
-    if (flight_stage_determines_max_throttle) {
+        (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
+        (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
+
+    if (use_takeoff_throttle_max) {
         if (aparm.takeoff_throttle_max != 0) {
-            max_throttle = aparm.takeoff_throttle_max;
-        } else {
-            max_throttle = aparm.throttle_max;
+            max_throttle = aparm.takeoff_throttle_max.get();
         }
     } else if (landing.is_flaring()) {
         min_throttle = 0;
     }
 
-    // conpensate for battery voltage drop
+    // compensate for battery voltage drop
     throttle_voltage_comp(min_throttle, max_throttle);
 
     // apply watt limiter
@@ -516,14 +516,16 @@ void Plane::set_servos_controlled(void)
                                     constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
     
     if (!arming.is_armed_and_safety_off()) {
+        // Always set 0 scaled even if overriding to zero pwm.
+        // This ensures slew limits and other functions using the scaled value pick up in the correct place
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
         if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
-        } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
         }
     } else if (suppress_throttle()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0); // default
@@ -573,6 +575,13 @@ void Plane::set_servos_controlled(void)
 #endif  // HAL_QUADPLANE_ENABLED
     }
 
+}
+
+/*
+  Warn AHRS that we might take off soon
+ */
+void Plane::set_takeoff_expected(void)
+{
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
     const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (!is_flying() && arming.is_armed()) {
@@ -605,7 +614,7 @@ void Plane::set_servos_flaps(void)
 
     if (control_mode->does_auto_throttle()) {
         int16_t flapSpeedSource = 0;
-        if (ahrs.airspeed_sensor_enabled()) {
+        if (ahrs.using_airspeed_sensor()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
         } else {
             flapSpeedSource = aparm.throttle_cruise;
@@ -812,15 +821,9 @@ void Plane::set_servos(void)
     quadplane.update();
 #endif
 
-    if (control_mode == &mode_auto && auto_state.idle_mode) {
-        // special handling for balloon launch
-        set_servos_idle();
-        servos_output();
-        return;
-    }
-
     if (control_mode != &mode_manual) {
         set_servos_controlled();
+        set_takeoff_expected();
     }
 
     // setup flap outputs
