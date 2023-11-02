@@ -85,6 +85,10 @@ public:
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
 
+    // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
+    float horizontal_fov() const { return MAX(0, _params.hfov); }
+    float vertical_fov() const { return MAX(0, _params.vfov); }
+
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
