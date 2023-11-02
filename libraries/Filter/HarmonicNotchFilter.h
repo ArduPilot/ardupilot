@@ -21,6 +21,8 @@
 
 #define HNF_MAX_HARMONICS 16
 
+class HarmonicNotchFilterParams;
+
 /*
   a filter that manages a set of notch filters targetted at a fundamental center frequency
   and multiples of that fundamental frequency
@@ -34,11 +36,19 @@ public:
     // expand filter bank with new filters
     void expand_filter_count(uint16_t total_notches);
     // initialize the underlying filters using the provided filter parameters
-    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
+    void init(float sample_freq_hz, const HarmonicNotchFilterParams &params);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
     void update(float center_freq_hz);
-    // update all o fthe underlying center frequencies individually
+    // update all of the underlying center frequencies individually
     void update(uint8_t num_centers, const float center_freq_hz[]);
+
+    /*
+      set center frequency of one notch.
+      spread_mul is a scale factor for spreading of double or triple notch
+      harmonic_mul is the multiplier for harmonics, 1 is for the fundamental
+    */
+    void set_center_frequency(uint8_t idx, float center_freq_hz, float spread_mul, uint8_t harmonic_mul);
+
     // apply a sample to each of the underlying filters in turn
     T apply(const T &sample);
     // reset each of the underlying filters
@@ -69,6 +79,14 @@ private:
 
     // have we failed to expand filters?
     bool _alloc_has_failed;
+
+    // minimum frequency (from INS_HNTCH_FREQ * INS_HNTCH_FM_RAT)
+    float _minimum_freq;
+
+    /*
+      flag for treating a very low frequency as the min frequency
+    */
+    bool _treat_low_freq_as_min;
 };
 
 // Harmonic notch update mode
@@ -92,6 +110,7 @@ public:
         LoopRateUpdate = 1<<2,
         EnableOnAllIMUs = 1<<3,
         TripleNotch = 1<<4,
+        TreatLowAsMin = 1<<5,
     };
 
     HarmonicNotchFilterParams(void);

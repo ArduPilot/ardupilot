@@ -44,6 +44,10 @@ public:
     // calculate attenuation and quality from provided center frequency and bandwidth
     static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
 
+    void disable(void) {
+        initialised = false;
+    }
+
 protected:
 
     bool initialised, need_reset;
