@@ -113,8 +113,8 @@ The JFB-110 has 9 analog inputs
  - ADC Pin5  -> ADC 5V Sense
  - ADC Pin11 -> ADC 3.3V Sense
  - ADC Pin10 -> RSSI voltage monitoring
- - ADC Pin12 -> ADC SPARE 1
- - ADC Pin13 -> ADC SPARE 2
+ - ADC Pin13 -> ADC SPARE 1
+ - ADC Pin12 -> ADC SPARE 2
  
 ## I2C Buses
 
