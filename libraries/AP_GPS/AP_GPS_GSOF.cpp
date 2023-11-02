@@ -57,12 +57,11 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    // baud request for port 0
-    requestBaud(0);
-    // baud request for port 3
-    requestBaud(3);
+    // baud request for port 1 (COM2 UART on PX1)
+    [[maybe_unused]] const auto successBaud = requestBaud(1);
 
     const uint32_t now = AP_HAL::millis();
+    // TODO this is magic offset, fix it.
     gsofmsg_time = now + 110;
 }
 
@@ -149,9 +148,20 @@ AP_GPS_GSOF::parse(const uint8_t temp)
     return false;
 }
 
-void
+bool
 AP_GPS_GSOF::requestBaud(const uint8_t portindex)
 {
+    if (!port->is_initialized()) {
+        return false;
+    }
+
+    // Clear input buffer before doing configuration
+     if (!port->discard_input()) {
+        return false;
+    };
+
+    // TODO allow passing in a baud rate to this array (prefer 230k)
+    // This is undocumented
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
                           0x02, 0x04, portindex, 0x07, 0x00,0x00, // serial port baud format
@@ -168,6 +178,27 @@ AP_GPS_GSOF::requestBaud(const uint8_t portindex)
     buffer[17] = checksum;
 
     port->write((const uint8_t*)buffer, sizeof(buffer));
+
+    // TODO add a read for ACK = 0x06. 
+    // If no ack, retry. It should take 500uS at 115k baud.
+    // GSOF is supported on the following bauds:
+    // 2400, 4800, 9600, 19200, 38400, 115200, 230400
+    
+    // Expect either an ACK or NACK
+    constexpr uint16_t expected_bytes = 1;
+    constexpr uint16_t ack_timeout_ms = 5;
+    port->wait_timeout(expected_bytes, ack_timeout_ms);
+    const auto available_bytes = port->available();
+    if (available_bytes != expected_bytes) {
+        return false;
+    }
+
+    uint8_t resp_code;
+    if(port->read(resp_code) && resp_code == ACK) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void
