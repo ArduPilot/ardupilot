@@ -51,6 +51,7 @@ do {                                            \
 # define Debug(fmt, args ...)
 #endif
 
+
 AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                          AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
@@ -61,7 +62,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     msg.state = Msg_Parser::State::STARTTX;
 
     // baud request for port 1 (COM2 UART on PX1)
-    is_baud_configured = requestBaud(1);
+    is_baud_configured = requestBaud(HW_Port::COM2);
 
     const uint32_t now = AP_HAL::millis();
     // TODO this is magic offset, fix it.
@@ -161,7 +162,7 @@ AP_GPS_GSOF::parse(const uint8_t temp)
 }
 
 bool
-AP_GPS_GSOF::requestBaud(const uint8_t portIndex)
+AP_GPS_GSOF::requestBaud(const HW_Port portIndex)
 {
     // Debug("Requesting baud on port %u", portIndex);
     if (!port->is_initialized()) {
@@ -179,7 +180,7 @@ AP_GPS_GSOF::requestBaud(const uint8_t portIndex)
     // This is undocumented
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, portIndex, 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portIndex), 0x07, 0x00,0x00, // serial port baud format
                           0x00,0x03
                          }; // checksum
 
@@ -235,7 +236,7 @@ AP_GPS_GSOF::requestBaud(const uint8_t portIndex)
 void
 AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz)
 {
-    Debug("Requesting gsof #%u on port %u", messagetype, portIndex);
+    // Debug("Requesting gsof #%u on port %u", messagetype, portIndex);
     if (!port->is_initialized()) {
         // Debug("Port not initialized");
         return false;

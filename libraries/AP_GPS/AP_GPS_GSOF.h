@@ -59,7 +59,7 @@ private:
 
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-    bool requestBaud(const uint8_t portindex) WARN_IF_UNUSED;
+    bool requestBaud(const HW_Port portIndex) WARN_IF_UNUSED;
 
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     // Note - these request functions currently ignore the ACK from the device.
@@ -100,6 +100,7 @@ private:
         uint16_t read;
         uint8_t checksumcalc;
     } msg;
+
 
     static const uint8_t STX = 0x02;
     static const uint8_t ETX = 0x03;
