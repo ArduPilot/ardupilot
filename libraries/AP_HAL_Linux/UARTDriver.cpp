@@ -450,3 +450,14 @@ uint32_t UARTDriver::bw_in_bytes_per_second() const
     const uint32_t bitrate = (_connected && _ip != nullptr) ? 10E6 : _baudrate;
     return bitrate/10; // convert bits to bytes minus overhead
 }
+
+bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms) {
+    const auto start_wait = AP_HAL::millis();
+    auto now = AP_HAL::millis();
+    while (now  - start_wait <= timeout_ms) {
+        if (available() >= n) {
+            return true;
+        }
+    }
+    return false;
+}

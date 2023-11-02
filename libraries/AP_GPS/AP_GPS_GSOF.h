@@ -59,13 +59,13 @@ private:
 
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-    void requestBaud(const uint8_t portindex);
+    bool requestBaud(const uint8_t portindex) WARN_IF_UNUSED;
 
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     // Note - these request functions currently ignore the ACK from the device.
     // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
     // According to the manufacturer, the best approach is to switch to ethernet.
-    void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
+    bool requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz) WARN_IF_UNUSED;
 
     double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
@@ -106,9 +106,15 @@ private:
     static const uint8_t ACK = 0x06;
     // TODO NACK undocumented
 
+    // How long to wait from sending configuration data for a response.
+    // This assumes delay is the same regardless of baud rate.
+    static const uint8_t configuration_wait_time_ms = 5;
+
     uint8_t packetcount;
     uint32_t gsofmsg_time;
     uint8_t gsofmsgreq_index;
-    const uint8_t gsofmsgreq[5] = {1};
+    const uint8_t gsofmsgreq[7] = {49, 50};
+    bool is_baud_configured {false};
+    bool is_configured {false};
 };
 #endif
