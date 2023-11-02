@@ -213,7 +213,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
     // @RebootRequired: True
     // @User: Standard
-    // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate
+    // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate, 3:forward mavlink packets that don't pass CRC
     AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
 
     // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
