@@ -99,6 +99,13 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
                                         const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
+    // handle the case of loopback of our own messages, due to
+    // incorrect serial configuration.
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == mavlink_system.compid) {
+        return false;  // do not process locally
+    }
+
     switch (framing_status) {
     case MAVLINK_FRAMING_OK:
         break;
@@ -120,13 +127,6 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "GoPro in Solo gimbal detected");
     }
 #endif // HAL_SOLO_GIMBAL_ENABLED
-
-    // handle the case of loopback of our own messages, due to
-    // incorrect serial configuration.
-    if (msg.sysid == mavlink_system.sysid &&
-        msg.compid == mavlink_system.compid) {
-        return false;
-    }
 
     // learn new routes including private channels
     // so that find_mav_type works for all channels
