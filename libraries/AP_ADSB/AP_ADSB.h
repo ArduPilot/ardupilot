@@ -133,6 +133,11 @@ public:
             velocity = vertRateD;
             return vertRateD_is_valid;
         }
+
+        // data from a pressure sensor:
+        bool baro_is_healthy;
+        float baro_alt_press_diff_sea_level;
+
     } _my_loc;
 
     // periodic task that maintains vehicle_list

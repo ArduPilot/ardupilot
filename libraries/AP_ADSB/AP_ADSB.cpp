@@ -360,6 +360,13 @@ void AP_ADSB::update(void)
 
     loc.vertRateD_is_valid = AP::ahrs().get_vert_pos_rate_D(loc.vertRateD);
 
+    const auto &baro = AP::baro();
+    loc.baro_is_healthy = baro.healthy();
+
+    // Altitude difference between sea level pressure and current
+    // pressure (in metres)
+    loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+
     update(loc);
 }
 #endif  // AP_GPS_ENABLED && AP_AHRS_ENABLED
