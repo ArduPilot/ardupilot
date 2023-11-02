@@ -805,3 +805,10 @@ singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1
 singleton mavlink manual send_chan lua_mavlink_send_chan 3
 singleton mavlink manual receive_chan lua_mavlink_receive_chan 0
 singleton mavlink manual block_command lua_mavlink_block_command 1
+
+include AC_Fence/AC_Fence.h depends AP_FENCE_ENABLED
+include AC_Fence/AC_Fence_config.h
+singleton AC_Fence depends AP_FENCE_ENABLED
+singleton AC_Fence rename fence
+singleton AC_Fence method get_breaches uint8_t
+singleton AC_Fence method get_breach_time uint32_t
