@@ -1879,7 +1879,17 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // MAVLink2
         _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
-    if (!routing.check_and_forward(*this, msg)) {
+}
+
+void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
+                                     const mavlink_status_t &status,
+                                     const mavlink_message_t &msg)
+{
+    if (framing_status == MAVLINK_FRAMING_OK) {
+        packetReceived(status, msg);
+    }
+
+    if (!routing.check_and_forward(framing_status, *this, msg)) {
         // the routing code has indicated we should not handle this packet locally
         return;
     }
@@ -1961,17 +1971,19 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
         // Try to get a new message
         const uint8_t framing = mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status);
-        if (framing == MAVLINK_FRAMING_OK) {
+        if (framing != MAVLINK_FRAMING_INCOMPLETE) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
-            packetReceived(status, msg);
-            parsed_packet = true;
-            gcs_alternative_active[chan] = false;
-            alternative.last_mavlink_ms = now_ms;
+            raw_packetReceived(framing, status, msg);
+            if (framing == MAVLINK_FRAMING_OK) {
+                parsed_packet = true;
+                gcs_alternative_active[chan] = false;
+                alternative.last_mavlink_ms = now_ms;
+            }
             hal.util->persistent_data.last_mavlink_msgid = 0;
 
         }
 #if AP_SCRIPTING_ENABLED
-        else if (framing == MAVLINK_FRAMING_BAD_CRC) {
+        if (framing == MAVLINK_FRAMING_BAD_CRC) {
             // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
             AP_Scripting *scripting = AP_Scripting::get_singleton();
             if (scripting != nullptr) {
