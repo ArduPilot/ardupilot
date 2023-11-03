@@ -23,6 +23,9 @@
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
 
+//    By default, 115k is used. For low-noise vehicles, switch to 230k like so
+//    param set GPS_GSOF_BAUD1 11 // 230k
+
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_GPS.h"
@@ -61,8 +64,11 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    // baud request for port 1 (COM2 UART on PX1)
-    is_baud_configured = requestBaud(HW_Port::COM2, HW_Baud::BAUD115K);
+    const auto baud = gps._gsof_baud[state.instance].get();
+    if (!validate_baud(baud)) {
+        return;
+    }
+    is_baud_configured = requestBaud(HW_Port::COM2, static_cast<HW_Baud>(baud));
 
     const uint32_t now = AP_HAL::millis();
     // TODO this is magic offset, fix it.
@@ -460,4 +466,16 @@ AP_GPS_GSOF::process_message(void)
 
     return false;
 }
+
+bool
+AP_GPS_GSOF::validate_baud(const uint8_t baud) const {
+    switch(baud) {
+        case static_cast<uint8_t>(HW_Baud::BAUD230K):
+        case static_cast<uint8_t>(HW_Baud::BAUD115K):
+            return true;
+        default:
+            return false;
+    }
+}
+
 #endif

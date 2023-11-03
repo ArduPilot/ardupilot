@@ -58,6 +58,7 @@ private:
 
     // A subset of the supported baud rates in the GSOF protocol that are useful.
     // These values are not documented in the API.
+    // The matches the GPS_GSOF_BAUD parameter.
     enum class HW_Baud {
         BAUD115K = 0x07,
         BAUD230K = 0x0B,
