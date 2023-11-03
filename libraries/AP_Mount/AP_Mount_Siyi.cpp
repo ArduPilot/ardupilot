@@ -281,6 +281,7 @@ void AP_Mount_Siyi::read_incoming_packets()
         if (reset_parser) {
             _parsed_msg.state = ParseState::WAITING_FOR_HEADER_LOW;
             _msg_buff_len = 0;
+            reset_parser = false;
         }
     }
 }
