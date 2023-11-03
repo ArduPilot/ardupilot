@@ -220,6 +220,8 @@ AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
             Debug("Got at least expected response");
             break;
         }
+        constexpr uint16_t delay_ms = 1;
+        hal.scheduler->delay(delay_ms);
         now = AP_HAL::millis();
     }
 
@@ -289,6 +291,8 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
             // Debug("Got at least expected response");
             break;
         }
+        constexpr uint16_t delay_ms = 1;
+        hal.scheduler->delay(delay_ms);
         now = AP_HAL::millis();
     }
 
