@@ -55,18 +55,25 @@ private:
         FREQ_10_HZ = 1,
         FREQ_50_HZ = 15,
         FREQ_100_HZ = 16,
+
+    // A subset of the supported baud rates in the GSOF protocol that are useful.
+    // These values are not documented in the API.
+    enum class HW_Baud {
+        BAUD115K = 0x07,
+        BAUD230K = 0x0B,
     };
 
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-    bool requestBaud(const HW_Port portIndex) WARN_IF_UNUSED;
-
-    // Send a request to the GPS to enable a message type on the port at the specified rate.
-    // Note - these request functions currently ignore the ACK from the device.
-    // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
-    // According to the manufacturer, the best approach is to switch to ethernet.
+    // Send a request to the GPS to configure its baud rate on a certain (serial) port.
+    // Note - these request functions expect an ACK from the device.
+    // If the device is already sending serial traffic, there is no mechanism to prevent this.
+    // According to the manufacturer, the best approach is to switch to ethernet. 
+    // Use one port for configuration data and another for stream data to prevent conflict.
+    // Because there is only one TTL serial interface exposed, the approach here is using retry logic.
+    bool requestBaud(const HW_Port portIndex, const HW_Baud baudRate) WARN_IF_UNUSED;
+    // Send a request to the GPS to enable a message type on the port.
     bool requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz) WARN_IF_UNUSED;
-
     double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
@@ -110,6 +117,11 @@ private:
     // How long to wait from sending configuration data for a response.
     // This assumes delay is the same regardless of baud rate.
     static const uint8_t configuration_wait_time_ms = 5;
+    // How many attempts to attempt configuration. 
+    // Raising this makes the initialization more immune to data conflicts with streamed data.
+    // Raising it too high will trigger the watchdog.
+    // Lowering this makes the driver quicker to return from initialization calls.
+    static const uint8_t configuration_attempts = 3;
 
     uint8_t packetcount;
     uint32_t gsofmsg_time;

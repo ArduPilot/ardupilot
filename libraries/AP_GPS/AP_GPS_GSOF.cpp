@@ -62,7 +62,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     msg.state = Msg_Parser::State::STARTTX;
 
     // baud request for port 1 (COM2 UART on PX1)
-    is_baud_configured = requestBaud(HW_Port::COM2);
+    is_baud_configured = requestBaud(HW_Port::COM2, HW_Baud::BAUD115K);
 
     const uint32_t now = AP_HAL::millis();
     // TODO this is magic offset, fix it.
@@ -162,7 +162,7 @@ AP_GPS_GSOF::parse(const uint8_t temp)
 }
 
 bool
-AP_GPS_GSOF::requestBaud(const HW_Port portIndex)
+AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
 {
     // Debug("Requesting baud on port %u", portIndex);
     if (!port->is_initialized()) {
@@ -176,11 +176,10 @@ AP_GPS_GSOF::requestBaud(const HW_Port portIndex)
         return false;
     };
 
-    // TODO allow passing in a baud rate to this array (prefer 230k)
-    // This is undocumented
+    // This packet is not documented in the API.
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, static_cast<uint8_t>(portIndex), 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portIndex), static_cast<uint8_t>(baudRate), 0x00,0x00, // serial port baud format
                           0x00,0x03
                          }; // checksum
 
@@ -247,6 +246,8 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
         // Debug("Failed to discard input");
         return false;
     };
+    
+    // This packet is not documented in the API.
     uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
                           0x03,0x00,0x01,0x00, // file control information block
                           0x07,0x06,0x0a,static_cast<uint8_t>(portIndex),static_cast<uint8_t>(rateHz),0x00,messageType,0x00, // output message record
