@@ -157,6 +157,7 @@ function interpolate(low_output, high_output, var_value, var_low, var_high)
   return (low_output + p * (high_output - low_output))
 end
 
+gcs:send_text(MAV_SEVERITY.INFO, "Mount-poi script started")
 
 -- the main update function called at 10hz
 function update()
@@ -181,7 +182,7 @@ function update()
   -- retrieve vehicle location
   local vehicle_loc = ahrs:get_location()
   if vehicle_loc == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: vehicle pos unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: vehicle pos unavailable")
     return update, UPDATE_INTERVAL_MS
   end
   
@@ -191,7 +192,7 @@ function update()
   -- retrieve gimbal attitude
   local _, pitch_deg, yaw_bf_deg = mount:get_attitude_euler(0)
   if pitch_deg == nil or yaw_bf_deg == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: gimbal attitude unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: gimbal attitude unavailable")
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -206,7 +207,7 @@ function update()
 
   -- fail if terrain alt cannot be retrieved
   if terrain_amsl_m == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt")
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -235,7 +236,7 @@ function update()
 
     -- fail if terrain alt cannot be retrieved
     if terrain_amsl_m == nil then
-      gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+      gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt")
       return update, UPDATE_INTERVAL_MS
     end
   end
