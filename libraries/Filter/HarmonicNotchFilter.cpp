@@ -217,7 +217,7 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
 
     // adjust the fundamental center frequency to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * 0.48f;
-    center_freq_hz = constrain_float(center_freq_hz, 1.0f, nyquist_limit);
+    center_freq_hz = constrain_float(center_freq_hz, 0.0f, nyquist_limit);
 
     _num_enabled_filters = 0;
     // update all of the filters using the new center frequency and existing A & Q
@@ -278,7 +278,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
             continue;
         }
 
-        const float notch_center = constrain_float(center_freq_hz[center_n] * (harmonic_n+1), 1.0f, nyquist_limit);
+        const float notch_center = constrain_float(center_freq_hz[center_n] * (harmonic_n+1), 0.0f, nyquist_limit);
         if (_composite_notches != 2) {
             // only enable the filter if its center frequency is below the nyquist frequency
             if (notch_center < nyquist_limit) {
