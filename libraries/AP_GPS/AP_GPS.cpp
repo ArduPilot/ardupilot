@@ -430,6 +430,24 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #endif // GPS_MAX_RECEIVERS > 1
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
 
+#if AP_GPS_GSOF_ENABLED
+    // @Param: _GSOF_BAUD1
+    // @DisplayName: Baud rate for the first GSOF GPS 
+    // @Description: What baud rate to configure the first GSOF GPS to
+    // @Values: 7:115k, 11:230k
+    // @User: Advanced
+    AP_GROUPINFO("_GSOF_BAUD1", 32, AP_GPS, _gsof_baud[0], 7),
+
+#if GPS_MAX_RECEIVERS > 1
+    // @Param: _GSOF_BAUD2
+    // @DisplayName: Baud rate for the second GSOF GPS
+    // @Description: What baud rate to configure the second GSOF GPS to
+    // @Values: 7:115k, 11:230k
+    // @User: Advanced
+    AP_GROUPINFO("_GSOF_BAUD2", 33, AP_GPS, _gsof_baud[1], 7),
+#endif // GPS_MAX_RECEIVERS > 1
+#endif //AP_GPS_GSOF_ENABLED
+
     AP_GROUPEND
 };
 

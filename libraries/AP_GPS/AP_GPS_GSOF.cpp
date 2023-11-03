@@ -22,6 +22,7 @@
 //    param set GPS_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
+//
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
@@ -57,10 +58,11 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    // baud request for port 0
-    requestBaud(0);
-    // baud request for port 3
-    requestBaud(3);
+    const auto baud = gps._gsof_baud[state.instance].get();
+    if (!validate_baud(baud)) {
+        return;
+    }
+    requestBaud(HW_Port::COM2, static_cast<HW_Baud>(baud));
 
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
@@ -150,11 +152,11 @@ AP_GPS_GSOF::parse(const uint8_t temp)
 }
 
 void
-AP_GPS_GSOF::requestBaud(const uint8_t portindex)
+AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
 {
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, portindex, 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portIndex), static_cast<uint8_t>(baudRate), 0x00,0x00, // serial port baud format
                           0x00,0x03
                          }; // checksum
 
@@ -346,5 +348,16 @@ AP_GPS_GSOF::process_message(void)
     }
 
     return false;
+}
+
+bool
+AP_GPS_GSOF::validate_baud(const uint8_t baud) const {
+    switch(baud) {
+        case static_cast<uint8_t>(HW_Baud::BAUD230K):
+        case static_cast<uint8_t>(HW_Baud::BAUD115K):
+            return true;
+        default:
+            return false;
+    }
 }
 #endif

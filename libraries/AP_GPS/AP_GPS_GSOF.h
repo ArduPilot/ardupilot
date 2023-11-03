@@ -55,16 +55,29 @@ private:
         FREQ_50_HZ = 15,
         FREQ_100_HZ = 16,
     };
+    
+    // A subset of the supported baud rates in the GSOF protocol that are useful.
+    // These values are not documented in the API.
+    // The matches the GPS_GSOF_BAUD parameter.
+    enum class HW_Baud {
+        BAUD115K = 0x07,
+        BAUD230K = 0x0B,
+    };
 
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-    void requestBaud(const uint8_t portindex);
 
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     // Note - these request functions currently ignore the ACK from the device.
     // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
     // According to the manufacturer, the best approach is to switch to ethernet.
     void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
+
+    // Send a request to the GPS to configure its baud rate on a certain (serial) port.
+    // Note - these request functions currently ignore the ACK from the device.
+    // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
+    // According to the manufacturer, the best approach is to switch to ethernet.
+    void requestBaud(const HW_Port portIndex, const HW_Baud baudRate);
 
     double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
