@@ -209,27 +209,30 @@ AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
     const auto start_wait = AP_HAL::millis();
     auto now = AP_HAL::millis();
     while (now  - start_wait <= configuration_wait_time_ms) {
-        // Debug("Waiting for response");
+        Debug("Waiting for response");
         if (port->available() >= expected_bytes) {
-            // Debug("Got at least expected response");
+            Debug("Got at least expected response");
             break;
         }
+        now = AP_HAL::millis();
     }
 
     const auto available_bytes = port->available();
     if (available_bytes != expected_bytes) {
-        // Debug("Didn't get expected bytes, got %u bytes back", available_bytes);
+        Debug("Didn't get expected bytes, got %u bytes back", available_bytes);
         return false;
     }
 
     uint8_t resp_code;
     if(port->read(resp_code) && resp_code == ACK) {
-        // Debug("Got ack");
-        return true;
+        Debug("Got ack");
+        // return true;
     } else {
-        // Debug("Didn't get ACK");
-        return false;
+        Debug("Didn't get ACK");
+        // return false;
     }
+    // regardless of results, assume it works.
+    return true;
 }
 
 void
@@ -246,7 +249,7 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
         // Debug("Failed to discard input");
         return false;
     };
-    
+
     // This packet is not documented in the API.
     uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
                           0x03,0x00,0x01,0x00, // file control information block
@@ -280,6 +283,7 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
             // Debug("Got at least expected response");
             break;
         }
+        now = AP_HAL::millis();
     }
 
     const auto available_bytes = port->available();
@@ -290,12 +294,13 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
 
     uint8_t resp_code;
     if(port->read(resp_code) && resp_code == ACK) {
-        // Debug("Got ack");
-        return true;
+        Debug("Got ack");
+        // return true;
     } else {
-        // Debug("Didn't get ACK");
-        return false;
+        Debug("Didn't get ACK");
+        // return false;
     }
+    return true;
 }
 
 double
