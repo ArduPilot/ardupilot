@@ -9851,7 +9851,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Checking mavlink commands")
         self.progress("Starting Sprayer")
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER, p1=1)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SPRAYER, p1=1)
 
         self.progress("Testing speed-ramping")
         self.wait_servo_channel_value(
