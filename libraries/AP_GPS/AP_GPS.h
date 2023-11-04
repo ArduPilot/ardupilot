@@ -623,10 +623,11 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
+        BypassGPSDetection = (1U << 5),
     };
 
     // check if an option is set
-    bool option_set(const DriverOptions option) const {
+    bool option_set(const DriverOptions option) const WARN_IF_UNUSED {
         return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
     }
 
@@ -783,6 +784,9 @@ private:
 
     // logging support
     void Write_GPS(uint8_t instance);
+
+    // autobaud helper to change to next baud
+    void change_to_next_baud();
 
 };
 
