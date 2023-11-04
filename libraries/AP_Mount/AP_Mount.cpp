@@ -380,7 +380,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_co
     return backend->handle_command_do_gimbal_manager_configure(packet, msg);
 }
 
-void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
+void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) {
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
 
@@ -445,7 +445,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     }
 }
 
-void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
+void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
 {
     mavlink_gimbal_manager_set_pitchyaw_t packet;
     mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
@@ -906,7 +906,7 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         handle_gimbal_manager_set_attitude(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW:
-        handle_command_gimbal_manager_set_pitchyaw(msg);
+        handle_gimbal_manager_set_pitchyaw(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);
