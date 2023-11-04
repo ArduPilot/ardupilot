@@ -97,6 +97,9 @@ public:
     // can also be called from scripting
     void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
 
+    // callback to update the data in the frontend, should be called by the driver when new data is available
+    void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
+
 #if AP_SCRIPTING_ENABLED
     /*
       set RPM scale factor from script
@@ -105,9 +108,6 @@ public:
 #endif
 
 private:
-
-    // callback to update the data in the frontend, should be called by the driver when new data is available
-    void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
 
     // rpm data
     volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];
