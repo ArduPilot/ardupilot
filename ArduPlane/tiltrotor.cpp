@@ -260,8 +260,8 @@ void Tiltrotor::continuous_update(void)
       we are in a VTOL mode. We need to work out how much tilt is
       needed. There are 5 strategies we will use:
 
-      1) With use of a forward throttle controlled by Q_FWD_THR_GAIN in all
-         VTOL modes except Q_AUTOTUNE, we set the angle based on a calculated
+      1) With use of a forward throttle controlled by Q_FWD_THR_GAIN in
+         VTOL modes except Q_AUTOTUNE determined by Q_FWD_THR_USE. We set the angle based on a calculated
          forward throttle.
 
       2) With manual forward throttle control we set the angle based on the

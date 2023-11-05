@@ -167,7 +167,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: VFWD_GAIN
     // @DisplayName: Forward velocity hold gain
-    // @Description: The use of this parameter is no longer recommended and has been superseded by a method that works in all VTOL  modes with the exception of autotune which is controlled by the Q_FWD_THR_USE parameter. This Q_VFD_GAIN parameter controls use of the forward motor in VTOL modes that use the velocity controller. Set to 0 to disable this function. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor. 
+    // @Description: The use of this parameter is no longer recommended and has been superseded by a method that works in all VTOL modes with the exception of QAUTOTUNE which is controlled by the Q_FWD_THR_USE parameter. This Q_VFD_GAIN parameter controls use of the forward motor in VTOL modes that use the velocity controller. Set to 0 to disable this function. A value of 0.05 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use with QLOITER for position hold with the forward motor. 
     // @Range: 0 0.5
     // @Increment: 0.01
     // @User: Standard
@@ -507,7 +507,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: FWD_THR_GAIN
     // @DisplayName: Q mode fwd throttle gain
-    // @Description: This parameter sets the gain from forward accel/tilt to forward throttle in Q modes. The Q modes this feature operates in is controlled by the Q_FWD_THR_USE parameter. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors) with a value of 2 being typical. Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter.
+    // @Description: This parameter sets the gain from forward accel/tilt to forward throttle in certain Q modes. The Q modes this feature operates in is controlled by the Q_FWD_THR_USE parameter. Vehicles using separate forward thrust motors, eg quadplanes, should set this parameter to (all up weight) / (maximum combined thrust of forward motors) with a value of 2 being typical. Vehicles that tilt lifting rotors to provide forward thrust should set this parameter to (all up weight) / (weight lifted by tilting rotors) which for most aircraft can be approximated as (total number of lifting rotors) / (number of lifting rotors that tilt). When using this method of forward throttle control, the forward tilt angle limit is controlled by the Q_FWD_PIT_LIM parameter.
     // @Range: 0.0 5.0
     // @Increment: 0.1
     // @User: Standard
