@@ -110,7 +110,7 @@ void AP_Winch::release_length(float length)
 
     // display verbose output to user
     if (backend->option_enabled(Options::VerboseOutput)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Winch: lowering %4.1fm to %4.1fm", (double)length, (double)config.length_desired);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Winch: %s %4.1fm to %4.1fm", is_negative(length) ? "raising" : "lowering", (double)fabsf(length), (double)config.length_desired);
     }
 }
 

@@ -87,6 +87,22 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_MNT_INST", 11, AP_Camera_Params, mount_instance, 0),
 
+    // @Param: _HFOV
+    // @DisplayName: Camera horizontal field of view
+    // @Description: Camera horizontal field of view. 0 if unknown
+    // @Units: deg
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_HFOV", 12, AP_Camera_Params, hfov, 0),
+
+    // @Param: _VFOV
+    // @DisplayName: Camera vertical field of view
+    // @Description: Camera vertical field of view. 0 if unknown
+    // @Units: deg
+    // @Range: 0 180
+    // @User: Standard
+    AP_GROUPINFO("_VFOV", 13, AP_Camera_Params, vfov, 0),
+
     AP_GROUPEND
 
 };

@@ -384,6 +384,10 @@ private:
     bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
+    void probe_i2c_spi_compasses(void);
+#if AP_COMPASS_DRONECAN_ENABLED
+    void probe_dronecan_compasses(void);
+#endif
 
     // compass cal
     void _update_calibration_trampoline();
@@ -648,6 +652,8 @@ private:
     uint8_t msp_instance_mask;
 #endif
     bool init_done;
+
+    bool suppress_devid_save;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
 };

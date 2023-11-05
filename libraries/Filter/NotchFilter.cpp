@@ -71,7 +71,7 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
                                           _center_freq_hz * NOTCH_MAX_SLEW_UPPER);
     }
 
-    if ((new_center_freq > 0.0) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
+    if ((new_center_freq > 2.0) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
         float omega = 2.0 * M_PI * new_center_freq / sample_freq_hz;
         float alpha = sinf(omega) / (2 * Q);
         b0 =  1.0 + alpha*sq(A);

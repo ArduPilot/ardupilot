@@ -452,7 +452,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @DisplayName: Simulated ADSB Type mask
     // @Description: specifies which simulated ADSB types are active
     // @User: Advanced
-    // @Bitmask: 0:MAVLink,1:SageTechMXS
+    // @Bitmask: 0:MAVLink,3:SageTechMXS
     AP_GROUPINFO("ADSB_TYPES",    52, SIM,  adsb_types, 1),
 
 #ifdef SFML_JOYSTICK
@@ -744,6 +744,14 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG3_SCALING",  30, SIM,  mag_scaling[2], 1),
     AP_GROUPINFO("MAG3_ORIENT",   36, SIM,  mag_orient[2], 0),
 #endif
+
+    // @Param: MAG_SAVE_IDS
+    // @DisplayName: Save MAG devids on startup
+    // @Description: This forces saving of compass devids on startup so that simulated compasses start as calibrated
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("MAG_SAVE_IDS", 37, SIM, mag_save_ids, 1),
+
     AP_GROUPEND
 };
 

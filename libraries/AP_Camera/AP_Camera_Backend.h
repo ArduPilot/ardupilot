@@ -85,14 +85,18 @@ public:
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
 
+    // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
+    float horizontal_fov() const { return MAX(0, _params.hfov); }
+    float vertical_fov() const { return MAX(0, _params.vfov); }
+
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
     // configure camera
-    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time) {}
+    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) {}
 
     // handle camera control
-    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
+    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id);
 
     // set camera trigger distance in meters
     void set_trigger_distance(float distance_m) { _params.trigg_dist.set(distance_m); }
@@ -105,6 +109,11 @@ public:
 
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const;
+
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    // send camera field of view status
+    void send_camera_fov_status(mavlink_channel_t chan) const;
+#endif
 
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state

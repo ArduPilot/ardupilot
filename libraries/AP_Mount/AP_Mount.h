@@ -181,9 +181,6 @@ public:
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
 
-    // handling of set_roi_none message
-    MAV_RESULT handle_command_do_set_roi_none();
-
     // mavlink message handling:
     MAV_RESULT handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
@@ -197,6 +194,11 @@ public:
 
     // send a GIMBAL_MANAGER_STATUS message to GCS
     void send_gimbal_manager_status(mavlink_channel_t chan);
+
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const;
+#endif
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success

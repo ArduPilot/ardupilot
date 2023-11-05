@@ -185,7 +185,7 @@ void Plane::takeoff_calc_pitch(void)
         return;
     }
 
-    if (ahrs.airspeed_sensor_enabled()) {
+    if (ahrs.using_airspeed_sensor()) {
         int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
         if (nav_pitch_cd < takeoff_pitch_min_cd) {

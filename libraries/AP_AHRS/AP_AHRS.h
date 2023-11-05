@@ -151,6 +151,9 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &type) const;
 
+    // return true if the current AHRS airspeed estimate (from airspeed_estimate method) is directly derived from an airspeed sensor
+    bool using_airspeed_sensor() const;
+
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool airspeed_estimate_true(float &airspeed_ret) const;
@@ -163,12 +166,13 @@ public:
     // returns false if the data is unavailable
     bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
-    // return true if airspeed comes from an airspeed sensor, as
-    // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(void) const;
+    // return true if a airspeed sensor is enabled
+    bool airspeed_sensor_enabled(void) const {
+        // FIXME: make this a method on the active backend
+        return AP_AHRS_Backend::airspeed_sensor_enabled();
+    }
 
-    // return true if airspeed comes from a specific airspeed sensor, as
-    // opposed to an IMU estimate
+    // return true if a airspeed from a specific airspeed sensor is enabled
     bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
         // FIXME: make this a method on the active backend
         return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
@@ -909,6 +913,9 @@ private:
 
     // get current location estimate
     bool _get_location(Location &loc) const;
+
+    // return true if a airspeed sensor should be used for the AHRS airspeed estimate
+    bool _should_use_airspeed_sensor(uint8_t airspeed_index) const;
     
     /*
       update state structure

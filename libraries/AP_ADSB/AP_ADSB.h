@@ -288,13 +288,13 @@ private:
     void push_sample(const adsb_vehicle_t &vehicle);
 
     // logging
-    AP_Int8 _log;
     void write_log(const adsb_vehicle_t &vehicle) const;
-    enum logging {
+    enum class Logging {
         NONE            = 0,
         SPECIAL_ONLY    = 1,
         ALL             = 2
     };
+    AP_Enum<Logging> _log;
 
     // reference to backend
     AP_ADSB_Backend *_backend[ADSB_MAX_INSTANCES];

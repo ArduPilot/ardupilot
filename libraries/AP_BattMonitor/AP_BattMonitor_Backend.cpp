@@ -47,6 +47,9 @@ bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const
     if (!has_current() || !_state.healthy) {
         return false;
     }
+    if (isnan(_state.consumed_mah) || _params._pack_capacity <= 0) {
+        return false;
+    }
 
     const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
     percentage = constrain_float(100 * mah_remaining / _params._pack_capacity, 0, UINT8_MAX);
