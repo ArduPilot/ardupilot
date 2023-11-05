@@ -29,8 +29,8 @@ USB_STRING_MANUFACTURER "Aocoda-RC-H743Dual"
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
-# OTG USB Detect
-PE2 EXT_CS2 CS
+# OTG USB VBUS
+PE2 VBUS INPUT
 
 # These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
 PA13 JTMS-SWDIO SWD

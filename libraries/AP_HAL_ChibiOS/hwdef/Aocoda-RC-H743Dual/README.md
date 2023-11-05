@@ -44,19 +44,12 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 
 RC input is configured on SERIAL1 (USART1), which is available on the Rx1, Tx1. PPM receivers are *not* supported as this input does not have a timer resource available. 
 
-*Note* It is recommend to use CRSF/ELRS. For SBUS users, please contact FC manufacture for detailed information.
+*Note* It is recommend to use CRSF/ELRS. 
 
 With recommended option:
 
 - Set SERIAL1_PROTOCOL<SERIAL1_PROTOCOL must be set to "23"
 - Set SERIAL1_OPTIONS<SERIAL1_OPTIONS to "0".
- 
-## FrSky Telemetry
- 
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL1/UART1 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL1). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC protocols, you must a different UART for FrSky Telemetry.
- 
-  - SERIAL1_PROTOCOL 10
-  - SERIAL1_OPTIONS 7
   
 ## OSD Support
 
