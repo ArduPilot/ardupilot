@@ -1150,7 +1150,18 @@ public:
     }
     // called when valid traffic has been seen from our GCS
     void sysid_myggcs_seen(uint32_t seen_time_ms) {
+        if (seen_time_ms > _sysid_mygcs_last_seen_time_ms) {
+            _sysid_mygcs_seen_freq_hz = 1000.f / (seen_time_ms - _sysid_mygcs_last_seen_time_ms);
+        } else {
+            _sysid_mygcs_seen_freq_hz = 1.f;
+        }
         _sysid_mygcs_last_seen_time_ms = seen_time_ms;
+    }
+
+    bool is_connected() {
+        const int connection_timeout = 5000;
+        return (AP_HAL::millis() - _sysid_mygcs_last_seen_time_ms < connection_timeout
+                && _sysid_mygcs_seen_freq_hz >= 0.95);
     }
 
     void send_to_active_channels(uint32_t msgid, const char *pkt);
@@ -1280,6 +1291,7 @@ private:
 
     // time we last saw traffic from our GCS
     uint32_t _sysid_mygcs_last_seen_time_ms;
+    float _sysid_mygcs_seen_freq_hz;
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
