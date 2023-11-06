@@ -47,7 +47,7 @@ public:
       spread_mul is a scale factor for spreading of double or triple notch
       harmonic_mul is the multiplier for harmonics, 1 is for the fundamental
     */
-    void set_center_frequency(uint8_t idx, float center_freq_hz, float spread_mul, uint8_t harmonic_mul);
+    void set_center_frequency(uint16_t idx, float center_freq_hz, float spread_mul, uint8_t harmonic_mul);
 
     // apply a sample to each of the underlying filters in turn
     T apply(const T &sample);
