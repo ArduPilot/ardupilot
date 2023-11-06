@@ -36,7 +36,7 @@ public:
     // expand filter bank with new filters
     void expand_filter_count(uint16_t total_notches);
     // initialize the underlying filters using the provided filter parameters
-    void init(float sample_freq_hz, const HarmonicNotchFilterParams &params);
+    void init(float sample_freq_hz, HarmonicNotchFilterParams &params);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
     void update(float center_freq_hz);
     // update all of the underlying center frequencies individually
@@ -83,10 +83,8 @@ private:
     // minimum frequency (from INS_HNTCH_FREQ * INS_HNTCH_FM_RAT)
     float _minimum_freq;
 
-    /*
-      flag for treating a very low frequency as the min frequency
-    */
-    bool _treat_low_freq_as_min;
+    // pointer to params object for this filter
+    HarmonicNotchFilterParams *params;
 };
 
 // Harmonic notch update mode
@@ -156,6 +154,11 @@ public:
 
     // save parameters
     void save_params();
+
+    // return the number of composite notches given the options
+    uint8_t num_composite_notches(void) const {
+        return hasOption(Options::DoubleNotch) ? 2 : hasOption(Options::TripleNotch) ? 3: 1;
+    }
 
 private:
     // configured notch harmonics
