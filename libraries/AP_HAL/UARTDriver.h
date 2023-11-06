@@ -10,7 +10,7 @@
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED
-#define AP_UART_MONITOR_ENABLED 1
+#define AP_UART_MONITOR_ENABLED 0
 #endif
 
 class ExpandingString;
