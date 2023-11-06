@@ -59,7 +59,7 @@ The Aocoda-RC-H743Dual supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 The Aocoda-RC-H743Dual supports up to 12 PWM outputs. 
 
-- The pads for motor output S1 to S8 on the two motor connectors.
+- The pads for motor output S1 to S8 on the two motor connectors, and bi-dshot default settings.
 - S9, S10 for two servos
 - SE1(S11), SE2(S12) for servo/pinio
 
@@ -90,12 +90,16 @@ The correct battery setting parameters are:
  - BATT_VOLT_PIN 10
  - BATT_CURR_PIN 11
  - BATT_VOLT_MULT 11
+ - BATT2_VOLT_PIN 18
+ - BATT2_CURR_PIN 7
+ - BATT2_VOLT_MULT 11
 
 Please calibrate before use amp parameters.
 
  - BATT_AMP_PERVLT 17.0
+ - BATT2_AMP_PERVLT 17.0
 
-*Note: Please check carefully before use BATT_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side*
+*Note: Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side*
 
 ## Compass
 
