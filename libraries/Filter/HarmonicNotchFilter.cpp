@@ -204,6 +204,10 @@ void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harm
 template <class T>
 void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
 {
+    if (total_notches <= _num_filters) {
+        // enough already
+        return;
+    }
     if (_alloc_has_failed) {
         // we've failed to allocate before, don't try again
         return;
@@ -228,7 +232,7 @@ void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
   set the center frequency of a single notch
  */
 template <class T>
-void HarmonicNotchFilter<T>::set_center_frequency(uint8_t idx, float notch_center, float spread_mul, uint8_t harmonic_mul)
+void HarmonicNotchFilter<T>::set_center_frequency(uint16_t idx, float notch_center, float spread_mul, uint8_t harmonic_mul)
 {
     const float nyquist_limit = _sample_freq_hz * 0.48f;
     auto &notch = _filters[idx];
@@ -307,7 +311,7 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
 
     _num_enabled_filters = 0;
     // update all of the filters using the new center frequency and existing A & Q
-    for (uint8_t i = 0; i < HNF_MAX_HARMONICS && _num_enabled_filters < _num_filters; i++) {
+    for (uint16_t i = 0; i < HNF_MAX_HARMONICS && _num_enabled_filters < _num_filters; i++) {
         if ((1U<<i) & _harmonics) {
             const float notch_center = center_freq_hz;
             const uint8_t harmonic_mul = i+1;
@@ -336,7 +340,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     // adjust the frequencies to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * 0.48f;
 
-    uint16_t total_notches = num_centers * _num_harmonics * _composite_notches;
+    const uint16_t total_notches = num_centers * _num_harmonics * _composite_notches;
     if (total_notches > _num_filters) {
         // alloc realloc of filters
         expand_filter_count(total_notches);
