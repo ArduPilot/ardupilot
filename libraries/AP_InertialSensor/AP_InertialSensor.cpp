@@ -1012,7 +1012,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
         sensors_used += _use(i);
     }
 
-    uint8_t num_filters = 0;
+    uint16_t num_filters = 0;
     for (auto &notch : harmonic_notches) {
         // calculate number of notches we might want to use for harmonic notch
         if (notch.params.enabled() || fft_enabled) {
