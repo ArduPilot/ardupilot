@@ -29,6 +29,7 @@
 #include "AP_GPS_GSOF.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_GPS_GSOF_ENABLED
 
@@ -57,10 +58,15 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    // baud request for port 0
-    requestBaud(0);
-    // baud request for port 3
-    requestBaud(3);
+    constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
+    gps._com_port[state.instance].set_default(default_com_port);
+    const auto com_port = gps._com_port[state.instance].get();
+    if (!validate_com_port(com_port)) {
+        // The user parameter for COM port is not a valid GSOF port
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
+        return;
+    }
+    requestBaud(static_cast<HW_Port>(com_port));
 
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
@@ -74,8 +80,13 @@ AP_GPS_GSOF::read(void)
     const uint32_t now = AP_HAL::millis();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
+        const auto com_port = gps._com_port[state.instance].get();
+        if (!validate_com_port(com_port)) {
+            // The user parameter for COM port is not a valid GSOF port
+            return false;
+        }
         if (now > gsofmsg_time) {
-            requestGSOF(gsofmsgreq[gsofmsgreq_index], HW_Port::COM2, Output_Rate::FREQ_10_HZ);
+            requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
             gsofmsg_time = now + 110;
             gsofmsgreq_index++;
         }
@@ -150,11 +161,11 @@ AP_GPS_GSOF::parse(const uint8_t temp)
 }
 
 void
-AP_GPS_GSOF::requestBaud(const uint8_t portindex)
+AP_GPS_GSOF::requestBaud(const HW_Port portindex)
 {
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, portindex, 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portindex), 0x07, 0x00,0x00, // serial port baud format
                           0x00,0x03
                          }; // checksum
 
@@ -347,4 +358,16 @@ AP_GPS_GSOF::process_message(void)
 
     return false;
 }
+
+bool
+AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
+    switch(com_port) {
+        case static_cast<uint8_t>(HW_Port::COM1):
+        case static_cast<uint8_t>(HW_Port::COM2):
+            return true;
+        default:
+            return false;
+    }
+}
+
 #endif
