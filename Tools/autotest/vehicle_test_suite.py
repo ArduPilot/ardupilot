@@ -10297,62 +10297,40 @@ Also, ignores heartbeats not from our target system'''
         self.set_rc(9, 2000)
         self.wait_text("Gripper load grabb", check_context=True)
         self.progress("Test gripper with Mavlink cmd")
+
+        self.context_collect('STATUSTEXT')
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas", check_context=True)
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_GRAB
+        )
+        self.wait_text("Gripper load grabb", check_context=True)
+
+        self.context_clear_collection('STATUSTEXT')
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas", check_context=True)
+
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_GRAB
+        )
+        self.wait_text("Gripper load grabb", check_context=True)
+
         self.context_pop()
         self.reboot_sitl()
 
