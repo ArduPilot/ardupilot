@@ -1,3 +1,7 @@
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
@@ -139,3 +143,5 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 AP_RangeFinder_Params::AP_RangeFinder_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_RANGEFINDER_ENABLED
