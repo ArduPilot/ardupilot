@@ -6614,6 +6614,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0)
         self.assert_fence_disabled()
 
+    def NAV_CONTROLLER_OUTPUT(self):
+        '''tests for NAV_CONTROLLER_OUTPUT message'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 100, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, -100, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.set_current_waypoint(1)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "target_bearing": 45,
+            },
+            epsilon=1,
+            poll=True,
+        )
+        self.set_current_waypoint(2)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "target_bearing": 315,
+            },
+            epsilon=1,
+            poll=True,
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6697,6 +6722,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
+            self.NAV_CONTROLLER_OUTPUT,
         ])
         return ret
 

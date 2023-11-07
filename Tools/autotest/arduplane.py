@@ -5240,6 +5240,32 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         home = self.home_position_as_mav_location()
         self.assert_distance(home, adsb_vehicle_loc, 0, 10000)
 
+    def NAV_CONTROLLER_OUTPUT(self):
+        '''tests for NAV_CONTROLLER_OUTPUT message'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 100, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, -100, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.set_current_waypoint(1)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "nav_bearing": 45,
+                "target_bearing": 45,
+            },
+            epsilon=1,
+            poll=True,
+        )
+        self.set_current_waypoint(2)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "nav_bearing": -45,
+            },
+            epsilon=1,
+            poll=True,
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5345,6 +5371,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.NAV_CONTROLLER_OUTPUT,
         ])
         return ret
 

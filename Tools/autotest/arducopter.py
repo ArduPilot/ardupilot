@@ -10489,6 +10489,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # unlock home position
 
+    def NAV_CONTROLLER_OUTPUT(self):
+        '''tests for NAV_CONTROLLER_OUTPUT message'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 100, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, -100, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.set_current_waypoint(1)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "target_bearing": 45,
+            },
+            poll=True,
+            epsilon=1,
+            drain_mav=True,
+        )
+        self.set_current_waypoint(2)
+        self.assert_received_message_field_values(
+            "NAV_CONTROLLER_OUTPUT", {
+                "target_bearing": 315,
+            },
+            poll=True,
+            epsilon=1,
+            drain_mav=True,
+        )
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10558,6 +10585,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
+            self.NAV_CONTROLLER_OUTPUT,
         ])
         return ret
 
