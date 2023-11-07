@@ -1062,7 +1062,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_AIS_ENABLED
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
 #endif
-#if HAL_ADSB_ENABLED
+#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
         { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
 #endif
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
@@ -6071,7 +6071,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 #endif
 
-#if HAL_ADSB_ENABLED
+#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
         CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
