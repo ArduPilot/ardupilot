@@ -486,9 +486,16 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         return false;
     }
 
-    if (rangefinder_required && (dal.rangefinder() == nullptr || !dal.rangefinder()->has_orientation(ROTATION_PITCH_270))) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "RangeFinder");
-        return false;
+    if (rangefinder_required) {
+#if AP_RANGEFINDER_ENABLED
+        const bool have_rangefinder = (dal.rangefinder() != nullptr && dal.rangefinder()->has_orientation(ROTATION_PITCH_270));
+#else
+        const bool have_rangefinder = false;
+#endif
+        if (!have_rangefinder) {
+            hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "RangeFinder");
+            return false;
+        }
     }
 
     if (visualodom_required) {
