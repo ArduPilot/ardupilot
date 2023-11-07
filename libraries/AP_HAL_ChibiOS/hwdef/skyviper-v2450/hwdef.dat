@@ -131,8 +131,9 @@ define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
 
 # SkyViper doesn't have any rangefinder, but might get mavlink?
+define AP_RANGEFINDER_ENABLED 1
 define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED 0
-define AP_RANGEFINDER_MAVLINK_ENABLED 1
+define AP_RANGEFINDER_MAVLINK_ENABLED AP_RANGEFINDER_ENABLED
 
 # SkyViper doesn't have RPM sensors:
 define AP_RPM_ENABLED 0
