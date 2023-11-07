@@ -70,7 +70,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,    200,   3),
     SCHED_TASK(ahrs_update,           400,    400,   6),
+#if AP_RANGEFINDER_ENABLED
     SCHED_TASK(read_rangefinders,      50,    200,   9),
+#endif
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
