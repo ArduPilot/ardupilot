@@ -17,7 +17,7 @@ void Sub::read_barometer()
 
 void Sub::init_rangefinder()
 {
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
     rangefinder.init(ROTATION_PITCH_270);
     rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
@@ -28,7 +28,7 @@ void Sub::init_rangefinder()
 // return rangefinder altitude in centimeters
 void Sub::read_rangefinder()
 {
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     rangefinder.update();
 
     // signal quality ranges from 0 (worst) to 100 (perfect), -1 means n/a
