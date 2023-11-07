@@ -6,6 +6,7 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#if AP_RANGEFINDER_ENABLED
 /********************************************************
 *              OPT FLOW AND RANGE FINDER                *
 ********************************************************/
@@ -105,6 +106,7 @@ void NavEKF3_core::readRangeFinder(void)
         }
     }
 }
+#endif  // AP_RANGEFINDER_ENABLED
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
