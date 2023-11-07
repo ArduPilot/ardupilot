@@ -244,9 +244,11 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         if (maintain_target) {
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
             loiter_nav->init_target(wp_dest.xy());
+#if AP_RANGEFINDER_ENABLED
             if (wp_nav->origin_and_destination_are_terrain_alt()) {
                 copter.surface_tracking.set_target_alt_cm(wp_dest.z);
             }
+#endif
         } else {
             loiter_nav->init_target();
         }
@@ -377,8 +379,10 @@ void ModeZigZag::manual_control()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
+#if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
+#endif
 
         // Send the commanded climb rate to the position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
@@ -454,9 +458,11 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
         // if we have a downward facing range finder then use terrain altitude targets
         terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
         if (terrain_alt) {
+#if AP_RANGEFINDER_ENABLED
             if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
                 next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
             }
+#endif
         } else {
             next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
         }
@@ -506,9 +512,11 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
     // if we have a downward facing range finder then use terrain altitude targets
     terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
     if (terrain_alt) {
+#if AP_RANGEFINDER_ENABLED
         if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
             next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
         }
+#endif
     } else {
         next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
     }
