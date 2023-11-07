@@ -3901,7 +3901,11 @@ class TestSuite(ABC):
                                              poll=False,
                                              timeout=None,
                                              check_context=False,
+                                             drain_mav=False,
                                              ):
+        if drain_mav:
+            self.drain_mav()
+
         if poll:
             self.poll_message(message)
         m = self.assert_receive_message(
