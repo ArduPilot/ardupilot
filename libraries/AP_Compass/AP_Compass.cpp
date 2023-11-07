@@ -66,6 +66,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OFS_X
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
@@ -101,6 +102,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if COMPASS_LEARN_ENABLED
     // @Param: LEARN
@@ -111,6 +113,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: USE
     // @DisplayName: Use compass for yaw
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
@@ -124,6 +127,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
+#endif
 
 #if COMPASS_MOT_ENABLED
     // @Param: MOTCT
@@ -162,6 +166,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: ORIENT
     // @DisplayName: Compass orientation
     // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.
@@ -175,6 +180,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
+#endif
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
@@ -584,6 +590,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OPTIONS
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
@@ -591,6 +598,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Bitmask: 1: Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
+#endif
 
 #if COMPASS_MAX_UNREG_DEV > 0
     // @Param: DEV_ID4
