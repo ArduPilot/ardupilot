@@ -40,10 +40,10 @@ void AP_MotorsPulsing::init(motor_frame_class frame_class, motor_frame_type fram
     motor_enabled[AP_MOTORS_MOT_5] = false;
     motor_enabled[AP_MOTORS_MOT_6] = false;
 
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(3), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(4), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(5), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    SRV_Channels::set_angle(SRV_Channels::get_motor_function(6), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_MOT_3), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_MOT_4), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_MOT_5), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_MOT_6), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
 
 
     _mav_type = MAV_TYPE_QUADROTOR;
