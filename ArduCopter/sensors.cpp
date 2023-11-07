@@ -8,9 +8,9 @@ void Copter::read_barometer(void)
     baro_alt = barometer.get_altitude() * 100.0f;
 }
 
+#if AP_RANGEFINDER_ENABLED
 void Copter::init_rangefinder(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED && AP_RANGEFINDER_ENABLED
    rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
    rangefinder.init(ROTATION_PITCH_270);
    rangefinder_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
@@ -19,13 +19,11 @@ void Copter::init_rangefinder(void)
    // upward facing range finder
    rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
-#endif
 }
 
 // return rangefinder altitude in centimeters
 void Copter::read_rangefinder(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED && AP_RANGEFINDER_ENABLED
     rangefinder.update();
 
     rangefinder_state.update();
@@ -36,9 +34,8 @@ void Copter::read_rangefinder(void)
         g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
     }
 #endif
-
-#endif
 }
+#endif  // AP_RANGEFINDER_ENABLED
 
 // return true if rangefinder_alt can be used
 bool Copter::rangefinder_alt_ok() const
@@ -73,7 +70,7 @@ void Copter::update_rangefinder_terrain_offset()
 // helper function to get inertially interpolated rangefinder height.
 bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
 {
-#if RANGEFINDER_ENABLED == ENABLED && AP_RANGEFINDER_ENABLED
+#if AP_RANGEFINDER_ENABLED
     return rangefinder_state.get_rangefinder_height_interpolated_cm(ret);
 #else
     return false;

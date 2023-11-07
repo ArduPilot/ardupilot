@@ -258,7 +258,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
             break;
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
         case AUX_FUNC::RANGEFINDER:
             // enable or disable the rangefinder
             if ((ch_flag == AuxSwitchPos::HIGH) &&
@@ -544,6 +544,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
             break;
         }
 
+#if AP_RANGEFINDER_ENABLED
         case AUX_FUNC::SURFACE_TRACKING:
             switch (ch_flag) {
             case AuxSwitchPos::LOW:
@@ -557,6 +558,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
                 break;
             }
             break;
+#endif
 
         case AUX_FUNC::FLIGHTMODE_PAUSE:
             switch (ch_flag) {

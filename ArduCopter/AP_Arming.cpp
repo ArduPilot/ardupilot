@@ -257,6 +257,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+#if AP_RANGEFINDER_ENABLED
                 if (!copter.rangefinder_state.enabled || !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
                     check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "no rangefinder");
                     return false;
@@ -266,6 +267,9 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                     check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "RTL_ALT>RNGFND_MAX_CM");
                     return false;
                 }
+#else
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "rangefinder not in firmware");
+#endif
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
                 // these checks are done in AP_Arming
