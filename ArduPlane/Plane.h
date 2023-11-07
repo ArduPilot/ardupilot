@@ -39,7 +39,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#include <AP_RangeFinder/AP_RangeFinder_config.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Terrain/AP_Terrain.h>
@@ -206,7 +206,9 @@ private:
     AP_Int8 *flight_modes = &g.flight_mode1;
     const uint8_t num_flight_modes = 6;
 
+#if AP_RANGEFINDER_ENABLED
     AP_FixedWing::Rangefinder_State rangefinder_state;
+#endif
 
 #if AP_RPM_ENABLED
     AP_RPM rpm_sensor;
@@ -865,9 +867,11 @@ private:
     float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
+#if AP_RANGEFINDER_ENABLED
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
     void rangefinder_terrain_correction(float &height);
+#endif
     void stabilize();
     void calc_throttle();
     void calc_nav_roll();
@@ -1074,8 +1078,10 @@ private:
     bool rc_throttle_value_ok(void) const;
     bool rc_failsafe_active(void) const;
 
+#if AP_RANGEFINDER_ENABLED
     // sensors.cpp
     void read_rangefinder(void);
+#endif
 
     // system.cpp
     void init_ardupilot() override;
