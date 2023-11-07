@@ -1124,9 +1124,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def TestRCRelay(self):
         '''Test Relay RC Channel Option'''
-        self.set_parameter("RC12_OPTION", 28) # Relay On/Off
+        self.set_parameters({
+            "RELAY1_FUNCTION": 1, # Enable relay as a standard relay pin
+            "RC12_OPTION": 28 # Relay On/Off
+        })
         self.set_rc(12, 1000)
-        self.reboot_sitl() # needed for RC12_OPTION to take effect
+        self.reboot_sitl() # needed for RC12_OPTION and RELAY1_FUNCTION to take effect
 
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
