@@ -6614,6 +6614,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0)
         self.assert_fence_disabled()
 
+    def MAV_CMD_BATTERY_RESET(self):
+        '''manipulate battery levels with MAV_CMD_BATTERY_RESET'''
+        for (run_cmd, value) in (self.run_cmd, 56), (self.run_cmd_int, 97):
+            run_cmd(
+                mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                p1=65535,  # battery mask
+                p2=value,
+            )
+            self.assert_received_message_field_values('BATTERY_STATUS', {
+                "battery_remaining": value,
+            }, {
+                "poll": True,
+            })
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6697,6 +6711,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
+            self.MAV_CMD_BATTERY_RESET,
         ])
         return ret
 
