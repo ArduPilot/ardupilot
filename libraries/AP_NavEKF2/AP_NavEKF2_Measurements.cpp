@@ -5,6 +5,8 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#if AP_RANGEFINDER_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -110,6 +112,7 @@ void NavEKF2_core::readRangeFinder(void)
         }
     }
 }
+#endif
 
 // write the raw optical flow measurements
 // this needs to be called externally.
