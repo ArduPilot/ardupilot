@@ -233,9 +233,7 @@ public:
     ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
-    void update_z_controller();
-
-    void update_z_controller_edited(float throttle_input);
+    void update_z_controller(float throttle_input);
 
 
     ///

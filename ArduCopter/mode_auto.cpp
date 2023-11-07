@@ -990,7 +990,7 @@ void ModeAuto::wp_run()
     float g_pilot_desired_climb_rate = constrain_float(pilot_desired_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller_edited(g_pilot_desired_climb_rate);
+    pos_control->update_z_controller(g_pilot_desired_climb_rate);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
