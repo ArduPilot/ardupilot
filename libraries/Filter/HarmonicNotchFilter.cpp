@@ -20,8 +20,20 @@
 
 #include "HarmonicNotchFilter.h"
 #include <GCS_MAVLink/GCS.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdio.h>
 
 #define HNF_MAX_FILTERS HAL_HNF_MAX_FILTERS // must be even for double-notch filters
+
+/*
+  optional logging for SITL only of all notch frequencies
+ */
+#ifndef NOTCH_DEBUG_LOGGING
+#define NOTCH_DEBUG_LOGGING 0
+#endif
+
 
 // table of user settable parameters
 const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
@@ -311,10 +323,29 @@ T HarmonicNotchFilter<T>::apply(const T &sample)
         return sample;
     }
 
+#if NOTCH_DEBUG_LOGGING
+    static int dfd = -1;
+    if (dfd == -1) {
+        dfd = ::open("notch.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    }
+#endif
+
     T output = sample;
     for (uint8_t i = 0; i < _num_enabled_filters; i++) {
+#if NOTCH_DEBUG_LOGGING
+        if (!_filters[i].initialised) {
+            ::dprintf(dfd, "------- ");
+        } else {
+            ::dprintf(dfd, "%.4f ", _filters[i]._center_freq_hz);
+        }
+#endif
         output = _filters[i].apply(output);
     }
+#if NOTCH_DEBUG_LOGGING
+    if (_num_enabled_filters > 0) {
+        ::dprintf(dfd, "\n");
+    }
+#endif
     return output;
 }
 
