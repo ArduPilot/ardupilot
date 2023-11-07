@@ -206,8 +206,10 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
+#if AP_RANGEFINDER_ENABLED
     // range finder last update for each instance (used for DPTH logging)
     uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
+#endif
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
@@ -372,7 +374,9 @@ private:
     void update_compass(void);
     void compass_save(void);
     void update_wheel_encoder();
+#if AP_RANGEFINDER_ENABLED
     void read_rangefinders(void);
+#endif
 
     // Steering.cpp
     void set_servos(void);
