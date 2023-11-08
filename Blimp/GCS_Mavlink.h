@@ -29,7 +29,9 @@ protected:
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
     bool mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const override;
+#endif
 
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
