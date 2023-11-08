@@ -732,8 +732,7 @@ protected:
     // initialised.
     virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
 
-    // methods to extract a Location object from a command_long or command_int
-    bool location_from_command_t(const mavlink_command_long_t &in, MAV_FRAME in_frame, Location &out);
+    // methods to extract a Location object from a command_int
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
