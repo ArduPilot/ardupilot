@@ -29,6 +29,7 @@
 int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
   ClientEntryAbstract** entry_array, uint8_t entry_length)
 {
+  //Based on the Vertiq standard, grab the data known to be at various portions of the incoming packet
   uint8_t type_idn = rx_data[0];
   uint8_t sub_idn = rx_data[1];
   uint8_t obj_idn = rx_data[2] >> 2; // high 6 bits are obj_idn
@@ -68,6 +69,7 @@ int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
 int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
   ClientEntryAbstract& entry)
 {
+  //Based on the Vertiq standard, grab the data known to be at various portions of the incoming packet
   uint8_t type_idn = rx_data[0];
   uint8_t sub_idn = rx_data[1];
   uint8_t obj_idn = rx_data[2] >> 2; // high 6 bits are obj_idn
