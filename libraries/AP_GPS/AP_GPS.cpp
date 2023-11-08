@@ -767,17 +767,49 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     // This is disabled when DriverOptions::BypassGPSDetection is turned on.
     dstate->auto_detected_baud = !option_set(AP_GPS::DriverOptions::BypassGPSDetection);
 
-    const uint32_t now = AP_HAL::millis();
 
-    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS && dstate->auto_detected_baud) {
-        // try the next baud rate
-        // incrementing like this will skip the first element in array of bauds
-        // this is okay, and relied upon
-        dstate->current_baud++;
-        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-            dstate->current_baud = 0;
+    if (dstate->auto_detected_baud) {
+        const uint32_t now = AP_HAL::millis();
+        if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
+            // try the next baud rate
+            // incrementing like this will skip the first element in array of bauds
+            // this is okay, and relied upon
+            dstate->current_baud++;
+            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                dstate->current_baud = 0;
+            }
+            uint32_t baudrate = _baudrates[dstate->current_baud];
+            uint16_t rx_size=0, tx_size=0;
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                tx_size = 2048;
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+                rx_size = 2048;
+            }
+            _port[instance]->begin(baudrate, rx_size, tx_size);
+            _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+            dstate->last_baud_change_ms = now;
+
+            if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+                send_blob_start(instance);
+            }
         }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
+    } else {
+        // TODO set current_baud from serial param
+        // TODO handle whether to send the blob start and blob update based on GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY
+
+        const AP_SerialManager& sm = AP::serialmanager();
+        // TODO may be confused between serial instance number and GPS instance number
+        // Check AP_GPS::init for more info.
+        const auto uart_state = sm.find_protocol_instance(AP_SerialManager::SerialProtocol_GPS, instance);
+        if (uart_state == nullptr) {
+            return nullptr;
+        }
+        const auto serial_baud = uart_state->baudrate();
+        // Rely on above wrap if the user sets DriverOptions::BypassGPSDetection
+        dstate->current_baud = ARRAY_SIZE(_baudrates);
+
+        // TODO this is duplicated with above logic
         uint16_t rx_size=0, tx_size=0;
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
             tx_size = 2048;
@@ -785,13 +817,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        _port[instance]->begin(baudrate, rx_size, tx_size);
+        _port[instance]->begin(serial_baud, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        dstate->last_baud_change_ms = now;
-
-        if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
-            send_blob_start(instance);
-        }
     }
 
     if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
