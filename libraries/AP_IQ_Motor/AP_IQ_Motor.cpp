@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_IQ_Motor::var_info[] = {
     // @Description: This sets which motors are sending data back to the flight controller
     // @Range: 0 65535
     // @User: Advanced
-    AP_GROUPINFO("TELEM", 2, AP_IQ_Motor, _telemetry_bitmask, 0)
+    AP_GROUPINFO("TELEM", 2, AP_IQ_Motor, _telemetry_bitmask, 0),
 
     AP_GROUPEND
 };
