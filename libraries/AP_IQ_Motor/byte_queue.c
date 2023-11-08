@@ -30,7 +30,8 @@
 #include "byte_queue.h"
 
 
-void InitBQ(struct ByteQueue *p, uint8_t* data, uint16_t data_size) {
+void InitBQ(struct ByteQueue *p, uint8_t* data, uint16_t data_size)
+{
     p->data = data;
     p->data_size = data_size;
     p->start = p->data;
@@ -39,7 +40,8 @@ void InitBQ(struct ByteQueue *p, uint8_t* data, uint16_t data_size) {
 }
 
 
-int8_t IsFullBQ(struct ByteQueue *p) {
+int8_t IsFullBQ(struct ByteQueue *p)
+{
     // if p->end at end of fixed array
     if (p->end == p->data + p->data_size - 1) {
         if (p->start == p->data) {
@@ -59,29 +61,32 @@ int8_t IsFullBQ(struct ByteQueue *p) {
 }
 
 
-int8_t IsEmptyBQ(struct ByteQueue *p) {
-    if(p->start == p->end)
+int8_t IsEmptyBQ(struct ByteQueue *p)
+{
+    if (p->start == p->end) {
         return 1;
-    else
+    } else {
         return 0;
+    }
 }
 
 
-uint16_t CountBQ(struct ByteQueue *p) {
-  return(p->count);
+uint16_t CountBQ(struct ByteQueue *p)
+{
+    return (p->count);
 }
 
 
-uint8_t GetByteBQ(struct ByteQueue *p) {
+uint8_t GetByteBQ(struct ByteQueue *p)
+{
 
     // silent failure if empty
-    if(IsEmptyBQ(p)) {
-        return(0);
-    }
-    else {
-    // otherwise buffer contains data
+    if (IsEmptyBQ(p)) {
+        return (0);
+    } else {
+        // otherwise buffer contains data
         // get data at start
-        uint8_t temp_char = *(p->start);      
+        uint8_t temp_char = *(p->start);
         // if start is not at the end of the array, advance start
         if (p->start != p->data + p->data_size - 1) {
             p->start = p->start + 1;
@@ -96,21 +101,21 @@ uint8_t GetByteBQ(struct ByteQueue *p) {
 }
 
 
-uint8_t PeekByteBQ(struct ByteQueue *p) {
-  // silent failure if empty
-  if(IsEmptyBQ(p)) {
-    return(0);
-  }
-  else {
-    return(*(p->start));
-  }
+uint8_t PeekByteBQ(struct ByteQueue *p)
+{
+    // silent failure if empty
+    if (IsEmptyBQ(p)) {
+        return (0);
+    } else {
+        return (*(p->start));
+    }
 }
 
 
-int8_t PutByteBQ(struct ByteQueue *p, uint8_t item) {
+int8_t PutByteBQ(struct ByteQueue *p, uint8_t item)
+{
     // if p->end points to last element of array
-    if (p->end == p->data + p->data_size - 1)
-    {
+    if (p->end == p->data + p->data_size - 1) {
         // if start is at the beginning of the array, the buffer is full
         if (p->start == p->data) {
             return 0;           // failure, buffer is full
