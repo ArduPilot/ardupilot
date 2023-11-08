@@ -43,12 +43,20 @@ class GenericInterface: public CommunicationInterface{
       
   public:
     // Member Variables
-    struct PacketFinder pf;        // packet_finder instance
-    struct ByteQueue index_queue;              // needed by pf for storing indices
-    uint8_t pf_index_data[GENERIC_PF_INDEX_DATA_SIZE]; // data for index_queue used by pf
-    BipBuffer tx_bipbuf;   // bipbuffer for transmissions 
-    uint8_t tx_buffer[GENERIC_TX_BUFFER_SIZE];   // raw buffer for transmissions 
+     // packet_finder instance
+    struct PacketFinder pf;    
 
+    // needed by pf for storing indices   
+    struct ByteQueue index_queue;       
+
+    // data for index_queue used by pf 
+    uint8_t pf_index_data[GENERIC_PF_INDEX_DATA_SIZE]; 
+
+    // bipbuffer for transmissions 
+    BipBuffer tx_bipbuf;   
+
+    // raw buffer for transmissions 
+    uint8_t tx_buffer[GENERIC_TX_BUFFER_SIZE];   
 
     // Default Constructor
     GenericInterface();
