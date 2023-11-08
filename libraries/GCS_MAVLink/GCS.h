@@ -413,6 +413,15 @@ public:
     // Index starts at 1
     virtual uint8_t send_available_mode(uint8_t index) const = 0;
 
+#if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+    struct {
+        MAV_LANDED_STATE last_landed_state;
+        uint64_t takeoff_time_us;
+    } flight_info;
+
+    void send_flight_information();
+#endif
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
