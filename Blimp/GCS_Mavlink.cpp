@@ -488,6 +488,7 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
     }
 }
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
 bool GCS_MAVLINK_Blimp::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
 {
     if (packet_command == MAV_CMD_NAV_TAKEOFF) {
@@ -496,6 +497,7 @@ bool GCS_MAVLINK_Blimp::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD pac
     }
     return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
+#endif
 
 void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 {
