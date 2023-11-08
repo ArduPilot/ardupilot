@@ -834,6 +834,19 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
+        if (option_set(AP_GPS::DriverOptions::BypassGPSDetection))
+        {
+            if (_type[instance] == GPS_TYPE_UBLOX) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_MB_BASE);
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_MB_ROVER);
+            }
+        }
+
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
@@ -858,8 +871,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
-                 AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
+if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             return new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
@@ -870,14 +883,16 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
-                 AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
+        if ((option_set(AP_GPS::DriverOptions::BypassGPSDetection) && _type[instance] == GPS_TYPE_SIRF) ||
+            ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) && 
+                 AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data))) {
             return new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
-                 AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
+        if ((option_set(AP_GPS::DriverOptions::BypassGPSDetection) && _type[instance] == GPS_TYPE_ERB) ||
+            ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
+                 AP_GPS_ERB::_detect(dstate->erb_detect_state, data))) {
             return new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
 #endif // AP_GPS_ERB_ENABLED
@@ -889,7 +904,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
                     _type[instance] == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
 #endif
                     _type[instance] == GPS_TYPE_ALLYSTAR) &&
-                   AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
+                   (AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data) ||
+                        option_set(AP_GPS::DriverOptions::BypassGPSDetection))) {
             return new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_NMEA_ENABLED
