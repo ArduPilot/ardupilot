@@ -16,7 +16,7 @@
   Contributors: Matthew Piccoli, Raphael Van Hoffelen
 */
 
-/* 
+/*
   Changed header gaurd from pragma once to ifndef BipBuffer_H.
   Chaning types to fixed width integers.
   Removed destructor, AllocateBuffer, FreeBuffer.
@@ -45,12 +45,12 @@ private:
 public:
     BipBuffer() : pBuffer(NULL), ixa(0), sza(0), ixb(0), szb(0), buflen(0), ixResrv(0), szResrv(0)
     {
-      
+
     }
     BipBuffer(uint8_t* buffer_in, uint16_t buffer_length_in) : ixa(0), sza(0), ixb(0), szb(0), ixResrv(0), szResrv(0)
     {
-      pBuffer = buffer_in;
-      buflen = buffer_length_in;
+        pBuffer = buffer_in;
+        buflen = buffer_length_in;
     }
 
     ///
@@ -84,38 +84,44 @@ public:
     uint8_t* Reserve(uint16_t size, uint16_t& reserved)
     {
         // We always allocate on B if B exists; this means we have two blocks and our buffer is filling.
-        if (szb)
-        {
+        if (szb) {
             uint16_t freespace = GetBFreeSpace();
 
-            if (size < freespace) freespace = size;
+            if (size < freespace) {
+                freespace = size;
+            }
 
-            if (freespace == 0) return NULL;
+            if (freespace == 0) {
+                return NULL;
+            }
 
             szResrv = freespace;
             reserved = freespace;
             ixResrv = ixb + szb;
             return pBuffer + ixResrv;
-        }
-        else
-        {
+        } else {
             // Block b does not exist, so we can check if the space AFTER a is bigger than the space
             // before A, and allocate the bigger one.
             uint16_t freespace = GetSpaceAfterA();
-            if (freespace >= ixa) // If space after A > space before
-            {
-                if (freespace == 0) return NULL;
-                if (size < freespace) freespace = size;
+            if (freespace >= ixa) { // If space after A > space before
+                if (freespace == 0) {
+                    return NULL;
+                }
+                if (size < freespace) {
+                    freespace = size;
+                }
 
                 szResrv = freespace;
                 reserved = freespace;
                 ixResrv = ixa + sza;
                 return pBuffer + ixResrv;
-            }
-            else // space before A > space after A
-            {
-                if (ixa == 0) return NULL;
-                if (ixa < size) size = ixa;
+            } else { // space before A > space after A
+                if (ixa == 0) {
+                    return NULL;
+                }
+                if (ixa < size) {
+                    size = ixa;
+                }
                 szResrv = size;
                 reserved = size;
                 ixResrv = 0;
@@ -139,18 +145,17 @@ public:
     //   Committing a size of 0 will release the reservation.
     void Commit(uint16_t size)
     {
-      if (size == 0)
-      {
-        // decommit any reservation
-        szResrv = ixResrv = 0;
-        return;
-      }
+        if (size == 0) {
+            // decommit any reservation
+            szResrv = ixResrv = 0;
+            return;
+        }
 
-      CommitPartial(size);
-      
-      // Decommit rest of reservation
-      ixResrv = 0;
-      szResrv = 0;
+        CommitPartial(size);
+
+        // Decommit rest of reservation
+        ixResrv = 0;
+        szResrv = 0;
     }
 
     // CommitPartial
@@ -170,36 +175,31 @@ public:
     //   Committing a size of 0 does nothing (space is still reserved)
     uint16_t CommitPartial(uint16_t size)
     {
-      // If we try to commit more space than we asked for, clip to the size we asked for.
-      if (size > szResrv)
-      {
-        size = szResrv;
-      }
+        // If we try to commit more space than we asked for, clip to the size we asked for.
+        if (size > szResrv) {
+            size = szResrv;
+        }
 
-      // If we have no blocks being used currently, we create one in A.
-      if (sza == 0 && szb == 0)
-      {
-        ixa = ixResrv;
-      }
+        // If we have no blocks being used currently, we create one in A.
+        if (sza == 0 && szb == 0) {
+            ixa = ixResrv;
+        }
 
-      // If the reserve index is at the end of block A
-      if (ixResrv == sza + ixa)
-      {
-        sza += size; // Grow A by committed size
-      }
-      else
-      {
-        szb += size; // Otherwise grow B by committed size
-      }
-      
-      // Advance the reserved index
-      ixResrv += size;
-      // Update reserved size
-      szResrv -= size;
-      
-      return size;
+        // If the reserve index is at the end of block A
+        if (ixResrv == sza + ixa) {
+            sza += size; // Grow A by committed size
+        } else {
+            szb += size; // Otherwise grow B by committed size
+        }
+
+        // Advance the reserved index
+        ixResrv += size;
+        // Update reserved size
+        szResrv -= size;
+
+        return size;
     }
-    
+
     // GetContiguousBlock
     //
     // Gets a pointer to the first contiguous block in the buffer, and returns the size of that block.
@@ -211,8 +211,7 @@ public:
     //   uint8_t*                    pointer to the first contiguous block, or NULL if empty.
     uint8_t* GetContiguousBlock(uint16_t& size)
     {
-        if (sza == 0)
-        {
+        if (sza == 0) {
             size = 0;
             return NULL;
         }
@@ -233,15 +232,12 @@ public:
     //   nothing
     void DecommitBlock(uint16_t size)
     {
-        if (size >= sza)
-        {
+        if (size >= sza) {
             ixa = ixb;
             sza = szb;
             ixb = 0;
             szb = 0;
-        }
-        else
-        {
+        } else {
             sza -= size;
             ixa += size;
         }
