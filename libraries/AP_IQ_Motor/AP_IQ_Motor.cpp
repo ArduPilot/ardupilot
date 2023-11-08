@@ -37,8 +37,7 @@ void AP_IQ_Motor::init(void)
 {
     //Grab access to the global serial manager if it exists
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
-    if (!serial_manager)
-    {
+    if (!serial_manager) {
         return;
     }
 
@@ -46,8 +45,7 @@ void AP_IQ_Motor::init(void)
     iq_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_IQ, 0);
 
     // check if the uart exists
-    if (iq_uart)
-    {
+    if (iq_uart) {
         //Grab the number of IFCI values the user wants to use
         const int8_t length = _broadcast_length.get();
 
@@ -57,14 +55,11 @@ void AP_IQ_Motor::init(void)
         //Find the position of the first and last motor that we will request telemetry from
         const uint8_t bitmask = _telemetry_bitmask.get();
         bool found_first = false;
-        for (uint8_t motor = 0; motor < NUM_SERVO_CHANNELS; ++motor)
-        {
-            if (bitmask & 1 << motor)
-            {
-                if (found_first)
-                {
+        for (uint8_t motor = 0; motor < NUM_SERVO_CHANNELS; ++motor) {
+            if (bitmask & 1 << motor) {
+                if (found_first) {
                     _last_telem_motor = motor;
-                } else{
+                } else {
                     _first_telem_motor = motor;
                     found_first = true;
                 }
@@ -76,8 +71,7 @@ void AP_IQ_Motor::init(void)
 uint8_t AP_IQ_Motor::add_client(ClientAbstract *new_client)
 {
     //Make sure that there is enough space to add a new client
-    if (_client_size < _client_limit) // TODO check if this client type already exists and don't add if it does. Instead return the pointer?
-    {
+    if (_client_size < _client_limit) { // TODO check if this client type already exists and don't add if it does. Instead return the pointer?
         _clients[_client_size] = new_client;
         _client_size++;
         return 1;
@@ -89,10 +83,8 @@ uint8_t AP_IQ_Motor::add_client(ClientAbstract *new_client)
 uint8_t AP_IQ_Motor::find_client(ClientAbstract **set_client, uint8_t client_type, uint8_t obj_idn)
 {
     //Go and try to find the client specified in the function call
-    for (int client = 0; client < _client_size; ++client)
-    {
-        if (_clients[client]->obj_idn_ == obj_idn && _clients[client]->type_idn_ == client_type)
-        {
+    for (int client = 0; client < _client_size; ++client) {
+        if (_clients[client]->obj_idn_ == obj_idn && _clients[client]->type_idn_ == client_type) {
             *set_client = _clients[client];
             return 1;
         }
@@ -103,15 +95,13 @@ uint8_t AP_IQ_Motor::find_client(ClientAbstract **set_client, uint8_t client_typ
 void AP_IQ_Motor::update(void)
 {
     //Only initialize once
-    if (!_initialized)
-    {
+    if (!_initialized) {
         _initialized = true; // check if init worked
         init();
     }
 
     //If we are ever unable to find an instance of our communication protocol, stop trying to update
-    if (iq_uart == nullptr)
-    {
+    if (iq_uart == nullptr) {
         return;
     }
 
@@ -119,18 +109,16 @@ void AP_IQ_Motor::update(void)
     // TODO: send telemetry request for current telemetry motor
     read();
     update_motor_outputs();
-    if (_telemetry_bitmask.get() != 0)
-    {
+    if (_telemetry_bitmask.get() != 0) {
         update_telemetry();
     }
     write();
-    
+
 }
 
 void AP_IQ_Motor::update_motor_outputs()
 {
-    if (hal.util->get_soft_armed())
-    {
+    if (hal.util->get_soft_armed()) {
         //Go through all of our outputs, and, if possible, update its value
         uint16_t raw_control_values[_total_channels];
         for (unsigned ii = 0; ii < _total_channels; ++ii) {
@@ -157,14 +145,13 @@ void AP_IQ_Motor::update_motor_outputs()
     }
 }
 
-#if HAL_WITH_ESC_TELEM 
-void AP_IQ_Motor::update_telemetry() 
+#if HAL_WITH_ESC_TELEM
+void AP_IQ_Motor::update_telemetry()
 {
     bool got_reply = false;
 
     //If there's telemetry to be gotten, go and grab it
-    if (_motor_interface.telemetry_.IsFresh())
-    {
+    if (_motor_interface.telemetry_.IsFresh()) {
         //Create a struct to hold the telem data
         IFCITelemetryData motor_telem = _motor_interface.telemetry_.get_reply();
 
@@ -173,7 +160,7 @@ void AP_IQ_Motor::update_telemetry()
 
         //Update the motor with the gotten RPM
         update_rpm(_motor_interface.get_last_telemetry_receeived_id(), velocity, 0.0);
-        
+
         //Give the motor's telemetry to the F.C.
         TelemetryData t {};
         t.temperature_cdeg = motor_telem.mcu_temp;
@@ -197,8 +184,7 @@ void AP_IQ_Motor::update_telemetry()
 
     //If we got a reply from the current target, or we're giving up due to a timeout, move on to the next target
     bool timeout = AP_HAL::millis() - _last_request_time > _telem_timeout;
-    if (got_reply || timeout)
-    {
+    if (got_reply || timeout) {
         find_next_telem_motor();
         _telem_request_id = _telem_motor_id;
         _last_request_time = AP_HAL::millis();
@@ -211,20 +197,17 @@ void AP_IQ_Motor::find_next_telem_motor()
     const uint8_t bitmask = _telemetry_bitmask.get();
 
     //Keep going until we find the correct target
-    while(bitmask != 0)
-    {
+    while (bitmask != 0) {
         //Increment the target id
         ++_telem_motor_id;
 
         //If you hit the end of the list, wrap around
-        if (_telem_motor_id > _last_telem_motor)
-        {
+        if (_telem_motor_id > _last_telem_motor) {
             _telem_motor_id = _first_telem_motor;
         }
 
         //If your id is the next in the bitmask, stop looking. We've found the target
-        if (_telemetry_bitmask & 1 << _telem_motor_id)
-        {
+        if (_telemetry_bitmask & 1 << _telem_motor_id) {
             return;
         }
     }
@@ -235,8 +218,7 @@ void AP_IQ_Motor::read()
 {
     //Check if there's data for us to read from serial
     _ser_length = iq_uart->available();
-    if (_ser_length > 0)
-    {
+    if (_ser_length > 0) {
         //If there is data, read it and process it
         _ser_length = iq_uart->read(_rx_buf, _ser_length);
 
@@ -247,21 +229,19 @@ void AP_IQ_Motor::read()
         uint8_t *packet_buf_point = _rx_buf;
 
         //While there's data for us to look through
-        while(_com.PeekPacket(&packet_buf_point, &_ser_length) == 1)
-        {
+        while (_com.PeekPacket(&packet_buf_point, &_ser_length) == 1) {
             //Try to read telemetry and check to see if there's any response to a particular client
             _motor_interface.ReadTelemetry(packet_buf_point, _ser_length);
-            for (int client = 0; client < _client_size; ++client)
-            {
+            for (int client = 0; client < _client_size; ++client) {
                 _clients[client]->ReadMsg(packet_buf_point, _ser_length);
             }
 
             //We don't need this data anymore
             _com.DropPacket();
         }
-        
+
     }
-    
+
 }
 
 void AP_IQ_Motor::write()
@@ -269,10 +249,9 @@ void AP_IQ_Motor::write()
     _writing = true;
 
     //While there's data to send, keep sending it
-    while(_com.GetTxBytes(_tx_buf, _ser_length))
-    {
+    while (_com.GetTxBytes(_tx_buf, _ser_length)) {
         iq_uart->write(_tx_buf, _ser_length);
     }
-    
+
     _writing = false;
 }
