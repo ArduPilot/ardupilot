@@ -640,7 +640,7 @@ protected:
 
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet);
 
-    MAV_RESULT handle_command_battery_reset(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_battery_reset(const mavlink_command_int_t &packet);
     void handle_command_long(const mavlink_message_t &msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet);
 
@@ -657,7 +657,7 @@ protected:
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
-    MAV_RESULT handle_command_do_gripper(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
