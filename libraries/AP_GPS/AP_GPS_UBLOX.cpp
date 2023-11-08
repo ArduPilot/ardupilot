@@ -930,7 +930,6 @@ uint8_t AP_GPS_UBLOX::config_key_size(ConfigKey key) const
  */
 int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
 {
-#if GPS_MOVING_BASELINE
     if (active_config.list == nullptr) {
         return -1;
     }
@@ -939,7 +938,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
             return (int8_t)i;
         }
     }
-#endif
+
     return -1;
 }
 

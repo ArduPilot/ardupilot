@@ -196,7 +196,6 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
     }
 }
 
-
 /* 
    handle terrain messages from GCS
  */

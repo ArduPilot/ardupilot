@@ -107,7 +107,7 @@ uint32_t AP_ESC_Telem::get_active_esc_mask() const {
             // have never seen telem from this ESC
             continue;
         }
-        if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS
+        if (_telem_data[i].stale(now)
             && !rpm_data_within_timeout(_rpm_data[i], now_us, ESC_RPM_DATA_TIMEOUT_US)) {
             continue;
         }
@@ -211,7 +211,7 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & (AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL))) {
         return false;
     }
@@ -223,7 +223,7 @@ bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & (AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL))) {
         return false;
     }
@@ -251,7 +251,7 @@ bool AP_ESC_Telem::get_highest_motor_temperature(int16_t& temp) const
 bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::CURRENT)) {
         return false;
     }
@@ -263,7 +263,7 @@ bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)) {
         return false;
     }
@@ -275,7 +275,7 @@ bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
         return false;
     }
@@ -287,7 +287,7 @@ bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah
 bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || _telem_data[esc_index].stale()
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::USAGE)) {
         return false;
     }
@@ -324,7 +324,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         for (uint8_t j=0; j<4; j++) {
             const uint8_t esc_id = (i * 4 + j) + esc_offset;
             if (esc_id < ESC_TELEM_MAX_ESCS &&
-                (now - _telem_data[esc_id].last_update_ms <= ESC_TELEM_DATA_TIMEOUT_MS ||
+                (!_telem_data[esc_id].stale(now) ||
                  rpm_data_within_timeout(_rpm_data[esc_id], now_us, ESC_RPM_DATA_TIMEOUT_US))) {
                 all_stale = false;
                 break;

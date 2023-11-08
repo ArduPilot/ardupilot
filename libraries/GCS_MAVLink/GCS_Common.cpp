@@ -998,6 +998,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
         { MAVLINK_MSG_ID_CAMERA_INFORMATION,    MSG_CAMERA_INFORMATION},
         { MAVLINK_MSG_ID_CAMERA_SETTINGS,       MSG_CAMERA_SETTINGS},
+        { MAVLINK_MSG_ID_CAMERA_FOV_STATUS,     MSG_CAMERA_FOV_STATUS},
 #endif
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
@@ -3449,14 +3450,14 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 #endif
 
 #if AP_CAMERA_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packet)
 {
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    return camera->handle_command_long(packet);
+    return camera->handle_command(packet);
 }
 #endif
 
@@ -4352,10 +4353,11 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
         airspeed->calibrate(false);
+        return MAV_RESULT_IN_PROGRESS;
     }
 #endif
 
-    return MAV_RESULT_IN_PROGRESS;
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
@@ -4435,7 +4437,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet, msg);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_int_t &packet)
 {
     if (hal.util->get_soft_armed()) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -4582,7 +4584,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &
 #endif  // AP_GRIPPER_ENABLED
 
 #if HAL_SPRAYER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
 {
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
@@ -4724,30 +4726,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
-#if AP_CAMERA_ENABLED
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_SET_CAMERA_ZOOM:
-    case MAV_CMD_SET_CAMERA_FOCUS:
-    case MAV_CMD_IMAGE_START_CAPTURE:
-    case MAV_CMD_IMAGE_STOP_CAPTURE:
-    case MAV_CMD_CAMERA_TRACK_POINT:
-    case MAV_CMD_CAMERA_TRACK_RECTANGLE:
-    case MAV_CMD_CAMERA_STOP_TRACKING:
-    case MAV_CMD_VIDEO_START_CAPTURE:
-    case MAV_CMD_VIDEO_STOP_CAPTURE:
-        result = handle_command_camera(packet);
-        break;
-#endif
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:
         result = handle_command_do_gripper(packet);
-        break;
-#endif
-#if HAL_SPRAYER_ENABLED
-    case MAV_CMD_DO_SPRAYER:
-        result = handle_command_do_sprayer(packet);
         break;
 #endif
 
@@ -4768,21 +4749,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_battery_reset(packet);
         break;
 #endif
-
-#if HAL_ADSB_ENABLED
-    case MAV_CMD_DO_ADSB_OUT_IDENT:
-        if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
-            result = MAV_RESULT_ACCEPTED;
-        }
-        else {
-            result = MAV_RESULT_FAILED;
-        }
-        break;
-#endif
-
-    case MAV_CMD_RUN_PREARM_CHECKS:
-        result = handle_command_run_prearm_checks(packet);
-        break;
 
     default:
         result = try_command_long_as_command_int(packet, msg);
@@ -5040,6 +5006,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+
 #if HAL_INS_ACCELCAL_ENABLED
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         return handle_command_accelcal_vehicle_pos(packet);
@@ -5062,6 +5029,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DEBUG_TRAP:
         return handle_command_debug_trap(packet);
 
+#if HAL_ADSB_ENABLED
+    case MAV_CMD_DO_ADSB_OUT_IDENT:
+        if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return  MAV_RESULT_FAILED;
+#endif
+
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
 
@@ -5075,6 +5050,27 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
+
+#if HAL_SPRAYER_ENABLED
+    case MAV_CMD_DO_SPRAYER:
+        return handle_command_do_sprayer(packet);
+#endif
+
+#if AP_CAMERA_ENABLED
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+    case MAV_CMD_CAMERA_TRACK_POINT:
+    case MAV_CMD_CAMERA_TRACK_RECTANGLE:
+    case MAV_CMD_CAMERA_STOP_TRACKING:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        return handle_command_camera(packet);
+#endif
 
     case MAV_CMD_DO_SET_ROI_NONE: {
         const Location zero_loc = Location();
@@ -5147,6 +5143,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_REPEAT_RELAY:
         return handle_servorelay_message(packet);
 #endif
+
+    case MAV_CMD_RUN_PREARM_CHECKS:
+        return handle_command_run_prearm_checks(packet);
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
@@ -5774,6 +5773,18 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             camera->send_camera_settings(chan);
         }
         break;
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    case MSG_CAMERA_FOV_STATUS:
+        {
+            AP_Camera *camera = AP::camera();
+            if (camera == nullptr) {
+                break;
+            }
+            CHECK_PAYLOAD_SIZE(CAMERA_FOV_STATUS);
+            camera->send_camera_fov_status(chan);
+        }
+        break;
+#endif
 #endif
 
     case MSG_SYSTEM_TIME:

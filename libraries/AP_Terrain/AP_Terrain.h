@@ -183,6 +183,11 @@ public:
     void get_statistics(uint16_t &pending, uint16_t &loaded) const;
 
     /*
+      get grid spacing in meters
+     */
+    uint16_t get_grid_spacing() const { return MAX(grid_spacing, 0); };
+
+    /*
       returns true if initialisation failed because out-of-memory
      */
     bool init_failed() const { return memory_alloc_failed; }

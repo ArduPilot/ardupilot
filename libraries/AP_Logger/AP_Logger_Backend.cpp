@@ -519,7 +519,8 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
         sequence        : sequence,
         latitude        : rally_point.lat,
         longitude       : rally_point.lng,
-        altitude        : rally_point.alt
+        altitude        : rally_point.alt,
+        flags           : rally_point.flags
     };
     return WriteBlock(&pkt_rally, sizeof(pkt_rally));
 }

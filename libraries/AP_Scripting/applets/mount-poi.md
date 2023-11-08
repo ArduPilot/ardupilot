@@ -8,10 +8,10 @@ POI_DIST_MAX : POI's max distance (in meters) from the vehicle
 
 # How To Use
 
-1. Set RCx_OPTION to 300 (scripting1) to allow triggering the POI calculation from an auxiliary switch
+1. Set RCx_OPTION to 300 or 301 to enable triggering the POI calculation from an auxiliary switch.  If 301 is used the gimbal will also lock onto the location
 2. Optionally set POI_DIST_MAX to the maximum distance (in meters) that the POI point could be from the vehicle
 3. Fly the vehicle and point the camera gimbal at a point on the ground
-4. Raise the RC auxiliary switch and check the GCS's messages tab for the latitude, longitude and alt (above sea-level)
+4. Raise one of the RC auxiliary switches and check the GCS's messages tab for the latitude, longitude and alt (above sea-level)
 
 # How It Works
 

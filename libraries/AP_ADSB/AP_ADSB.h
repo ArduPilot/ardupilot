@@ -28,6 +28,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_GPS/AP_GPS_FixType.h>
 
 #define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
 
@@ -84,6 +85,63 @@ public:
 
     // periodic task that maintains vehicle_list
     void update(void);
+
+    // a structure holding *this vehicle's* position-related information:
+    enum class AltType {
+        Barometric = 0,  // we use a specific model for this?
+        WGS84 = 1,
+    };
+    struct Loc : Location {
+        AltType loc_alt_type;  // more information on altitude in base class
+
+        AP_GPS_FixType fix_type;
+        uint64_t epoch_us;  // microseconds since 1970-01-01
+        uint64_t epoch_from_rtc_us;  // microseconds since 1970-01-01
+        bool have_epoch_from_rtc_us;
+        uint8_t satellites;
+
+        float horizontal_pos_accuracy;
+        bool horizontal_pos_accuracy_is_valid;
+
+        float vertical_pos_accuracy;
+        bool vertical_pos_accuracy_is_valid;
+
+        float horizontal_vel_accuracy;
+        bool horizontal_vel_accuracy_is_valid;
+
+        Vector3f vel_ned;
+
+        float vertRateD;  // m/s down
+        bool vertRateD_is_valid;
+
+        // methods to make us look much like the AP::gps() singleton:
+        AP_GPS_FixType status() const { return fix_type; }
+        const Vector3f &velocity() const {
+            return vel_ned;
+        }
+        uint64_t time_epoch_usec() const { return epoch_us; }
+
+        bool speed_accuracy(float &sacc) const;
+        bool horizontal_accuracy(float &hacc) const;
+        bool vertical_accuracy(float &vacc) const;
+
+        uint8_t num_sats() const { return satellites; }
+
+        // methods to make us look like the AP::ahrs() singleton:
+        const Vector2f &groundspeed_vector() const { return vel_ned.xy(); }
+        bool get_vert_pos_rate_D(float &velocity) const {
+            velocity = vertRateD;
+            return vertRateD_is_valid;
+        }
+
+        // data from a pressure sensor:
+        bool baro_is_healthy;
+        float baro_alt_press_diff_sea_level;
+
+    } _my_loc;
+
+    // periodic task that maintains vehicle_list
+    void update(const Loc &loc);
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
@@ -205,8 +263,6 @@ private:
 
     AP_Int8 _type[ADSB_MAX_INSTANCES];
 
-    Location  _my_loc;
-
     bool _init_failed;
 
     // ADSB-IN state. Maintains list of external vehicles
@@ -288,13 +344,13 @@ private:
     void push_sample(const adsb_vehicle_t &vehicle);
 
     // logging
-    AP_Int8 _log;
     void write_log(const adsb_vehicle_t &vehicle) const;
-    enum logging {
+    enum class Logging {
         NONE            = 0,
         SPECIAL_ONLY    = 1,
         ALL             = 2
     };
+    AP_Enum<Logging> _log;
 
     // reference to backend
     AP_ADSB_Backend *_backend[ADSB_MAX_INSTANCES];

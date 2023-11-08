@@ -548,6 +548,7 @@ struct PACKED log_Rally {
     int32_t latitude;
     int32_t longitude;
     int16_t altitude;
+    uint8_t flags;
 };
 
 struct PACKED log_Performance {
@@ -968,6 +969,7 @@ struct PACKED log_VER {
 // @Field: Lat: latitude of rally point
 // @Field: Lng: longitude of rally point
 // @Field: Alt: altitude of rally point
+// @Field: Flags: altitude frame flags
 
 // @LoggerMessage: RCI2
 // @Description: (More) RC input channels to vehicle
@@ -1286,7 +1288,7 @@ LOG_STRUCTURE_FROM_FENCE \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
+      "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \

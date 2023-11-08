@@ -161,10 +161,10 @@ void AP_Camera_Backend::stop_capture()
 }
 
 // handle camera control
-void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     // take picture
-    if (is_equal(shooting_cmd, 1.0f)) {
+    if (shooting_cmd == 1) {
         take_picture();
     }
 }
@@ -246,6 +246,45 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
+
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+// send camera field of view status
+void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
+{
+    // getting corresponding mount instance for camera
+    const AP_Mount* mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    Quaternion quat;
+    Location loc;
+    Location poi_loc;
+    if (!mount->get_poi(get_mount_instance(), quat, loc, poi_loc)) {
+        return;
+    }
+    // send camera fov status message only if the last calculated values aren't stale
+    const float NaN = nanf("0x4152");
+    const float quat_array[4] = {
+        quat.q1,
+        quat.q2,
+        quat.q3,
+        quat.q4
+    };
+    mavlink_msg_camera_fov_status_send(
+        chan,
+        AP_HAL::millis(),
+        loc.lat,
+        loc.lng,
+        loc.alt,
+        poi_loc.lat,
+        poi_loc.lng,
+        poi_loc.alt,
+        quat_array,
+        horizontal_fov() > 0 ? horizontal_fov() : NaN,
+        vertical_fov() > 0 ? vertical_fov() : NaN
+    );
+}
+#endif
 
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.

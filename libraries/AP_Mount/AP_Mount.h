@@ -195,6 +195,11 @@ public:
     // send a GIMBAL_MANAGER_STATUS message to GCS
     void send_gimbal_manager_status(mavlink_channel_t chan);
 
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const;
+#endif
+
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
     bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
@@ -291,7 +296,7 @@ private:
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
-    void handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
+    void handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);

@@ -216,6 +216,10 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
             AP_HAL::panic("Only one sagetech_mxs at a time");
         }
         sagetech_mxs = new SITL::ADSB_Sagetech_MXS();
+        if (adsb == nullptr) {
+            adsb = new SITL::ADSB();
+        }
+        sitl_model->set_adsb(adsb);
         return sagetech_mxs;
 #endif
 #if !defined(HAL_BUILD_AP_PERIPH)

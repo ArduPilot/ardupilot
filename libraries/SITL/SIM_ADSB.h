@@ -37,7 +37,7 @@ class ADSB_Vehicle {
 public:
     bool initialised = false;
 
-    bool location(class Location &) const;  // return vehicle absolute location
+    const Location &get_location() const;  // return vehicle absolute location
     // return earth-frame vehicle velocity:
     bool velocity(Vector3F &ret) const { ret = velocity_ef; return true; }
 
@@ -46,11 +46,14 @@ public:
     char callsign[9];
 
 private:
-    void update(float delta_t);
-    
+    void update(const class Aircraft &aircraft, float delta_t);
+
     Vector3p position; // NED from origin
+    Location location;
+
     ADSB_EMITTER_TYPE type;
     uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects
+
 };
 
 class ADSB : public SerialDevice {

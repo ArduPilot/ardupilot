@@ -20,16 +20,23 @@
     https://en.wikipedia.org/wiki/Automatic_dependent_surveillance_%E2%80%93_broadcast
 */
 
-#include "AP_ADSB.h"
+#include "AP_ADSB_config.h"
 
 #if HAL_ADSB_ENABLED
+
+#include "AP_ADSB.h"
+
 #include "AP_ADSB_uAvionix_MAVLink.h"
 #include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
 #include "AP_ADSB_Sagetech_MXS.h"
-#include <GCS_MAVLink/GCS.h>
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
@@ -47,6 +54,10 @@
     #endif
 #endif
 
+#ifndef AP_ADSB_TYPE_DEFAULT
+#define AP_ADSB_TYPE_DEFAULT 0
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_ADSB *AP_ADSB::_singleton;
@@ -59,7 +70,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    AP_ADSB_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // index 1 is reserved - was BEHAVIOR
 
@@ -319,20 +330,56 @@ bool AP_ADSB::is_valid_callsign(uint16_t octal)
     return true;
 }
 
+#if AP_GPS_ENABLED && AP_AHRS_ENABLED && AP_BARO_ENABLED
 /*
  * periodic update to handle vehicle timeouts and trigger collision detection
  */
 void AP_ADSB::update(void)
 {
+    Loc loc{};
+    if (!AP::ahrs().get_location(loc)) {
+        loc.zero();
+    }
+
+    const AP_GPS &gps = AP::gps();
+
+    loc.fix_type = (AP_GPS_FixType)gps.status();
+    loc.epoch_us = gps.time_epoch_usec();
+#if AP_RTC_ENABLED
+    loc.have_epoch_from_rtc_us = AP::rtc().get_utc_usec(loc.epoch_from_rtc_us);
+#endif
+
+    loc.satellites = gps.num_sats();
+
+    loc.horizontal_pos_accuracy_is_valid = gps.horizontal_accuracy(loc.horizontal_pos_accuracy);
+    loc.vertical_pos_accuracy_is_valid = gps.vertical_accuracy(loc.vertical_pos_accuracy);
+    loc.horizontal_vel_accuracy_is_valid = gps.speed_accuracy(loc.horizontal_vel_accuracy);
+
+
+    loc.vel_ned = gps.velocity();
+
+    loc.vertRateD_is_valid = AP::ahrs().get_vert_pos_rate_D(loc.vertRateD);
+
+    const auto &baro = AP::baro();
+    loc.baro_is_healthy = baro.healthy();
+
+    // Altitude difference between sea level pressure and current
+    // pressure (in metres)
+    loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+
+    update(loc);
+}
+#endif  // AP_GPS_ENABLED && AP_AHRS_ENABLED
+
+void AP_ADSB::update(const AP_ADSB::Loc &loc)
+{
     if (!check_startup()) {
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
+    _my_loc = loc;
 
-    if (!AP::ahrs().get_location(_my_loc)) {
-        _my_loc.zero();
-    }
+    const uint32_t now = AP_HAL::millis();
 
     // check current list for vehicles that time out
     uint16_t index = 0;
@@ -697,7 +744,7 @@ uint32_t AP_ADSB::genICAO(const Location &loc) const
 {
     // gps_time is used as a pseudo-random number instead of seconds since UTC midnight
     // TODO: use UTC time instead of GPS time
-    const AP_GPS &gps = AP::gps();
+    const AP_ADSB::Loc &gps { _my_loc };
     const uint64_t gps_time = gps.time_epoch_usec();
 
     uint32_t timeSum = 0;
@@ -828,17 +875,17 @@ bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) 
  */
 void AP_ADSB::write_log(const adsb_vehicle_t &vehicle) const
 {
-    switch (_log) {
-        case logging::SPECIAL_ONLY:
+    switch ((Logging)_log) {
+        case Logging::SPECIAL_ONLY:
             if (!is_special_vehicle(vehicle.info.ICAO_address)) {
                 return;
             }
             break;
 
-        case logging::ALL:
+        case Logging::ALL:
             break;
 
-        case logging::NONE:
+        case Logging::NONE:
         default:
             return;
     }
@@ -880,6 +927,34 @@ uint32_t AP_ADSB::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNu
         if (inputNumber == 0) break;
     }
     return outputNumber;
+}
+
+// methods for embedded class Location
+bool AP_ADSB::Loc::speed_accuracy(float &sacc) const
+{
+    if (!horizontal_vel_accuracy_is_valid) {
+        return false;
+    }
+    sacc = horizontal_vel_accuracy;
+    return true;
+}
+
+bool AP_ADSB::Loc::horizontal_accuracy(float &hacc) const
+{
+    if (!horizontal_pos_accuracy_is_valid) {
+        return false;
+    }
+    hacc = horizontal_pos_accuracy;
+    return true;
+}
+
+bool AP_ADSB::Loc::vertical_accuracy(float &vacc) const
+{
+    if (!vertical_pos_accuracy_is_valid) {
+        return false;
+    }
+    vacc = vertical_pos_accuracy;
+    return true;
 }
 
 AP_ADSB *AP::ADSB()
