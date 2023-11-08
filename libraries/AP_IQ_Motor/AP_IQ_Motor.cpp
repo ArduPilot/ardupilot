@@ -165,7 +165,7 @@ void AP_IQ_Motor::update_telemetry()
         float velocity = abs(motor_telem.speed * M_1_PI * 0.5 * 60);
 
         //Update the motor with the gotten RPM
-        update_rpm(_motor_interface.get_last_telemetry_receeived_id(), velocity, 0.0);
+        update_rpm(_motor_interface.get_last_telemetry_received_id(), velocity, 0.0);
 
         //Give the motor's telemetry to the F.C.
         TelemetryData t {};
@@ -176,7 +176,7 @@ void AP_IQ_Motor::update_telemetry()
         t.consumption_mah = motor_telem.consumption;
         t.usage_s = motor_telem.uptime;
         update_telem_data(
-            _motor_interface.get_last_telemetry_receeived_id(),
+            _motor_interface.get_last_telemetry_received_id(),
             t,
             TelemetryType::TEMPERATURE|
             TelemetryType::MOTOR_TEMPERATURE|
