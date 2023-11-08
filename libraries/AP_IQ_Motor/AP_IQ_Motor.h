@@ -19,7 +19,8 @@
 #include <AP_IQ_Motor/ardupilot_client.hpp>
 #include <AP_IQ_Motor/ifci.hpp>
 
-class AP_IQ_Motor : public AP_ESC_Telem_Backend {
+class AP_IQ_Motor : public AP_ESC_Telem_Backend
+{
 public:
 
     //Create an AP_IQ_Motor object
@@ -36,44 +37,53 @@ public:
 
     //Called periodically to update the motor outputs and update telemetry
     void update();
-    
+
     // Add a client pointer to the list of clients. The only check right now is if the list is full.
     // Takes a ClientAbstract pointer which all clients are derived from.
     // Return 1 if the client was added, else return 0
-	uint8_t add_client(ClientAbstract *new_client);
+    uint8_t add_client(ClientAbstract *new_client);
 
     // Find a client if it exists and give its pointer.
     // Takes a pointer to a ClientAbstract pointer, a client type, and a module ID
     // Returns a 1 if the client exists and a 0 if it doesn't
     // TODO: always return a client. If it exists already return that pointer, else create a new one. Maybe this should be a new function called "get_client"
-	uint8_t find_client(ClientAbstract **set_client, uint8_t client_type, uint8_t obj_id);
+    uint8_t find_client(ClientAbstract **set_client, uint8_t client_type, uint8_t obj_id);
 
     // Return the single com interface pointer owned by AP_IQ_Motor
     // Currently only one UART can be used, but maybe if more than one is required the behavior might need to change
     // Takes no input
     // Returns the pointer to the single GenericInterface
-    GenericInterface *get_com_interface() { return &_com; }
-    
+    GenericInterface *get_com_interface()
+    {
+        return &_com;
+    }
+
     // This function returns whether the writing function is happening right now or not. The code isn't multithreaded, but maybe useful for interrupts?
     // Takes no input
     // Returns whether writing is happening
-    bool get_writing() { return _writing; }
+    bool get_writing()
+    {
+        return _writing;
+    }
 
 
     // Returns the AP_IQ_Motor object singleton. Trying to copy other ardupilot structure here.
-    static AP_IQ_Motor *get_singleton(void) { return _singleton; }
+    static AP_IQ_Motor *get_singleton(void)
+    {
+        return _singleton;
+    }
 
 private:
     static AP_IQ_Motor *_singleton;
 
     AP_HAL::UARTDriver *iq_uart;
     GenericInterface _com;
-    
-    
+
+
     AP_Int8 _broadcast_length;
     AP_Int16 _telemetry_bitmask;
     AP_Int16 _motor_dir_bitmask;
-    
+
     static const uint8_t _client_limit = 128;
 
     // Initialize the the AP IQmotor object
