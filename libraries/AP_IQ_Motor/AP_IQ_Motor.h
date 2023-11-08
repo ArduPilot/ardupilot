@@ -1,3 +1,8 @@
+/*
+ * This header file defines all functions and variables necessary for creation of an AP_IQ_Motor object.
+ * The AP_IQ_Motor object provides functions necessary to communicate with Vertiq modules.
+*/
+
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -16,14 +21,22 @@
 
 class AP_IQ_Motor : public AP_ESC_Telem_Backend {
 public:
+
+    //Create an AP_IQ_Motor object
     AP_IQ_Motor();
 
+    //Delete an AP_IQ_Motor object
     AP_IQ_Motor(const AP_IQ_Motor &other) = delete;
+
+    //Delete an AP_IQ_Motor object
     AP_IQ_Motor &operator=(const AP_IQ_Motor&) = delete;
 
+    //Holds all of the information for our group variables
     static const struct AP_Param::GroupInfo var_info[];
 
+    //Called periodically to update the motor outputs and update telemetry
     void update();
+    
     // Add a client pointer to the list of clients. The only check right now is if the list is full.
     // Takes a ClientAbstract pointer which all clients are derived from.
     // Return 1 if the client was added, else return 0

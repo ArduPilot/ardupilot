@@ -1,3 +1,9 @@
+/*
+ * This source file implements all functions and variables necessary for creation of an AP_IQ_Motor object.
+ * The AP_IQ_Motor object provides functions necessary to communicate with Vertiq modules.
+*/
+
+
 #include "AP_IQ_Motor.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
