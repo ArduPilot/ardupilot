@@ -877,6 +877,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
 bool GCS_MAVLINK_Copter::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
 {
     if (packet_command == MAV_CMD_NAV_TAKEOFF ||
@@ -886,6 +887,7 @@ bool GCS_MAVLINK_Copter::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD pa
     }
     return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
+#endif
 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet)
