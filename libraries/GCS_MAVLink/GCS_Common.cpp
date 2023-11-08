@@ -4519,7 +4519,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_int_t
 #endif
 
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_int_t &packet)
 {
     if (!is_equal(packet.param1,1.0f)) {
         return MAV_RESULT_FAILED;
@@ -4756,13 +4756,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
-
-#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
-    case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-        result = handle_command_request_autopilot_capabilities(packet);
-        break;
-    }
-#endif
 
     case MAV_CMD_DO_JUMP_TAG:
         result = handle_command_do_jump_tag(packet);
@@ -5175,6 +5168,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_RELAY:
     case MAV_CMD_DO_REPEAT_RELAY:
         return handle_servorelay_message(packet);
+#endif
+
+#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
+    case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
+        return handle_command_request_autopilot_capabilities(packet);
 #endif
 
     case MAV_CMD_RUN_PREARM_CHECKS:
