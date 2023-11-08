@@ -44,9 +44,11 @@ int8_t GenericInterface::GetBytes()
 
 int8_t GenericInterface::SetRxBytes(uint8_t* data_in, uint16_t length_in)
 {
+  //If we don't have a pointer to data to send, stop
   if(data_in == nullptr)
     return -1;
-  
+
+  //If there's data worth reading, add it to our packet finder
   if(length_in)
   {
     //copy it over
@@ -72,6 +74,7 @@ int8_t GenericInterface::SendPacket(uint8_t msg_type, uint8_t *data, uint16_t le
   // This function must not be interrupted by another call to SendBytes or 
   // SendPacket, or else the packet it builds will be spliced/corrupted.
 
+  //Pack up all of the data we need to send in accordance with the Vertiq standard
   uint8_t header[3];
   header[0] = kStartByte;                   // const defined by packet_finder.c
   header[1] = length;
@@ -121,12 +124,16 @@ int8_t GenericInterface::GetTxBytes(uint8_t* data_out, uint8_t& length_out)
   uint8_t* location_temp;
   
   location_temp = tx_bipbuf.GetContiguousBlock(length_temp);
+
+  //If there's data to send
   if(length_temp)
   {
+    //put that data into our output buffer and clear the space
     memcpy(data_out, location_temp, length_temp);
     length_out = length_temp;
     tx_bipbuf.DecommitBlock(length_temp);
     
+    //Go get the next data
     location_temp = tx_bipbuf.GetContiguousBlock(length_temp);
     memcpy(&data_out[length_out], location_temp, length_temp);
     length_out = length_out + length_temp;
