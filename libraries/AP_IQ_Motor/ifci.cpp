@@ -44,7 +44,7 @@ int IFCI::ReadTelemetry(uint8_t* rx_data, uint8_t rx_length)
   return kBroadcastID; // I didn't parse anything
 }
 
-uint8_t IFCI::get_last_telemetry_receeived_id()
+uint8_t IFCI::get_last_telemetry_received_id()
 {
   return last_telemetry_received_id_;
 }
