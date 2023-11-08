@@ -16,7 +16,6 @@
 #include <AP_Param/AP_Param.h>
 #include "generic_interface.hpp"
 #include "client_communication.hpp"
-#include <AP_IQ_Motor/ardupilot_client.hpp>
 #include <AP_IQ_Motor/ifci.hpp>
 
 class AP_IQ_Motor : public AP_ESC_Telem_Backend
