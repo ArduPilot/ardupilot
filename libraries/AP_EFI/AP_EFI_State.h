@@ -15,9 +15,6 @@
 
 #pragma once
 
-#define EFI_MAX_INSTANCES 2
-#define EFI_MAX_BACKENDS 2
-
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
