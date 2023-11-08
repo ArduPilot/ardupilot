@@ -754,6 +754,11 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return new AP_GPS_ExternalAHRS(*this, state[instance], nullptr);
 #endif
+#if AP_GPS_GSOF_ENABLED
+    case GPS_TYPE_GSOF:
+        dstate->auto_detected_baud = false; // specified, not detected
+        return new AP_GPS_GSOF(*this, state[instance], _port[instance]);
+#endif //AP_GPS_GSOF_ENABLED
     default:
         break;
     }
@@ -803,10 +808,6 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     case GPS_TYPE_SBF:
         return new AP_GPS_SBF(*this, state[instance], _port[instance]);
 #endif //AP_GPS_SBF_ENABLED
-#if AP_GPS_GSOF_ENABLED
-    case GPS_TYPE_GSOF:
-        return new AP_GPS_GSOF(*this, state[instance], _port[instance]);
-#endif //AP_GPS_GSOF_ENABLED
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
         return new AP_GPS_NOVA(*this, state[instance], _port[instance]);
