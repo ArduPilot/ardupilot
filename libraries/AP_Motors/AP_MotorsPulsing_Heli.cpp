@@ -57,7 +57,7 @@ void AP_MotorsPulsing_Heli::init(motor_frame_class frame_class, motor_frame_type
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
     _mav_type = MAV_TYPE_QUADROTOR;
-    rpm = AP_RPM::get_singleton();
+
     // record successful initialisation if what we setup was the desired frame_class
     // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_HELI);
@@ -149,7 +149,7 @@ void AP_MotorsPulsing_Heli::output_armed_stabilizing()
     // gyro ff and yaw ff. Also need rotor height above COM
     Vector3f gyro_latest = _ahrs_view->get_gyro_latest();
     float velocity_0 = 0;
-    rpm->get_rpm(0, velocity_0);
+
     float rotor_yaw_ff = _rotor_yaw_ff * velocity_0 * velocity_0;
     Vector3f blade_omega(gyro_latest.x, gyro_latest.y, gyro_latest.z-velocity_0);
 
