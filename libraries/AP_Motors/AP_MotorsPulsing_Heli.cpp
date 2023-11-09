@@ -126,6 +126,8 @@ uint32_t AP_MotorsPulsing_Heli::get_motor_mask()
     //Our mask is the main rotor, pitch, roll, and the tail rotor
     uint32_t motor_mask =
         1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 |
+        1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4;
     uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
