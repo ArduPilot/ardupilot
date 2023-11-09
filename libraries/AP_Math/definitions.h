@@ -74,7 +74,9 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 #define C_TO_KELVIN(temp) (temp + 273.15f)
 #define KELVIN_TO_C(temp) (temp - 273.15f)
-#define F_TO_KELVIN(temp) C_TO_KELVIN(((temp - 32) * 5/9))
+#define F_TO_C(temp) ((temp - 32) * 5/9)
+#define F_TO_KELVIN(temp) C_TO_KELVIN(F_TO_C(temp))
+#define C_TO_F(temp) ((temp * 9/5) + 32)
 
 #define M_PER_SEC_TO_KNOTS 1.94384449f
 #define KNOTS_TO_M_PER_SEC (1/M_PER_SEC_TO_KNOTS)
