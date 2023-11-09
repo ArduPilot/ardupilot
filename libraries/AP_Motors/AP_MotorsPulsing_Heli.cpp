@@ -38,6 +38,11 @@ const AP_Param::GroupInfo AP_MotorsPulsing_Heli::var_info[] = {
 // init
 void AP_MotorsPulsing_Heli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+
+    //1: Main rotor thrust
+    //2: Pitch
+    //3: Roll
+    //4: Tail rotor thrust
     
     // make sure 4 output channels are mapped
     for (uint8_t i = 0; i < 4; i++) {
@@ -69,7 +74,7 @@ void AP_MotorsPulsing_Heli::set_frame_class_and_type(motor_frame_class frame_cla
 // set update rate to motors - a value in hertz
 void AP_MotorsPulsing_Heli::set_update_rate(uint16_t speed_hz)
 {
-    // record requested speed
+    // record requested speed and then set the rc frequency
     _speed_hz = speed_hz;
 
     uint32_t mask =
@@ -80,6 +85,10 @@ void AP_MotorsPulsing_Heli::set_update_rate(uint16_t speed_hz)
 
 void AP_MotorsPulsing_Heli::output_to_motors()
 {
+    //Depending on the current state of the control, determine what we should send to each motor.
+    //If we are in SHUT_DOWN, send the minimum value to each motor
+    //If we are in GROUND_IDLE, allow the rotors to spin with throttle with a predefined idle speed, but no pitch or roll
+    //In any other state, allow full control of main and tail throttle, pitch, and roll
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
@@ -116,6 +125,7 @@ void AP_MotorsPulsing_Heli::output_to_motors()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint32_t AP_MotorsPulsing_Heli::get_motor_mask()
 {
+    //Our mask is the main rotor, pitch, roll, and the tail rotor
     uint32_t motor_mask =
         1U << AP_MOTORS_MOT_1 |
         1U << AP_MOTORS_MOT_4;
@@ -169,9 +179,6 @@ void AP_MotorsPulsing_Heli::output_armed_stabilizing()
     }
 
     throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, _throttle_thrust_max);
-
-
-
 
     // calculate the throttle setting for the lift fan
     // compensation_gain can never be zero
