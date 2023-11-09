@@ -19,17 +19,17 @@ this->uart = uart_param;
         hal.console->println("åh nej ikke godt");
     }
     uart->begin(57600);
-        hal.console->println("den virker");
-
+    hal.console->println("den virker");
+    uart->lock_port(17, 16); //Write key, Read key
 }
 
 void AP_GPSParser::process() {
 
     test_uart(hal.serial(3), "SERIAL3");
 
-    if (uart->available_locked(0) > 0) {
+    if (uart->available_locked(16) > 0) {
         uint8_t received_byte;
-        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 0);
+        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 16);
 
         if (bytesRead > 0) {
             if (parseMavlinkByte(received_byte)) {
@@ -43,20 +43,14 @@ void AP_GPSParser::process() {
 
 void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name)
 {
-    if (uart_param == nullptr) {
-        // that UART doesn't exist on this platform
-        return;
-    }
-    //uint8_t received_byte;
-    uart_param->printf("Hello on UART %s at %.3f seconds\n",
-                 name, (double)(AP_HAL::millis() * 0.001f));
-    uart_param->write("teesting \n");
-     // Check if the UART port is available
+    // Check if the UART port is available
     if (uart == nullptr) {
         hal.console->println("UART port not available.");
         return;
     }
 
+    uart_param->write_locked(mavlink_buffer,"teesting \n");
+    
     // Read data from the UART
     size_t bytesRead = uart->read(mavlink_buffer, sizeof(mavlink_buffer));
 
