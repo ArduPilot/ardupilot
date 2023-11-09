@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_MotorsPulsing_Heli::var_info[] = {
     // @Increment: float
     // @User: Standard
     AP_GROUPINFO("ROTOR_YAW_FF", 2, AP_MotorsPulsing_Heli, _rotor_yaw_ff, 0),
-    
+
     // @Param: GYRO_FF
     // @DisplayName: Rotor gyroscopic FF gain
     // @Description: Used to add a feed forward term to compensate for the rotor's gyroscopic torque
@@ -43,7 +43,7 @@ void AP_MotorsPulsing_Heli::init(motor_frame_class frame_class, motor_frame_type
     //2: Pitch
     //3: Roll
     //4: Tail rotor thrust
-    
+
     // make sure 4 output channels are mapped
     for (uint8_t i = 0; i < 4; i++) {
         add_motor_num(CH_1 + i);
@@ -90,35 +90,35 @@ void AP_MotorsPulsing_Heli::output_to_motors()
     //If we are in GROUND_IDLE, allow the rotors to spin with throttle with a predefined idle speed, but no pitch or roll
     //In any other state, allow full control of main and tail throttle, pitch, and roll
     switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            rc_write(AP_MOTORS_MOT_1, output_to_pwm(0)); // rotor
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(0)); // tail
-            rc_write_angle(AP_MOTORS_MOT_2, 0); // pitch
-            rc_write_angle(AP_MOTORS_MOT_3, 0); // roll
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends output to motors when armed but not flying
-            rc_write_angle(AP_MOTORS_MOT_2, 0);
-            rc_write_angle(AP_MOTORS_MOT_3, 0);
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], actuator_spin_up_to_ground_idle()); // spin up motors
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], actuator_spin_up_to_ground_idle());
-            rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-        case SpoolState::SPOOLING_DOWN:
-            // set motor output based on thrust requests
-            rc_write_angle(AP_MOTORS_MOT_2, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
-            rc_write_angle(AP_MOTORS_MOT_3, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_rotor_thrust));
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], thrust_to_actuator(_tail_thrust));
-            rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
-            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
-            break;
+    case SpoolState::SHUT_DOWN:
+        // sends minimum values out to the motors
+        rc_write(AP_MOTORS_MOT_1, output_to_pwm(0)); // rotor
+        rc_write(AP_MOTORS_MOT_4, output_to_pwm(0)); // tail
+        rc_write_angle(AP_MOTORS_MOT_2, 0); // pitch
+        rc_write_angle(AP_MOTORS_MOT_3, 0); // roll
+        break;
+    case SpoolState::GROUND_IDLE:
+        // sends output to motors when armed but not flying
+        rc_write_angle(AP_MOTORS_MOT_2, 0);
+        rc_write_angle(AP_MOTORS_MOT_3, 0);
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], actuator_spin_up_to_ground_idle()); // spin up motors
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], actuator_spin_up_to_ground_idle());
+        rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
+        rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+        break;
+    case SpoolState::SPOOLING_UP:
+    case SpoolState::THROTTLE_UNLIMITED:
+    case SpoolState::SPOOLING_DOWN:
+        // set motor output based on thrust requests
+        rc_write_angle(AP_MOTORS_MOT_2, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
+        rc_write_angle(AP_MOTORS_MOT_3, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_rotor_thrust));
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], thrust_to_actuator(_tail_thrust));
+        rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
+        rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
+        break;
     }
-    
+
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -199,24 +199,24 @@ void AP_MotorsPulsing_Heli::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // output to motors and servos
     switch (motor_seq) {
-        case 1:
-            // flap servo 1
-            rc_write(AP_MOTORS_MOT_1, pwm);
-            break;
-        case 2:
-            // flap servo 2
-            rc_write(AP_MOTORS_MOT_2, pwm);
-            break;
-        case 3:
-            // flap servo 3
-            rc_write(AP_MOTORS_MOT_3, pwm);
-            break;
-        case 4:
-            // flap servo 4
-            rc_write(AP_MOTORS_MOT_4, pwm);
-            break;
-        default:
-            // do nothing
-            break;
+    case 1:
+        // flap servo 1
+        rc_write(AP_MOTORS_MOT_1, pwm);
+        break;
+    case 2:
+        // flap servo 2
+        rc_write(AP_MOTORS_MOT_2, pwm);
+        break;
+    case 3:
+        // flap servo 3
+        rc_write(AP_MOTORS_MOT_3, pwm);
+        break;
+    case 4:
+        // flap servo 4
+        rc_write(AP_MOTORS_MOT_4, pwm);
+        break;
+    default:
+        // do nothing
+        break;
     }
 }
