@@ -6,6 +6,11 @@ AP_GPSParser::AP_GPSParser() {
 
 }
 
+void AP_GPSParser::setup(){
+    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+    setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
+}
+
 void AP_GPSParser::setup_uart(AP_HAL::UARTDriver *uart_param, const char *name){
 this->uart = uart_param;
     if (uart == nullptr) {
@@ -18,11 +23,23 @@ this->uart = uart_param;
 
 }
 
-void AP_GPSParser::setup(){
-    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
-    setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
-}
+void AP_GPSParser::process() {
 
+    test_uart(hal.serial(3), "SERIAL3");
+
+    if (uart->available_locked(0) > 0) {
+        uint8_t received_byte;
+        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 0);
+
+        if (bytesRead > 0) {
+            if (parseMavlinkByte(received_byte)) {
+                if (processMavlinkMessage(mavlink_buffer, mavlink_buffer_index)) {
+                }
+                mavlink_buffer_index = 0;
+            }
+        }
+    }
+}
 
 void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name)
 {
@@ -45,29 +62,8 @@ void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name)
 
     if (bytesRead > 0) {
         // Print the received data to the console
-        hal.console->printf("pis neger ");
         for (size_t i = 0; i < bytesRead; i++) {
-           hal.console->printf("%c \n", mavlink_buffer[i]);
-        }
-    }
-}
-
-
-void AP_GPSParser::process() {
-
-    test_uart(hal.serial(3), "SERIAL3");
-
-    if (uart->available_locked(0) > 0) {
-        uint8_t received_byte;
-        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 0);
-
-        if (bytesRead > 0) {
-            if (parseMavlinkByte(received_byte)) {
-                if (processMavlinkMessage(mavlink_buffer, mavlink_buffer_index)) {
-                    hal.console->println("fejemøj");
-                }
-                mavlink_buffer_index = 0;
-            }
+          // hal.console->printf("%c \n", mavlink_buffer[i]);
         }
     }
 }
