@@ -75,6 +75,7 @@ public:
         MOTOR_FRAME_6DOF_SCRIPTING = 16,
         MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX = 17,
         MOTOR_FRAME_PULSING_COAX = 18,
+        MOTOR_FRAME_PULSING_HELI = 19,
     };
 
     // return string corresponding to frame_class
