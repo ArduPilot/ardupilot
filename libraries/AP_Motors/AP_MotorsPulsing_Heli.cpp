@@ -49,14 +49,12 @@ void AP_MotorsPulsing_Heli::init(motor_frame_class frame_class, motor_frame_type
         add_motor_num(CH_1 + i);
     }
 
-
     // setup actuator scaling
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(1), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(2), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
 
     motor_enabled[AP_MOTORS_MOT_1] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
-
 
     _mav_type = MAV_TYPE_QUADROTOR;
     rpm = AP_RPM::get_singleton();
@@ -158,7 +156,6 @@ void AP_MotorsPulsing_Heli::output_armed_stabilizing()
     float gyro_x_ff = omega_cross.x * _gyro_ff_gain;
     float gyro_y_ff = omega_cross.y * _gyro_ff_gain;
 
-
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain();
     roll_thrust = (_roll_in + _roll_in_ff + gyro_x_ff) * compensation_gain;
@@ -166,7 +163,6 @@ void AP_MotorsPulsing_Heli::output_armed_stabilizing()
     yaw_thrust = (_yaw_in + _yaw_in_ff + rotor_yaw_ff) * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
-
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
