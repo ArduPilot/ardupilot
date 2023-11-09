@@ -19,7 +19,8 @@
 #pragma once
 #include <stdint.h>
 
-#define RTCM3_MAX_PACKET_LEN 300
+#define RTCM3_MAX_PACKET_LEN 1024
+
 class RTCM3_Parser {
 public:
     // process one byte, return true if packet found
