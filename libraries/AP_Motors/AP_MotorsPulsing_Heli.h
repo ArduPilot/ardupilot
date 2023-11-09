@@ -12,7 +12,8 @@
 
 //This class defines a helecopter frame that uses pulsing motors
 
-class AP_MotorsPulsing_Heli : public AP_MotorsMulticopter {
+class AP_MotorsPulsing_Heli : public AP_MotorsMulticopter
+{
 public:
     //Create an instance of a Pulsing Heli object
     AP_MotorsPulsing_Heli(AP_AHRS_View  *ahrs_view, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
@@ -36,10 +37,13 @@ public:
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint32_t        get_motor_mask() override;
-    
+
     //Returns whether or not initialization was successful
-    bool            arming_checks(size_t buflen, char *buffer) const override { return AP_Motors::arming_checks(buflen, buffer); }
-    
+    bool            arming_checks(size_t buflen, char *buffer) const override
+    {
+        return AP_Motors::arming_checks(buflen, buffer);
+    }
+
     //Stores the group information for a pulsing helicopter
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -54,12 +58,15 @@ protected:
 
     AP_AHRS_View    *_ahrs_view;
     AP_RPM          *rpm;
-    
+
     AP_Int8         _yaw_dir;
     AP_Float        _rotor_yaw_ff;
     AP_Float        _gyro_ff_gain;
 
-    const char*     _get_frame_string() const override { return "PULSE"; }
+    const char*     _get_frame_string() const override
+    {
+        return "PULSE";
+    }
 
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
