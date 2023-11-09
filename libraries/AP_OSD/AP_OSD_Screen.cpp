@@ -84,12 +84,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ALTITUDE_X
     // @DisplayName: ALTITUDE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ALTITUDE_Y
     // @DisplayName: ALTITUDE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(altitude, "ALTITUDE", 4, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: BAT_VOLT_EN
@@ -100,12 +100,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BAT_VOLT_X
     // @DisplayName: BATVOLT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BAT_VOLT_Y
     // @DisplayName: BATVOLT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(bat_volt, "BAT_VOLT", 5, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: RSSI_EN
@@ -116,12 +116,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: RSSI_X
     // @DisplayName: RSSI_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: RSSI_Y
     // @DisplayName: RSSI_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(rssi, "RSSI", 6, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: CURRENT_EN
@@ -132,12 +132,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CURRENT_X
     // @DisplayName: CURRENT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CURRENT_Y
     // @DisplayName: CURRENT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(current, "CURRENT", 7, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: BATUSED_EN
@@ -148,12 +148,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BATUSED_X
     // @DisplayName: BATUSED_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BATUSED_Y
     // @DisplayName: BATUSED_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(batused, "BATUSED", 8, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: SATS_EN
@@ -164,12 +164,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: SATS_X
     // @DisplayName: SATS_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: SATS_Y
     // @DisplayName: SATS_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(sats, "SATS", 9, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: FLTMODE_EN
@@ -180,12 +180,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: FLTMODE_X
     // @DisplayName: FLTMODE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: FLTMODE_Y
     // @DisplayName: FLTMODE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(fltmode, "FLTMODE", 10, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: MESSAGE_EN
@@ -196,12 +196,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: MESSAGE_X
     // @DisplayName: MESSAGE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: MESSAGE_Y
     // @DisplayName: MESSAGE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(message, "MESSAGE", 11, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: GSPEED_EN
@@ -212,12 +212,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: GSPEED_X
     // @DisplayName: GSPEED_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: GSPEED_Y
     // @DisplayName: GSPEED_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HORIZON_EN
@@ -228,12 +228,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HORIZON_X
     // @DisplayName: HORIZON_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HORIZON_Y
     // @DisplayName: HORIZON_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HOME_EN
@@ -244,12 +244,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HOME_X
     // @DisplayName: HOME_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HOME_Y
     // @DisplayName: HOME_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(home, "HOME", 14, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HEADING_EN
@@ -260,12 +260,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HEADING_X
     // @DisplayName: HEADING_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HEADING_Y
     // @DisplayName: HEADING_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(heading, "HEADING", 15, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: THROTTLE_EN
@@ -276,12 +276,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: THROTTLE_X
     // @DisplayName: THROTTLE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: THROTTLE_Y
     // @DisplayName: THROTTLE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(throttle, "THROTTLE", 16, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: COMPASS_EN
@@ -292,12 +292,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: COMPASS_X
     // @DisplayName: COMPASS_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: COMPASS_Y
     // @DisplayName: COMPASS_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(compass, "COMPASS", 17, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: WIND_EN
@@ -308,12 +308,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: WIND_X
     // @DisplayName: WIND_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: WIND_Y
     // @DisplayName: WIND_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(wind, "WIND", 18, AP_OSD_Screen, AP_OSD_Setting),
 
 
@@ -325,12 +325,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ASPEED_X
     // @DisplayName: ASPEED_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ASPEED_Y
     // @DisplayName: ASPEED_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(aspeed, "ASPEED", 19, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: VSPEED_EN
@@ -341,12 +341,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: VSPEED_X
     // @DisplayName: VSPEED_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: VSPEED_Y
     // @DisplayName: VSPEED_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
 
 #if HAL_WITH_ESC_TELEM
@@ -358,12 +358,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ESCTEMP_X
     // @DisplayName: ESCTEMP_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ESCTEMP_Y
     // @DisplayName: ESCTEMP_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(esc_temp, "ESCTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ESCRPM_EN
@@ -374,12 +374,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ESCRPM_X
     // @DisplayName: ESCRPM_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ESCRPM_Y
     // @DisplayName: ESCRPM_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(esc_rpm, "ESCRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ESCAMPS_EN
@@ -390,12 +390,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ESCAMPS_X
     // @DisplayName: ESCAMPS_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ESCAMPS_Y
     // @DisplayName: ESCAMPS_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(esc_amps, "ESCAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
     // @Param: GPSLAT_EN
@@ -406,12 +406,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: GPSLAT_X
     // @DisplayName: GPSLAT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: GPSLAT_Y
     // @DisplayName: GPSLAT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(gps_latitude, "GPSLAT", 24, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: GPSLONG_EN
@@ -422,12 +422,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: GPSLONG_X
     // @DisplayName: GPSLONG_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: GPSLONG_Y
     // @DisplayName: GPSLONG_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(gps_longitude, "GPSLONG", 25, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ROLL_EN
@@ -438,12 +438,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ROLL_X
     // @DisplayName: ROLL_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ROLL_Y
     // @DisplayName: ROLL_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(roll_angle, "ROLL", 26, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: PITCH_EN
@@ -454,12 +454,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: PITCH_X
     // @DisplayName: PITCH_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: PITCH_Y
     // @DisplayName: PITCH_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: TEMP_EN
@@ -470,12 +470,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: TEMP_X
     // @DisplayName: TEMP_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: TEMP_Y
     // @DisplayName: TEMP_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HDOP_EN
@@ -486,12 +486,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HDOP_X
     // @DisplayName: HDOP_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HDOP_Y
     // @DisplayName: HDOP_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: WAYPOINT_EN
@@ -502,12 +502,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: WAYPOINT_X
     // @DisplayName: WAYPOINT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: WAYPOINT_Y
     // @DisplayName: WAYPOINT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(waypoint, "WAYPOINT", 30, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: XTRACK_EN
@@ -518,12 +518,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: XTRACK_X
     // @DisplayName: XTRACK_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: XTRACK_Y
     // @DisplayName: XTRACK_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(xtrack_error, "XTRACK", 31, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: DIST_EN
@@ -534,12 +534,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: DIST_X
     // @DisplayName: DIST_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: DIST_Y
     // @DisplayName: DIST_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(dist, "DIST", 32, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: STATS_EN
@@ -550,12 +550,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: STATS_X
     // @DisplayName: STATS_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: STATS_Y
     // @DisplayName: STATS_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(stat, "STATS", 33, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: FLTIME_EN
@@ -566,12 +566,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: FLTIME_X
     // @DisplayName: FLTIME_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: FLTIME_Y
     // @DisplayName: FLTIME_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(flightime, "FLTIME", 34, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: CLIMBEFF_EN
@@ -582,12 +582,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CLIMBEFF_X
     // @DisplayName: CLIMBEFF_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CLIMBEFF_Y
     // @DisplayName: CLIMBEFF_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(climbeff, "CLIMBEFF", 35, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: EFF_EN
@@ -598,12 +598,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: EFF_X
     // @DisplayName: EFF_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: EFF_Y
     // @DisplayName: EFF_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
 
 #if BARO_MAX_INSTANCES > 1
@@ -615,12 +615,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BTEMP_X
     // @DisplayName: BTEMP_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BTEMP_Y
     // @DisplayName: BTEMP_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
@@ -632,12 +632,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ATEMP_X
     // @DisplayName: ATEMP_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ATEMP_Y
     // @DisplayName: ATEMP_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: BAT2_VLT_EN
@@ -648,12 +648,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BAT2_VLT_X
     // @DisplayName: BAT2VLT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BAT2_VLT_Y
     // @DisplayName: BAT2VLT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(bat2_vlt, "BAT2_VLT", 39, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: BAT2USED_EN
@@ -664,12 +664,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BAT2USED_X
     // @DisplayName: BAT2USED_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BAT2USED_Y
     // @DisplayName: BAT2USED_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
 
 
@@ -681,12 +681,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ASPD2_X
     // @DisplayName: ASPD2_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ASPD2_Y
     // @DisplayName: ASPD2_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ASPD1_EN
@@ -697,12 +697,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ASPD1_X
     // @DisplayName: ASPD1_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ASPD1_Y
     // @DisplayName: ASPD1_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(aspd1, "ASPD1", 42, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: CLK_EN
@@ -713,12 +713,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CLK_X
     // @DisplayName: CLK_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CLK_Y
     // @DisplayName: CLK_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
 
 #if HAL_OSD_SIDEBAR_ENABLE || HAL_MSP_ENABLED
@@ -730,12 +730,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: SIDEBARS_X
     // @DisplayName: SIDEBARS_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: SIDEBARS_Y
     // @DisplayName: SIDEBARS_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
@@ -748,12 +748,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CRSSHAIR_X
     // @DisplayName: CRSSHAIR_X
     // @Description: Horizontal position on screen (MSP OSD only)
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CRSSHAIR_Y
     // @DisplayName: CRSSHAIR_Y
     // @Description: Vertical position on screen (MSP OSD only)
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(crosshair, "CRSSHAIR", 45, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HOMEDIST_EN
@@ -764,12 +764,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HOMEDIST_X
     // @DisplayName: HOMEDIST_X
     // @Description: Horizontal position on screen (MSP OSD only)
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HOMEDIST_Y
     // @DisplayName: HOMEDIST_Y
     // @Description: Vertical position on screen (MSP OSD only)
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(home_dist, "HOMEDIST", 46, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: HOMEDIR_EN
@@ -780,12 +780,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: HOMEDIR_X
     // @DisplayName: HOMEDIR_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: HOMEDIR_Y
     // @DisplayName: HOMEDIR_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(home_dir, "HOMEDIR", 47, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: POWER_EN
@@ -796,12 +796,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: POWER_X
     // @DisplayName: POWER_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: POWER_Y
     // @DisplayName: POWER_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(power, "POWER", 48, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: CELLVOLT_EN
@@ -812,12 +812,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CELLVOLT_X
     // @DisplayName: CELL_VOLT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CELLVOLT_Y
     // @DisplayName: CELL_VOLT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(cell_volt, "CELLVOLT", 49, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: BATTBAR_EN
@@ -828,12 +828,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: BATTBAR_X
     // @DisplayName: BATT_BAR_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: BATTBAR_Y
     // @DisplayName: BATT_BAR_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(batt_bar, "BATTBAR", 50, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ARMING_EN
@@ -844,12 +844,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ARMING_X
     // @DisplayName: ARMING_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ARMING_Y
     // @DisplayName: ARMING_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(arming, "ARMING", 51, AP_OSD_Screen, AP_OSD_Setting),
 #endif //HAL_MSP_ENABLED
 
@@ -862,12 +862,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: PLUSCODE_X
     // @DisplayName: PLUSCODE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: PLUSCODE_Y
     // @DisplayName: PLUSCODE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
@@ -880,12 +880,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CALLSIGN_X
     // @DisplayName: CALLSIGN_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CALLSIGN_Y
     // @DisplayName: CALLSIGN_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(callsign, "CALLSIGN", 53, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
@@ -897,12 +897,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: CURRENT2_X
     // @DisplayName: CURRENT2_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: CURRENT2_Y
     // @DisplayName: CURRENT2_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(current2, "CURRENT2", 54, AP_OSD_Screen, AP_OSD_Setting),
 
 #if AP_VIDEOTX_ENABLED
@@ -914,12 +914,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: VTX_PWR_X
     // @DisplayName: VTX_PWR_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: VTX_PWR_Y
     // @DisplayName: VTX_PWR_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(vtx_power, "VTX_PWR", 55, AP_OSD_Screen, AP_OSD_Setting),
 #endif  // AP_VIDEOTX_ENABLED
 
@@ -932,12 +932,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: TER_HGT_X
     // @DisplayName: TER_HGT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: TER_HGT_Y
     // @DisplayName: TER_HGT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(hgt_abvterr, "TER_HGT", 56, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
@@ -949,12 +949,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: AVGCELLV_X
     // @DisplayName: AVGCELLV_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: AVGCELLV_Y
     // @DisplayName: AVGCELLV_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(avgcellvolt, "AVGCELLV", 57, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: RESTVOLT_EN
@@ -965,12 +965,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: RESTVOLT_X
     // @DisplayName: RESTVOLT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: RESTVOLT_Y
     // @DisplayName: RESTVOLT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(restvolt, "RESTVOLT", 58, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: FENCE_EN
@@ -981,12 +981,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: FENCE_X
     // @DisplayName: FENCE_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: FENCE_Y
     // @DisplayName: FENCE_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(fence, "FENCE", 59, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: RNGF_EN
@@ -997,12 +997,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: RNGF_X
     // @DisplayName: RNGF_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: RNGF_Y
     // @DisplayName: RNGF_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Param: ACRVOLT_EN
@@ -1013,12 +1013,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Param: ACRVOLT_X
     // @DisplayName: ACRVOLT_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: ACRVOLT_Y
     // @DisplayName: ACRVOLT_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(avgcellrestvolt, "ACRVOLT", 61, AP_OSD_Screen, AP_OSD_Setting),
 
 #if AP_RPM_ENABLED
@@ -1054,12 +1054,12 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Param: LINK_Q_X
     // @DisplayName: LINK_Q_X
     // @Description: Horizontal position on screen
-    // @Range: 0 29
+    // @Range: 0 59
 
     // @Param: LINK_Q_Y
     // @DisplayName: LINK_Q_Y
     // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Range: 0 21
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
 
 #if HAL_WITH_MSP_DISPLAYPORT
@@ -1073,7 +1073,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Param: FONT
     // @DisplayName: Sets the font index for this screen (MSP DisplayPort only)
     // @Description: Sets the font index for this screen (MSP DisplayPort only)
-    // @Range: 0 15
+    // @Range: 0 21
     // @User: Standard
     AP_GROUPINFO("FONT", 4, AP_OSD_Screen, font_index, 0),
 #endif
