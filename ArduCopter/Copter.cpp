@@ -261,7 +261,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
 
-SCHED_TASK(gpsparser_init,              1, 75, 175),
+SCHED_TASK(gpsparser_init,              5, 2500, 175),
 
 };
 

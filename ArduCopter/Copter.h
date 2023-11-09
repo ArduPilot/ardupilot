@@ -263,8 +263,6 @@ private:
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    bool firstTimeSetup = true;
-
     struct RangeFinderState {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder

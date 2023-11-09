@@ -17,7 +17,7 @@ private:
     const AP_HAL::HAL& hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver* uart;
     uint8_t mavlink_buffer[255];
-    uint16_t mavlink_buffer_index;
+    ssize_t mavlink_buffer_index;
     bool parseMavlinkByte(uint8_t byte);
     bool processMavlinkMessage(const uint8_t* buffer, uint16_t length);
 };

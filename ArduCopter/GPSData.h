@@ -9,6 +9,7 @@ private:
     double latitude;
     double longitude;
     float altitude;
+    
 public:
     GPSData(/* args */);
     ~GPSData() = default;

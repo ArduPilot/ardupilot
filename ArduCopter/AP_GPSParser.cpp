@@ -11,13 +11,15 @@ this->uart = uart_param;
     if (uart == nullptr) {
         // that UART doesn't exist on this platform
         return;
+        hal.console->println("åh nej ikke godt");
     }
     uart->begin(57600);
+        hal.console->println("den virker");
+
 }
 
 void AP_GPSParser::setup(){
     hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
-
     setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
 }
 
@@ -28,9 +30,26 @@ void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name)
         // that UART doesn't exist on this platform
         return;
     }
+    //uint8_t received_byte;
     uart_param->printf("Hello on UART %s at %.3f seconds\n",
                  name, (double)(AP_HAL::millis() * 0.001f));
-                 uart_param->write("kalundborg er en skøge");
+    uart_param->write("teesting \n");
+     // Check if the UART port is available
+    if (uart == nullptr) {
+        hal.console->println("UART port not available.");
+        return;
+    }
+
+    // Read data from the UART
+    size_t bytesRead = uart->read(mavlink_buffer, sizeof(mavlink_buffer));
+
+    if (bytesRead > 0) {
+        // Print the received data to the console
+        hal.console->printf("pis neger ");
+        for (size_t i = 0; i < bytesRead; i++) {
+           hal.console->printf("%c \n", mavlink_buffer[i]);
+        }
+    }
 }
 
 
@@ -38,37 +57,19 @@ void AP_GPSParser::process() {
 
     test_uart(hal.serial(3), "SERIAL3");
 
-    // also do a raw printf() on some platforms, which prints to the
-    // debug console
-    hal.console->printf("Hello on debug console at %.3f seconds\n", (double)(AP_HAL::millis() * 0.001f));
-
-    hal.scheduler->delay(1000);
-
-
-/*
-    uint32_t key = 123; // Replace with your desired key
-    
-    while (uart->available_locked(key) > 0) {
+    if (uart->available_locked(0) > 0) {
         uint8_t received_byte;
-        ssize_t bytesRead = uart->read_locked(&received_byte, 1, key);
-        double last_run_time = AP_HAL::millis();
-
-        // 100hz loop
-        if (AP_HAL::millis() - last_run_time < 20) {
-            hal.scheduler->delay(10);
-            continue;
-        }
+        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 0);
 
         if (bytesRead > 0) {
             if (parseMavlinkByte(received_byte)) {
                 if (processMavlinkMessage(mavlink_buffer, mavlink_buffer_index)) {
-                    // Process the GPS data, e.g., update the gps_data structure
+                    hal.console->println("fejemøj");
                 }
                 mavlink_buffer_index = 0;
             }
         }
     }
-    */
 }
 
 bool AP_GPSParser::parseMavlinkByte(uint8_t byte) {
@@ -88,4 +89,5 @@ bool AP_GPSParser::processMavlinkMessage(const uint8_t* buffer, uint16_t length)
     return false; // Replace with your parsing logic
   
 }
- 
+
+
