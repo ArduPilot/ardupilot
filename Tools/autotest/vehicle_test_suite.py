@@ -3915,7 +3915,16 @@ class TestSuite(ABC):
         return m
 
     # FIXME: try to use wait_and_maintain here?
-    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None, minimum_duration=None):
+    def wait_message_field_values(self,
+                                  message,
+                                  fieldvalues,
+                                  timeout=10,
+                                  epsilon=None,
+                                  instance=None,
+                                  minimum_duration=None,
+                                  verbose=False,
+                                  very_verbose=False,
+                                  ):
 
         tstart = self.get_sim_time_cached()
         pass_start = None
@@ -3923,8 +3932,13 @@ class TestSuite(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Field never reached values")
-            m = self.assert_receive_message(message, instance=instance)
-            if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
+            m = self.assert_receive_message(
+                message,
+                instance=instance,
+                verbose=verbose,
+                very_verbose=very_verbose,
+            )
+            if self.message_has_field_values(m, fieldvalues, epsilon=epsilon, verbose=verbose):
                 if minimum_duration is not None:
                     if pass_start is None:
                         pass_start = now
