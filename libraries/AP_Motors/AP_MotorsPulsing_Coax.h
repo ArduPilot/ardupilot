@@ -10,9 +10,9 @@
 
 #define AP_MOTORS_COAX_SERVO_INPUT_RANGE    4500
 
-class AP_MotorsPulsing : public AP_MotorsMulticopter {
+class AP_MotorsPulsing_Coax : public AP_MotorsMulticopter {
 public:
-    AP_MotorsPulsing(AP_AHRS_View  *ahrs_view, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsPulsing_Coax(AP_AHRS_View  *ahrs_view, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(speed_hz), _ahrs_view(ahrs_view)
     {
         AP_Param::setup_object_defaults(this, var_info);
