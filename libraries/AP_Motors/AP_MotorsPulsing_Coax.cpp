@@ -6,19 +6,19 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_MotorsPulsing::var_info[] = {
+const AP_Param::GroupInfo AP_MotorsPulsing_Coax::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
     // @Param: YAW_DIR
     // @DisplayName: Motor normal or reverse
     // @Description: Used to change motor rotation directions without changing wires
     // @Values: 1:normal,-1:reverse
     // @User: Standard
-    AP_GROUPINFO("YAW_DIR", 1, AP_MotorsPulsing, _yaw_dir, 1),
+    AP_GROUPINFO("YAW_DIR", 1, AP_MotorsPulsing_Coax, _yaw_dir, 1),
 
     AP_GROUPEND
 };
 // init
-void AP_MotorsPulsing::init(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_MotorsPulsing_Coax::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // 1 - Bottom Throttle
     // 2 - Top Throttle
@@ -54,13 +54,13 @@ void AP_MotorsPulsing::init(motor_frame_class frame_class, motor_frame_type fram
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-void AP_MotorsPulsing::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_MotorsPulsing_Coax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsPulsing::set_update_rate(uint16_t speed_hz)
+void AP_MotorsPulsing_Coax::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
     _speed_hz = speed_hz;
@@ -71,7 +71,7 @@ void AP_MotorsPulsing::set_update_rate(uint16_t speed_hz)
     rc_set_freq(mask, _speed_hz);
 }
 
-void AP_MotorsPulsing::output_to_motors()
+void AP_MotorsPulsing_Coax::output_to_motors()
 {
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
@@ -120,7 +120,7 @@ void AP_MotorsPulsing::output_to_motors()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint32_t AP_MotorsPulsing::get_motor_mask()
+uint32_t AP_MotorsPulsing_Coax::get_motor_mask()
 {
     uint32_t motor_mask =
         1U << AP_MOTORS_MOT_1 |
@@ -133,7 +133,7 @@ uint32_t AP_MotorsPulsing::get_motor_mask()
     return mask;
 }
 
-void AP_MotorsPulsing::output_armed_stabilizing()
+void AP_MotorsPulsing_Coax::output_armed_stabilizing()
 {
     float   roll_thrust;                // roll thrust input value, +/- 1.0
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
@@ -179,7 +179,7 @@ void AP_MotorsPulsing::output_armed_stabilizing()
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsPulsing::_output_test_seq(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsPulsing_Coax::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // output to motors and servos
     switch (motor_seq) {
