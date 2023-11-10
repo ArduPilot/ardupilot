@@ -221,7 +221,7 @@ singleton AP_Proximity method get_backend AP_Proximity_Backend uint8_t'skip_chec
 include AP_RangeFinder/AP_RangeFinder.h
 include AP_RangeFinder/AP_RangeFinder_Backend.h
 
-userdata RangeFinder::RangeFinder_State depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+userdata RangeFinder::RangeFinder_State depends AP_RANGEFINDER_ENABLED
 userdata RangeFinder::RangeFinder_State rename RangeFinder_State
 userdata RangeFinder::RangeFinder_State field last_reading_ms uint32_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field last_reading_ms rename last_reading
@@ -234,7 +234,7 @@ userdata RangeFinder::RangeFinder_State field signal_quality_pct rename signal_q
 userdata RangeFinder::RangeFinder_State field voltage_mv uint16_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field voltage_mv rename voltage
 
-ap_object AP_RangeFinder_Backend depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+ap_object AP_RangeFinder_Backend depends AP_RANGEFINDER_ENABLED
 ap_object AP_RangeFinder_Backend method distance float
 ap_object AP_RangeFinder_Backend method signal_quality_pct float
 ap_object AP_RangeFinder_Backend method signal_quality_pct rename signal_quality
@@ -244,7 +244,7 @@ ap_object AP_RangeFinder_Backend method status uint8_t
 ap_object AP_RangeFinder_Backend manual handle_script_msg lua_range_finder_handle_script_msg 1 1
 ap_object AP_RangeFinder_Backend method get_state void RangeFinder::RangeFinder_State'Ref
 
-singleton RangeFinder depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+singleton RangeFinder depends AP_RANGEFINDER_ENABLED
 singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
@@ -546,8 +546,11 @@ singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
 singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
 singleton Sub method is_button_pressed boolean uint8_t 1 4
 singleton Sub method rangefinder_alt_ok boolean
+singleton Sub method rangefinder_alt_ok depends AP_RANGEFINDER_ENABLED
 singleton Sub method get_rangefinder_target_cm float
+singleton Sub method get_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 singleton Sub method set_rangefinder_target_cm boolean float'skip_check
+singleton Sub method set_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
