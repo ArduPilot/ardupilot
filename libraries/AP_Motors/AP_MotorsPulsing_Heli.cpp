@@ -10,14 +10,14 @@ const AP_Param::GroupInfo AP_MotorsPulsing_Heli::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
     // @Param: YAW_DIR
     // @DisplayName: Motor normal or reverse
-    // @Description: Changes motor rotation directions without changing wires
+    // @Description: Used to change motor rotation directions without changing wires
     // @Values: 1:normal,-1:reverse
     // @User: Standard
     AP_GROUPINFO("YAW_DIR", 1, AP_MotorsPulsing_Heli, _yaw_dir, 1),
 
     // @Param: ROTOR_YAW_FF
     // @DisplayName: Rotor torque FF gain
-    // @Description: Adds a feed forward term to yaw compensates for rotor torque
+    // @Description: Used to add a feed forward term to yaw that can compensate for rotor torque
     // @Range: ? ?
     // @Units: ?
     // @Increment: float
@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_MotorsPulsing_Heli::var_info[] = {
 
     // @Param: GYRO_FF
     // @DisplayName: Rotor gyroscopic FF gain
-    // @Description: Adds a feed forward term to compensate for the rotor's gyroscopic torque
+    // @Description: Used to add a feed forward term to compensate for the rotor's gyroscopic torque
     // @Range: ? ?
     // @Units: ?
     // @Increment: float

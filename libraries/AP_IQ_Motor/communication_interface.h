@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-class Communication_Interface {
+class CommunicationInterface{
   private:
   
   public:
@@ -88,7 +88,7 @@ class Communication_Interface {
      ******************************************************************************/
      
     /// Read a given message and act appropriately.
-    virtual void ReadMsg(Communication_Interface& com, uint8_t* data, uint8_t length) = 0;
-}; // end class Communication_Interface
+    virtual void ReadMsg(CommunicationInterface& com, uint8_t* data, uint8_t length) = 0;
+}; // end class CommunicationInterface
 
 #endif // COMMUNICATION_INTERFACE_H
