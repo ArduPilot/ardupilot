@@ -41,8 +41,7 @@ enum Access {kGet=0, kSet=1, kSave=2, kReply=3};
 
 //This is the top level, abstract, client entry. It provides the template for all entries to follow.
 //It has a type, object, and sub id to define what endpoint it belongs to, the module ID, and the location within the endpoint
-class Client_Entry_Abstract
-{
+class Client_Entry_Abstract {
 public:
 
     //Create an instance of a Client_Entry_Abstract with a type id, object id, and sub id
@@ -69,8 +68,7 @@ public:
 };
 
 //A typeless extension of the Client_Entry_Abstract class. Defines get, set, and save functions as well as the Reply function
-class Client_Entry_Void: public Client_Entry_Abstract
-{
+class Client_Entry_Void: public Client_Entry_Abstract {
 public:
     //Create an instance of a Client_Entry_Void with a type id, object id, and sub id
     //type_idn represents the endpoint type for this entry
@@ -130,8 +128,7 @@ private:
 //Represents a client entry that has a known type, for example a float. This Client stores a parameter of type T,
 //that can be gotten, set, or saved.
 template <typename T>
-class ClientEntry: public Client_Entry_Abstract
-{
+class ClientEntry: public Client_Entry_Abstract {
 public:
     //Create an instance of a ClientEntry with a type id, object id, sub id, and a type T through the template
     //type_idn represents the endpoint type for this entry
@@ -216,8 +213,7 @@ private:
 
 //A client holds client entries. All clients have a type and an object id that make them unique to each
 //module with a unique module ID
-class ClientAbstract
-{
+class ClientAbstract {
 public:
     //Create a client with a type id and object id
     ClientAbstract(uint8_t type_idn, uint8_t obj_idn):

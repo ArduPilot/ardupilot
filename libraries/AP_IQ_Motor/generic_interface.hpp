@@ -38,8 +38,7 @@
 #define GENERIC_TX_BUFFER_SIZE 256
 #endif
 
-class GenericInterface: public Communication_Interface
-{
+class GenericInterface: public Communication_Interface {
 private:
 
 public:
