@@ -30,27 +30,27 @@
 
 #include <stddef.h>
 
-class BipBuffer
+class Bip_Buffer
 {
 private:
-    uint8_t* pBuffer; // Pointer to the data buffer
-    uint16_t ixa; // Starting index of region A
-    uint16_t sza; // Size of region A
-    uint16_t ixb; // Starting index of region B
-    uint16_t szb; // Size of region B
-    uint16_t buflen; // Length of full buffer
-    uint16_t ixResrv; // Starting index of reserved region
-    uint16_t szResrv; // Size of the reserved region
+    uint8_t* _pBuffer; // Pointer to the data buffer
+    uint16_t _ixa; // Starting index of region A
+    uint16_t _sza; // Size of region A
+    uint16_t _ixb; // Starting index of region B
+    uint16_t _szb; // Size of region B
+    uint16_t _buflen; // Length of full buffer
+    uint16_t _ixResrv; // Starting index of reserved region
+    uint16_t _szResrv; // Size of the reserved region
 
 public:
-    BipBuffer() : pBuffer(NULL), ixa(0), sza(0), ixb(0), szb(0), buflen(0), ixResrv(0), szResrv(0)
+    Bip_Buffer() : _pBuffer(NULL), _ixa(0), _sza(0), _ixb(0), _szb(0), _buflen(0), _ixResrv(0), _szResrv(0)
     {
 
     }
-    BipBuffer(uint8_t* buffer_in, uint16_t buffer_length_in) : ixa(0), sza(0), ixb(0), szb(0), ixResrv(0), szResrv(0)
+    Bip_Buffer(uint8_t* buffer_in, uint16_t buffer_length_in) : _ixa(0), _sza(0), _ixb(0), _szb(0), _ixResrv(0), _szResrv(0)
     {
-        pBuffer = buffer_in;
-        buflen = buffer_length_in;
+        _pBuffer = buffer_in;
+        _buflen = buffer_length_in;
     }
 
     ///
@@ -63,7 +63,7 @@ public:
     ///
     void Clear()
     {
-        ixa = sza = ixb = szb = ixResrv = szResrv = 0;
+        _ixa = _sza = _ixb = _szb = _ixResrv = _szResrv = 0;
     }
 
     // Reserve
@@ -84,7 +84,7 @@ public:
     uint8_t* Reserve(uint16_t size, uint16_t& reserved)
     {
         // We always allocate on B if B exists; this means we have two blocks and our buffer is filling.
-        if (szb) {
+        if (_szb) {
             uint16_t freespace = GetBFreeSpace();
 
             if (size < freespace) {
@@ -95,15 +95,15 @@ public:
                 return NULL;
             }
 
-            szResrv = freespace;
+            _szResrv = freespace;
             reserved = freespace;
-            ixResrv = ixb + szb;
-            return pBuffer + ixResrv;
+            _ixResrv = _ixb + _szb;
+            return _pBuffer + _ixResrv;
         } else {
             // Block b does not exist, so we can check if the space AFTER a is bigger than the space
             // before A, and allocate the bigger one.
             uint16_t freespace = GetSpaceAfterA();
-            if (freespace >= ixa) { // If space after A > space before
+            if (freespace >= _ixa) { // If space after A > space before
                 if (freespace == 0) {
                     return NULL;
                 }
@@ -111,21 +111,21 @@ public:
                     freespace = size;
                 }
 
-                szResrv = freespace;
+                _szResrv = freespace;
                 reserved = freespace;
-                ixResrv = ixa + sza;
-                return pBuffer + ixResrv;
+                _ixResrv = _ixa + _sza;
+                return _pBuffer + _ixResrv;
             } else { // space before A > space after A
-                if (ixa == 0) {
+                if (_ixa == 0) {
                     return NULL;
                 }
-                if (ixa < size) {
-                    size = ixa;
+                if (_ixa < size) {
+                    size = _ixa;
                 }
-                szResrv = size;
+                _szResrv = size;
                 reserved = size;
-                ixResrv = 0;
-                return pBuffer;
+                _ixResrv = 0;
+                return _pBuffer;
             }
         }
     }
@@ -147,15 +147,15 @@ public:
     {
         if (size == 0) {
             // decommit any reservation
-            szResrv = ixResrv = 0;
+            _szResrv = _ixResrv = 0;
             return;
         }
 
         CommitPartial(size);
 
         // Decommit rest of reservation
-        ixResrv = 0;
-        szResrv = 0;
+        _ixResrv = 0;
+        _szResrv = 0;
     }
 
     // CommitPartial
@@ -176,26 +176,26 @@ public:
     uint16_t CommitPartial(uint16_t size)
     {
         // If we try to commit more space than we asked for, clip to the size we asked for.
-        if (size > szResrv) {
-            size = szResrv;
+        if (size > _szResrv) {
+            size = _szResrv;
         }
 
         // If we have no blocks being used currently, we create one in A.
-        if (sza == 0 && szb == 0) {
-            ixa = ixResrv;
+        if (_sza == 0 && _szb == 0) {
+            _ixa = _ixResrv;
         }
 
         // If the reserve index is at the end of block A
-        if (ixResrv == sza + ixa) {
-            sza += size; // Grow A by committed size
+        if (_ixResrv == _sza + _ixa) {
+            _sza += size; // Grow A by committed size
         } else {
-            szb += size; // Otherwise grow B by committed size
+            _szb += size; // Otherwise grow B by committed size
         }
 
         // Advance the reserved index
-        ixResrv += size;
+        _ixResrv += size;
         // Update reserved size
-        szResrv -= size;
+        _szResrv -= size;
 
         return size;
     }
@@ -211,13 +211,13 @@ public:
     //   uint8_t*                    pointer to the first contiguous block, or NULL if empty.
     uint8_t* GetContiguousBlock(uint16_t& size)
     {
-        if (sza == 0) {
+        if (_sza == 0) {
             size = 0;
             return NULL;
         }
 
-        size = sza;
-        return pBuffer + ixa;
+        size = _sza;
+        return _pBuffer + _ixa;
 
     }
 
@@ -232,14 +232,14 @@ public:
     //   nothing
     void DecommitBlock(uint16_t size)
     {
-        if (size >= sza) {
-            ixa = ixb;
-            sza = szb;
-            ixb = 0;
-            szb = 0;
+        if (size >= _sza) {
+            _ixa = _ixb;
+            _sza = _szb;
+            _ixb = 0;
+            _szb = 0;
         } else {
-            sza -= size;
-            ixa += size;
+            _sza -= size;
+            _ixa += size;
         }
     }
 
@@ -254,7 +254,7 @@ public:
     //   uint16_t         total amount of committed data in the buffer
     uint16_t GetCommittedSize() const
     {
-        return sza + szb;
+        return _sza + _szb;
     }
 
     // GetReservationSize
@@ -271,7 +271,7 @@ public:
     //   A return value of 0 indicates that no space has been reserved
     uint16_t GetReservationSize() const
     {
-        return szResrv;
+        return _szResrv;
     }
 
     // GetBufferSize
@@ -285,7 +285,7 @@ public:
     //   uint16_t                    total size of buffer
     uint16_t GetBufferSize() const
     {
-        return buflen;
+        return _buflen;
     }
 
     // IsInitialized
@@ -299,18 +299,18 @@ public:
     //   uint8_t                    true if the buffer has been allocated
     uint8_t IsInitialized() const
     {
-        return pBuffer != NULL;
+        return _pBuffer != NULL;
     }
 
 private:
     uint16_t GetSpaceAfterA() const
     {
-        return buflen - ixa - sza;
+        return _buflen - _ixa - _sza;
     }
 
     uint16_t GetBFreeSpace() const
     {
-        return ixa - ixb - szb;
+        return _ixa - _ixb - _szb;
     }
 };
 

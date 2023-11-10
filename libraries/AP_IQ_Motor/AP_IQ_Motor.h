@@ -18,8 +18,7 @@
 #include "client_communication.hpp"
 #include <AP_IQ_Motor/ifci.hpp>
 
-class AP_IQ_Motor : public AP_ESC_Telem_Backend
-{
+class AP_IQ_Motor : public AP_ESC_Telem_Backend {
 public:
 
     //Create an AP_IQ_Motor object
@@ -75,7 +74,7 @@ public:
 private:
     static AP_IQ_Motor *_singleton;
 
-    AP_HAL::UARTDriver *iq_uart;
+    AP_HAL::UARTDriver *_iq_uart;
     GenericInterface _com;
 
 
@@ -119,7 +118,7 @@ private:
     uint8_t _first_telem_motor = 0;
     uint8_t _last_telem_motor = 0;
 
-    static const uint8_t kSubCtrlCoast                  =  2;
-    static const uint8_t kTypePropellerMotorControl     = 52;
-    static const uint8_t kBroadcastID                   = 63;
+    static const uint8_t _kSubCtrlCoast                  =  2;
+    static const uint8_t _kTypePropellerMotorControl     = 52;
+    static const uint8_t _kBroadcastID                   = 63;
 };

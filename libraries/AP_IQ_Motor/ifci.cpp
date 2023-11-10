@@ -1,18 +1,18 @@
 #include "ifci.hpp"
 
 IFCI::IFCI() :
-    telemetry_(kTypeIFCI, 63, kTelemetry),
-    last_telemetry_received_id_(63)
+    telemetry_(_kTypeIFCI, 63, _kTelemetry),
+    _last_telemetry_received_id_(63)
 {
 };
 
-void IFCI::BroadcastPackedControlMessage(CommunicationInterface &com, uint16_t* values, uint8_t length, uint8_t telem)
+void IFCI::BroadcastPackedControlMessage(Communication_Interface &com, uint16_t* values, uint8_t length, uint8_t telem)
 {
     //Calls the targeted send message, but with the broadcast ID placed as the module ID. This allows all modules to receive the message
-    SendPackedControlMessage(com, values, length, telem, kBroadcastID);
+    SendPackedControlMessage(com, values, length, telem, _kBroadcastID);
 }
 
-void IFCI::SendPackedControlMessage(CommunicationInterface &com, uint16_t* values, uint8_t length, uint8_t telem, uint8_t obj_id)
+void IFCI::SendPackedControlMessage(Communication_Interface &com, uint16_t* values, uint8_t length, uint8_t telem, uint8_t obj_id)
 {
     //all control values are 2 bytes, so we need to make sure we have enough space
     uint8_t cv_array_size = 2 * length;
@@ -26,7 +26,7 @@ void IFCI::SendPackedControlMessage(CommunicationInterface &com, uint16_t* value
     uint8_t tx_msg[total_size]; // must fit outgoing message
 
     //Load in the type, object, and access. This is always a set/
-    tx_msg[0] = kPackedControlMessage;
+    tx_msg[0] = _kPackedControlMessage;
     tx_msg[1] = (obj_id<<2) | Access::kSet; // high six | low two
 
     //Add the rest of our data to the array
@@ -34,7 +34,7 @@ void IFCI::SendPackedControlMessage(CommunicationInterface &com, uint16_t* value
 
     //Set in the ID of the module whose telemetry we want then send the data
     tx_msg[total_size - 1] = telem;
-    com.SendPacket(kTypeIFCI, tx_msg, total_size);
+    com.SendPacket(_kTypeIFCI, tx_msg, total_size);
 }
 
 int IFCI::ReadTelemetry(uint8_t* rx_data, uint8_t rx_length)
@@ -46,17 +46,17 @@ int IFCI::ReadTelemetry(uint8_t* rx_data, uint8_t rx_length)
     Access dir = static_cast<Access>(rx_data[2] & 0b00000011); // low two bits
     if (dir == kReply) {
         // if sub_idn is within array range (safe to access array at this location)
-        if (sub_idn == kTelemetry && type_idn == kTypeIFCI) {
+        if (sub_idn == _kTelemetry && type_idn == _kTypeIFCI) {
             // ... then we have a valid message
             telemetry_.Reply(&rx_data[3],rx_length-3);
-            last_telemetry_received_id_ = obj_idn;
+            _last_telemetry_received_id_ = obj_idn;
             return obj_idn; // I parsed something
         }
     }
-    return kBroadcastID; // I didn't parse anything
+    return _kBroadcastID; // I didn't parse anything
 }
 
 uint8_t IFCI::get_last_telemetry_received_id()
 {
-    return last_telemetry_received_id_;
+    return _last_telemetry_received_id_;
 }
