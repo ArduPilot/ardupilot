@@ -216,7 +216,8 @@ private:
 
 //A client holds client entries. All clients have a type and an object id that make them unique to each
 //module with a unique module ID
-class ClientAbstract {
+class ClientAbstract 
+{
 public:
     //Create a client with a type id and object id
     ClientAbstract(uint8_t type_idn, uint8_t obj_idn):
