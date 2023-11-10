@@ -6,7 +6,7 @@
 #include "ifci_telemetry.h"
 
 //This class handles all IFCI communication to and from a Vertiq module
-class IFCI 
+class IFCI
 {
 public:
     //Construct a new IFCI object
