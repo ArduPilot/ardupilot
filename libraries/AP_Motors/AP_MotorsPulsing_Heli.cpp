@@ -59,7 +59,6 @@ void AP_MotorsPulsing_Heli::init(motor_frame_class frame_class, motor_frame_type
     _mav_type = MAV_TYPE_QUADROTOR;
 
     // record successful initialisation if what we setup was the desired frame_class
-    // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_HELI);
 }
 

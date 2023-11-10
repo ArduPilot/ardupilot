@@ -49,7 +49,6 @@ void AP_MotorsPulsing_Coax::init(motor_frame_class frame_class, motor_frame_type
     _mav_type = MAV_TYPE_QUADROTOR;
     rpm = AP_RPM::get_singleton();
     // record successful initialisation if what we setup was the desired frame_class
-    // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
 }
 
@@ -107,12 +106,6 @@ void AP_MotorsPulsing_Coax::output_to_motors()
             set_actuator_with_slew(_actuator[AP_MOTORS_MOT_2], thrust_to_actuator(_top_thrust));
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
-            // if ( AP_HAL::millis() > _last_update + 500)
-            // {
-            //     _last_update =  AP_HAL::millis();
-            //     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "t:%.2f\tr:%.2f\tp:%.2f\ty:%.2f", _throttle_out, _roll_action, _pitch_action, yaw_thrust);
-
-            // }
             break;
     }
     
