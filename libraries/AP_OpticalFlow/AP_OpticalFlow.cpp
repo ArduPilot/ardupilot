@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _FXSCALER
     // @DisplayName: X axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor X axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the X axis optical flow reading by 0.1%. Negative values reduce the scale factor.
-    // @Range: -200 +200
+    // @Range: -800 +800
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_FXSCALER", 1,  AP_OpticalFlow,    _flowScalerX,   0),
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _FYSCALER
     // @DisplayName: Y axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor Y axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the Y axis optical flow reading by 0.1%. Negative values reduce the scale factor.
-    // @Range: -200 +200
+    // @Range: -800 +800
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_FYSCALER", 2,  AP_OpticalFlow,    _flowScalerY,   0),
