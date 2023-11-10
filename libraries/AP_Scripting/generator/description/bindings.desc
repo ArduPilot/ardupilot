@@ -726,7 +726,9 @@ userdata Cylinder_Status depends (AP_EFI_SCRIPTING_ENABLED == 1)
 userdata Cylinder_Status field ignition_timing_deg float'skip_check read write
 userdata Cylinder_Status field injection_time_ms float'skip_check read write
 userdata Cylinder_Status field cylinder_head_temperature float'skip_check read write
+userdata Cylinder_Status field cylinder_head_temperature2 float'skip_check read write
 userdata Cylinder_Status field exhaust_gas_temperature float'skip_check read write
+userdata Cylinder_Status field exhaust_gas_temperature2 float'skip_check read write
 userdata Cylinder_Status field lambda_coefficient float'skip_check read write
 
 userdata EFI_State depends (AP_EFI_SCRIPTING_ENABLED == 1)
