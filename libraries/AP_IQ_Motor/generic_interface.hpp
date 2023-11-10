@@ -38,7 +38,7 @@
 #define GENERIC_TX_BUFFER_SIZE 256
 #endif
 
-class GenericInterface: public CommunicationInterface
+class GenericInterface: public Communication_Interface
 {
 private:
 
@@ -54,7 +54,7 @@ public:
     uint8_t pf_index_data[GENERIC_PF_INDEX_DATA_SIZE];
 
     // bipbuffer for transmissions
-    BipBuffer tx_bipbuf;
+    Bip_Buffer tx_bipbuf;
 
     // raw buffer for transmissions
     uint8_t tx_buffer[GENERIC_TX_BUFFER_SIZE];
@@ -119,7 +119,7 @@ public:
      ******************************************************************************/
 
     /// Read a given message and act appropriately.
-    void ReadMsg(CommunicationInterface& com, uint8_t* data, uint8_t length) override;
+    void ReadMsg(Communication_Interface& com, uint8_t* data, uint8_t length) override;
 }; // class GenericInterface
 
 #endif // GENERIC_INTERFACE_H

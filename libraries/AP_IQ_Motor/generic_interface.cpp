@@ -32,7 +32,7 @@ GenericInterface::GenericInterface()
 {
     InitBQ(&index_queue, pf_index_data, GENERIC_PF_INDEX_DATA_SIZE);
     InitPacketFinder(&pf, &index_queue);
-    tx_bipbuf = BipBuffer(tx_buffer, GENERIC_TX_BUFFER_SIZE);
+    tx_bipbuf = Bip_Buffer(tx_buffer, GENERIC_TX_BUFFER_SIZE);
 }
 
 int8_t GenericInterface::GetBytes()
@@ -144,7 +144,7 @@ void GenericInterface::SendNow()
     // I'm useless.
 }
 
-void GenericInterface::ReadMsg(CommunicationInterface& com, uint8_t* data, uint8_t length)
+void GenericInterface::ReadMsg(Communication_Interface& com, uint8_t* data, uint8_t length)
 {
     // I currently don't support being talked to
     (void)com;

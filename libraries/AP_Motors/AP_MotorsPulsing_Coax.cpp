@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_MotorsPulsing_Coax::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
     // @Param: YAW_DIR
     // @DisplayName: Motor normal or reverse
-    // @Description: Used to change motor rotation directions without changing wires
+    // @Description: Changes motor rotation directions without changing wires
     // @Values: 1:normal,-1:reverse
     // @User: Standard
     AP_GROUPINFO("YAW_DIR", 1, AP_MotorsPulsing_Coax, _yaw_dir, 1),
@@ -47,7 +47,7 @@ void AP_MotorsPulsing_Coax::init(motor_frame_class frame_class, motor_frame_type
 
 
     _mav_type = MAV_TYPE_QUADROTOR;
-    rpm = AP_RPM::get_singleton();
+    _rpm = AP_RPM::get_singleton();
     // record successful initialisation if what we setup was the desired frame_class
     // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
