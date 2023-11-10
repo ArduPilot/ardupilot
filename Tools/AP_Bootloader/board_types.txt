@@ -252,6 +252,7 @@ AP_HW_SPEEDYBEEF4V4                  1136
 AP_HW_FlywooF405Pro                  1137
 AP_HW_TMOTORH7                       1138
 AP_HW_MICOAIR405                     1139
+AP_HW_PixPilot-C3                    1140
 AP_HW_YJUAV_A6SE_H743                1141
 
 AP_HW_ESP32_PERIPH                   1205

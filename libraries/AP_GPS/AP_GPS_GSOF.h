@@ -92,6 +92,7 @@ private:
     uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
 
     bool validate_baud(const uint8_t baud) const WARN_IF_UNUSED;
+    bool validate_com_port(const uint8_t com_port) const WARN_IF_UNUSED;
 
     struct Msg_Parser
     {

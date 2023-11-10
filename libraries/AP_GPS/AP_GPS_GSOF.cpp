@@ -32,6 +32,7 @@
 #include "AP_GPS_GSOF.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_GPS_GSOF_ENABLED
 
@@ -64,13 +65,18 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    // const auto baud = gps._gsof_baud[state.instance].get();
+    constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
+    gps._com_port[state.instance].set_default(default_com_port);
+    const auto com_port = gps._com_port[state.instance].get();
+    if (!validate_com_port(com_port)) {
+        // The user parameter for COM port is not a valid GSOF port
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
+        return;
+    }
     const HW_Baud baud = HW_Baud::BAUD115K;
-    const auto com_port = HW_Port::COM2;
     // Start by disabling output during config
-    [[maybe_unused]] const auto output_disabled = disableOutput(com_port);
-    is_baud_configured = requestBaud(com_port, baud);
-
+    [[maybe_unused]] const auto output_disabled = disableOutput(static_cast<HW_Port>(com_port));
+    is_baud_configured = requestBaud(static_cast<HW_Port>(com_port), baud);
 
     const uint32_t now = AP_HAL::millis();
     // TODO this is magic offset, fix it.
@@ -90,8 +96,13 @@ AP_GPS_GSOF::read(void)
 
     bool gsof_configured = true;
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
+        const auto com_port = gps._com_port[state.instance].get();
+        if (!validate_com_port(com_port)) {
+            // The user parameter for COM port is not a valid GSOF port
+            return false;
+        }
         if (now > gsofmsg_time) {
-            gsof_configured &= requestGSOF(gsofmsgreq[gsofmsgreq_index], HW_Port::COM2, Output_Rate::FREQ_10_HZ);
+            gsof_configured &= requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
             gsofmsg_time = now + 110;
             gsofmsgreq_index++;
         }
@@ -487,6 +498,16 @@ AP_GPS_GSOF::validate_baud(const uint8_t baud) const {
     switch(baud) {
         case static_cast<uint8_t>(HW_Baud::BAUD230K):
         case static_cast<uint8_t>(HW_Baud::BAUD115K):
+            return true;
+        default:
+            return false;
+    }
+}
+bool
+AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
+    switch(com_port) {
+        case static_cast<uint8_t>(HW_Port::COM1):
+        case static_cast<uint8_t>(HW_Port::COM2):
             return true;
         default:
             return false;

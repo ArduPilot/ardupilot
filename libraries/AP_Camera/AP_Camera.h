@@ -100,6 +100,9 @@ public:
     void send_camera_fov_status(mavlink_channel_t chan);
 #endif
 
+    // send camera capture status message to GCS
+    void send_camera_capture_status(mavlink_channel_t chan);
+
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
     void configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
