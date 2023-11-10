@@ -64,11 +64,13 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     
     msg.state = Msg_Parser::State::STARTTX;
 
-    const auto baud = gps._gsof_baud[state.instance].get();
-    if (!validate_baud(baud)) {
-        return;
-    }
-    is_baud_configured = requestBaud(HW_Port::COM2, static_cast<HW_Baud>(baud));
+    // const auto baud = gps._gsof_baud[state.instance].get();
+    const HW_Baud baud = HW_Baud::BAUD115K;
+    const auto com_port = HW_Port::COM2;
+    // Start by disabling output during config
+    [[maybe_unused]] const auto output_disabled = disableOutput(com_port);
+    is_baud_configured = requestBaud(com_port, baud);
+
 
     const uint32_t now = AP_HAL::millis();
     // TODO this is magic offset, fix it.
@@ -170,54 +172,110 @@ AP_GPS_GSOF::parse(const uint8_t temp)
 bool
 AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
 {
-    // Debug("Requesting baud on port %u", portIndex);
-    if (!port->is_initialized()) {
-        // Debug("Port not initialized");
-        return false;
-    }
-
-    // Clear input buffer before doing configuration
-     if (!port->discard_input()) {
-        // Debug("Failed to discard input");
-        return false;
-    };
+    Debug("Requesting baud on port %u", (uint8_t)portIndex);
+    // GSOF is supported on the following bauds:
+    // 2400, 4800, 9600, 19200, 38400, 115200, 230400
 
     // This packet is not documented in the API.
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
                           0x02, 0x04, static_cast<uint8_t>(portIndex), static_cast<uint8_t>(baudRate), 0x00,0x00, // serial port baud format
                           0x00,0x03
-                         }; // checksum
+                         };
 
-    buffer[4] = packetcount++;
+    populateChecksum(buffer, sizeof(buffer));
+    populateOutgoingTransNumber(buffer);
+    
+    return requestResponse(buffer, sizeof(buffer));
+}
 
-    uint8_t checksum = 0;
-    for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
-        checksum += buffer[a];
+bool
+AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz)
+{
+    Debug("Requesting gsof #%u on port %u", messageType, (uint8_t)portIndex);
+
+    // This packet is not documented in the API.
+    uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
+                          0x03,0x00,0x01,0x00, // file control information block
+                          0x07,0x06,0x0a,static_cast<uint8_t>(portIndex),static_cast<uint8_t>(rateHz),0x00,messageType,0x00, // output message record
+                          0x00,0x03
+                         };
+
+    populateChecksum(buffer, sizeof(buffer));
+    populateOutgoingTransNumber(buffer);
+    
+    return requestResponse(buffer, sizeof(buffer));
+}
+
+bool
+AP_GPS_GSOF::disableOutput(const HW_Port portIndex) {
+    switch(portIndex) {
+    case HW_Port::COM1:
+    {
+        constexpr uint8_t cmd[8] = {
+            STX,
+            0x00,
+            0x51,
+            0x02,
+            0x0A,
+            0x01,
+            0x5E,
+            ETX
+        };
+        // The checksum is hard-coded.
+        // No need to calculate it.
+        return requestResponse(cmd, sizeof(cmd));
     }
 
-    buffer[17] = checksum;
+    case HW_Port::COM2:
+    {
+        constexpr uint8_t cmd[8] = {
+            STX,
+            0x00,
+            0x51,
+            0x02,
+            0x0A,
+            0x02,
+            0x5F,
+            ETX
+        };
+        return requestResponse(cmd, sizeof(cmd));
+    }
+    }
+    return false;
+}
 
-    port->write((const uint8_t*)buffer, sizeof(buffer));
+bool
+AP_GPS_GSOF::requestResponse(const uint8_t* buf, const uint8_t len) {
+    if (!port->is_initialized()) {
+        Debug("Port not initialized");
+        return false;
+    }
 
-    // TODO add a read for ACK = 0x06. 
-    // If no ack, retry. It should take 500uS at 115k baud.
-    // GSOF is supported on the following bauds:
-    // 2400, 4800, 9600, 19200, 38400, 115200, 230400
-    
-    // Expect either an ACK or NACK
+    // Clear input buffer before doing configuration
+     if (!port->discard_input()) {
+        Debug("Failed to discard input");
+        return false;
+    };
+
+    port->write((const uint8_t*)buf, len);
+
+    // Expect either an ACK or NACK.
+    // TODO: If no ack, support retry logic.
+    // It should take 500uS at 115k baud.
+
     constexpr uint16_t expected_bytes = 1;
     // TODO use wait_timeout instead like so.
-    if (!port->wait_timeout(expected_bytes, configuration_wait_time_ms)) {
-        // Debug("wait_timeout failed. TODO this is not implemented in the HAL. Ignoring failure.");
-        // return false;
-    }
+    // if (!port->wait_timeout(expected_bytes, configuration_wait_time_ms)) {
+    //     // Debug("wait_timeout failed. TODO this is not implemented in the HAL. Ignoring failure.");
+    //     // return false;
+    // }
     const auto start_wait = AP_HAL::millis();
     auto now = AP_HAL::millis();
     while (now  - start_wait <= configuration_wait_time_ms) {
-        Debug("Waiting for response");
+        // Debug("Waiting for response");
         if (port->available() >= expected_bytes) {
-            Debug("Got at least expected response");
+            // Debug("Got at least expected response");
             break;
         }
         constexpr uint16_t delay_ms = 1;
@@ -234,83 +292,36 @@ AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
     uint8_t resp_code;
     if(port->read(resp_code) && resp_code == ACK) {
         Debug("Got ack");
-        // return true;
+        return true;
     } else {
-        Debug("Didn't get ACK");
-        // return false;
+        Debug("Didn't get ACK, got 0x%02x", resp_code);
+        return false;
     }
-    // regardless of results, assume it works.
-    return true;
 }
 
 void
-AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz)
+AP_GPS_GSOF::populateChecksum(uint8_t* buf, const uint8_t len)
 {
-    // Debug("Requesting gsof #%u on port %u", messagetype, portIndex);
-    if (!port->is_initialized()) {
-        // Debug("Port not initialized");
-        return false;
+    // The buffer is of size len.
+    // If ETX is not element buf[len-1], the buf/len numbers are wrong.
+    // Same problem if the len is too small for a valid packet.
+    if (len <= 3 || buf[len - 1] != ETX) {
+        return;
     }
 
-    // Clear input buffer before doing configuration
-     if (!port->discard_input()) {
-        // Debug("Failed to discard input");
-        return false;
-    };
-
-    // This packet is not documented in the API.
-    uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
-                          0x03,0x00,0x01,0x00, // file control information block
-                          0x07,0x06,0x0a,static_cast<uint8_t>(portIndex),static_cast<uint8_t>(rateHz),0x00,messageType,0x00, // output message record
-                          0x00,0x03
-                         }; // checksum
-
-    buffer[4] = packetcount++;
-
+    // The checksum field is at buf[len - 2]
     uint8_t checksum = 0;
-    for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
-        checksum += buffer[a];
+    const uint8_t payload_size = len - 2;
+    for (uint8_t i = 1; i < payload_size; i++) {
+        checksum += buf[i];
     }
 
-    buffer[19] = checksum;
+    buf[len -2] = checksum;
+}
 
-    port->write((const uint8_t*)buffer, sizeof(buffer));
-
-    // Expect either an ACK or NACK
-    constexpr uint16_t expected_bytes = 1;
-    // TODO use wait_timeout instead like so.
-    if (!port->wait_timeout(expected_bytes, configuration_wait_time_ms)) {
-        // Debug("wait_timeout failed. TODO this is not implemented in the HAL. Ignoring failure.");
-        // return false;
-    }
-    const auto start_wait = AP_HAL::millis();
-    auto now = AP_HAL::millis();
-    while (now  - start_wait <= configuration_wait_time_ms) {
-        // Debug("Waiting for response");
-        if (port->available() >= expected_bytes) {
-            // Debug("Got at least expected response");
-            break;
-        }
-        constexpr uint16_t delay_ms = 1;
-        hal.scheduler->delay(delay_ms);
-        now = AP_HAL::millis();
-    }
-
-    const auto available_bytes = port->available();
-    if (available_bytes != expected_bytes) {
-        // Debug("Didn't get expected bytes, got %u bytes back", available_bytes);
-        return false;
-    }
-
-    uint8_t resp_code;
-    if(port->read(resp_code) && resp_code == ACK) {
-        Debug("Got ack");
-        // return true;
-    } else {
-        Debug("Didn't get ACK");
-        // return false;
-    }
-    return true;
+void
+AP_GPS_GSOF::populateOutgoingTransNumber(uint8_t* buf) {
+   buf[4] = packetOutboundTransNumber++; 
 }
 
 double
