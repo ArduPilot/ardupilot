@@ -30,8 +30,7 @@
 
 #include <stddef.h>
 
-class Bip_Buffer
-{
+class Bip_Buffer {
 private:
     uint8_t* _pBuffer; // Pointer to the data buffer
     uint16_t _ixa; // Starting index of region A

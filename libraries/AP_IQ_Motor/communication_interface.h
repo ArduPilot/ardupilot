@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-class Communication_Interface{
+class Communication_Interface {
   private:
   
   public:
