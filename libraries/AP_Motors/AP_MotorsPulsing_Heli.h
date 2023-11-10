@@ -56,7 +56,6 @@ protected:
     float           _roll_action;
 
     AP_AHRS_View    *_ahrs_view;
-    AP_RPM          *rpm;
 
     AP_Int8         _yaw_dir;
     AP_Float        _rotor_yaw_ff;
