@@ -19,14 +19,14 @@ const AP_Param::GroupInfo AP_IQ_Motor::var_info[] = {
 
     // @Param: CTRL_LEN
     // @DisplayName: Number of Motors
-    // @Description: Sets how many motors will be sent throttle commands starting from 0 and being contiguous
+    // @Description: This sets how many motors will be sent throttle commands starting from 0 and being contiguous
     // @Range: 0 16
     // @User: Advanced
     AP_GROUPINFO("LEN", 1, AP_IQ_Motor, _broadcast_length, 0),
 
     // @Param: TELEM_MASK
     // @DisplayName: Motor Telemetry Bitmask
-    // @Description: Sets which motors are sending data back to the flight controller
+    // @Description: This sets which motors are sending data back to the flight controller
     // @Range: 0 65535
     // @User: Advanced
     AP_GROUPINFO("TELEM", 2, AP_IQ_Motor, _telemetry_bitmask, 0),
@@ -48,10 +48,10 @@ void AP_IQ_Motor::init(void)
     }
 
     //Try to find an instance of a serial peripheral configured to use the IQ protocol
-    _iq_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_IQ, 0);
+    iq_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_IQ, 0);
 
     // check if the uart exists
-    if (_iq_uart) {
+    if (iq_uart) {
         //Grab the number of IFCI values the user wants to use
         const int8_t length = _broadcast_length.get();
 
@@ -107,7 +107,7 @@ void AP_IQ_Motor::update(void)
     }
 
     //If we are ever unable to find an instance of our communication protocol, stop trying to update
-    if (_iq_uart == nullptr) {
+    if (iq_uart == nullptr) {
         return;
     }
 
@@ -145,9 +145,9 @@ void AP_IQ_Motor::update_motor_outputs()
     } else {
         //If we're not armed, send a broadcast coast command
         uint8_t tx_msg[2]; // must fit outgoing message
-        tx_msg[0] = _kSubCtrlCoast;
-        tx_msg[1] = (_kBroadcastID<<2) | kSet; // high six | low two
-        _com.SendPacket(_kTypePropellerMotorControl, tx_msg, 2);
+        tx_msg[0] = kSubCtrlCoast;
+        tx_msg[1] = (kBroadcastID<<2) | kSet; // high six | low two
+        _com.SendPacket(kTypePropellerMotorControl, tx_msg, 2);
     }
 }
 
@@ -223,10 +223,10 @@ void AP_IQ_Motor::find_next_telem_motor()
 void AP_IQ_Motor::read()
 {
     //Check if there's data for us to read from serial
-    _ser_length = _iq_uart->available();
+    _ser_length = iq_uart->available();
     if (_ser_length > 0) {
         //If there is data, read it and process it
-        _ser_length = _iq_uart->read(_rx_buf, _ser_length);
+        _ser_length = iq_uart->read(_rx_buf, _ser_length);
 
         //Pass the read data into the IQ data parser to find proper packets of data
         _com.SetRxBytes(_rx_buf, _ser_length);
@@ -256,7 +256,7 @@ void AP_IQ_Motor::write()
 
     //While there's data to send, keep sending it
     while (_com.GetTxBytes(_tx_buf, _ser_length)) {
-        _iq_uart->write(_tx_buf, _ser_length);
+        iq_uart->write(_tx_buf, _ser_length);
     }
 
     _writing = false;

@@ -38,7 +38,7 @@ protected:
     uint32_t        _last_update;
 
     AP_AHRS_View    *_ahrs_view;
-    AP_RPM          *_rpm;
+    AP_RPM          *rpm;
     
     AP_Int8         _yaw_dir;
 

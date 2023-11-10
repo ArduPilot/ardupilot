@@ -41,20 +41,21 @@ enum Access {kGet=0, kSet=1, kSave=2, kReply=3};
 
 //This is the top level, abstract, client entry. It provides the template for all entries to follow.
 //It has a type, object, and sub id to define what endpoint it belongs to, the module ID, and the location within the endpoint
-class Client_Entry_Abstract {
+class ClientEntryAbstract
+{
 public:
 
-    //Create an instance of a Client_Entry_Abstract with a type id, object id, and sub id
+    //Create an instance of a ClientEntryAbstract with a type id, object id, and sub id
     //type_idn represents the endpoint type for this entry
     //obj_idn represents the target module's module ID
     //sub_idn represents the array index of this entry in the endpoint
-    Client_Entry_Abstract(uint8_t type_idn, uint8_t obj_idn, uint8_t sub_idn):
+    ClientEntryAbstract(uint8_t type_idn, uint8_t obj_idn, uint8_t sub_idn):
         type_idn_(type_idn),
         obj_idn_(obj_idn),
         sub_idn_(sub_idn) {};
 
-    //Destructor of a Client_Entry_Abstract object
-    virtual ~Client_Entry_Abstract() {};
+    //Destructor of a ClientEntryAbstract object
+    virtual ~ClientEntryAbstract() {};
 
     //Completely virtual reply function. Must be defined by all child classes
     virtual void Reply(const uint8_t* data, uint8_t len) = 0;
@@ -67,20 +68,21 @@ public:
     const uint8_t sub_idn_;
 };
 
-//A typeless extension of the Client_Entry_Abstract class. Defines get, set, and save functions as well as the Reply function
-class Client_Entry_Void: public Client_Entry_Abstract {
+//A typeless extension of the ClientEntryAbstract class. Defines get, set, and save functions as well as the Reply function
+class ClientEntryVoid: public ClientEntryAbstract
+{
 public:
-    //Create an instance of a Client_Entry_Void with a type id, object id, and sub id
+    //Create an instance of a ClientEntryVoid with a type id, object id, and sub id
     //type_idn represents the endpoint type for this entry
     //obj_idn represents the target module's module ID
     //sub_idn represents the array index of this entry in the endpoint
-    Client_Entry_Void(uint8_t type_idn, uint8_t obj_idn, uint8_t sub_idn):
-        Client_Entry_Abstract(type_idn, obj_idn, sub_idn),
-        _is_fresh_(false)
+    ClientEntryVoid(uint8_t type_idn, uint8_t obj_idn, uint8_t sub_idn):
+        ClientEntryAbstract(type_idn, obj_idn, sub_idn),
+        is_fresh_(false)
     {};
 
-    //Use the Communication_Interface to send a get request for this entry from the flight controller to the module
-    void get(Communication_Interface &com)
+    //Use the CommunicationInterface to send a get request for this entry from the flight controller to the module
+    void get(CommunicationInterface &com)
     {
         uint8_t tx_msg[2];
         tx_msg[0] = sub_idn_;
@@ -88,8 +90,8 @@ public:
         com.SendPacket(type_idn_, tx_msg, 2);
     };
 
-    //Use the Communication_Interface to send a set command for this entry from the flight controller to the module
-    void set(Communication_Interface &com)
+    //Use the CommunicationInterface to send a set command for this entry from the flight controller to the module
+    void set(CommunicationInterface &com)
     {
         uint8_t tx_msg[2]; // must fit outgoing message
         tx_msg[0] = sub_idn_;
@@ -97,8 +99,8 @@ public:
         com.SendPacket(type_idn_, tx_msg, 2);
     }
 
-    //Use the Communication_Interface to send a save request for this entry from the flight controller to the module
-    void save(Communication_Interface &com)
+    //Use the CommunicationInterface to send a save request for this entry from the flight controller to the module
+    void save(CommunicationInterface &com)
     {
         uint8_t tx_msg[2];
         tx_msg[0] = sub_idn_;
@@ -111,48 +113,49 @@ public:
     {
         (void)data;
         if (len == 0) {
-            _is_fresh_ = true;
+            is_fresh_ = true;
         }
     };
 
-    //Return our internal _is_fresh_ bool's state
+    //Return our internal is_fresh_ bool's state
     bool IsFresh()
     {
-        return _is_fresh_;
+        return is_fresh_;
     };
 
 private:
-    bool _is_fresh_;
+    bool is_fresh_;
 };
 
 //Represents a client entry that has a known type, for example a float. This Client stores a parameter of type T,
 //that can be gotten, set, or saved.
 template <typename T>
-class ClientEntry: public Client_Entry_Abstract {
+class ClientEntry: public ClientEntryAbstract
+{
 public:
     //Create an instance of a ClientEntry with a type id, object id, sub id, and a type T through the template
     //type_idn represents the endpoint type for this entry
     //obj_idn represents the target module's module ID
     //sub_idn represents the array index of this entry in the endpoint
     ClientEntry(uint8_t type_idn, uint8_t obj_idn, uint8_t sub_idn):
-        Client_Entry_Abstract(type_idn, obj_idn, sub_idn),
-        _is_fresh_(false),
-        _value_(),
-        _unfulfilled_(0)
+        ClientEntryAbstract(type_idn, obj_idn, sub_idn),
+        is_fresh_(false),
+        value_(),
+        unfulfilled_(0)
     {};
 
-    //Use the Communication_Interface to send a get request for this entry from the flight controller to the module
-    void get(Communication_Interface &com)
+    //Use the CommunicationInterface to send a get request for this entry from the flight controller to the module
+    void get(CommunicationInterface &com)
     {
         uint8_t tx_msg[2];
         tx_msg[0] = sub_idn_;
         tx_msg[1] = (obj_idn_<<2) | kGet; // high six | low two
         com.SendPacket(type_idn_, tx_msg, 2);
-        _unfulfilled_++;
+        unfulfilled_++;
     };
 
-    //Use the Communication_Interface to send a set request for this entry from the flight controller to the module
-    void set(Communication_Interface &com, T value)
+    //Use the CommunicationInterface to send a set request for this entry from the flight controller to the module
+    void set(CommunicationInterface &com, T value)
     {
         uint8_t tx_msg[2+sizeof(T)]; // must fit outgoing message
         tx_msg[0] = sub_idn_;
@@ -161,8 +164,8 @@ public:
         com.SendPacket(type_idn_, tx_msg, 2+sizeof(T));
     }
 
-    //Use the Communication_Interface to send a save request for this entry from the flight controller to the module
-    void save(Communication_Interface &com)
+    //Use the CommunicationInterface to send a save request for this entry from the flight controller to the module
+    void save(CommunicationInterface &com)
     {
         uint8_t tx_msg[2];
         tx_msg[0] = sub_idn_;
@@ -170,45 +173,45 @@ public:
         com.SendPacket(type_idn_, tx_msg, 2);
     }
 
-    //Use the Communication_Interface to send a reply for this entry from the flight controller to the module
+    //Use the CommunicationInterface to send a reply for this entry from the flight controller to the module
     void Reply(const uint8_t* data, uint8_t len) override
     {
         if (len == sizeof(T)) {
-            memcpy(&_value_, data, sizeof(T));
-            _is_fresh_ = true;
-            _unfulfilled_--;
+            memcpy(&value_, data, sizeof(T));
+            is_fresh_ = true;
+            unfulfilled_--;
         }
     };
 
-    //Return the value stored in this entry, and set _is_fresh_ to false
+    //Return the value stored in this entry, and set is_fresh_ to false
     T get_reply()
     {
-        _is_fresh_ = false;
-        return _value_;
+        is_fresh_ = false;
+        return value_;
     };
 
-    //Return our internal _is_fresh_ bool's state
+    //Return our internal is_fresh_ bool's state
     bool IsFresh()
     {
-        return _is_fresh_;
+        return is_fresh_;
     };
 
     //Get the number of uncompleted get requests
     int Unfulfilled()
     {
-        return _unfulfilled_;
+        return unfulfilled_;
     };
 
     //Reset the number of uncompleted get requests
     void ResetUnfulfilled()
     {
-        _unfulfilled_ = 0;
+        unfulfilled_ = 0;
     };
 
 private:
-    bool _is_fresh_;
-    int _unfulfilled_;
-    T _value_;
+    bool is_fresh_;
+    int unfulfilled_;
+    T value_;
 };
 
 //A client holds client entries. All clients have a type and an object id that make them unique to each
@@ -235,10 +238,10 @@ public:
 
 //Definition of a function used to read data from a recveived message, and find who the message is for. Must be defined by each client.
 int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
-                Client_Entry_Abstract** entry_array, uint8_t entry_length);
+                ClientEntryAbstract** entry_array, uint8_t entry_length);
 
 //Definition of a function used to read data from a recveived message, and find who the message is for. Must be defined by each client.
 int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
-                Client_Entry_Abstract& entry);
+                ClientEntryAbstract& entry);
 
 #endif // CLIENT_COMMUNICATION_H
