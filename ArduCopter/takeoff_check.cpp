@@ -29,6 +29,12 @@ void Copter::takeoff_check()
 
     // check ESCs are sending RPM at expected level
     uint32_t motor_mask = motors->get_motor_mask();
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // In 4.4 and earlier ESC telemetry is always indexed from 1 for servo channels 9+
+        motor_mask >>= 8;
+    }
+#endif
     const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
     const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, g2.takeoff_rpm_min);
 
