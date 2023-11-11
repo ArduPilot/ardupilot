@@ -1002,6 +1002,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PROFILED:
     {
         uint8_t bits_per_pixel = 24;
+        uint32_t bit_width = NEOP_BIT_WIDTH_TICKS;
         bool active_high = true;
 
         if (!start_led_thread()) {
@@ -1011,6 +1012,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 
         if (group.current_mode == MODE_PROFILED) {
             bits_per_pixel = 25;
+            bit_width = PROFI_BIT_WIDTH_TICKS;
             active_high = false;
         }
 
@@ -1025,7 +1027,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         // calculate min time between pulses taking into account the DMAR parallelism
         const uint32_t pulse_time_us = 1000000UL * bit_length / rate;
 
-        if (!setup_group_DMA(group, rate, NEOP_BIT_WIDTH_TICKS, active_high, buffer_length, pulse_time_us, false)) {
+        if (!setup_group_DMA(group, rate, bit_width, active_high, buffer_length, pulse_time_us, false)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
@@ -1608,7 +1610,8 @@ bool RCOutput::serial_led_send(pwm_group &group)
     }
 
 #ifndef DISABLE_DSHOT
-    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)
+        || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
