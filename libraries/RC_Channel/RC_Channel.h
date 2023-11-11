@@ -17,7 +17,6 @@
 /// @brief	Object managing one RC channel
 class RC_Channel {
 public:
-    friend class SRV_Channels;
     friend class RC_Channels;
     // Constructor
     RC_Channel(void);

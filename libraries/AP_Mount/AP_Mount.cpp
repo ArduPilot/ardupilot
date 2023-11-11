@@ -380,7 +380,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_co
     return backend->handle_command_do_gimbal_manager_configure(packet, msg);
 }
 
-void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
+void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) {
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
 
@@ -445,7 +445,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     }
 }
 
-void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
+void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
 {
     mavlink_gimbal_manager_set_pitchyaw_t packet;
     mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
@@ -850,6 +850,16 @@ void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) co
     backend->send_camera_settings(chan);
 }
 
+// send camera capture status message to GCS
+void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_capture_status(chan);
+}
+
 // get rangefinder distance.  Returns true on success
 bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) const
 {
@@ -906,7 +916,7 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         handle_gimbal_manager_set_attitude(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW:
-        handle_command_gimbal_manager_set_pitchyaw(msg);
+        handle_gimbal_manager_set_pitchyaw(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);

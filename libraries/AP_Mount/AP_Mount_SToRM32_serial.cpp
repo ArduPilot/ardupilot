@@ -219,7 +219,7 @@ void AP_Mount_SToRM32_serial::read_incoming() {
 
     numc = _port->available();
 
-    if (numc < 0 ){
+    if (numc < 0 ) {
         return;
     }
 

@@ -890,9 +890,9 @@ void ToyMode::blink_update(void)
     // let the TX know we are recording video
     uint32_t now = AP_HAL::millis();
     if (now - last_video_ms < 1000) {
-        AP_Notify::flags.video_recording = 1;
+        AP_Notify::flags.video_recording = true;
     } else {
-        AP_Notify::flags.video_recording = 0;
+        AP_Notify::flags.video_recording = false;
     }
     
     if (red_blink_count > 0 && green_blink_count > 0) {
@@ -954,7 +954,7 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         green_blink_count = 1;
         last_video_ms = AP_HAL::millis();
         // immediately update AP_Notify recording flag
-        AP_Notify::flags.video_recording = 1;
+        AP_Notify::flags.video_recording = true;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
 #if HAL_RCINPUT_WITH_AP_RADIO
         AP_Radio *radio = AP_Radio::get_singleton();

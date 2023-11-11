@@ -64,7 +64,8 @@ void ModeAlthold::run()
     sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float yaw_input = channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim());
+    float target_yaw_rate = sub.get_pilot_desired_yaw_rate(yaw_input);
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input

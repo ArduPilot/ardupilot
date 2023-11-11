@@ -90,6 +90,6 @@ bool AP_DDS_Client::ddsSerialInit()
     if (!uxr_init_custom_transport(&serial.transport, (void*)this)) {
         return false;
     }
-    uxr_init_session(&session, &serial.transport.comm, uniqueClientKey);
+    comm = &serial.transport.comm;
     return true;
 }

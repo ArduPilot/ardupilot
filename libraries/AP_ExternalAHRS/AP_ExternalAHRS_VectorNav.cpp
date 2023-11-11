@@ -744,21 +744,21 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
     memset(&status, 0, sizeof(status));
     if (type == TYPE::VN_300) {
         if (last_pkt1 && last_pkt2) {
-            status.flags.initalized = 1;
+            status.flags.initalized = true;
         }
         if (healthy() && last_pkt2) {
-            status.flags.attitude = 1;
-            status.flags.vert_vel = 1;
-            status.flags.vert_pos = 1;
+            status.flags.attitude = true;
+            status.flags.vert_vel = true;
+            status.flags.vert_pos = true;
 
             const struct VN_packet2 &pkt2 = *last_pkt2;
             if (pkt2.GPS1Fix >= 3) {
-                status.flags.horiz_vel = 1;
-                status.flags.horiz_pos_rel = 1;
-                status.flags.horiz_pos_abs = 1;
-                status.flags.pred_horiz_pos_rel = 1;
-                status.flags.pred_horiz_pos_abs = 1;
-                status.flags.using_gps = 1;
+                status.flags.horiz_vel = true;
+                status.flags.horiz_pos_rel = true;
+                status.flags.horiz_pos_abs = true;
+                status.flags.pred_horiz_pos_rel = true;
+                status.flags.pred_horiz_pos_abs = true;
+                status.flags.using_gps = true;
             }
         }
     } else {

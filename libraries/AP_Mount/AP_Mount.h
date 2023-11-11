@@ -256,6 +256,9 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
 
+    // send camera capture status message to GCS
+    void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
+
     //
     // rangefinder
     //
@@ -296,7 +299,7 @@ private:
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
-    void handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
+    void handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);

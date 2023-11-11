@@ -1,9 +1,5 @@
 include ../f103-periph/hwdef.inc
 
-
-undef  HAL_COMPASS_MAX_SENSORS 1
-define HAL_COMPASS_MAX_SENSORS 2
-
 define HAL_AIRSPEED_BUS_DEFAULT 0
 
 # 15 ASP5033 sensor by default

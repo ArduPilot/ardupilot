@@ -106,7 +106,7 @@ void AP_Mount_Backend::clear_roi_target()
     _roi_target_set = false;
 
     // reset the mode if in GPS tracking mode
-    if (_mode == MAV_MOUNT_MODE_GPS_POINT) {
+    if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
     }

@@ -259,7 +259,7 @@ void AP_Mount_Alexmos::read_incoming()
 
     numc = _port->available();
 
-    if (numc < 0 ){
+    if (numc < 0 ) {
         return;
     }
 

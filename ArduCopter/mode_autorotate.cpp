@@ -48,14 +48,14 @@ bool ModeAutorotate::init(bool ignore_checks)
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
 
      // Set all intial flags to on
-    _flags.entry_initial = 1;
-    _flags.ss_glide_initial = 1;
-    _flags.flare_initial = 1;
-    _flags.touch_down_initial = 1;
-    _flags.level_initial = 1;
-    _flags.break_initial = 1;
-    _flags.straight_ahead_initial = 1;
-    _flags.bail_out_initial = 1;
+    _flags.entry_initial = true;
+    _flags.ss_glide_initial = true;
+    _flags.flare_initial = true;
+    _flags.touch_down_initial = true;
+    _flags.level_initial = true;
+    _flags.break_initial = true;
+    _flags.straight_ahead_initial = true;
+    _flags.bail_out_initial = true;
     _msg_flags.bad_rpm = true;
 
     // Setting default starting switches
@@ -114,7 +114,7 @@ void ModeAutorotate::run()
         case Autorotation_Phase::ENTRY:
         {
             // Entry phase functions to be run only once
-            if (_flags.entry_initial == 1) {
+            if (_flags.entry_initial == true) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                     gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
@@ -130,7 +130,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Prevent running the initial entry functions again
-                _flags.entry_initial = 0;
+                _flags.entry_initial = false;
 
             }
 
@@ -160,7 +160,7 @@ void ModeAutorotate::run()
         case Autorotation_Phase::SS_GLIDE:
         {
             // Steady state glide functions to be run only once
-            if (_flags.ss_glide_initial == 1) {
+            if (_flags.ss_glide_initial == true) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                     gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
@@ -177,7 +177,7 @@ void ModeAutorotate::run()
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again
-                _flags.ss_glide_initial = 0;
+                _flags.ss_glide_initial = false;
             }
 
             // Run airspeed/attitude controller
@@ -202,7 +202,7 @@ void ModeAutorotate::run()
 
         case Autorotation_Phase::BAIL_OUT:
         {
-        if (_flags.bail_out_initial == 1) {
+        if (_flags.bail_out_initial == true) {
                 // Functions and settings to be done once are done here.
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -243,7 +243,7 @@ void ModeAutorotate::run()
 
                 motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-                _flags.bail_out_initial = 0;
+                _flags.bail_out_initial = false;
             }
 
         if ((now - _bail_time_start_ms)/1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
