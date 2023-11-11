@@ -176,7 +176,7 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     auto &sm = AP::serialmanager();
     uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
     if (!uart) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS no UART");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VectorNav ExternalAHRS no UART");
         return;
     }
     baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
@@ -188,13 +188,13 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     last_pkt2 = new VN_packet2;
 
     if (!pktbuf || !last_pkt1 || !last_pkt2) {
-        AP_BoardConfig::allocation_error("ExternalAHRS");
+        AP_BoardConfig::allocation_error("VectorNav ExternalAHRS");
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_VectorNav::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
-        AP_HAL::panic("Failed to start ExternalAHRS update thread");
+        AP_HAL::panic("VectorNav Failed to start ExternalAHRS update thread");
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VectorNav ExternalAHRS initialised");
 }
 
 /*
