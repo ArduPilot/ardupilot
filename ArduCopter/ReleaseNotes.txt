@@ -232,7 +232,6 @@ Changes from 4.3.6
         - Touchdown detection threshold is configurable (see PLDP_THRESH)
     - Position controller angle max adjusted inflight with CH6 Tuning knob (set TUNE=59)
     - Surface tracking time constant allows tuning response (see SURFTRAK_TC)
-    - Takeoff throttle max is configurable (see TKOFF_TH_MAX)
     - Throttle-Gain boost increases attitude control gains when throttle high (see ATC_THR_G_BOOST)
     - Waypoint navigation cornering acceleration is configurable (see WPNAV_ACCEL_C)
     - WeatherVane into the wind in Auto and Guided modes (see WVANE_ENABLE)
