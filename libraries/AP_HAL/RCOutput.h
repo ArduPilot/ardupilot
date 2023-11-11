@@ -406,6 +406,7 @@ public:
     // neopixel does not use pulse widths at all
     static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
     static constexpr uint32_t PROFI_BIT_1_TICKS = 14;
+    static constexpr uint32_t PROFI_BIT_WIDTH_TICKS = 20;
 
     // suitably long LED output period to support high LED counts
     static constexpr uint32_t LED_OUTPUT_PERIOD_US = 10000;
