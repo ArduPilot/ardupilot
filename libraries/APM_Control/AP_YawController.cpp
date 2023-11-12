@@ -344,6 +344,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.DFF *= deg_scale;
     pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied
@@ -351,7 +352,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.actual = degrees(rate_z);
 
     // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
 
     // remember the last output to trigger the I limit
     _last_out = out;
