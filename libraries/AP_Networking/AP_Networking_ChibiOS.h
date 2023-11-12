@@ -2,7 +2,7 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
 #include "AP_Networking_backend.h"
 
 class AP_Networking_ChibiOS : public AP_Networking_backend
@@ -25,5 +25,5 @@ private:
     uint8_t macaddr[6];
 };
 
-#endif // AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif // AP_NETWORKING_BACKEND_CHIBIOS
 

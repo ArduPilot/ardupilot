@@ -1,11 +1,9 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
 
-#include "AP_Networking.h"
 #include "AP_Networking_ChibiOS.h"
-#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <lwipthread.h>
@@ -174,5 +172,5 @@ int32_t AP_Networking_ChibiOS::send_udp(struct udp_pcb *pcb, const ip4_addr_t &i
     return err == ERR_OK ? data_len : err;
 }
 
-#endif // AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif // AP_NETWORKING_BACKEND_CHIBIOS
 
