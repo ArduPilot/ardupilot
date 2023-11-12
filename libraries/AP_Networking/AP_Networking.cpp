@@ -4,7 +4,7 @@
 #if AP_NETWORKING_ENABLED
 
 #include "AP_Networking.h"
-#include "AP_Networking_backend.h"
+#include "AP_Networking_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
 

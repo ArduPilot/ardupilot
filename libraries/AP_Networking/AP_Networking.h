@@ -7,20 +7,20 @@
 #include <AP_Param/AP_Param.h>
 
 #include "AP_Networking_address.h"
-#include "AP_Networking_backend.h"
+#include "AP_Networking_Backend.h"
 
 /*
   Note! all uint32_t IPv4 addresses are in host byte order
 */
 
 // declare backend classes
-class AP_Networking_backend;
+class AP_Networking_Backend;
 class AP_Networking_ChibiOS;
 
 class AP_Networking
 {
 public:
-    friend class AP_Networking_backend;
+    friend class AP_Networking_Backend;
     friend class AP_Networking_ChibiOS;
 
     AP_Networking();
@@ -167,7 +167,7 @@ private:
         AP_Int32 options;
     } param;
 
-    AP_Networking_backend *backend;
+    AP_Networking_Backend *backend;
 
     HAL_Semaphore sem;
 

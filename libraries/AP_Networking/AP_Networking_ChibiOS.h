@@ -3,12 +3,12 @@
 #include "AP_Networking_Config.h"
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
-#include "AP_Networking_backend.h"
+#include "AP_Networking_Backend.h"
 
-class AP_Networking_ChibiOS : public AP_Networking_backend
+class AP_Networking_ChibiOS : public AP_Networking_Backend
 {
 public:
-    using AP_Networking_backend::AP_Networking_backend;
+    using AP_Networking_Backend::AP_Networking_Backend;
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Networking_ChibiOS);
