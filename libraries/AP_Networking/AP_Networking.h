@@ -4,7 +4,6 @@
 #include "AP_Networking_Config.h"
 
 #if AP_NETWORKING_ENABLED
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
 #include "AP_Networking_address.h"
@@ -14,9 +13,14 @@
   Note! all uint32_t IPv4 addresses are in host byte order
 */
 
+// declare backend classes
+class AP_Networking_backend;
+class AP_Networking_ChibiOS;
+
 class AP_Networking
 {
 public:
+    friend class AP_Networking_backend;
     friend class AP_Networking_ChibiOS;
 
     AP_Networking();
@@ -54,10 +58,7 @@ public:
     }
 
     // returns the 32bit value of the active IP address that is currently in use
-    uint32_t get_ip_active() const
-    {
-        return backend?backend->activeSettings.ip:0;
-    }
+    uint32_t get_ip_active() const;
 
     // returns the 32bit value of the user-parameter static IP address
     uint32_t get_ip_param() const
@@ -81,10 +82,7 @@ public:
     }
 
     // returns the 32bit value of the active Netmask that is currently in use
-    uint32_t get_netmask_active() const
-    {
-        return backend?backend->activeSettings.nm:0;
-    }
+    uint32_t get_netmask_active() const;
 
     // returns the 32bit value of the of the user-parameter static Netmask
     uint32_t get_netmask_param() const
@@ -113,10 +111,7 @@ public:
         param.netmask.set(convert_netmask_ip_to_bitcount(nm));
     }
 
-    uint32_t get_gateway_active() const
-    {
-        return backend?backend->activeSettings.gw:0;
-    }
+    uint32_t get_gateway_active() const;
 
     uint32_t get_gateway_param() const
     {

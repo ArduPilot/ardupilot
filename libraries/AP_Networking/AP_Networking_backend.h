@@ -4,6 +4,8 @@
 
 #if AP_NETWORKING_ENABLED
 
+#include "AP_Networking.h"
+
 class AP_Networking;
 
 class AP_Networking_backend

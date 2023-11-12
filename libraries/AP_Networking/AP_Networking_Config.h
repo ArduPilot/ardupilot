@@ -4,7 +4,24 @@
 #define AP_NETWORKING_ENABLED 0
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#ifndef AP_NETWORKING_BACKEND_DEFAULT_ENABLED
+#define AP_NETWORKING_BACKEND_DEFAULT_ENABLED AP_NETWORKING_ENABLED
+#endif
+
+
+// ---------------------------
+// Backends
+// ---------------------------
+#ifndef AP_NETWORKING_BACKEND_CHIBIOS
+#define AP_NETWORKING_BACKEND_CHIBIOS AP_NETWORKING_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif
+
+#define AP_NETWORKING_SOCKETS_ENABLED (HAL_OS_SOCKETS || AP_NETWORKING_BACKEND_CHIBIOS)
+
+// ---------------------------
+// IP Features
+// ---------------------------
+#if AP_NETWORKING_BACKEND_CHIBIOS
 #define AP_NETWORKING_DHCP_AVAILABLE    LWIP_DHCP
 #else
 #define AP_NETWORKING_DHCP_AVAILABLE    1 // for non-ChibiOS, assume it's available
