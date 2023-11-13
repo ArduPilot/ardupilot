@@ -22,6 +22,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_EFI_ThrottleLinearisation.h"
 
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
@@ -96,7 +97,9 @@ public:
 #if AP_EFI_SCRIPTING_ENABLED
         SCRIPTING  = 7,
 #endif
-        // Hirth      = 8 /* Reserved for future implementation */
+#if AP_EFI_SERIAL_HIRTH_ENABLED
+        Hirth      = 8, 
+#endif
 		MAV = 9,
     };
 
@@ -122,6 +125,10 @@ protected:
     AP_Float ecu_fuel_density;
 
     EFI_State state;
+
+#if AP_EFI_THROTTLE_LINEARISATION_ENABLED
+    AP_EFI_ThrLin throttle_linearisation;
+#endif
 
 private:
     // Front End Parameters
