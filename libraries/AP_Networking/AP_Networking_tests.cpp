@@ -54,7 +54,7 @@ void AP_Networking::test_UDP_client(void)
     while (true) {
         hal.scheduler->delay(100);
         char *s = nullptr;
-        asprintf(&s, "hello %u", unsigned(AP_HAL::millis()));
+        IGNORE_RETURN(asprintf(&s, "hello %u", unsigned(AP_HAL::millis())));
         sock->send((const void*)s, strlen(s));
         free(s);
         uint8_t buf[128] {};
@@ -89,7 +89,7 @@ void AP_Networking::test_TCP_client(void)
     while (true) {
         hal.scheduler->delay(100);
         char *s = nullptr;
-        asprintf(&s, "hello %u", unsigned(AP_HAL::millis()));
+        IGNORE_RETURN(asprintf(&s, "hello %u", unsigned(AP_HAL::millis())));
         sock->send((const void*)s, strlen(s));
         free(s);
         uint8_t buf[128] {};
