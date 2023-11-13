@@ -143,34 +143,5 @@ void AP_Networking_ChibiOS::update()
     }
 }
 
-/*
-  send a UDP packet
- */
-int32_t AP_Networking_ChibiOS::send_udp(struct udp_pcb *pcb, const ip4_addr_t &ip4_addr, const uint16_t port, const uint8_t* data, uint16_t data_len)
-{
-    if (pcb == nullptr) {
-        return ERR_ARG;
-    }
-
-    data_len = (data == nullptr) ? 0 : data_len;
-
-    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, data_len, PBUF_RAM);
-    if (p == nullptr) {
-        return ERR_MEM;
-    }
-
-    ip_addr_t dst;
-    ip_addr_copy_from_ip4(dst, ip4_addr);
-
-    if (data_len > 0) {
-        memcpy(p->payload, data, data_len);
-    }
-
-    const err_t err = udp_sendto(pcb, p, &dst, port);
-    pbuf_free(p);
-
-    return err == ERR_OK ? data_len : err;
-}
-
 #endif // AP_NETWORKING_BACKEND_CHIBIOS
 
