@@ -64,6 +64,10 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
+
+    // @Group: TEST_IP
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(param.test_ipaddr, "TEST_IP", 8,  AP_Networking, AP_Networking_IPV4),
 #endif
 
     AP_GROUPEND
