@@ -102,8 +102,8 @@ void AP_MotorsPulsing_Coax::output_to_motors()
             rc_write_angle(AP_MOTORS_MOT_4, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
             rc_write_angle(AP_MOTORS_MOT_5, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
             rc_write_angle(AP_MOTORS_MOT_6, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_bottom_thrust));
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_2], thrust_to_actuator(_top_thrust));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thr_lin.thrust_to_actuator(_bottom_thrust));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_2], thr_lin.thrust_to_actuator(_top_thrust));
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[AP_MOTORS_MOT_2]));
             break;
@@ -137,7 +137,6 @@ void AP_MotorsPulsing_Coax::output_armed_stabilizing()
 
 
     // apply voltage and air pressure compensation
-    // const float compensation_gain = get_compensation_gain();
     roll_thrust = _roll_in + _roll_in_ff;
     pitch_thrust = _pitch_in + _pitch_in_ff;
     yaw_thrust = _yaw_in + _yaw_in_ff;

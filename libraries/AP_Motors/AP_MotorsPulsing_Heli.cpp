@@ -109,8 +109,8 @@ void AP_MotorsPulsing_Heli::output_to_motors()
         // set motor output based on thrust requests
         rc_write_angle(AP_MOTORS_MOT_2, _pitch_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // pitch
         rc_write_angle(AP_MOTORS_MOT_3, _roll_action * AP_MOTORS_COAX_SERVO_INPUT_RANGE); // roll
-        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thrust_to_actuator(_rotor_thrust));
-        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], thrust_to_actuator(_tail_thrust));
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_1], thr_lin.thrust_to_actuator(_rotor_thrust));
+        set_actuator_with_slew(_actuator[AP_MOTORS_MOT_4], thr_lin.thrust_to_actuator(_tail_thrust));
         rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[AP_MOTORS_MOT_1]));
         rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[AP_MOTORS_MOT_4]));
         break;
@@ -158,7 +158,7 @@ void AP_MotorsPulsing_Heli::output_armed_stabilizing()
     float gyro_y_ff = omega_cross.y * _gyro_ff_gain;
 
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain();
+    const float compensation_gain = thr_lin.get_compensation_gain();
     roll_thrust = (_roll_in + _roll_in_ff + gyro_x_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff + gyro_y_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff + rotor_yaw_ff) * compensation_gain;
