@@ -65,6 +65,10 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @User: Standard
     AP_GROUPINFO("_PORT", 2, AP_DDS_Client, udp.port, 2019),
 
+    // @Group: _IP
+    // @Path: ../AP_Networking/AP_Networking_address.cpp
+    AP_SUBGROUPINFO(udp.ip, "_IP", 3,  AP_DDS_Client, AP_Networking_IPV4),
+
 #endif
 
     AP_GROUPEND

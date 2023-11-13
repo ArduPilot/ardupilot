@@ -31,6 +31,7 @@
 
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
+#include <AP_Networking/AP_Networking_address.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -138,7 +139,7 @@ private:
     struct {
         AP_Int32 port;
         // UDP endpoint
-        const char* ip = "127.0.0.1";
+        AP_Networking_IPV4 ip{AP_DDS_DEFAULT_UDP_IP_ADDR};
         // UDP Allocation
         uxrCustomTransport transport;
         SocketAPM *socket;
