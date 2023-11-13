@@ -9,7 +9,9 @@
 
 // 22 is enough for the rc_input page in one transfer
 #define PKT_MAX_REGS 22
-#define IOMCU_MAX_CHANNELS 16
+#define IOMCU_MAX_RC_CHANNELS 16
+#define IOMCU_MAX_CHANNELS 8
+#define IOMCU_MAX_TELEM_CHANNELS 4
 
 //#define IOMCU_DEBUG
 
@@ -136,6 +138,7 @@ struct page_reg_status {
     uint8_t err_write;
     uint8_t err_uart;
     uint8_t err_lock;
+    uint8_t spare;
 };
 
 struct page_rc_input {
@@ -143,7 +146,7 @@ struct page_rc_input {
     uint8_t flags_failsafe:1;
     uint8_t flags_rc_ok:1;
     uint8_t rc_protocol;
-    uint16_t pwm[IOMCU_MAX_CHANNELS];
+    uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     int16_t rssi;
 };
 
@@ -206,7 +209,7 @@ struct page_dshot {
 };
 
 struct page_dshot_erpm {
-    uint16_t erpm[IOMCU_MAX_CHANNELS];
+    uint16_t erpm[IOMCU_MAX_TELEM_CHANNELS];
     uint32_t update_mask;
 };
 
