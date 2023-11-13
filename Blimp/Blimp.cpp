@@ -274,6 +274,20 @@ void Blimp::rotate_NE_to_BF(Vector2f &vec)
 
 }
 
+AP_Vehicle::LandedState Blimp::get_landed_state() const
+{
+    if (ap.land_complete) {
+        return AP_Vehicle::LandedState::OnGround;
+    }
+    if (flightmode->is_landing()) {
+        return AP_Vehicle::LandedState::Landing;
+    }
+    // if (flightmode->is_taking_off()) {
+    //     return AP_Vehicle::LandedState::TakeOff;
+    // }
+    return AP_Vehicle::LandedState::InAir;
+}
+
 /*
   constructor for main Blimp class
  */

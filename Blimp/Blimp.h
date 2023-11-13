@@ -309,6 +309,7 @@ private:
     void update_altitude();
     void rotate_NE_to_BF(Vector2f &vec);
     void rotate_BF_to_NE(Vector2f &vec);
+    AP_Vehicle::LandedState get_landed_state() const override;
 
     // commands.cpp
     void update_home_from_EKF();
