@@ -78,12 +78,16 @@ void AP_IOMCU::init(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
+#if IOMCU_DEBUG_ENABLE
+    crc_is_ok = true;
+#else
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if ((!boardconfig || boardconfig->io_enabled() == 1) && !hal.util->was_watchdog_reset()) {
         check_crc();
     } else {
         crc_is_ok = true;
     }
+#endif
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
@@ -407,7 +411,7 @@ void AP_IOMCU::read_erpm()
     if (blh) {
         motor_poles = blh->get_motor_poles();
     }
-    for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS/4; i++) {
+    for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
             if (dshot_erpm.update_mask & 1U<<esc_id) {
@@ -426,15 +430,11 @@ void AP_IOMCU::read_telem()
     uint16_t *r = (uint16_t *)telem;
     iopage page = PAGE_RAW_DSHOT_TELEM_1_4;
     switch (esc_group) {
+#if IOMCU_MAX_TELEM_CHANNELS > 4
     case 1:
         page = PAGE_RAW_DSHOT_TELEM_5_8;
         break;
-    case 2:
-        page = PAGE_RAW_DSHOT_TELEM_9_12;
-        break;
-    case 3:
-        page = PAGE_RAW_DSHOT_TELEM_13_16;
-        break;
+#endif
     default:
         break;
     }
@@ -450,7 +450,7 @@ void AP_IOMCU::read_telem()
         };
         update_telem_data(esc_group * 4 + i, t, telem->types[i]);
     }
-    esc_group = (esc_group + 1) % 4;
+    esc_group = (esc_group + 1) % (IOMCU_MAX_TELEM_CHANNELS / 4);
 }
 
 /*
@@ -874,7 +874,7 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
     if (last_frame_us != uint32_t(rc_last_input_ms * 1000U)) {
-        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
+        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_RC_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
         last_frame_us = uint32_t(rc_last_input_ms * 1000U);
         return true;
