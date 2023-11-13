@@ -35,12 +35,15 @@
 
 extern const AP_HAL::HAL& hal;
 
+// Set this to 1 to enable debug messages
 #define gsof_DEBUGGING 0
 
 #if gsof_DEBUGGING
 # define Debug(fmt, args ...)                  \
 do {                                            \
-    hal.console->printf("%s:%d: " fmt "\n",     \
+    hal.console->printf("%u %s:%s:%d: " fmt "\n",     \
+                        AP_HAL::millis(),        \
+                        __FILE__,                \
                         __FUNCTION__, __LINE__, \
                         ## args);               \
     hal.scheduler->delay(1);                    \
@@ -66,10 +69,10 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
         return;
     }
-    requestBaud(static_cast<HW_Port>(com_port));
-
-    const uint32_t now = AP_HAL::millis();
-    gsofmsg_time = now + 110;
+    const HW_Baud baud = HW_Baud::BAUD115K;
+    // Start by disabling output during config
+    [[maybe_unused]] const auto output_disabled = disableOutput(static_cast<HW_Port>(com_port));
+    is_baud_configured = requestBaud(static_cast<HW_Port>(com_port), baud);
 }
 
 // Process all bytes available from the stream
@@ -77,19 +80,27 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
-    const uint32_t now = AP_HAL::millis();
+    if (!is_baud_configured) {
+        // Debug("Baud not configured, not ready to read()");
+        return false;
+    }
 
-    if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
+    bool gsof_configured = true;
+
+    static_assert(sizeof(gsofmsgreq) != 0, "gsofmsgreq is not empty");
+    while (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
         const auto com_port = gps._com_port[state.instance].get();
         if (!validate_com_port(com_port)) {
             // The user parameter for COM port is not a valid GSOF port
             return false;
         }
-        if (now > gsofmsg_time) {
-            requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
-            gsofmsg_time = now + 110;
-            gsofmsgreq_index++;
-        }
+
+        gsof_configured &= requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
+        gsofmsgreq_index++;
+    }
+    if (!gsof_configured) {
+       Debug("Failed to requestGSOF()");
+       return false;
     }
 
     bool ret = false;
@@ -160,46 +171,152 @@ AP_GPS_GSOF::parse(const uint8_t temp)
     return false;
 }
 
-void
-AP_GPS_GSOF::requestBaud(const HW_Port portindex)
+bool
+AP_GPS_GSOF::requestBaud(const HW_Port portIndex, const HW_Baud baudRate)
 {
+    Debug("Requesting baud on port %u", (uint8_t)portIndex);
+    // GSOF is supported on the following bauds:
+    // 2400, 4800, 9600, 19200, 38400, 115200, 230400
+
+    // This packet is not documented in the API.
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, static_cast<uint8_t>(portindex), 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portIndex), static_cast<uint8_t>(baudRate), 0x00,0x00, // serial port baud format
                           0x00,0x03
-                         }; // checksum
+                         };
 
-    buffer[4] = packetcount++;
+    populateOutgoingTransNumber(buffer);
+    populateChecksum(buffer, sizeof(buffer));
 
-    uint8_t checksum = 0;
-    for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
-        checksum += buffer[a];
-    }
-
-    buffer[17] = checksum;
-
-    port->write((const uint8_t*)buffer, sizeof(buffer));
+    return requestResponse(buffer, sizeof(buffer));
 }
 
-void
+bool
 AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz)
 {
+    Debug("Requesting gsof #%u on port %u", messageType, (uint8_t)portIndex);
+
+    // This packet is not documented in the API.
     uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
                           0x03,0x00,0x01,0x00, // file control information block
                           0x07,0x06,0x0a,static_cast<uint8_t>(portIndex),static_cast<uint8_t>(rateHz),0x00,messageType,0x00, // output message record
                           0x00,0x03
-                         }; // checksum
+                         };
 
-    buffer[4] = packetcount++;
+    populateOutgoingTransNumber(buffer);
+    populateChecksum(buffer, sizeof(buffer));
 
-    uint8_t checksum = 0;
-    for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
-        checksum += buffer[a];
+    return requestResponse(buffer, sizeof(buffer));
+}
+
+bool
+AP_GPS_GSOF::disableOutput(const HW_Port portIndex) {
+    Debug("Disabling output on on port %u", (uint8_t)portIndex);
+    switch(portIndex) {
+    case HW_Port::COM1:
+    {
+        constexpr uint8_t cmd[8] = {
+            STX,
+            0x00,
+            0x51,
+            0x02,
+            0x0A,
+            0x01,
+            0x5E,
+            ETX
+        };
+        // The checksum is hard-coded.
+        // No need to calculate it.
+        return requestResponse(cmd, sizeof(cmd));
     }
 
-    buffer[19] = checksum;
+    case HW_Port::COM2:
+    {
+        constexpr uint8_t cmd[8] = {
+            STX,
+            0x00,
+            0x51,
+            0x02,
+            0x0A,
+            0x02,
+            0x5F,
+            ETX
+        };
+        return requestResponse(cmd, sizeof(cmd));
+    }
+    }
+    return false;
+}
 
-    port->write((const uint8_t*)buffer, sizeof(buffer));
+bool
+AP_GPS_GSOF::requestResponse(const uint8_t* buf, const uint8_t len) {
+    if (!port->is_initialized()) {
+        Debug("Port not initialized");
+        return false;
+    }
+
+    for (int attempt = 0; attempt <= configuration_attempts; attempt++) {
+        // Clear input buffer before doing configuration
+        if (!port->discard_input()) {
+            Debug("Failed to discard input");
+            return false;
+        };
+
+        port->write((const uint8_t*)buf, len);
+
+        constexpr uint16_t expected_bytes = 1;
+        // TODO use wait_timeout instead once HAL_SITL has it implemented.
+        const auto start_wait = AP_HAL::millis();
+        auto now = start_wait;
+        while (now  - start_wait <= configuration_wait_time_ms) {
+            if (port->available() >= expected_bytes) {
+                break;
+            }
+            constexpr uint16_t delay_us = 100;
+            hal.scheduler->delay_microseconds(delay_us);
+            now = AP_HAL::millis();
+        }
+
+        const auto available_bytes = port->available();
+        if (available_bytes != expected_bytes) {
+            Debug("Didn't get expected bytes, got %u bytes back", available_bytes);
+            return false;
+        }
+
+        uint8_t resp_code;
+        if(port->read(resp_code) && resp_code == ACK) {
+            Debug("Got ack");
+            return true;
+        } else {
+            Debug("Didn't get ACK, got 0x%02x", resp_code);
+        }
+    }
+    return false;
+}
+
+void
+AP_GPS_GSOF::populateChecksum(uint8_t* buf, const uint8_t len)
+{
+    // The buffer is of size len.
+    // If ETX is not element buf[len-1], the buf/len numbers are wrong.
+    // Same problem if the len is too small for a valid packet.
+    if (len <= 3 || buf[len - 1] != ETX) {
+        return;
+    }
+
+    // The checksum field is at buf[len - 2]
+    uint8_t checksum = 0;
+    const uint8_t payload_size = len - 2;
+    for (uint8_t i = 1; i < payload_size; i++) {
+        checksum += buf[i];
+    }
+
+    buf[len -2] = checksum;
+}
+
+void
+AP_GPS_GSOF::populateOutgoingTransNumber(uint8_t* buf) {
+   buf[4] = packetOutboundTransNumber++; 
 }
 
 double
@@ -258,6 +375,7 @@ AP_GPS_GSOF::process_message(void)
     if (msg.packettype == 0x40) { // GSOF
         // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
 #if gsof_DEBUGGING
+        //trans_number is functionally the sequence number.
         const uint8_t trans_number = msg.data[0];
         const uint8_t pageidx = msg.data[1];
         const uint8_t maxpageidx = msg.data[2];
@@ -359,6 +477,16 @@ AP_GPS_GSOF::process_message(void)
     return false;
 }
 
+bool
+AP_GPS_GSOF::validate_baud(const uint8_t baud) const {
+    switch(baud) {
+        case static_cast<uint8_t>(HW_Baud::BAUD230K):
+        case static_cast<uint8_t>(HW_Baud::BAUD115K):
+            return true;
+        default:
+            return false;
+    }
+}
 bool
 AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
     switch(com_port) {
