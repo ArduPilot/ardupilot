@@ -18,6 +18,9 @@ extern const AP_HAL::HAL& hal;
 #include <arpa/inet.h>
 #endif
 
+#if AP_NETWORKING_BACKEND_SITL
+#include "AP_Networking_SITL.h"
+#endif
 
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: ENABLED
@@ -113,6 +116,9 @@ void AP_Networking::init()
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
     backend = new AP_Networking_ChibiOS(*this);
+#endif
+#if AP_NETWORKING_BACKEND_SITL
+    backend = new AP_Networking_SITL(*this);
 #endif
 
     if (backend == nullptr) {
