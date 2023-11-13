@@ -25,6 +25,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #include "ap_message.h"
 
@@ -498,7 +499,7 @@ protected:
     virtual MAV_STATE vehicle_system_status() const = 0;
 
     virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
-    virtual MAV_LANDED_STATE landed_state() const { return MAV_LANDED_STATE_UNDEFINED; }
+    MAV_LANDED_STATE landed_state() const { return (MAV_LANDED_STATE)AP::vehicle()->get_landed_state(); }
 
     // return a MAVLink parameter type given a AP_Param type
     static MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
