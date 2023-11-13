@@ -205,7 +205,7 @@ public:
         SerialProtocol_MAVLinkHL = 43,
         SerialProtocol_Tramp = 44,
         SerialProtocol_DDS_XRCE = 45,
-        SerialProtocol_IQ = 45,
+        SerialProtocol_IQ = 46,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
