@@ -273,7 +273,7 @@ private:
 
     // bi-directional dshot erpm values
     struct page_dshot_erpm dshot_erpm;
-    struct page_dshot_telem dshot_telem[IOMCU_MAX_CHANNELS/4];
+    struct page_dshot_telem dshot_telem[IOMCU_MAX_TELEM_CHANNELS/4];
     uint8_t esc_group;
 
     // queue of dshot commands that need sending
