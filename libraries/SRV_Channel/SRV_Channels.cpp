@@ -553,6 +553,10 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
+#if AP_IQUART_ENABLED
+    iq_ptr->update();
+#endif
+
 #if AP_KDECAN_ENABLED
     if (AP::kdecan() != nullptr) {
         AP::kdecan()->update();
