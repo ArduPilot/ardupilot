@@ -23,6 +23,18 @@
 extern AP_IOMCU iomcu;
 #endif
 
+// ensure that our LandedState enumeration is 1:1 with the mavlink
+// numbers of the same type.  This allows us to do a simple cast
+// from one to the other when sending mavlink messages using LandedState,
+// rather than having some sort of mapping function from our internal
+// enumeration into the mavlink enumeration.  For further information
+// see the comment in AP_GPS.cpp for AP_GPS::GPS_Status.
+static_assert((uint8_t)AP_Vehicle::LandedState::Undefined == (uint8_t)MAV_LANDED_STATE_UNDEFINED, "AP_Vehicle::LandedState::Undefined incorrect");
+static_assert((uint8_t)AP_Vehicle::LandedState::OnGround == (uint8_t)MAV_LANDED_STATE_ON_GROUND, "AP_Vehicle::LandedState::OnGround incorrect");
+static_assert((uint8_t)AP_Vehicle::LandedState::InAir == (uint8_t)MAV_LANDED_STATE_IN_AIR, "AP_Vehicle::LandedState::InAir incorrect");
+static_assert((uint8_t)AP_Vehicle::LandedState::TakeOff == (uint8_t)MAV_LANDED_STATE_TAKEOFF, "AP_Vehicle::LandedState::TakeOff incorrect");
+static_assert((uint8_t)AP_Vehicle::LandedState::Landing == (uint8_t)MAV_LANDED_STATE_LANDING, "AP_Vehicle::LandedState::Landing incorrect");
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
 /*
