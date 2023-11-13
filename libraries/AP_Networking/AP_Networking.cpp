@@ -56,6 +56,16 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Path: AP_Networking_macaddr.cpp
     AP_SUBGROUPINFO(param.macaddr, "MACADDR", 6,  AP_Networking, AP_Networking_MAC),
 
+#if AP_NETWORKING_TESTS_ENABLED
+    // @Param: TESTS
+    // @DisplayName: Test enable flags
+    // @Description: Enable/Disable networking tests
+    // @Bitmask: 0:UDP echo test,1:TCP echo test
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -116,6 +126,10 @@ void AP_Networking::init()
     announce_address_changes();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"NET: Initialized");
+
+#if AP_NETWORKING_TESTS_ENABLED
+    start_tests();
+#endif
 }
 
 /*

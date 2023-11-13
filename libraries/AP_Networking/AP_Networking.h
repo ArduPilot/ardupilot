@@ -165,6 +165,9 @@ private:
         AP_Networking_MAC macaddr{AP_NETWORKING_DEFAULT_MAC_ADDR};
         AP_Int8 enabled;
         AP_Int32 options;
+#if AP_NETWORKING_TESTS_ENABLED
+        AP_Int32 tests;
+#endif
     } param;
 
     AP_Networking_Backend *backend;
@@ -173,6 +176,16 @@ private:
 
 private:
     uint32_t announce_ms;
+
+#if AP_NETWORKING_TESTS_ENABLED
+    enum {
+        TEST_UDP_CLIENT = (1U<<0),
+        TEST_TCP_CLIENT = (1U<<1),
+    };
+    void start_tests(void);
+    void test_UDP_client(void);
+    void test_TCP_client(void);
+#endif // AP_NETWORKING_TESTS_ENABLED
 };
 
 namespace AP
