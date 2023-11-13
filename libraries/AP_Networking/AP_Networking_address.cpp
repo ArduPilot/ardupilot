@@ -68,4 +68,9 @@ void AP_Networking_IPV4::set_default_uint32(uint32_t v)
     }
 }
 
+const char* AP_Networking_IPV4::get_str() const
+{
+    return AP_Networking::convert_ip_to_str(get_uint32());
+}
+
 #endif // AP_NETWORKING_ENABLED
