@@ -167,6 +167,7 @@ private:
         AP_Int32 options;
 #if AP_NETWORKING_TESTS_ENABLED
         AP_Int32 tests;
+        AP_Networking_IPV4 test_ipaddr{AP_NETWORKING_TEST_IP};
 #endif
     } param;
 

@@ -40,7 +40,7 @@ void AP_Networking::test_UDP_client(void)
     }
     hal.scheduler->delay(1000);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP_client: starting");
-    const char *dest = AP_NETWORKING_TEST_IP;
+    const char *dest = param.test_ipaddr.get_str();
     auto *sock = new SocketAPM(true);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP_client: failed to create socket");
@@ -75,7 +75,7 @@ void AP_Networking::test_TCP_client(void)
     }
     hal.scheduler->delay(1000);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_client: starting");
-    const char *dest = AP_NETWORKING_TEST_IP;
+    const char *dest = param.test_ipaddr.get_str();
     auto *sock = new SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_client: failed to create socket");
