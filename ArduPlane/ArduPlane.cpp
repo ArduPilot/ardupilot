@@ -904,6 +904,16 @@ bool Plane::is_taking_off() const
     return control_mode->is_taking_off();
 }
 
+AP_Vehicle::LandedState Plane::get_landed_state() const
+{
+    if (plane.is_flying()) {
+        // note that Q-modes almost always consider themselves as flying
+        return AP_Vehicle::LandedState::InAir;
+    }
+
+    return AP_Vehicle::LandedState::OnGround;
+}
+
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
