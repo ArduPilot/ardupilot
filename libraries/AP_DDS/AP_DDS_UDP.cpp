@@ -14,7 +14,7 @@ bool AP_DDS_Client::udp_transport_open(uxrCustomTransport *t)
     if (sock == nullptr) {
         return false;
     }
-    if (!sock->connect(dds->udp.ip, dds->udp.port.get())) {
+    if (!sock->connect(dds->udp.ip.get_str(), dds->udp.port.get())) {
         return false;
     }
     dds->udp.socket = sock;
