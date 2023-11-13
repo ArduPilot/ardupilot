@@ -94,6 +94,7 @@ BUILD_OPTIONS = [
     Feature('ICE', 'EFI_Lutan', 'AP_EFI_SERIAL_LUTAN_ENABLED', 'Enable EFI Lutan', 0, 'EFI'),
     Feature('ICE', 'EFI_NMPWU', 'AP_EFI_NWPWU_ENABLED', 'Enable EFI NMPMU', 0, 'EFI'),
     Feature('ICE', 'EFI_CURRAWONGECU', 'AP_EFI_CURRAWONG_ECU_ENABLED', 'Enable EFI Currawong ECU', 0, 'EFI'),
+    Feature('ICE', 'EFI_HIRTH', 'AP_EFI_SERIAL_HIRTH_ENABLED', 'Enable EFI Hirth ECU', 0, 'EFI'),
     Feature('ICE', 'EFI_DRONECAN', 'AP_EFI_DRONECAN_ENABLED', 'Enable EFI DroneCAN', 0, 'EFI'),
     Feature('ICE', 'EFI_MAV', 'AP_EFI_MAV_ENABLED', 'Enable EFI MAV', 0, 'EFI'),
 
