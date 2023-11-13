@@ -4257,8 +4257,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "throttle_position": 31,
             "intake_manifold_temperature": 28,
         }, very_verbose=1, epsilon=2)
+
         if check_fuel_flow:
-            if abs(m.fuel_flow - 0.2) > 0.0001:
+            if abs(m.fuel_flow - 0.2) < 0.0001:
                 raise NotAchievedException("Expected fuel flow")
 
         self.disarm_vehicle()
