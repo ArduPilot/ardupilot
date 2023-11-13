@@ -468,7 +468,7 @@ void AP_IOMCU_FW::update()
         now - sbus_last_ms >= sbus_interval_ms) {
         // output a new SBUS frame
         sbus_last_ms = now;
-        sbus_out_write(reg_servo.pwm, IOMCU_MAX_CHANNELS);
+        sbus_out_write(reg_servo.pwm, IOMCU_MAX_RC_CHANNELS);
     }
     // handle FMU failsafe
     if (now - fmu_data_received_time > 200) {
@@ -583,7 +583,7 @@ void AP_IOMCU_FW::rcin_update()
         const auto &rc = AP::RC();
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
-        hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
+        hal.rcin->read(rc_input.pwm, IOMCU_MAX_RC_CHANNELS);
         rc_last_input_ms = last_ms;
         rc_input.rc_protocol = (uint16_t)rc.protocol_detected();
         rc_input.rssi = rc.get_RSSI();
@@ -606,7 +606,7 @@ void AP_IOMCU_FW::rcin_update()
     if (mixing.enabled &&
         mixing.rc_chan_override > 0 &&
         rc_input.flags_rc_ok &&
-        mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
+        mixing.rc_chan_override <= IOMCU_MAX_RC_CHANNELS) {
         override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
     } else {
         override_active = false;
@@ -625,7 +625,7 @@ void AP_IOMCU_FW::erpm_update()
     uint32_t now_us = AP_HAL::micros();
 
     if (hal.rcout->new_erpm()) {
-        dshot_erpm.update_mask |= hal.rcout->read_erpm(dshot_erpm.erpm, IOMCU_MAX_CHANNELS);
+        dshot_erpm.update_mask |= hal.rcout->read_erpm(dshot_erpm.erpm, IOMCU_MAX_TELEM_CHANNELS);
         last_erpm_us = now_us;
     } else if (now_us - last_erpm_us > ESC_RPM_DATA_TIMEOUT_US) {
         dshot_erpm.update_mask = 0;
@@ -636,10 +636,10 @@ void AP_IOMCU_FW::telem_update()
 {
     uint32_t now_ms = AP_HAL::millis();
 
-    for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS/4; i++) {
+    for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
-            if (esc_id >= IOMCU_MAX_CHANNELS) {
+            if (esc_id >= IOMCU_MAX_TELEM_CHANNELS) {
                 continue;
             }
             dshot_telem[i].error_rate[j] = uint16_t(roundf(hal.rcout->get_erpm_error_rate(esc_id) * 100.0));
@@ -767,15 +767,11 @@ bool AP_IOMCU_FW::handle_code_read()
     case PAGE_RAW_DSHOT_TELEM_1_4:
         COPY_PAGE(dshot_telem[0]);
         break;
+#if IOMCU_MAX_TELEM_CHANNELS > 4
     case PAGE_RAW_DSHOT_TELEM_5_8:
         COPY_PAGE(dshot_telem[1]);
         break;
-    case PAGE_RAW_DSHOT_TELEM_9_12:
-        COPY_PAGE(dshot_telem[2]);
-        break;
-    case PAGE_RAW_DSHOT_TELEM_13_16:
-        COPY_PAGE(dshot_telem[3]);
-        break;
+#endif
 #endif
     case PAGE_STATUS:
         COPY_PAGE(reg_status);
