@@ -226,7 +226,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 #if AP_IQUART_ENABLED
     // @Group: _IQ_
     // @Path: ../AP_IQ_Motor/AP_IQ_Motor.cpp
-    AP_SUBGROUPINFO(iq, "_IQ_",  44, SRV_Channels, AP_IQ_Motor),
+    AP_SUBGROUPINFO(iq, "_IQ_",  45, SRV_Channels, AP_IQ_Motor),
 #endif
 
     // @Param: _DSHOT_RATE
