@@ -28,6 +28,21 @@
 #define DIST_MAX_CM 5000
 #define OUT_OF_RANGE_ADD_CM   100
 
+void AP_RangeFinder_JRE_Serial::move_preamble_in_buffer(uint8_t search_start_pos)
+{
+    uint8_t i;
+    for (i=search_start_pos; i<data_buff_idx; i++) {
+        if (data_buff[i] == FRAME_HEADER_1) {
+            break;
+        }
+    }
+    if (i == 0) {
+        return;
+    }
+    memmove(data_buff, &data_buff[i], data_buff_idx-i);
+    data_buff_idx = data_buff_idx - i;
+}
+
 bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
 {
     // uart instance check
@@ -41,51 +56,74 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     // max distance the sensor can reliably measure - read from parameters
     const int16_t distance_cm_max = max_distance_cm();
 
-    // buffer read
-    const ssize_t num_read = uart->read(read_buff, ARRAY_SIZE(read_buff));
-    for (read_buff_idx = 0; read_buff_idx < num_read; read_buff_idx++) {
-        if (data_buff_idx == 0) { // header first byte check
-            // header data search
-            if (read_buff[read_buff_idx] == FRAME_HEADER_1) {
-                data_buff[0] = FRAME_HEADER_1;
-                data_buff_idx = 1; // next data_buff
-            }
-        } else if (data_buff_idx == 1) { // header second byte check
-            data_buff[1] = read_buff[read_buff_idx];
-            data_buff_idx = 2;    // next data_buff
-            switch (read_buff[read_buff_idx]) {
-            case FRAME_HEADER_2_A:
-                data_buff_len = 16;
-                break;
-            case FRAME_HEADER_2_B:
-                data_buff_len = 32;
-                break;
-            case FRAME_HEADER_2_C:
-                data_buff_len = 48;
-                break;
-            default:
-                data_buff_idx = 0;    // data index clear
-                break;
-            }
-        } else { // data set
-            data_buff[data_buff_idx++] = read_buff[read_buff_idx];
+    // read a maximum of 8192 bytes per call to this function:
+    uint16_t bytes_available = MIN(uart->available(), 8192U);
 
-            if (data_buff_idx >= data_buff_len) {  // 1 data set complete
-                // crc check
-                uint16_t crc = crc16_ccitt_r(data_buff, data_buff_len - 2, 0xffff, 0xffff);
-                if ((HIGHBYTE(crc) == data_buff[data_buff_len-1]) && (LOWBYTE(crc) == data_buff[data_buff_len-2])) {
-                    // status check
-                    if (data_buff[data_buff_len-3] & 0x02) { // NTRK
-                        invalid_count++;
-                    } else { // TRK
-                        reading_m = (data_buff[4] * 256 + data_buff[5]) * 0.01f;
-                        sum += reading_m;
-                        valid_count++;
-                    }
-                }
-                data_buff_idx = 0; // data index clear
-            }
+    while (bytes_available > 0) {
+        // fill buffer
+        const auto num_bytes_to_read = MIN(bytes_available, ARRAY_SIZE(data_buff) - data_buff_idx);
+        const auto num_bytes_read = uart->read(&data_buff[data_buff_idx], num_bytes_to_read);
+        if (num_bytes_read == 0) {
+            break;
         }
+        if (bytes_available < num_bytes_read) {
+            // this is a bug in the uart call.
+            break;
+        }
+        bytes_available -= num_bytes_read;
+        data_buff_idx += num_bytes_read;
+
+        // move header frame header in buffer
+        move_preamble_in_buffer(0);
+
+        // ensure we have a packet type:
+        if (data_buff_idx < 2) {
+            continue;
+        }
+
+        // determine packet length for incoming packet:
+        uint8_t packet_length;
+        switch (data_buff[1]) {
+        case FRAME_HEADER_2_A:                   
+            packet_length = 16;
+            break;
+        case FRAME_HEADER_2_B:
+            packet_length = 32;
+            break;
+        case FRAME_HEADER_2_C:
+            packet_length = 48;
+            break;
+        default:
+            move_preamble_in_buffer(1);
+            continue;
+        }
+
+        // check there are enough bytes for message type
+        if (data_buff_idx < packet_length) {
+            continue;
+        }
+
+        // check the checksum
+        const uint16_t crc = crc16_ccitt_r(data_buff, packet_length - 2, 0xffff, 0xffff);
+        if (crc != ((data_buff[packet_length-1] << 8) | data_buff[packet_length-2])) {
+            // CRC failure
+            move_preamble_in_buffer(1);
+            continue;
+        }
+
+        // check random bit to for magic value:
+        if (data_buff[packet_length-3] & 0x02) { // NTRK
+            invalid_count++;
+            // discard entire packet:
+            move_preamble_in_buffer(packet_length);
+            continue;
+        }
+
+        // good message, extract rangefinder reading:
+        reading_m = (data_buff[4] * 256 + data_buff[5]) * 0.01f;
+        sum += reading_m;
+        valid_count++;
+        move_preamble_in_buffer(packet_length);
     }
 
     // return average of all valid readings
