@@ -47,7 +47,7 @@ void AP_MotorsPulsing_Coax::init(motor_frame_class frame_class, motor_frame_type
 
 
     _mav_type = MAV_TYPE_QUADROTOR;
-    rpm = AP_RPM::get_singleton();
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING_COAX);
 }
