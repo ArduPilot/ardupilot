@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.4.3 14-Nov-2023
+Changes from 4.4.3-beta1
+1) AP_GPS: correct uBlox M10 configuration on low flash boards
+------------------------------------------------------------------
 Copter 4.4.3-beta1 07-Nov-2023
 Changes from 4.4.2
 1) Autopilot related enhancements and fixes
