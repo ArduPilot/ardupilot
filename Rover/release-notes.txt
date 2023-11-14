@@ -1,7 +1,11 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.4.0-beta10 14-Nov-2023
+Changes from 4.4.0-beta9
+1) AP_GPS: correct uBlox M10 configuration on low flash boards
+------------------------------------------------------------------
 Rover 4.4.0-beta9 07-Nov-2023
-Changes from 4.4.2
+Changes from 4.4.0-beta8
 1) Autopilot related enhancements and fixes
     - BETAFTP-F405 board configuration fixes
     - CubeOrangePlus-BG edition ICM45486 IMU setup fixed
