@@ -46,6 +46,26 @@ bool AP_Mount_Backend::has_pitch_control() const
     return (_params.pitch_angle_min < _params.pitch_angle_max);
 }
 
+bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
+{
+    switch (mode) {
+    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
+        return true;
+    case MAV_MOUNT_MODE_ENUM_END:
+        return false;
+    }
+    return false;
+}
+
+bool AP_Mount_Backend::set_mode(MAV_MOUNT_MODE mode)
+{
+    if (!valid_mode(mode)) {
+        return false;
+    }
+    _mode = mode;
+    return true;
+}
+
 // set angle target in degrees
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
