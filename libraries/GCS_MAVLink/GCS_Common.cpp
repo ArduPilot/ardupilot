@@ -5067,8 +5067,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #endif
 
     case MAV_CMD_DO_JUMP_TAG:
-        result = handle_command_do_jump_tag(packet);
-        break;
+        return handle_command_do_jump_tag(packet);
 
     case MAV_CMD_DO_SET_MISSION_CURRENT:
         return handle_command_do_set_mission_current(packet);
