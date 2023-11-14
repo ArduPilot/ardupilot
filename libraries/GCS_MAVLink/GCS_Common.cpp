@@ -4452,7 +4452,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_i
 // the current waypoint, rather than this DO command.  It is hoped we
 // can move to this command in the future to avoid acknowledgement
 // issues with MISSION_SET_CURRENT
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
@@ -4485,7 +4485,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_jump_tag(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_jump_tag(const mavlink_command_int_t &packet)
 {
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
@@ -4756,14 +4756,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
-
-    case MAV_CMD_DO_JUMP_TAG:
-        result = handle_command_do_jump_tag(packet);
-        break;
-
-    case MAV_CMD_DO_SET_MISSION_CURRENT:
-        result = handle_command_do_set_mission_current(packet);
-        break;
 
     default:
         result = try_command_long_as_command_int(packet, msg);
@@ -5073,6 +5065,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_GRIPPER:
         return handle_command_do_gripper(packet);
 #endif
+
+    case MAV_CMD_DO_JUMP_TAG:
+        result = handle_command_do_jump_tag(packet);
+        break;
+
+    case MAV_CMD_DO_SET_MISSION_CURRENT:
+        return handle_command_do_set_mission_current(packet);
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
