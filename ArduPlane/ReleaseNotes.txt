@@ -1,5 +1,5 @@
-Release 4.4.3-beta1 4th November 2023
--------------------------------------
+Release 4.4.3 14th November 2023
+--------------------------------
 
 Changes from 4.4.2:
 
@@ -14,6 +14,7 @@ Changes from 4.4.2:
  - protect against notch filtering with uninitialised RPM source in ESC telemetry
  - allow lua scripts to populate full ESC telemetry data
  - added YJUAV_A6SE_H743 support
+ - fixed uBlox M10 GPS support on boards with 1M flash
 
 Release 4.4.2 23th October 2023
 -------------------------------
