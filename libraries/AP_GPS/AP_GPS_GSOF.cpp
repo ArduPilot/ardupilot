@@ -58,21 +58,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
-    
-    msg.state = Msg_Parser::State::STARTTX;
-
-    constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
-    gps._com_port[state.instance].set_default(default_com_port);
-    const auto com_port = gps._com_port[state.instance].get();
-    if (!validate_com_port(com_port)) {
-        // The user parameter for COM port is not a valid GSOF port
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
-        return;
-    }
-    const HW_Baud baud = HW_Baud::BAUD115K;
-    // Start by disabling output during config
-    [[maybe_unused]] const auto output_disabled = disableOutput(static_cast<HW_Port>(com_port));
-    is_baud_configured = requestBaud(static_cast<HW_Port>(com_port), baud);
+    static_assert(sizeof(gsofmsgreq) != 0, "gsofmsgreq is not empty");
 }
 
 // Process all bytes available from the stream
@@ -80,22 +66,48 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
+
     if (!is_baud_configured) {
         // Debug("Baud not configured, not ready to read()");
-        return false;
-    }
 
-    bool gsof_configured = true;
-
-    static_assert(sizeof(gsofmsgreq) != 0, "gsofmsgreq is not empty");
-    while (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
+        constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
+        gps._com_port[state.instance].set_default(default_com_port);
         const auto com_port = gps._com_port[state.instance].get();
         if (!validate_com_port(com_port)) {
             // The user parameter for COM port is not a valid GSOF port
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
+            return false;
+        }
+        const HW_Baud baud = HW_Baud::BAUD115K;
+        // Start by disabling output during config
+        if (!disableOutput(static_cast<HW_Port>(com_port))) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d cannot disable output on port %d", state.instance, com_port);
             return false;
         }
 
-        gsof_configured &= requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
+        is_baud_configured = requestBaud(static_cast<HW_Port>(com_port), baud);
+        if (!is_baud_configured) {
+            // Don't try further configuration if the baud request fails.
+            return false;
+        }
+    }
+
+    while (gsofmsgreq_index < sizeof(gsofmsgreq)) {
+        const auto com_port = gps._com_port[state.instance].get();
+        if (!validate_com_port(com_port)) {
+            // The user parameter for COM port is not a valid GSOF port.
+            return false;
+        }
+
+        const auto success = requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
+        if (!success) {
+            // Try again to do the rest of the configuration next time.
+            return false;
+        } else {
+            if (gsofmsgreq_index == sizeof(gsofmsgreq) - 1) {
+                gsof_configured = true;
+            }
+        }
         gsofmsgreq_index++;
     }
     if (!gsof_configured) {
