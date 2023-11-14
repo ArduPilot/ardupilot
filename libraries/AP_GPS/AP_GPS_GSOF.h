@@ -108,7 +108,7 @@ private:
             ENDTX
         };
 
-        State state;
+        State state = State::STARTTX;
 
         uint8_t status;
         uint8_t packettype;
@@ -142,6 +142,6 @@ private:
     uint8_t gsofmsgreq_index;
     const uint8_t gsofmsgreq[5] = {1,2,8,9,12};
     bool is_baud_configured {false};
-    bool is_configured {false};
+    bool gsof_configured {false};
 };
 #endif
