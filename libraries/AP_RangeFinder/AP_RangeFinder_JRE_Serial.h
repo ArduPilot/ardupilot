@@ -62,8 +62,6 @@ Altitude data used: 4,5 bytes
 |      |        |        |          |          |                     |               |                       |                     |               |                       |                     |               |                       |                     |               |                       |                     |               |                       | BIT 0: GAIN LOW/HIGH  |               |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 */
-#define DATA_LENGTH 16
-
 class AP_RangeFinder_JRE_Serial : public AP_RangeFinder_Backend_Serial
 {
 
@@ -94,11 +92,10 @@ private:
     // get a reading
     bool get_reading(float &reading_m) override;
 
-    uint8_t read_buff[DATA_LENGTH * 10];
-    uint8_t read_buff_idx;
-    uint8_t data_buff[DATA_LENGTH * 3];  // maximum frame length
+    void move_preamble_in_buffer(uint8_t search_start_pos);
+
+    uint8_t data_buff[48 * 3];  // 48 is longest possible packet
     uint8_t data_buff_idx;
-    uint8_t data_buff_len;
 
     bool no_signal;     // true if the latest read attempt found no valid distances
 };
