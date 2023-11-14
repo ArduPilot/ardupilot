@@ -1383,7 +1383,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     } // end switch
 } // end handle mavlink
 
-MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
     const MAV_RESULT result = GCS_MAVLINK::handle_command_do_set_mission_current(packet);
     if (result != MAV_RESULT_ACCEPTED) {
