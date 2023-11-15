@@ -67,6 +67,9 @@ public:
     // yaw is in body-frame.
     virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
+    // get angular velocity of mount. Only available on some backends
+    virtual bool get_angular_velocity(Vector3f& rates) { return false; }
+    
     // get mount's mode
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
