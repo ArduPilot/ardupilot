@@ -53,16 +53,17 @@ public:
         AP_HAL::CANIface** _can_ifaces)
 #endif
         :
-        uartA(_uartA),
-        uartB(_uartB),
-        uartC(_uartC),
-        uartD(_uartD),
-        uartE(_uartE),
-        uartF(_uartF),
-        uartG(_uartG),
-        uartH(_uartH),
-        uartI(_uartI),
-        uartJ(_uartJ),
+        uart_array{
+            _uartA,
+            _uartB,
+            _uartC,
+            _uartD,
+            _uartE,
+            _uartF,
+            _uartG,
+            _uartH,
+            _uartI,
+            _uartJ},
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         wspi(_wspi),
@@ -112,19 +113,6 @@ public:
 
     virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
-private:
-    // the uartX ports must be contiguous in ram for the serial() method to work
-    AP_HAL::UARTDriver* uartA;
-    AP_HAL::UARTDriver* uartB UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartC UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartD UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartE UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartF UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartG UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartH UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartI UNUSED_PRIVATE_MEMBER;
-    AP_HAL::UARTDriver* uartJ UNUSED_PRIVATE_MEMBER;
-
 public:
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
@@ -151,6 +139,10 @@ public:
 
     static constexpr uint8_t num_serial = 10;
 
+private:
+    AP_HAL::UARTDriver* uart_array[num_serial];
+
+public:
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
     AP_HAL::SIMState *simstate;
 #endif
