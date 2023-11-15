@@ -169,8 +169,6 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 define HAL_STORAGE_SIZE 16384
 
 # DMA

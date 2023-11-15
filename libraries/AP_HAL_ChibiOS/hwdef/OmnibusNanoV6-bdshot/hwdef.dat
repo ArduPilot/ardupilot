@@ -3,7 +3,6 @@
 include ../OmnibusNanoV6/hwdef.dat
 
 undef PB0 PB1 PA3 PB5
-undef STM32_PWM_USE_ADVANCED
 
 PB0 TIM3_CH3 TIM3 PWM(1) GPIO(50)
 PB1 TIM3_CH4 TIM3 PWM(2) GPIO(51) BIDIR

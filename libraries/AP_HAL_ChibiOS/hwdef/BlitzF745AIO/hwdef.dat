@@ -146,8 +146,6 @@ BARO DPS310 I2C:1:0x76
 define ALLOW_ARM_NO_COMPASS
 define HAL_I2C_INTERNAL_MASK 0
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # save some flash
 include ../include/save_some_flash.inc
 
