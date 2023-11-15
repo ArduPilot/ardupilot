@@ -416,7 +416,7 @@ def do_build(opts, frame_options):
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
-        
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
