@@ -149,7 +149,7 @@ void AP_CANManager::init()
         if (hal.can[i] == nullptr) {
             // So if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            const_cast <AP_HAL::HAL&> (hal).can[i] = new HAL_CANIface(i);
+            hal.can[i] = new HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
@@ -305,7 +305,7 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
         if (hal.can[i] == nullptr) {
             // if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            const_cast <AP_HAL::HAL&> (hal).can[i] = new HAL_CANIface(i);
+            hal.can[i] = new HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
