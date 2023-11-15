@@ -37,10 +37,10 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
         signal_quality = packet.signal_quality;
         if (signal_quality == 0) {
             // MAVLink's 0 means invalid/unset, so we map it to -1
-            signal_quality = -1;
+            signal_quality = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
         } else if (signal_quality == 1) {
             // Map 1 to 0 as that is what ardupilot uses as the worst signal quality
-            signal_quality = 0;
+            signal_quality = RangeFinder::SIGNAL_QUALITY_MIN;
         }
     }
 }
@@ -79,19 +79,12 @@ void AP_RangeFinder_MAVLink::update(void)
     if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
         set_status(RangeFinder::Status::NoData);
         state.distance_m = 0.0f;
+        state.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     } else {
         state.distance_m = distance_cm * 0.01f;
+        state.signal_quality_pct = signal_quality;
         update_status();
     }
-}
-
-bool AP_RangeFinder_MAVLink::get_signal_quality_pct(int8_t &quality_pct) const
-{
-    if (status() != RangeFinder::Status::Good) {
-        return false;
-    }
-    quality_pct = signal_quality;
-    return true;
 }
 
 #endif
