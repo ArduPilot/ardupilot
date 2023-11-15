@@ -112,6 +112,7 @@ private:
         SET_CAMERA_IMAGE_TYPE = 0x11,
         READ_RANGEFINDER = 0x15,
         EXTERNAL_ATTITUDE = 0x22,
+        SET_TIME = 0x30,
     };
 
     // Function Feedback Info packet info_type values
@@ -335,6 +336,9 @@ private:
         const char* model_name;
     };
     static const HWInfo hardware_lookup_table[];
+
+    // count of SET_TIME packets, we send 5 times to cope with packet loss
+    uint8_t sent_time_count;
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED
