@@ -31,7 +31,7 @@
 void AP_RangeFinder_JRE_Serial::move_preamble_in_buffer(uint8_t search_start_pos)
 {
     uint8_t i;
-    for (i=search_start_pos; i<data_buff_idx; i++) {
+    for (i=search_start_pos; i<data_buff_ofs; i++) {
         if (data_buff[i] == FRAME_HEADER_1) {
             break;
         }
@@ -39,8 +39,8 @@ void AP_RangeFinder_JRE_Serial::move_preamble_in_buffer(uint8_t search_start_pos
     if (i == 0) {
         return;
     }
-    memmove(data_buff, &data_buff[i], data_buff_idx-i);
-    data_buff_idx = data_buff_idx - i;
+    memmove(data_buff, &data_buff[i], data_buff_ofs-i);
+    data_buff_ofs = data_buff_ofs - i;
 }
 
 bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
@@ -61,8 +61,8 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
 
     while (bytes_available > 0) {
         // fill buffer
-        const auto num_bytes_to_read = MIN(bytes_available, ARRAY_SIZE(data_buff) - data_buff_idx);
-        const auto num_bytes_read = uart->read(&data_buff[data_buff_idx], num_bytes_to_read);
+        const auto num_bytes_to_read = MIN(bytes_available, ARRAY_SIZE(data_buff) - data_buff_ofs);
+        const auto num_bytes_read = uart->read(&data_buff[data_buff_ofs], num_bytes_to_read);
         if (num_bytes_read == 0) {
             break;
         }
@@ -71,13 +71,13 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
             break;
         }
         bytes_available -= num_bytes_read;
-        data_buff_idx += num_bytes_read;
+        data_buff_ofs += num_bytes_read;
 
         // move header frame header in buffer
         move_preamble_in_buffer(0);
 
         // ensure we have a packet type:
-        if (data_buff_idx < 2) {
+        if (data_buff_ofs < 2) {
             continue;
         }
 
@@ -99,7 +99,7 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
         }
 
         // check there are enough bytes for message type
-        if (data_buff_idx < packet_length) {
+        if (data_buff_ofs < packet_length) {
             continue;
         }
 

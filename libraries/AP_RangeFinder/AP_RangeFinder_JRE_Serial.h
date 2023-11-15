@@ -95,7 +95,7 @@ private:
     void move_preamble_in_buffer(uint8_t search_start_pos);
 
     uint8_t data_buff[48 * 3];  // 48 is longest possible packet
-    uint8_t data_buff_idx;
+    uint8_t data_buff_ofs;      // index where next item will be added in data_buff
 
     bool no_signal;     // true if the latest read attempt found no valid distances
 };
