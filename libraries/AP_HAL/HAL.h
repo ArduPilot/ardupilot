@@ -141,9 +141,9 @@ public:
     AP_HAL::Flash       *flash;
     AP_HAL::DSP         *dsp;
 #if HAL_NUM_CAN_IFACES > 0
-    AP_HAL::CANIface* can[HAL_NUM_CAN_IFACES];
+    mutable AP_HAL::CANIface* can[HAL_NUM_CAN_IFACES];
 #else
-    AP_HAL::CANIface** can;
+    mutable AP_HAL::CANIface** can;
 #endif
 
     // access to serial ports using SERIALn_ numbering
