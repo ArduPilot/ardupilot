@@ -117,7 +117,7 @@ static void cb_GetNodeInfoRequest(const CanardRxTransfer &transfer, const uavcan
 
 void DroneCAN_sniffer::init(void)
 {
-    const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
+    hal.can[driver_index] = new HAL_CANIface(driver_index);
     
     if (hal.can[driver_index] == nullptr) {
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
