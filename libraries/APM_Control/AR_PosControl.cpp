@@ -141,9 +141,11 @@ void AR_PosControl::update(float dt)
     }
 
     // calculation velocity error
+    bool stopping = false;
     if (_vel_desired_valid) {
         // add target velocity to desired velocity from position error
         _vel_target += _vel_desired;
+        stopping = _vel_desired.is_zero();
     }
 
     // limit velocity to maximum speed
@@ -192,19 +194,21 @@ void AR_PosControl::update(float dt)
     const Vector2f vel_target_FR = AP::ahrs().earth_to_body2D(_vel_target);
 
     // desired speed is normally the forward component (only) of the target velocity
-    // but we do not let it fall below the minimum turn speed unless the vehicle is slowing down
-    const float abs_des_speed_min = MIN(_vel_target.length(), turn_speed_min);
-    float des_speed;
-    if (_reversed != backing_up) {
-        // if reversed or backing up desired speed will be negative
-        des_speed = MIN(-abs_des_speed_min, vel_target_FR.x);
-    } else {
-        des_speed = MAX(abs_des_speed_min, vel_target_FR.x);
+    float des_speed = vel_target_FR.x;
+    if (!stopping) {
+        // do not let target speed fall below the minimum turn speed unless the vehicle is slowing down
+        const float abs_des_speed_min = MIN(_vel_target.length(), turn_speed_min);
+        if (_reversed != backing_up) {
+            // if reversed or backing up desired speed will be negative
+            des_speed = MIN(-abs_des_speed_min, vel_target_FR.x);
+        } else {
+            des_speed = MAX(abs_des_speed_min, vel_target_FR.x);
+        }
     }
     _desired_speed = _atc.get_desired_speed_accel_limited(des_speed, dt);
 
     // calculate turn rate from desired lateral acceleration
-    _desired_lat_accel = accel_target_FR.y;
+    _desired_lat_accel = stopping ? 0 : accel_target_FR.y;
     _desired_turn_rate_rads = _atc.get_turn_rate_from_lat_accel(_desired_lat_accel, _desired_speed);
 }
 
