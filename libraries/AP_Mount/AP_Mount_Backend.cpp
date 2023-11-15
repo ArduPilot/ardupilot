@@ -142,6 +142,8 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
     if (!get_attitude_quaternion(att_quat)) {
         return;
     }
+    Vector3f ang_velocity { nanf(""), nanf(""), nanf("") };
+    IGNORE_RETURN(get_angular_velocity(ang_velocity));
 
     // construct quaternion array
     const float quat_array[4] = {att_quat.q1, att_quat.q2, att_quat.q3, att_quat.q4};
@@ -152,9 +154,9 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    AP_HAL::millis(),    // autopilot system time
                                                    get_gimbal_device_flags(),
                                                    quat_array,    // attitude expressed as quaternion
-                                                   std::numeric_limits<double>::quiet_NaN(),    // roll axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // pitch axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // yaw axis angular velocity (NaN for unknown)
+                                                   ang_velocity.x,    // roll axis angular velocity (NaN for unknown)
+                                                   ang_velocity.y,    // pitch axis angular velocity (NaN for unknown)
+                                                   ang_velocity.z,    // yaw axis angular velocity (NaN for unknown)
                                                    0,                                           // failure flags (not supported)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw (NaN for unknonw)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknonw)
