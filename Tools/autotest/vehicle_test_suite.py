@@ -5911,10 +5911,12 @@ class TestSuite(ABC):
     def set_current_waypoint_using_mav_cmd_do_set_mission_current(
             self,
             seq,
+            reset=0,
             target_sysid=1,
             target_compid=1):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
                      p1=seq,
+                     p2=reset,
                      timeout=1,
                      target_sysid=target_sysid,
                      target_compid=target_compid)
@@ -13179,7 +13181,7 @@ switch value'''
             (6, "SBP", None, "SBP", 5, 'detected'),
             # (7, "SBP2", 9, "SBP2", 5),  # broken, "waiting for config data"
             (8, "NOVA", 15, "NOVA", 5, 'detected'),  # no attempt to auto-detect this in AP_GPS
-            (11, "GSOF", 11, "GSOF", 5, 'detected'),
+            (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
         ]

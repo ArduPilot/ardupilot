@@ -4,13 +4,14 @@
 #if AP_NETWORKING_ENABLED
 
 #include "AP_Networking.h"
-#include "AP_Networking_ChibiOS.h"
+#include "AP_Networking_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
+#include "AP_Networking_ChibiOS.h"
 #include <hal_mii.h>
 #include <lwip/sockets.h>
 #else
@@ -96,7 +97,7 @@ void AP_Networking::init()
         param.macaddr.set_default_address_byte(5, crc.bytes[2]);
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
     backend = new AP_Networking_ChibiOS(*this);
 #endif
 
@@ -209,6 +210,23 @@ bool AP_Networking::convert_str_to_macaddr(const char *mac_str, uint8_t addr[6])
         s = strtok_r(nullptr, ":", &ptr);
     }
     return true;
+}
+
+// returns the 32bit value of the active IP address that is currently in use
+uint32_t AP_Networking::get_ip_active() const
+{
+    return backend?backend->activeSettings.ip:0;
+}
+
+// returns the 32bit value of the active Netmask that is currently in use
+uint32_t AP_Networking::get_netmask_active() const
+{
+    return backend?backend->activeSettings.nm:0;
+}
+
+uint32_t AP_Networking::get_gateway_active() const
+{
+    return backend?backend->activeSettings.gw:0;
 }
 
 AP_Networking *AP_Networking::singleton;

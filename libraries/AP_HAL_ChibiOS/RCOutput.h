@@ -414,7 +414,7 @@ private:
 #endif // HAL_WITH_BIDIR_DSHOT
         // are we safe to send another pulse?
         bool can_send_dshot_pulse() const {
-          return is_dshot_protocol(current_mode) && AP_HAL::micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
+          return is_dshot_protocol(current_mode) && AP_HAL::micros64() - last_dmar_send_us > (dshot_pulse_time_us + 50);
         }
 
         // return whether the group channel is both enabled in the group and for output

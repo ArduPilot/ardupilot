@@ -468,7 +468,11 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
             } else {
                 calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
-                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
+                uint32_t tnow_ms = AP_HAL::millis();
+                if ((tnow_ms - _crsf_version.last_request_info_ms) > 5000) {
+                    _crsf_version.last_request_info_ms = tnow_ms;
+                    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
+                }
             }
             break;
         case DEVICE_PING:
