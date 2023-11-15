@@ -385,13 +385,16 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         return;
     }
 
-    int8_t quality_pct;
+    int8_t quality_pct = sensor->signal_quality_pct();
+    // ardupilot defines this field as -1 is unknown, 0 is poor, 100 is excellent
+    // mavlink defines this field as 0 is unknown, 1 is invalid, 100 is perfect
     uint8_t quality;
-    if (sensor->get_signal_quality_pct(quality_pct)) {
-        // mavlink defines this field as 0 is unknown, 1 is invalid, 100 is perfect
-        quality = MAX(quality_pct, 1);
-    } else {
+    if (quality_pct == RangeFinder::SIGNAL_QUALITY_UNKNOWN) {
         quality = 0;
+    } else if (quality_pct > 1 && quality_pct <= RangeFinder::SIGNAL_QUALITY_MAX) {
+        quality = quality_pct;
+    } else {
+        quality = 1;
     }
 
     mavlink_msg_distance_sensor_send(

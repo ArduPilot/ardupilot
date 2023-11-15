@@ -193,9 +193,14 @@ public:
         Good
     };
 
+    static constexpr int8_t SIGNAL_QUALITY_MIN = 0;
+    static constexpr int8_t SIGNAL_QUALITY_MAX = 100;
+    static constexpr int8_t SIGNAL_QUALITY_UNKNOWN = -1;
+
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
         float distance_m;               // distance in meters
+        int8_t signal_quality_pct;      // measurement quality in percent 0-100, -1 -> quality is unknown
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
@@ -260,6 +265,7 @@ public:
     // any sensor which can current supply it
     float distance_orient(enum Rotation orientation) const;
     uint16_t distance_cm_orient(enum Rotation orientation) const;
+    int8_t signal_quality_pct_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;

@@ -82,9 +82,9 @@ protected:
         return MAV_DISTANCE_SENSOR_RADAR;
     }
 
-    bool get_signal_quality_pct(int8_t &quality_pct) const override {
-        quality_pct = no_signal ? 0 : 100;
-        return true;
+    int8_t get_signal_quality_pct() const override
+    {
+        return no_signal ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
     }
 
 private:
