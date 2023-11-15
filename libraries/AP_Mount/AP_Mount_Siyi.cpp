@@ -6,6 +6,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RTC/AP_RTC.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -68,6 +69,17 @@ void AP_Mount_Siyi::update()
         } else {
             request_configuration();
         }
+
+#if AP_RTC_ENABLED
+        // send UTC time to the camera
+        if (sent_time_count < 5) {
+            uint64_t utc_usec;
+            if (AP::rtc().get_utc_usec(utc_usec) &&
+                send_packet(SiyiCommandId::SET_TIME, (const uint8_t *)&utc_usec, sizeof(utc_usec))) {
+                sent_time_count++;
+            }
+        }
+#endif
     }
 
     // request attitude at regular intervals
