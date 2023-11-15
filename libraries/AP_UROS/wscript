@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+
+import pathlib
+import platform
+
+
+def configure(cfg):
+    host_system = platform.system()
+    host_processor = platform.processor()
+    host_machine = platform.machine()
+    host_release = platform.release()       # kernel version
+    toolchain = cfg.env.TOOLCHAIN
+
+    print('host_system:     {}'.format(host_system))
+    print('host_processor:  {}'.format(host_processor))
+    print('host_machine:    {}'.format(host_machine))
+    print('host_release:    {}'.format(host_release))
+    print('toolchain:       {}'.format(toolchain))
+
+    # suggestion for alternative package names
+    # - uros-darwin-22.6.0-x86_64
+    # - uros-darwin-22.5.0-arm64
+
+    distro = None
+    if toolchain == 'native':
+        if host_system == 'Darwin':
+            if host_machine == 'x86_64':
+                distro = 'uros-macos-13.4-x86_64'
+            elif host_machine == 'arm64':
+                distro = 'uros-macos-13.4-arm64'
+        elif host_system == 'Linux':
+            if host_machine == 'x86_64':
+                distro = 'uros-ubuntu-22-x86_64'
+            elif host_machine == 'aarch64':
+                distro = 'uros-ubuntu-22-aarch64'
+        else:
+            print('Cannot configure AP_UROS. Unsupported host: {}'.format(host_system))
+            return
+    elif toolchain == 'arm-none-eabi':
+        distro = 'uros-stm32-m7-custom'
+    elif toolchain == 'xtensa-esp32-elf':
+        distro = 'uros-esp-idf-4.4-custom'
+    else:
+        print('Cannot configure AP_UROS. Unsupported toolchain: {}'.format(toolchain))
+        return
+
+    uros_include_dir = str(pathlib.PurePath('modules', 'ardupilot_uros', distro, 'uros', 'include'))
+    uros_library_dir = str(pathlib.PurePath('modules', 'ardupilot_uros', distro, 'uros', 'lib'))
+    cfg.env.UROS_INCLUDE_DIR = uros_include_dir
+    cfg.env.UROS_LIBRARY_DIR = uros_library_dir
+
+    extra_src_inc = [
+        f'{uros_include_dir}',
+        f'{uros_include_dir}/rcl',
+        f'{uros_include_dir}/rcl_action',
+        f'{uros_include_dir}/rcl_interfaces',
+        f'{uros_include_dir}/rcutils',
+        f'{uros_include_dir}/rmw',
+        f'{uros_include_dir}/rosidl_runtime_c',
+        f'{uros_include_dir}/rosidl_typesupport_interface',
+        f'{uros_include_dir}/rosidl_typesupport_introspection_c',
+        f'{uros_include_dir}/action_msgs',
+        f'{uros_include_dir}/ardupilot_msgs',
+        f'{uros_include_dir}/builtin_interfaces',
+        f'{uros_include_dir}/geographic_msgs',
+        f'{uros_include_dir}/geometry_msgs',
+        f'{uros_include_dir}/rosgraph_msgs',
+        f'{uros_include_dir}/sensor_msgs',
+        f'{uros_include_dir}/std_msgs',
+        f'{uros_include_dir}/tf2_msgs',
+        f'{uros_include_dir}/unique_identifier_msgs',
+    ]
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    # auto update submodules
+    cfg.env.append_value('GIT_SUBMODULES', 'ardupilot_uros')
+
+
+def build(bld):
+    bld.env.LIB += ['microros']
+    bld.env.LIBPATH += [str(pathlib.PurePath(bld.env.SRCROOT, bld.env.UROS_LIBRARY_DIR))]

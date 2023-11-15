@@ -64,6 +64,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 
 class AP_DDS_Client;
+class AP_UROS_Client;
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -425,6 +426,12 @@ protected:
     // Declare the dds client for communication with ROS2 and DDS(common for all vehicles)
     AP_DDS_Client *dds_client;
     bool init_dds_client() WARN_IF_UNUSED;
+#endif
+
+#if AP_UROS_ENABLED
+    // Declare the micro-ros client for communication with ROS 2 and DDS (common for all vehicles)
+    AP_UROS_Client *uros_client;
+    bool init_uros_client() WARN_IF_UNUSED;
 #endif
 
     // Check if this mode can be entered from the GCS
