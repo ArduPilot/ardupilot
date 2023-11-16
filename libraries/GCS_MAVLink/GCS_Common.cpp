@@ -3203,6 +3203,16 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return MAV_RESULT_ACCEPTED;
         }
+        if (is_equal(packet.param4, 100.0f)) {
+            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
+            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
+            while (!_deadlock_sem.taken) {
+                hal.scheduler->delay(1);
+            }
+            WITH_SEMAPHORE(_deadlock_sem.sem);
+            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
+            return MAV_RESULT_ACCEPTED;
+        }
 #endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
@@ -3217,16 +3227,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 #endif
         }
 #endif
-        if (is_equal(packet.param4, 100.0f)) {
-            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
-            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
-            while (!_deadlock_sem.taken) {
-                hal.scheduler->delay(1);
-            }
-            WITH_SEMAPHORE(_deadlock_sem.sem);
-            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
-            return MAV_RESULT_ACCEPTED;
-        }
     }
 
     // refuse reboot when armed:
@@ -3270,6 +3270,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     return MAV_RESULT_FAILED;
 }
 
+#if AP_MAVLINK_FAILURE_CREATION_ENABLED
 /*
   take a semaphore and do not release it, triggering a deadlock
  */
@@ -3280,6 +3281,7 @@ void GCS_MAVLINK::deadlock_sem(void)
         _deadlock_sem.sem.take_blocking();
     }
 }
+#endif
 
 /*
   handle a flight termination request
