@@ -579,11 +579,7 @@ class TestResults(object):
     def __init__(self):
         """Init test results class."""
         self.date = time.asctime()
-        self.githash = util.run_cmd('git rev-parse HEAD',
-                                    output=True,
-                                    directory=util.reltopdir('.')).strip()
-        if sys.version_info.major >= 3:
-            self.githash = self.githash.decode('utf-8')
+        self.githash = util.get_git_hash()
         self.tests = []
         self.files = []
         self.images = []
