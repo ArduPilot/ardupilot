@@ -1681,7 +1681,9 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         }
     }
 #endif
-
+#if defined(HAL_ARM_GPIO_PIN)
+    update_arm_gpio();
+#endif
     return armed;
 }
 
@@ -1721,9 +1723,20 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         }
     }
 #endif
-
+#if defined(HAL_ARM_GPIO_PIN)
+    update_arm_gpio();
+#endif
     return true;
 }
+
+#if defined(HAL_ARM_GPIO_PIN)
+void AP_Arming::update_arm_gpio()
+{
+    if (!AP_BoardConfig::arming_gpio_disabled()) {
+        hal.gpio->write(HAL_ARM_GPIO_PIN, HAL_ARM_GPIO_POL_INVERT ? !armed : armed);
+    }
+}
+#endif
 
 void AP_Arming::send_arm_disarm_statustext(const char *str) const
 {
