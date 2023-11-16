@@ -4,19 +4,23 @@
 #if AP_NETWORKING_ENABLED
 
 #include "AP_Networking.h"
-#include "AP_Networking_ChibiOS.h"
+#include "AP_Networking_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
+#include "AP_Networking_ChibiOS.h"
 #include <hal_mii.h>
 #include <lwip/sockets.h>
 #else
 #include <arpa/inet.h>
 #endif
 
+#if AP_NETWORKING_BACKEND_SITL
+#include "AP_Networking_SITL.h"
+#endif
 
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: ENABLED
@@ -54,6 +58,20 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Group: MACADDR
     // @Path: AP_Networking_macaddr.cpp
     AP_SUBGROUPINFO(param.macaddr, "MACADDR", 6,  AP_Networking, AP_Networking_MAC),
+
+#if AP_NETWORKING_TESTS_ENABLED
+    // @Param: TESTS
+    // @DisplayName: Test enable flags
+    // @Description: Enable/Disable networking tests
+    // @Bitmask: 0:UDP echo test,1:TCP echo test
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
+
+    // @Group: TEST_IP
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(param.test_ipaddr, "TEST_IP", 8,  AP_Networking, AP_Networking_IPV4),
+#endif
 
     AP_GROUPEND
 };
@@ -96,8 +114,11 @@ void AP_Networking::init()
         param.macaddr.set_default_address_byte(5, crc.bytes[2]);
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
     backend = new AP_Networking_ChibiOS(*this);
+#endif
+#if AP_NETWORKING_BACKEND_SITL
+    backend = new AP_Networking_SITL(*this);
 #endif
 
     if (backend == nullptr) {
@@ -115,6 +136,10 @@ void AP_Networking::init()
     announce_address_changes();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"NET: Initialized");
+
+#if AP_NETWORKING_TESTS_ENABLED
+    start_tests();
+#endif
 }
 
 /*
@@ -209,6 +234,23 @@ bool AP_Networking::convert_str_to_macaddr(const char *mac_str, uint8_t addr[6])
         s = strtok_r(nullptr, ":", &ptr);
     }
     return true;
+}
+
+// returns the 32bit value of the active IP address that is currently in use
+uint32_t AP_Networking::get_ip_active() const
+{
+    return backend?backend->activeSettings.ip:0;
+}
+
+// returns the 32bit value of the active Netmask that is currently in use
+uint32_t AP_Networking::get_netmask_active() const
+{
+    return backend?backend->activeSettings.nm:0;
+}
+
+uint32_t AP_Networking::get_gateway_active() const
+{
+    return backend?backend->activeSettings.gw:0;
 }
 
 AP_Networking *AP_Networking::singleton;

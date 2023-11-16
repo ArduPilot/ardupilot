@@ -108,7 +108,9 @@ private:
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet);
 #endif
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
     bool mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const override;
+#endif
 
     MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet);

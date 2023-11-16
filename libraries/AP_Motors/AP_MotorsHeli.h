@@ -162,6 +162,9 @@ public:
     // output_test_seq - disabled on heli, do nothing
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
 
+    // Helper function for param conversions to be done in motors class
+    virtual void heli_motors_param_conversions(void) { return; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

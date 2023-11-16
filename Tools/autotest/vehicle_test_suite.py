@@ -3915,7 +3915,16 @@ class TestSuite(ABC):
         return m
 
     # FIXME: try to use wait_and_maintain here?
-    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None, minimum_duration=None):
+    def wait_message_field_values(self,
+                                  message,
+                                  fieldvalues,
+                                  timeout=10,
+                                  epsilon=None,
+                                  instance=None,
+                                  minimum_duration=None,
+                                  verbose=False,
+                                  very_verbose=False,
+                                  ):
 
         tstart = self.get_sim_time_cached()
         pass_start = None
@@ -3923,8 +3932,13 @@ class TestSuite(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Field never reached values")
-            m = self.assert_receive_message(message, instance=instance)
-            if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
+            m = self.assert_receive_message(
+                message,
+                instance=instance,
+                verbose=verbose,
+                very_verbose=very_verbose,
+            )
+            if self.message_has_field_values(m, fieldvalues, epsilon=epsilon, verbose=verbose):
                 if minimum_duration is not None:
                     if pass_start is None:
                         pass_start = now
@@ -5897,10 +5911,12 @@ class TestSuite(ABC):
     def set_current_waypoint_using_mav_cmd_do_set_mission_current(
             self,
             seq,
+            reset=0,
             target_sysid=1,
             target_compid=1):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
                      p1=seq,
+                     p2=reset,
                      timeout=1,
                      target_sysid=target_sysid,
                      target_compid=target_compid)
@@ -10297,62 +10313,40 @@ Also, ignores heartbeats not from our target system'''
         self.set_rc(9, 2000)
         self.wait_text("Gripper load grabb", check_context=True)
         self.progress("Test gripper with Mavlink cmd")
+
+        self.context_collect('STATUSTEXT')
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas", check_context=True)
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_GRAB
+        )
+        self.wait_text("Gripper load grabb", check_context=True)
+
+        self.context_clear_collection('STATUSTEXT')
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas", check_context=True)
+
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb",
-                       the_function=lambda: self.mav.mav.command_long_send(1,
-                                                                           1,
-                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
-                                                                           0,
-                                                                           1,
-                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           0,
-                                                                           ))
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_GRAB
+        )
+        self.wait_text("Gripper load grabb", check_context=True)
+
         self.context_pop()
         self.reboot_sitl()
 
@@ -13187,7 +13181,7 @@ switch value'''
             (6, "SBP", None, "SBP", 5, 'detected'),
             # (7, "SBP2", 9, "SBP2", 5),  # broken, "waiting for config data"
             (8, "NOVA", 15, "NOVA", 5, 'detected'),  # no attempt to auto-detect this in AP_GPS
-            (11, "GSOF", 11, "GSOF", 5, 'detected'),
+            (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
         ]

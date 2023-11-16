@@ -538,7 +538,7 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 }
 
 // set_current_cmd - jumps to command specified by index
-bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
+bool AP_Mission::set_current_cmd(uint16_t index)
 {
     // read command to check for DO_LAND_START
     Mission_Command cmd;
@@ -546,10 +546,8 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
         _flags.in_landing_sequence = false;
     }
 
-    // mission command has been set and not as rewind command, don't track history.
-    if (!rewind) {
-        reset_wp_history();
-    }
+    // mission command has been set, don't track history.
+    reset_wp_history();
 
     // sanity check index and that we have a mission
     if (index >= (unsigned)_cmd_total || _cmd_total == 1) {

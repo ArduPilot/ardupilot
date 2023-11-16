@@ -524,6 +524,7 @@ void Copter::allocate_motors(void)
     convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
     convert_tradheli_parameters();
+    motors->heli_motors_param_conversions();
 #endif
 
 #if HAL_PROXIMITY_ENABLED

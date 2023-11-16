@@ -601,7 +601,7 @@ public:
     }
 
     // set_current_cmd - jumps to command specified by index
-    bool set_current_cmd(uint16_t index, bool rewind = false);
+    bool set_current_cmd(uint16_t index);
 
     // restart current navigation command.  Used to handle external changes to mission
     // returns true on success, false if current nav command has been deleted
@@ -723,6 +723,8 @@ public:
     // find the first JUMP_TAG with this tag and return its index.
     // Returns 0 if no appropriate JUMP_TAG match can be found.
     uint16_t get_index_of_jump_tag(const uint16_t tag) const;
+
+    bool is_valid_index(const uint16_t index) const { return index < _cmd_total; }
 
 #if AP_SDCARD_STORAGE_ENABLED
     bool failed_sdcard_storage(void) const {

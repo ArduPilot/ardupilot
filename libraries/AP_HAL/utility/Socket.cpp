@@ -17,7 +17,8 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if HAL_OS_SOCKETS
+#include <AP_Networking/AP_Networking_Config.h>
+#if AP_NETWORKING_SOCKETS_ENABLED
 
 #include "Socket.h"
 #include <errno.h>
@@ -34,7 +35,9 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
     datagram(_datagram),
     fd(_fd)
 {
+#ifdef FD_CLOEXEC
     fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
     if (!datagram) {
         int one = 1;
         setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
@@ -44,7 +47,11 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
 SocketAPM::~SocketAPM()
 {
     if (fd != -1) {
+#if AP_NETWORKING_BACKEND_CHIBIOS
+        ::lwip_close(fd);
+#else
         ::close(fd);
+#endif
         fd = -1;
     }
 }
@@ -69,7 +76,11 @@ bool SocketAPM::connect(const char *address, uint16_t port)
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    if (::lwip_connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+#else
     if (::connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+#endif
         return false;
     }
     return true;
@@ -85,7 +96,11 @@ bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t tim
 
     set_blocking(false);
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    int ret = ::lwip_connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#else
     int ret = ::connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#endif
     if (ret == 0) {
         // instant connect?
         return true;
@@ -113,7 +128,11 @@ bool SocketAPM::bind(const char *address, uint16_t port)
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    if (::lwip_bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+#else
     if (::bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+#endif
         return false;
     }
     return true;
@@ -148,7 +167,11 @@ bool SocketAPM::set_blocking(bool blocking) const
  */
 bool SocketAPM::set_cloexec() const
 {
+#ifdef FD_CLOEXEC
     return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
+#else
+    return false;
+#endif
 }
 
 /*
@@ -156,7 +179,11 @@ bool SocketAPM::set_cloexec() const
  */
 ssize_t SocketAPM::send(const void *buf, size_t size) const
 {
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    return ::lwip_send(fd, buf, size, 0);
+#else
     return ::send(fd, buf, size, 0);
+#endif
 }
 
 /*
@@ -166,7 +193,11 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    return ::lwip_sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#else
     return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#endif
 }
 
 /*
@@ -178,7 +209,11 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
         return -1;
     }
     socklen_t len = sizeof(in_addr);
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    return ::lwip_recvfrom(fd, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
+#else
     return ::recvfrom(fd, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
+#endif
 }
 
 /*
@@ -242,7 +277,11 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
  */
 bool SocketAPM::listen(uint16_t backlog) const
 {
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    return ::lwip_listen(fd, (int)backlog) == 0;
+#else
     return ::listen(fd, (int)backlog) == 0;
+#endif
 }
 
 /*
@@ -255,7 +294,11 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
         return nullptr;
     }
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    int newfd = ::lwip_accept(fd, nullptr, nullptr);
+#else
     int newfd = ::accept(fd, nullptr, nullptr);
+#endif
     if (newfd == -1) {
         return nullptr;
     }
@@ -265,4 +308,4 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     return new SocketAPM(false, newfd);
 }
 
-#endif // HAL_OS_SOCKETS
+#endif // AP_NETWORKING_BACKEND_ANY

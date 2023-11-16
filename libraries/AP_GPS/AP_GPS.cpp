@@ -356,17 +356,18 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if AP_GPS_SBF_ENABLED
     // @Param: _COM_PORT
     // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF GPS
+    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
+    // @Values: 0:COM1(RS232) on GSOF, 1:COM2(TTL) on GSOF
     // @RebootRequired: True
     AP_GROUPINFO("_COM_PORT", 23, AP_GPS, _com_port[0], HAL_GPS_COM_PORT_DEFAULT),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Param: _COM_PORT2
     // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF GPS
+    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -753,6 +754,11 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return new AP_GPS_ExternalAHRS(*this, state[instance], nullptr);
 #endif
+#if AP_GPS_GSOF_ENABLED
+    case GPS_TYPE_GSOF:
+        dstate->auto_detected_baud = false; // specified, not detected
+        return new AP_GPS_GSOF(*this, state[instance], _port[instance]);
+#endif //AP_GPS_GSOF_ENABLED
     default:
         break;
     }
@@ -802,10 +808,6 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     case GPS_TYPE_SBF:
         return new AP_GPS_SBF(*this, state[instance], _port[instance]);
 #endif //AP_GPS_SBF_ENABLED
-#if AP_GPS_GSOF_ENABLED
-    case GPS_TYPE_GSOF:
-        return new AP_GPS_GSOF(*this, state[instance], _port[instance]);
-#endif //AP_GPS_GSOF_ENABLED
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
         return new AP_GPS_NOVA(*this, state[instance], _port[instance]);

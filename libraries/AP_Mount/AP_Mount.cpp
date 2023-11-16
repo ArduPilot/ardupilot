@@ -850,6 +850,16 @@ void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) co
     backend->send_camera_settings(chan);
 }
 
+// send camera capture status message to GCS
+void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_capture_status(chan);
+}
+
 // get rangefinder distance.  Returns true on success
 bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) const
 {
