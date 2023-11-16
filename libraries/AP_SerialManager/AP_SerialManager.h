@@ -115,6 +115,18 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
 
+#ifndef AP_SERIALMANAGER_REGISTER_ENABLED
+#define AP_SERIALMANAGER_REGISTER_ENABLED HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif
+
+// serial ports registered by AP_Networking will use IDs starting at 21 for the first port
+#define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
+
+// serial ports registered by AP_DroneCAN will use IDs starting at 41/51 for the first port
+#define AP_SERIALMANAGER_CAN_D1_PORT_1         41 // CAN_D1_UC_S1_*
+#define AP_SERIALMANAGER_CAN_D2_PORT_1         51 // CAN_D2_UC_S1_*
+
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -205,7 +217,7 @@ public:
 
     // get the passthru ports if enabled
     bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                      uint32_t &baud1, uint32_t &baud2) const;
+                      uint32_t &baud1, uint32_t &baud2);
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);
@@ -235,11 +247,16 @@ public:
         AP_SerialManager::SerialProtocol get_protocol() const {
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
-    private:
         AP_Int32 baud;
         AP_Int16 options;
         AP_Int8 protocol;
+
+        // serial index number
+        uint8_t idx;
     };
+
+    // get a state from serial index
+    const UARTState *get_state_by_id(uint8_t id) const;
 
     // search through managed serial connections looking for the
     // instance-nth UART which is running protocol protocol.
@@ -248,6 +265,25 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    /*
+      a class for a externally registered port
+      used by AP_Networking
+     */
+    class RegisteredPort : public AP_HAL::UARTDriver {
+    public:
+        RegisteredPort *next;
+        UARTState state;
+    };
+    RegisteredPort *registered_ports;
+    HAL_Semaphore port_sem;
+
+    // register an externally managed port
+    void register_port(RegisteredPort *port);
+
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
+
 
 private:
     static AP_SerialManager *_singleton;
