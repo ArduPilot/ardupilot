@@ -683,6 +683,24 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
 }
 
 /*
+  get a UARTState by index
+*/
+const AP_SerialManager::UARTState *AP_SerialManager::get_state_by_id(uint8_t id) const
+{
+    if (id < SERIALMANAGER_NUM_PORTS) {
+        return &state[id];
+    }
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->state.idx == id) {
+            return &p->state;
+        }
+    }
+#endif
+    return nullptr;
+}
+
+/*
  *  map from a 16 bit EEPROM baud rate to a real baud rate.  For
  *  stm32-based boards we can do 1.5MBit, although 921600 is more
  *  reliable.
@@ -757,18 +775,24 @@ void AP_SerialManager::set_options(uint16_t i)
 
 // get the passthru ports if enabled
 bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                                    uint32_t &baud1, uint32_t &baud2) const
+                                    uint32_t &baud1, uint32_t &baud2)
 {
     if (passthru_port2 < 0 ||
-        passthru_port2 >= SERIALMANAGER_NUM_PORTS ||
-        passthru_port1 < 0 ||
-        passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
+        passthru_port1 < 0) {
         return false;
     }
-    port1 = hal.serial(passthru_port1);
-    port2 = hal.serial(passthru_port2);
-    baud1 = state[passthru_port1].baudrate();
-    baud2 = state[passthru_port2].baudrate();
+    port1 = get_serial_by_id(passthru_port1);
+    port2 = get_serial_by_id(passthru_port2);
+    if (port1 == nullptr || port2 == nullptr) {
+        return false;
+    }
+    const auto *state1 = get_state_by_id(passthru_port1);
+    const auto *state2 = get_state_by_id(passthru_port2);
+    if (!state1 || !state2) {
+        return false;
+    }
+    baud1 = state1->baudrate();
+    baud2 = state2->baudrate();
     timeout_s = MAX(passthru_timeout, 0);
     return true;
 }
