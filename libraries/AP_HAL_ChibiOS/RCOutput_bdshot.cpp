@@ -58,11 +58,12 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
         iomcu.set_bidir_dshot_mask(mask & iomcu_mask);
     }
 #endif
-    _bdshot.mask = (mask >> chan_offset);
+    const uint32_t local_mask = (mask >> chan_offset) & ~_bdshot.disabled_mask;
+    _bdshot.mask = local_mask;
     // we now need to reconfigure the DMA channels since they are affected by the value of the mask
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (((group.ch_mask << chan_offset) & mask) == 0) {
+        if ((group.ch_mask & local_mask) == 0) {
             // this group is not affected
             continue;
         }
@@ -101,7 +102,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
                                                 FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }
             if (!group.bdshot.ic_dma_handle[i]) {
-                return false;
+                goto ic_dma_fail;
             }
         }
     }
@@ -149,11 +150,11 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             if (!group.dma_ch[curr_chan].have_dma) {
                 // We can't find a DMA channel to use so
                 // return error
-                return false;
+                goto ic_dma_fail;
             }
             if (group.bdshot.ic_dma_handle[i]) {
                 INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
-                return false;
+                goto ic_dma_fail;
             }
             // share up channel if required
             if (group.dma_ch[curr_chan].stream_id == group.dma_up_stream_id) {
@@ -165,7 +166,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
                                             FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }
             if (!group.bdshot.ic_dma_handle[i]) {
-                return false;
+                goto ic_dma_fail;
             }
             group.bdshot.telem_tim_ch[i] = curr_chan;
             group.dma_ch[i] = group.dma_ch[curr_chan];
@@ -181,6 +182,15 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
     }
 
     return true;
+
+ic_dma_fail:
+    for (uint8_t i = 0; i < 4; i++) {
+        if (group.bdshot.ic_dma_handle[i] != group.dma_handle) {
+            delete group.bdshot.ic_dma_handle[i];
+        }
+        group.bdshot.ic_dma_handle[i] = nullptr;
+    }
+    return false;
 }
 
 /*
@@ -676,8 +686,6 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     }
 }
 
-#define INVALID_ERPM 0xfffU
-
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
 uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count)
@@ -801,7 +809,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
 
     erpm = (1000000U * 60U / 100U + erpm / 2U) / erpm;
 
-    if (encodederpm == 0x0fff) { // the special 0 encoding
+    if (encodederpm == ZERO_ERPM) { // the special 0 encoding
         erpm = 0;
     }
 

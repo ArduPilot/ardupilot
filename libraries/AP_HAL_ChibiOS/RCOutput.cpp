@@ -16,6 +16,7 @@
  * Bi-directional dshot based on Betaflight, code by Andy Piper and Siddharth Bharat Purohit
  * 
  * There really is no dshot reference. For information try these resources:
+ * https://brushlesswhoop.com/dshot-and-bidirectional-dshot/
  * https://blck.mn/2016/11/dshot-the-new-kid-on-the-block/
  * https://www.swallenhardware.io/battlebots/2019/4/20/a-developers-guide-to-dshot-escs
  */
@@ -981,10 +982,11 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 
 #ifdef HAL_WITH_BIDIR_DSHOT
     // configure input capture DMA if required
-    if (is_bidir_dshot_enabled()) {
+    if (is_bidir_dshot_enabled(group)) {
         if (!bdshot_setup_group_ic_DMA(group)) {
-            group.dma_handle->unlock();
-            return false;
+            _bdshot.mask &= ~group.ch_mask; // only use dshot on this group
+            _bdshot.disabled_mask |= group.ch_mask;
+            active_high = true;
         }
     }
 #endif
@@ -1115,7 +1117,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
 #if HAL_DSHOT_ENABLED
         const uint32_t rate = protocol_bitrate(group.current_mode);
-        bool active_high = is_bidir_dshot_enabled() ? false : true;
+        bool active_high = is_bidir_dshot_enabled(group) ? false : true;
         bool at_least_freq = false;
         // calculate min time between pulses
         const uint32_t pulse_send_time_us = 1000000UL * dshot_bit_length / rate;
@@ -1131,7 +1133,7 @@ void RCOutput::set_group_mode(pwm_group &group)
             group.current_mode = MODE_PWM_NORMAL;
             break;
         }
-        if (is_bidir_dshot_enabled()) {
+        if (is_bidir_dshot_enabled(group)) {
             group.dshot_pulse_send_time_us = pulse_send_time_us;
             // to all intents and purposes the pulse time of send and receive are the same
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
