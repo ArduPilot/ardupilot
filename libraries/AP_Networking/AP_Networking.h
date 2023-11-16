@@ -8,6 +8,8 @@
 
 #include "AP_Networking_address.h"
 #include "AP_Networking_Backend.h"
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 /*
   Note! all uint32_t IPv4 addresses are in host byte order
@@ -17,11 +19,14 @@
 class AP_Networking_Backend;
 class AP_Networking_ChibiOS;
 
+class SocketAPM;
+
 class AP_Networking
 {
 public:
     friend class AP_Networking_Backend;
     friend class AP_Networking_ChibiOS;
+    friend class AP_Vehicle;
 
     AP_Networking();
 
@@ -175,6 +180,51 @@ private:
 
     HAL_Semaphore sem;
 
+    enum class NetworkPortType {
+        NONE = 0,
+        UDP_CLIENT = 1,
+    };
+
+    // class for NET_Pn_* parameters
+    class Port : public AP_SerialManager::RegisteredPort {
+    public:
+        /* Do not allow copies */
+        CLASS_NO_COPY(Port);
+
+        Port() {}
+
+        static const struct AP_Param::GroupInfo var_info[];
+        AP_Enum<NetworkPortType> type;
+        AP_Networking_IPV4 ip {"0.0.0.0"};
+        AP_Int32 port;
+        SocketAPM *sock;
+
+        bool is_initialized() override {
+            return true;
+        }
+        bool tx_pending() override {
+            return false;
+        }
+
+        void udp_client_init(void);
+        void udp_client_loop(void);
+
+    private:
+        bool init_buffers(uint32_t size);
+
+        uint32_t txspace() override;
+        void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+        size_t _write(const uint8_t *buffer, size_t size) override;
+        ssize_t _read(uint8_t *buffer, uint16_t count) override;
+        uint32_t _available() override;
+        void _end() override {}
+        void _flush() override {}
+        bool _discard_input() override;
+
+        ByteBuffer *readbuffer;
+        ByteBuffer *writebuffer;
+    };
+
 private:
     uint32_t announce_ms;
 
@@ -187,6 +237,11 @@ private:
     void test_UDP_client(void);
     void test_TCP_client(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
+
+    // ports for registration with serial manager
+    Port ports[AP_NETWORKING_NUM_PORTS];
+
+    void ports_init(void);
 };
 
 namespace AP
