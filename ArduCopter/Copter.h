@@ -174,15 +174,14 @@
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif
 
-// Local modules
-#ifdef USER_PARAMS_ENABLED
-#include "UserParameters.h"
-#endif
-#include "Parameters.h"
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
-
+// Local modules
+#include "Parameters.h"
+#if USER_PARAMS_ENABLED
+#include "UserParameters.h"
+#endif
 #include "mode.h"
 
 class Copter : public AP_Vehicle {
