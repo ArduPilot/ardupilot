@@ -23,6 +23,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Networking/AP_Networking_Config.h>
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
@@ -150,6 +151,13 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
 
+#ifndef AP_SERIALMANAGER_REGISTER_ENABLED
+#define AP_SERIALMANAGER_REGISTER_ENABLED AP_NETWORKING_ENABLED
+#endif
+
+// serial ports registered by AP_Networking will use IDs starting at 21 for the first port
+#define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -268,10 +276,12 @@ public:
         AP_SerialManager::SerialProtocol get_protocol() const {
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
-    private:
         AP_Int32 baud;
         AP_Int16 options;
         AP_Int8 protocol;
+
+        // serial index number
+        uint8_t idx;
     };
 
     // search through managed serial connections looking for the
@@ -281,6 +291,24 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    /*
+      a class for a externally registered port
+      used by AP_Networking
+     */
+    class RegisteredPort : public AP_HAL::UARTDriver {
+    public:
+        RegisteredPort *next;
+        UARTState state;
+    };
+    RegisteredPort *registered_ports;
+
+    // register an externally managed port
+    void register_port(RegisteredPort *port);
+
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
+
 
 private:
     static AP_SerialManager *_singleton;
