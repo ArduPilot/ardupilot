@@ -74,8 +74,9 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 bool Plane::suppress_throttle(void)
 {
 #if PARACHUTE == ENABLED
-    if (control_mode->does_auto_throttle() && parachute.release_initiated()) {
-        // throttle always suppressed in auto-throttle modes after parachute release initiated
+    if (parachute.release_initiated() && (parachute.throttle_suppress() == AP_PARACHUTE_THROTTLE_ALWAYS_SUPPRESS ||
+        (parachute.throttle_suppress() == AP_PARACHUTE_THROTTLE_SUPPRESS_ONLY_AUTO && control_mode->does_auto_throttle()))) {
+        // the throttle is suppressed if the parachute parameter value allows it
         throttle_suppressed = true;
         return true;
     }

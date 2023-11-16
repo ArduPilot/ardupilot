@@ -21,6 +21,10 @@
 
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
 
+#define AP_PARACHUTE_THROTTLE_NOT_SUPPRESS       0 // do not suppress throttle due to an parachute
+#define AP_PARACHUTE_THROTTLE_SUPPRESS_ONLY_AUTO 1 // suppress throttle only if autothrottle modes
+#define AP_PARACHUTE_THROTTLE_ALWAYS_SUPPRESS    2 // always suppress throttle, regardless of mode
+
 #ifndef HAL_PARACHUTE_ENABLED
 // default to parachute enabled to match previous configs
 #define HAL_PARACHUTE_ENABLED 1
@@ -85,6 +89,9 @@ public:
 
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
+
+    // throttle_suppress - returns the current rule for throttle suppression when the parachute is released
+    int8_t throttle_suppress() const { return _throttle_suppress; };
     
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -101,6 +108,7 @@ private:
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
     AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
+    AP_Int8     _throttle_suppress; // 0 - do not suppress throttle due to an parachute; 1 - suppress throttle only if autothrottle modes; 2 - always suppress throttle, regardless of mode
 
     // internal variables
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)

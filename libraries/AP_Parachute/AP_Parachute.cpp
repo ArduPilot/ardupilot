@@ -81,6 +81,13 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, 0),
 
+    // @Param: THR_SUPR
+    // @DisplayName: Throttle suppress after parachute release
+    // @Description: Throttle suppress after parachute release. Default: 1
+    // @Values: 0:Not suppress,1:Only auto throttle modes,2:Always suppress
+    // @User: Standard
+    AP_GROUPINFO("THR_SUPPR", 8, AP_Parachute, _throttle_suppress, AP_PARACHUTE_THROTTLE_SUPPRESS_ONLY_AUTO),
+
     AP_GROUPEND
 };
 
