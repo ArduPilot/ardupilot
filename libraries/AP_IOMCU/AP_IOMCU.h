@@ -271,11 +271,12 @@ private:
         uint16_t rate;
     } dshot_rate;
 
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
     // bi-directional dshot erpm values
     struct page_dshot_erpm dshot_erpm;
     struct page_dshot_telem dshot_telem[IOMCU_MAX_TELEM_CHANNELS/4];
     uint8_t esc_group;
-
+#endif
     // queue of dshot commands that need sending
     ObjectBuffer<page_dshot> dshot_command_queue{8};
 
