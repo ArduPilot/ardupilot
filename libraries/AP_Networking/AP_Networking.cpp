@@ -140,6 +140,9 @@ void AP_Networking::init()
 #if AP_NETWORKING_TESTS_ENABLED
     start_tests();
 #endif
+
+    // init network mapped serialmanager ports
+    ports_init();
 }
 
 /*
