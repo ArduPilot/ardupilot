@@ -269,8 +269,8 @@ submodules at specific revisions.
     g.add_option('--enable-dds', action='store_true',
                  help="Enable the dds client to connect with ROS2/DDS.")
 
-    g.add_option('--enable-networking', action='store_true',
-                 help="Enable the networking code")
+    g.add_option('--disable-networking', action='store_true',
+                 help="Disable the networking API code")
 
     g.add_option('--enable-networking-tests', action='store_true',
                  help="Enable the networking test code. Automatically enables networking.")
