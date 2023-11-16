@@ -379,4 +379,4 @@ env BUILD_ABIN True
 
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
-define HAL_WITH_IO_MCU_DSHOT 1
+define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
