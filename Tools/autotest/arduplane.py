@@ -4262,7 +4262,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if abs(m.fuel_flow - 0.2) < 0.0001:
                 raise NotAchievedException("Expected fuel flow")
 
-        self.disarm_vehicle()
+        self.set_rc(3, 1000)
+
+        # need to force disarm as the is_flying flag can trigger with the engine running
+        self.disarm_vehicle(force=True)
 
     def MegaSquirt(self):
         '''test MegaSquirt driver'''
