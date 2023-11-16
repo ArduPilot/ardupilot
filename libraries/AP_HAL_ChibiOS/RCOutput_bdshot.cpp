@@ -28,8 +28,6 @@
 extern AP_IOMCU iomcu;
 #endif
 
-#ifdef HAL_WITH_BIDIR_DSHOT
-
 #if defined(IOMCU_FW)
 #undef INTERNAL_ERROR
 #define INTERNAL_ERROR(x) do {} while (0)
@@ -39,25 +37,20 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
-#if RCOU_DSHOT_TIMING_DEBUG
-#define DEBUG_CHANNEL 1
-#define TOGGLE_PIN_CH_DEBUG(pin, channel) do { if (channel == DEBUG_CHANNEL) palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
-#else
-#define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
-#endif
-
+#if HAL_USE_PWM
 /*
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
-#if HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
     const uint32_t iomcu_mask = ((1U<<chan_offset)-1);
     if (iomcu_dshot && (mask & iomcu_mask)) {
         iomcu.set_bidir_dshot_mask(mask & iomcu_mask);
     }
 #endif
+#ifdef HAL_WITH_BIDIR_DSHOT
     const uint32_t local_mask = (mask >> chan_offset) & ~_bdshot.disabled_mask;
     _bdshot.mask = local_mask;
     // we now need to reconfigure the DMA channels since they are affected by the value of the mask
@@ -69,7 +62,18 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
         }
         set_group_mode(group);
     }
+#endif
 }
+#endif // HAL_USE_PWM
+
+#ifdef HAL_WITH_BIDIR_DSHOT
+
+#if RCOU_DSHOT_TIMING_DEBUG
+#define DEBUG_CHANNEL 1
+#define TOGGLE_PIN_CH_DEBUG(pin, channel) do { if (channel == DEBUG_CHANNEL) palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#else
+#define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
+#endif
 
 bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 {
