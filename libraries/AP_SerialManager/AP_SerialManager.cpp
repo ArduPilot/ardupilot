@@ -439,6 +439,8 @@ void AP_SerialManager::init()
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
         auto *uart = hal.serial(i);
 
+        state[i].idx = i;
+
         if (uart != nullptr) {
             set_options(i);
             switch (state[i].protocol) {
@@ -589,6 +591,17 @@ const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum
         }
     }
 
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (protocol_match(protocol, (enum SerialProtocol)p->state.protocol.get())) {
+            if (found_instance == instance) {
+                return &p->state;
+            }
+            found_instance++;
+        }
+    }
+#endif
+
     // if we got this far we did not find the uart
     return nullptr;
 }
@@ -602,10 +615,23 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     if (_state == nullptr) {
         return nullptr;
     }
-    const uint8_t serial_idx = _state - &state[0];
+    const uint8_t serial_idx = _state->idx;
 
     // set options before any user does begin()
     AP_HAL::UARTDriver *port = hal.serial(serial_idx);
+
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    if (port == nullptr) {
+        // look for a registered port
+        for (auto p = registered_ports; p; p = p->next) {
+            if (p->state.idx == serial_idx) {
+                port = p;
+                break;
+            }
+        }
+    }
+#endif
+
     if (port) {
         port->set_options(_state->options);
     }
@@ -637,7 +663,7 @@ int8_t AP_SerialManager::find_portnum(enum SerialProtocol protocol, uint8_t inst
     if (_state == nullptr) {
         return -1;
     }
-    return int8_t(_state - &state[0]);
+    return int8_t(_state->idx);
 }
 
 // get_serial_by_id - gets serial by serial id
@@ -646,6 +672,13 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
     if (id < SERIALMANAGER_NUM_PORTS) {
         return hal.serial(id);
     }
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->state.idx == id) {
+            return (AP_HAL::UARTDriver *)p;
+        }
+    }
+#endif
     return nullptr;
 }
 
@@ -755,6 +788,17 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
     }
 }
 
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+/*
+  register an external network port. It is up to the caller to use a unique id field
+  using AP_SERIALMANAGER_NET_PORT_1 as the base id for NET_P1_*
+ */
+void AP_SerialManager::register_port(RegisteredPort *port)
+{
+    port->next = registered_ports;
+    registered_ports = port;
+}
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
 namespace AP {
 
