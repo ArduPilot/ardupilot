@@ -413,8 +413,8 @@ def do_build(opts, frame_options):
         if configure_target == 'sitl' and "--enable-networking" not in cmd_configure:
             cmd_configure.append("--enable-networking")
 
-    if opts.enable_networking and configure_target == 'sitl':
-        cmd_configure.append("--enable-networking")
+    if opts.disable_networking or configure_target != "sitl":
+        cmd_configure.append("--disable-networking")
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
@@ -1336,8 +1336,8 @@ group_sim.add_option("", "--sim-address",
                      help="IP address of the simulator. Defaults to localhost")
 group_sim.add_option("--enable-dds", action='store_true',
                      help="Enable the dds client to connect with ROS2/DDS")
-group_sim.add_option("--enable-networking", action='store_true',
-                     help="Enable networking")
+group_sim.add_option("--disable-networking", action='store_true',
+                     help="Disable networking APIs")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
 
