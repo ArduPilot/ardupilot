@@ -1554,7 +1554,7 @@ class TestSuite(ABC):
                 if spec is None:
                     raise ImportError
             except ImportError as e:
-                raise ImportError(f"Junit export need junitparser package.\n {e} \nTry: python -m pip install junitparser")
+                raise ImportError(f"Junit export need junitparser package.\n {e} \nTry: python3 -m pip install junitparser")
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -6185,6 +6185,58 @@ class TestSuite(ABC):
         m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
         return m.capabilities
 
+    def decode_flight_sw_version(self, flight_sw_version: int):
+        """ Decode 32 bit flight_sw_version mavlink parameter
+        corresponds to encoding in ardupilot GCS_MAVLINK::send_autopilot_version."""
+        fw_type_id = (flight_sw_version >> 0) % 256
+        patch = (flight_sw_version >> 8) % 256
+        minor = (flight_sw_version >> 16) % 256
+        major = (flight_sw_version >> 24) % 256
+        if fw_type_id == 0:
+            fw_type = "dev"
+        elif fw_type_id == 64:
+            fw_type = "alpha"
+        elif fw_type_id == 128:
+            fw_type = "beta"
+        elif fw_type_id == 192:
+            fw_type = "rc"
+        elif fw_type_id == 255:
+            fw_type = "official"
+        else:
+            fw_type = "undefined"
+        return major, minor, patch, fw_type
+
+    def get_autopilot_firmware_version(self):
+        self.mav.mav.command_long_send(self.sysid_thismav(),
+                                       1,
+                                       mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
+                                       0,  # confirmation
+                                       1,  # 1: Request autopilot version
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0)
+        m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
+        self.fcu_firmware_version = self.decode_flight_sw_version(m.flight_sw_version)
+
+        def hex_values_to_int(hex_values):
+            # Convert ascii codes to characters
+            hex_chars = [chr(int(hex_value)) for hex_value in hex_values]
+            # Convert hex characters to integers, handle \x00 case
+            int_values = [0 if hex_char == '\x00' else int(hex_char, 16) for hex_char in hex_chars]
+            return int_values
+
+        fcu_hash_to_hex = ""
+        for i in hex_values_to_int(m.flight_custom_version):
+            fcu_hash_to_hex += f"{i:x}"
+        self.fcu_firmware_hash = fcu_hash_to_hex
+        self.progress(f"Firmware Version {self.fcu_firmware_version}")
+        self.progress(f"Firmware hash {self.fcu_firmware_hash}")
+        self.githash = util.get_git_hash(short=True)
+        self.progress(f"Git hash {self.githash}")
+
     def GetCapabilities(self):
         '''Get Capabilities'''
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
@@ -8376,6 +8428,7 @@ Also, ignores heartbeats not from our target system'''
         # recv_match and those will not be in self.mav.messages until
         # you do this!
         self.wait_heartbeat()
+        self.get_autopilot_firmware_version()
         self.progress("Sim time: %f" % (self.get_sim_time(),))
         self.apply_default_parameters()
 
@@ -13649,9 +13702,8 @@ SERIAL5_BAUD 128
         xml_filename = f"autotest_result_{frame}_{test_name}_junit.xml"
         self.progress(f"Writing test result in jUnit format to {xml_filename}\n")
 
-        suites = TestSuite("ArduPilot Autotest")
-        suites.timestamp = datetime.now().replace(microsecond=0).isoformat()
         suite = TestSuite(f"Autotest {frame} {test_name}")
+        suite.timestamp = datetime.now().replace(microsecond=0).isoformat()
         for result in results:
             case = TestCase(f"{result.test.name}", f"{frame}", result.time_elapsed)
             # f"{result.test.description}"
@@ -13663,9 +13715,18 @@ SERIAL5_BAUD 128
             (test, reason) = skipped
             case = TestCase(f"{test.name}", f"{test.function}")
             case.result = [Skipped(f"Skipped : {reason}")]
-        # Add suite to JunitXml
+
+        suite.add_property("Firmware Version Major", self.fcu_firmware_version[0])
+        suite.add_property("Firmware Version Minor", self.fcu_firmware_version[1])
+        suite.add_property("Firmware Version Rev", self.fcu_firmware_version[2])
+        suite.add_property("Firmware hash", self.fcu_firmware_hash)
+        suite.add_property("Git hash", self.githash)
+        mavproxy_version = util.MAVProxy_version()
+        suite.add_property("Mavproxy Version Major", mavproxy_version[0])
+        suite.add_property("Mavproxy Version Minor", mavproxy_version[1])
+        suite.add_property("Mavproxy Version Rev", mavproxy_version[2])
+
         xml = JUnitXml()
-        xml.add_testsuite(suites)
         xml.add_testsuite(suite)
         xml.write(xml_filename, pretty=True)
 
