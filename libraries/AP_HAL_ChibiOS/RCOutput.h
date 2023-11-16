@@ -314,6 +314,8 @@ private:
     // input capture is expecting TELEM_IC_SAMPLE (16) ticks per transition (22) so the maximum
     // value of the counter in CCR registers is 16*22 == 352, so must be 16-bit
     static const uint16_t GCR_TELEMETRY_BUFFER_LEN = GCR_TELEMETRY_BIT_LEN*sizeof(dmar_uint_t);
+    static const uint16_t INVALID_ERPM = 0xffffU;
+    static const uint16_t ZERO_ERPM = 0x0fffU;
 
     struct pwm_group {
         // only advanced timers can do high clocks needed for more than 400Hz
@@ -551,6 +553,7 @@ private:
     // handling of bi-directional dshot
     struct {
         uint32_t mask;
+        uint32_t disabled_mask; // record of channels that were tried, but failed
         uint16_t erpm[max_channels];
         volatile uint32_t update_mask;
 #ifdef HAL_WITH_BIDIR_DSHOT
@@ -619,7 +622,7 @@ private:
 
     volatile bool _initialised;
 
-    bool is_bidir_dshot_enabled() const { return _bdshot.mask != 0; }
+    bool is_bidir_dshot_enabled(const pwm_group& group) const { return (_bdshot.mask & group.ch_mask) != 0; }
 
     static bool is_dshot_send_allowed(DshotState state) {
       return state == DshotState::IDLE || state == DshotState::RECV_COMPLETE || state == DshotState::RECV_FAILED;

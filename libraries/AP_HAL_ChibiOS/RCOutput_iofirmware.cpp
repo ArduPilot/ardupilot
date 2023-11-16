@@ -353,8 +353,6 @@ void RCOutput::bdshot_config_icu_dshot_f1(stm32_tim_t* TIMx, uint8_t chan, uint8
     }
 }
 
-#define INVALID_ERPM 0xfffU
-
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
 uint32_t RCOutput::bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed)
