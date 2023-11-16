@@ -69,27 +69,23 @@ public:
     GPS_Backend(class GPS &front, uint8_t _instance);
     virtual ~GPS_Backend() {}
 
-    void update(const GPS_Data &d);
-
     // 0 baud means "unset" i.e. baud-rate checks should not apply
     virtual uint32_t device_baud() const { return 0; }
 
     ssize_t write_to_autopilot(const char *p, size_t size) const;
     ssize_t read_from_autopilot(char *buffer, size_t size) const;
 
+    // read and process config from autopilot (e.g.)
+    virtual void update_read();
+    // writing fix information to autopilot (e.g.)
+    virtual void publish(const GPS_Data *d) = 0;
+    
 protected:
 
     uint8_t instance;
     GPS &front;
 
     class SIM *_sitl;
-
-private:
-
-    // read and process config from autopilot (e.g.)
-    virtual void update_read(const GPS_Data *d);
-    // writing fix information to autopilot (e.g.)
-    virtual void update_write(const GPS_Data *d) = 0;
 
 };
 
@@ -99,7 +95,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 };
 
 class GPS_GSOF : public GPS_Backend {
@@ -108,7 +104,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
 private:
     void send_gsof(const uint8_t *buf, const uint16_t size);
@@ -125,7 +121,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
 private:
 
@@ -141,7 +137,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
     uint32_t device_baud() const override { return 19200; }
 
@@ -158,7 +154,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 };
 
 class GPS_SBP_Common : public GPS_Backend {
@@ -179,7 +175,7 @@ public:
 
     using GPS_SBP_Common::GPS_SBP_Common;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
 };
 
@@ -189,7 +185,7 @@ public:
 
     using GPS_SBP_Common::GPS_SBP_Common;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
 };
 
@@ -199,7 +195,7 @@ public:
 
     using GPS_Backend::GPS_Backend;
 
-    void update_write(const GPS_Data *d) override;
+    void publish(const GPS_Data *d) override;
 
 private:
     void send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
