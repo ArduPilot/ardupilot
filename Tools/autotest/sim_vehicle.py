@@ -410,12 +410,16 @@ def do_build(opts, frame_options):
 
     if opts.enable_dds:
         cmd_configure.append("--enable-dds")
+        if configure_target == 'sitl' and "--enable-networking" not in cmd_configure:
+            cmd_configure.append("--enable-networking")
 
-    if opts.enable_networking:
+    if opts.enable_networking and configure_target == 'sitl':
         cmd_configure.append("--enable-networking")
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
+        if "--enable-networking" not in cmd_configure:
+            cmd_configure.append("--enable-networking")
 
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
