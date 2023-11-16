@@ -1505,6 +1505,10 @@ function ins:get_gyro_health(instance) end
 ---@return boolean
 function ins:get_accel_health(instance) end
 
+-- Get if the INS is currently calibrating
+---@return boolean
+function ins:calibrating() end
+
 -- desc
 ---@class Motors_dynamic
 Motors_dynamic = {}
