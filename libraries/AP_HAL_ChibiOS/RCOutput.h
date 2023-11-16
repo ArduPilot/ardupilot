@@ -164,14 +164,13 @@ public:
      */
     void set_telem_request_mask(uint32_t mask) override;
 
-#ifdef HAL_WITH_BIDIR_DSHOT
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
       The mask uses servo channel numbering
      */
     void set_bidir_dshot_mask(uint32_t mask) override;
-
+#ifdef HAL_WITH_BIDIR_DSHOT
     void set_motor_poles(uint8_t poles) override { _bdshot.motor_poles = poles; }
 #endif
 
