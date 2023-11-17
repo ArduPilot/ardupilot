@@ -87,6 +87,11 @@ public:
         // ground vector estimate in meters/second, in North/East order
         Vector2f groundspeed_vector;
 
+        bool get_hagl(float &height) const WARN_IF_UNUSED {
+            height = hagl;
+            return hagl_valid;
+        }
+
         Vector3f velocity_NED;
         bool velocity_NED_valid;
 
@@ -98,6 +103,9 @@ public:
         // errors that are being corrected for:
         float vert_pos_rate_D;
         bool vert_pos_rate_D_valid;
+
+        float hagl;  // in metres
+        bool hagl_valid;
     };
 
     // init sets up INS board orientation
@@ -136,9 +144,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;
