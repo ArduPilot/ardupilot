@@ -32,8 +32,8 @@ public:
       Serial LED emulation
      */
     bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint32_t clock_mask = 0) override;
-    void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
-    void serial_led_send(const uint16_t chan) override;
+    bool set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
+    bool serial_led_send(const uint16_t chan) override;
     
 private:
     SITL_State *_sitlState;

@@ -115,34 +115,36 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
     return false;
 }
 
-void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     if (chan > 15) {
-        return;
+        return false;
     }
     SITL::SIM *sitl = AP::sitl();
     if (led == -1) {
         for (uint8_t i=0; i < sitl->led.num_leds[chan]; i++) {
             set_serial_led_rgb_data(chan, i, red, green, blue);
         }
-        return;
+        return true;
     }
     if (led < -1 || led >= sitl->led.num_leds[chan]) {
-        return;
+        return false;
     }
     if (sitl) {
         sitl->led.rgb[chan][led].rgb[0] = red;
         sitl->led.rgb[chan][led].rgb[1] = green;
         sitl->led.rgb[chan][led].rgb[2] = blue;
     }
+    return true;
 }
 
-void RCOutput::serial_led_send(const uint16_t chan)
+bool RCOutput::serial_led_send(const uint16_t chan)
 {
     SITL::SIM *sitl = AP::sitl();
     if (sitl) {
         sitl->led.send_counter++;
     }
+    return true;
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
