@@ -77,12 +77,6 @@ public:
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override;
 
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
-
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
@@ -90,6 +84,12 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
 private:
+
+    // relative-origin functions for fallback in AP_InertialNav
+    bool get_origin(Location &ret) const;
+    bool get_relative_position_NED_origin(Vector3f &vec) const;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const;
+    bool get_relative_position_D_origin(float &posD) const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;

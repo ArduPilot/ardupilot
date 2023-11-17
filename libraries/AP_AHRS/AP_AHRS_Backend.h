@@ -87,6 +87,26 @@ public:
         // ground vector estimate in meters/second, in North/East order
         Vector2f groundspeed_vector;
 
+        // origin-relative movement:
+        bool get_origin(Location &ret) const {
+            ret = origin;
+            return origin_valid;
+        }
+        bool  get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
+            vec = relative_position_NED_origin;
+            return relative_position_NED_origin_valid;
+        }
+
+        bool  get_relative_position_NE_origin(Vector2f &vec) const WARN_IF_UNUSED {
+            vec = relative_position_NE_origin;
+            return relative_position_NE_origin_valid;
+        }
+
+        bool  get_relative_position_D_origin(float &down) const WARN_IF_UNUSED {
+            down = relative_position_D_origin;
+            return relative_position_D_origin_valid;
+        }
+
         bool get_hagl(float &height) const WARN_IF_UNUSED {
             height = hagl;
             return hagl_valid;
@@ -108,6 +128,22 @@ public:
         // errors that are being corrected for:
         float vert_pos_rate_D;
         bool vert_pos_rate_D_valid;
+
+        // origin for local position:
+        Location origin;
+        bool origin_valid;
+
+        // position relative to origin in meters, North/East/Down
+        // order. This will only be accurate if have_inertial_nav() is
+        // true
+        Vector3f relative_position_NED_origin;
+        bool relative_position_NED_origin_valid;
+        // a position relative to origin in meters, North/East
+        // order
+        Vector2f relative_position_NE_origin;
+        bool relative_position_NE_origin_valid;
+        float relative_position_D_origin;
+        bool relative_position_D_origin_valid;
 
         float hagl;  // in metres
         bool hagl_valid;
@@ -197,26 +233,6 @@ public:
 
     //
     virtual bool set_origin(const Location &loc) {
-        return false;
-    }
-    virtual bool get_origin(Location &ret) const = 0;
-
-    // return a position relative to origin in meters, North/East/Down
-    // order. This will only be accurate if have_inertial_nav() is
-    // true
-    virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return a position relative to origin in meters, North/East
-    // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return a Down position relative to origin in meters
-    // Return true if estimate is valid
-    virtual bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
         return false;
     }
 
