@@ -19,16 +19,6 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    wind = _sitl->state.wind_ef;
-    return true;
-}
-
 bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
@@ -222,6 +212,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = get_location(results.location);
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
     results.hagl_valid = true;
+
+    // wind estimation:
+    results.wind = _sitl->state.wind_ef;
+    results.wind_valid = true;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

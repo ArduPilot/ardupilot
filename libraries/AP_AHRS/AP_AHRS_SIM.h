@@ -60,9 +60,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;

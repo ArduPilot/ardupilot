@@ -103,6 +103,11 @@ public:
             return hagl_valid;
         }
 
+        bool wind_estimate(Vector3f &_wind) const WARN_IF_UNUSED {
+            _wind = wind;
+            return wind_valid;
+        }
+
     private:
 
         Vector3f velocity_NED;
@@ -122,6 +127,10 @@ public:
 
         float hagl;  // in metres
         bool hagl_valid;
+
+        // wind estimate, earth frame, metres/second
+        Vector3f wind;
+        bool wind_valid;
     };
 
     // init sets up INS board orientation
@@ -160,9 +169,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // return a wind estimation vector, in m/s
-    virtual bool wind_estimate(Vector3f &wind) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate

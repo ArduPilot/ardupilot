@@ -800,12 +800,12 @@ bool AP_AHRS::_wind_estimate(Vector3f &wind) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.wind_estimate(wind);
+        return dcm_estimates.wind_estimate(wind);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.wind_estimate(wind);
+        return sim_estimates.wind_estimate(wind);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -821,7 +821,7 @@ bool AP_AHRS::_wind_estimate(Vector3f &wind) const
 
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.wind_estimate(wind);
+        return external_estimates.wind_estimate(wind);
 #endif
     }
     return false;
