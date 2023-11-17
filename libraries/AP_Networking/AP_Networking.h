@@ -206,11 +206,11 @@ private:
             return false;
         }
 
-        void udp_client_init(void);
+        void udp_client_init(const uint32_t size_rx, const uint32_t size_tx);
         void udp_client_loop(void);
 
     private:
-        bool init_buffers(uint32_t size);
+        bool init_buffers(const uint32_t size_rx, const uint32_t size_tx);
 
         uint32_t txspace() override;
         void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;

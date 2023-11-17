@@ -61,7 +61,7 @@ void AP_Networking::ports_init(void)
         case NetworkPortType::NONE:
             break;
         case NetworkPortType::UDP_CLIENT:
-            p.udp_client_init();
+            p.udp_client_init(AP_NETWORKING_PORT_UDP_CLIENT_RX_BUF_DEFAULT_SIZE, AP_NETWORKING_PORT_UDP_CLIENT_TX_BUF_DEFAULT_SIZE);
             break;
         }
         if (p.sock != nullptr) {
@@ -73,9 +73,9 @@ void AP_Networking::ports_init(void)
 /*
   initialise a UDP client
  */
-void AP_Networking::Port::udp_client_init(void)
+void AP_Networking::Port::udp_client_init(const uint32_t size_rx, const uint32_t size_tx)
 {
-    if (!init_buffers(4096)) {
+    if (!init_buffers(size_rx, size_tx)) {
         return;
     }
     sock = new SocketAPM(true);
@@ -171,10 +171,10 @@ bool AP_Networking::Port::_discard_input()
 /*
   initialise read/write buffers
  */
-bool AP_Networking::Port::init_buffers(uint32_t size)
+bool AP_Networking::Port::init_buffers(const uint32_t size_rx, const uint32_t size_tx)
 {
-    readbuffer = new ByteBuffer(size);
-    writebuffer = new ByteBuffer(size);
+    readbuffer = new ByteBuffer(size_rx);
+    writebuffer = new ByteBuffer(size_tx);
     return readbuffer != nullptr && writebuffer != nullptr;
 }
 
