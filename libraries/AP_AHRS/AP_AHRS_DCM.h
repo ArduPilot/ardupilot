@@ -72,12 +72,6 @@ public:
         return _error_yaw;
     }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        wind = _wind;
-        return true;
-    }
-
     void set_external_wind_estimate(float speed, float direction);
 
     // return an airspeed estimate if available. return true
