@@ -18,6 +18,7 @@ bool ModeGuided::_enter()
         loc.offset_bearing(degrees(plane.ahrs.groundspeed_vector().angle()),
                            plane.quadplane.stopping_distance());
     }
+    plane.quadplane.land_repo_active = false;
 #endif
 
     plane.set_guided_WP(loc);

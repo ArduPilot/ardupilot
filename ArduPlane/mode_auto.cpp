@@ -20,6 +20,7 @@ bool ModeAuto::_enter()
     } else {
         plane.auto_state.vtol_mode = false;
     }
+    plane.quadplane.land_repo_active = false;
 #else
     plane.auto_state.vtol_mode = false;
 #endif

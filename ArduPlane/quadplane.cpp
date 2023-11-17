@@ -2277,6 +2277,53 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
     last_run_ms = now;
 }
 
+// precision landing horizontal controller. Ensure Precision Landing is active before calling this
+void QuadPlane::run_precland_horizontal_controller()
+{
+#if PRECISION_LANDING == ENABLED
+    // run precision landing
+    if (precland_active()) {
+        Vector2f target_pos, target_vel;
+        if (!plane.precland.get_target_position_cm(target_pos)) {
+            target_pos = inertial_nav.get_position_xy_cm();
+        }
+         // get the velocity of the target
+        plane.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+
+        const Vector2f zero;
+        Vector2p landing_pos = target_pos.topostype();
+        // target vel will remain zero if landing target is stationary
+        pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+    } else {
+        // should never happen since the caller of this funtion should already check if precland is active
+        Vector2f zero;
+        pos_control->input_vel_accel_xy(zero, zero);
+
+    }
+#endif
+}
+
+bool QuadPlane::precland_active(void)
+{
+#if PRECISION_LANDING == ENABLED
+    const bool manual_control_active = (plane.channel_roll->get_control_in() != 0) || (plane.channel_pitch->get_control_in() !=  0);
+    if (manual_control_active) {
+        land_repo_active = true;
+    }
+
+    if (((plane.control_mode == &plane.mode_qland) || (plane.control_mode == &plane.mode_auto)) && (!land_repo_active)) {
+        return plane.precland.target_acquired();
+    } else if (plane.control_mode == &plane.mode_qloiter && _precision_loiter_enabled) {
+        if (manual_control_active) {
+            // user is trying to reposition the vehicle
+            return false;
+        }
+        return plane.precland.target_acquired();
+    }
+#endif
+    return false;
+}
+
 /*
   main landing controller. Used for landing and RTL.
  */
@@ -2683,7 +2730,11 @@ void QuadPlane::vtol_position_controller(void)
         // relax when close to the ground
         if (should_relax()) {
             pos_control->relax_velocity_controller_xy();
-        } else {
+        } else if (precland_active()) {
+            // precland active
+            run_precland_horizontal_controller(); 
+        
+        }else {
             Vector2f zero;
             Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
             Vector2f rpos;
@@ -2703,7 +2754,13 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
 
-        run_xy_controller();
+        pos_control->update_xy_controller();
+        // run controller
+        if (!pos_control->is_active_xy()) {
+            pos_control->init_xy_controller();
+        }
+
+        // run_xy_controller();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();

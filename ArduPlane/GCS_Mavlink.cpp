@@ -124,6 +124,17 @@ MAV_STATE GCS_MAVLINK_Plane::vehicle_system_status() const
     return MAV_STATE_STANDBY;
 }
 
+// Precise landing target handling
+void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
+{
+
+    #if PRECISION_LANDING==ENABLED
+    plane.precland.handle_msg(packet, timestamp_ms);
+    #endif
+
+
+}
+
 
 void GCS_MAVLINK_Plane::send_attitude() const
 {

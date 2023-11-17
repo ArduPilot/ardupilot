@@ -30,6 +30,8 @@ def build(bld):
             'AC_AutoTune',
             'AP_KDECAN',
             'AP_Follow',
+            'AP_IRLock',
+            'AC_PrecLand',
         ],
     )
 

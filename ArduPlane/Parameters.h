@@ -352,6 +352,9 @@ public:
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
+        
+        // 263: precision landing object
+        k_param_precland = 263,
     };
 
     AP_Int16 format_version;

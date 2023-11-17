@@ -267,6 +267,13 @@
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////////
+// Precision Landing with companion computer or IRLock sensor
+#ifndef PRECISION_LANDING
+ # define PRECISION_LANDING ENABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_THRESHOLD_DEFAULT

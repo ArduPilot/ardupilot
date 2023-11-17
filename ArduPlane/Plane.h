@@ -93,6 +93,11 @@
 // Configuration
 #include "config.h"
 
+#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#include <AC_PrecLand/AC_PrecLand_StateMachine.h>
+#endif
+
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_plane.h"
 #endif
@@ -165,6 +170,9 @@ public:
 
 private:
 
+#if PRECISION_LANDING
+    AC_PrecLand precland;
+#endif
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
 
@@ -1117,6 +1125,9 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
+#if PRECISION_LANDING ==ENABLED
+    void update_precland();
+#endif
     // reverse_thrust.cpp
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
