@@ -17,6 +17,9 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.initialised = extahrs.initialised();
     results.healthy = extahrs.healthy();
 
+    const AP_InertialSensor &_ins = AP::ins();
+    results.primary_imu_index = _ins.get_first_usable_gyro();
+
     results.attitude_valid = extahrs.get_quaternion(results.quat);
 
     results.quat.rotation_matrix(results.dcm_matrix);
