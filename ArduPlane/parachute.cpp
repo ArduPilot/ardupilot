@@ -31,6 +31,9 @@ void Plane::parachute_release()
     // release parachute
     parachute.release();
 
+    // stop motors to avoid parachute tangling
+    plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
+
 #if AP_LANDINGGEAR_ENABLED
     // deploy landing gear
     g2.landing_gear.set_position(AP_LandingGear::LandingGear_Deploy);

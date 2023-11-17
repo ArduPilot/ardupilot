@@ -431,6 +431,9 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return start_command_camera(cmd);
 #endif
     case MAV_CMD_DO_PARACHUTE:
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        _cmd_start_fn(cmd);
+#endif
         return start_command_parachute(cmd);
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return start_command_do_scripting(cmd);

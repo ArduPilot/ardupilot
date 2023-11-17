@@ -209,6 +209,13 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_DELAY:
         mode_auto.do_nav_delay(cmd);
         break;
+
+    case MAV_CMD_DO_PARACHUTE:
+        if (cmd.p1 == PARACHUTE_RELEASE) {
+            // stop motors to avoid parachute tangling
+            plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
+        }
+        break;
         
     default:
         // unable to use the command, allow the vehicle to try the next command
