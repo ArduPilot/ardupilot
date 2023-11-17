@@ -98,6 +98,11 @@ public:
             return location_valid;
         };
 
+        bool get_hagl(float &height) const WARN_IF_UNUSED {
+            height = hagl;
+            return hagl_valid;
+        }
+
     private:
 
         Vector3f velocity_NED;
@@ -114,6 +119,9 @@ public:
 
         Location location;
         bool location_valid;
+
+        float hagl;  // in metres
+        bool hagl_valid;
     };
 
     // init sets up INS board orientation
@@ -152,9 +160,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;

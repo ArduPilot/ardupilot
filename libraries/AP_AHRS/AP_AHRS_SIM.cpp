@@ -45,17 +45,6 @@ bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
     return airspeed_estimate(airspeed_ret);
 }
 
-bool AP_AHRS_SIM::get_hagl(float &height) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    height = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
-
-    return true;
-}
-
 bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
 {
     if (_sitl == nullptr) {
@@ -231,6 +220,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D_valid = true;
 
     results.location_valid = get_location(results.location);
+    results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+    results.hagl_valid = true;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

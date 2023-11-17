@@ -1592,7 +1592,7 @@ bool AP_AHRS::get_hagl(float &height) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return false;
+        return dcm_estimates.get_hagl(height);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1606,12 +1606,11 @@ bool AP_AHRS::get_hagl(float &height) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_hagl(height);
+        return sim_estimates.get_hagl(height);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        return false;
-    }
+    case EKFType::EXTERNAL:
+        return external_estimates.get_hagl(height);
 #endif
     }
     // since there is no default case above, this is unreachable
