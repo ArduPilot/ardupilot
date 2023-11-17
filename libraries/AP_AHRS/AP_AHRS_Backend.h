@@ -231,12 +231,6 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
-    // return true if the AHRS object supports inertial navigation,
-    // with very accurate position and velocity
-    virtual bool have_inertial_nav(void) const {
-        return false;
-    }
-
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
