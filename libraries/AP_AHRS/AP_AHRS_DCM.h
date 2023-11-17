@@ -101,9 +101,6 @@ public:
 
     void estimate_wind(void);
 
-    // is the AHRS subsystem healthy?
-    bool healthy() const override;
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
@@ -122,6 +119,9 @@ public:
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
+
+    // is the AHRS subsystem healthy?
+    bool healthy() const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;
