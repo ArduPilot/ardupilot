@@ -39,6 +39,7 @@ GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance)
     : front{_front},
       instance{_instance}
 {
+    _sitl = AP::sitl();
 }
 
 ssize_t GPS_Backend::write_to_autopilot(const char *p, size_t size) const
@@ -53,13 +54,6 @@ ssize_t GPS_Backend::read_from_autopilot(char *buffer, size_t size) const
 
 void GPS_Backend::update(const GPS_Data &d)
 {
-    if (_sitl == nullptr) {
-        _sitl = AP::sitl();
-        if (_sitl == nullptr) {
-            return;
-        }
-    }
-
     update_read(&d);
     update_write(&d);
 }
