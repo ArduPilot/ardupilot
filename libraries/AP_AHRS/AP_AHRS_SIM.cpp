@@ -204,6 +204,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.initialised = true;
     results.healthy = true;
 
+    results.primary_imu_index = AP::ins().get_primary_gyro();
+
     fdm.quaternion.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);

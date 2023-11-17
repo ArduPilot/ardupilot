@@ -3168,7 +3168,7 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        break;
+        return dcm_estimates.primary_imu_index;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -3184,11 +3184,11 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        break;
+        return sim_estimates.primary_imu_index;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        break;
+        return external_estimates.primary_imu_index;
 #endif
     }
     if (imu == -1) {

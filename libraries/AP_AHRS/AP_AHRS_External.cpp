@@ -18,6 +18,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.healthy = AP::externalAHRS().healthy();
 
     const AP_InertialSensor &_ins = AP::ins();
+    results.primary_imu_index = _ins.get_primary_gyro();
+
     results.attitude_valid = AP::externalAHRS().get_quaternion(results.quat);
 
     results.quat.rotation_matrix(results.dcm_matrix);
