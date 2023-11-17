@@ -78,6 +78,9 @@ void AP_Networking::Port::udp_client_init(const uint32_t size_rx, const uint32_t
     if (!init_buffers(size_rx, size_tx)) {
         return;
     }
+    if (sock != nullptr) {
+        return false;
+    }
     sock = new SocketAPM(true);
     if (sock == nullptr) {
         return;
