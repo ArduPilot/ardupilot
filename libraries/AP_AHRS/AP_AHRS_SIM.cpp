@@ -210,6 +210,13 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D_valid = true;
 
     results.location_valid = get_location(results.location);
+
+    results.origin_valid = get_origin(results.origin);
+
+    results.relative_position_NED_origin_valid = get_relative_position_NED_origin(results.relative_position_NED_origin);
+    results.relative_position_NE_origin_valid = get_relative_position_NE_origin(results.relative_position_NE_origin);
+    results.relative_position_D_origin_valid = get_relative_position_D_origin(results.relative_position_D_origin);
+
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
     results.hagl_valid = true;
 

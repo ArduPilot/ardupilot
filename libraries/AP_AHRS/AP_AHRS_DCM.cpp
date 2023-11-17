@@ -154,6 +154,21 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.location_valid = get_location(results.location);
 
+    // origin for local position:
+    results.origin = last_origin;
+    if (results.origin.is_zero()) {
+        // use home if we never have had an origin
+        results.origin = AP::ahrs().get_home();
+    }
+    results.origin_valid = !results.origin.is_zero();
+
+    results.relative_position_NED_origin_valid = get_relative_position_NED_origin(results.relative_position_NED_origin);
+    // derivative values of NED_origin:
+    results.relative_position_NE_origin = results.relative_position_NED_origin.xy();
+    results.relative_position_NE_origin_valid = results.relative_position_NED_origin_valid;
+    results.relative_position_D_origin = results.relative_position_NED_origin.z;
+    results.relative_position_D_origin_valid = results.relative_position_NED_origin_valid;
+
     // wind estimation:
     results.wind = _wind;
     results.wind_valid = true;
@@ -1250,10 +1265,6 @@ bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8
 bool AP_AHRS_DCM::get_origin(Location &ret) const
 {
     ret = last_origin;
-    if (ret.is_zero()) {
-        // use home if we never have had an origin
-        ret = AP::ahrs().get_home();
-    }
     return !ret.is_zero();
 }
 
@@ -1268,26 +1279,6 @@ bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
         return false;
     }
     posNED = origin.get_distance_NED(loc);
-    return true;
-}
-
-bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2f &posNE) const
-{
-    Vector3f posNED;
-    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
-        return false;
-    }
-    posNE = posNED.xy();
-    return true;
-}
-
-bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
-{
-    Vector3f posNED;
-    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
-        return false;
-    }
-    posD = posNED.z;
     return true;
 }
 

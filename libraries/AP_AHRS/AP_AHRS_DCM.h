@@ -101,12 +101,6 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
-
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     // return true if DCM has a yaw source
@@ -116,11 +110,16 @@ public:
 
 private:
 
+    bool get_relative_position_NED_origin(Vector3f &vec) const;
+
     // is the AHRS subsystem healthy?
     bool healthy() const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;
+
+    // local-position origin
+    bool get_origin(Location &ret) const;
 
     // settable parameters
     AP_Float &_kp_yaw;

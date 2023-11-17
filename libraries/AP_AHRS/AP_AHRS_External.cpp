@@ -46,6 +46,14 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.groundspeed_vector = AP::externalAHRS().get_groundspeed_vector();
 
     results.location_valid = AP::externalAHRS().get_location(results.location);
+
+    // origin for local position:
+    results.origin_valid = AP::externalAHRS().get_origin(results.origin);
+    results.relative_position_NED_origin_valid = get_relative_position_NED_origin(results.relative_position_NED_origin);
+    results.relative_position_NE_origin = results.relative_position_NED_origin.xy();
+    results.relative_position_NE_origin_valid = results.relative_position_NED_origin_valid;
+    results.relative_position_D_origin = results.relative_position_NED_origin.z;
+    results.relative_position_D_origin_valid = results.relative_position_NED_origin_valid;
 }
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
@@ -62,32 +70,6 @@ bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
     return false;
 }
 
-bool AP_AHRS_External::get_relative_position_NE_origin(Vector2f &posNE) const
-{
-    auto &extahrs = AP::externalAHRS();
-
-    Location loc, orgn;
-    if (!extahrs.get_location(loc) ||
-        !extahrs.get_origin(orgn)) {
-        return false;
-    }
-    posNE = orgn.get_distance_NE(loc);
-    return true;
-}
-
-bool AP_AHRS_External::get_relative_position_D_origin(float &posD) const
-{
-    auto &extahrs = AP::externalAHRS();
-
-    Location orgn, loc;
-    if (!extahrs.get_origin(orgn) ||
-        !extahrs.get_location(loc)) {
-        return false;
-    }
-    posD = -(loc.alt - orgn.alt)*0.01;
-    return true;
-}
-
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
@@ -102,11 +84,6 @@ bool AP_AHRS_External::get_filter_status(nav_filter_status &status) const
 void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     AP::externalAHRS().send_status_report(link);
-}
-
-bool AP_AHRS_External::get_origin(Location &ret) const
-{
-    return AP::externalAHRS().get_origin(ret);
 }
 
 void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
