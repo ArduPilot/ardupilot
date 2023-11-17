@@ -1524,7 +1524,9 @@ INCLUDE common.ld
             if t.startswith('SPI'):
                 self.spi_list.append(t)
         self.spi_list = sorted(self.spi_list)
-        if len(self.spi_list) == 0:
+        if len(self.spidev) != 0 and len(self.spi_list) == 0:
+            self.error("Have SPI devices but no SPI bus?!")
+        if len(self.spidev) == 0:
             f.write('#define HAL_USE_SPI FALSE\n')
             return
         devlist = []
