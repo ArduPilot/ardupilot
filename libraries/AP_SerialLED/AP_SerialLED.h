@@ -39,10 +39,10 @@ public:
     void set_RGB_mask(uint8_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue);
 
     // set RGB value on LED. LED -1 is all LEDs. LED 0 is first LED. chan is PWM output, 1..16
-    void set_RGB(uint8_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue);
-    
+    bool set_RGB(uint8_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue);
+
     // trigger sending of LED changes to LEDs
-    void send(uint8_t chan);
+    bool send(uint8_t chan);
 
     // singleton support
     static AP_SerialLED *get_singleton(void) {
