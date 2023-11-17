@@ -519,6 +519,7 @@ void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estim
 void AP_AHRS::update_DCM()
 {
     dcm.update();
+    dcm_estimates = {};
     dcm.get_results(dcm_estimates);
 
     // we always update the vehicle's canonical roll/pitch/yaw from
@@ -536,6 +537,7 @@ void AP_AHRS::update_DCM()
 void AP_AHRS::update_SITL(void)
 {
     sim.update();
+    sim_estimates = {};
     sim.get_results(sim_estimates);
 
     if (_active_EKF_type() == EKFType::SIM) {
@@ -693,6 +695,7 @@ void AP_AHRS::update_EKF3(void)
 void AP_AHRS::update_external(void)
 {
     external.update();
+    external_estimates = {};
     external.get_results(external_estimates);
 
     if (_active_EKF_type() == EKFType::EXTERNAL) {
