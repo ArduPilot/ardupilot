@@ -360,10 +360,10 @@ configuration in order to save typing.
         default=False,
         help='Use flash storage emulation.')
 
-    g.add_option('--disable-ekf2',
+    g.add_option('--enable-ekf2',
         action='store_true',
         default=False,
-        help='Configure without EKF2.')
+        help='Configure with EKF2.')
 
     g.add_option('--disable-ekf3',
         action='store_true',
