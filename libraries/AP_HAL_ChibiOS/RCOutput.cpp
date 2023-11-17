@@ -2626,9 +2626,9 @@ void RCOutput::serial_led_send(const uint16_t chan)
     }
 
     if (grp->prepared_send) {
-        chEvtSignal(led_thread_ctx, EVT_LED_SEND);
         grp->serial_led_pending = true;
         serial_led_pending = true;
+        chEvtSignal(led_thread_ctx, EVT_LED_SEND);
     }
 }
 #endif // HAL_SERIALLED_ENABLED
