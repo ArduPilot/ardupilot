@@ -50,6 +50,10 @@ public:
 
     // structure to retrieve results from backends:
     struct Estimates {
+        friend class AP_AHRS_DCM;
+        friend class AP_AHRS_External;
+        friend class AP_AHRS_SIM;
+
         float roll_rad;
         float pitch_rad;
         float yaw_rad;
@@ -61,13 +65,14 @@ public:
         Vector3f accel_ef;
         Vector3f accel_bias;
 
-        Location location;
-        bool location_valid;
-
-        bool get_location(Location &loc) const {
+        bool get_location(Location &loc) const WARN_IF_UNUSED {
             loc = location;
             return location_valid;
         };
+
+    private:
+        Location location;
+        bool location_valid;
     };
 
     // init sets up INS board orientation
