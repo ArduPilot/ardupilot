@@ -126,3 +126,4 @@ define CAN_APP_NODE_NAME "org.ardupilot.ARK_CANNODE"
 # enable ESC control
 define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
+define AP_SERIALLED_ENABLED 1
