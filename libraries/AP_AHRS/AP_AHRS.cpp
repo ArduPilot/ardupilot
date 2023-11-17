@@ -2044,7 +2044,7 @@ AP_AHRS::EKFType AP_AHRS::fallback_active_EKF_type(void) const
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
-    if (external.healthy()) {
+    if (external_estimates.healthy) {
         return EKFType::EXTERNAL;
     }
 #endif
@@ -2120,7 +2120,7 @@ bool AP_AHRS::healthy(void) const
 
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.healthy();
+        return dcm_estimates.healthy;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2159,11 +2159,11 @@ bool AP_AHRS::healthy(void) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.healthy();
+        return sim_estimates.healthy;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.healthy();
+        return external_estimates.healthy;
 #endif
     }
 
@@ -2248,7 +2248,7 @@ bool AP_AHRS::initialised(void) const
     switch (ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return true;
+        return dcm_estimates.initialised;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2265,11 +2265,11 @@ bool AP_AHRS::initialised(void) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return true;
+        return sim_estimates.initialised;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.initialised();
+        return external_estimates.initialised;
 #endif
     }
     return false;

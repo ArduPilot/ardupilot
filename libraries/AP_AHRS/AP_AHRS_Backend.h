@@ -54,6 +54,9 @@ public:
         friend class AP_AHRS_External;
         friend class AP_AHRS_SIM;
 
+        bool initialised;
+        bool healthy;
+
         float roll_rad;
         float pitch_rad;
         float yaw_rad;
@@ -249,17 +252,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // is the AHRS subsystem healthy?
-    virtual bool healthy(void) const = 0;
-
-    // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const {
-        return true;
-    };
-    virtual bool started(void) const {
-        return initialised();
-    };
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred

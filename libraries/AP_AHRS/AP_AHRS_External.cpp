@@ -5,23 +5,18 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-// true if the AHRS has completed initialisation
-bool AP_AHRS_External::initialised(void) const
-{
-    return AP::externalAHRS().initialised();
-}
-
 void AP_AHRS_External::update()
 {
     AP::externalAHRS().update();
 }
 
-bool AP_AHRS_External::healthy() const {
-    return AP::externalAHRS().healthy();
-}
-
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    results = {};
+
+    results.initialised = AP::externalAHRS().initialised();
+    results.healthy = AP::externalAHRS().healthy();
+
     const AP_InertialSensor &_ins = AP::ins();
     results.attitude_valid = AP::externalAHRS().get_quaternion(results.quat);
 

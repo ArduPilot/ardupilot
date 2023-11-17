@@ -76,9 +76,6 @@ public:
 
     bool            use_compass() override { return true; }
 
-    // is the AHRS subsystem healthy?
-    bool healthy() const override { return true; }
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override { return true; }

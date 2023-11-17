@@ -189,6 +189,8 @@ bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vec
 
 void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    results = {};
+
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
         if (_sitl == nullptr) {
@@ -198,6 +200,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     const AP_InertialSensor &_ins = AP::ins();
+
+    results.initialised = true;
+    results.healthy = true;
 
     fdm.quaternion.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
