@@ -60,9 +60,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
-
     // return a wind estimation vector, in m/s
     bool wind_estimate(Vector3f &wind) const override;
 
