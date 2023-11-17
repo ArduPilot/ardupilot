@@ -250,12 +250,6 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
-    // return true if the AHRS object supports inertial navigation,
-    // with very accurate position and velocity
-    virtual bool have_inertial_nav(void) const {
-        return false;
-    }
-
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
