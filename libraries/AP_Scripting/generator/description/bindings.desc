@@ -282,8 +282,8 @@ include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
 singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
-singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
-singleton AP_SerialLED method send void uint8_t 1 16
+singleton AP_SerialLED method set_RGB boolean uint8_t 1 16 int8_t -1 INT8_MAX uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+singleton AP_SerialLED method send boolean uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels rename SRV_Channels
