@@ -39,9 +39,11 @@ public:
 protected:
 
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
+    void rgb_set_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id) override;
 
 private:
     uint16_t enable_mask;
+    bool _set_rgb_local(uint8_t red, uint8_t green, uint8_t blue, uint8_t lught_id);
 
     HAL_Semaphore _sem;
 };

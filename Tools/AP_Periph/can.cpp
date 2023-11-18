@@ -544,10 +544,18 @@ void AP_Periph_FW::handle_arming_status(CanardInstance* canard_instance, CanardR
 
 
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
-void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
-{
+    void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue){
+        uint8_t light_id = -1;
+        set_rgb_led(red, green, blue, light_id);
+    }
+
+    void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue, uint8_t light_id){
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
-    notify.handle_rgb(red, green, blue);
+        if(light_id > 0) {
+            notify.handle_rgb_id(red, green, blue, light_id);
+        } else {
+            notify.handle_rgb(red, green, blue);
+        }
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     rcout_has_new_data_to_update = true;
 #endif // HAL_PERIPH_ENABLE_RC_OUT
@@ -638,6 +646,7 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
         uavcan_equipment_indication_SingleLightCommand &cmd = req.commands.data[i];
         // to get the right color proportions we scale the green so that is uses the
         // same number of bits as red and blue
+        uint8_t light_id = cmd.light_id;
         uint8_t red = cmd.color.red<<3U;
         uint8_t green = (cmd.color.green>>1U)<<3U;
         uint8_t blue = cmd.color.blue<<3U;
@@ -652,7 +661,7 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
             green = constrain_int16(green * scale, 0, 255);
             blue = constrain_int16(blue * scale, 0, 255);
         }
-        set_rgb_led(red, green, blue);
+        set_rgb_led(red, green, blue, light_id);
     }
 }
 #endif // AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
