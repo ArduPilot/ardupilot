@@ -172,6 +172,11 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // wind estimation:
     results.wind = _wind;
     results.wind_valid = true;
+
+    // lower gains in VTOL controllers when flying on DCM:
+    results.ekfGndSpdLimit = 50.0;
+    results.controlScaleXY = 0.5;
+
 }
 
 /*
@@ -1290,13 +1295,6 @@ void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
 bool AP_AHRS_DCM::yaw_source_available(void) const
 {
     return AP::compass().use_for_yaw();
-}
-
-void AP_AHRS_DCM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
 }
 
 #endif  // AP_AHRS_DCM_ENABLED

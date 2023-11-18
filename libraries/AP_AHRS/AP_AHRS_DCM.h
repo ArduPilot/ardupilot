@@ -106,8 +106,6 @@ public:
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
-
 private:
 
     bool get_relative_position_NED_origin(Vector3f &vec) const;

@@ -54,6 +54,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.relative_position_NE_origin_valid = results.relative_position_NED_origin_valid;
     results.relative_position_D_origin = results.relative_position_NED_origin.z;
     results.relative_position_D_origin_valid = results.relative_position_NED_origin_valid;
+
+    // estimator limits on control:
+    results.ekfGndSpdLimit = 400.0;
+    results.controlScaleXY = 1;
 }
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
@@ -84,13 +88,6 @@ bool AP_AHRS_External::get_filter_status(nav_filter_status &status) const
 void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     AP::externalAHRS().send_status_report(link);
-}
-
-void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
 }
 
 #endif
