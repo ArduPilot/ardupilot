@@ -29,6 +29,9 @@ typedef double ftype;
 #define fminF(x,y) fmin(x,y)
 #define fmodF(x,y) fmod(x,y)
 #define fabsF(x) fabs(x)
+#define expF(x) exp(x)
+#define sinhF(x) sinh(x)
+#define coshF(x) cosh(x)
 #define toftype todouble
 #else
 typedef float ftype;
@@ -48,6 +51,9 @@ typedef float ftype;
 #define fminF(x,y) fminf(x,y)
 #define fmodF(x,y) fmodf(x,y)
 #define fabsF(x) fabsf(x)
+#define expF(x) expf(x)
+#define sinhF(x) sinhf(x)
+#define coshF(x) coshf(x)
 #define toftype tofloat
 #endif
 
