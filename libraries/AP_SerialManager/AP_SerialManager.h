@@ -158,6 +158,11 @@
 // serial ports registered by AP_Networking will use IDs starting at 21 for the first port
 #define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
 
+// serial ports registered by AP_DroneCAN will use IDs starting at 41/51 for the first port
+#define AP_SERIALMANAGER_CAN_D1_PORT_1         41 // CAN_D1_UC_S1_*
+#define AP_SERIALMANAGER_CAN_D2_PORT_1         51 // CAN_D2_UC_S1_*
+
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
