@@ -117,6 +117,11 @@ public:
             return wind_valid;
         }
 
+        void get_control_limits(float &_ekfGndSpdLimit, float &_controlScaleXY) const {
+            _ekfGndSpdLimit = ekfGndSpdLimit;
+            _controlScaleXY = controlScaleXY;
+        }
+
         Vector3f velocity_NED;
         bool velocity_NED_valid;
 
@@ -151,6 +156,10 @@ public:
         // wind estimate, earth frame, metres/second
         Vector3f wind;
         bool wind_valid;
+
+        // control limits (with defaults):
+        float ekfGndSpdLimit;
+        float controlScaleXY;
     };
 
     // init sets up INS board orientation
@@ -307,5 +316,4 @@ public:
     // this is not related to terrain following
     virtual void set_terrain_hgt_stable(bool stable) {}
 
-    virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

@@ -59,8 +59,6 @@ public:
     bool get_filter_status(nav_filter_status &status) const override;
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
-
 private:
 
     bool get_relative_position_NED_origin(Vector3f &vec) const;

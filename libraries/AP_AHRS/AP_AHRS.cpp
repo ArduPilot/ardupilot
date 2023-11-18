@@ -2438,7 +2438,7 @@ void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        dcm.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
+        dcm_estimates.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
         break;
 #endif
 
@@ -2456,14 +2456,13 @@ void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        sim.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
+        sim_estimates.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
         break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // no limit on gains, large vel limit
-        ekfGndSpdLimit = 400;
-        ekfNavVelGainScaler = 1;
+        external_estimates.get_control_limits(ekfGndSpdLimit, ekfNavVelGainScaler);
         break;
 #endif
     }

@@ -98,13 +98,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // same as EKF2 for no optical flow
-    ekfGndSpdLimit = 400.0f;
-    ekfNavVelGainScaler = 1.0f;
-}
-
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 #if HAL_GCS_ENABLED
@@ -216,6 +209,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // wind estimation:
     results.wind = _sitl->state.wind_ef;
     results.wind_valid = true;
+
+    // estimator limits on control:
+    results.ekfGndSpdLimit = 400.0;
+    results.controlScaleXY = 1;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
