@@ -14,6 +14,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef AP_NETWORKING_PORT_MIN_TXSIZE
+#define AP_NETWORKING_PORT_MIN_TXSIZE 2048
+#endif
+
+#ifndef AP_NETWORKING_PORT_MIN_RXSIZE
+#define AP_NETWORKING_PORT_MIN_RXSIZE 2048
+#endif
+
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Port type
@@ -26,9 +34,8 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: PROTOCOL
     // @DisplayName: protocol
     // @Description: protocol
-    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
-    // @RebootRequired: True
     // @User: Advanced
+    // @CopyFieldsFrom: SERIAL0_PROTOCOL
     AP_GROUPINFO("PROTOCOL", 2,  AP_Networking::Port, state.protocol, 0),
 
     // @Group: IP
@@ -61,7 +68,7 @@ void AP_Networking::ports_init(void)
         case NetworkPortType::NONE:
             break;
         case NetworkPortType::UDP_CLIENT:
-            p.udp_client_init(AP_NETWORKING_PORT_UDP_CLIENT_RX_BUF_DEFAULT_SIZE, AP_NETWORKING_PORT_UDP_CLIENT_TX_BUF_DEFAULT_SIZE);
+            p.udp_client_init(AP_NETWORKING_PORT_MIN_RXSIZE, AP_NETWORKING_PORT_MIN_TXSIZE);
             break;
         }
         if (p.sock != nullptr) {
@@ -75,6 +82,7 @@ void AP_Networking::ports_init(void)
  */
 void AP_Networking::Port::udp_client_init(const uint32_t size_rx, const uint32_t size_tx)
 {
+    WITH_SEMAPHORE(sem);
     if (!init_buffers(size_rx, size_tx)) {
         return;
     }
@@ -112,6 +120,7 @@ void AP_Networking::Port::udp_client_loop(void)
 
     while (true) {
         hal.scheduler->delay_microseconds(500);
+        WITH_SEMAPHORE(sem);
 
         // handle outgoing packets
         uint32_t available;
@@ -141,32 +150,39 @@ void AP_Networking::Port::udp_client_loop(void)
  */
 uint32_t AP_Networking::Port::txspace(void)
 {
+    WITH_SEMAPHORE(sem);
     return writebuffer->space();
 }
 
 void AP_Networking::Port::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    // TODO: use buffer sizes
+    rxS = MAX(rxS, AP_NETWORKING_PORT_MIN_RXSIZE);
+    txS = MAX(txS, AP_NETWORKING_PORT_MIN_TXSIZE);
+    init_buffers(rxS, txS);
 }
 
 size_t AP_Networking::Port::_write(const uint8_t *buffer, size_t size)
 {
+    WITH_SEMAPHORE(sem);
     return writebuffer->write(buffer, size);
 }
 
 ssize_t AP_Networking::Port::_read(uint8_t *buffer, uint16_t count)
 {
+    WITH_SEMAPHORE(sem);
     return readbuffer->read(buffer, count);
 }
 
 uint32_t AP_Networking::Port::_available()
 {
+    WITH_SEMAPHORE(sem);
     return readbuffer->available();
 }
 
 
 bool AP_Networking::Port::_discard_input()
 {
+    WITH_SEMAPHORE(sem);
     readbuffer->clear();
     return true;
 }
@@ -176,8 +192,23 @@ bool AP_Networking::Port::_discard_input()
  */
 bool AP_Networking::Port::init_buffers(const uint32_t size_rx, const uint32_t size_tx)
 {
-    readbuffer = new ByteBuffer(size_rx);
-    writebuffer = new ByteBuffer(size_tx);
+    if (size_tx == last_size_tx &&
+        size_rx == last_size_rx) {
+        return true;
+    }
+    WITH_SEMAPHORE(sem);
+    if (readbuffer == nullptr) {
+        readbuffer = new ByteBuffer(size_rx);
+    } else {
+        readbuffer->set_size_best(size_rx);
+    }
+    if (writebuffer == nullptr) {
+        writebuffer = new ByteBuffer(size_tx);
+    } else {
+        writebuffer->set_size_best(size_tx);
+    }
+    last_size_rx = size_rx;
+    last_size_tx = size_tx;
     return readbuffer != nullptr && writebuffer != nullptr;
 }
 
