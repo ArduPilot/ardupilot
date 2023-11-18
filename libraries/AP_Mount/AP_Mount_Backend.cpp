@@ -46,6 +46,26 @@ bool AP_Mount_Backend::has_pitch_control() const
     return (_params.pitch_angle_min < _params.pitch_angle_max);
 }
 
+bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
+{
+    switch (mode) {
+    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
+        return true;
+    case MAV_MOUNT_MODE_ENUM_END:
+        return false;
+    }
+    return false;
+}
+
+bool AP_Mount_Backend::set_mode(MAV_MOUNT_MODE mode)
+{
+    if (!valid_mode(mode)) {
+        return false;
+    }
+    _mode = mode;
+    return true;
+}
+
 // set angle target in degrees
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
@@ -142,6 +162,8 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
     if (!get_attitude_quaternion(att_quat)) {
         return;
     }
+    Vector3f ang_velocity { nanf(""), nanf(""), nanf("") };
+    IGNORE_RETURN(get_angular_velocity(ang_velocity));
 
     // construct quaternion array
     const float quat_array[4] = {att_quat.q1, att_quat.q2, att_quat.q3, att_quat.q4};
@@ -152,9 +174,9 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    AP_HAL::millis(),    // autopilot system time
                                                    get_gimbal_device_flags(),
                                                    quat_array,    // attitude expressed as quaternion
-                                                   std::numeric_limits<double>::quiet_NaN(),    // roll axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // pitch axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // yaw axis angular velocity (NaN for unknown)
+                                                   ang_velocity.x,    // roll axis angular velocity (NaN for unknown)
+                                                   ang_velocity.y,    // pitch axis angular velocity (NaN for unknown)
+                                                   ang_velocity.z,    // yaw axis angular velocity (NaN for unknown)
                                                    0,                                           // failure flags (not supported)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw (NaN for unknonw)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknonw)

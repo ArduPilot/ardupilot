@@ -26,7 +26,7 @@ protected:
 
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
-    MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet) override;
 
     void send_position_target_global_int() override;
 
@@ -62,8 +62,10 @@ private:
     MAV_RESULT handle_command_DO_VTOL_TRANSITION(const mavlink_command_int_t &packet);
 
 #if HAL_QUADPLANE_ENABLED
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
     void convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
     void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT) override;
+#endif
     MAV_RESULT handle_command_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet);
 #endif
 

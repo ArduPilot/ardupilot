@@ -267,9 +267,14 @@ submodules at specific revisions.
                  help="Enables GPS logging")
     
     g.add_option('--enable-dds', action='store_true',
-                 help="Enable the dds client to connect with ROS2/DDS"
-    )
+                 help="Enable the dds client to connect with ROS2/DDS.")
 
+    g.add_option('--disable-networking', action='store_true',
+                 help="Disable the networking API code")
+
+    g.add_option('--enable-networking-tests', action='store_true',
+                 help="Enable the networking test code. Automatically enables networking.")
+    
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")

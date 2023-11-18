@@ -148,6 +148,12 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
+        if cfg.options.disable_networking:
+            env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
+
+        if cfg.options.enable_networking_tests:
+            env.CXXFLAGS += ['-DAP_NETWORKING_TESTS_ENABLED=1']
+            
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
@@ -668,6 +674,9 @@ class sitl(Board):
             '-Werror=missing-declarations',
         ]
 
+        if not cfg.options.disable_networking:
+            env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
+        
         if cfg.options.ubsan or cfg.options.ubsan_abort:
             env.CXXFLAGS += [
                 "-fsanitize=undefined",
@@ -831,6 +840,7 @@ class sitl_periph_gps(sitl):
             HAL_PERIPH_ENABLE_RPM = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
+            AP_ICENGINE_ENABLED = 0,
             AP_AIRSPEED_ENABLED = 1,
             AP_AIRSPEED_AUTOCAL_ENABLE = 0,
             AP_AHRS_ENABLED = 1,

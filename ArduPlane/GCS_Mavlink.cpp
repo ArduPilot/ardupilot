@@ -1105,6 +1105,7 @@ void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink
     out.z = -in.param7;  // up -> down
 }
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
 void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     switch (in.command) {
@@ -1114,6 +1115,7 @@ void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_comman
     }
     return GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(in, out, frame);
 }
+#endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
@@ -1383,7 +1385,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     } // end switch
 } // end handle mavlink
 
-MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
     const MAV_RESULT result = GCS_MAVLINK::handle_command_do_set_mission_current(packet);
     if (result != MAV_RESULT_ACCEPTED) {

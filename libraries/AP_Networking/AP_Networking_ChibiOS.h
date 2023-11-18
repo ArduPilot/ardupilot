@@ -18,7 +18,6 @@ public:
 
 private:
     bool allocate_buffers(void);
-    int32_t send_udp(struct udp_pcb *pcb, const struct ip4_addr &ip4_addr, const uint16_t port, const uint8_t* data, uint16_t data_len);
 
 private:
     struct lwipthread_opts *lwip_options;

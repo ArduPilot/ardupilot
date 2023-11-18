@@ -86,3 +86,10 @@
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 #define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
 #endif
+
+// all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
+// strictly required.  This option created for 4.5, Nov 2023, and code
+// left in place.
+#ifndef AP_MAVLINK_COMMAND_LONG_ENABLED
+#define AP_MAVLINK_COMMAND_LONG_ENABLED 1
+#endif

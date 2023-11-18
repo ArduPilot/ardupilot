@@ -142,6 +142,7 @@ class ExtractFeatures(object):
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
             ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
             ('AP_EFI_CURRAWONG_ECU_ENABLED', r'AP_EFI_Currawong_ECU::update\b',),
+            ('AP_EFI_SERIAL_HIRTH_ENABLED', r'AP_EFI_Serial_Hirth::update\b',),
             ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
             ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::init',),
 

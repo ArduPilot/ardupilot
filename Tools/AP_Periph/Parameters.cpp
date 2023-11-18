@@ -443,7 +443,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+#endif
 
+#if HAL_GCS_ENABLED || defined(HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS)
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),

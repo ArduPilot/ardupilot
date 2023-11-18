@@ -427,6 +427,11 @@ void AP_DroneCAN::loop(void)
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 void AP_DroneCAN::hobbywing_ESC_update(void)
 {
+    if (hal.util->get_soft_armed()) {
+        // don't update ID database while disarmed, as it can cause
+        // some hobbywing ESCs to stutter
+        return;
+    }
     uint32_t now = AP_HAL::millis();
     if (now - hobbywing.last_GetId_send_ms >= 1000U) {
         hobbywing.last_GetId_send_ms = now;

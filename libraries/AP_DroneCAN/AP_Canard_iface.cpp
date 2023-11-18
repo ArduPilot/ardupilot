@@ -217,7 +217,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         // volatile as the value can change at any time during can interrupt
         // we need to ensure that this is not optimized
         volatile const auto *stats = ifaces[iface]->get_statistics();
-        uint64_t last_transmit_us = stats->last_transmit_us;
+        uint64_t last_transmit_us = stats==nullptr?0:stats->last_transmit_us;
         bool iface_down = true;
         if (stats == nullptr || (AP_HAL::micros64() - last_transmit_us) < 200000UL) {
             /*

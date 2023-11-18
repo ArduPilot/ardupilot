@@ -598,7 +598,7 @@ protected:
     void handle_send_autopilot_version(const mavlink_message_t &msg);
 #endif
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
-    MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_int_t &packet);
 #endif
 
     virtual void send_banner();
@@ -638,8 +638,8 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
-    virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_do_jump_tag(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_jump_tag(const mavlink_command_int_t &packet);
 
     MAV_RESULT handle_command_battery_reset(const mavlink_command_int_t &packet);
     void handle_command_long(const mavlink_message_t &msg);
@@ -654,7 +654,6 @@ protected:
 
     virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
@@ -733,8 +732,7 @@ protected:
     // initialised.
     virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
 
-    // methods to extract a Location object from a command_long or command_int
-    bool location_from_command_t(const mavlink_command_long_t &in, MAV_FRAME in_frame, Location &out);
+    // methods to extract a Location object from a command_int
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:

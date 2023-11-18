@@ -18,6 +18,9 @@ extern const AP_HAL::HAL& hal;
 #include <arpa/inet.h>
 #endif
 
+#if AP_NETWORKING_BACKEND_SITL
+#include "AP_Networking_SITL.h"
+#endif
 
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: ENABLED
@@ -55,6 +58,20 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Group: MACADDR
     // @Path: AP_Networking_macaddr.cpp
     AP_SUBGROUPINFO(param.macaddr, "MACADDR", 6,  AP_Networking, AP_Networking_MAC),
+
+#if AP_NETWORKING_TESTS_ENABLED
+    // @Param: TESTS
+    // @DisplayName: Test enable flags
+    // @Description: Enable/Disable networking tests
+    // @Bitmask: 0:UDP echo test,1:TCP echo test
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
+
+    // @Group: TEST_IP
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(param.test_ipaddr, "TEST_IP", 8,  AP_Networking, AP_Networking_IPV4),
+#endif
 
     AP_GROUPEND
 };
@@ -100,6 +117,9 @@ void AP_Networking::init()
 #if AP_NETWORKING_BACKEND_CHIBIOS
     backend = new AP_Networking_ChibiOS(*this);
 #endif
+#if AP_NETWORKING_BACKEND_SITL
+    backend = new AP_Networking_SITL(*this);
+#endif
 
     if (backend == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend failed");
@@ -116,6 +136,13 @@ void AP_Networking::init()
     announce_address_changes();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"NET: Initialized");
+
+#if AP_NETWORKING_TESTS_ENABLED
+    start_tests();
+#endif
+
+    // init network mapped serialmanager ports
+    ports_init();
 }
 
 /*

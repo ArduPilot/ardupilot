@@ -385,3 +385,6 @@
 #define AP_TERRAIN_AVAILABLE 0
 #endif
 
+#ifndef AP_ICENGINE_ENABLED
+#define AP_ICENGINE_ENABLED 0
+#endif

@@ -289,11 +289,27 @@ function Cylinder_Status_ud:exhaust_gas_temperature(value) end
 
 -- get field
 ---@return number
+function Cylinder_Status_ud:exhaust_gas_temperature2() end
+
+-- set field
+---@param value number
+function Cylinder_Status_ud:exhaust_gas_temperature2(value) end
+
+-- get field
+---@return number
 function Cylinder_Status_ud:cylinder_head_temperature() end
 
 -- set field
 ---@param value number
 function Cylinder_Status_ud:cylinder_head_temperature(value) end
+
+-- get field
+---@return number
+function Cylinder_Status_ud:cylinder_head_temperature2() end
+
+-- set field
+---@param value number
+function Cylinder_Status_ud:cylinder_head_temperature2(value) end
 
 -- get field
 ---@return number
