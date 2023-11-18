@@ -5269,21 +5269,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_push()
 
-        test_scripts = ["scripting_test.lua", "math.lua", "strings.lua", "mavlink_test.lua"]
-        success_text = ["Internal tests passed", "Math tests passed", "String tests passed", "Received heartbeat from"]
-        named_value_float_types = ["test"]
-
-        messages = []
-        named_value_float = []
-
-        def my_message_hook(mav, message):
-            if message.get_type() == 'STATUSTEXT':
-                messages.append(message)
-            # also sniff for named value float messages
-            if message.get_type() == 'NAMED_VALUE_FLOAT':
-                named_value_float.append(message)
-
-        self.install_message_hook_context(my_message_hook)
         self.set_parameters({
             "SCR_ENABLE": 1,
             "SCR_HEAP_SIZE": 1024000,
@@ -5291,38 +5276,36 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.install_test_modules_context()
         self.install_mavlink_module_context()
-        for script in test_scripts:
+        for script in [
+                "scripting_test.lua",
+                "math.lua",
+                "strings.lua",
+                "mavlink_test.lua",
+        ]:
             self.install_test_script_context(script)
+
+        self.context_collect('STATUSTEXT')
+        self.context_collect('NAMED_VALUE_FLOAT')
+
         self.reboot_sitl()
 
-        self.delay_sim_time(10)
+        for success_text in [
+                "Internal tests passed",
+                "Math tests passed",
+                "String tests passed",
+                "Received heartbeat from"
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+
+        for success_nvf in [
+                "test",
+        ]:
+            self.assert_received_message_field_values("NAMED_VALUE_FLOAT", {
+                "name": success_nvf,
+            }, check_context=True)
 
         self.context_pop()
         self.reboot_sitl()
-
-        # check all messages to see if we got our message
-        success = True
-        for text in success_text:
-            script_success = False
-            for m in messages:
-                if text in m.text:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive STATUS_TEXT")
-        else:
-            self.progress("Success STATUS_TEXT")
-
-        for type in named_value_float_types:
-            script_success = False
-            for m in named_value_float:
-                if type == m.name:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive NAMED_VALUE_FLOAT")
-        else:
-            self.progress("Success NAMED_VALUE_FLOAT")
 
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
