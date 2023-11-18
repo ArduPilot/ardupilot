@@ -149,8 +149,6 @@ Follow the steps to use the microROS Agent
     - Do "Creating the micro-ROS agent"
     - Source your ROS workspace
 
-Until this [PR](https://github.com/micro-ROS/micro-ROS.github.io/pull/401) is merged, ignore the notes about `foxy`. It works on `humble`.
-
 ## Using the ROS 2 CLI to Read Ardupilot Data
 
 After your setups are complete, do the following:
@@ -252,7 +250,7 @@ In order to consume the transforms, it's highly recommended to [create and run a
 
 ## Using ROS 2 services
 
-The `AP_DDS` libraary exposes services which are automatically mapped to ROS 2 
+The `AP_DDS` library exposes services which are automatically mapped to ROS 2 
 services using appropriate naming conventions for topics and message and service
 types. An earlier version of `AP_DDS` required the use of the eProsima
 [Integration Service](https://github.com/eProsima/Integration-Service) to map
@@ -338,7 +336,7 @@ Note that a service interface always requires a Request / Response pair.
 #### ROS 2 topic and service names
 
 The ROS 2 design article: [Topic and Service name mapping to DDS](https://design.ros2.org/articles/topic_and_service_names.html) describes the mapping of ROS 2 topic and service
-names to DDS. Each ROS 2 subsytem is provided a prefix when mapped to DDS.
+names to DDS. Each ROS 2 subsystem is provided a prefix when mapped to DDS.
 The request / response pair for services require an additional suffix.
 
 | ROS 2 subsystem | DDS Prefix | DDS Suffix |
