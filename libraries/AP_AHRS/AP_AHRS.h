@@ -421,6 +421,11 @@ public:
         return _ekf_type;
     }
 
+    // set the selected ekf type, for RC aux control
+    void set_ekf_type(uint8_t ahrs_type) {
+        _ekf_type.set(ahrs_type);
+    }
+    
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
@@ -700,6 +705,7 @@ private:
         EXTERNAL = 11,
 #endif
     };
+
     EKFType active_EKF_type(void) const { return state.active_EKF; }
 
     bool always_use_EKF() const {
