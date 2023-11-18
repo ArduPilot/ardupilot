@@ -413,7 +413,7 @@ def do_build(opts, frame_options):
         if configure_target == 'sitl' and "--enable-networking" not in cmd_configure:
             cmd_configure.append("--enable-networking")
 
-    if opts.disable_networking or configure_target != "sitl":
+    if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
     if opts.enable_networking_tests:
