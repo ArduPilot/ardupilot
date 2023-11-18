@@ -411,7 +411,7 @@ def do_build(opts, frame_options):
     if opts.enable_dds:
         cmd_configure.append("--enable-dds")
 
-    if opts.disable_networking or configure_target != "sitl":
+    if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
     if opts.enable_networking_tests:
