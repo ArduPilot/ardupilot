@@ -223,6 +223,9 @@ private:
 
         ByteBuffer *readbuffer;
         ByteBuffer *writebuffer;
+        uint32_t last_size_tx;
+        uint32_t last_size_rx;
+        HAL_Semaphore sem;
     };
 
 private:
