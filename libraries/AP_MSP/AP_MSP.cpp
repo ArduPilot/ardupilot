@@ -44,8 +44,8 @@ const AP_Param::GroupInfo AP_MSP::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: MSP OSD Options
-    // @Description: A bitmask to set some MSP specific options
-    // @Bitmask: 0:EnableTelemetryMode, 1: DisableDJIWorkarounds, 2:EnableBTFLFonts
+    // @Description: A bitmask to set some MSP specific options: EnableTelemetryMode-allows "push" mode telemetry when only rx line of OSD ic connected to autopilot,  EnableBTFLFonts-uses indexes corresponding to Betaflight fonts if OSD uses those instead of ArduPilot fonts.
+    // @Bitmask: 0:EnableTelemetryMode, 1: unused, 2:EnableBTFLFonts
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, 0),
 
