@@ -303,7 +303,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
+#if AP_SIM_ENABLED
     MSG_SIMSTATE,
+#endif
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
 #if COMPASS_CAL_ENABLED
