@@ -41,7 +41,7 @@ public:
 
     // set desired location and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
-    virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
+    virtual bool set_desired_location(const Location &destination, Location next_destination = Location(), Location intermediate_origin = Location()) WARN_IF_UNUSED;
 
     // set desired location to a reasonable stopping point, return true on success
     bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
@@ -168,6 +168,7 @@ protected:
     uint32_t _last_update_ms;       // system time of last call to update
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
+    Location _next_destination;     // next destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
     bool _reversed;                 // execute the mission by backing up
     enum class NavControllerType {
