@@ -931,6 +931,7 @@ void NavEKF3::UpdateFilter(void)
     }
 
     const bool armed  = AP::dal().get_armed();
+    const uint8_t original_primary = primary;
 
     // core selection is only available after the vehicle is armed, else forced to lane 0 if its healthy
     if (runCoreSelection && armed) {
@@ -999,6 +1000,13 @@ void NavEKF3::UpdateFilter(void)
         // have quite different noise characteristics this leads to
         // inconsistent performance
         primary = user_primary;
+    }
+
+    if (primary != original_primary) {
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+            AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary));
+#endif
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary);
     }
 
     // align position of inactive sources to ahrs
