@@ -211,7 +211,10 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     save_gyro_window(instance, gyro, filter_phase++);
 
     Vector3f gyro_filtered = gyro;
-
+#ifndef HAL_BUILD_AP_PERIPH
+    // small chance of a lane switch in the middle of the loop, so get the index at the start
+    const uint8_t primary_instance = AP::ahrs().get_primary_gyro_index();
+#endif
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
         if (!notch.params.enabled()) {
@@ -223,17 +226,16 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
-            instance != AP::ahrs().get_primary_gyro_index()) {
+            instance != primary_instance) {
             inactive = true;
         }
 #endif
         if (inactive) {
             // while inactive we reset the filter so when it activates the first output
-            // will be the first input sample
+            // will be the current input sample
             notch.filter[instance].reset();
-        } else {
-            gyro_filtered = notch.filter[instance].apply(gyro_filtered);
         }
+        gyro_filtered = notch.filter[instance].apply(gyro_filtered);
         save_gyro_window(instance, gyro_filtered, filter_phase++);
     }
 
@@ -248,6 +250,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #endif
         for (auto &notch : _imu.harmonic_notches) {
             notch.filter[instance].reset();
+            notch.filter[instance].apply(gyro);
         }
     } else {
         _imu._gyro_filtered[instance] = gyro_filtered;
