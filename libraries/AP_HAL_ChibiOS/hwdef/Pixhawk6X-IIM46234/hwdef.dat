@@ -1,0 +1,41 @@
+# hwdef for Pixhawk6X with IIM46234 IMU
+
+include ../Pixhawk6X/hwdef.dat
+
+# don't use board detection as it doesn't cope with the IIM46234
+undef HAL_CHIBIOS_ARCH_FMUV6
+undef AP_FEATURE_BOARD_DETECT
+
+# Holybro compass orientation
+define AP_COMPASS_IST8310_DEFAULT_ROTATION ROTATION_PITCH_180_YAW_270
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# use builtin list for BMM150
+define AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED 0
+
+undef COMPASS
+COMPASS BMM150 I2C:0:0x10 false ROTATION_PITCH_180
+
+# don't auto-build
+AUTOBUILD_TARGETS None
+
+# setup DRDY and nRST for IIM46234
+undef PI7 PI8
+
+PI7 IIM46234_DRDY INPUT GPIO(61)
+define IIM46234_DRDY_PIN 61
+
+PI8 IIM46234_nRST OUTPUT HIGH
+
+undef bmi088_g
+undef bmi088_a
+SPIDEV iim46234  SPI3 DEVID1  BMI088_A_CS MODE3  12*MHZ 12*MHZ
+SPIDEV ramtron   SPI5 DEVID1  FRAM_CS     MODE3  8*MHZ  8*MHZ
+
+# 3 IMUs, different orientation to standard Pixhawk6X
+undef IMU
+IMU Invensensev3 SPI:icm42688 ROTATION_YAW_270
+IMU IIM4623x     SPI:iim46234 ROTATION_PITCH_180 IIM46234_DRDY_PIN
+IMU Invensensev3 SPI:icm42670 ROTATION_YAW_90
