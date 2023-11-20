@@ -2692,6 +2692,16 @@ function gps:location(instance) end
 function gps:status(instance) end
 
 -- desc
+---@param instance integer
+---@return boolean
+function gps:have_gps_yaw_configured(instance) end
+
+-- desc
+---@param instance integer
+---@return boolean
+function gps:have_gps_yaw(instance) end
+
+-- desc
 ---@return integer
 function gps:primary_sensor() end
 
