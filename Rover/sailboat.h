@@ -24,7 +24,10 @@ public:
     Sailboat();
 
     // enabled
-    bool sail_enabled() const { return enable > 0;}
+    bool sail_enabled() const
+    {
+        return enable > 0;
+    }
 
     // true if sailboat navigation (aka tacking) is enabled
     bool tack_enabled() const;
@@ -75,6 +78,12 @@ public:
         USE_MOTOR_ALWAYS = 2
     };
 
+    // states of SAIL_CONTROL_TYPE parameter and sail_control_type variable
+    enum class SailControlType {
+        DEFAULT  = 0,
+        FIXED = 1
+    };
+
     // set state of motor
     // if report_failure is true a message will be sent to all GCSs
     void set_motor_state(UseMotor state, bool report_failure = true);
@@ -83,7 +92,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return sailboat loiter radius
-    float get_loiter_radius() const {return loit_radius;}
+    float get_loiter_radius() const
+    {
+        return loit_radius;
+    }
 
 private:
 
@@ -103,6 +115,7 @@ private:
     AP_Float sail_windspeed_min;
     AP_Float xtrack_max;
     AP_Float loit_radius;
+    AP_Int8 sail_control_type;
 
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
