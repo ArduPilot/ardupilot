@@ -9,6 +9,8 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+static __thread AP_HAL::Semaphore *sem_list;
+
 // construct a semaphore
 Semaphore::Semaphore()
 {
@@ -28,6 +30,7 @@ bool Semaphore::give()
     if (take_count == 0) {
         owner = (pthread_t)-1;
     }
+    pop_list();
     return true;
 }
 
@@ -45,6 +48,7 @@ bool Semaphore::take(uint32_t timeout_ms)
         if (pthread_mutex_lock(&_lock) == 0) {
             owner = pthread_self();
             take_count++;
+            push_list();
             return true;
         }
         return false;
@@ -71,9 +75,19 @@ bool Semaphore::take_nonblocking()
     if (pthread_mutex_trylock(&_lock) == 0) {
         owner = pthread_self();
         take_count++;
+        push_list();
         return true;
     }
     return false;
+}
+
+AP_HAL::Semaphore *Semaphore::get_sem_list()
+{
+    return sem_list;
+}
+void Semaphore::set_sem_list(AP_HAL::Semaphore *sem)
+{
+    sem_list = sem;
 }
 
 #endif  // CONFIG_HAL_BOARD

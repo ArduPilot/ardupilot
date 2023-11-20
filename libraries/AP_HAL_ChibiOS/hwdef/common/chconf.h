@@ -709,7 +709,7 @@ extern "C" {
  * @details User fields added to the end of the @p thread_t structure.
  */
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
-  /* Add threads custom fields here.*/
+    void* sem_list; \
 
 /**
  * @brief   Threads initialization hook.
@@ -719,7 +719,7 @@ extern "C" {
  *          the threads creation APIs.
  */
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
+    tp->sem_list = NULL; \
 }
 
 /**

@@ -37,6 +37,7 @@ Semaphore::Semaphore()
 bool Semaphore::give()
 {
     mutex_t *mtx = (mutex_t *)_lock;
+    pop_list();
     chMtxUnlock(mtx);
     return true;
 }
@@ -46,6 +47,7 @@ bool Semaphore::take(uint32_t timeout_ms)
     mutex_t *mtx = (mutex_t *)_lock;
     if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
         chMtxLock(mtx);
+        push_list();
         return true;
     }
     if (take_nonblocking()) {
@@ -64,7 +66,11 @@ bool Semaphore::take(uint32_t timeout_ms)
 bool Semaphore::take_nonblocking()
 {
     mutex_t *mtx = (mutex_t *)_lock;
-    return chMtxTryLock(mtx);
+    if (chMtxTryLock(mtx)) {
+        push_list();
+        return true;
+    }
+    return false;
 }
 
 bool Semaphore::check_owner(void)
@@ -76,6 +82,16 @@ bool Semaphore::check_owner(void)
 void Semaphore::assert_owner(void)
 {
     osalDbgAssert(check_owner(), "owner");
+}
+
+AP_HAL::Semaphore *Semaphore::get_sem_list()
+{
+    return (AP_HAL::Semaphore*)chThdGetSelfX()->sem_list;
+}
+
+void Semaphore::set_sem_list(AP_HAL::Semaphore *sem)
+{
+    chThdGetSelfX()->sem_list = (void*)sem;
 }
 
 #endif // CH_CFG_USE_MUTEXES
