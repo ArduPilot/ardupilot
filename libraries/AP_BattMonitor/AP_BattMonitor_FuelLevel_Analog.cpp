@@ -58,13 +58,7 @@ const AP_Param::GroupInfo AP_BattMonitor_FuelLevel_Analog::var_info[] = {
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,103:Pixhawk SBUS
     AP_GROUPINFO("FL_PIN", 43, AP_BattMonitor_FuelLevel_Analog, _pin, -1),
 
-    // @Param: FL_VLT_MAX
-    // @DisplayName: Full fuel level voltage
-    // @Description: The voltage seen on the analog pin when the fuel tank is full.
-    // @Range: 0 10
-    // @Units: V
-    // @User: Advanced
-    AP_GROUPINFO("FL_VLT_MAX", 44, AP_BattMonitor_FuelLevel_Analog, _fuel_level_max_voltage, -1),
+ // index 44 unused and available
 
     // @Param: FL_FF
     // @DisplayName: First order term
