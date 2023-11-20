@@ -52,8 +52,8 @@ public:
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);
 
-    /// enabled - returns true if parachute release is enabled
-    bool enabled() const { return _enabled; }
+    /// enabled - returns true if parachute release is enabled (also check if its not disabled by aux function)
+    bool enabled() const { return _enabled && _enabled_by_aux; }
 
     /// release - release parachute
     void release();
@@ -69,6 +69,9 @@ public:
 
     /// update - shuts off the trigger should be called at about 10hz
     void update();
+
+    /// enabled_by_aux - enable or disable parachute release using aux switch
+    void enabled_by_aux(bool on_off);
 
     /// alt_min - returns the min altitude above home the vehicle should have before parachute is released
     ///   0 = altitude check disabled
@@ -109,6 +112,11 @@ private:
     bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
+
+    // true if parachute release is enabled by aux switch
+    // introduced to avoid showing/hiding of parameters by directly altering _enabled
+    // defaults to true and should only be altered using aux functions
+    bool        _enabled_by_aux = true;
 
     enum class Options : uint8_t {
         HoldOpen = (1U<<0),
