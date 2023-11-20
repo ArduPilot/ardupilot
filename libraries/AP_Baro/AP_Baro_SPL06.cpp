@@ -123,7 +123,9 @@ bool AP_Baro_SPL06::_init()
 
     // read the calibration data
     uint8_t buf[SPL06_CALIB_COEFFS_LEN];
-    _dev->read_registers(SPL06_REG_CALIB_COEFFS_START, buf, sizeof(buf));
+    if (!_dev->read_registers(SPL06_REG_CALIB_COEFFS_START, buf, sizeof(buf))) {
+        return false;
+    }
 
     _c0 = (buf[0] & 0x80 ? 0xF000 : 0) | ((uint16_t)buf[0] << 4) | (((uint16_t)buf[1] & 0xF0) >> 4);
     _c1 = ((buf[1] & 0x8 ? 0xF000 : 0) | ((uint16_t)buf[1] & 0x0F) << 8) | (uint16_t)buf[2];
@@ -136,10 +138,16 @@ bool AP_Baro_SPL06::_init()
     _c30 = ((uint16_t)buf[16] << 8) | (uint16_t)buf[17];
 
     // setup temperature and pressure measurements
-    _dev->setup_checked_registers(3, 20);
+    if (!_dev->setup_checked_registers(3, 20)) {
+        return false;
+    }
 
-    _dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_USE_EXT_SENSOR | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
-    _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+    if (!_dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_USE_EXT_SENSOR | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true)) {
+        return false;
+    }
+    if (!_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true)) {
+        return false;
+    }
 
     uint8_t int_and_fifo_reg_value = 0;
     if (SPL06_TEMPERATURE_OVERSAMPLING > 8) {
@@ -148,7 +156,9 @@ bool AP_Baro_SPL06::_init()
     if (SPL06_PRESSURE_OVERSAMPLING > 8) {
         int_and_fifo_reg_value |= SPL06_PRESSURE_RESULT_BIT_SHIFT;
     }
-    _dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true);
+    if (!_dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true)) {
+        return false;
+    }
 
     _instance = _frontend.register_sensor();
 

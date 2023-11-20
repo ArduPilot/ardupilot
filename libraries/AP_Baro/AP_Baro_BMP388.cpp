@@ -89,7 +89,9 @@ bool AP_Baro_BMP388::init()
     }
 
     // normal mode, temp and pressure
-    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
+    if (!dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true)) {
+        return false;
+    }
     
     uint8_t whoami;
     if (!read_registers(BMP388_REG_ID, &whoami, 1)) {
@@ -108,15 +110,21 @@ bool AP_Baro_BMP388::init()
     }
 
     // read the calibration data
-    read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
-    read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t));
+    if (!read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p))) {
+        return false;
+    }
+    if (!read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t))) {
+        return false;
+    }
 
     scale_calibration_data();
 
     dev->setup_checked_registers(4);
 
     // normal mode, temp and pressure
-    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
+    if (!dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true)) {
+        return false;
+    }
 
     instance = _frontend.register_sensor();
 

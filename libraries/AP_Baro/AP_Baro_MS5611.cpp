@@ -93,7 +93,10 @@ bool AP_Baro_MS56XX::_init()
     uint16_t prom[8];
     bool prom_read_ok = false;
 
-    _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
+    if (!_dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     hal.scheduler->delay(4);
 
     /*
@@ -137,7 +140,10 @@ bool AP_Baro_MS56XX::_init()
     _cal_reg.c6 = prom[6];
 
     // Send a command to read temperature first
-    _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
+    if (!_dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     _state = 0;
 
     memset(&_accum, 0, sizeof(_accum));

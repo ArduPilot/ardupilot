@@ -90,7 +90,9 @@ bool AP_Baro_BMP085::_init()
     }
 
 
-    _dev->read_registers(0xD1, &_vers, 1);
+    if (!_dev->read_registers(0xD1, &_vers, 1)) {
+        return false;
+    }
 
     bool prom_ok=false;
     _type=0;

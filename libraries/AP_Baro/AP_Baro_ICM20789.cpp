@@ -102,31 +102,62 @@ bool AP_Baro_ICM20789::imu_spi_init(void)
     uint8_t whoami = 0;
     uint8_t v;
 
-    dev_imu->read_registers(MPUREG_USER_CTRL, &v, 1);
-    dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!dev_imu->read_registers(MPUREG_USER_CTRL, &v, 1)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
+    if (!dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
     hal.scheduler->delay(1);
-    dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
-    dev_imu->write_register(MPUREG_PWR_MGMT_1,
-                            BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
+    if (!dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
     hal.scheduler->delay(1);
-    dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
     hal.scheduler->delay(1);
-    dev_imu->write_register(MPUREG_FIFO_EN, 0x00);
-    dev_imu->write_register(MPUREG_PWR_MGMT_1,
-                            BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!dev_imu->write_register(MPUREG_FIFO_EN, 0x00)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
+    if (!dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
-    dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    if (!dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
     // wait for sensor to settle
     hal.scheduler->delay(100);
 
-    dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    if (!dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
-    dev_imu->write_register(MPUREG_INT_PIN_CFG, 0x00);
-    dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+    if (!dev_imu->write_register(MPUREG_INT_PIN_CFG, 0x00)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
+    if (!dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS)) {
+        dev_imu->get_semaphore()->give();
+        return false;
+    }
 
     dev_imu->get_semaphore()->give();
 
@@ -146,16 +177,24 @@ bool AP_Baro_ICM20789::imu_i2c_init(void)
     dev->set_retries(4);
 
     uint8_t whoami=0;
-    dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    if (!dev->read_registers(MPUREG_WHOAMI, &whoami, 1)) {
+        return false;
+    }
     debug("ICM20789: whoami 0x%02x old_address=%02x\n", whoami, old_address);
 
-    dev->write_register(MPUREG_FIFO_EN, 0x00);
-    dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    if (!dev->write_register(MPUREG_FIFO_EN, 0x00)) {
+        return false;
+    }
+    if (!dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO)) {
+        return false;
+    }
     
     // wait for sensor to settle
     hal.scheduler->delay(10);
 
-    dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+    if (!dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN)) {
+        return false;
+    }
 
     dev->set_address(old_address);
 

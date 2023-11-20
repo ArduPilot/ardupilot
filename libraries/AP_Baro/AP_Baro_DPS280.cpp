@@ -134,23 +134,43 @@ bool AP_Baro_DPS280::read_calibration(void)
     return true;
 }
 
-void AP_Baro_DPS280::set_config_registers(void)
+bool AP_Baro_DPS280::set_config_registers(void)
 {
-    dev->write_register(DPS280_REG_CREG, 0x0C, true); // shift for 16x oversampling
-    dev->write_register(DPS280_REG_PCONF, 0x54, true); // 32 Hz, 16x oversample
-    dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source, true); // 32 Hz, 16x oversample
-    dev->write_register(DPS280_REG_MCONF, 0x07); // continuous temp and pressure.
+    if (!dev->write_register(DPS280_REG_CREG, 0x0C, true)) {  // shift for 16x oversampling
+        return false;
+    }
+    if (!dev->write_register(DPS280_REG_PCONF, 0x54, true)) {  // 32 Hz, 16x oversample
+        return false;
+    }
+    if (!dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source, true)) {  // 32 Hz, 16x oversample
+        return false;
+    }
+    if (!dev->write_register(DPS280_REG_MCONF, 0x07)) {  // continuous temp and pressure.
+        return false;
+    }
 
     if (is_dps310) {
         // work around broken temperature handling on some sensors
         // using undocumented register writes
         // see https://github.com/infineon/DPS310-Pressure-Sensor/blob/dps310/src/DpsClass.cpp#L442
-        dev->write_register(0x0E, 0xA5);
-        dev->write_register(0x0F, 0x96);
-        dev->write_register(0x62, 0x02);
-        dev->write_register(0x0E, 0x00);
-        dev->write_register(0x0F, 0x00);
+        if (!dev->write_register(0x0E, 0xA5)) {
+            return false;
+        }
+        if (!dev->write_register(0x0F, 0x96)) {
+            return false;
+        }
+        if (!dev->write_register(0x62, 0x02)) {
+            return false;
+        }
+        if (!dev->write_register(0x0E, 0x00)) {
+            return false;
+        }
+        if (!dev->write_register(0x0F, 0x00)) {
+            return false;
+        }
     }
+    
+    return true;
 }
 
 bool AP_Baro_DPS280::init(bool _is_dps310)
@@ -187,7 +207,10 @@ bool AP_Baro_DPS280::init(bool _is_dps310)
 
     dev->setup_checked_registers(4, 20);
 
-    set_config_registers();
+    if (!set_config_registers()) {
+        dev->get_semaphore()->give();
+        return false;
+    }
 
     instance = _frontend.register_sensor();
     if(_is_dps310) {

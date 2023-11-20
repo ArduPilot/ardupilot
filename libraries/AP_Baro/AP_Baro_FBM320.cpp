@@ -124,7 +124,10 @@ bool AP_Baro_FBM320::init()
         return false;
     }
 
-    dev->write_register(FBM320_REG_CMD, FBM320_CMD_READ_T);
+    if (!dev->write_register(FBM320_REG_CMD, FBM320_CMD_READ_T)) {
+        dev->get_semaphore()->give();
+        return false;
+    }
 
     instance = _frontend.register_sensor();
 
