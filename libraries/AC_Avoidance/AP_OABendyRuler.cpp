@@ -78,20 +78,43 @@ AP_OABendyRuler::AP_OABendyRuler()
     _bearing_prev = FLT_MAX;
 }
 
+
+ // compute the real planning startpoint
+void AP_OABendyRuler::compute_planning_start_point(Location& current_loc, const Vector2f &ground_speed_vec, const float plannning_period_sec)
+{
+    // get ground course
+    float ground_course_deg;
+    if (ground_speed_vec.length_squared() < OA_BENDYRULER_LOW_SPEED_SQUARED) {
+        // with zero ground speed use vehicle's heading
+        ground_course_deg = AP::ahrs().yaw_sensor * 0.01f;
+    } else {
+        ground_course_deg = degrees(ground_speed_vec.angle());
+    }
+
+    const float delay_distance = ground_speed_vec.length() * plannning_period_sec;
+
+    current_loc.offset_bearing(ground_course_deg, delay_distance);
+}
+
+
 // run background task to find best path and update avoidance_results
 // returns true and updates origin_new and destination_new if a best path has been found
 // bendy_type is set to the type of BendyRuler used
 bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only)
 {
+    // update the current planning start position
+    Location start_location = current_loc;
+    compute_planning_start_point(start_location, ground_speed_vec, 1.0f);
+
     // bendy ruler always sets origin to current_loc
-    origin_new = current_loc;
+    origin_new = start_location;
 
     // init bendy_type returned
     bendy_type = OABendyType::OA_BENDY_DISABLED;
 
     // calculate bearing and distance to final destination
-    const float bearing_to_dest = current_loc.get_bearing_to(destination) * 0.01f;
-    const float distance_to_dest = current_loc.get_distance(destination);
+    const float bearing_to_dest = start_location.get_bearing_to(destination) * 0.01f;
+    const float distance_to_dest = start_location.get_distance(destination);
 
     // make sure user has set a meaningful value for _lookahead
     _lookahead.set(MAX(_lookahead,1.0f));
@@ -126,7 +149,7 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
 
         case OABendyType::OA_BENDY_HORIZONTAL:
         default:
-            ret = search_xy_path(current_loc, destination, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            ret = search_xy_path(start_location, destination, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
             bendy_type = OABendyType::OA_BENDY_HORIZONTAL;
     }
 
