@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Range: 10 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MAX", 3, AC_Fence, _alt_max, AC_FENCE_ALT_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("ALT_MAX", 3, AC_Fence, _alt_max, AC_FENCE_ALT_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_PLANE),
 
     // @Param: RADIUS
     // @DisplayName: Circular Fence Radius
@@ -106,7 +106,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Range: -100 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_PLANE),
 
     // @Param{Plane}: RET_RALLY
     // @DisplayName: Fence Return to Rally
