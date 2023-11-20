@@ -254,6 +254,8 @@ private:
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
+    // float last_altitude = 0;
+
     struct RangeFinderState {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -426,6 +428,10 @@ private:
     // Motor Output
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
+
+    // float last_altitude = 0;
+    // float last_rangefinder = 0;
+    // bool rangefinder_is_good_rc_car_bool = true;
 
     int32_t _home_bearing;
     uint32_t _home_distance;
@@ -648,7 +654,7 @@ private:
                   "_failsafe_priorities is missing the sentinel");
 
 
-
+    // bool get_rangefinder_good_rc_car(void);
     // AP_State.cpp
     void set_auto_armed(bool b);
     void set_simple_mode(SimpleMode b);

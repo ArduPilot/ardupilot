@@ -645,11 +645,32 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+
+    // // Check if the rangefinder isn't changing but the velocity is positive
+    // float current_alt = inertial_nav.get_position_z_up_cm();
+    // float current_rangefinder = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+
+    // // Need this because if we are flying off a cliff, the quad would just keep moving upwards
+    // if (current_alt - last_altitude > 0.4 && current_rangefinder == 0 && last_rangefinder == 0) {
+    //     rangefinder_is_good_rc_car_bool = false;
+    // } else if (!rangefinder_is_good_rc_car_bool && current_rangefinder == 0 && last_rangefinder == 0) {
+    //     rangefinder_is_good_rc_car_bool = false;
+    // } else {
+    //     rangefinder_is_good_rc_car_bool = true;
+    // }
+
+    // last_rangefinder = current_rangefinder;
+    // last_altitude = current_alt;
+
     if (!arming.armed) {
         check_outdoors_ready();
     }
 }
+
+// bool Copter::get_rangefinder_good_rc_car()
+// {
+//     return rangefinder_is_good_rc_car_bool;
+// }
 
 void Copter::init_simple_bearing()
 {
@@ -787,7 +808,6 @@ void Copter::check_outdoors_ready() {
         // if (!(arming.armed)) { //Only update mode when disarmed
         bool optflow_good = optflow.enabled() && optflow.healthy();
         bool gps_good = arming.gps_checks_indoor_mode(false) && (gps.num_sats() >= 9 && gps.get_hdop() < 140);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%d %d", gps_good, optflow_good);
         bool new_outdoors_ready = gps_good || !optflow_good;
         if (outdoors_ready != new_outdoors_ready) {
             outdoors_ready = new_outdoors_ready;

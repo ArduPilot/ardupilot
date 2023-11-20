@@ -93,9 +93,10 @@ void Copter::read_rangefinder(void)
             }
             rf_state.last_healthy_ms = now;
         }
-
+        // copter.gcs().send_text(MAV_SEVERITY_WARNING, "rangefinder check");
         // handle reset of terrain offset
         if (reset_terrain_offset) {
+            // copter.gcs().send_text(MAV_SEVERITY_WARNING, "reset rangefinder");
             if (rf_orient == ROTATION_PITCH_90) {
                 // upward facing
                 rf_state.terrain_offset_cm = rf_state.inertial_alt_cm + rf_state.alt_cm;

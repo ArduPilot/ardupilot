@@ -178,10 +178,20 @@ void ModeRCCar::run()
             // Send the commanded climb rate to the position controller
             // pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
             if (copter.g.rccar_unlimited_height == 0) {
-                float alt_target = channel_throttle->get_control_in() * 0.2;	
+                float alt_factor = 0.2;
+                float alt_target = channel_throttle->get_control_in() * alt_factor;
+                // float rangefinder_alt_cm = copter.rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+                // float ekf_origin_alt_target = inertial_nav.get_position_z_up_cm() + alt_target - rangefinder_alt_cm;
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "1: %f", inertial_nav.get_position_z_up_cm());
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "2: %f", alt_target);
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "3: %f", rangefinder_alt_cm);
+                // if (!copter.get_rangefinder_good_rc_car()) {
+                //     ekf_origin_alt_target = 0;
+                // }
+                // copter.surface_tracking.set_target_alt_cm(alt_target);
                 pos_control->set_pos_target_z_cm(alt_target);	
             } else {	
-                pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);	
+                pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
             }
             break;
         }
@@ -292,9 +302,19 @@ void ModeRCCar::run()
             copter.surface_tracking.update_surface_offset();
 
             // Send the commanded climb rate to the position controller
-            if (copter.g.rccar_unlimited_height == 0) {	
-                float alt_target = channel_throttle->get_control_in() * 0.7;	
-                pos_control->set_pos_target_z_cm(alt_target);	
+            if (copter.g.rccar_unlimited_height == 0) {
+                float alt_factor = 0.7;
+                float alt_target = channel_throttle->get_control_in() * alt_factor;
+                // float rangefinder_alt_cm = copter.rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+                // float ekf_origin_alt_target = inertial_nav.get_position_z_up_cm() + alt_target - rangefinder_alt_cm;
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "1: %f", inertial_nav.get_position_z_up_cm());
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "2: %f", alt_target);
+                // // gcs().send_text(MAV_SEVERITY_WARNING, "3: %f", rangefinder_alt_cm);
+                // if (!copter.get_rangefinder_good_rc_car()) {
+                //     ekf_origin_alt_target = 0;
+                // }
+                pos_control->set_pos_target_z_cm(alt_target);
+                // copter.surface_tracking.set_target_alt_cm(alt_target);
             } else {	
                 pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);	
             }

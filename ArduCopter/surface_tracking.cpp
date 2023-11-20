@@ -19,6 +19,8 @@ void Copter::SurfaceTracking::update_surface_offset()
 
         // update position controller target offset to the surface's alt above the EKF origin
         copter.pos_control->set_pos_offset_target_z_cm(rf_state.terrain_offset_cm);
+        // copter.gcs().send_text(MAV_SEVERITY_WARNING, "Surface offset: %f", rf_state.terrain_offset_cm);
+
         last_update_ms = now_ms;
         valid_for_logging = true;
 
@@ -34,6 +36,7 @@ void Copter::SurfaceTracking::update_surface_offset()
         }
 
     } else {
+        // copter.gcs().send_text(MAV_SEVERITY_WARNING, "surface not working");
         // reset position controller offsets if surface tracking is inactive
         // flag target should be reset when/if it next becomes active
         if (timeout) {
