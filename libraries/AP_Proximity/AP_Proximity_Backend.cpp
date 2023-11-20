@@ -107,21 +107,20 @@ bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matr
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(float angle, float pitch, float distance)
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, float radius)
 {
     Vector3f current_pos;
     Matrix3f body_to_ned;
 
     if (database_prepare_for_push(current_pos, body_to_ned)) {
-        database_push(angle, pitch, distance, AP_HAL::millis(), current_pos, body_to_ned);
+        database_push(angle, pitch, distance, AP_HAL::millis(), current_pos, body_to_ned, radius);
     }
 }
 
 // update Object Avoidance database with Earth-frame point
 // pitch can be optionally provided if needed
-void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned, const float radius)
 {
-
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
@@ -141,8 +140,75 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     //Convert the vector to a NEU frame from NED
     temp_pos.z = temp_pos.z * -1.0f;
 
-    oaDb->queue_push(temp_pos, timestamp_ms, distance);
+    oaDb->queue_push(temp_pos, timestamp_ms, distance, radius);
 #endif
 }
+
+
+// update Object Avoidance database with Earth-frame point
+// consider dynamical object velocity
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, float vel_mag, float vel_angle, float radius, bool relative)
+{
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+    if (database_prepare_for_push(current_pos, body_to_ned)) {
+        AP_OADatabase *oaDb = AP::oadatabase();
+        if (oaDb == nullptr || !oaDb->healthy()) {
+            return;
+        }
+       if ((pitch > 90.0f) || (pitch < -90.0f)) {
+            // sanity check on pitch
+            return;
+        }
+
+        // deal with absolute object velocity
+        if(!relative){
+            const Vector3f abs_vel{vel_mag * cosf(radians(vel_angle)),vel_mag * sinf(radians(vel_angle)),0};
+            const Vector3f abs_pos{distance * cosf(radians(angle)),distance * sinf(radians(angle)),-current_pos.z};
+             oaDb->queue_push(abs_pos, abs_vel, AP_HAL::millis(), distance, radius);
+             return;
+        }
+
+        //Assume object is angle and pitch bearing and distance meters away from the vehicle 
+        Vector3f object_3D;
+        object_3D.offset_bearing(wrap_180(angle), (pitch * -1.0f), distance);
+        const Vector3f rotated_object_3D = body_to_ned * object_3D;
+
+        //Calculate the position vector from origin
+        Vector3f temp_pos = current_pos + rotated_object_3D;
+        //Convert the vector to a NEU frame from NED
+        temp_pos.z = temp_pos.z * -1.0f;
+
+        // Calculate the absolute velocity from origin
+        const Vector3f angular_speed = AP::ahrs().get_gyro();
+        const Vector3f local_pos{distance * cosf(radians(angle)), distance * sinf(radians(angle)), 0};
+        const Vector3f local_vel{vel_mag * cosf(radians(vel_angle)), vel_mag * sinf(radians(vel_angle)), 0};
+        const Vector3f angular_trans_speed = angular_speed % local_pos;
+        const Vector3f world_vel = body_to_ned * (local_vel  + angular_trans_speed);
+
+        // vehicle speed and heading
+        Vector2f _groundspeed_vector = AP::ahrs().groundspeed_vector();
+        const float heading = AP::ahrs().yaw;
+        float groundSpeed = _groundspeed_vector.length();
+        if (groundSpeed < 0.5f) {
+            // use a small ground speed vector in the right direction,
+            // allowing us to use the compass heading at zero GPS velocity
+            groundSpeed = 0.5f;
+            _groundspeed_vector = Vector2f(cosf(heading), sinf(heading)) * groundSpeed;
+        }
+        Vector3f vehicle_speed = {_groundspeed_vector, 0};
+        Vector3f vel = world_vel + vehicle_speed;
+        //Convert the vector to a NEU frame from NED
+        vel.z = vel.z * -1.0f;
+
+        // ingore too slow obstacles
+        if(vel.xy().length() < 0.5f){
+            vel.zero();
+        }
+
+        oaDb->queue_push(temp_pos, vel, AP_HAL::millis(), distance, radius);
+    }
+}
+
 
 #endif // HAL_PROXIMITY_ENABLED
