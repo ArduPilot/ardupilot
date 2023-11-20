@@ -167,9 +167,7 @@ public:
     const char *protocol_name(void) const;
 
     // return detected protocol
-    enum rcprotocol_t protocol_detected(void) const {
-        return _detected_protocol;
-    }
+    enum rcprotocol_t protocol_detected(void) const;
 
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
@@ -201,7 +199,8 @@ private:
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 
-    enum rcprotocol_t _detected_protocol = NONE;
+    AP_RCProtocol_Backend *_active_backend;
+
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];

@@ -34,8 +34,9 @@
 
 
 
-AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
+AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol) :
     frontend(_frontend),
+    _protocol{protocol},
     rc_input_count(0),
     last_rc_input_count(0),
     _num_channels(0)

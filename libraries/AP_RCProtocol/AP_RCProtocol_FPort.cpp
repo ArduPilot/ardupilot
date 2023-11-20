@@ -78,8 +78,8 @@ struct PACKED FPort_Frame {
 static_assert(sizeof(FPort_Frame) == FPORT_CONTROL_FRAME_SIZE, "FPort_Frame incorrect size");
 
 // constructor
-AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool _inverted) :
-    AP_RCProtocol_Backend(_frontend),
+AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol, bool _inverted) :
+    AP_RCProtocol_Backend(_frontend, protocol),
     inverted(_inverted)
 {}
 
