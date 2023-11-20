@@ -47,8 +47,10 @@ bool AP_OSD_MSP_DisplayPort::init(void)
         gcs().send_text(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
         return false;
     }
-    // re-init port here for use in this thread
-    _displayport->init_uart();
+
+	//Set flag to say the uart needs to be initalized 
+	//This must happen from the active read thread once its running.
+    _bInitedUart=false;
     return true;
 }
 
@@ -95,6 +97,15 @@ uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, 
 
 void AP_OSD_MSP_DisplayPort::flush(void)
 {
+	//The uart init needs to be called from the operational thread.
+	//This causes that to happen the first time the thread executes.
+	//Otherwise read will fail wiht a -1 as thread ownership flag in uart is wrong.
+    if (!_bInitedUart) {
+        _bInitedUart=true;
+        _displayport->init_uart();
+    }
+
+
     // grab the screen and force a redraw
     _displayport->msp_displayport_grab();
     _displayport->msp_displayport_draw_screen();
