@@ -186,7 +186,10 @@ bool sdcard_retry(void)
         if (sdcard_init()) {
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
             // create APM directory
-            AP::FS().mkdir("/APM");
+            int ret = AP::FS().mkdir("/APM");
+            if (ret == -1 && errno != EEXIST) {
+                return false;
+            }
 #endif
         }
     }
