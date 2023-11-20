@@ -532,13 +532,14 @@ void FlightAxis::update(const struct sitl_input &input)
         }
     } else {
         uint64_t dt_us = new_time_us - time_now_us;
-        const uint64_t glitch_threshold_us = 50000;
+        const uint64_t glitch_threshold_us = 250000;    // When network glitches start to affect EKF
         const uint64_t glitch_max_us = 2000000;
         if (dt_us > glitch_threshold_us && dt_us < glitch_max_us) {
             // we've had a network glitch, compensate by advancing initial time
             float adjustment_s = (dt_us-glitch_threshold_us)*1.0e-6;
             initial_time_s += adjustment_s;
-            printf("glitch %.2fs\n", adjustment_s);
+            printf("network glitch dt(us): %lu above threshold %lu moving time by %.3fs\n", 
+                        (unsigned long) dt_us, (unsigned long) glitch_threshold_us, adjustment_s);
             dt_us = glitch_threshold_us;
             glitch_count++;
         }
@@ -568,12 +569,25 @@ void FlightAxis::update(const struct sitl_input &input)
 void FlightAxis::report_FPS(void)
 {
     if (frame_counter++ % 1000 == 0) {
+        uint64_t frames = socket_frame_counter - last_socket_frame_counter;
+        last_socket_frame_counter = socket_frame_counter;
+        double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
+        
+        AP::logger().Write("SIMF", "TimeUS,FrameDT,DT,FPSAvg,FrameAT,Glitches", "QffffI",
+                                    AP_HAL::micros64(),
+                                    (double)frames / dt,
+                                    (double)dt*100.0,                    // Convert to ms
+                                    (double)1.0/average_frame_time_s,
+                                    (double)average_frame_time_s,
+                                    glitch_count);
+        
         if (!is_zero(last_frame_count_s)) {
-            uint64_t frames = socket_frame_counter - last_socket_frame_counter;
-            last_socket_frame_counter = socket_frame_counter;
-            double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
+            // To avoid spamming the console, only display FPS data if actively glitching
+            // The test is glitch_count > 1 because there is often a single glitch at startup
+            if (glitch_count > 1) {
+                printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
                    frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+            }
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
