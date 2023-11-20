@@ -1,0 +1,141 @@
+# Skystars F405 DJI
+# With F405 MCU, MPU6000 IMU and 7456 series OSD
+# Based on Mamba F405 MK2 from jeanphilippehell
+# Pin information from Betaflight
+
+# MCU class and specific type.
+MCU STM32F4xx STM32F405xx
+
+HAL_CHIBIOS_ARCH_F405 1
+
+# board ID for firmware load
+APJ_BOARD_ID 1045
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# board voltage
+STM32_VDD 330U
+
+STM32_ST_USE_TIMER 5
+
+#### I2C BUS #######
+# order of I2C buses
+I2C_ORDER I2C1
+
+# PULLUP on I2C pins
+PB8 I2C1_SCL I2C1 PULLUP
+PB9 I2C1_SDA I2C1 PULLUP
+
+#### SERIALS AND USB #######
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART6 USART2 UART5 UART4 EMPTY
+
+#### USB ####
+# The pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+#### RECEIVER #######
+# skyF405 uses IBUS
+# USART6
+PC7 TIM8_CH2 TIM8 RCININT PULLDOWN
+PC6 USART6_TX USART6
+
+#### TELEMETRY #######
+# USART2
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+#### GPS #######
+# UART5
+PC12 UART5_TX UART5
+PD2  UART5_RX UART5
+
+#### SMARTAUDIO #######
+# UART4
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+#### BATT #######
+PC0 BAT_VOLT_SENS ADC1 SCALE(1)
+PC1 BAT_CURR_SENS ADC1 SCALE(1)
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11.12
+define HAL_BATT_CURR_SCALE 18.2
+
+#### ESCs #######
+# PWM output. 1 - 4 on ESC header
+PB3 TIM2_CH2 TIM2 PWM(3) GPIO(50)   # Front left
+PB4 TIM3_CH1 TIM3 PWM(2) GPIO(51)   # Back left
+PB6 TIM4_CH1 TIM4 PWM(1) GPIO(52)   # Front right
+PB7 TIM4_CH2 TIM4 PWM(4) GPIO(53)   # Back right
+# 2 extra motors still available in Skystars F405:
+# MOTOR 5 B00
+# MOTOR 6 B01
+
+#### LEDs #######
+# Board LEDs
+PC14 LED_BLUE  OUTPUT LOW GPIO(1)
+PC15 LED_GREEN OUTPUT LOW GPIO(2)
+define HAL_GPIO_A_LED_PIN 1
+define HAL_GPIO_B_LED_PIN 2
+
+##### GYRO/ACCEL ########
+# SPI1 - GYRO/ACCEL
+PA4 MPU6000_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# One IMU rotated in yaw
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
+
+##### BARO ########
+# SPI2 - BARO
+PB15 SPI2_MOSI SPI2
+PB14 SPI2_MISO SPI2
+PB13 SPI2_SCK SPI2
+PC5 BMP280_CS CS
+
+BARO BMP280 SPI:bmp280
+
+#### OSD #######
+# SPI2 - OSD max7456
+PB12 OSD_CS CS
+# Setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+# Font for the osd
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# SPI Device table
+SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 4*MHZ
+SPIDEV dataflash  SPI3 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
+SPIDEV bmp280     SPI2 DEVID3 BMP280_CS  MODE3 1*MHZ 8*MHZ
+SPIDEV osd        SPI2 DEVID4 OSD_CS     MODE0 10*MHZ 10*MHZ
+
+#### COMPASS #######
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+#### DATAFLASH #######
+# SPI3
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PB5  SPI3_MOSI SPI3
+PA15 FLASH_CS CS
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
+# flash size
+FLASH_SIZE_KB 1024
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
