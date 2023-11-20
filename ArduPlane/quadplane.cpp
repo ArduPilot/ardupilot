@@ -1496,7 +1496,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
                 // we've been below assistant alt for Q_ASSIST_DELAY seconds
                 if (!in_alt_assist) {
                     in_alt_assist = true;
-                    gcs().send_text(MAV_SEVERITY_INFO, "Alt assist %.1fm", height_above_ground);
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
                 }
                 return true;
             }
@@ -1541,7 +1541,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
     bool ret = (now - angle_error_start_ms) >= assist_delay*1000;
     if (ret && !in_angle_assist) {
         in_angle_assist = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
+        gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
                                          (int)(ahrs.roll_sensor/100),
                                          (int)(ahrs.pitch_sensor/100));
     }
