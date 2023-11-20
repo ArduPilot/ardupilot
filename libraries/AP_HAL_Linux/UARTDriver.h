@@ -56,6 +56,8 @@ public:
 
     uint32_t bw_in_bytes_per_second() const override;
 
+    bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
+
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _console;
