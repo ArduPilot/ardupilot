@@ -219,12 +219,12 @@ const char* AP_ExternalAHRS_MicroStrain5::get_name() const
 bool AP_ExternalAHRS_MicroStrain5::healthy(void) const
 {
     uint32_t now = AP_HAL::millis();
-    return (now - last_ins_pkt < 40 && now - last_gps_pkt < 500 && now - last_filter_pkt < 500);
+    return (now - last_imu_pkt < 40 && now - last_gps_pkt < 500 && now - last_filter_pkt < 500);
 }
 
 bool AP_ExternalAHRS_MicroStrain5::initialised(void) const
 {
-    return last_ins_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
+    return last_imu_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
 }
 
 bool AP_ExternalAHRS_MicroStrain5::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
@@ -248,10 +248,10 @@ bool AP_ExternalAHRS_MicroStrain5::pre_arm_check(char *failure_msg, uint8_t fail
 void AP_ExternalAHRS_MicroStrain5::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
-    if (last_ins_pkt != 0 && last_gps_pkt != 0) {
+    if (last_imu_pkt != 0 && last_gps_pkt != 0) {
         status.flags.initalized = true;
     }
-    if (healthy() && last_ins_pkt != 0) {
+    if (healthy() && last_imu_pkt != 0) {
         status.flags.attitude = true;
         status.flags.vert_vel = true;
         status.flags.vert_pos = true;

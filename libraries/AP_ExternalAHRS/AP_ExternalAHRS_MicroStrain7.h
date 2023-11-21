@@ -45,7 +45,8 @@ public:
     void send_status_report(class GCS_MAVLINK &link) const override;
 
     // check for new data
-    void update() override {
+    void update() override
+    {
         build_packet();
     };
 
@@ -54,7 +55,7 @@ private:
     uint32_t baudrate;
     int8_t port_num;
     bool port_open = false;
-    
+
 
 
     void build_packet();

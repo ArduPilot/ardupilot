@@ -134,7 +134,7 @@ protected:
         uint8_t index;
     } message_in;
 
-    uint32_t last_ins_pkt;
+    uint32_t last_imu_pkt;
     uint32_t last_gps_pkt;
     uint32_t last_filter_pkt;
 

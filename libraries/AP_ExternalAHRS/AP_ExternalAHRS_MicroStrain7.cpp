@@ -97,7 +97,7 @@ void AP_ExternalAHRS_MicroStrain7::build_packet()
     if (uart == nullptr) {
         return;
     }
-    
+
     WITH_SEMAPHORE(sem);
     uint32_t nbytes = MIN(uart->available(), 2048u);
     while (nbytes--> 0) {
@@ -143,9 +143,9 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
 
     {
         AP_ExternalAHRS::ins_data_message_t ins {
-            accel: imu_data.accel,
-            gyro: imu_data.gyro,
-            temperature: -300
+accel: imu_data.accel,
+gyro: imu_data.gyro,
+temperature: -300
         };
         AP::ins().handle_external(ins);
     }
@@ -153,7 +153,7 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::mag_data_message_t mag {
-            field: imu_data.mag
+field: imu_data.mag
         };
         AP::compass().handle_external(mag);
     }
@@ -163,10 +163,10 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
     {
         const AP_ExternalAHRS::baro_data_message_t baro {
             instance: 0,
-            pressure_pa: imu_data.pressure,
+pressure_pa: imu_data.pressure,
             // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by MicroStrain
             temperature: 25,
-        };        
+        };
         AP::baro().handle_external(baro);
     }
 #endif
@@ -188,25 +188,25 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
 
     for (int instance = 0; instance < NUM_GNSS_INSTANCES; instance++) {
         AP_ExternalAHRS::gps_data_message_t gps {
-            gps_week: filter_data.week,
-            ms_tow: filter_data.tow_ms,
-            fix_type: (uint8_t) gnss_data[instance].fix_type,
-            satellites_in_view: gnss_data[instance].satellites,
+gps_week: filter_data.week,
+ms_tow: filter_data.tow_ms,
+fix_type: (uint8_t) gnss_data[instance].fix_type,
+satellites_in_view: gnss_data[instance].satellites,
 
-            horizontal_pos_accuracy: gnss_data[instance].horizontal_position_accuracy,
-            vertical_pos_accuracy: gnss_data[instance].vertical_position_accuracy,
-            horizontal_vel_accuracy: gnss_data[instance].speed_accuracy,
+horizontal_pos_accuracy: gnss_data[instance].horizontal_position_accuracy,
+vertical_pos_accuracy: gnss_data[instance].vertical_position_accuracy,
+horizontal_vel_accuracy: gnss_data[instance].speed_accuracy,
 
-            hdop: gnss_data[instance].hdop,
-            vdop: gnss_data[instance].vdop,
+hdop: gnss_data[instance].hdop,
+vdop: gnss_data[instance].vdop,
 
-            longitude: filter_data.lon,
-            latitude: filter_data.lat,
-            msl_altitude: gnss_data[instance].msl_altitude,
+longitude: filter_data.lon,
+latitude: filter_data.lat,
+msl_altitude: gnss_data[instance].msl_altitude,
 
-            ned_vel_north: filter_data.ned_velocity_north,
-            ned_vel_east: filter_data.ned_velocity_east,
-            ned_vel_down: filter_data.ned_velocity_down,
+ned_vel_north: filter_data.ned_velocity_north,
+ned_vel_east: filter_data.ned_velocity_east,
+ned_vel_down: filter_data.ned_velocity_down,
         };
 
         if (gps.fix_type >= 3 && !state.have_origin) {
@@ -238,7 +238,22 @@ const char* AP_ExternalAHRS_MicroStrain7::get_name() const
 bool AP_ExternalAHRS_MicroStrain7::healthy(void) const
 {
     uint32_t now = AP_HAL::millis();
-    const bool times_healthy = (now - last_ins_pkt < 40 && now - last_gps_pkt < 500 && now - last_filter_pkt < 500);
+
+    // Expect the following rates:
+    // * Navigation Filter: 25Hz = 40mS
+    // * GPS: 2Hz = 500mS
+    // * IMU: 25Hz = 40mS
+
+    // Allow for some slight variance of 10%
+    constexpr float RateFoS = 1.1;
+
+    constexpr uint32_t expected_filter_time_delta_ms = 40;
+    constexpr uint32_t expected_gps_time_delta_ms = 500;
+    constexpr uint32_t expected_imu_time_delta_ms = 40;
+
+    const bool times_healthy = (now - last_imu_pkt < expected_imu_time_delta_ms * RateFoS && \
+                                now - last_gps_pkt < expected_gps_time_delta_ms * RateFoS && \
+                                now - last_filter_pkt < expected_filter_time_delta_ms * RateFoS);
     const auto filter_state = static_cast<FilterState>(filter_status.state);
     const bool filter_healthy = (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS);
     return times_healthy && filter_healthy;
@@ -246,9 +261,9 @@ bool AP_ExternalAHRS_MicroStrain7::healthy(void) const
 
 bool AP_ExternalAHRS_MicroStrain7::initialised(void) const
 {
-    const bool got_packets = last_ins_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
+    const bool got_packets = last_imu_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
     const auto filter_state = static_cast<FilterState>(filter_status.state);
-    const bool filter_healthy = (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS); 
+    const bool filter_healthy = (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS);
     return got_packets && filter_healthy;
 }
 
@@ -274,22 +289,22 @@ bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t fail
 void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
-    if (last_ins_pkt != 0 && last_gps_pkt != 0) {
-        status.flags.initalized = 1;
+    if (last_imu_pkt != 0 && last_gps_pkt != 0) {
+        status.flags.initalized = true;
     }
-    if (healthy() && last_ins_pkt != 0) {
-        status.flags.attitude = 1;
-        status.flags.vert_vel = 1;
-        status.flags.vert_pos = 1;
+    if (healthy() && last_imu_pkt != 0) {
+        status.flags.attitude = true;
+        status.flags.vert_vel = true;
+        status.flags.vert_pos = true;
 
         const auto filter_state = static_cast<FilterState>(filter_status.state);
         if (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS) {
-            status.flags.horiz_vel = 1;
-            status.flags.horiz_pos_rel = 1;
-            status.flags.horiz_pos_abs = 1;
-            status.flags.pred_horiz_pos_rel = 1;
-            status.flags.pred_horiz_pos_abs = 1;
-            status.flags.using_gps = 1;
+            status.flags.horiz_vel = true;
+            status.flags.horiz_pos_rel = true;
+            status.flags.horiz_pos_abs = true;
+            status.flags.pred_horiz_pos_rel = true;
+            status.flags.pred_horiz_pos_abs = true;
+            status.flags.using_gps = true;
         }
     }
 }

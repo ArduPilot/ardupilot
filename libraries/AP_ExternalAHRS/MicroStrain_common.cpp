@@ -153,7 +153,7 @@ AP_MicroStrain::DescriptorSet AP_MicroStrain::handle_packet(const MicroStrain_Pa
 
 void AP_MicroStrain::handle_imu(const MicroStrain_Packet& packet)
 {
-    last_ins_pkt = AP_HAL::millis();
+    last_imu_pkt = AP_HAL::millis();
 
     // Iterate through fields of varying lengths in INS packet
     for (uint8_t i = 0; i < packet.payload_length(); i +=  packet.payload[i]) {
