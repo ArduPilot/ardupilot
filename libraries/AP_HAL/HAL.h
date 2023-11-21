@@ -155,3 +155,12 @@ public:
 #endif
 
 };
+
+// access serial ports using SERIALn numbering
+inline AP_HAL::UARTDriver* AP_HAL::HAL::serial(uint8_t sernum) const
+{
+    if (sernum >= ARRAY_SIZE(serial_array)) {
+        return nullptr;
+    }
+    return serial_array[sernum];
+}
