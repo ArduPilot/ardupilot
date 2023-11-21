@@ -15,11 +15,8 @@ HAL::FunCallbacks::FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void))
 // access serial ports using SERIALn numbering
 AP_HAL::UARTDriver* AP_HAL::HAL::serial(uint8_t sernum) const
 {
-    // this mapping captures the historical use of uartB as SERIAL3
-    const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
-    static_assert(sizeof(mapping) == ARRAY_SIZE(uart_array), "array size must match mapping");
-    if (sernum >= ARRAY_SIZE(uart_array)) {
+    if (sernum >= ARRAY_SIZE(serial_array)) {
         return nullptr;
     }
-    return uart_array[mapping[sernum]];
+    return serial_array[sernum];
 }
