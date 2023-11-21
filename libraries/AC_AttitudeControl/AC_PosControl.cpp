@@ -28,6 +28,12 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_VEL_XY_IMAX                1000.0f // horizontal velocity controller IMAX gain default
  # define POSCONTROL_VEL_XY_FILT_HZ             5.0f    // horizontal velocity controller input filter
  # define POSCONTROL_VEL_XY_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+ # define POSCONTROL_POS1_VEL_P                 1.0f    // POS1 velocity controller P gain default
+ # define POSCONTROL_POS1_VEL_I                 0.0f    // POS1 velocity controller I gain default
+ # define POSCONTROL_POS1_VEL_D                 1.0f    // POS1 velocity controller D gain default
+ # define POSCONTROL_POS1_VEL_IMAX              0       // POS1 velocity controller IMAX gain default
+ # define POSCONTROL_POS1_VEL_FILT_HZ           10.0f   // POS1 velocity controller input filter default
+ # define POSCONTROL_POS1_VEL_DT                0.02f   // POS1 velocity controller dt default
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
  // default gains for Sub
  # define POSCONTROL_POS_Z_P                    3.0f    // vertical position controller P gain default
@@ -318,6 +324,96 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
 
+    // @Param: _POS1VEL_P
+    // @DisplayName: POS1 velocity controller P gain
+    // @Description: POS1 velocity controller P gain.  Converts the difference between desired vertical velocity and actual velocity into a delta pitch angle
+    // @Range: 0.200 1.500
+    // @Increment: 0.05
+    // @User: Standard
+
+    // @Param: _POS1VEL_I
+    // @DisplayName: POS1 velocity controller I gain
+    // @Description: POS1 velocity controller I gain.  Corrects long-term difference in desired vertical velocity and actual velocity
+    // @Range: 0.000 3.000
+    // @User: Standard
+
+    // @Param: _POS1VEL_IMAX
+    // @DisplayName: POS1 velocity controller I gain maximum
+    // @Description: POS1 velocity controller I gain maximum.  Constrains the maximum pwm that the I term will generate
+    // @Range: 0 1000
+    // @Units: d%
+    // @User: Standard
+
+    // @Param: _POS1VEL_D
+    // @DisplayName: POS1 velocity controller D gain
+    // @Description: POS1 velocity controller D gain.  Compensates for short-term change in desired vertical velocity vs actual velocity
+    // @Range: 0.000 0.400
+    // @User: Standard
+
+    // @Param: _POS1VEL_FF
+    // @DisplayName: POS1 velocity controller feed forward
+    // @Description: POS1 velocity controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _POS1VEL_FLTT
+    // @DisplayName: POS1 velocity controller target frequency in Hz
+    // @Description: POS1 velocity controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _POS1VEL_FLTE
+    // @DisplayName: POS1 velocity controller error frequency in Hz
+    // @Description: POS1 velocity controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _POS1VEL_FLTD
+    // @DisplayName: POS1 velocity controller derivative frequency in Hz
+    // @Description: POS1 velocity controller derivative frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _POS1VEL_SMAX
+    // @DisplayName: POS1 velocity slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: _POS1VEL_PDMX
+    // @DisplayName: POS1 velocity controller PD sum maximum
+    // @Description: POS1 velocity controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1000
+    // @Units: d%
+
+    // @Param: _ACCZ_D_FF
+    // @DisplayName: POS1 velocity Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: _POS1VEL_NTF
+    // @DisplayName: POS1 velocity Target notch filter index
+    // @Description: POS1 velocity Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _POS1VEL_NEF
+    // @DisplayName: POS1 velocity Error notch filter index
+    // @Description: POS1 velocity Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    AP_SUBGROUPINFO(_pid_pos1_vel, "_POS1VEL_", 12, AC_PosControl, AC_PID),
+
     AP_GROUPEND
 };
 
@@ -342,7 +438,8 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _accel_max_z_cmss(POSCONTROL_ACCEL_Z),
     _accel_max_xy_cmss(POSCONTROL_ACCEL_XY),
     _jerk_max_xy_cmsss(POSCONTROL_JERK_XY * 100.0),
-    _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
+    _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0),
+    _pid_pos1_vel(POSCONTROL_POS1_VEL_P, POSCONTROL_POS1_VEL_I, POSCONTROL_POS1_VEL_D, 0.0f, POSCONTROL_POS1_VEL_IMAX, 0.0f, POSCONTROL_POS1_VEL_FILT_HZ, 0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1017,6 +1114,14 @@ void AC_PosControl::update_z_controller()
     } else {
         _limit_vector.z = 0.0f;
     }
+}
+
+///
+/// POS1 speed controller for quadplanes
+///
+void AC_PosControl::update_pos1_controller(float setpoint, float measurement)
+{
+    _delta_pitch_target = -1.0f*_pid_pos1_vel.update_all(setpoint, measurement, _dt);
 }
 
 

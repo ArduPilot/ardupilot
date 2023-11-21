@@ -235,6 +235,11 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_z_controller();
 
+    ///
+    /// POS1 speed controller
+    ///
+    void update_pos1_controller(float setpoint, float measurement);
+
 
 
     ///
@@ -329,6 +334,7 @@ public:
     /// get desired roll and pitch to be passed to the attitude controller
     float get_roll_cd() const { return _roll_target; }
     float get_pitch_cd() const { return _pitch_target; }
+    float get_delta_pitch_cd() const {return _delta_pitch_target; }
 
     /// get desired yaw to be passed to the attitude controller
     float get_yaw_cd() const { return _yaw_target; }
@@ -360,6 +366,7 @@ public:
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
     AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
     AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    AC_PID& get_pos1_vel_pid() { return _pid_pos1_vel; }
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
@@ -437,6 +444,7 @@ protected:
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
+    AC_PID          _pid_pos1_vel;      // POS1 velocity controller to convert desired velocity to change in pitch angle
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
@@ -454,6 +462,7 @@ protected:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    float       _delta_pitch_target;    // desired change in pitch as determined from the position 1 velocity controller for quadplanes
     float       _yaw_target;            // desired yaw in centi-degrees calculated by position controller
     float       _yaw_rate_target;       // desired yaw rate in centi-degrees per second calculated by position controller
 

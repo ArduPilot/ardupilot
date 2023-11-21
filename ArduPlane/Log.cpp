@@ -37,6 +37,7 @@ void Plane::Log_Write_Attitude(void)
     if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
         logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
         logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_y());
+        logger.Write_PID(LOG_PIDPOS1_MSG, quadplane.pos_control->get_pos1_vel_pid().get_pid_info());
     }
 #endif
 

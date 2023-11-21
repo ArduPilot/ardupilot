@@ -529,6 +529,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: POS1_PD_ENABLE
+    // @DisplayName: Quadplane position1 proportional-derivative speed controller
+    // @Description: This flag enables the use of a proportional-derivative speed controller in position 1 instead of the legacy controller which uses the copter pos/vel/accel.
+    // @Values: 0: Disabled 1: Enabled
+    // @User: Advanced
+    AP_GROUPINFO("POS1_PD_ENABLE", 38, QuadPlane, is_pos1_velocity_pd_controller, 0),
+
     AP_GROUPEND
 };
 
@@ -2703,9 +2710,16 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_accel_desired_xy_cmss(target_accel_cms);
         }
         
-        // nav roll and pitch are controller by position controller
+        // nav roll is controlled by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
-        plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+        if (is_pos1_velocity_pd_controller) {
+            // calculate the delta pitch angle from the velocity PD controller.
+            const float setpoint_velocity_ms = target_speed_xy_cms.length()*0.01f;
+            plane.nav_pitch_cd += calculate_pos1_delta_pitch_cd(setpoint_velocity_ms);
+        } else {
+            plane.nav_pitch_cd = pos_control->get_pitch_cd();
+        }
 
         assign_tilt_to_fwd_thr();
 
@@ -4035,6 +4049,18 @@ float QuadPlane::transition_threshold(void)
 {
     // 1.5 times stopping distance for cruise speed
     return 1.5 * stopping_distance(sq(plane.aparm.airspeed_cruise_cm*0.01));
+}
+
+/*
+  change in pitch angle from proportional-derivative controller for position1 speed tracking
+*/
+float QuadPlane::calculate_pos1_delta_pitch_cd(float setpoint_velocity_ms)
+{
+    const Vector2f rel_groundspeed_vector_ms = landing_closing_velocity();
+    const float measured_groundspeed_ms = rel_groundspeed_vector_ms.length();
+    pos_control->update_pos1_controller(setpoint_velocity_ms, measured_groundspeed_ms);
+
+    return pos_control->get_delta_pitch_cd();
 }
 
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing

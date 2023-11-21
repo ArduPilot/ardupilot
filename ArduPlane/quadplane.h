@@ -307,6 +307,9 @@ private:
     // distance for cruise speed
     float transition_threshold(void);
 
+    // change in pitch angle from proportional-derivative controller for position1 speed tracking
+    float calculate_pos1_delta_pitch_cd(float setpoint_velocity_ms);
+
     AP_Int16 transition_time_ms;
     AP_Int16 back_trans_pitch_limit_ms;
 
@@ -497,6 +500,9 @@ private:
 
     // time we last set the loiter target
     uint32_t last_loiter_ms;
+
+    // flag to enable the use of PD controller on speed in POS1
+    AP_Int8 is_pos1_velocity_pd_controller;
 
     enum position_control_state {
         QPOS_NONE = 0,
