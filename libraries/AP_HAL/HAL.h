@@ -53,11 +53,11 @@ public:
         AP_HAL::CANIface** _can_ifaces)
 #endif
         :
-        uart_array{
+        serial_array{
             _uartA,
-            _uartB,
-            _uartC,
+            _uartC, // ordering captures the historical use of uartB as SERIAL3
             _uartD,
+            _uartB,
             _uartE,
             _uartF,
             _uartG,
@@ -140,7 +140,8 @@ public:
     static constexpr uint8_t num_serial = 10;
 
 private:
-    AP_HAL::UARTDriver* uart_array[num_serial];
+    // UART drivers in SERIALn_ order
+    AP_HAL::UARTDriver* serial_array[num_serial];
 
 public:
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
