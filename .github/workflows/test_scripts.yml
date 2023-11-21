@@ -9,7 +9,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-base:v0.1.1
+    container: ardupilot/ardupilot-dev-base:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
