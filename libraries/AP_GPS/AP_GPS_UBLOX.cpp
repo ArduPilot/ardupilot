@@ -241,6 +241,18 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
 };
 
 
+/*
+  config changes for L5 modules
+*/
+const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_ena[] {
+    {ConfigKey::CFG_SIGNAL_GPS_L5_ENA, 1},
+    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 1},
+};
+
+const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_dis[] {
+    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 0},
+};
+
 void
 AP_GPS_UBLOX::_request_next_config(void)
 {
@@ -436,7 +448,24 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     }
-        
+
+    case STEP_L5: {
+        if (supports_l5 && option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+            const config_list *list = config_L5_ovrd_ena;
+            const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_ena);
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_ALL)) {
+                _next_message--;
+            }
+        } else if (supports_l5 && !option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+            const config_list *list = config_L5_ovrd_dis;
+            const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_dis);
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_ALL)) {
+                _next_message--;
+            }
+        }
+        break;
+    }
+
     default:
         // this case should never be reached, do a full reset if it is hit
         _next_message = STEP_PVT;
@@ -1314,6 +1343,12 @@ AP_GPS_UBLOX::_parse_gps(void)
                     }
                     _hardware_generation = UBLOX_F9;
                 }
+                // check if L1L5 in extension
+                if (memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "L1L5", 4) != nullptr) {
+                    supports_l5 = true;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox supports L5 Band");
+                    _unconfigured_messages |= CONFIG_L5;
+                }
                 if (strncmp(_version.swVersion, "EXT CORE 4", 10) == 0) {
                     // a M9
                     _hardware_generation = UBLOX_M9;
@@ -1995,7 +2030,8 @@ static const char *reasons[] = {"navigation rate",
                                 "Time mode settings",
                                 "RTK MB",
                                 "TIM TM2",
-                                "M10"};
+                                "M10",
+                                "L5 Enable Disable"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 

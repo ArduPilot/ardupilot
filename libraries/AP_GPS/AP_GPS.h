@@ -624,6 +624,7 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
+        GPSL5HealthOverride = (1U << 5)
     };
 
     // check if an option is set
