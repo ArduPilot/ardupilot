@@ -1,9 +1,11 @@
+#include "AP_Filter_config.h"
+
+#if AP_FILTER_ENABLED
+
 #include "AP_Filter.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#if AP_FILTER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 
 extern const AP_HAL::HAL& hal;
 
@@ -152,4 +154,4 @@ AP_Filters &filters()
 
 }
 
-#endif // AP_FILTER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif // AP_FILTER_ENABLED
