@@ -568,7 +568,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     SCHED_TASK(check_motor_noise,      5,     50, 252),
 #endif
-#if AP_FILTER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_FILTER_ENABLED
     SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
