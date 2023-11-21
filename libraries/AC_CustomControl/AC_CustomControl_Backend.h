@@ -23,6 +23,9 @@ public:
     // reset controller to avoid build up or abrupt response upon switch, ex: integrator, filter
     virtual void reset() = 0;
 
+    // set the PID notch sample rates
+    virtual void set_notch_sample_rate(float sample_rate) {};
+
 protected:
     // References to external libraries
     AP_AHRS_View*& _ahrs;

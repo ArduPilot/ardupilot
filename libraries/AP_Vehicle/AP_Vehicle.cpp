@@ -241,6 +241,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 #endif // AP_NETWORKING_ENABLED
 
+#if AP_FILTER_ENABLED
+    // @Group: FILT
+    // @Path: ../Filter/AP_Filter.cpp
+    AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
+#endif
     AP_GROUPEND
 };
 
@@ -419,6 +424,10 @@ void AP_Vehicle::setup()
 
     custom_rotations.init();
 
+#if AP_FILTER_ENABLED
+    filters.init();
+#endif
+
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     for (uint8_t i = 0; i<ESC_TELEM_MAX_ESCS; i++) {
         esc_noise[i].set_cutoff_frequency(2);
@@ -558,6 +567,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     SCHED_TASK(check_motor_noise,      5,     50, 252),
+#endif
+#if AP_FILTER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+    SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
 };

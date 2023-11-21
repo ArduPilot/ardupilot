@@ -82,3 +82,7 @@
 #ifndef AP_UART_MONITOR_ENABLED
 #define AP_UART_MONITOR_ENABLED 1
 #endif
+
+#ifndef AP_FILTER_ENABLED
+#define AP_FILTER_ENABLED 1
+#endif

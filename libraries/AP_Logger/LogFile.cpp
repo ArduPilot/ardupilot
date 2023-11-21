@@ -496,6 +496,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
         I               : info.I,
         D               : info.D,
         FF              : info.FF,
+        DFF             : info.DFF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
         flags           : flags

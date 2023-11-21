@@ -101,6 +101,26 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
+
+    // @Param: RAT_RLL_D_FF
+    // @DisplayName: Roll Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: RAT_RLL_NTF
+    // @DisplayName: Roll Target notch filter index
+    // @Description: Roll Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: RAT_RLL_NEF
+    // @DisplayName: Roll Error notch filter index
+    // @Description: Roll Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_atti_rate_roll, "RAT_RLL_", 4, AC_CustomControl_PID, AC_PID),
 
     // @Param: RAT_PIT_P
@@ -175,6 +195,26 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
+
+    // @Param: RAT_PIT_D_FF
+    // @DisplayName: Pitch Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: RAT_PIT_NTF
+    // @DisplayName: Pitch Target notch filter index
+    // @Description: Pitch Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: RAT_PIT_NEF
+    // @DisplayName: Pitch Error notch filter index
+    // @Description: Pitch Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_atti_rate_pitch, "RAT_PIT_", 5, AC_CustomControl_PID, AC_PID),
 
 
@@ -250,6 +290,26 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
+
+    // @Param: RAT_YAW_D_FF
+    // @DisplayName: Yaw Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: RAT_YAW_NTF
+    // @DisplayName: Yaw Target notch filter index
+    // @Description: Yaw Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: RAT_YAW_NEF
+    // @DisplayName: Yaw Error notch filter index
+    // @Description: Yaw Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_atti_rate_yaw, "RAT_YAW_", 6, AC_CustomControl_PID, AC_PID),
 
     AP_GROUPEND
@@ -330,6 +390,16 @@ void AC_CustomControl_PID::reset(void)
     _pid_atti_rate_roll.reset_filter();
     _pid_atti_rate_pitch.reset_filter();
     _pid_atti_rate_yaw.reset_filter();
+}
+
+
+void AC_CustomControl_PID::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    _pid_atti_rate_roll.set_notch_sample_rate(sample_rate);
+    _pid_atti_rate_pitch.set_notch_sample_rate(sample_rate);
+    _pid_atti_rate_yaw.set_notch_sample_rate(sample_rate);
+#endif
 }
 
 #endif

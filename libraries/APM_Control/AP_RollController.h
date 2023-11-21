@@ -40,6 +40,9 @@ public:
         return _pid_info;
     }
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) { rate_pid.set_notch_sample_rate(sample_rate); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 
