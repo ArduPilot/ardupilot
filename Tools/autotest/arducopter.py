@@ -10672,6 +10672,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def testcan(self):
         ret = ([
             self.CANGPSCopterMission,
+            self.TestLogDownloadMAVProxyCAN,
         ])
         return ret
 
