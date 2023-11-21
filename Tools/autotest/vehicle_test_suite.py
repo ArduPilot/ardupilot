@@ -4166,6 +4166,38 @@ class TestSuite(ABC):
         self.stop_mavproxy(mavproxy)
         self.context_pop()
 
+    def TestLogDownloadMAVProxyCAN(self, upload_logs=False):
+        """Download latest log over CAN serial port"""
+        self.context_push()
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            "LOG_DISARMED": 1,
+            })
+        self.reboot_sitl()
+        self.set_parameters({
+            "CAN_D1_UC_SER_EN": 1,
+            "CAN_D1_UC_S1_NOD": 125,
+            "CAN_D1_UC_S1_IDX": 4,
+            "CAN_D1_UC_S1_BD": 57600,
+            "CAN_D1_UC_S1_PRO": 2,
+            })
+        self.reboot_sitl()
+        filename = "MAVProxy-downloaded-can-log.BIN"
+        # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
+        mavproxy = self.start_mavproxy(master=':15550')
+        mavproxy.expect("Detected vehicle")
+        self.mavproxy_load_module(mavproxy, 'log')
+        mavproxy.send("log list\n")
+        mavproxy.expect("numLogs")
+        self.wait_heartbeat()
+        self.wait_heartbeat()
+        mavproxy.send("set shownoise 0\n")
+        mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.expect("Finished downloading", timeout=120)
+        self.mavproxy_unload_module(mavproxy, 'log')
+        self.stop_mavproxy(mavproxy)
+        self.context_pop()
+
     def show_gps_and_sim_positions(self, on_off):
         """Allow to display gps and actual position on map."""
         if on_off is True:
