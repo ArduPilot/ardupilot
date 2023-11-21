@@ -29,7 +29,7 @@ enum class INSPacketField {
     GYRO = 0x05,
     QUAT = 0x0A,
     MAG = 0x06,
-    PRESSURE = 0x17
+    PRESSURE = 0x17,
 };
 
 // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/gnss_recv_1_links.htm
@@ -37,8 +37,9 @@ enum class GNSSPacketField {
     LLH_POSITION = 0x03,
     NED_VELOCITY = 0x05,
     DOP_DATA = 0x07,
-    GPS_TIME = 0x09,
-    FIX_INFO = 0x0B
+    FIX_INFO = 0x0B,
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/shared_data/data/mip_field_shared_gps_timestamp.htm
+    GPS_TIMESTAMP = 0xD3,
 };
 
 // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_fix_info.htm
@@ -47,15 +48,16 @@ enum class GNSSFixType {
     FIX_2D = 0x01,
     TIME_ONLY = 0x02,
     NONE = 0x03,
-    INVALID = 0x04
+    INVALID = 0x04,
 };
 
 // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/filter_data_links.htm
 enum class FilterPacketField {
     FILTER_STATUS = 0x10,
-    GPS_TIME = 0x11,
     LLH_POSITION = 0x01,
-    NED_VELOCITY = 0x02
+    NED_VELOCITY = 0x02,
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/shared_data/data/mip_field_shared_gps_timestamp.htm
+    GPS_TIMESTAMP = 0xD3,
 };
 
 bool AP_MicroStrain::handle_byte(const uint8_t b, DescriptorSet& descriptor)
@@ -198,13 +200,11 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
     // Iterate through fields of varying lengths in GNSS packet
     for (uint8_t i = 0; i < packet.payload_length(); i += packet.payload[i]) {
         switch ((GNSSPacketField) packet.payload[i+1]) {
-        // GPS Time
-        case GNSSPacketField::GPS_TIME: {
+        case GNSSPacketField::GPS_TIMESTAMP: {
             gnss_data[gnss_instance].tow_ms = double_to_uint32(be64todouble_ptr(packet.payload, i+2) * 1000); // Convert seconds to ms
             gnss_data[gnss_instance].week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
-        // GNSS Fix Information
         case GNSSPacketField::FIX_INFO: {
             switch ((GNSSFixType) packet.payload[i+2]) {
             case (GNSSFixType::FIX_3D): {
@@ -230,7 +230,6 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
             gnss_data[gnss_instance].satellites = packet.payload[i+3];
             break;
         }
-        // LLH Position
         case GNSSPacketField::LLH_POSITION: {
             gnss_data[gnss_instance].lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
             gnss_data[gnss_instance].lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
@@ -239,13 +238,11 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
             gnss_data[gnss_instance].vertical_position_accuracy = be32tofloat_ptr(packet.payload, i+38);
             break;
         }
-        // DOP Data
         case GNSSPacketField::DOP_DATA: {
             gnss_data[gnss_instance].hdop = be32tofloat_ptr(packet.payload, i+10);
             gnss_data[gnss_instance].vdop = be32tofloat_ptr(packet.payload, i+14);
             break;
         }
-        // NED Velocity
         case GNSSPacketField::NED_VELOCITY: {
             gnss_data[gnss_instance].ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
             gnss_data[gnss_instance].ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
@@ -264,27 +261,23 @@ void AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
     // Iterate through fields of varying lengths in filter packet
     for (uint8_t i = 0; i < packet.payload_length(); i += packet.payload[i]) {
         switch ((FilterPacketField) packet.payload[i+1]) {
-        // GPS Timestamp
-        case FilterPacketField::GPS_TIME: {
+        case FilterPacketField::GPS_TIMESTAMP: {
             filter_data.tow_ms = be64todouble_ptr(packet.payload, i+2) * 1000; // Convert seconds to ms
             filter_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
-        // LLH Position
         case FilterPacketField::LLH_POSITION: {
             filter_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
             filter_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
             filter_data.hae_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
             break;
         }
-        // NED Velocity
         case FilterPacketField::NED_VELOCITY: {
             filter_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
             filter_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
             filter_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
             break;
         }
-        // Filter Status
         case FilterPacketField::FILTER_STATUS: {
             filter_status.state = be16toh_ptr(&packet.payload[i+2]);
             filter_status.mode = be16toh_ptr(&packet.payload[i+4]);
