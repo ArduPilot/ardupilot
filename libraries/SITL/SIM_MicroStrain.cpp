@@ -148,9 +148,9 @@ void MicroStrain5::send_gnss_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x81; // GNSS Descriptor
 
-    // Add GPS Time
+    // Add GPS Timestamp
     packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
-    packet.payload[packet.payload_size++] = 0x09; // Descriptor
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_sec);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0);
@@ -217,9 +217,9 @@ void MicroStrain5::send_filter_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x82; // Filter Descriptor
 
-    // Add Filter Time
-    packet.payload[packet.payload_size++] = 0x0E; // Filter Time Field Size
-    packet.payload[packet.payload_size++] = 0x11; // Descriptor
+    // Add GPS Timestamp Shared Data
+    packet.payload[packet.payload_size++] = 0x0E; // GPS Timestamp Field Size
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_usec / 1e6);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0x0001);
