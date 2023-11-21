@@ -388,3 +388,7 @@
 #ifndef AP_ICENGINE_ENABLED
 #define AP_ICENGINE_ENABLED 0
 #endif
+
+#ifndef AP_FILTER_ENABLED
+#define AP_FILTER_ENABLED 0
+#endif
