@@ -4,9 +4,9 @@
 //PARAMS:
 // param set AHRS_EKF_TYPE 11
 // param set EAHRS_TYPE 2
-// param set SERIAL4_PROTOCOL 36
-// param set SERIAL4_BAUD 115
-// sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:MicroStrain
+// param set SERIAL3_PROTOCOL 36
+// param set SERIAL3_BAUD 115
+// sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain7" --console --map -DG
 #pragma once
 
 #include "SIM_Aircraft.h"
@@ -36,9 +36,9 @@ protected:
         size_t payload_size = 0;
     };
 
-    uint32_t last_imu_pkt_us;
-    uint32_t last_gnss_pkt_us;
-    uint32_t last_filter_pkt_us;
+    uint32_t last_imu_pkt_ms;
+    uint32_t last_gnss_pkt_ms;
+    uint32_t last_filter_pkt_ms;
 
     void generate_checksum(MicroStrain_Packet&);
 

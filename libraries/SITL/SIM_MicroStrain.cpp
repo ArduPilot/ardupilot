@@ -260,23 +260,23 @@ void MicroStrain::update(void)
         return;
     }
 
-    uint32_t us_between_imu_packets = 20000;
-    uint32_t us_between_gnss_packets = 250000;
-    uint32_t us_between_filter_packets = 100000;
+    uint32_t ms_between_imu_packets = 40;
+    uint32_t ms_between_gnss_packets = 500;
+    uint32_t ms_between_filter_packets = 40;
 
-    uint32_t now = AP_HAL::micros();
-    if (now - last_imu_pkt_us >= us_between_imu_packets) {
-        last_imu_pkt_us = now;
+    uint32_t now = AP_HAL::millis();
+    if (now - last_imu_pkt_ms >= ms_between_imu_packets) {
+        last_imu_pkt_ms = now;
         send_imu_packet();
     }
 
-    if (now - last_gnss_pkt_us >= us_between_gnss_packets) {
-        last_gnss_pkt_us = now;
+    if (now - last_gnss_pkt_ms >= ms_between_gnss_packets) {
+        last_gnss_pkt_ms = now;
         send_gnss_packet();
     }
 
-    if (now - last_filter_pkt_us >= us_between_filter_packets) {
-        last_filter_pkt_us = now;
+    if (now - last_filter_pkt_ms >= ms_between_filter_packets) {
+        last_filter_pkt_ms = now;
         send_filter_packet();
     }
 }
