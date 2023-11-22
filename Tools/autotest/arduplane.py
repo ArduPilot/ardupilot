@@ -5357,6 +5357,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainLoiter,
             self.VectorNavEAHRS,
             self.MicroStrainEAHRS5,
+            self.MicroStrainEAHRS7,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,
