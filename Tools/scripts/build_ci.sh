@@ -451,7 +451,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "param_parse" ]; then
-        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp; do
+        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
             python Tools/autotest/param_metadata/param_parse.py --vehicle $v
         done
         continue
