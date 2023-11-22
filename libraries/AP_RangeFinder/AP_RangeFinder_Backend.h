@@ -48,6 +48,7 @@ public:
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
     uint16_t distance_cm() const { return state.distance_m*100.0f; }
+    int8_t signal_quality_pct() const  WARN_IF_UNUSED { return state.signal_quality_pct; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
     virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
     virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
@@ -71,10 +72,6 @@ public:
 
     // get temperature reading in C.  returns true on success and populates temp argument
     virtual bool get_temp(float &temp) const { return false; }
-
-    // 0 is no return value, 100 is perfect.  false means signal
-    // quality is not available
-    virtual bool get_signal_quality_pct(int8_t &quality_pct) const { return false; }
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.

@@ -733,7 +733,7 @@ bool AP_DDS_Client::create()
     constexpr uint8_t nRequestsParticipant = 1;
     const uint16_t requestsParticipant[nRequestsParticipant] = {participant_req_id};
 
-    constexpr uint8_t maxTimeMsPerRequestMs = 250;
+    constexpr uint16_t maxTimeMsPerRequestMs = 500;
     constexpr uint16_t requestTimeoutParticipantMs = (uint16_t) nRequestsParticipant * maxTimeMsPerRequestMs;
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
