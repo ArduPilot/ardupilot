@@ -100,8 +100,15 @@ dual_mode_lookup = {0: 'Longitudinal',
                     1: 'Transverse',
                     2: 'Intermeshing_or_Coaxial'}
 
+tail_type_lookup = {0: 'Servo_only',
+                    1: 'Servo_with_ExtGyro',
+                    2: 'DirectDrive_VarPitch',
+                    3: 'DirectDrive_FixedPitch_CW',
+                    4: 'DirectDrive_FixedPitch_CCW',
+                    5: 'DDVP_with_external_governor'}
+
 # Run sweep over range of types
-def run_sweep(frame_class, swash_type, dual_mode, dir_name):
+def run_sweep(frame_class, swash_type, secondary_iter, secondary_lookup, secondary_name, dir_name):
 
     # configure and build the test
     os.system('./waf configure --board linux')
@@ -110,28 +117,28 @@ def run_sweep(frame_class, swash_type, dual_mode, dir_name):
     # Run sweep
     for fc in frame_class:
         for swash in swash_type:
-            for mode in dual_mode:
+            for sec in secondary_iter:
                 if swash is not None:
                     swash_cmd = 'swash=%d' % swash
 
-                    if mode is not None:
-                        name = 'frame class = %s (%i), swash = %s (%i), dual mode = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash, dual_mode_lookup[mode], mode)
-                        filename = '%s_%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash], dual_mode_lookup[mode])
-                        mode_cmd = 'dual_mode=%d' % mode
+                    if sec is not None:
+                        name = 'frame class = %s (%i), swash = %s (%i), %s = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash, secondary_name.replace('_', ' '), secondary_lookup[sec], sec)
+                        filename = '%s_%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash], secondary_lookup[sec])
+                        sec_cmd = '%s=%d' % (secondary_name, sec)
 
                     else:
                         name = 'frame class = %s (%i), swash = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash)
                         filename = '%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash])
-                        mode_cmd = ''
+                        sec_cmd = ''
 
                 else:
                     name = 'frame class = %s (%i)' % (frame_class_lookup[fc], fc)
                     filename = '%s_motor_test.csv' % (frame_class_lookup[fc])
                     swash_cmd = ''
-                    mode_cmd = ''
+                    sec_cmd = ''
 
                 print('Running motors test for %s' % name)
-                os.system('./build/linux/examples/AP_Motors_test s frame_class=%d %s %s > %s/%s' % (fc, swash_cmd, mode_cmd, dir_name, filename))
+                os.system('./build/linux/examples/AP_Motors_test s frame_class=%d %s %s > %s/%s' % (fc, swash_cmd, sec_cmd, dir_name, filename))
                 print('%s complete\n' % name)
 
 
@@ -149,6 +156,7 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--compare", action='store_true', help='Compare only, do not re-run tests')
     parser.add_argument("-p", "--plot", action='store_true', help='Plot comparison results')
     parser.add_argument("-m", "--dual_mode", type=int, dest='dual_mode', help='Set DUAL_MODE, 0:Longitudinal, 1:Transverse, 2:Intermeshing/Coaxial, default:run all')
+    parser.add_argument("-t", "--tail_type", type=int, dest='tail_type', help='Set TAIL_TYPE, 0:Servo Only, 1:Servo with ExtGyro, 2:DirectDrive VarPitch, 3:DirectDrive FixedPitch CW, 4:DirectDrive FixedPitch CCW, 5:DDVP with external governor, default:run all')
     args = parser.parse_args()
 
     if 13 in args.frame_class:
@@ -171,6 +179,30 @@ if __name__ == '__main__':
     else:
         args.dual_mode = [None]
 
+    if (args.frame_class != [6]) and (args.tail_type is not None):
+        print('Only Frame %s (%i) supports tail_type' % (frame_class_lookup[6], 6))
+        quit()
+
+    if args.frame_class == [6]:
+        if args.tail_type is None:
+            args.tail_type = (0, 1, 2, 3, 4, 5)
+    else:
+        args.tail_type = [None]
+
+    # Secondary iterator, tail type for single heli and dual mode for dual heli
+    secondary_iter = [None]
+    secondary_lookup = None
+    secondary_name = None
+    if args.dual_mode != [None]:
+        secondary_iter = args.dual_mode
+        secondary_lookup = dual_mode_lookup
+        secondary_name = 'dual_mode'
+
+    elif args.tail_type != [None]:
+        secondary_iter = args.tail_type
+        secondary_lookup = tail_type_lookup
+        secondary_name = 'tail_type'
+
     dir_name = 'motors_comparison'
 
     if not args.compare:
@@ -185,7 +217,7 @@ if __name__ == '__main__':
         print('\nRunning motor tests with current changes\n')
 
         # run the test
-        run_sweep(args.frame_class, args.swash_type, args.dual_mode, new_name)
+        run_sweep(args.frame_class, args.swash_type, secondary_iter, secondary_lookup, secondary_name, new_name)
 
         if args.head:
             # rewind head and repeat test
@@ -237,14 +269,14 @@ if __name__ == '__main__':
     # Print comparison
     for fc in args.frame_class:
         for sw in args.swash_type:
-            for dm in args.dual_mode:
+            for sec in secondary_iter:
                 frame = frame_class_lookup[fc]
                 if sw is not None:
                     swash = swash_type_lookup[sw]
-                    if dm is not None:
-                        mode = dual_mode_lookup[dm]
-                        name = frame + ' ' + swash + ' ' + mode
-                        filename = '%s_%s_%s_motor_test.csv' % (frame, swash, mode)
+                    if sec is not None:
+                        sec_str = secondary_lookup[sec]
+                        name = frame + ' ' + swash + ' ' + sec_str
+                        filename = '%s_%s_%s_motor_test.csv' % (frame, swash, sec_str)
 
                     else:
                         name = frame + ' ' + swash
