@@ -35,10 +35,10 @@ void MicroStrain7::send_gnss_packet(void)
         packet.header[1] = 0x65; // Sync Two
         packet.header[2] = descriptors[i]; // GNSS Descriptor
 
-        // Add GPS Time
-        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_gps_time.htm
+        // Add GPS Timestamp
+        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/shared_data/data/mip_field_shared_gps_timestamp.htm
         packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
-        packet.payload[packet.payload_size++] = 0x09; // Descriptor
+        packet.payload[packet.payload_size++] = 0xD3; // Descriptor
         put_double(packet, (double) tv.tv_sec);
         put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
         put_int(packet, 0);
