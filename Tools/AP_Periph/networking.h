@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_Periph.h"
+
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
 
 #ifndef HAL_PERIPH_NETWORK_NUM_PASSTHRU
@@ -30,6 +32,9 @@ private:
             AP_Param::setup_object_defaults(this, var_info);
         }
 
+        void init();
+        void update();
+        
         static const struct AP_Param::GroupInfo var_info[];
 
     private:
