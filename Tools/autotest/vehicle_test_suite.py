@@ -20,6 +20,8 @@ import time
 import traceback
 from datetime import datetime
 from typing import List
+from typing import Tuple
+from typing import Dict
 import importlib.util
 
 import pexpect
@@ -13803,7 +13805,7 @@ SERIAL5_BAUD 128
 
         return len(self.fail_list) == 0
 
-    def create_junit_report(self, test_name: str, results: List[Result], skip_list: list[tuple[Test, dict[str, str]]]) -> None:
+    def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""
         from junitparser import TestCase, TestSuite, JUnitXml, Skipped, Failure
         frame = self.vehicleinfo_key()
