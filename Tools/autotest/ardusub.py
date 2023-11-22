@@ -10,11 +10,12 @@ AP_FLAKE8_CLEAN
 import os
 import sys
 
-from pymavlink import mavutil
+from pymavlink import mavutil, mavextra
 
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import AutoTestTimeoutException
+from math import degrees
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -748,6 +749,32 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 self.wait_groundspeed(speed-0.2, speed+0.2, minimum_duration=2, timeout=60)
         self.disarm_vehicle()
 
+    def GPSForYaw(self):
+        '''Consume heading of NMEA GPS and propagate to ATTITUDE'''
+
+        # load parameters with gps for yaw and 10 degrees offset
+        self.load_default_params_file("sub-gps-for-yaw-nmea.parm")
+        self.reboot_sitl()
+        # wait for the vehicle to be ready
+        self.wait_ready_to_arm()
+        # make sure we are getting both GPS_RAW_INT and SIMSTATE
+        simstate_m = self.assert_receive_message("SIMSTATE")
+        real_yaw_deg = degrees(simstate_m.yaw)
+        expected_yaw_deg = mavextra.wrap_180(real_yaw_deg + 30) # offset in the param file, in degrees
+        # wait for GPS_RAW_INT to have a good fix
+        self.wait_gps_fix_type_gte(3, message_type="GPS_RAW_INT", verbose=True)
+
+        att_m = self.assert_receive_message("ATTITUDE")
+        achieved_yaw_deg = mavextra.wrap_180(degrees(att_m.yaw))
+
+        # ensure new reading propagated to ATTITUDE
+        try:
+            self.wait_heading(expected_yaw_deg)
+        except NotAchievedException as e:
+            raise NotAchievedException(
+                "Expected to get yaw consumed and at ATTITUDE (want %f got %f)" % (expected_yaw_deg, achieved_yaw_deg)
+            ) from e
+
     def _MAV_CMD_CONDITION_YAW(self, run_cmd):
         self.arm_vehicle()
         self.change_mode('GUIDED')
@@ -1170,6 +1197,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.PosHoldBounceBack,
             self.SHT3X,
             self.SurfaceSensorless,
+            self.GPSForYaw,
         ])
 
         return ret
