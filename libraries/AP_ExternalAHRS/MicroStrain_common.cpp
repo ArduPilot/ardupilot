@@ -49,6 +49,8 @@ enum class GNSSFixType {
     TIME_ONLY = 0x02,
     NONE = 0x03,
     INVALID = 0x04,
+    FIX_RTK_FLOAT = 0x05,
+    FIX_RTK_FIXED = 0x06,
 };
 
 // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/filter_data_links.htm
@@ -207,6 +209,14 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
         }
         case GNSSPacketField::FIX_INFO: {
             switch ((GNSSFixType) packet.payload[i+2]) {
+            case (GNSSFixType::FIX_RTK_FLOAT): {
+                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_RTK_FLOAT;
+                break;
+            }
+            case (GNSSFixType::FIX_RTK_FIXED): {
+                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_RTK_FIXED;
+                break;
+            }
             case (GNSSFixType::FIX_3D): {
                 gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_3D_FIX;
                 break;

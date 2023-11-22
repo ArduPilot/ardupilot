@@ -145,9 +145,9 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
 
     {
         AP_ExternalAHRS::ins_data_message_t ins {
-accel: imu_data.accel,
-gyro: imu_data.gyro,
-temperature: -300
+            accel: imu_data.accel,
+            gyro: imu_data.gyro,
+            temperature: -300
         };
         AP::ins().handle_external(ins);
     }
@@ -187,31 +187,31 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         state.location = Location{filter_data.lat, filter_data.lon, gnss_data[0].msl_altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;
     }
-    
+
     // TODO only report the first gnss data
     uint8_t instance;
     if (AP::gps().get_first_external_instance(instance)) {
-            AP_ExternalAHRS::gps_data_message_t gps {
-                gps_week: filter_data.week,
-                ms_tow: filter_data.tow_ms,
-                fix_type: (uint8_t) gnss_data[instance].fix_type,
-                satellites_in_view: gnss_data[instance].satellites,
+        AP_ExternalAHRS::gps_data_message_t gps {
+gps_week: filter_data.week,
+ms_tow: filter_data.tow_ms,
+fix_type: (uint8_t) gnss_data[instance].fix_type,
+satellites_in_view: gnss_data[instance].satellites,
 
-                horizontal_pos_accuracy: gnss_data[instance].horizontal_position_accuracy,
-                vertical_pos_accuracy: gnss_data[instance].vertical_position_accuracy,
-                horizontal_vel_accuracy: gnss_data[instance].speed_accuracy,
+horizontal_pos_accuracy: gnss_data[instance].horizontal_position_accuracy,
+vertical_pos_accuracy: gnss_data[instance].vertical_position_accuracy,
+horizontal_vel_accuracy: gnss_data[instance].speed_accuracy,
 
-                hdop: gnss_data[instance].hdop,
-                vdop: gnss_data[instance].vdop,
+hdop: gnss_data[instance].hdop,
+vdop: gnss_data[instance].vdop,
 
-                longitude: filter_data.lon,
-                latitude: filter_data.lat,
-                msl_altitude: gnss_data[instance].msl_altitude,
+longitude: filter_data.lon,
+latitude: filter_data.lat,
+msl_altitude: gnss_data[instance].msl_altitude,
 
-                ned_vel_north: filter_data.ned_velocity_north,
-                ned_vel_east: filter_data.ned_velocity_east,
-                ned_vel_down: filter_data.ned_velocity_down,
-            };
+ned_vel_north: filter_data.ned_velocity_north,
+ned_vel_east: filter_data.ned_velocity_east,
+ned_vel_down: filter_data.ned_velocity_down,
+        };
 
         if (gps.fix_type >= 3 && !state.have_origin) {
             WITH_SEMAPHORE(state.sem);
@@ -302,7 +302,8 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
         status.flags.vert_pos = true;
 
         const auto filter_state = static_cast<FilterState>(filter_status.state);
-        if (filter_state == FilterState::GQ7_FULL_NAV || filter_state == FilterState::GQ7_AHRS) {
+        if (filter_state == FilterState::GQ7_FULL_NAV ||
+            filter_state == FilterState::GQ7_AHRS ) {
             status.flags.horiz_vel = true;
             status.flags.horiz_pos_rel = true;
             status.flags.horiz_pos_abs = true;
