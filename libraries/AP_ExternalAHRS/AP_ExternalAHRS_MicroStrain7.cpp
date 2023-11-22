@@ -23,6 +23,8 @@
   UDEV rules for repeatable USB connection:
     $ cat /etc/udev/rules.d/99-usb-serial.rules
     SUBSYSTEM=="tty", ATTRS{manufacturer}=="Lord Microstrain", SYMLINK+="3dm-gq7"
+  Usage with simulated MicroStrain7:
+    ./Tools/autotest/sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain7" --console --map -DG
  */
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
