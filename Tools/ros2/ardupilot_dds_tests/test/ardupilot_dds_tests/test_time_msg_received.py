@@ -41,14 +41,10 @@ class TimeListener(rclpy.node.Node):
 
     def start_subscriber(self):
         """Start the subscriber."""
-        self.subscription = self.create_subscription(
-            Time, self.topic, self.subscriber_callback, 1
-        )
+        self.subscription = self.create_subscription(Time, self.topic, self.subscriber_callback, 1)
 
         # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(
-            target=lambda node: rclpy.spin(node), args=(self,)
-        )
+        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
 
     def subscriber_callback(self, msg):
@@ -56,9 +52,7 @@ class TimeListener(rclpy.node.Node):
         self.msg_event_object.set()
 
         if msg.sec:
-            self.get_logger().info(
-                "From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec)
-            )
+            self.get_logger().info("From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec))
         else:
             self.get_logger().info("From AP : False")
 
