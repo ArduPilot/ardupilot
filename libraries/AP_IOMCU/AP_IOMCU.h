@@ -202,7 +202,7 @@ private:
     uint32_t last_rc_read_ms;
     uint32_t last_servo_read_ms;
     uint32_t last_safety_option_check_ms;
-    uint32_t last_reg_read_ms;
+    uint32_t last_reg_access_ms;
     uint32_t last_erpm_read_ms;
     uint32_t last_telem_read_ms;
 
