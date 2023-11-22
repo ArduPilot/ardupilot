@@ -203,7 +203,7 @@ void MicroStrain5::send_gnss_packet(void)
 
 
 
-void MicroStrain::send_filter_packet(void)
+void MicroStrain5::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;

@@ -96,3 +96,52 @@ void MicroStrain7::send_gnss_packet(void)
     }
 
 }
+
+void MicroStrain7::send_filter_packet(void)
+{
+    const auto &fdm = _sitl->state;
+    MicroStrain_Packet packet;
+
+    struct timeval tv;
+    simulation_timeval(&tv);
+
+    packet.header[0] = 0x75; // Sync One
+    packet.header[1] = 0x65; // Sync Two
+    packet.header[2] = 0x82; // Filter Descriptor
+
+    // Add GPS Timestamp Shared Data
+    packet.payload[packet.payload_size++] = 0x0E; // GPS Timestamp Field Size
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
+    put_double(packet, (double) tv.tv_usec / 1e6);
+    put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
+    put_int(packet, 0x0001);
+
+    // Add GNSS Filter velocity
+    packet.payload[packet.payload_size++] = 0x10; // GNSS Velocity Field Size
+    packet.payload[packet.payload_size++] = 0x02; // Descriptor
+    put_float(packet, fdm.speedN);
+    put_float(packet, fdm.speedE);
+    put_float(packet, fdm.speedD);
+    put_int(packet, 0x0001);
+
+    // Add Filter LLH position
+    packet.payload[packet.payload_size++] = 0x1C; // Filter LLH Field Size
+    packet.payload[packet.payload_size++] = 0x01; // Descriptor
+    put_double(packet, fdm.latitude);
+    put_double(packet, fdm.longitude);
+    put_double(packet, 0); // Height above ellipsoid - unused
+    put_int(packet, 0x0001); // Valid flags
+
+    // Add Filter State
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_status.htm
+    packet.payload[packet.payload_size++] = 0x08; // Filter State Field Size
+    packet.payload[packet.payload_size++] = 0x10; // Descriptor
+    put_int(packet, 0x04); // Filter state (GQ7_FULL_NAV)
+    put_int(packet, 0x03); // Dynamics mode (Airborne)
+    put_int(packet, 0); // Filter flags (None, no warnings)
+
+    packet.header[3] = packet.payload_size;
+
+
+    send_packet(packet);
+}

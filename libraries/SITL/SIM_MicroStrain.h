@@ -45,7 +45,7 @@ protected:
     void send_packet(MicroStrain_Packet);
     void send_imu_packet();
     virtual void send_gnss_packet() = 0;
-    void send_filter_packet();
+    virtual void send_filter_packet() = 0;
 
     void put_float(MicroStrain_Packet&, float);
     void put_double(MicroStrain_Packet&, double);
@@ -62,6 +62,7 @@ class MicroStrain5 : public MicroStrain
     // This is a specialization for the 3DM-GX5-GNSS/INS
 private:
     void send_gnss_packet() override;
+    void send_filter_packet() override;
 
 };
 
@@ -70,6 +71,7 @@ class MicroStrain7 : public MicroStrain
     // This is a specialization for the 3DM-GQ7-GNSS/INS
 private:
     void send_gnss_packet() override;
+    void send_filter_packet() override;
 
 };
 
