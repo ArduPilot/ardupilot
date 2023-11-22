@@ -195,6 +195,9 @@ private:
     // simulated MicroStrain Series 5 system
     SITL::MicroStrain5 *microstrain5;
 
+    // simulated MicroStrain Series 7 system
+    SITL::MicroStrain7 *microstrain7;
+
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
