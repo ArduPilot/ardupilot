@@ -186,7 +186,9 @@ def all_vehicles():
             'Rover',
             'AntennaTracker',
             'ArduSub',
-            'Blimp')
+            'Blimp',
+            'AP_Periph',
+            )
 
 
 def build_parameters():
