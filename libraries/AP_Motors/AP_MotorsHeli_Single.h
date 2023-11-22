@@ -14,15 +14,6 @@
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
 
-// tail types
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                      0
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO              1
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH       2
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW  3
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW 4
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV 5
-
-
 // direct-drive variable pitch defaults
 #define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
 
@@ -72,8 +63,8 @@ public:
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const  override { return _flybar_mode; }
 
-    // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const override { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
+    // supports_yaw_passthrough - returns true if we support yaw passthrough
+    bool supports_yaw_passthrough() const override { return get_tail_type() == TAIL_TYPE::SERVO_EXTGYRO; }
 
     void set_acro_tail(bool set) override { _acro_tail = set; }
 
@@ -103,11 +94,32 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
+    // Get yaw offset required to cancel out steady state main rotor torque
+    float get_yaw_offset(float collective);
+
     // handle output limit flags and send throttle to servos lib
     void output_to_ddfp_tail(float throttle);
 
     // servo_test - move servos through full range of movement
     void servo_test() override;
+
+    // Tail types
+    enum class TAIL_TYPE {
+        SERVO = 0,
+        SERVO_EXTGYRO = 1,
+        DIRECTDRIVE_VARPITCH = 2,
+        DIRECTDRIVE_FIXEDPITCH_CW = 3,
+        DIRECTDRIVE_FIXEDPITCH_CCW = 4,
+        DIRECTDRIVE_VARPIT_EXT_GOV = 5
+    };
+
+    TAIL_TYPE get_tail_type() const { return TAIL_TYPE(_tail_type.get()); }
+
+    // Helper to return true for direct drive fixed pitch tail, either CW or CCW
+    bool have_DDFP_tail() const;
+
+    // Helper to return true if the tail RSC should be used
+    bool use_tail_RSC() const;
 
     // external objects we depend upon
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
