@@ -107,6 +107,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
 #endif
 
+#ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
+    // @Param: CAN_TERMINATE
+    // @DisplayName: Enable CAN software temination in this node
+    // @Description: Enable CAN software temination in this node
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_terminate,   0, "CAN_TERMINATE", 0),
+#endif
+
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
@@ -124,6 +134,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN2_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
+    // @Param: CAN2_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    1, "CAN2_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
@@ -135,6 +151,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN3_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
+    // @Param: CAN3_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    2, "CAN3_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_CANFD_SUPPORTED
