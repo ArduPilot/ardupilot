@@ -172,6 +172,7 @@ public:
         UARTState state;
     };
     RegisteredPort *registered_ports;
+    HAL_Semaphore port_sem;
 
     // register an externally managed port
     void register_port(RegisteredPort *port);

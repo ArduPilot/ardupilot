@@ -850,8 +850,24 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
  */
 void AP_SerialManager::register_port(RegisteredPort *port)
 {
-    port->next = registered_ports;
-    registered_ports = port;
+    const auto idx = port->state.idx;
+    WITH_SEMAPHORE(port_sem);
+    /*
+      maintain the list in ID order
+     */
+    if (registered_ports == nullptr ||
+        registered_ports->state.idx >= idx) {
+        port->next = registered_ports;
+        registered_ports = port;
+        return;
+    }
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->next == nullptr || p->next->state.idx >= idx) {
+            port->next = p->next;
+            p->next = port;
+            break;
+        }
+    }
 }
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
