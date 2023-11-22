@@ -17,10 +17,6 @@
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
 
-#include <AP_SerialManager/AP_SerialManager.h>
-
-extern const AP_HAL::HAL &hal;
-
 const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @Group:
     // @Path: ../../libraries/AP_Networking/AP_Networking.cpp
@@ -145,80 +141,15 @@ const AP_Param::GroupInfo Networking_Periph::var_info[] {
 };
 
 
-const AP_Param::GroupInfo Networking_Periph::Passthru::var_info[] = {
-    // @Param: ENABLE
-    // @DisplayName: Enable Passthrough
-    // @Description: Enable Passthrough of any UART, Network, or CAN ports to any UART, Network, or CAN ports.
-    // @Values: 0:Disabled, 1:Enabled
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1,  Networking_Periph::Passthru, enabled, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: EP1
-    // @DisplayName: Endpoint 1
-    // @Description: Passthrough Endpoint 1. This can be a serial port UART, a Network port, or a CAN port. The selected port will route to Endport 2.
-    // @Values: -1:Disabled, 0:Serial0(usually USB), 1:Serial1, 2:Serial2, 3:Serial3, 4:Serial4, 5:Serial5, 6:Serial6, 7:Serial7, 8:Serial8, 9:Serial9, 21:Network Port1, 22:Network Port2, 23:Network Port3, 24:Network Port4, 25:Network Port5, 26:Network Port6, 27:Network Port7, 28:Network Port8, 29:Network Port9, 41:CAN1 Port1, 42:CAN1 Port2, 43:CAN1 Port3, 44:CAN1 Port4, 45:CAN1 Port5, 46:CAN1 Port6, 47:CAN1 Port7, 48:CAN1 Port8, 49:CAN1 Port9, 51:CAN2 Port1, 52:CAN2 Port2, 53:CAN2 Port3, 54:CAN2 Port4, 55:CAN2 Port5, 56:CAN2 Port6, 57:CAN2 Port7, 58:CAN2 Port8, 59:CAN2 Port9
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("EP1", 2,  Networking_Periph::Passthru, ep1, -1),
-
-    // @Param: EP2
-    // @DisplayName: Endpoint 2
-    // @Description: Passthrough Endpoint 2. This can be a serial port UART, a Network port, or a CAN port. The selected port will route to Endport 1.
-    // @CopyFieldsFrom: NET_PASS1_EP1
-    AP_GROUPINFO("EP2", 3,  Networking_Periph::Passthru, ep2, -1),
-
-    // @Param: BAUD1
-    // @DisplayName: Endpoint 1 Baud Rate
-    // @Description: The baud rate used for Endpoint 1. Only applies to serial ports.
-    // @CopyFieldsFrom: SERIAL1_BAUD
-    AP_GROUPINFO("BAUD1", 4,  Networking_Periph::Passthru, baud1, 115200),
-
-    // @Param: BAUD2
-    // @DisplayName: Endpoint 2 Baud Rate
-    // @Description: The baud rate used for Endpoint 2. Only applies to serial ports.
-    // @CopyFieldsFrom: SERIAL1_BAUD
-    AP_GROUPINFO("BAUD2", 5,  Networking_Periph::Passthru, baud2, 115200),
-
-    // @Param: OPT1
-    // @DisplayName: Serial Port Options EP1
-    // @Description: Control over UART options for Endpoint 1. Only applies to serial ports.
-    // @CopyFieldsFrom: SERIAL1_OPTIONS
-    AP_GROUPINFO("OPT1", 6,  Networking_Periph::Passthru, options1, 0),
-
-    // @Param: OPT2
-    // @DisplayName: Serial Port Options EP2
-    // @Description: Control over UART options for Endpoint 2. Only applies to serial ports.
-    // @CopyFieldsFrom: SERIAL1_OPTIONS
-    AP_GROUPINFO("OPT2", 7,  Networking_Periph::Passthru, options2, 0),
-
-    AP_GROUPEND
-};
-
 void Networking_Periph::init(void)
 {
     networking_lib.init();
 
 #if HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
-    auto &serial_manager = AP::serialmanager();
-
     for (auto &p : passthru) {
-        if (p.enabled != 0 && p.port1 == nullptr && p.port2 == nullptr &&
-            p.ep1 != -1 && p.ep2 != -1 && p.ep1 != p.ep2) {
-
-            p.port1 = serial_manager.get_serial_by_id(p.ep1);
-            p.port2 = serial_manager.get_serial_by_id(p.ep2);
-
-            if (p.port1 != nullptr && p.port2 != nullptr) {
-                p.port1->set_options(p.options1);
-                p.port1->begin(p.baud1);
-
-                p.port2->set_options(p.options2);
-                p.port2->begin(p.baud2);
-            }
-        }
+        p.init();
     }
-#endif // HAL_PERIPH_NETWORK_NUM_PASSTHRU
+#endif
 }
 
 void Networking_Periph::update(void)
@@ -227,34 +158,9 @@ void Networking_Periph::update(void)
 
 #if HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
     for (auto &p : passthru) {
-        if (p.enabled == 0 || p.port1 == nullptr || p.port2 == nullptr) {
-            continue;
-        }
-        uint8_t buf[1024];
-
-        // read from port1, and write to port2
-        auto avail = p.port1->available();
-        if (avail > 0) {
-            auto space = p.port2->txspace();
-            const uint32_t n = MIN(space, sizeof(buf));
-            const auto nbytes = p.port1->read(buf, n);
-            if (nbytes > 0) {
-                p.port2->write(buf, nbytes);
-            }
-        }
-
-        // read from port2, and write to port1
-        avail = p.port2->available();
-        if (avail > 0) {
-            auto space = p.port1->txspace();
-            const uint32_t n = MIN(space, sizeof(buf));
-            const auto nbytes = p.port2->read(buf, n);
-            if (nbytes > 0) {
-                p.port1->write(buf, nbytes);
-            }
-        }
+        p.update();
     }
-#endif // HAL_PERIPH_NETWORK_NUM_PASSTHRU
+#endif
 }
 
 #endif  // HAL_PERIPH_ENABLE_NETWORKING
