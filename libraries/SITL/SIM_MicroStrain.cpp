@@ -29,10 +29,7 @@ MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 }
 
 
-/*
-  get timeval using simulation time
- */
-static void simulation_timeval(struct timeval *tv)
+void MicroStrain::simulation_timeval(struct timeval *tv)
 {
     uint64_t now = AP_HAL::micros64();
     static uint64_t first_usec;
@@ -135,7 +132,6 @@ void MicroStrain::send_imu_packet(void)
     send_packet(packet);
 }
 
-
 void MicroStrain5::send_gnss_packet(void)
 {
     const auto &fdm = _sitl->state;
@@ -205,82 +201,7 @@ void MicroStrain5::send_gnss_packet(void)
     send_packet(packet);
 }
 
-void MicroStrain7::send_gnss_packet(void)
-{
-    const auto &fdm = _sitl->state;
 
-    constexpr uint8_t descriptors[2] = {0x91, 0x92};
-    for (uint8_t i = 0; i < ARRAY_SIZE(descriptors); i++) {
-        MicroStrain_Packet packet;
-
-        struct timeval tv;
-        simulation_timeval(&tv);
-
-        packet.header[0] = 0x75; // Sync One
-        packet.header[1] = 0x65; // Sync Two
-        packet.header[2] = descriptors[i]; // GNSS Descriptor
-
-        // Add GPS Time
-        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_gps_time.htm
-        packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
-        packet.payload[packet.payload_size++] = 0x09; // Descriptor
-        put_double(packet, (double) tv.tv_sec);
-        put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
-        put_int(packet, 0);
-
-        // Add GNSS Fix Information
-        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_fix_info.htm
-        packet.payload[packet.payload_size++] =  0x08; // GNSS Fix Field Size
-        packet.payload[packet.payload_size++] = 0x0B; // Descriptor
-        packet.payload[packet.payload_size++] = 0x00; // Fix type FIX_3D
-        packet.payload[packet.payload_size++] = 19; // Sat count
-        put_int(packet, 0); // Fix flags
-        put_int(packet, 0); // Valid flags
-
-        // Add GNSS LLH position
-        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_llh_pos.htm
-        packet.payload[packet.payload_size++] = 0x2C; // GNSS LLH Field Size
-        packet.payload[packet.payload_size++] = 0x03; // Descriptor
-        put_double(packet, fdm.latitude);
-        put_double(packet, fdm.longitude);
-        put_double(packet, 0);   // Height above ellipsoid - unused
-        put_double(packet, fdm.altitude);
-        put_float(packet, 0.5f); // Horizontal accuracy
-        put_float(packet, 0.5f); // Vertical accuracy
-        put_int(packet, 31); // Valid flags
-
-        // Add DOP Data
-        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_dop.htm
-        packet.payload[packet.payload_size++] = 0x20; // DOP Field Size
-        packet.payload[packet.payload_size++] = 0x07; // Descriptor
-        put_float(packet, 0); // GDOP
-        put_float(packet, 0); // PDOP
-        put_float(packet, 0); // HDOP
-        put_float(packet, 0); // VDOP
-        put_float(packet, 0); // TDOP
-        put_float(packet, 0); // NDOP
-        put_float(packet, 0); // EDOP
-        put_int(packet, 127);
-
-        // Add GNSS NED velocity
-        packet.payload[packet.payload_size++] = 0x24; // GNSS NED Velocity Field Size
-        packet.payload[packet.payload_size++] = 0x05; // Descriptor
-        put_float(packet, fdm.speedN);
-        put_float(packet, fdm.speedE);
-        put_float(packet, fdm.speedD);
-        put_float(packet, 0); //speed - unused
-        put_float(packet, 0); //ground speed - unused
-        put_float(packet, 0); //heading - unused
-        put_float(packet, 0.25f); //speed accuracy
-        put_float(packet, 0); //heading accuracy - unused
-        put_int(packet, 31); //valid flags
-
-        packet.header[3] = packet.payload_size;
-
-        send_packet(packet);
-    }
-
-}
 
 void MicroStrain::send_filter_packet(void)
 {

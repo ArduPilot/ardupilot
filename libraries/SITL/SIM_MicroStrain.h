@@ -51,6 +51,9 @@ protected:
     void put_double(MicroStrain_Packet&, double);
     void put_int(MicroStrain_Packet&, uint16_t);
 
+    // get timeval using simulation time
+    static void simulation_timeval(struct timeval *tv);
+
     uint64_t start_us;
 };
 
