@@ -17,16 +17,17 @@
 namespace SITL
 {
 
-class MicroStrain5 : public SerialDevice
+class MicroStrain : public SerialDevice
 {
+    // This class implements the common MicroStrain driver support.
 public:
 
-    MicroStrain5();
+    MicroStrain();
 
     // update state
     void update(void);
 
-private:
+protected:
     struct MicroStrain_Packet {
         uint8_t header[4];
         uint8_t payload[256];
@@ -43,7 +44,7 @@ private:
 
     void send_packet(MicroStrain_Packet);
     void send_imu_packet();
-    void send_gnss_packet();
+    virtual void send_gnss_packet() = 0;
     void send_filter_packet();
 
     void put_float(MicroStrain_Packet&, float);
@@ -51,6 +52,22 @@ private:
     void put_int(MicroStrain_Packet&, uint16_t);
 
     uint64_t start_us;
+};
+
+class MicroStrain5 : public MicroStrain
+{
+    // This is a specialization for the 3DM-GX5-GNSS/INS
+private:
+    void send_gnss_packet() override;
+
+};
+
+class MicroStrain7 : public MicroStrain
+{
+    // This is a specialization for the 3DM-GQ7-GNSS/INS
+private:
+    void send_gnss_packet() override;
+
 };
 
 }

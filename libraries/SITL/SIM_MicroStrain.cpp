@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate LORD MicroStrain serial device
+    simulate MicroStrain GNSS-INS devices
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
@@ -24,7 +24,7 @@
 
 using namespace SITL;
 
-MicroStrain5::MicroStrain5() :SerialDevice::SerialDevice()
+MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 {
 }
 
@@ -48,7 +48,7 @@ static void simulation_timeval(struct timeval *tv)
     tv->tv_usec = new_usec % 1000000ULL;
 }
 
-void MicroStrain5::generate_checksum(MicroStrain_Packet& packet)
+void MicroStrain::generate_checksum(MicroStrain_Packet& packet)
 {
     uint8_t checksumByte1 = 0;
     uint8_t checksumByte2 = 0;
@@ -67,7 +67,7 @@ void MicroStrain5::generate_checksum(MicroStrain_Packet& packet)
     packet.checksum[1] = checksumByte2;
 }
 
-void MicroStrain5::send_packet(MicroStrain_Packet packet)
+void MicroStrain::send_packet(MicroStrain_Packet packet)
 {
     generate_checksum(packet);
 
@@ -77,7 +77,7 @@ void MicroStrain5::send_packet(MicroStrain_Packet packet)
 }
 
 
-void MicroStrain5::send_imu_packet(void)
+void MicroStrain::send_imu_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -205,7 +205,84 @@ void MicroStrain5::send_gnss_packet(void)
     send_packet(packet);
 }
 
-void MicroStrain5::send_filter_packet(void)
+void MicroStrain7::send_gnss_packet(void)
+{
+    const auto &fdm = _sitl->state;
+
+    constexpr uint8_t descriptors[2] = {0x91, 0x92};
+    for (uint8_t i = 0; i < ARRAY_SIZE(descriptors); i++) {
+        MicroStrain_Packet packet;
+
+        struct timeval tv;
+        simulation_timeval(&tv);
+
+        packet.header[0] = 0x75; // Sync One
+        packet.header[1] = 0x65; // Sync Two
+        packet.header[2] = descriptors[i]; // GNSS Descriptor
+
+        // Add GPS Time
+        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_gps_time.htm
+        packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
+        packet.payload[packet.payload_size++] = 0x09; // Descriptor
+        put_double(packet, (double) tv.tv_sec);
+        put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
+        put_int(packet, 0);
+
+        // Add GNSS Fix Information
+        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_fix_info.htm
+        packet.payload[packet.payload_size++] =  0x08; // GNSS Fix Field Size
+        packet.payload[packet.payload_size++] = 0x0B; // Descriptor
+        packet.payload[packet.payload_size++] = 0x00; // Fix type FIX_3D
+        packet.payload[packet.payload_size++] = 19; // Sat count
+        put_int(packet, 0); // Fix flags
+        put_int(packet, 0); // Valid flags
+
+        // Add GNSS LLH position
+        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_llh_pos.htm
+        packet.payload[packet.payload_size++] = 0x2C; // GNSS LLH Field Size
+        packet.payload[packet.payload_size++] = 0x03; // Descriptor
+        put_double(packet, fdm.latitude);
+        put_double(packet, fdm.longitude);
+        put_double(packet, 0);   // Height above ellipsoid - unused
+        put_double(packet, fdm.altitude);
+        put_float(packet, 0.5f); // Horizontal accuracy
+        put_float(packet, 0.5f); // Vertical accuracy
+        put_int(packet, 31); // Valid flags
+
+        // Add DOP Data
+        // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/gnss_recv_1/data/mip_field_gnss_dop.htm
+        packet.payload[packet.payload_size++] = 0x20; // DOP Field Size
+        packet.payload[packet.payload_size++] = 0x07; // Descriptor
+        put_float(packet, 0); // GDOP
+        put_float(packet, 0); // PDOP
+        put_float(packet, 0); // HDOP
+        put_float(packet, 0); // VDOP
+        put_float(packet, 0); // TDOP
+        put_float(packet, 0); // NDOP
+        put_float(packet, 0); // EDOP
+        put_int(packet, 127);
+
+        // Add GNSS NED velocity
+        packet.payload[packet.payload_size++] = 0x24; // GNSS NED Velocity Field Size
+        packet.payload[packet.payload_size++] = 0x05; // Descriptor
+        put_float(packet, fdm.speedN);
+        put_float(packet, fdm.speedE);
+        put_float(packet, fdm.speedD);
+        put_float(packet, 0); //speed - unused
+        put_float(packet, 0); //ground speed - unused
+        put_float(packet, 0); //heading - unused
+        put_float(packet, 0.25f); //speed accuracy
+        put_float(packet, 0); //heading accuracy - unused
+        put_int(packet, 31); //valid flags
+
+        packet.header[3] = packet.payload_size;
+
+        send_packet(packet);
+    }
+
+}
+
+void MicroStrain::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -256,7 +333,7 @@ void MicroStrain5::send_filter_packet(void)
 /*
   send MicroStrain data
  */
-void MicroStrain5::update(void)
+void MicroStrain::update(void)
 {
     if (!init_sitl_pointer()) {
         return;
@@ -283,7 +360,7 @@ void MicroStrain5::update(void)
     }
 }
 
-void MicroStrain5::put_float(MicroStrain_Packet &packet, float f)
+void MicroStrain::put_float(MicroStrain_Packet &packet, float f)
 {
     uint32_t fbits = 0;
     memcpy(&fbits, &f, sizeof(fbits));
@@ -291,7 +368,7 @@ void MicroStrain5::put_float(MicroStrain_Packet &packet, float f)
     packet.payload_size += sizeof(float);
 }
 
-void MicroStrain5::put_double(MicroStrain_Packet &packet, double d)
+void MicroStrain::put_double(MicroStrain_Packet &packet, double d)
 {
     uint64_t dbits = 0;
     memcpy(&dbits, &d, sizeof(dbits));
@@ -299,7 +376,7 @@ void MicroStrain5::put_double(MicroStrain_Packet &packet, double d)
     packet.payload_size += sizeof(double);
 }
 
-void MicroStrain5::put_int(MicroStrain_Packet &packet, uint16_t t)
+void MicroStrain::put_int(MicroStrain_Packet &packet, uint16_t t)
 {
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);
