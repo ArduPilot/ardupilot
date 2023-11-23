@@ -280,6 +280,7 @@ void AP_CANManager::init()
     }
 }
 #endif
+
 /*
   register a new CAN driver
  */
@@ -332,6 +333,32 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
         return true;
     }
     return false;
+}
+
+// register a new auxillary sensor driver for 11 bit address frames
+bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sensor, uint8_t &driver_index)
+{
+    WITH_SEMAPHORE(_sem);
+
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        uint8_t drv_num = _interfaces[i]._driver_number;
+        if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
+            continue;
+        }
+        // from 1 based to 0 based
+        drv_num--;
+
+        if (dtype != (AP_CAN::Protocol)_drv_param[drv_num]._driver_type_11bit.get()) {
+            continue;
+        }
+        if (_drivers[drv_num] != nullptr &&
+            _drivers[drv_num]->add_11bit_driver(sensor)) {
+            driver_index = drv_num;
+            return true;
+        }
+    }
+    return false;
+
 }
 
 // Method used by CAN related library methods to report status and debug info
