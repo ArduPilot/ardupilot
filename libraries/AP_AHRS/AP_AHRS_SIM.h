@@ -98,10 +98,6 @@ public:
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override;
 
-    // get compass offset estimates
-    // true if offsets are valid
-    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
-
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
