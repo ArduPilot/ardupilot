@@ -588,8 +588,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
     // @Group: NET_
-    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
-    GOBJECT(networking, "NET_", AP_Networking),
+    // @Path: networking.cpp
+    GOBJECT(networking_periph, "NET_", Networking_Periph),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RPM
