@@ -1479,15 +1479,15 @@ class Result(object):
     def __str__(self):
         ret = "  %s (%s)" % (self.test.name, self.test.description)
         if self.passed:
-            return ret + " OK"
+            return f"{ret} OK"
         if self.reason is not None:
-            ret += " (" + self.reason + ")"
+            ret += f" ({self.reason} )"
         if self.exception is not None:
-            ret += " (" + str(self.exception) + ")"
+            ret += f" ({str(self.exception)})"
         if self.debug_filename is not None:
-            ret += " (see " + self.debug_filename + ")"
+            ret += f" (see {self.debug_filename})"
         if self.time_elapsed is not None:
-            ret += " (duration " + self.time_elapsed + "s)"
+            ret += f" (duration {self.time_elapsed} s)"
         return ret
 
 
