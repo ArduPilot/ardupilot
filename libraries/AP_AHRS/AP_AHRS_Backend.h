@@ -176,19 +176,6 @@ public:
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
 
-    // returns the estimated magnetic field offsets in body frame
-    virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    virtual bool get_mag_field_NED(Vector3f &vec) const {
-        return false;
-    }
-
-    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
-        return false;
-    }
-
     //
     virtual bool set_origin(const Location &loc) {
         return false;
