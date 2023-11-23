@@ -910,9 +910,6 @@ private:
     // get secondary EKF type.  returns false if no secondary (i.e. only using DCM)
     bool _get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
 
-    // return the index of the primary core or -1 if no primary core selected
-    int8_t _get_primary_core_index() const;
-
     // get the index of the current primary accelerometer sensor
     uint8_t _get_primary_accel_index(void) const;
 

@@ -365,7 +365,7 @@ void AP_AHRS::update_state(void)
     state.primary_IMU = _get_primary_IMU_index();
     state.primary_gyro = _get_primary_gyro_index();
     state.primary_accel = _get_primary_accel_index();
-    state.primary_core = _get_primary_core_index();
+    state.primary_core = active_estimates->primary_core_index;
     state.wind_estimate_ok = active_estimates->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_ok = _airspeed_estimate(state.airspeed, state.airspeed_estimate_type);
@@ -3193,42 +3193,6 @@ uint8_t AP_AHRS::_get_primary_IMU_index() const
         imu = AP::ins().get_first_usable_gyro();
     }
     return imu;
-}
-
-// return the index of the primary core or -1 if no primary core selected
-int8_t AP_AHRS::_get_primary_core_index() const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // we have only one core
-        return 0;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        // we have only one core
-        return 0;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        // we have only one core
-        return 0;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.getPrimaryCoreIndex();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3_estimates.primary_imu_index;
-#endif
-    }
-
-    // we should never get here
-    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    return -1;
 }
 
 // get the index of the current primary accelerometer sensor
