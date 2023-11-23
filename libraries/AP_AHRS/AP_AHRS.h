@@ -877,9 +877,6 @@ private:
     // get active EKF type
     EKFType _active_EKF_type(void) const;
 
-    // return a wind estimation vector, in m/s
-    bool _wind_estimate(Vector3f &wind) const WARN_IF_UNUSED;
-
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool _airspeed_estimate_true(float &airspeed_ret) const;
@@ -1016,6 +1013,12 @@ private:
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+    AP_AHRS_Backend &_active_backend();
+    AP_AHRS_Backend::Estimates &_active_estimates();
+    AP_AHRS_Backend *active_backend;
+    AP_AHRS_Backend::Estimates *active_estimates;
+
 };
 
 namespace AP {
