@@ -1,64 +1,70 @@
 #include "AP_GPSParser.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+AP_SerialManager serial_manager;
+//AP_SerialManager.SerialProtocol *protocol = AP::serialmanager().SerialProtocol_MAVLink;
+AP_HAL::UARTDriver *port = serial_manager.find_serial(AP::serialmanager().SerialProtocol_MAVLink,0);
 
+AP_GPSParser::AP_GPSParser() :  uart(nullptr), mavlink_buffer_index(0){
 
+} 
 
-AP_GPSParser::AP_GPSParser() {
+void AP_GPSParser::setup() {
+    // Ensure that the uartA can be initialized
+    hal.scheduler->delay_microseconds(10000);
 
-}
-
-void AP_GPSParser::setup(){
-    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+    // Initialize serial ports using AP_SerialManager
+    serial_manager.init();
+  // serial_manager.init_console();
     setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
 }
 
 void AP_GPSParser::setup_uart(AP_HAL::UARTDriver *uart_param, const char *name){
+    
 this->uart = uart_param;
     if (uart == nullptr) {
         // that UART doesn't exist on this platform
-        return;
         hal.console->println("åh nej ikke godt");
+        return;
     }
     uart->begin(57600);
     hal.console->println("den virker");
-    uart->lock_port(17, 16); //Write key, Read key
 }
 
 void AP_GPSParser::process() {
-
-    test_uart(hal.serial(3), "SERIAL3");
-
-    if (uart->available_locked(16) > 0) {
-        uint8_t received_byte;
-        ssize_t bytesRead = uart->read_locked(&received_byte, 1, 16);
-
-        if (bytesRead > 0) {
-            if (parseMavlinkByte(received_byte)) {
-                if (processMavlinkMessage(mavlink_buffer, mavlink_buffer_index)) {
-                }
-                mavlink_buffer_index = 0;
-            }
-        }
+    test_uart(port, "SERIAL3");
+    if(serial_manager.have_serial(AP::serialmanager().SerialProtocol_MAVLink, 0)){
+        hal.console->println("Serial 0 connection obtained");
+    }
+      if(serial_manager.have_serial(AP::serialmanager().SerialProtocol_MAVLink, 1)){
+        hal.console->println("Serial 1 connection obtained");
+    }
+      if(serial_manager.have_serial(AP::serialmanager().SerialProtocol_MAVLink, 2)){
+        hal.console->println("Serial 2 connection obtained");
+    }
+      if(serial_manager.have_serial(AP::serialmanager().SerialProtocol_MAVLink, 3)){
+        hal.console->println("Serial 3 connection obtained");
     }
 }
 
-void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name)
-{
+void AP_GPSParser::test_uart(AP_HAL::UARTDriver *uart_param, const char *name) {
     // Check if the UART port is available
-    if (uart == nullptr) {
-        hal.console->println("UART port not available.");
-        return;
-    }
+    if (uart_param != nullptr) {
+        // Test UART communication here
+        // Example: Send a message
+        const char *message = "Testing UART\n";
+        uart_param->write(message);
 
-    uart_param->write_locked(mavlink_buffer,"teesting \n");
-    
-    // Read data from the UART
-    size_t bytesRead = uart->read(mavlink_buffer, sizeof(mavlink_buffer));
+        // Example: Read and print received data
+        uint8_t buffer[50];
+        size_t bytesRead = uart_param->read(buffer, sizeof(buffer));
 
-    if (bytesRead > 0) {
-        // Print the received data to the console
-        for (size_t i = 0; i < bytesRead; i++) {
-          // hal.console->printf("%c \n", mavlink_buffer[i]);
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';  // Null-terminate the string
+            hal.console->printf("Received on %s: %s", name, buffer);
         }
+    } else {
+        hal.console->printf("UART %s not available.\n", name);
     }
 }
 

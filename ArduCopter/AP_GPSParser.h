@@ -14,6 +14,7 @@ public:
     void process();
     void test_uart(AP_HAL::UARTDriver *uart, const char *name);
 private:
+
     const AP_HAL::HAL& hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver* uart;
     uint8_t mavlink_buffer[255];
