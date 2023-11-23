@@ -136,12 +136,6 @@ public:
         return true;
     }
 
-    // return estimate of true airspeed vector in body frame in m/s
-    // returns false if estimate is unavailable
-    virtual bool airspeed_vector_true(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // get apparent to true airspeed ratio
     static float get_EAS2TAS(void);
     static float get_TAS2EAS(void) { return 1.0/get_EAS2TAS(); }
