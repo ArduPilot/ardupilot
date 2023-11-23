@@ -964,6 +964,7 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
         return true;
     }
     // not a value WHOAMI result
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: whoami filed %u", whoami);
     return false;
 }
 
