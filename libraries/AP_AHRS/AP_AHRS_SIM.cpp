@@ -172,13 +172,6 @@ void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGain
     ekfNavVelGainScaler = 1.0f;
 }
 
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
-}
-
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 #if HAL_GCS_ENABLED
