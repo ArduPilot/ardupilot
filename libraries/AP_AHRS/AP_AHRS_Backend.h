@@ -261,19 +261,6 @@ public:
     #endif
     }
 
-    // returns the estimated magnetic field offsets in body frame
-    virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    virtual bool get_mag_field_NED(Vector3f &vec) const {
-        return false;
-    }
-
-    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
-        return false;
-    }
-
     //
     virtual bool set_origin(const Location &loc) {
         return false;
