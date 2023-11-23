@@ -1751,4 +1751,20 @@ void AP_DroneCAN::logging(void)
 #endif // HAL_LOGGING_ENABLED
 }
 
+// add an 11 bit auxillary driver
+bool AP_DroneCAN::add_11bit_driver(CANSensor *sensor)
+{
+    return canard_iface.add_11bit_driver(sensor);
+}
+
+// handler for outgoing frames for auxillary drivers
+bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+{
+    if (out_frame.isExtended()) {
+        // don't allow extended frames to be sent by auxillary driver
+        return false;
+    }
+    return canard_iface.write_aux_frame(out_frame, timeout_us);
+}
+
 #endif // HAL_NUM_CAN_IFACES

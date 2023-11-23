@@ -9,6 +9,7 @@
 extern const AP_HAL::HAL& hal;
 #define LOG_TAG "DroneCANIface"
 #include <canard.h>
+#include <AP_CANManager/AP_CANSensor.h>
 
 #define DEBUG_PKTS 0
 
@@ -346,6 +347,15 @@ void CanardInterface::processRx() {
             if (ifaces[i]->receive(rxmsg, timestamp, flags) <= 0) {
                 break;
             }
+
+            if (!rxmsg.isExtended()) {
+                // 11 bit frame, see if we have a handler
+                if (aux_11bit_driver != nullptr) {
+                    aux_11bit_driver->handle_frame(rxmsg);
+                }
+                continue;
+            }
+
             rx_frame.data_len = AP_HAL::CANFrame::dlcToDataLength(rxmsg.dlc);
             memcpy(rx_frame.data, rxmsg.data, rx_frame.data_len);
 #if HAL_CANFD_SUPPORTED
@@ -434,4 +444,29 @@ bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
     num_ifaces++;
     return true;
 }
+
+// add an 11 bit auxillary driver
+bool CanardInterface::add_11bit_driver(CANSensor *sensor)
+{
+    if (aux_11bit_driver != nullptr) {
+        // only allow one
+        return false;
+    }
+    aux_11bit_driver = sensor;
+    return true;
+}
+
+// handler for outgoing frames for auxillary drivers
+bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+{
+    bool ret = false;
+    for (uint8_t iface = 0; iface < num_ifaces; iface++) {
+        if (ifaces[iface] == NULL) {
+            continue;
+        }
+        ret |= ifaces[iface]->send(out_frame, timeout_us, 0) > 0;
+    }
+    return ret;
+}
+
 #endif // #if HAL_ENABLE_DRONECAN_DRIVERS
