@@ -198,7 +198,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
                                                                  AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                                                  enum Rotation _rotation)
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: probe ins");
     if (!_dev) {
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: dev not found");
         return nullptr;
     }
 
@@ -209,6 +211,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
     AP_InertialSensor_Invensensev3 *sensor =
         new AP_InertialSensor_Invensensev3(imu, std::move(_dev), _rotation);
     if (!sensor || !sensor->hardware_init()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: sensor probe failed");
         delete sensor;
         return nullptr;
     }
