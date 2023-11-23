@@ -77,10 +77,6 @@ public:
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override;
 
-    // get compass offset estimates
-    // true if offsets are valid
-    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
-
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;

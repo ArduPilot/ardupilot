@@ -98,13 +98,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
-}
-
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 #if HAL_GCS_ENABLED
