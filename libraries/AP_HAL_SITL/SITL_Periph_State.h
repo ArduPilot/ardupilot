@@ -30,9 +30,8 @@ public:
     void update(const struct sitl_input &input) override;
 
 private:
-    int mc_fd = -1;
-    int servo_fd = -1;
-    struct sockaddr_in in_addr;
+    SocketAPM sock{true};
+    SocketAPM servo_sock{true};
 
     // offset between multicast timestamp and local timestamp
     uint64_t base_time_us;
