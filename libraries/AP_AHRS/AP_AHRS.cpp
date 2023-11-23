@@ -1520,7 +1520,8 @@ bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.get_mag_field_NED(vec);
+        EKF3.EKF3.getMagNED(vec);
+        return true;
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -1551,7 +1552,8 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.get_mag_field_correction(vec);
+        EKF3.EKF3.getMagXYZ(vec);
+        return true;
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -2403,7 +2405,7 @@ bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.get_mag_offsets(mag_idx, magOffsets);
+        return EKF3.EKF3.getMagOffsets(mag_idx, magOffsets);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
