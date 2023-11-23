@@ -690,6 +690,9 @@ public:
     AP_Int16 takeoff_rpm_max;
 #endif
 
+    // EKF variance filter cutoff
+    AP_Float fs_ekf_filt_hz;
+
 #if WEATHERVANE_ENABLED == ENABLED
     AC_WeatherVane weathervane;
 #endif
