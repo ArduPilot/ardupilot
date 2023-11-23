@@ -1118,31 +1118,7 @@ bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airs
 
 bool AP_AHRS::_airspeed_estimate_true(float &airspeed_ret) const
 {
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.airspeed_estimate_true(airspeed_ret);
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        break;
-    }
-
-    if (!airspeed_estimate(airspeed_ret)) {
-        return false;
-    }
-    airspeed_ret *= get_EAS2TAS();
-    return true;
+    return active_backend->airspeed_estimate_true(airspeed_ret);
 }
 
 // return estimate of true airspeed vector in body frame in m/s
