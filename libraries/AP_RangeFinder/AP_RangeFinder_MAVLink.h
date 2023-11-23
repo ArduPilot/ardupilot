@@ -31,10 +31,6 @@ public:
     int16_t max_distance_cm() const override;
     int16_t min_distance_cm() const override;
 
-    // Get the reading confidence
-    // 100 is best quality, 0 is worst
-    WARN_IF_UNUSED bool get_signal_quality_pct(int8_t &quality_pct) const override;
-
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {

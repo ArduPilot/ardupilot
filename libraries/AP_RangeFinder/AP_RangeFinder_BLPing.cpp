@@ -83,13 +83,12 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
     return false;
 }
 
-bool AP_RangeFinder_BLPing::get_signal_quality_pct(int8_t &quality_pct) const
+int8_t AP_RangeFinder_BLPing::get_signal_quality_pct() const
 {
     if (status() != RangeFinder::Status::Good) {
-        return false;
+        return RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     }
-    quality_pct = protocol.get_confidence();
-    return true;
+    return protocol.get_confidence();
 }
 
 uint8_t PingProtocol::get_confidence() const

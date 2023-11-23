@@ -58,9 +58,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
  */
 void AP_Networking::ports_init(void)
 {
-    // init in reverse order to keep the linked list in
-    // AP_SerialManager in the right order
-    for (int8_t i=ARRAY_SIZE(ports)-1; i>= 0; i--) {
+    for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
         NetworkPortType ptype = (NetworkPortType)p.type;
         p.state.idx = AP_SERIALMANAGER_NET_PORT_1 + i;

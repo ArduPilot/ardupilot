@@ -27,6 +27,37 @@
 #include "AP_SerialManager.h"
 #include <GCS_MAVLink/GCS.h>
 
+#ifndef HAL_HAVE_SERIAL0
+#define HAL_HAVE_SERIAL0 HAL_NUM_SERIAL_PORTS > 0
+#endif
+#ifndef HAL_HAVE_SERIAL1
+#define HAL_HAVE_SERIAL1 HAL_NUM_SERIAL_PORTS > 1
+#endif
+#ifndef HAL_HAVE_SERIAL2
+#define HAL_HAVE_SERIAL2 HAL_NUM_SERIAL_PORTS > 2
+#endif
+#ifndef HAL_HAVE_SERIAL3
+#define HAL_HAVE_SERIAL3 HAL_NUM_SERIAL_PORTS > 3
+#endif
+#ifndef HAL_HAVE_SERIAL4
+#define HAL_HAVE_SERIAL4 HAL_NUM_SERIAL_PORTS > 4
+#endif
+#ifndef HAL_HAVE_SERIAL5
+#define HAL_HAVE_SERIAL5 HAL_NUM_SERIAL_PORTS > 5
+#endif
+#ifndef HAL_HAVE_SERIAL6
+#define HAL_HAVE_SERIAL6 HAL_NUM_SERIAL_PORTS > 6
+#endif
+#ifndef HAL_HAVE_SERIAL7
+#define HAL_HAVE_SERIAL7 HAL_NUM_SERIAL_PORTS > 7
+#endif
+#ifndef HAL_HAVE_SERIAL8
+#define HAL_HAVE_SERIAL8 HAL_NUM_SERIAL_PORTS > 8
+#endif
+#ifndef HAL_HAVE_SERIAL9
+#define HAL_HAVE_SERIAL9 HAL_NUM_SERIAL_PORTS > 9
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #ifndef DEFAULT_SERIAL0_PROTOCOL
@@ -819,8 +850,24 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
  */
 void AP_SerialManager::register_port(RegisteredPort *port)
 {
-    port->next = registered_ports;
-    registered_ports = port;
+    const auto idx = port->state.idx;
+    WITH_SEMAPHORE(port_sem);
+    /*
+      maintain the list in ID order
+     */
+    if (registered_ports == nullptr ||
+        registered_ports->state.idx >= idx) {
+        port->next = registered_ports;
+        registered_ports = port;
+        return;
+    }
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->next == nullptr || p->next->state.idx >= idx) {
+            port->next = p->next;
+            p->next = port;
+            break;
+        }
+    }
 }
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 

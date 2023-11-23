@@ -234,6 +234,7 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
             ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
+            ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
         ]
 
     def progress(self, msg):
