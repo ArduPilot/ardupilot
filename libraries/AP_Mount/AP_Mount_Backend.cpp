@@ -816,4 +816,21 @@ void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
     _last_warning_ms = now_ms;
 }
 
+// set_mode_3pos - sets the mount's retract or default mode from an aux switch
+void AP_Mount_Backend::set_mode_3pos(uint8_t ch_flag)
+{
+    switch (ch_flag) {
+    case 2: // = HIGH
+        if (get_mode() > MAV_MOUNT_MODE_NEUTRAL) _mode_last = get_mode();
+        set_mode(MAV_MOUNT_MODE_RETRACT);
+        break;
+    case 1: // = MIDDLE
+        if (_mode_last > MAV_MOUNT_MODE_NEUTRAL) set_mode(_mode_last);
+        break;
+    case 0: // LOW:
+        set_mode((MAV_MOUNT_MODE)_params.default_mode.get());
+        break;
+    }
+}
+
 #endif // HAL_MOUNT_ENABLED
