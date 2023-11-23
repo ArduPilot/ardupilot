@@ -245,8 +245,8 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
   config changes for L5 modules
 */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_ena[] {
-    {ConfigKey::CFG_SIGNAL_GPS_L5_ENA, 1},
     {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 1},
+    {ConfigKey::CFG_SIGNAL_GPS_L5_ENA, 1},
 };
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_dis[] {
@@ -453,13 +453,13 @@ AP_GPS_UBLOX::_request_next_config(void)
         if (supports_l5 && option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_ena;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_ena);
-            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_ALL)) {
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
         } else if (supports_l5 && !option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_dis;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_dis);
-            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_ALL)) {
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
         }
