@@ -76,7 +76,7 @@ public:
         k_param_esc_number1,
         k_param_pole_count1,
         k_param_esc_serial_port1,
-        k_param_networking,
+        k_param_networking_periph,
         k_param_rpm_sensor,
         k_param_g_rcin,
         k_param_sitl,
