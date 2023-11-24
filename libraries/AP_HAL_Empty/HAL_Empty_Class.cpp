@@ -66,9 +66,14 @@ void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
     }
 }
 
+static HAL_Empty hal_empty;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_Empty hal;
-    return hal;
+    return hal_empty;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
+    return hal_empty;
 }
 
 #endif
