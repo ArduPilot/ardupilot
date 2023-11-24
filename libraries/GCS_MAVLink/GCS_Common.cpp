@@ -110,6 +110,7 @@ uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 // private channels are ones used for point-to-point protocols, and
 // don't get broadcasts or fwded packets
 uint8_t GCS_MAVLINK::mavlink_private = 0;
+MAV_STATE GCS_MAVLINK::operator_minimum_system_status;
 
 GCS *GCS::_singleton = nullptr;
 
@@ -2828,6 +2829,7 @@ void GCS_MAVLINK::send_gps_global_origin() const
 MAV_STATE GCS_MAVLINK::system_status() const
 {
     MAV_STATE _system_status = vehicle_system_status();
+
     if (_system_status < MAV_STATE_CRITICAL) {
         // note that POWEROFF and FLIGHT_TERMINATION are both >
         // CRITICAL, so we will not overwrite POWEROFF and
@@ -2838,6 +2840,12 @@ MAV_STATE GCS_MAVLINK::system_status() const
             _system_status = MAV_STATE_CRITICAL;
         }
     }
+
+    // allow the operator to force the system status *higher* but no lower:
+    if (_system_status < operator_minimum_system_status) {
+        _system_status = operator_minimum_system_status;
+    }
+
     return _system_status;
 }
 
@@ -5012,6 +5020,20 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 }
 #endif
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_minimum_mav_state(const mavlink_command_int_t &packet)
+{
+    if (is_equal(packet.param2, 1.0f)) {
+        operator_minimum_system_status = (MAV_STATE)0;
+        return MAV_RESULT_ACCEPTED;
+    }
+    const MAV_STATE new_state = (MAV_STATE)packet.param1;
+    if (new_state > MAV_STATE_EMERGENCY) {
+        return MAV_RESULT_DENIED;
+    }
+    operator_minimum_system_status = new_state;
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -5211,6 +5233,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+    case MAV_CMD_SET_MINIMUM_MAV_STATE:
+        return handle_command_do_set_minimum_mav_state(packet);
     }
 
     return MAV_RESULT_UNSUPPORTED;
