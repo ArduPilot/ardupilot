@@ -103,9 +103,6 @@ public:
         EKF3.send_status_report(link);
     }
 
-    bool get_hgt_ctrl_limit(float &limit) const {
-        return EKF3.getHeightControlLimit(limit);
-    }
     void set_terrain_hgt_stable(bool stable) override {
         EKF3.setTerrainHgtStable(stable);
     }
