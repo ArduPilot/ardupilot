@@ -84,7 +84,7 @@
 #endif
 
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
@@ -846,7 +846,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     if (can_ifaces[self_index_] == nullptr) {
         can_ifaces[self_index_] = this;
 #if !defined(HAL_BOOTLOADER_BUILD)
-        hal.can[self_index_] = this;
+        AP_HAL::get_HAL_mutable().can[self_index_] = this;
 #endif
     }
 
