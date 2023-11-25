@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AR_PosControl::var_info[] = {
     // @Param: _VEL_I
     // @DisplayName: Velocity (horizontal) I gain
     // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
+    // @Range: 0.00 1.00
     // @Increment: 0.01
     // @User: Advanced
 
