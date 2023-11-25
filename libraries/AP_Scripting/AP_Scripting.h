@@ -41,6 +41,8 @@ public:
 
     void init(void);
 
+    void update();
+
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
 
@@ -134,15 +136,23 @@ private:
     bool repl_start(void);
     void repl_stop(void);
 
-    void load_script(const char *filename); // load a script from a file
-
     void thread(void); // main script execution thread
+
+    // Check if DEBUG_OPTS bit has been set to save current checksum values to params
+    void save_checksum();
+
+    // Mask down to 23 bits for comparison with parameters, this the length of the a float mantissa, to deal with the float transport of parameters over MAVLink
+    // The full range of uint32 integers cannot be represented by a float.
+    const uint32_t checksum_param_mask = 0x007FFFFF;
 
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
     AP_Int8 _debug_options;
     AP_Int16 _dir_disable;
+    AP_Int32 _required_loaded_checksum;
+    AP_Int32 _required_running_checksum;
+
 
     bool _thread_failed; // thread allocation failed
     bool _init_failed;  // true if memory allocation failed
