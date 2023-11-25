@@ -54,6 +54,7 @@ public:
         SUPPRESS_SCRIPT_LOG = 1U << 2,
         LOG_RUNTIME = 1U << 3,
         DISABLE_PRE_ARM = 1U << 4,
+        SAVE_CHECKSUM = 1U << 5,
     };
 
 private:
@@ -64,6 +65,7 @@ private:
     typedef struct script_info {
        int lua_ref;          // reference to the loaded script object
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
+       uint32_t crc;         // crc32 checksum
        char *name;           // filename for the script // FIXME: This information should be available from Lua
        script_info *next;
     } script_info;
@@ -125,6 +127,11 @@ private:
     static uint32_t last_print_ms;
     int current_ref;
 
+    // XOR of crc32 of running scripts
+    static uint32_t loaded_checksum;
+    static uint32_t running_checksum;
+    static HAL_Semaphore crc_sem;
+
 public:
     // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
     static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
@@ -134,6 +141,10 @@ public:
 
     // get semaphore for above error buffer
     static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
+
+    // Return the file checksums of running and loaded scripts
+    static uint32_t get_loaded_checksum();
+    static uint32_t get_running_checksum();
 
 };
 
