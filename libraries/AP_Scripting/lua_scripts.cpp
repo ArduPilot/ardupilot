@@ -36,6 +36,10 @@ HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
 uint32_t lua_scripts::last_print_ms;
 
+uint32_t lua_scripts::loaded_checksum;
+uint32_t lua_scripts::running_checksum;
+HAL_Semaphore lua_scripts::crc_sem;
+
 lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal)
     : _vm_steps(vm_steps),
       _debug_options(debug_options),
@@ -198,6 +202,19 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     new_script->name = filename;
     new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
+
+    // Get checksum of file
+    uint32_t crc = 0;
+    if (AP::FS().crc32(filename, crc)) {
+        // Record crc of this script
+        new_script->crc = crc;
+        {
+            // Apply crc to checksum of all scripts
+            WITH_SEMAPHORE(crc_sem);
+            loaded_checksum ^= crc;
+            running_checksum ^= crc;
+        }
+    }
 
     return new_script;
 }
@@ -391,6 +408,13 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
+
+    {
+        // Remove from running checksum
+        WITH_SEMAPHORE(crc_sem);
+        running_checksum ^= script->crc;
+    }
+
 }
 
 void lua_scripts::reschedule_script(script_info *script) {
@@ -604,6 +628,19 @@ void lua_scripts::run(void) {
         error_msg_buf = nullptr;
     }
     error_msg_buf_sem.give();
+}
+
+// Return the file checksums of running and loaded scripts
+uint32_t lua_scripts::get_loaded_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return loaded_checksum;
+}
+
+uint32_t lua_scripts::get_running_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return running_checksum;
 }
 
 #endif  // AP_SCRIPTING_ENABLED
