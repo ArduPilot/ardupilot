@@ -444,25 +444,11 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                         request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
-                        // actually open the file
-                        int fd = AP::FS().open((char *)request.data, O_RDONLY);
-                        if (fd == -1) {
+                        uint32_t checksum = 0;
+                        if (!AP::FS().crc32((char *)request.data, checksum)) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
                         }
-
-                        uint32_t checksum = 0;
-                        ssize_t read_size;
-                        do {
-                            read_size = AP::FS().read(fd, reply.data, sizeof(reply.data));
-                            if (read_size == -1) {
-                                ftp_error(reply, FTP_ERROR::FailErrno);
-                                break;
-                            }
-                            checksum = crc_crc32(checksum, reply.data, MIN((size_t)read_size, sizeof(reply.data)));
-                        } while (read_size > 0);
-
-                        AP::FS().close(fd);
 
                         // reset our scratch area so we don't leak data, and can leverage trimming
                         memset(reply.data, 0, sizeof(reply.data));
