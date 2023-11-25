@@ -37,7 +37,22 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @Units: s
     // @ReadOnly: True
     // @User: Standard
-    AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
+    AP_GROUPINFO("_RESET",      3, AP_Stats, params.reset, 1),
+
+    // @Param: _INTTIM
+    // @DisplayName: Statistics Flush Interval Time
+    // @Description: Interval between flushing statistics to EEPROM
+    // @Range: 1000 30000
+    // @Units: ms
+    // @User: Standard
+    AP_GROUPINFO("_INTTIM",     4, AP_Stats, params.intervaltime, 30000),
+
+    // @Param: _NFT
+    // @DisplayName: National Flight Time
+    // @Description: Total FlightTime
+    // @Values: 0:Default,1:Japan
+    // @User: Standard
+    AP_GROUPINFO("_NFT",        5, AP_Stats, params.nationalflighttime, 0),
 
     AP_GROUPEND
 };
@@ -97,7 +112,7 @@ void AP_Stats::update()
 {
     WITH_SEMAPHORE(sem);
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms -  last_flush_ms > flush_interval_ms) {
+    if (now_ms -  last_flush_ms > uint32_t(params.intervaltime)) {
         update_flighttime();
         update_runtime();
         flush();
@@ -131,8 +146,16 @@ void AP_Stats::set_flying(const bool is_flying)
             _flying_ms = AP_HAL::millis();
         }
     } else {
-        update_flighttime();
-        _flying_ms = 0;
+        switch (params.nationalflighttime) {
+        case 0:  // Default
+            update_flighttime();
+            _flying_ms = 0;
+            break;
+        case 1:  // Japan
+            break;
+        default:
+            break;
+        }
     }
 }
 
