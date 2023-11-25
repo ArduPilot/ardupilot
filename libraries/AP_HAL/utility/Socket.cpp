@@ -119,6 +119,8 @@ bool SocketAPM::connect(const char *address, uint16_t port)
         if (ret == -1) {
             goto fail_mc;
         }
+    } else if (datagram && sockaddr.sin_addr.s_addr == INADDR_BROADCAST) {
+        set_broadcast();
     }
 
     ret = CALL_PREFIX(connect)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
