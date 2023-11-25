@@ -108,6 +108,9 @@ public:
     // returns null-terminated string; cr or lf terminates line
     bool fgets(char *buf, uint8_t buflen, int fd);
 
+    // run crc32 over file with given name, returns true if successful
+    bool crc32(const char *fname, uint32_t& checksum) WARN_IF_UNUSED;
+
     // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
 
