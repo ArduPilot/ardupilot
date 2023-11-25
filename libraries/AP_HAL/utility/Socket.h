@@ -70,11 +70,26 @@ public:
     // listen has been used. A new socket is returned
     SocketAPM *accept(uint32_t timeout_ms);
 
+    // get a FD suitable for read selection
+    int get_read_fd(void) const {
+        return fd_in != -1? fd_in : fd;
+    }
+
+    bool is_connected(void) const {
+        return connected;
+    }
+
 private:
     bool datagram;
     struct sockaddr_in in_addr {};
+    bool is_multicast_address(struct sockaddr_in &addr) const;
 
     int fd = -1;
+
+    // fd_in is used for multicast UDP
+    int fd_in = -1;
+
+    bool connected;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };
