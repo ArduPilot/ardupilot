@@ -551,9 +551,7 @@ void Plane::set_servos_controlled(void)
                control_mode == &mode_fbwa ||
                control_mode == &mode_autotune) {
         // a manual throttle mode
-        if (!rc().has_valid_input()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_passthru_stabilize ? 0.0 : MAX(min_throttle,0));
-        } else if (g.throttle_passthru_stabilize) {
+        if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
