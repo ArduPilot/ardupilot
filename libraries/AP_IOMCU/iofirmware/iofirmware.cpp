@@ -411,13 +411,7 @@ static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
 */
 void AP_IOMCU_FW::update()
 {
-#if CH_CFG_ST_FREQUENCY == 1000000
     eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END | IOEVENT_TX_BEGIN, TIME_US2I(1000));
-#else
-    // we are not running any other threads, so we can use an
-    // immediate timeout here for lowest latency
-    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END, TIME_IMMEDIATE);
-#endif
 #ifdef HAL_GPIO_LINE_GPIO107
     TOGGLE_PIN_DEBUG(107);
 #endif
@@ -948,18 +942,17 @@ bool AP_IOMCU_FW::handle_code_write()
             // no input when override is active
             break;
         }
-        /* copy channel data */
-        uint16_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(reg_direct_pwm.pwm)/2) {
+        if (rx_io_packet.count != sizeof(reg_direct_pwm.pwm)/2) {
             return false;
         }
-        while ((offset < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
+        /* copy channel data */
+        uint16_t i = 0, num_values = rx_io_packet.count;
+        while ((i < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
             /* XXX range-check value? */
             if (rx_io_packet.regs[i] != PWM_IGNORE_THIS_CHANNEL) {
-                reg_direct_pwm.pwm[offset] = rx_io_packet.regs[i];
+                reg_direct_pwm.pwm[i] = rx_io_packet.regs[i];
             }
 
-            offset++;
             num_values--;
             i++;
         }
@@ -968,7 +961,7 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
-    case PAGE_MIXING: {
+    case PAGE_MIXING: { // multi-packet message
         uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         if (offset + num_values > sizeof(mixing)/2) {
             return false;
@@ -978,11 +971,10 @@ bool AP_IOMCU_FW::handle_code_write()
     }
 
     case PAGE_FAILSAFE_PWM: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(reg_failsafe_pwm.pwm)/2) {
+        if (rx_io_packet.count != sizeof(reg_failsafe_pwm.pwm)/2) {
             return false;
         }
-        memcpy((&reg_failsafe_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
+        memcpy((&reg_failsafe_pwm.pwm[0]), &rx_io_packet.regs[0], rx_io_packet.count*2);
         break;
     }
 
@@ -994,11 +986,10 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
 
     case PAGE_DSHOT: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(dshot)/2) {
+        if (rx_io_packet.count != sizeof(dshot)/2) {
             return false;
         }
-        memcpy(((uint16_t *)&dshot)+offset, &rx_io_packet.regs[0], num_values*2);
+        memcpy(((uint16_t *)&dshot)+rx_io_packet.offset, &rx_io_packet.regs[0], rx_io_packet.count*2);
         if(dshot.telem_mask) {
             hal.rcout->set_telem_request_mask(dshot.telem_mask);
         }
