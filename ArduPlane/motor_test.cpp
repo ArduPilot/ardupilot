@@ -56,9 +56,11 @@ void QuadPlane::motor_test_output()
         pwm = motor_test.throttle_value;
         break;
 
-    case MOTOR_TEST_THROTTLE_PILOT:
-        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * plane.get_throttle_input()*0.01f;
+    case MOTOR_TEST_THROTTLE_PILOT: {
+        const float throttle_input = rc().has_valid_input() ? plane.get_throttle_input() : 0.0;
+        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * throttle_input*0.01f;
         break;
+    }
 
     default:
         motor_test_stop();

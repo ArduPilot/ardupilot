@@ -879,10 +879,12 @@ void QuadPlane::run_esc_calibration(void)
     }
     AP_Notify::flags.esc_calibration = true;
     switch (esc_calibration) {
-    case 1:
+    case 1: {
         // throttle based calibration
-        motors->set_throttle_passthrough_for_esc_calibration(plane.get_throttle_input() * 0.01f);
+        const float throttle_input = rc().has_valid_input() ? plane.get_throttle_input() : 0.0;
+        motors->set_throttle_passthrough_for_esc_calibration(throttle_input * 0.01f);
         break;
+    }
     case 2:
         // full range calibration
         motors->set_throttle_passthrough_for_esc_calibration(1);
