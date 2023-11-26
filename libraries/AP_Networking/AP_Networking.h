@@ -184,6 +184,9 @@ private:
     enum class NetworkPortType {
         NONE = 0,
         UDP_CLIENT = 1,
+        UDP_SERVER = 2,
+        TCP_CLIENT = 3,
+        TCP_SERVER = 4,
     };
 
     // class for NET_Pn_* parameters
@@ -199,6 +202,7 @@ private:
         AP_Networking_IPV4 ip {"0.0.0.0"};
         AP_Int32 port;
         SocketAPM *sock;
+        SocketAPM *listen_sock;
 
         bool is_initialized() override {
             return true;
@@ -207,11 +211,22 @@ private:
             return false;
         }
 
-        void udp_client_init(const uint32_t size_rx, const uint32_t size_tx);
+        void wait_startup();
+        void udp_client_init(void);
+        void udp_server_init(void);
+        void tcp_server_init(void);
+        void tcp_client_init(void);
+
         void udp_client_loop(void);
+        void udp_server_loop(void);
+        void tcp_client_loop(void);
+        void tcp_server_loop(void);
+
+        bool send_receive(void);
 
     private:
         bool init_buffers(const uint32_t size_rx, const uint32_t size_tx);
+        void thread_create(AP_HAL::MemberProc);
 
         uint32_t txspace() override;
         void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
@@ -222,10 +237,22 @@ private:
         void _flush() override {}
         bool _discard_input() override;
 
+        enum flow_control get_flow_control(void) override;
+
+        uint32_t bw_in_bytes_per_second() const override {
+            return 1000000UL;
+        }
+
         ByteBuffer *readbuffer;
         ByteBuffer *writebuffer;
+        char thread_name[10];
         uint32_t last_size_tx;
         uint32_t last_size_rx;
+        bool packetise;
+        bool connected;
+        bool have_received;
+        bool close_on_recv_error;
+
         HAL_Semaphore sem;
     };
 
@@ -236,10 +263,12 @@ private:
     enum {
         TEST_UDP_CLIENT = (1U<<0),
         TEST_TCP_CLIENT = (1U<<1),
+        TEST_TCP_DISCARD = (1U<<2),
     };
     void start_tests(void);
     void test_UDP_client(void);
     void test_TCP_client(void);
+    void test_TCP_discard(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
     // ports for registration with serial manager
