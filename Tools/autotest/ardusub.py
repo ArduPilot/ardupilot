@@ -166,6 +166,53 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.watch_altitude_maintained()
         self.disarm_vehicle()
 
+    def RngfndQuality(self):
+        """Check lua Range Finder quality information flow"""
+        self.context_push()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN_CM": 10,
+            "RNGFND1_MAX_CM": 5000,
+        })
+
+        self.install_example_script_context("rangefinder_quality_test.lua")
+
+        # These string must match those sent by the lua test script.
+        test_id_str = "RQTL"
+        complete_str = "#COMPLETE#"
+        failure_str = "!!FAILURE!!"
+
+        test_complete = ""
+
+        def my_message_hook(mav, message):
+            nonlocal test_complete
+            if message.get_type() != 'STATUSTEXT':
+                return
+            if test_id_str in message.text:
+                if complete_str in message.text:
+                    # NOTE: Do not raise an exception from in this hook. Doing so messes
+                    # with the flow of messages for the test cleanup.
+                    test_complete = message.text
+
+        # Install a message hook that looks for the SUCCESS or FAILURE message.
+        self.install_message_hook_context(my_message_hook)
+
+        self.reboot_sitl()
+
+        timeout = 20
+        tstart = self.get_sim_time()
+        while len(test_complete) == 0:
+            if self.get_sim_time() - tstart > timeout:
+                raise AutoTestTimeoutException("Test timed out after %.0fs" % (timeout))
+            self.delay_sim_time(10)
+
+        self.context_pop()
+
+        if failure_str in test_complete:
+            raise NotAchievedException("RngfndQuality test failed: " + test_complete)
+
     def ModeChanges(self, delta=0.2):
         """Check if alternating between ALTHOLD, STABILIZE and POSHOLD affects altitude"""
         self.wait_ready_to_arm()
@@ -524,6 +571,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         ret.extend([
             self.DiveManual,
             self.AltitudeHold,
+            self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
             self.DiveMission,
