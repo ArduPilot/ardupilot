@@ -793,6 +793,7 @@ class sitl(Board):
         # whitelist of compilers which we should build with -Werror
         gcc_whitelist = frozenset([
                 ('11','3','0'),
+                ('11','4','0'),
                 ('12','1','0'),
             ])
 
@@ -1149,6 +1150,7 @@ class chibios(Board):
             ('9','3','1'),
             ('10','2','1'),
             ('11','3','0'),
+            ('11','4','0'),
         ])
 
         if cfg.env.HAL_CANFD_SUPPORTED:
