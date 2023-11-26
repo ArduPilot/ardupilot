@@ -950,4 +950,30 @@ int lua_print(lua_State *L) {
     return 0;
 }
 
+#if (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+int lua_range_finder_handle_script_msg(lua_State *L) {
+    // Arg 1 => self (an instance of rangefinder_backend)
+    // Arg 2 => a float distance or a RangeFinder_State user data
+    binding_argcheck(L, 2);
+
+    // check_AP_RangeFinder_Backend aborts if not found. No need to check for null
+    AP_RangeFinder_Backend * ud = *check_AP_RangeFinder_Backend(L, 1);
+
+    bool result = false;
+
+    // Check to see if the first argument is the state structure.
+    const void *state_arg = luaL_testudata(L, 2, "RangeFinder_State");
+    if (state_arg != nullptr) {
+        result = ud->handle_script_msg(*static_cast<const RangeFinder::RangeFinder_State *>(state_arg));
+
+    } else {
+        // Otherwise assume the argument is a number and set the measurement.
+        result = ud->handle_script_msg(luaL_checknumber(L, 2));
+    }
+
+    lua_pushboolean(L, result);
+    return 1;
+}
+#endif
+
 #endif  // AP_SCRIPTING_ENABLED
