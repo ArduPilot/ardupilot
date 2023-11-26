@@ -37,8 +37,8 @@ public:
 
 #if AP_SCRIPTING_ENABLED
     // Returns false if scripting backing hasn't been setup
-    // Get distance from lua script
-    virtual bool handle_script_msg(float dist_m) { return false; }
+    // Pass distance and signal_quality from lua script to backend
+    virtual bool handle_script_msg(float dist_m, float signal_quality_pct) { return false; }
 #endif
 
 #if HAL_MSP_RANGEFINDER_ENABLED

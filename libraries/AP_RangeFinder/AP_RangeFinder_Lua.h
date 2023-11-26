@@ -20,7 +20,7 @@ public:
     void update(void) override;
 
     // Get update from Lua script
-    bool handle_script_msg(float dist_m) override;
+    bool handle_script_msg(float dist_m, float signal_quality_pct) override;
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
@@ -28,7 +28,8 @@ public:
 
 private:
 
-    float _distance_m;   // stored data from lua script:
+    float _distance_m = 0.0f;          // stored data from lua script:
+    int8_t _signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
 };
 
 #endif  // AP_RANGEFINDER_LUA_ENABLED

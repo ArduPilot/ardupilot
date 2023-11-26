@@ -28,11 +28,16 @@ AP_RangeFinder_Lua::AP_RangeFinder_Lua(RangeFinder::RangeFinder_State &_state, A
 }
 
 
-// Set the distance based on a Lua Script
-bool AP_RangeFinder_Lua::handle_script_msg(float dist_m)
+// Set the distance and signal_quality from a Lua Script.
+bool AP_RangeFinder_Lua::handle_script_msg(float dist_m, float signal_quality_pct)
 {
     state.last_reading_ms = AP_HAL::millis();
     _distance_m = dist_m;
+
+    // Trying to set an invalid signal_quality is like having no signal_quality data.
+    _signal_quality_pct = (signal_quality_pct >= RangeFinder::SIGNAL_QUALITY_MIN &&
+            signal_quality_pct <= RangeFinder::SIGNAL_QUALITY_MAX) ?
+            static_cast<int8_t>(signal_quality_pct) : RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     return true;
 }
 
@@ -45,8 +50,10 @@ void AP_RangeFinder_Lua::update(void)
     if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_LUA_TIMEOUT_MS) {
         set_status(RangeFinder::Status::NoData);
         state.distance_m = 0.0f;
+        _signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN; // no signal_quality also
     } else {
         state.distance_m = _distance_m;
+        state.signal_quality_pct = _signal_quality_pct;
         update_status();
     }
 }
