@@ -31,6 +31,7 @@
   <exec_depend>geographic_msgs</exec_depend>
   <test_depend>launch</test_depend>
   <test_depend>launch_pytest</test_depend>
+  <test_depend>micro_ros_agent</test_depend>
   <test_depend>launch_ros</test_depend>
   <exec_depend>micro_ros_msgs</exec_depend>
   <test_depend>python3-pytest</test_depend>
