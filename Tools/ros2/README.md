@@ -92,6 +92,11 @@ colcon test --packages-select ardupilot_dds_tests
 colcon test-result --all --verbose
 ```
 
+To debug a specific test, you can do the following:
+```
+colcon --log-level DEBUG test --packages-select ardupilot_dds_tests --event-handlers=console_direct+ --pytest-args -k test_dds_udp_geopose_msg_recv -s
+```
+
 ## Install macOS
 
 The install procedure on macOS is similar, except that all dependencies

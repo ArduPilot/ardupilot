@@ -144,7 +144,7 @@ def achieved_goal(goal_global_pos, cur_geopose):
     p2 = (cur_pos.latitude, cur_pos.longitude, cur_pos.altitude)
 
     flat_distance = distance.distance(p1[:2], p2[:2]).m
-    euclidian_distance = math.sqrt(flat_distance ** 2 + (p2[2] - p1[2]) ** 2)
+    euclidian_distance = math.sqrt(flat_distance**2 + (p2[2] - p1[2]) ** 2)
     print(f"Goal is {euclidian_distance} meters away")
     return euclidian_distance < 150
 
