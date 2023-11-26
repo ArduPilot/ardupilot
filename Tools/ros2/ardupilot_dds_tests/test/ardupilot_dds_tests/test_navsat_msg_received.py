@@ -51,14 +51,10 @@ class NavSatFixListener(rclpy.node.Node):
             depth=1,
         )
 
-        self.subscription = self.create_subscription(
-            NavSatFix, self.topic, self.subscriber_callback, qos_profile
-        )
+        self.subscription = self.create_subscription(NavSatFix, self.topic, self.subscriber_callback, qos_profile)
 
         # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(
-            target=lambda node: rclpy.spin(node), args=(self,)
-        )
+        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
 
     def subscriber_callback(self, msg):
@@ -66,9 +62,7 @@ class NavSatFixListener(rclpy.node.Node):
         self.msg_event_object.set()
 
         if msg.latitude:
-            self.get_logger().info(
-                "From AP : True [lat:{}, lon: {}]".format(msg.latitude, msg.longitude)
-            )
+            self.get_logger().info("From AP : True [lat:{}, lon: {}]".format(msg.latitude, msg.longitude))
         else:
             self.get_logger().info("From AP : False")
 

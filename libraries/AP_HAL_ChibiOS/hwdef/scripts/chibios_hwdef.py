@@ -965,18 +965,19 @@ class ChibiOSHWDef(object):
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
         if 'ETH1' in self.bytype:
-            f.write('// Configure for Ethernet support\n')
-            f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
-            f.write('#define HAL_USE_MAC                         TRUE\n')
-            f.write('#define MAC_USE_EVENTS                      TRUE\n')
-            f.write('#define STM32_ETH_BUFFERS_EXTERN\n')
-            f.write('#define AP_NETWORKING_ENABLED               TRUE\n')
             self.build_flags.append('USE_LWIP=yes')
-            self.env_vars['WITH_NETWORKING'] = True
-        else:
-            f.write('#define AP_NETWORKING_ENABLED               FALSE\n')
-            self.build_flags.append('USE_LWIP=no')
-            self.env_vars['WITH_NETWORKING'] = False
+            f.write('''
+
+#ifndef AP_NETWORKING_ENABLED
+// Configure for Ethernet support
+#define AP_NETWORKING_ENABLED               1
+#define CH_CFG_USE_MAILBOXES                TRUE
+#define HAL_USE_MAC                         TRUE
+#define MAC_USE_EVENTS                      TRUE
+#define STM32_ETH_BUFFERS_EXTERN
+#endif
+
+''')
 
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
@@ -1523,7 +1524,9 @@ INCLUDE common.ld
             if t.startswith('SPI'):
                 self.spi_list.append(t)
         self.spi_list = sorted(self.spi_list)
-        if len(self.spi_list) == 0:
+        if len(self.spidev) != 0 and len(self.spi_list) == 0:
+            self.error("Have SPI devices but no SPI bus?!")
+        if len(self.spidev) == 0:
             f.write('#define HAL_USE_SPI FALSE\n')
             return
         devlist = []

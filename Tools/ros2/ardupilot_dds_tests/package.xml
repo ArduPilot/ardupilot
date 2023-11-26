@@ -17,9 +17,12 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>socat</exec_depend>
 
+  <test_depend>ament_black</test_depend>
   <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
+  <test_depend>ament_uncrustify</test_depend>
+  <test_depend>ament_xmllint</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
   <test_depend>ardupilot_sitl</test_depend>
   <test_depend>launch</test_depend>
   <test_depend>launch_pytest</test_depend>

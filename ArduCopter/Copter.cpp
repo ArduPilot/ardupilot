@@ -671,6 +671,13 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
+
+    // slowly update the PID notches with the average loop rate
+    attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+    custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+#endif
 }
 
 void Copter::init_simple_bearing()

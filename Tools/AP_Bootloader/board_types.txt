@@ -256,6 +256,7 @@ AP_HW_PixPilot-C3                    1140
 AP_HW_YJUAV_A6SE_H743                1141
 AP_HW_FSO_POWER_STACK                1142
 AP_HW_ATOMRCF405NAVI_DLX             1143
+AP_HW_YJUAV_A6Ultra                  1144
 
 
 AP_HW_ESP32_PERIPH                   1205

@@ -39,6 +39,7 @@ GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance)
     : front{_front},
       instance{_instance}
 {
+    _sitl = AP::sitl();
 }
 
 ssize_t GPS_Backend::write_to_autopilot(const char *p, size_t size) const
@@ -49,19 +50,6 @@ ssize_t GPS_Backend::write_to_autopilot(const char *p, size_t size) const
 ssize_t GPS_Backend::read_from_autopilot(char *buffer, size_t size) const
 {
     return front.read_from_autopilot(buffer, size);
-}
-
-void GPS_Backend::update(const GPS_Data &d)
-{
-    if (_sitl == nullptr) {
-        _sitl = AP::sitl();
-        if (_sitl == nullptr) {
-            return;
-        }
-    }
-
-    update_read(&d);
-    update_write(&d);
 }
 
 GPS::GPS(uint8_t _instance) :
@@ -189,7 +177,7 @@ static GPS_TOW gps_time()
 /*
   send a new set of GPS UBLOX packets
  */
-void GPS_UBlox::update_write(const GPS_Data *d)
+void GPS_UBlox::publish(const GPS_Data *d)
 {
     struct PACKED ubx_nav_posllh {
         uint32_t    time; // GPS msToW
@@ -492,7 +480,7 @@ void GPS_NMEA::nmea_printf(const char *fmt, ...)
 /*
   send a new GPS NMEA packet
  */
-void GPS_NMEA::update_write(const GPS_Data *d)
+void GPS_NMEA::publish(const GPS_Data *d)
 {
     struct timeval tv;
     struct tm *tm;
@@ -605,7 +593,7 @@ void GPS_SBP_Common::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uin
     write_to_autopilot((char*)&crc, 2);
 }
 
-void GPS_SBP::update_write(const GPS_Data *d)
+void GPS_SBP::publish(const GPS_Data *d)
 {
     struct sbp_heartbeat_t {
         bool sys_error : 1;
@@ -719,7 +707,7 @@ void GPS_SBP::update_write(const GPS_Data *d)
 }
 
 
-void GPS_SBP2::update_write(const GPS_Data *d)
+void GPS_SBP2::publish(const GPS_Data *d)
 {
     struct sbp_heartbeat_t {
         bool sys_error : 1;
@@ -831,7 +819,7 @@ void GPS_SBP2::update_write(const GPS_Data *d)
     do_every_count++;
 }
 
-void GPS_NOVA::update_write(const GPS_Data *d)
+void GPS_NOVA::publish(const GPS_Data *d)
 {
     static struct PACKED nova_header
     {
@@ -997,7 +985,7 @@ uint32_t GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_
     return( crc );
 }
 
-void GPS_GSOF::update_write(const GPS_Data *d)
+void GPS_GSOF::publish(const GPS_Data *d)
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
     constexpr uint8_t GSOF_POS_TIME_TYPE { 0x01 };
@@ -1292,7 +1280,7 @@ uint32_t GPS_GSOF::gsof_pack_float(const float& src)
 /*
   send MSP GPS data
  */
-void GPS_MSP::update_write(const GPS_Data *d)
+void GPS_MSP::publish(const GPS_Data *d)
 {
     struct PACKED {
         // header
@@ -1370,7 +1358,7 @@ void GPS_MSP::update_write(const GPS_Data *d)
   read file data logged from AP_GPS_DEBUG_LOGGING_ENABLED
  */
 #if AP_SIM_GPS_FILE_ENABLED
-void GPS_FILE::update_write(const GPS_Data *d)
+void GPS_FILE::publish(const GPS_Data *d)
 {
     static int fd[2] = {-1,-1};
     static uint32_t base_time[2];
@@ -1530,6 +1518,7 @@ void GPS::update()
 
         // run at configured GPS rate (default 5Hz)
         if ((now_ms - last_update) < (uint32_t)(1000/_sitl->gps_hertz[idx])) {
+            backend->update_read();
             return;
         }
 
@@ -1599,10 +1588,10 @@ void GPS::update()
         d.longitude += glitch_offsets.y;
         d.altitude += glitch_offsets.z;
 
-    backend->update(d);   // i.e. reading configuration etc from autopilot
+    backend->publish(&d);
 }
 
-void GPS_Backend::update_read(const GPS_Data *d)
+void GPS_Backend::update_read()
 {
         // swallow any config bytes
         char c;

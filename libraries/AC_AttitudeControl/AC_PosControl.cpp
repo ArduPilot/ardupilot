@@ -209,6 +209,24 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Acceleration (vertical) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0 1000
     // @Units: d%
+
+    // @Param: _ACCZ_D_FF
+    // @DisplayName: Accel (vertical) Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: _ACCZ_NTF
+    // @DisplayName: Accel (vertical) Target notch filter index
+    // @Description: Accel (vertical) Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _ACCZ_NEF
+    // @DisplayName: Accel (vertical) Error notch filter index
+    // @Description: Accel (vertical) Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),

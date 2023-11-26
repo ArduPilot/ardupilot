@@ -34,6 +34,7 @@
 #include "AP_DroneCAN_DNA_Server.h"
 #include <canard.h>
 #include <dronecan_msgs.h>
+#include <AP_SerialManager/AP_SerialManager_config.h>
 
 #ifndef DRONECAN_SRV_NUMBER
 #define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
@@ -56,6 +57,14 @@
 
 #ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
 #define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef AP_DRONECAN_SERIAL_ENABLED
+#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#endif
+
+#if AP_DRONECAN_SERIAL_ENABLED
+#include "AP_DroneCAN_serial.h"
 #endif
 
 // fwd-declare callback classes
@@ -257,6 +266,10 @@ private:
     uavcan_protocol_NodeStatus node_status_msg;
 
     CanardInterface canard_iface;
+
+#if AP_DRONECAN_SERIAL_ENABLED
+    AP_DroneCAN_Serial serial;
+#endif
 
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
     Canard::Publisher<dronecan_protocol_CanStats> can_stats{canard_iface};

@@ -226,6 +226,7 @@ public:
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
     uint16_t get_num_logs(void);
+    uint16_t get_max_num_logs();
 
     void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
 
@@ -336,6 +337,7 @@ public:
         AP_Float mav_ratemax;
         AP_Float blk_ratemax;
         AP_Float disarm_ratemax;
+        AP_Int16 max_log_files;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;

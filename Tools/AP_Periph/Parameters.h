@@ -76,7 +76,7 @@ public:
         k_param_esc_number1,
         k_param_pole_count1,
         k_param_esc_serial_port1,
-        k_param_networking,
+        k_param_networking_periph,
         k_param_rpm_sensor,
         k_param_g_rcin,
         k_param_sitl,
@@ -85,6 +85,9 @@ public:
         k_param_battery_hide_mask,
         k_param_can_mirror_ports,
         k_param_rtc,
+        k_param_can_terminate0,
+        k_param_can_terminate1,
+        k_param_can_terminate2,
     };
 
     AP_Int16 format_version;
@@ -205,6 +208,9 @@ public:
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
+
+    AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
+
     AP_Int8 node_stats;
     Parameters() {}
 };

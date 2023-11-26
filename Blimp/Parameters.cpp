@@ -729,6 +729,26 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Increment: 10
     // @Units: d%
     // @User: Advanced
+
+    // @Param: POSYAW_D_FF
+    // @DisplayName: Position (yaw) Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSYAW_NTF
+    // @DisplayName: Position (yaw) Target notch filter index
+    // @Description: Position (yaw) Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: POSYAW_NEF
+    // @DisplayName: Position (yaw) Error notch filter index
+    // @Description: Position (yaw) Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
 
     // @Group:

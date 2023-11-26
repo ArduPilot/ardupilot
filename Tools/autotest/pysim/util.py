@@ -815,6 +815,14 @@ def load_local_module(fname):
     return ret
 
 
+def get_git_hash(short=False):
+    short_v = "--short=8 " if short else ""
+    githash = run_cmd(f'git rev-parse {short_v}HEAD', output=True, directory=reltopdir('.')).strip()
+    if sys.version_info.major >= 3:
+        githash = githash.decode('utf-8')
+    return githash
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

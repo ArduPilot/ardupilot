@@ -254,12 +254,12 @@ public:
       setup serial LED output data for a given output channel
       and LEDs number. LED -1 is all LEDs
      */
-    void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
+    bool set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
 
     /*
       trigger send of serial LED data
      */
-    void serial_led_send(const uint16_t chan) override;
+    bool serial_led_send(const uint16_t chan) override;
 #endif
     /*
       rcout thread

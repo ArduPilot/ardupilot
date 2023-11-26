@@ -93,6 +93,12 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // get angular velocity of mount. Only available on some backends
+    bool get_angular_velocity(Vector3f& rates) override {
+        rates = _current_rates_rads;
+        return true;
+    }
+    
 private:
 
     // serial protocol command ids
@@ -112,6 +118,7 @@ private:
         SET_CAMERA_IMAGE_TYPE = 0x11,
         READ_RANGEFINDER = 0x15,
         EXTERNAL_ATTITUDE = 0x22,
+        SET_TIME = 0x30,
     };
 
     // Function Feedback Info packet info_type values
@@ -308,6 +315,7 @@ private:
 
     // actual attitude received from gimbal
     Vector3f _current_angle_rad;                    // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
+    Vector3f _current_rates_rads;                   // current angular rates in rad/s (x=roll, y=pitch, z=yaw)
     uint32_t _last_current_angle_rad_ms;            // system time _current_angle_rad was updated
     uint32_t _last_req_current_angle_rad_ms;        // system time that this driver last requested current angle
 
@@ -335,6 +343,9 @@ private:
         const char* model_name;
     };
     static const HWInfo hardware_lookup_table[];
+
+    // count of SET_TIME packets, we send 5 times to cope with packet loss
+    uint8_t sent_time_count;
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

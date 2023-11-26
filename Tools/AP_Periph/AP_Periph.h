@@ -36,6 +36,7 @@
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
 #include "batt_balance.h"
+#include "networking.h"
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -356,7 +357,7 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
-    AP_Networking networking;
+    Networking_Periph networking_periph;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RTC

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "AP_EFI.h"
-#include "AP_EFI_Backend.h"
+#include "AP_EFI_config.h"
 
 #if AP_EFI_DRONECAN_ENABLED
+#include "AP_EFI.h"
+#include "AP_EFI_Backend.h"
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_EFI_DroneCAN : public AP_EFI_Backend {

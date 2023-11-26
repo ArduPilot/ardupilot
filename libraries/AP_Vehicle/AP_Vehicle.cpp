@@ -210,8 +210,42 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: NET_
     // @Path: ../AP_Networking/AP_Networking.cpp
     AP_SUBGROUPINFO(networking, "NET_", 21, AP_Vehicle, AP_Networking),
+
+    /*
+      the NET_Pn_ parameters need to be in AP_Vehicle as otherwise we
+      are too deep in the parameter tree
+     */
+
+#if AP_NETWORKING_NUM_PORTS > 0
+    // @Group: NET_P1_
+    // @Path: ../AP_Networking/AP_Networking_port.cpp
+    AP_SUBGROUPINFO(networking.ports[0], "NET_P1_", 22, AP_Vehicle, AP_Networking::Port),
 #endif
 
+#if AP_NETWORKING_NUM_PORTS > 1
+    // @Group: NET_P2_
+    // @Path: ../AP_Networking/AP_Networking_port.cpp
+    AP_SUBGROUPINFO(networking.ports[1], "NET_P2_", 23, AP_Vehicle, AP_Networking::Port),
+#endif
+
+#if AP_NETWORKING_NUM_PORTS > 2
+    // @Group: NET_P3_
+    // @Path: ../AP_Networking/AP_Networking_port.cpp
+    AP_SUBGROUPINFO(networking.ports[2], "NET_P3_", 24, AP_Vehicle, AP_Networking::Port),
+#endif
+
+#if AP_NETWORKING_NUM_PORTS > 3
+    // @Group: NET_P4_
+    // @Path: ../AP_Networking/AP_Networking_port.cpp
+    AP_SUBGROUPINFO(networking.ports[3], "NET_P4_", 25, AP_Vehicle, AP_Networking::Port),
+#endif
+#endif // AP_NETWORKING_ENABLED
+
+#if AP_FILTER_ENABLED
+    // @Group: FILT
+    // @Path: ../Filter/AP_Filter.cpp
+    AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
+#endif
     AP_GROUPEND
 };
 
@@ -390,6 +424,10 @@ void AP_Vehicle::setup()
 
     custom_rotations.init();
 
+#if AP_FILTER_ENABLED
+    filters.init();
+#endif
+
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     for (uint8_t i = 0; i<ESC_TELEM_MAX_ESCS; i++) {
         esc_noise[i].set_cutoff_frequency(2);
@@ -529,6 +567,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     SCHED_TASK(check_motor_noise,      5,     50, 252),
+#endif
+#if AP_FILTER_ENABLED
+    SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
 };

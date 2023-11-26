@@ -894,7 +894,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
 
-#ifdef USER_PARAMS_ENABLED
+#if USER_PARAMS_ENABLED == ENABLED
     AP_SUBGROUPINFO(user_parameters, "USR", 28, ParametersG2, UserParameters),
 #endif
 
@@ -1260,7 +1260,7 @@ ParametersG2::ParametersG2(void)
 #if MODE_FOLLOW_ENABLED == ENABLED
     ,follow()
 #endif
-#ifdef USER_PARAMS_ENABLED
+#if USER_PARAMS_ENABLED == ENABLED
     ,user_parameters()
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
