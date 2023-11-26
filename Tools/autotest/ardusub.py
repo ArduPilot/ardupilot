@@ -166,6 +166,44 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.watch_altitude_maintained()
         self.disarm_vehicle()
 
+    def RngfndQuality(self):
+        """Check lua Range Finder quality information flow"""
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        ex = None
+        try:
+            self.set_parameters({
+                "SCR_ENABLE": 1,
+                "RNGFND1_TYPE": 36,
+                "RNGFND1_ORIENT": 25,
+                "RNGFND1_MIN_CM": 10,
+                "RNGFND1_MAX_CM": 5000,
+            })
+
+            self.install_example_script_context("rangefinder_quality_test.lua")
+
+            # These string must match those sent by the lua test script.
+            complete_str = "#complete#"
+            failure_str = "!!failure!!"
+
+            self.reboot_sitl()
+
+            self.wait_statustext(complete_str, timeout=20, check_context=True)
+            found_failure = self.statustext_in_collections(failure_str)
+
+            if found_failure is not None:
+                raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        if ex:
+            raise ex
+
     def ModeChanges(self, delta=0.2):
         """Check if alternating between ALTHOLD, STABILIZE and POSHOLD affects altitude"""
         self.wait_ready_to_arm()
@@ -524,6 +562,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         ret.extend([
             self.DiveManual,
             self.AltitudeHold,
+            self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
             self.DiveMission,
