@@ -771,4 +771,27 @@ int lua_print(lua_State *L) {
     return 0;
 }
 
+#if (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+int lua_range_finder_handle_script_msg(lua_State *L) {
+
+    const int args = lua_gettop(L);
+
+    // Arg 1 => self (an instance of rangefinder_backend)
+    // Arg 2 => a float distance
+    // Arg 3 => an optional float signal_quality
+    if (args != 2 and args != 3) {
+        return luaL_argerror(L, args, "expected 1 or 2 arguments");
+    }
+
+    AP_RangeFinder_Backend * ud = *check_AP_RangeFinder_Backend(L, 1);
+    const float distance_m = luaL_checknumber(L, 2);
+    const float signal_quality_pct = args == 3 ? luaL_checknumber(L, 3) : RangeFinder::SIGNAL_QUALITY_UNKNOWN;
+
+    const bool result = ud->handle_script_msg(distance_m, signal_quality_pct);
+    lua_pushboolean(L, result);
+
+    return 1;
+}
+#endif
+
 #endif  // AP_SCRIPTING_ENABLED

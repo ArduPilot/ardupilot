@@ -2429,10 +2429,11 @@ function terrain:enabled() end
 ---@class AP_RangeFinder_Backend_ud
 local AP_RangeFinder_Backend_ud = {}
 
--- Send distance to lua rangefinder backend. Returns false if failed
+-- Send distance and optionally signal_quality to lua rangefinder backend. Returns false if failed
 ---@param distance number
+---@param signal_quality_pct number?
 ---@return boolean
-function AP_RangeFinder_Backend_ud:handle_script_msg(distance) end
+function AP_RangeFinder_Backend_ud:handle_script_msg(distance, signal_quality_pct) end
 
 -- Status of this rangefinder instance
 ---@return integer
@@ -2449,6 +2450,10 @@ function AP_RangeFinder_Backend_ud:orientation() end
 -- Current distance of the sensor instance
 ---@return number
 function AP_RangeFinder_Backend_ud:distance() end
+
+-- Current distance measurement signal_quality of the sensor instance
+---@return number
+function AP_RangeFinder_Backend_ud:signal_quality() end
 
 -- desc
 ---@class rangefinder
@@ -2493,6 +2498,11 @@ function rangefinder:max_distance_cm_orient(orientation) end
 ---@param orientation integer
 ---@return integer
 function rangefinder:distance_cm_orient(orientation) end
+
+-- Current distance measurement signal quality for range finder at this orientation
+---@param orientation integer
+---@return integer
+function rangefinder:signal_quality_pct_orient(orientation) end
 
 -- desc
 ---@param orientation integer
