@@ -2517,14 +2517,71 @@ function terrain:status() end
 ---@return boolean
 function terrain:enabled() end
 
+
+-- RangeFinder state structure
+---@class RangeFinder_State_ud
+local RangeFinder_State_ud = {}
+
+---@return RangeFinder_State_ud
+function RangeFinder_State() end
+
+-- get system time (ms) of last successful update from sensor
+---@return number
+function RangeFinder_State_ud:last_reading() end
+
+-- set system time (ms) of last successful update from sensor
+---@param value number
+function RangeFinder_State_ud:last_reading(value) end
+
+-- get sensor status
+---@return number
+function RangeFinder_State_ud:status() end
+
+-- set sensor status
+---@param value number
+function RangeFinder_State_ud:status(value) end
+
+-- get number of consecutive valid readings (max out at 10)
+---@return number
+function RangeFinder_State_ud:range_valid_count() end
+
+-- set number of consecutive valid readings (max out at 10)
+---@param value number
+function RangeFinder_State_ud:range_valid_count(value) end
+
+-- get distance in meters
+---@return number
+function RangeFinder_State_ud:distance() end
+
+-- set distance in meters
+---@param value number
+function RangeFinder_State_ud:distance(value) end
+
+-- get measurement quality in percent 0-100, -1 -> quality is unknown
+---@return number
+function RangeFinder_State_ud:signal_quality() end
+
+-- set measurement quality in percent 0-100, -1 -> quality is unknown
+---@param value number
+function RangeFinder_State_ud:signal_quality(value) end
+
+-- get voltage in millivolts, if applicable, otherwise 0
+---@return number
+function RangeFinder_State_ud:voltage() end
+
+-- set voltage in millivolts, if applicable, otherwise 0
+---@param value number
+function RangeFinder_State_ud:voltage(value) end
+
+
 -- RangeFinder backend
 ---@class AP_RangeFinder_Backend_ud
 local AP_RangeFinder_Backend_ud = {}
 
--- Send distance to lua rangefinder backend. Returns false if failed
----@param distance number
+-- Send range finder measurement to lua rangefinder backend. Returns false if failed
+---@param state RangeFinder_State_ud|number
 ---@return boolean
-function AP_RangeFinder_Backend_ud:handle_script_msg(distance) end
+function AP_RangeFinder_Backend_ud:handle_script_msg(state) end
 
 -- Status of this rangefinder instance
 ---@return integer
@@ -2541,6 +2598,15 @@ function AP_RangeFinder_Backend_ud:orientation() end
 -- Current distance of the sensor instance
 ---@return number
 function AP_RangeFinder_Backend_ud:distance() end
+
+-- Current distance measurement signal_quality of the sensor instance
+---@return number
+function AP_RangeFinder_Backend_ud:signal_quality() end
+
+-- State of most recent range finder measurment
+---@return RangeFinder_State_ud
+function AP_RangeFinder_Backend_ud:get_state() end
+
 
 -- desc
 ---@class rangefinder
@@ -2585,6 +2651,11 @@ function rangefinder:max_distance_cm_orient(orientation) end
 ---@param orientation integer
 ---@return integer
 function rangefinder:distance_cm_orient(orientation) end
+
+-- Current distance measurement signal quality for range finder at this orientation
+---@param orientation integer
+---@return integer
+function rangefinder:signal_quality_pct_orient(orientation) end
 
 -- desc
 ---@param orientation integer
