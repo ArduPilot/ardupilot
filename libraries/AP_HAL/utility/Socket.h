@@ -57,6 +57,9 @@ public:
     // return the IP address and port of the last received packet
     void last_recv_address(const char *&ip_addr, uint16_t &port) const;
 
+    // return the IP address and port of the last received packet, using caller supplied buffer
+    const char *last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const;
+
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);
 

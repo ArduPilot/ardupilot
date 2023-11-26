@@ -247,6 +247,7 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
 ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
+        errno = EWOULDBLOCK;
         return -1;
     }
     socklen_t len = sizeof(in_addr);
@@ -282,6 +283,19 @@ void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
     ip_addr = inet_ntoa(in_addr.sin_addr);
     port = ntohs(in_addr.sin_port);
+}
+
+/*
+  return the IP address and port of the last received packet, using caller supplied buffer
+ */
+const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const
+{
+    const char *ret = inet_ntop(AF_INET, (void*)&in_addr.sin_addr, ip_addr_buf, buflen);
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    port = ntohs(in_addr.sin_port);
+    return ret;
 }
 
 void SocketAPM::set_broadcast(void) const
@@ -350,13 +364,11 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
         return nullptr;
     }
 
-    int newfd = CALL_PREFIX(accept)(fd, nullptr, nullptr);
+    socklen_t len = sizeof(in_addr);
+    int newfd = CALL_PREFIX(accept)(fd, (sockaddr *)&in_addr, &len);
     if (newfd == -1) {
         return nullptr;
     }
-    // turn off nagle for lower latency
-    int one = 1;
-    CALL_PREFIX(setsockopt)(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     return new SocketAPM(false, newfd);
 }
 
