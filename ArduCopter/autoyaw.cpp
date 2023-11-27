@@ -110,6 +110,10 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
 
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
+        // if both negative relative angle and CCW direction rotate in CCW direction
+        if (is_negative(angle_deg) && (direction < 0)) {
+            direction = 0;
+        }
         _fixed_yaw_offset_cd = angle_deg * 100.0 * (direction >= 0 ? 1.0 : -1.0);
     } else {
         // absolute angle
