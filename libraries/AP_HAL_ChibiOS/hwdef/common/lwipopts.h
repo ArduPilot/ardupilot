@@ -57,6 +57,10 @@
 #define LWIP_STATS_DISPLAY 1
 #define ETHARP_STATS 1
 #define LWIP_IGMP 1
+#define MEMP_NUM_NETCONN 10 // up to 10 sockets
+#define MEMP_NUM_TCP_PCB 10
+#define MEM_LIBC_MALLOC 1
+#define MEMP_MEM_MALLOC 1
 #define DHCP_DEBUG LWIP_DBG_ON
 
 #ifndef LWIP_IPV6
