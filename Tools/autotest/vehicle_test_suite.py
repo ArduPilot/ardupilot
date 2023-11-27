@@ -4268,27 +4268,94 @@ class TestSuite(ABC):
         self.set_parameters({
             "NET_ENABLED": 1,
             "NET_DHCP": 0,
+            "LOG_DARM_RATEMAX": 2, # make small logs
+            # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 15004,
+            "NET_P1_PORT": 16001,
             "NET_P1_IP0": 127,
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
-            "NET_P1_IP3": 1
+            "NET_P1_IP3": 1,
+            # UDP server
+            "NET_P2_TYPE": 2,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16002,
+            "NET_P2_IP0": 0,
+            "NET_P2_IP1": 0,
+            "NET_P2_IP2": 0,
+            "NET_P2_IP3": 0,
+            # TCP client
+            "NET_P3_TYPE": 3,
+            "NET_P3_PROTOCOL": 2,
+            "NET_P3_PORT": 16003,
+            "NET_P3_IP0": 127,
+            "NET_P3_IP1": 0,
+            "NET_P3_IP2": 0,
+            "NET_P3_IP3": 1,
+            # TCP server
+            "NET_P4_TYPE": 4,
+            "NET_P4_PROTOCOL": 2,
+            "NET_P4_PORT": 16004,
+            "NET_P4_IP0": 0,
+            "NET_P4_IP1": 0,
+            "NET_P4_IP2": 0,
+            "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
-        filename = "MAVProxy-downloaded-net-log.BIN"
-        mavproxy = self.start_mavproxy(master=':15004')
-        self.mavproxy_load_module(mavproxy, 'log')
-        mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
-        mavproxy.send("set shownoise 0\n")
-        mavproxy.send("log download latest %s\n" % filename)
-        mavproxy.expect("Finished downloading", timeout=120)
-        self.mavproxy_unload_module(mavproxy, 'log')
-        self.stop_mavproxy(mavproxy)
+        endpoints = [('UDPClient', ':16001') ,
+                     ('UDPServer', 'udpout:127.0.0.1:16002'),
+                     ('TCPClient', 'tcpin:0.0.0.0:16003'),
+                     ('TCPServer', 'tcp:127.0.0.1:16004')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e)
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
+        self.set_parameters({
+            # multicast UDP client
+            "NET_P1_TYPE": 1,
+            "NET_P1_PROTOCOL": 2,
+            "NET_P1_PORT": 14550,
+            "NET_P1_IP0": 239,
+            "NET_P1_IP1": 255,
+            "NET_P1_IP2": 145,
+            "NET_P1_IP3": 50,
+            # Broadcast UDP client
+            "NET_P2_TYPE": 1,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16005,
+            "NET_P2_IP0": 255,
+            "NET_P2_IP1": 255,
+            "NET_P2_IP2": 255,
+            "NET_P2_IP3": 255,
+            })
+        self.reboot_sitl()
+        endpoints = [('UDPMulticast', 'mcast:') ,
+                     ('UDPBroadcast', ':16005')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e)
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
         self.context_pop()
 
     def TestLogDownloadMAVProxyCAN(self, upload_logs=False):
