@@ -140,6 +140,21 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         }    
 }
 
+#if AP_RC_CHANNEL_PROPULSION_FAILED_ENABLED
+void RC_Channel_Plane::do_aux_function_propulsion_failed(AuxSwitchPos ch_flag)
+{
+    switch(ch_flag) {
+    case AuxSwitchPos::HIGH:
+        plane.TECS_controller.set_propulsion_failed_flag(true);
+        break;
+    case AuxSwitchPos::MIDDLE:
+        break;
+    case AuxSwitchPos::LOW:
+        plane.TECS_controller.set_propulsion_failed_flag(false);
+        break;
+    }
+}
+#endif
 
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
@@ -177,7 +192,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
+#if AP_RC_CHANNEL_PROPULSION_FAILED_ENABLED
     case AUX_FUNC::TECS_PROP_FAILED:
+#endif
         break;
 
     case AUX_FUNC::SOARING:
@@ -444,18 +461,11 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         }
         break;
 
+#if AP_RC_CHANNEL_PROPULSION_FAILED_ENABLED
     case AUX_FUNC::TECS_PROP_FAILED:
-        switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            plane.TECS_controller.set_propulsion_failed_flag(true);
-            break;
-        case AuxSwitchPos::MIDDLE:
-            break;
-        case AuxSwitchPos::LOW:
-            plane.TECS_controller.set_propulsion_failed_flag(false);
-            break;
-        }
+        do_aux_function_propulsion_failed(ch_flag);
         break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
