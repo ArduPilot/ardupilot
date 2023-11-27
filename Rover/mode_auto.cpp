@@ -83,13 +83,13 @@ void ModeAuto::update()
         case SubMode::WP:
         {
             // boats loiter once the waypoint is reached
+            bool keep_navigating = true;
             if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
-                start_loiter();
+                keep_navigating = !start_loiter();
+            }
 
-                // update distance to destination
-                _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
-            } else {
-                // update navigation controller
+            // update navigation controller
+            if (keep_navigating) {
                 navigate_to_waypoint();
             }
             break;
