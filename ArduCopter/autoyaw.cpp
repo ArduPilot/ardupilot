@@ -114,9 +114,9 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
     } else {
         // absolute angle
         _fixed_yaw_offset_cd = wrap_180_cd(angle_deg * 100.0 - _yaw_angle_cd);
-        if ( direction < 0 && is_positive(_fixed_yaw_offset_cd) ) {
+        if (direction < 0 && is_positive(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd -= 36000.0;
-        } else if ( direction > 0 && is_negative(_fixed_yaw_offset_cd) ) {
+        } else if (direction > 0 && is_negative(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd += 36000.0;
         }
     }
