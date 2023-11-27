@@ -61,6 +61,8 @@
 #define MEMP_NUM_TCP_PCB 10
 #define MEM_LIBC_MALLOC 1
 #define MEMP_MEM_MALLOC 1
+#define SO_REUSE 1
+#define SO_REUSE_RXTOALL 1
 #define DHCP_DEBUG LWIP_DBG_ON
 
 #ifndef LWIP_IPV6
