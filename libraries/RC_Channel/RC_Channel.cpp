@@ -234,6 +234,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
     // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
     // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
+    // @Values{Plane}: 177:Set TECS Propulsion Failed
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail

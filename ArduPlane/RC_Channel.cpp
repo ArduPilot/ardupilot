@@ -177,6 +177,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
+    case AUX_FUNC::TECS_PROP_FAILED:
         break;
 
     case AUX_FUNC::SOARING:
@@ -440,6 +441,21 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Autotuning not allowed in this mode!");
         } else {
            plane.autotune_enable(false); 
+        }
+        break;
+
+    case AUX_FUNC::TECS_PROP_FAILED:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.TECS_controller.set_propulsion_failed_flag(true);
+            gcs().send_text(MAV_SEVERITY_INFO, "TECS: set 'propulsion failed' flag");
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.TECS_controller.set_propulsion_failed_flag(false);
+            gcs().send_text(MAV_SEVERITY_INFO, "TECS: clear 'propulsion failed' flag");
+            break;
         }
         break;
 
