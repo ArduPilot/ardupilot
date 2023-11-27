@@ -1007,7 +1007,7 @@ def ports_to_try(args):
     if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
         import glob
         for pattern in patterns:
-            portlist += glob.glob(pattern)
+            portlist += sorted(glob.glob(pattern))
     else:
         portlist = patterns
 
