@@ -448,13 +448,11 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.TECS_controller.set_propulsion_failed_flag(true);
-            gcs().send_text(MAV_SEVERITY_INFO, "TECS: set 'propulsion failed' flag");
             break;
         case AuxSwitchPos::MIDDLE:
             break;
         case AuxSwitchPos::LOW:
             plane.TECS_controller.set_propulsion_failed_flag(false);
-            gcs().send_text(MAV_SEVERITY_INFO, "TECS: clear 'propulsion failed' flag");
             break;
         }
         break;

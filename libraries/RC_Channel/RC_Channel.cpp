@@ -769,6 +769,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
     { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
+    { AUX_FUNC::TECS_PROP_FAILED, "TECS Propulsion Failure"},
 };
 
 /* lookup the announcement for switch change */
