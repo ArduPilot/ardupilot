@@ -679,6 +679,7 @@ private:
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
 
+    // Land within Auto state
     enum class State {
         FlyToLocation = 0,
         Descending = 1
