@@ -119,13 +119,9 @@ PB9 UART4_TX UART4
 PB8 UART4_RX UART4
 
 # USART6 (RC input), SERIAL7
-PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
+# PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 PC6 USART6_TX USART6 NODMA
-
-# as an alternative config setup the RX6 pin as a uart. This allows
-# for bi-directional UART based receiver protocols such as FPort
-# without any extra hardware
-PC7 USART6_RX USART6 NODMA ALT(1)
+PC7 USART6_RX USART6 NODMA 
 
 # UART7 (telem1)
 PE7 UART7_RX UART7
