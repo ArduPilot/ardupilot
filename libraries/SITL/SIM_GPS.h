@@ -114,8 +114,8 @@ public:
 #if AP_SIM_GPS_SBP2_ENABLED
         SBP2  =  9,
 #endif
-#if AP_SIM_GPS_GSOF_ENABLED
-        GSOF  = 11, // matches GPS_TYPE
+#if AP_SIM_GPS_TRIMBLE_ENABLED
+        TRIMBLE  = 11, // matches GPS_TYPE
 #endif
 #if AP_SIM_GPS_MSP_ENABLED
         MSP   = 19,

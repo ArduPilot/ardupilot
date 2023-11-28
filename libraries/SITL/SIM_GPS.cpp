@@ -18,7 +18,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 
 #include "SIM_GPS_FILE.h"
-#include "SIM_GPS_GSOF.h"
+#include "SIM_GPS_Trimble.h"
 #include "SIM_GPS_MSP.h"
 #include "SIM_GPS_NMEA.h"
 #include "SIM_GPS_NOVA.h"
@@ -201,9 +201,9 @@ void GPS::check_backend_allocation()
         break;
 #endif
 
-#if AP_SIM_GPS_GSOF_ENABLED
-    case Type::GSOF:
-        backend = new GPS_GSOF(*this, instance);
+#if AP_SIM_GPS_TRIMBLE_ENABLED
+    case Type::TRIMBLE:
+        backend = new GPS_Trimble(*this, instance);
         break;
 #endif
 
