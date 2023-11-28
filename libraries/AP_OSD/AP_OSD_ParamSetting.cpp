@@ -117,7 +117,7 @@ static const char* SERIAL_PROTOCOL_VALUES[] = {
     "FSKY_TX", "LID360", "", "BEACN", "VOLZ", "SBUS", "ESC_TLM", "DEV_TLM", "OPTFLW", "RBTSRV",
     "NMEA", "WNDVNE", "SLCAN", "RCIN", "MGSQRT", "LTM", "RUNCAM", "HOT_TLM", "SCRIPT", "CRSF",
     "GEN", "WNCH", "MSP", "DJI", "AIRSPD", "ADSB", "AHRS", "AUDIO", "FETTEC", "TORQ",
-    "AIS", "CD_ESC", "MSP_DP", "MAV_HL", "TRAMP", "DDS"
+    "AIS", "CD_ESC", "MSP_DP", "MAV_HL", "TRAMP", "DDS", "IMUOUT",
 };
 static_assert(AP_SerialManager::SerialProtocol_NumProtocols == ARRAY_SIZE(SERIAL_PROTOCOL_VALUES), "Wrong size SerialProtocol_NumProtocols");
 
