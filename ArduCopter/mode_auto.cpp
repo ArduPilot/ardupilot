@@ -41,6 +41,9 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
+        // initialise desired speed overrides
+        desired_speed_override = {0, 0, 0};
+
         // set flag to start mission
         waiting_to_start = true;
 
@@ -370,7 +373,16 @@ bool ModeAuto::wp_start(const Location& dest_loc)
                 stopping_point = takeoff_complete_pos.tofloat();
             }
         }
-        wp_nav->wp_and_spline_init(0, stopping_point);
+        float des_speed_xy_cm = is_positive(desired_speed_override.xy) ? (desired_speed_override.xy * 100) : 0;
+        wp_nav->wp_and_spline_init(des_speed_xy_cm, stopping_point);
+
+        // override speeds up and down if necessary
+        if (is_positive(desired_speed_override.up)) {
+            wp_nav->set_speed_up(desired_speed_override.up * 100.0);
+        }
+        if (is_positive(desired_speed_override.down)) {
+            wp_nav->set_speed_down(desired_speed_override.down * 100.0);
+        }
     }
 
     if (!wp_nav->set_wp_destination_loc(dest_loc)) {
@@ -585,18 +597,21 @@ bool ModeAuto::use_pilot_yaw(void) const
 bool ModeAuto::set_speed_xy(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_xy(speed_xy_cms);
+    desired_speed_override.xy = speed_xy_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_up(float speed_up_cms)
 {
     copter.wp_nav->set_speed_up(speed_up_cms);
+    desired_speed_override.up = speed_up_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_down(float speed_down_cms)
 {
     copter.wp_nav->set_speed_down(speed_down_cms);
+    desired_speed_override.down = speed_down_cms * 0.01;
     return true;
 }
 
@@ -1855,10 +1870,13 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
     if (cmd.content.speed.target_ms > 0) {
         if (cmd.content.speed.speed_type == 2)  {
             copter.wp_nav->set_speed_up(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.up = cmd.content.speed.target_ms;
         } else if (cmd.content.speed.speed_type == 3)  {
             copter.wp_nav->set_speed_down(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.down = cmd.content.speed.target_ms;
         } else {
             copter.wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.xy = cmd.content.speed.target_ms;
         }
     }
 }
