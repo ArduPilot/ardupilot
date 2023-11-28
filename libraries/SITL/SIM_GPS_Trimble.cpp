@@ -1,8 +1,8 @@
 #include "SIM_config.h"
 
-#if AP_SIM_GPS_GSOF_ENABLED
+#if AP_SIM_GPS_TRIMBLE_ENABLED
 
-#include "SIM_GPS_GSOF.h"
+#include "SIM_GPS_Trimble.h"
 
 #include <SITL/SITL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -11,7 +11,7 @@
 
 using namespace SITL;
 
-void GPS_GSOF::publish(const GPS_Data *d)
+void GPS_Trimble::publish(const GPS_Data *d)
 {
     // This logic is to populate output buffer only with enabled channels.
     // It also only sends each channel at the configured rate.
@@ -456,7 +456,7 @@ void DCOL_Parser::reset() {
 }
 
 
-void GPS_GSOF::send_gsof(const uint8_t *buf, const uint16_t size)
+void GPS_Trimble::send_gsof(const uint8_t *buf, const uint16_t size)
 {
     // All Trimble "Data Collector" packets, including GSOF, are comprised of three fields:
     // * A fixed-length packet header (dcol_header)
@@ -532,7 +532,7 @@ void GPS_GSOF::send_gsof(const uint8_t *buf, const uint16_t size)
     }
 }
 
-uint64_t GPS_GSOF::gsof_pack_double(const double& src)
+uint64_t GPS_Trimble::gsof_pack_double(const double& src)
 {
     uint64_t dst;
     static_assert(sizeof(src) == sizeof(dst));
@@ -541,7 +541,7 @@ uint64_t GPS_GSOF::gsof_pack_double(const double& src)
     return dst;
 }
 
-uint32_t GPS_GSOF::gsof_pack_float(const float& src)
+uint32_t GPS_Trimble::gsof_pack_float(const float& src)
 {
     uint32_t dst;
     static_assert(sizeof(src) == sizeof(dst));
@@ -550,7 +550,7 @@ uint32_t GPS_GSOF::gsof_pack_float(const float& src)
     return dst;
 }
 
-void GPS_GSOF::update_read() {
+void GPS_Trimble::update_read() {
     // Technically, the max command is slightly larger.
     // This will only slightly slow the response for packets that big.
     char c[MAX_PAYLOAD_SIZE];
@@ -566,4 +566,4 @@ void GPS_GSOF::update_read() {
     }
 }
 
-#endif  // AP_SIM_GPS_GSOF_ENABLED
+#endif  // AP_SIM_GPS_TRIMBLE_ENABLED

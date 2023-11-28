@@ -2,7 +2,7 @@
 
 #include "SIM_config.h"
 
-#if AP_SIM_GPS_GSOF_ENABLED
+#if AP_SIM_GPS_TRIMBLE_ENABLED
 
 #include "SIM_GPS.h"
 
@@ -124,9 +124,9 @@ private:
     void reset();
 };
 
-class GPS_GSOF : public GPS_Backend, public DCOL_Parser {
+class GPS_Trimble : public GPS_Backend, public DCOL_Parser {
 public:
-    CLASS_NO_COPY(GPS_GSOF);
+    CLASS_NO_COPY(GPS_Trimble);
 
     using GPS_Backend::GPS_Backend;
 
@@ -146,4 +146,4 @@ private:
 
 };
 
-#endif  // AP_SIM_GPS_GSOF_ENABLED
+#endif  // AP_SIM_GPS_TRIMBLE_ENABLED
