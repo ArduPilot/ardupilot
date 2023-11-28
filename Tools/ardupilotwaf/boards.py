@@ -79,7 +79,8 @@ class Board:
             ]
             env.DEFINES.update(AP_DDS_ENABLED = 1)
             # check for microxrceddsgen
-            cfg.find_program('microxrceddsgen',mandatory=True)
+            cfg.find_program('microxrceddsgen', mandatory=False)
+            print(cfg.env.MICROXRCEDDSGEN)
         else:
             env.ENABLE_DDS = False
             env.DEFINES.update(AP_DDS_ENABLED = 0)
