@@ -408,8 +408,8 @@ def do_build(opts, frame_options):
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
 
-    if opts.enable_dds:
-        cmd_configure.append("--enable-dds")
+    if opts.disable_dds:
+        cmd_configure.append("--disable-dds")
 
     if opts.disable_networking:
         cmd_configure.append("--disable-networking")
@@ -1330,8 +1330,8 @@ group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",
                      help="IP address of the simulator. Defaults to localhost")
-group_sim.add_option("--enable-dds", action='store_true',
-                     help="Enable the dds client to connect with ROS2/DDS")
+group_sim.add_option("--disable-dds", action='store_true',
+                     help="Disable compilation of the DDS client to connect with ROS2/DDS")
 group_sim.add_option("--disable-networking", action='store_true',
                      help="Disable networking APIs")
 group_sim.add_option("--enable-networking-tests", action='store_true',

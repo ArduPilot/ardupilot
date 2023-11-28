@@ -6,7 +6,7 @@
 set euf -o pipefail
 
 rm -r build
-./waf configure --board sitl --enable-dds
+./waf configure --board sitl
 ./waf plane
 
 GEN_SRC=./build/sitl/libraries/AP_DDS/generated

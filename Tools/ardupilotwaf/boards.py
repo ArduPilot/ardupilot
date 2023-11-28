@@ -71,7 +71,7 @@ class Board:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
         # configurations for XRCE-DDS
-        if cfg.options.enable_dds:
+        if not cfg.options.disable_dds:
             cfg.recurse('libraries/AP_DDS')
             env.ENABLE_DDS = True
             env.AP_LIBRARIES += [
