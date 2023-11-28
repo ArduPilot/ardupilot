@@ -396,3 +396,7 @@
 #ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 0
 #endif
+
+#ifndef HAL_WITH_ESC_TELEM
+#define HAL_WITH_ESC_TELEM 0
+#endif
