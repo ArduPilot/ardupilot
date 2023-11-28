@@ -123,7 +123,7 @@ define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_RC_OUT
 
 # enable ESC control
-define HAL_SUPPORT_RCOUT_SERIAL 1
+define AP_BLHELI_ENABLED 1
 define HAL_WITH_ESC_TELEM 1
 
 # enable GPS
