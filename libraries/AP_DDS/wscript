@@ -3,6 +3,8 @@
 
 import pathlib
 
+AP_DDS_PATH = "libraries/AP_DDS"
+
 
 def configure(cfg):
     extra_src = [
@@ -16,12 +18,6 @@ def configure(cfg):
         'modules/Micro-CDR/src/c/common.c',
     ]
 
-    cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] = []
-    for pattern in extra_src:
-        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
-        for x in s:
-            cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'].append(str(x))
-
     extra_src_inc = [
         'modules/Micro-XRCE-DDS-Client/include',
         'modules/Micro-XRCE-DDS-Client/include/uxr/client',
@@ -29,6 +25,17 @@ def configure(cfg):
         'modules/Micro-CDR/include',
         'modules/Micro-CDR/include/ucdr',
     ]
+
+    if not cfg.env.MICROXRCEDDSGEN:
+        extra_src.append(str(pathlib.PurePath(AP_DDS_PATH, 'generated/*/*/*.c')))
+        extra_src_inc.append(str(pathlib.PurePath(AP_DDS_PATH, "generated")))
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'].append(str(x))
+
     for inc in extra_src_inc:
         cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
 
@@ -45,14 +52,13 @@ def build(bld):
     config_h_in_nodes = [bld.srcnode.make_node(h) for h in config_h_in]
     config_h_nodes = [bld.bldnode.find_or_declare(h[:-3]) for h in config_h_in]
 
-    gen_path = "libraries/AP_DDS"
     extra_bld_inc = [
         'modules/Micro-CDR/include',
         'modules/Micro-XRCE-DDS-Client/include',
-        str(pathlib.PurePath(gen_path, "generated")),
     ]
-    for inc in extra_bld_inc:
-        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
+
+    if bld.env.MICROXRCEDDSGEN:
+        extra_bld_inc.append(str(pathlib.PurePath(AP_DDS_PATH, "generated")))
 
     for i in range(len(config_h_nodes)):
         print(f"building {config_h_nodes[i].abspath()}")
@@ -71,27 +77,31 @@ def build(bld):
             group='dynamic_sources',
         )
 
-    # TODO instead of keeping standard IDL files in the source tree, copy them with "ros2 pkg prefix --share " tools
-    idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
-    idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
+    for inc in extra_bld_inc:
+        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
 
-    for idl in idl_files:
-        idl_path = pathlib.PurePath(idl.abspath())
-        b = idl_path.name
+    if bld.env.MICROXRCEDDSGEN:
+        # TODO instead of keeping standard IDL files in the source tree, copy them with "ros2 pkg prefix --share " tools
+        idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
+        idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(AP_DDS_PATH, "Idl"))).abspath()
 
-        gen_h = idl_path.with_suffix('.h').name
-        gen_c = idl_path.with_suffix('.c').name
+        for idl in idl_files:
+            idl_path = pathlib.PurePath(idl.abspath())
+            b = idl_path.name
 
-        idl_folder = idl_path.parts[-3:-1]
-        dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
-        gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
-        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
-        bld(
-            # build IDL file
-            source=idl,
-            target=gen,
-            rule=gen_cmd,
-            group='dynamic_sources',
-        )
+            gen_h = idl_path.with_suffix('.h').name
+            gen_c = idl_path.with_suffix('.c').name
 
-        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(gen[1])]
+            idl_folder = idl_path.parts[-3:-1]
+            dst_dir = pathlib.PurePath(AP_DDS_PATH, "generated", *idl_folder)
+            gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
+            gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
+            bld(
+                # build IDL file
+                source=idl,
+                target=gen,
+                rule=gen_cmd,
+                group='dynamic_sources',
+            )
+
+            bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(gen[1])]
