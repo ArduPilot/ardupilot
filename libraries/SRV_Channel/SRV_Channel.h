@@ -618,7 +618,7 @@ private:
     static AP_RobotisServo *robotis_ptr;
 #endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
     // support for BLHeli protocol
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;

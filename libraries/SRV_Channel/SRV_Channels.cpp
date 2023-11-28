@@ -59,7 +59,7 @@ AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
 AP_BLHeli *SRV_Channels::blheli_ptr;
 #endif
 
@@ -201,7 +201,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
 #endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
     // @Group: _BLH_
     // @Path: ../AP_BLHeli/AP_BLHeli.cpp
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
@@ -396,7 +396,7 @@ SRV_Channels::SRV_Channels(void)
     robotis_ptr = &robotis;
 #endif // AP_ROBOTISSERVO_ENABLED
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
     blheli_ptr = &blheli;
 #endif
 }
@@ -405,7 +405,7 @@ SRV_Channels::SRV_Channels(void)
 void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 {
     // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
     blheli_ptr->init(motor_mask, mode);
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
@@ -530,7 +530,7 @@ void SRV_Channels::push()
     robotis_ptr->update();
 #endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if AP_BLHELI_ENABLED
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
