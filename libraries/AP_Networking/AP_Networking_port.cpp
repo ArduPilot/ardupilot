@@ -353,9 +353,11 @@ bool AP_Networking::Port::send_receive(void)
         // handle outgoing packets
         uint32_t available = writebuffer->available();
         available = MIN(300U, available);
+#if HAL_GCS_ENABLED
         if (packetise) {
             available = mavlink_packetise(*writebuffer, available);
         }
+#endif
         if (available > 0) {
             uint8_t buf[available];
             auto n = writebuffer->peekbytes(buf, available);
