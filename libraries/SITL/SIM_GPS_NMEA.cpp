@@ -73,7 +73,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      d->have_lock?_sitl->gps_numsats[instance]:3,
                      1.2,
                      d->altitude);
-                     
+
     const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
     const auto heading_rad = d->heading();
