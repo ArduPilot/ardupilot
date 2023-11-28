@@ -714,6 +714,13 @@ private:
         float climb_rate;   // climb rate in m/s. provided by mission command
         uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
+
+    // desired speeds
+    struct {
+        float xy;     // desired speed horizontally in m/s. 0 if unset
+        float up;     // desired speed upwards in m/s. 0 if unset
+        float down;   // desired speed downwards in m/s. 0 if unset
+    } desired_speed_override;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
