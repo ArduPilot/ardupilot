@@ -33,8 +33,9 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#ifdef HAVE_AP_BLHELI_SUPPORT
-#include <AP_BLheli/AP_BLHeli.h>
+#include <AP_BLHeli/AP_BLHeli_config.h>
+#if AP_BLHELI_ENABLED
+#include <AP_BLHeli/AP_BLHeli.h>
 #endif
 #include <math.h>
 
@@ -564,7 +565,7 @@ void AP_Spektrum_Telem::calc_gps_status()
 // prepare ESC information - B/E
 void AP_Spektrum_Telem::calc_esc()
 {
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if AP_BLHELI_ENABLED && 0  // FIXME; use AP::esc_telem()
     AP_BLHeli* blh = AP_BLHeli::get_singleton();
 
     if (blh == nullptr) {
