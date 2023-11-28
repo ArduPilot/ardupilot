@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
@@ -54,6 +55,10 @@
 
 #ifndef AP_SERIALMANAGER_REGISTER_ENABLED
 #define AP_SERIALMANAGER_REGISTER_ENABLED BOARD_FLASH_SIZE > 1024 && (AP_NETWORKING_ENABLED || HAL_ENABLE_DRONECAN_DRIVERS)
+#endif
+
+#ifndef AP_SERIALMANAGER_IMUOUT_ENABLED
+#define AP_SERIALMANAGER_IMUOUT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && AP_INERTIALSENSOR_ENABLED
 #endif
 
 // serial ports registered by AP_Networking will use IDs starting at 21 for the first port
@@ -127,3 +132,8 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
+
+// IMU OUT protocol
+#define AP_SERIALMANAGER_IMUOUT_BAUD           921600
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_TX     2048
