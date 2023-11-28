@@ -266,8 +266,8 @@ submodules at specific revisions.
                  default=False,
                  help="Enables GPS logging")
     
-    g.add_option('--enable-dds', action='store_true',
-                 help="Enable the dds client to connect with ROS2/DDS.")
+    g.add_option('--disable-dds', action='store_true',
+                 help="Disable the DDS client to connect with ROS2/DDS.")
 
     g.add_option('--disable-networking', action='store_true',
                  help="Disable the networking API code")
