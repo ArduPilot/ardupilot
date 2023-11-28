@@ -21,12 +21,12 @@
 
 #pragma once
 
+#include "AP_BLHeli_config.h"
+
+#if AP_BLHELI_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-
-#define HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
@@ -291,4 +291,4 @@ private:
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };
 
-#endif // HAL_SUPPORT_RCOUT_SERIAL
+#endif // AP_BLHELI_ENABLED

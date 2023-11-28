@@ -21,9 +21,11 @@
   betaflight equivalent functions
  */
 
-#include "AP_BLHeli.h"
+#include "AP_BLHeli_config.h"
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if AP_BLHELI_ENABLED
+
+#include "AP_BLHeli.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
@@ -1613,4 +1615,4 @@ void AP_BLHeli::update_telemetry(void)
     }
 }
 
-#endif // HAVE_AP_BLHELI_SUPPORT
+#endif  // AP_BLHELI_ENABLED
