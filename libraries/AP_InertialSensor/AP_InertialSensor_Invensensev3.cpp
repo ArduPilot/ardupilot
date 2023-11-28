@@ -956,6 +956,7 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
         inv3_type = Invensensev3_Type::ICM42670;
         return true;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: whoami filed 1 %u", whoami);
     // check 456 who am i
     whoami = register_read(INV3REG_456_WHOAMI);
     switch (whoami) {
@@ -964,7 +965,7 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
         return true;
     }
     // not a value WHOAMI result
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: whoami filed %u", whoami);
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: whoami filed 2 %u", whoami);
     return false;
 }
 
