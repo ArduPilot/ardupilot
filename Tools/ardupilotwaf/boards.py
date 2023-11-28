@@ -878,13 +878,17 @@ class sitl_periph_gps(sitl):
             AP_CAN_SLCAN_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
             AP_SCRIPTING_ENABLED = 0,
-            HAL_NAVEKF2_AVAILABLE = 0,
             HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
             AP_RTC_ENABLED = 0,
         )
 
+        try:
+            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=1')
+        except ValueError:
+            pass
+        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
 
 class esp32(Board):
     abstract = True
