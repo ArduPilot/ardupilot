@@ -92,20 +92,20 @@ void GPS_NOVA::publish(const GPS_Data *d)
         double vertspd;
         float resv;
     } bestvel {};
-    
+
     const auto gps_tow = gps_time();
-    
+
     header.preamble[0] = 0xaa;
     header.preamble[1] = 0x44;
     header.preamble[2] = 0x12;
     header.headerlength = sizeof(header);
     header.week = gps_tow.week;
     header.tow = gps_tow.ms;
-    
+
     header.messageid = 174;
     header.messagelength = sizeof(psrdop);
     header.sequence += 1;
-    
+
     psrdop.hdop = 1.20;
     psrdop.htdop = 1.20;
     nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&psrdop, sizeof(psrdop));
@@ -114,8 +114,8 @@ void GPS_NOVA::publish(const GPS_Data *d)
     header.messageid = 99;
     header.messagelength = sizeof(bestvel);
     header.sequence += 1;
-    
-    bestvel.horspd = norm(d->speedN, d->speedE);  
+
+    bestvel.horspd = norm(d->speedN, d->speedE);
     bestvel.trkgnd = ToDeg(atan2f(d->speedE, d->speedN));
     bestvel.vertspd = -d->speedD;
 
@@ -125,7 +125,7 @@ void GPS_NOVA::publish(const GPS_Data *d)
     header.messageid = 42;
     header.messagelength = sizeof(bestpos);
     header.sequence += 1;
-    
+
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
     bestpos.hgt = d->altitude;
