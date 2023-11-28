@@ -29,6 +29,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_DDS/AP_DDS_config.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
