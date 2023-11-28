@@ -1,6 +1,7 @@
 #include "Copter.h"
-
+#include "shared_throttle.h"
 #if MODE_AUTO_ENABLED == ENABLED
+
 
 /*
  * Init and run calls for auto flight mode
@@ -22,6 +23,7 @@
 // auto_init - initialise auto controller
 bool ModeAuto::init(bool ignore_checks)
 {
+    sharedData.throttle_input_total = 0.0; // Reset when entering auto mode
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
@@ -968,11 +970,9 @@ void ModeAuto::takeoff_run()
     auto_takeoff_run();
 }
 
-// auto_wp_run - runs the auto waypoint controller
-//      called by auto_run at 100hz or more
 void ModeAuto::wp_run()
 {
-    // if not armed set throttle to zero and exit immediately
+    // safety checks
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
         return;
@@ -984,9 +984,13 @@ void ModeAuto::wp_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // WP_Nav has set the vertical position control targets
+    // Get pilot's desired climb rate from throttle stick input (like in AltHold)
+    float pilot_throttle_input = channel_throttle->get_control_in();
+    float pilot_desired_climb_rate = get_pilot_desired_climb_rate(pilot_throttle_input);
+    float g_pilot_desired_climb_rate = constrain_float(pilot_desired_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    pos_control->update_z_controller_edited(g_pilot_desired_climb_rate);
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());

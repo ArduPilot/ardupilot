@@ -324,6 +324,7 @@ public:
     virtual MISSION_STATE mission_state(const class AP_Mission &mission) const;
     // send a mission_current message for the supplied waypoint
     void send_mission_current(const class AP_Mission &mission, uint16_t seq);
+    void send_mission_item_int(const AP_Mission &mission, uint16_t seq);
 
     // common send functions
     void send_heartbeat(void) const;

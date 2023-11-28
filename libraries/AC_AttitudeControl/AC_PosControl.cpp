@@ -5,6 +5,7 @@
 #include <AP_Motors/AP_Motors.h>    // motors library
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include "/home/solid/Downloads/Extra_Work/Phan/ardupilot/ardupilot/ArduCopter/shared_throttle.h" // Include the header
 
 extern const AP_HAL::HAL& hal;
 
@@ -987,6 +988,83 @@ void AC_PosControl::update_z_controller()
     }
 }
 
+
+void AC_PosControl::update_z_controller_edited(float throttle_input) {
+
+    // check for ekf z-axis position reset
+    handle_ekf_z_reset();
+
+    // Check for z_controller time out
+    if (!is_active_z()) {
+        init_z_controller();
+        if (has_good_timing()) {
+            // call internal error because initialisation has not been done
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
+    }
+    _last_update_z_ticks = AP::scheduler().ticks32();
+
+
+    sharedData.throttle_input_total += (throttle_input * abs(throttle_input) * 0.0002  * 0.02);  // Adjust scaling factor as needed
+
+    // Update the position target based on cumulative throttle input
+    float final_sum_thing = _pos_target.z + sharedData.throttle_input_total;
+
+    // The new position target should be final_sum_thing
+    float pos_target_zf = final_sum_thing;
+
+
+    // Calculate the target velocity correction based on throttle input
+    _vel_target.z = _p_pos_z.update_all(pos_target_zf, _inav.get_position_z_up_cm());
+    _vel_target.z *= AP::ahrs().getControlScaleZ();
+
+
+    _pos_target.z = pos_target_zf;
+
+    // add feed forward component
+    _vel_target.z += _vel_desired.z;
+
+    // Velocity Controller
+    const float curr_vel_z = _inav.get_velocity_z_up_cms();
+    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target.z *= AP::ahrs().getControlScaleZ();
+
+    // add feed forward component
+    _accel_target.z += _accel_desired.z;
+
+    // Acceleration Controller
+    const float z_accel_meas = get_z_accel_cmss();
+
+    // ensure imax is always large enough to overpower hover throttle
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
+    float thr_out;
+    if (_vibe_comp_enabled) {
+        thr_out = get_throttle_with_vibration_override();
+    } else {
+        thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
+        thr_out += _pid_accel_z.get_ff() * 0.001f;
+    }
+    thr_out += _motors.get_throttle_hover();
+
+    // Actuator commands
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+
+    // Check for vertical controller health
+    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
+    _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
+    _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
+
+    // set vertical component of the limit vector
+    if (_motors.limit.throttle_upper) {
+        _limit_vector.z = 1.0f;
+    } else if (_motors.limit.throttle_lower) {
+        _limit_vector.z = -1.0f;
+    } else {
+        _limit_vector.z = 0.0f;
+    }
+}
 
 ///
 /// Accessors
