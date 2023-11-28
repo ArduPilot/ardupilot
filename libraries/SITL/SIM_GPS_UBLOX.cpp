@@ -99,27 +99,27 @@ void GPS_UBlox::publish(const GPS_Data *d)
         uint16_t eDOP;
     } dop {};
     struct PACKED ubx_nav_pvt {
-        uint32_t itow; 
-        uint16_t year; 
-        uint8_t month, day, hour, min, sec; 
-        uint8_t valid; 
-        uint32_t t_acc; 
-        int32_t nano; 
-        uint8_t fix_type; 
-        uint8_t flags; 
-        uint8_t flags2; 
-        uint8_t num_sv; 
-        int32_t lon, lat; 
-        int32_t height, h_msl; 
-        uint32_t h_acc, v_acc; 
-        int32_t velN, velE, velD, gspeed; 
-        int32_t head_mot; 
-        uint32_t s_acc; 
-        uint32_t head_acc; 
-        uint16_t p_dop; 
-        uint8_t reserved1[6]; 
+        uint32_t itow;
+        uint16_t year;
+        uint8_t month, day, hour, min, sec;
+        uint8_t valid;
+        uint32_t t_acc;
+        int32_t nano;
+        uint8_t fix_type;
+        uint8_t flags;
+        uint8_t flags2;
+        uint8_t num_sv;
+        int32_t lon, lat;
+        int32_t height, h_msl;
+        uint32_t h_acc, v_acc;
+        int32_t velN, velE, velD, gspeed;
+        int32_t head_mot;
+        uint32_t s_acc;
+        uint32_t head_acc;
+        uint16_t p_dop;
+        uint8_t reserved1[6];
         uint32_t headVeh;
-        uint8_t reserved2[4]; 
+        uint8_t reserved2[4];
     } pvt {};
     const uint8_t SV_COUNT = 10;
     struct PACKED ubx_nav_svinfo {
@@ -234,20 +234,20 @@ void GPS_UBlox::publish(const GPS_Data *d)
     dop.hDOP = 121;
     dop.nDOP = 65535;
     dop.eDOP = 65535;
-    
+
     pvt.itow = gps_tow.ms;
-    pvt.year = 0; 
+    pvt.year = 0;
     pvt.month = 0;
     pvt.day = 0;
     pvt.hour = 0;
     pvt.min = 0;
-    pvt.sec = 0; 
+    pvt.sec = 0;
     pvt.valid = 0; // invalid utc date
-    pvt.t_acc = 0; 
-    pvt.nano = 0; 
+    pvt.t_acc = 0;
+    pvt.nano = 0;
     pvt.fix_type = d->have_lock? 0x3 : 0;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
-    pvt.flags2 =0; 
+    pvt.flags2 =0;
     pvt.num_sv = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
@@ -258,11 +258,11 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.velN = 1000.0f * d->speedN;
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
-    pvt.gspeed = norm(d->speedN, d->speedE) * 1000; 
-    pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5; 
-    pvt.s_acc = 40; 
-    pvt.head_acc = 38 * 1.0e5; 
-    pvt.p_dop = 65535; 
+    pvt.gspeed = norm(d->speedN, d->speedE) * 1000;
+    pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5;
+    pvt.s_acc = 40;
+    pvt.head_acc = 38 * 1.0e5;
+    pvt.p_dop = 65535;
     memset(pvt.reserved1, '\0', ARRAY_SIZE(pvt.reserved1));
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));

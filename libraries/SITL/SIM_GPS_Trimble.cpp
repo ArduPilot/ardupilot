@@ -12,7 +12,7 @@
 using namespace SITL;
 
 void GPS_GSOF::publish(const GPS_Data *d)
-{    
+{
     // This logic is to populate output buffer only with enabled channels.
     // It also only sends each channel at the configured rate.
     const uint64_t now = AP_HAL::millis();
@@ -98,7 +98,7 @@ void GPS_GSOF::publish(const GPS_Data *d)
                 bootcount
             };
             static_assert(sizeof(gsof_pos_time) - (sizeof(gsof_pos_time::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_time::RECORD_LEN)) == GSOF_POS_TIME_LEN);
-            
+
             payload_sz += sizeof(pos_time);
             memcpy(&buf[offset], &pos_time, sizeof(pos_time));
             offset += sizeof(pos_time);
@@ -126,8 +126,8 @@ void GPS_GSOF::publish(const GPS_Data *d)
                 gsof_pack_double(d->longitude * DEG_TO_RAD_DOUBLE),
                 gsof_pack_double(static_cast<double>(d->altitude))
             };
-            static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN); 
-            
+            static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN);
+
             payload_sz += sizeof(pos);
             memcpy(&buf[offset], &pos, sizeof(pos));
             offset += sizeof(pos);
@@ -154,7 +154,7 @@ void GPS_GSOF::publish(const GPS_Data *d)
                 RESERVED_6 = 1U << 6,
                 RESERVED_7 = 1U << 7,
             };
-            uint8_t vel_flags {0};   
+            uint8_t vel_flags {0};
             if(d->have_lock) {
                 vel_flags |= uint8_t(VEL_FIELDS::VALID);
                 vel_flags |= uint8_t(VEL_FIELDS::CONSECUTIVE_MEASUREMENTS);
@@ -162,7 +162,7 @@ void GPS_GSOF::publish(const GPS_Data *d)
             }
 
             const struct PACKED gsof_vel {
-                const uint8_t OUTPUT_RECORD_TYPE; 
+                const uint8_t OUTPUT_RECORD_TYPE;
                 const uint8_t RECORD_LEN;
                 // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Velocity%20flags
                 uint8_t flags;
@@ -194,7 +194,7 @@ void GPS_GSOF::publish(const GPS_Data *d)
             // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_PDOP.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____12
             constexpr uint8_t GSOF_DOP_LEN = 0x10;
             const struct PACKED gsof_dop {
-                const uint8_t OUTPUT_RECORD_TYPE { uint8_t(Gsof_Msg_Record_Type::PDOP_INFO) }; 
+                const uint8_t OUTPUT_RECORD_TYPE { uint8_t(Gsof_Msg_Record_Type::PDOP_INFO) };
                 const uint8_t RECORD_LEN { GSOF_DOP_LEN };
                 uint32_t pdop = htobe32(1);
                 uint32_t hdop = htobe32(1);
@@ -223,7 +223,7 @@ void GPS_GSOF::publish(const GPS_Data *d)
             // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_SIGMA.html
             constexpr uint8_t GSOF_POS_SIGMA_LEN = 0x26;
             const struct PACKED gsof_pos_sigma {
-                const uint8_t OUTPUT_RECORD_TYPE { uint8_t(Gsof_Msg_Record_Type::POSITION_SIGMA_INFO) }; 
+                const uint8_t OUTPUT_RECORD_TYPE { uint8_t(Gsof_Msg_Record_Type::POSITION_SIGMA_INFO) };
                 const uint8_t RECORD_LEN { GSOF_POS_SIGMA_LEN };
                 uint32_t pos_rms = htobe32(0);
                 uint32_t sigma_e = htobe32(0);
@@ -365,7 +365,7 @@ bool DCOL_Parser::parse_cmd_appfile() {
     if (expected_payload_length < min_cmd_appfile_sz) {
         return false;
     }
-    
+
     // For now, ignore appfile_trans_num, return success regardless.
     // If the driver doesn't send the right value, it's not clear what the behavior is supposed to be.
     // Also would need to handle re-sync.
@@ -475,7 +475,7 @@ void GPS_GSOF::send_gsof(const uint8_t *buf, const uint16_t size)
     static uint8_t TRANSMISSION_NUMBER = 0; // Functionally, this is a sequence number
     // Most messages, even GSOF49, only take one page. For SIM, assume it.
     assert(size < 0xFA); // GPS SIM doesn't yet support paging
-    constexpr uint8_t PAGE_INDEX = 0; 
+    constexpr uint8_t PAGE_INDEX = 0;
     constexpr uint8_t MAX_PAGE_INDEX = 0;
     const uint8_t gsof_header[3] = {
         TRANSMISSION_NUMBER,
@@ -496,7 +496,7 @@ void GPS_GSOF::send_gsof(const uint8_t *buf, const uint16_t size)
     // This aligns with manual's idea of data bytes:
     // "Each message begins with a 4-byte header, followed by the bytes of data in each packet. The packet ends with a 2-byte trailer."
     // Thus, for this implementation with single-page single-record per DCOL packet,
-    // the length is simply the sum of data packet size, the gsof_header size.    
+    // the length is simply the sum of data packet size, the gsof_header size.
     const uint8_t length = size + sizeof(gsof_header);
     const uint8_t dcol_header[4] {
         STX,
