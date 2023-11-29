@@ -221,4 +221,8 @@ define HAL_LANDING_DEEPSTALL_ENABLED 0
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
+# no payload place support.  It's lucky to lift itself:
+define AC_PAYLOAD_PLACE_ENABLED 0
+define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
+
 AUTOBUILD_TARGETS Copter
