@@ -7,6 +7,7 @@
 #include "AP_Networking_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -254,6 +255,25 @@ uint32_t AP_Networking::get_netmask_active() const
 uint32_t AP_Networking::get_gateway_active() const
 {
     return backend?backend->activeSettings.gw:0;
+}
+
+/*
+  wait for networking to be active
+ */
+void AP_Networking::startup_wait(void) const
+{
+    if (hal.scheduler->in_main_thread()) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay(100);
+    }
+#if AP_NETWORKING_BACKEND_CHIBIOS
+    do {
+        hal.scheduler->delay(250);
+    } while (get_ip_active() == 0);
+#endif
 }
 
 AP_Networking *AP_Networking::singleton;
