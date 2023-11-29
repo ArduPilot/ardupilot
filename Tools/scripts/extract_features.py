@@ -236,6 +236,7 @@ class ExtractFeatures(object):
             ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
+            ('AP_DDS_ENABLED', 'AP_DDS_Client::main_loop'),
         ]
 
     def progress(self, msg):

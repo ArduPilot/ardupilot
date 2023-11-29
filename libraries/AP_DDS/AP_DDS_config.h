@@ -4,7 +4,7 @@
 #include <AP_Networking/AP_Networking_Config.h>
 
 #ifndef AP_DDS_ENABLED
-#define AP_DDS_ENABLED 1
+#define AP_DDS_ENABLED 0
 #endif
 
 // UDP only on SITL for now
