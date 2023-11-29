@@ -62,10 +62,7 @@ public:
         uint8_t primary_imu_index;
         int8_t primary_core_index;
 
-        bool get_eulers(Vector3f &ret) const {
-            ret = eulers;
-            return attitude_valid;
-        }
+        bool get_eulers(Vector3f &ret) const;
 
         Matrix3f dcm_matrix;
         Quaternion quat;
