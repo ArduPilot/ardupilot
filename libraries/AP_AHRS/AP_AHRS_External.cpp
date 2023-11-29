@@ -24,7 +24,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.quat.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
-    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
     results.gyro_drift.zero();
     if (!extahrs.get_gyro(results.gyro_estimate)) {

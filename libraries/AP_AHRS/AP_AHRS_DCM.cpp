@@ -128,10 +128,6 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.primary_imu_index = AP::ins().get_primary_gyro();
 
-    results.roll_rad = roll;
-    results.pitch_rad = pitch;
-    results.yaw_rad = yaw;
-
     results.dcm_matrix = _body_dcm_matrix;
     results.quat.from_rotation_matrix(_dcm_matrix);
     results.attitude_valid = true;

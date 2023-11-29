@@ -1256,10 +1256,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // DCM is secondary
-        eulers[0] = dcm_estimates.roll_rad;
-        eulers[1] = dcm_estimates.pitch_rad;
-        eulers[2] = dcm_estimates.yaw_rad;
-        return dcm_estimates.attitude_valid;
+        return dcm_estimates.get_eulers(eulers);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1272,10 +1269,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // EKF3 is secondary
-        eulers[0] = ekf3_estimates.roll_rad;
-        eulers[1] = ekf3_estimates.pitch_rad;
-        eulers[2] = ekf3_estimates.yaw_rad;
-        return ekf3_estimates.attitude_valid;
+        return ekf3_estimates.get_eulers(eulers);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -1287,9 +1281,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL: {
         // External is secondary
-        eulers[0] = external_estimates.roll_rad;
-        eulers[1] = external_estimates.pitch_rad;
-        eulers[2] = external_estimates.yaw_rad;
+        UNUSED_RESULT(external_estimates.get_eulers(eulers);
 //        return external_estimates.attitude_valid;
         return true;
     }

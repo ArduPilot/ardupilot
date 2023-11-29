@@ -62,9 +62,11 @@ public:
         uint8_t primary_imu_index;
         int8_t primary_core_index;
 
-        float roll_rad;
-        float pitch_rad;
-        float yaw_rad;
+        bool get_eulers(Vector3f &ret) const {
+            ret = eulers;
+            return attitude_valid;
+        }
+
         Matrix3f dcm_matrix;
         Quaternion quat;
 
@@ -136,10 +138,17 @@ public:
             _controlScaleXY = controlScaleXY;
         }
 
+        // a method call to update derived values:
+        void update_derived_values();
+
     private:
 
         Vector3f velocity_NED;
         bool velocity_NED_valid;
+
+        // eulers are calculated as needed:
+        Vector3f eulers;
+        bool eulers_valid;
 
         // A derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
