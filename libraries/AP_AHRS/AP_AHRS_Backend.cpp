@@ -146,7 +146,7 @@ void AP_AHRS::update_trig(void)
               _sin_roll, _sin_pitch, _sin_yaw);
 }
 
-bool AP_AHRS_Backend::get_eulers(Vector3f &ret) const
+bool AP_AHRS_Backend::Estimates::get_eulers(Vector3f &ret) const
 {
     ret = eulers;
     return attitude_valid;
