@@ -524,9 +524,11 @@ void AP_AHRS::update(bool skip_ins_update)
  */
 void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results)
 {
-    roll = results.roll_rad;
-    pitch = results.pitch_rad;
-    yaw = results.yaw_rad;
+    Vector3f eulers;
+    UNUSED_RESULT(results.get_eulers(eulers));
+    roll = eulers[0];
+    pitch = eulers[1];
+    yaw = eulers[2];
 
     state.dcm_matrix = results.dcm_matrix;
 
@@ -696,10 +698,6 @@ void AP_AHRS_NavEKF3::get_results(Estimates &results)
 {
             Vector3f eulers;
             EKF3.getRotationBodyToNED(results.dcm_matrix);
-            EKF3.getEulerAngles(eulers);
-            results.roll_rad  = eulers.x;
-            results.pitch_rad = eulers.y;
-            results.yaw_rad   = eulers.z;
             EKF3.getQuaternion(results.quat);
             results.attitude_valid = _ekf3_started;
 
@@ -1281,7 +1279,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL: {
         // External is secondary
-        UNUSED_RESULT(external_estimates.get_eulers(eulers);
+        UNUSED_RESULT(external_estimates.get_eulers(eulers));
 //        return external_estimates.attitude_valid;
         return true;
     }
