@@ -40,10 +40,7 @@ void AP_Networking::start_tests(void)
  */
 void AP_Networking::test_UDP_client(void)
 {
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay(100);
-    }
-    hal.scheduler->delay(1000);
+    startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
     auto *sock = new SocketAPM(true);
@@ -75,10 +72,7 @@ void AP_Networking::test_UDP_client(void)
  */
 void AP_Networking::test_TCP_client(void)
 {
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay(100);
-    }
-    hal.scheduler->delay(1000);
+    startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
     auto *sock = new SocketAPM(false);
@@ -110,10 +104,7 @@ void AP_Networking::test_TCP_client(void)
  */
 void AP_Networking::test_TCP_discard(void)
 {
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay(100);
-    }
-    hal.scheduler->delay(1000);
+    startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: starting");
     const char *dest = param.test_ipaddr.get_str();
     auto *sock = new SocketAPM(false);
