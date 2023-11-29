@@ -35,8 +35,10 @@ uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
-// checksum used by SPORT/FPort
-uint8_t crc_sum8(const uint8_t *p, uint8_t len);
+// checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
+// sum, then adds those two bytes together.  Returns the complement of
+// the final sum.
+uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len);
 
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
