@@ -171,22 +171,11 @@ void AP_Networking::Port::tcp_client_init(void)
 }
 
 /*
-  wait for networking stack to be up
- */
-void AP_Networking::Port::wait_startup(void)
-{
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay(100);
-    }
-    hal.scheduler->delay(1000);
-}
-
-/*
   update a UDP client
  */
 void AP_Networking::Port::udp_client_loop(void)
 {
-    wait_startup();
+    AP::network().startup_wait();
 
     const char *dest = ip.get_str();
     if (!sock->connect(dest, port.get())) {
@@ -214,7 +203,7 @@ void AP_Networking::Port::udp_client_loop(void)
  */
 void AP_Networking::Port::udp_server_loop(void)
 {
-    wait_startup();
+    AP::network().startup_wait();
 
     const char *addr = ip.get_str();
     if (!sock->bind(addr, port.get())) {
@@ -241,7 +230,7 @@ void AP_Networking::Port::udp_server_loop(void)
  */
 void AP_Networking::Port::tcp_server_loop(void)
 {
-    wait_startup();
+    AP::network().startup_wait();
 
     const char *addr = ip.get_str();
     if (!listen_sock->bind(addr, port.get()) || !listen_sock->listen(1)) {
@@ -285,7 +274,7 @@ void AP_Networking::Port::tcp_server_loop(void)
  */
 void AP_Networking::Port::tcp_client_loop(void)
 {
-    wait_startup();
+    AP::network().startup_wait();
 
     close_on_recv_error = true;
 

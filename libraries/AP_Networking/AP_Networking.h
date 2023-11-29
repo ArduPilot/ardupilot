@@ -144,6 +144,9 @@ public:
         param.gwaddr.set_uint32(gw);
     }
 
+    // wait in a thread for network startup
+    void startup_wait(void) const;
+
     // helper functions to convert between 32bit IP addresses and null terminated strings and back
     static uint32_t convert_str_to_ip(const char* ip_str);
     static const char* convert_ip_to_str(uint32_t ip);
@@ -211,7 +214,6 @@ private:
             return false;
         }
 
-        void wait_startup();
         void udp_client_init(void);
         void udp_server_init(void);
         void tcp_server_init(void);
