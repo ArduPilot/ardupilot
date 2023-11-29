@@ -7,6 +7,10 @@
 #define HAL_GCS_ENABLED 1
 #endif
 
+#ifndef HAL_MAVLINK_BINDINGS_ENABLED
+#define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
+#endif
+
 // BATTERY2 is slated to be removed:
 #ifndef AP_MAVLINK_BATTERY2_ENABLED
 #define AP_MAVLINK_BATTERY2_ENABLED 1
@@ -73,4 +77,12 @@
 
 #ifndef AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
 #define AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED HAL_GCS_ENABLED
+#endif
+
+// GCS should be using MISSION_REQUEST_INT instead; this is a waste of
+// flash.  MISSION_REQUEST was deprecated in June 2020.  We started
+// sending warnings to the GCS in Sep 2022 if this command was used.
+// Copter 4.4.0 sends this warning.
+#ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
+#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
 #endif

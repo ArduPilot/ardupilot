@@ -35,9 +35,6 @@
 #endif
 #endif
 
-#ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED 1
-#endif
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif

@@ -248,6 +248,7 @@ public:
         PLANE_AUTO_LANDING_ABORT = 173, // Abort Glide-slope or VTOL landing during payload place or do_land type mission items
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
+        VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
 
 
         // inputs from 200 will eventually used to replace RCMAP
@@ -479,7 +480,7 @@ public:
 
     // returns a mask indicating which channels have overrides.  Bit 0
     // is RC channel 1.  Beware this is not a cheap call.
-    static uint16_t get_override_mask();
+    uint16_t get_override_mask() const;
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();

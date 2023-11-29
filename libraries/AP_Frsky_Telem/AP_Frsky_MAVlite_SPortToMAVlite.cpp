@@ -20,7 +20,7 @@ void AP_Frsky_MAVlite_SPortToMAVlite::update_checksum(const uint8_t c)
 }
 
 /*
- Parses sport packets and if successfull fills the rxmsg mavlite struct
+ Parses sport packets and if successful fills the rxmsg mavlite struct
  */
 bool AP_Frsky_MAVlite_SPortToMAVlite::process(AP_Frsky_MAVlite_Message &rxmsg, const AP_Frsky_SPort::sport_packet_t &packet)
 {

@@ -68,6 +68,14 @@
     #endif
 #endif
 
+#ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
+#define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
+#endif
+
+#ifndef HAL_PERIPH_CAN_MIRROR
+#define HAL_PERIPH_CAN_MIRROR 0
+#endif
+
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -100,7 +108,6 @@ struct CanardRxTransfer;
 #endif
 #endif
 
-
 class AP_Periph_FW {
 public:
     AP_Periph_FW();
@@ -130,6 +137,7 @@ public:
     void can_airspeed_update();
     void can_rangefinder_update();
     void can_battery_update();
+    void can_battery_send_cells(uint8_t instance);
     void can_proximity_update();
     void can_buzzer_update(void);
     void can_safety_button_update(void);
@@ -228,6 +236,7 @@ public:
     struct {
         mavlink_message_t msg;
         mavlink_status_t status;
+        uint32_t last_heartbeat_ms;
     } adsb;
 #endif
 
@@ -350,6 +359,10 @@ public:
     AP_Networking networking;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RTC
+    AP_RTC rtc;
+#endif
+
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
@@ -358,13 +371,26 @@ public:
 
     static const AP_Param::Info var_info[];
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    uint32_t last_efi_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_MAG
     uint32_t last_mag_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_GPS
     uint32_t last_gps_update_ms;
     uint32_t last_gps_yaw_ms;
+#endif
     uint32_t last_relposheading_ms;
+#ifdef HAL_PERIPH_ENABLE_BARO
     uint32_t last_baro_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
     uint32_t last_airspeed_update_ms;
+#endif
+#ifdef HAL_PERIPH_ENABLE_GPS
     bool saw_gps_lock_once;
+#endif
 
     static AP_Periph_FW *_singleton;
 
@@ -435,6 +461,9 @@ public:
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);
     void processRx(void);
+#if HAL_PERIPH_CAN_MIRROR
+    void processMirror(void);
+#endif // HAL_PERIPH_CAN_MIRROR
     void cleanup_stale_transactions(uint64_t &timestamp_usec);
     void update_rx_protocol_stats(int16_t res);
     void node_status_send(void);
@@ -463,9 +492,9 @@ public:
 
 #if AP_SIM_ENABLED
     SITL::SIM sitl;
+#endif
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
-#endif
 #endif
 };
 

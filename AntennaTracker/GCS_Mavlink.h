@@ -14,7 +14,7 @@ public:
 protected:
 
     // telem_delay is not used by Tracker but is pure virtual, thus
-    // this implementaiton.  it probably *should* be used by Tracker,
+    // this implementation.  it probably *should* be used by Tracker,
     // as currently Tracker may brick XBees
     uint32_t telem_delay() const override { return 0; }
 

@@ -484,7 +484,7 @@ void AC_AutoTune_Multi::report_final_gains(AxisType test_axis) const
     }
 }
 
-// report gain formating helper
+// report gain formatting helper
 void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const
 {
     gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);

@@ -84,7 +84,7 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ```
 
 > :warning: **If you have installed FastDDS or FastDDSGen globally on your system**:
-eProsima's libraries and the packaging system in Ardupilot are not determistic in this scenario.
+eProsima's libraries and the packaging system in Ardupilot are not deterministic in this scenario.
 You may experience the wrong version of a library brought in, or runtime segfaults.
 For now, avoid having simultaneous local and global installs.
 If you followed the [global install](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#global-installation)
@@ -139,7 +139,7 @@ Follow the steps to use the microROS Agent
   sudo apt install ros-humble-geographic-msgs
   ```
 
-- Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
+- Install and run the microROS agent (as described here). Make sure to use the `humble` branch.
   - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
 
     - Do "Installing ROS 2 and the micro-ROS build system"
@@ -200,7 +200,7 @@ You should be able to see the agent here and view the data output.
 
 ```bash
 $ ros2 node list
-/Ardupilot_DDS_XRCE_Client
+/ardupilot_dds
 ```
 
 ```bash
@@ -321,7 +321,7 @@ provided a few rules are followed when defining the entries in
 
 #### ROS 2 message and service interface types
 
-ROS 2 message and interface defintions are mangled by the `rosidl_adapter` when
+ROS 2 message and interface definitions are mangled by the `rosidl_adapter` when
 mapping from ROS 2 to DDS to avoid naming conflicts in the C/C++ libraries.
 The ROS 2 object `namespace::Struct` is mangled to `namespace::dds_::Struct_`
 for DDS. The table below provides some example mappings: 

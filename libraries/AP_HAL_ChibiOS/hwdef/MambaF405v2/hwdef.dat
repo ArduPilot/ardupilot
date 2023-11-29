@@ -18,7 +18,8 @@ OSCILLATOR_HZ 8000000
 # board voltage
 STM32_VDD 330U
 
-STM32_ST_USE_TIMER 5
+STM32_ST_USE_TIMER 4
+define CH_CFG_ST_RESOLUTION 16
 
 # order of I2C buses
 I2C_ORDER I2C1
@@ -40,32 +41,40 @@ PA9 USART1_TX USART1
 
 # Alt config to allow RCIN on UART
 PA10 USART1_RX USART1 ALT(1)
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
 
-# SBUS inversion control pin, active high
-PC0 USART1_RXINV OUTPUT LOW GPIO(78) POL(1)
+# SBUS inversion control pin, active low
+PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
 
-# USART3
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+
+# USART3 (VTX)
 PB10 USART3_TX USART3
-PB11 USART3_RX USART3 NODMA
+PB11 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Tramp
 
-# USART6
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+
+# USART6 (ESC Telemetry)
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_ESCTelemetry
 
 # The pins for SWD debugging with a STlinkv2 or black-magic probe (not tested)
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 # ADC
-PC1 BAT_VOLT_SENS ADC1 SCALE(1)
-PC2 RSSI_IN ADC1
-PC3 BAT_CURR_SENS ADC1 SCALE(1)
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 RSSI_ADC ADC1
+PC3 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 # PWM output. 1 - 4 on ESC header
-PA3 TIM2_CH4 TIM2 PWM(1) GPIO(50)
+PA3 TIM2_CH4 TIM2 PWM(1) GPIO(50) BIDIR
 PB0 TIM3_CH3 TIM3 PWM(2) GPIO(51)
 PB1 TIM3_CH4 TIM3 PWM(3) GPIO(52) BIDIR
-PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53) BIDIR
+PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53)
 
 # Board LEDs
 PB5 LED_BLUE OUTPUT LOW GPIO(1)
@@ -74,13 +83,15 @@ define HAL_GPIO_A_LED_PIN 1
 define HAL_GPIO_B_LED_PIN 2
 
 # External LEDs
-PA0 LED_EXT1 OUTPUT GPIO(30)
+PA0 TIM5_CH1 TIM5 PWM(5) GPIO(54)
 
 # Buzzer
 PA8 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
 
-
+# Camera control
+PB9 CAM_C OUTPUT LOW GPIO(81)
+define RELAY2_PIN_DEFAULT 81
 
 # Note that this board needs PULLUP on I2C pins
 PB6 I2C1_SCL I2C1 PULLUP
@@ -142,11 +153,12 @@ FLASH_RESERVE_START_KB 64
 # define default battery setup
 define HAL_BATT_VOLT_PIN 11
 define HAL_BATT_CURR_PIN 13
-define HAL_BATT_VOLT_SCALE 12
-define HAL_BATT_CURR_SCALE 39
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 25.0
+define HAL_BATT_MONITOR_DEFAULT 4
 
 # Analog RSSI pin (also could be used as analog airspeed input)
-define BOARD_RSSI_ANA_PIN 1
+define BOARD_RSSI_ANA_PIN 12
 
 # Setup for OSD
 define OSD_ENABLED 1
@@ -154,9 +166,7 @@ define HAL_OSD_TYPE_DEFAULT 1
 # Font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-# To complementary channels work we define this
-#define STM32_PWM_USE_ADVANCED TRUE
+DMA_PRIORITY TIM2* TIM3*
 
 # minimal drivers to reduce flash usage
-include ../include/minimal.inc
-include ../include/no_bootloader_DFU.inc
+include ../include/minimize_fpv_osd.inc

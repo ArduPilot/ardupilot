@@ -114,6 +114,13 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Roll axis rate controller PD sum maximum
+    // @Description: Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
 
     AP_GROUPEND

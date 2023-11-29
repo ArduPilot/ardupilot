@@ -53,7 +53,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 
 uint32_t GCS_Rover::custom_mode() const
 {
-    return rover.control_mode->mode_number();
+    return (uint32_t)rover.control_mode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
@@ -531,7 +531,9 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
+#if AP_FENCE_ENABLED
     MSG_FENCE_STATUS,
+#endif
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
@@ -564,8 +566,10 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY_STATUS,
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
     MSG_OPTICAL_FLOW,
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if AP_RPM_ENABLED

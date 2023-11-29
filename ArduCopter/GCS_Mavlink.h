@@ -18,7 +18,7 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
@@ -33,12 +33,11 @@ protected:
     void send_position_target_local_ned() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
-    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 #if HAL_MOUNT_ENABLED
     MAV_RESULT handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 #endif
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
-    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
 
@@ -98,13 +97,21 @@ private:
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
 
+    MAV_RESULT handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet);
 
 #if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet);
 #endif
+
+    bool mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const override;
+
+    MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet);
 
 #if AP_WINCH_ENABLED
     MAV_RESULT handle_MAV_CMD_DO_WINCH(const mavlink_command_int_t &packet);

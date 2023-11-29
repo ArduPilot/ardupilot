@@ -530,7 +530,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     // The reason for not just using the baro temperature is it tends to read high,
     // often 30 degrees above the actual temperature. That means the
     // EAS2TAS tends to be off by quite a large margin, as well as
-    // the calculation of altitude difference betweeen two pressures
+    // the calculation of altitude difference between two pressures
     // reporting a high temperature will cause the aircraft to
     // estimate itself as flying higher then it actually is.
     return MIN(get_temperature(instance), INTERNAL_TEMPERATURE_CLAMP);
@@ -583,7 +583,7 @@ void AP_Baro::init(void)
 {
     init_done = true;
 
-    // always set field elvation to zero on reboot in the case user
+    // always set field elevation to zero on reboot in the case user
     // fails to update.  TBD automate sanity checking error bounds on
     // on previously saved value at new location etc.
     if (!is_zero(_field_elevation)) {

@@ -166,3 +166,19 @@ values. Parameters will also be reverted if you disarm before saving.
 
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
+
+# Using a Two Position Switch
+
+Some transitters only have 2 position switches, with no 3 position
+switches available. To support quicktune with a 2 position switch
+please set the following:
+
+ - set QUIK_OPTIONS to 1 to indicate the use of a 2 position switch
+ - set QUIK_AUTO_SAVE to 10 to automatically save the tune 10 seconds after tuning is done
+
+with these two options the tuning will start when the switch gives a
+PWM value of over 1800. Ten seconds after tuning is complete the tune
+will automatically save.
+
+
+

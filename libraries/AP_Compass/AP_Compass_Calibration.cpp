@@ -451,6 +451,9 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
     return result;
 }
 
+#endif // COMPASS_CAL_ENABLED
+
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 /*
   get mag field with the effects of offsets, diagonals and
   off-diagonals removed
@@ -461,8 +464,8 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
     field = get_field(instance);
 
 #if AP_COMPASS_DIAGONALS_ENABLED
-    // form eliptical correction matrix and invert it. This is
-    // needed to remove the effects of the eliptical correction
+    // form elliptical correction matrix and invert it. This is
+    // needed to remove the effects of the elliptical correction
     // when calculating new offsets
     const Vector3f &diagonals = get_diagonals(instance);
     if (!diagonals.is_zero()) {
@@ -572,5 +575,4 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     return MAV_RESULT_ACCEPTED;
 }
 
-
-#endif // COMPASS_CAL_ENABLED
+#endif  // AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED

@@ -18,6 +18,10 @@
  */
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_RTC/JitterCorrection.h>
@@ -156,6 +160,9 @@ protected:
     void log_data(const uint8_t *data, uint16_t length);
 #endif
 
+    // set alt in location, honouring GPS driver option for ellipsoid height
+    void set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm);
+
 private:
     // itow from previous message
     uint64_t _pseudo_itow;
@@ -177,3 +184,5 @@ private:
 #endif
 
 };
+
+#endif  // AP_GPS_ENABLED

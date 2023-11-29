@@ -415,9 +415,9 @@ AP_GPS_SBF::process_message(void)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
             state.have_undulation = true;
             state.undulation = -temp.Undulation;
+            set_alt_amsl_cm(state, ((float)temp.Height - temp.Undulation) * 1e2f);
         }
 
         if (temp.NrSV != 255) {

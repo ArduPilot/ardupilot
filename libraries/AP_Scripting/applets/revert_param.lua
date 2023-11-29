@@ -57,6 +57,8 @@ local PID_prefixes = { "_RAT_RLL_", "_RAT_PIT_", "_RAT_YAW_" }
 local PID_suffixes = { "FF", "P", "I", "D", "IMAX", "FLTD", "FLTE", "FLTT", "SMAX" }
 local angle_axes = { "RLL", "PIT", "YAW" }
 local PSC_types = { "ACCZ", "VELZ", "POSZ", "VELXY", "POSXY" }
+local OTHER_PARAMS = { "INS_GYRO_FILTER", "INS_ACCEL_FILTER" }
+
 if PREV_ENABLE:get() == 0 then
    return
 end
@@ -101,6 +103,11 @@ for _, psc in ipairs(PSC_prefixes) do
          add_param(psc .. "_" .. ptype .. "_" .. suffix)
       end
    end
+end
+
+-- add in other parameters
+for _, p in ipairs(OTHER_PARAMS) do
+   add_param(p)
 end
 
 

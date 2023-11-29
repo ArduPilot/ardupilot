@@ -93,7 +93,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
 
 bool AP_Compass_DroneCAN::init()
 {
-    // Adding 1 is necessary to allow backward compatibilty, where this field was set as 1 by default
+    // Adding 1 is necessary to allow backward compatibility, where this field was set as 1 by default
     if (!register_compass(_devid, _instance)) {
         return false;
     }
@@ -120,7 +120,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
     }
 
     bool already_detected = false;
-    // Check if there's an empty spot for possible registeration
+    // Check if there's an empty spot for possible registration
     for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
         if (_detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id &&

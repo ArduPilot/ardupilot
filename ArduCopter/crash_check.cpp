@@ -101,7 +101,7 @@ void Copter::thrust_loss_check()
 {
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
 
-    // no-op if suppresed by flight options param
+    // no-op if suppressed by flight options param
     if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_THRUST_LOSS_CHECK)) != 0) {
         return;
     }
@@ -181,7 +181,7 @@ void Copter::thrust_loss_check()
 // check for a large yaw imbalance, could be due to badly calibrated ESC or misaligned motors
 void Copter::yaw_imbalance_check()
 {
-    // no-op if suppresed by flight options param
+    // no-op if suppressed by flight options param
     if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_YAW_IMBALANCE_WARNING)) != 0) {
         return;
     }

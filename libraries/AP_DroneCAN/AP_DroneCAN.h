@@ -78,8 +78,12 @@ public:
 
     uint8_t get_driver_index() const { return _driver_index; }
 
+    // define string with length structure
+    struct string { uint8_t len; uint8_t data[128]; };
+
     FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
     FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_DroneCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_TYPEDEF(ParamGetSetStringCb, bool, AP_DroneCAN*, const uint8_t, const char*, string &);
     FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_DroneCAN*,  const uint8_t, bool);
 
     void send_node_status();
@@ -104,8 +108,10 @@ public:
     // failures occur when waiting on node to respond to previous get or set request
     bool set_parameter_on_node(uint8_t node_id, const char *name, float value, ParamGetSetFloatCb *cb);
     bool set_parameter_on_node(uint8_t node_id, const char *name, int32_t value, ParamGetSetIntCb *cb);
+    bool set_parameter_on_node(uint8_t node_id, const char *name, const string &value, ParamGetSetStringCb *cb);
     bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetFloatCb *cb);
     bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetIntCb *cb);
+    bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetStringCb *cb);
 
     // Save parameters
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
@@ -177,6 +183,7 @@ private:
     // get parameter on a node
     ParamGetSetIntCb *param_int_cb;         // latest get param request callback function (for integers)
     ParamGetSetFloatCb *param_float_cb;     // latest get param request callback function (for floats)
+    ParamGetSetStringCb *param_string_cb;   // latest get param request callback function (for strings)
     bool param_request_sent = true;         // true after a param request has been sent, false when queued to be sent
     uint32_t param_request_sent_ms;         // system time that get param request was sent
     HAL_Semaphore _param_sem;               // semaphore protecting this block of variables

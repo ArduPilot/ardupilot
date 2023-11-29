@@ -47,7 +47,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     // Display message 
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
 
-     // Set all inial flags to on
+     // Set all intial flags to on
     _flags.entry_initial = 1;
     _flags.ss_glide_initial = 1;
     _flags.flare_initial = 1;
@@ -173,7 +173,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Set target head speed in head speed controller
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs hasent reached target for glide
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs has not reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again

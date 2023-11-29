@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 50m further out
+#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
 #else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
 #endif
@@ -494,7 +494,7 @@ bool AC_Fence::check_fence_polygon()
 /// check_fence_circle - returns true if the circle fence (defined via
 /// parameters) has been freshly breached.  May also set up a backup
 /// fence outside the fence and return a fresh breach if that backup
-/// fence is breaced.
+/// fence is breached.
 bool AC_Fence::check_fence_circle()
 {
     if (!(_enabled_fences & AC_FENCE_TYPE_CIRCLE)) {
@@ -518,7 +518,7 @@ bool AC_Fence::check_fence_circle()
         if (!(_breached_fences & AC_FENCE_TYPE_CIRCLE) ||
             (!is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
             // new breach
-            // create a backup fence 20m further out
+            // create a backup fence 20m or 100m further out
             record_breach(AC_FENCE_TYPE_CIRCLE);
             _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
             return true;

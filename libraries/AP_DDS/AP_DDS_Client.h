@@ -179,6 +179,9 @@ public:
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
+    //! @brief GCS message prefix
+    static constexpr const char* msg_prefix = "DDS:";
+
     //! @brief Parameter storage
     static const struct AP_Param::GroupInfo var_info[];
 

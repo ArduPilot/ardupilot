@@ -43,7 +43,13 @@ Sub::Sub()
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.pilot_input = true;
 #endif
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Can only be one Sub");
+    }
+    _singleton = this;
 }
+
+Sub *Sub::_singleton = nullptr;
 
 Sub sub;
 AP_Vehicle& vehicle = sub;

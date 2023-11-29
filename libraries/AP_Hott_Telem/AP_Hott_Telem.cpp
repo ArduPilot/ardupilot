@@ -289,12 +289,14 @@ void AP_Hott_Telem::send_GPS(void)
 
     msg.home_direction = degrees(atan2f(home_vec.y, home_vec.x)) * 0.5 + 0.5;
 
+#if AP_RTC_ENABLED
     AP_RTC &rtc = AP::rtc();
     {
         WITH_SEMAPHORE(rtc.get_semaphore());
         uint16_t ms;
         rtc.get_system_clock_utc(msg.gps_time_h, msg.gps_time_m, msg.gps_time_s, ms);
     }
+#endif
 
     send_packet((const uint8_t *)&msg, sizeof(msg));
 }

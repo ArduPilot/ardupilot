@@ -33,6 +33,7 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFr
     set_alt_cm(alt_in_cm, frame);
 }
 
+#if AP_AHRS_ENABLED
 Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
 {
     zero();
@@ -48,6 +49,7 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
         offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
     }
 }
+#endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
 {
@@ -141,12 +143,17 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             alt_abs = alt;
             break;
         case AltFrame::ABOVE_HOME:
+#if AP_AHRS_ENABLED
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             alt_abs = alt + AP::ahrs().get_home().alt;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
             break;
         case AltFrame::ABOVE_ORIGIN:
+#if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -156,6 +163,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 alt_abs = alt + ekf_origin.alt;
             }
             break;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
         case AltFrame::ABOVE_TERRAIN:
             alt_abs = alt + alt_terr_cm;
             break;
@@ -167,12 +177,17 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             ret_alt_cm = alt_abs;
             return true;
         case AltFrame::ABOVE_HOME:
+#if AP_AHRS_ENABLED
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             ret_alt_cm = alt_abs - AP::ahrs().get_home().alt;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
             return true;
         case AltFrame::ABOVE_ORIGIN:
+#if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -182,6 +197,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 ret_alt_cm = alt_abs - ekf_origin.alt;
                 return true;
             }
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
         case AltFrame::ABOVE_TERRAIN:
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
@@ -189,6 +207,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
 
+#if AP_AHRS_ENABLED
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
     Location ekf_origin;
@@ -216,6 +235,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 
     return true;
 }
+#endif  // AP_AHRS_ENABLED
 
 // return horizontal distance in meters between two locations
 ftype Location::get_distance(const Location &loc2) const
@@ -465,7 +485,7 @@ int32_t Location::diff_longitude(int32_t lon1, int32_t lon2)
 }
 
 /*
-  limit lattitude to -90e7 to 90e7
+  limit latitude to -90e7 to 90e7
  */
 int32_t Location::limit_lattitude(int32_t lat)
 {

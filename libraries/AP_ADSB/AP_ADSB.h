@@ -155,7 +155,7 @@ public:
     static uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
 
     // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
-    // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+    // See wikipedia for IDENT explanation https://en.wikipedia.org/wiki/Transponder_(aeronautics)
     bool ident_start() {
         if (!healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
             return false;

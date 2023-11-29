@@ -829,6 +829,7 @@ class sitl_periph_gps(sitl):
             HAL_PERIPH_ENABLE_EFI = 1,
             HAL_PERIPH_ENABLE_RPM = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
+            HAL_PERIPH_ENABLE_ADSB = 1,
             AP_AIRSPEED_ENABLED = 1,
             AP_AIRSPEED_AUTOCAL_ENABLE = 0,
             AP_AHRS_ENABLED = 1,
@@ -837,6 +838,7 @@ class sitl_periph_gps(sitl):
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
             HAL_GCS_ENABLED = 0,
+            HAL_MAVLINK_BINDINGS_ENABLED = 1,
             HAL_LOGGING_ENABLED = 0,
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             AP_MISSION_ENABLED = 0,
@@ -862,6 +864,7 @@ class sitl_periph_gps(sitl):
             HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
+            AP_RTC_ENABLED = 0,
         )
 
 

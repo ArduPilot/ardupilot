@@ -140,7 +140,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
 /*
  * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
  * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
- * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
+ * this function is used to create the encoded version without ever writing to the actual ICAO number. It's created on-demand
  */
 uint32_t AP_ADSB_uAvionix_MAVLink::encode_icao(const uint32_t icao_id) const
 {

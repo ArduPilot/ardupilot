@@ -422,8 +422,99 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
             "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
+            "MAV_CMD_DO_CHANGE_SPEED": "Doesn't work",
         })
         return ret
+
+    def MAV_CMD_NAV_LOITER_UNLIM(self):
+        '''test handling of MAV_CMD_NAV_LOITER_UNLIM received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
+            self.assert_mode('POSHOLD')
+
+    def MAV_CMD_NAV_LAND(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
+            self.assert_mode('SURFACE')
+
+    def MAV_CMD_MISSION_START(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.assert_mode('AUTO')
+        self.disarm_vehicle()
+
+    def MAV_CMD_DO_CHANGE_SPEED(self):
+        '''ensure vehicle changes speeds when DO_CHANGE_SPEED received'''
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ]
+        items = []
+        for i in range(0, 2000, 10):
+            items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, i, 0, 0))
+        self.upload_simple_relhome_mission(items)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            for speed in [1, 2, 3, 1]:
+                run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+                self.wait_groundspeed(speed-0.02, speed+0.02, minimum_duration=2)
+        self.disarm_vehicle()
+
+    def _MAV_CMD_CONDITION_YAW(self, run_cmd):
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+        for angle in 5, 30, 60, 10:
+            angular_rate = 10
+            direction = 1
+            relative_or_absolute = 0
+            run_cmd(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=angle,
+                p2=angular_rate,
+                p3=direction,
+                p4=relative_or_absolute,  # 1 for relative, 0 for absolute
+            )
+            self.wait_heading(angle, minimum_duration=2)
+
+        self.start_subtest('Relative angle')
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=0,
+            p2=10,
+            p3=1,
+            p4=0,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(0, minimum_duration=2)
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=20,
+            p2=10,
+            p3=1,
+            p4=1,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(20, minimum_duration=2)
+
+        self.disarm_vehicle()
+
+    def MAV_CMD_CONDITION_YAW(self):
+        '''ensure vehicle yaws according to GCS command'''
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd)
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
     def tests(self):
         '''return list of all tests'''
@@ -440,6 +531,11 @@ class AutoTestSub(AutoTest):
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
+            self.MAV_CMD_NAV_LOITER_UNLIM,
+            self.MAV_CMD_NAV_LAND,
+            self.MAV_CMD_MISSION_START,
+            self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_CONDITION_YAW,
         ])
 
         return ret

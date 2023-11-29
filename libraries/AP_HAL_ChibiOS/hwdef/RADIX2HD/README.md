@@ -12,7 +12,7 @@ For the full documentation, refer to the [BrainFPV website](https://www.brainfpv
  - Barometer: Infineon DPS310
  - Onboard flash: 16 MB connected via QUADSPI
  - microSD slot
- - 5 UARTs plus USB (6 UARTs with alternate board config)
+ - 6 UARTs plus USB (7 UARTs with alternate board config)
  - 10 PWM outputs (8 supporting BDSHOT on dual 4-in-1 ESC connectors)
  - I2C and CAN port
  - Builtin RGB LED
@@ -46,6 +46,7 @@ and how to use the "PWR:VBAT" jumper.
  - SERIAL4 -> UART4 (spare)
  - SERIAL5 -> UART5 (spare)
  - SERIAL6 -> UART6 (spare, PWM 9 and 10 by default, use BRD_ALT_CONFIG = 1 for UART)
+ - SERIAL7 -> UART7 (spare, RX is on HD connector for RC input, TX is not connected to external pad)
 
 ## RC Input
 

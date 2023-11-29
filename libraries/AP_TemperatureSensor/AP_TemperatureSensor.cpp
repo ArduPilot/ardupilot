@@ -28,6 +28,7 @@
 #include "AP_TemperatureSensor_TSYS03.h"
 #include "AP_TemperatureSensor_MCP9600.h"
 #include "AP_TemperatureSensor_MAX31865.h"
+#include "AP_TemperatureSensor_Analog.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -51,52 +52,94 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[0], "1_", 10, AP_TemperatureSensor, AP_TemperatureSensor_Params),
 
+    // @Group: 1_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "1_", 19, AP_TemperatureSensor, backend_var_info[0]),
+
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 2
     // @Group: 2_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 11, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 2_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 20, AP_TemperatureSensor, backend_var_info[1]),
 #endif
 
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 3
     // @Group: 3_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[2], "3_", 12, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 3_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 21, AP_TemperatureSensor, backend_var_info[2]),
 #endif
 
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 4
     // @Group: 4_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[3], "4_", 13, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 22, AP_TemperatureSensor, backend_var_info[3]),
 #endif
 
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 5
     // @Group: 5_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[4], "5_", 14, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_", 23, AP_TemperatureSensor, backend_var_info[4]),
 #endif
+
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 6
     // @Group: 6_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[5], "6_", 15, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[5], "6_", 24, AP_TemperatureSensor, backend_var_info[5]),
 #endif
+
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 7
     // @Group: 7_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[6], "7_", 16, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[6], "7_", 25, AP_TemperatureSensor, backend_var_info[6]),
 #endif
+
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 8
     // @Group: 8_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[7], "8_", 17, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[7], "8_", 26, AP_TemperatureSensor, backend_var_info[7]),
 #endif
+
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 9
     // @Group: 9_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[8], "9_", 18, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 26, AP_TemperatureSensor, backend_var_info[8]),
 #endif
 
     AP_GROUPEND
 };
+
+const AP_Param::GroupInfo *AP_TemperatureSensor::backend_var_info[AP_TEMPERATURE_SENSOR_MAX_INSTANCES];
 
 // Default Constructor
 AP_TemperatureSensor::AP_TemperatureSensor()
@@ -148,6 +191,11 @@ void AP_TemperatureSensor::init()
                 drivers[instance] = new AP_TemperatureSensor_TSYS03(*this, _state[instance], _params[instance]);
                 break;
 #endif
+#if AP_TEMPERATURE_SENSOR_ANALOG_ENABLED
+            case AP_TemperatureSensor_Params::Type::ANALOG:
+                drivers[instance] = new AP_TemperatureSensor_Analog(*this, _state[instance], _params[instance]);
+                break;
+#endif
             case AP_TemperatureSensor_Params::Type::NONE:
             default:
                 break;
@@ -155,6 +203,12 @@ void AP_TemperatureSensor::init()
 
         // call init function for each backend
         if (drivers[instance] != nullptr) {
+            if (_state[instance].var_info != nullptr) {
+                // Load backend specific params
+                backend_var_info[instance] = _state[instance].var_info;
+                AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
+            }
+
             drivers[instance]->init();
             // _num_instances is actually the index for looping over instances
             // the user may have TEMP_TYPE=0 and TEMP2_TYPE=7, in which case

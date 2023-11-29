@@ -766,6 +766,18 @@ private:
     AP_Int32 tcal_options;
     bool tcal_learning;
 #endif
+
+    // Raw logging options bitmask and parameter
+    enum class RAW_LOGGING_OPTION {
+        PRIMARY_GYRO_ONLY   = (1U<<0),
+        ALL_GYROS           = (1U<<1),
+        POST_FILTER         = (1U<<2),
+        PRE_AND_POST_FILTER = (1U<<3),
+    };
+    AP_Int16 raw_logging_options;
+    bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
+        return (raw_logging_options.get() & int32_t(option)) != 0;
+    }
 };
 
 namespace AP {

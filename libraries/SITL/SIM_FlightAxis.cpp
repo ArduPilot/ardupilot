@@ -595,7 +595,11 @@ void FlightAxis::socket_creator(void)
             usleep(500);
             continue;
         }
-        if (!sck->connect(controller_ip, controller_port)) {
+        /*
+          don't let the connection take more than 100ms (10Hz). Longer
+          than this and we are better off trying for a new socket
+         */
+        if (!sck->connect_timeout(controller_ip, controller_port, 100)) {
             ::printf("connect failed\n");
             delete sck;
             usleep(5000);

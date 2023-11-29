@@ -354,7 +354,9 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
+#if AP_FENCE_ENABLED
     MSG_FENCE_STATUS,
+#endif
     MSG_NAMED_FLOAT
 };
 static const ap_message STREAM_POSITION_msgs[] = {
@@ -386,8 +388,10 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY_STATUS,
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
     MSG_OPTICAL_FLOW,
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if AP_RPM_ENABLED
@@ -459,23 +463,51 @@ bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool _lock) {
     return sub.set_home(loc, _lock);
 }
 
-
-MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    switch (packet.command) {
+    switch(packet.command) {
+
+    case MAV_CMD_CONDITION_YAW:
+        return handle_MAV_CMD_CONDITION_YAW(packet);
+
+    case MAV_CMD_DO_CHANGE_SPEED:
+        return handle_MAV_CMD_DO_CHANGE_SPEED(packet);
+
+    case MAV_CMD_DO_MOTOR_TEST:
+        return handle_MAV_CMD_DO_MOTOR_TEST(packet);
+
+    case MAV_CMD_MISSION_START:
+        return handle_MAV_CMD_MISSION_START(packet);
+
     case MAV_CMD_NAV_LOITER_UNLIM:
+        return handle_MAV_CMD_NAV_LOITER_UNLIM(packet);
+
+    case MAV_CMD_NAV_LAND:
+        return handle_MAV_CMD_NAV_LAND(packet);
+
+    }
+
+    return GCS_MAVLINK::handle_command_int_packet(packet, msg);
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LOITER_UNLIM(const mavlink_command_int_t &packet)
+{
         if (!sub.set_mode(Mode::Number::POSHOLD, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
 
-    case MAV_CMD_NAV_LAND:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t &packet)
+{
         if (!sub.set_mode(Mode::Number::SURFACE, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
 
-    case MAV_CMD_CONDITION_YAW:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet)
+{
         // param1 : target angle [0-360]
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
@@ -486,9 +518,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
             sub.mode_auto.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
             return MAV_RESULT_ACCEPTED;
         }
-        return MAV_RESULT_FAILED;
+        return MAV_RESULT_DENIED;
+}
 
-    case MAV_CMD_DO_CHANGE_SPEED:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
+{
         // param1 : unused
         // param2 : new speed in m/s
         // param3 : unused
@@ -498,14 +532,18 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+}
 
-    case MAV_CMD_MISSION_START:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
+{
         if (sub.motors.armed() && sub.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+}
 
-    case MAV_CMD_DO_MOTOR_TEST:
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet)
+{
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
         // param3 : throttle (range depends upon param2)
@@ -514,13 +552,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
-
-    default:
-        return GCS_MAVLINK::handle_command_long_packet(packet, msg);
-    }
 }
-
-
 
 void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 {
@@ -775,7 +807,7 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
         );
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
+MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_t &packet) {
     if (packet.param1 > 0.5f) {
         sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;

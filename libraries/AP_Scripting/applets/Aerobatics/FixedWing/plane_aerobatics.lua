@@ -2434,6 +2434,8 @@ function do_path()
       path_var.ss_angle_filt = 0.0
       path_var.last_rate_override = 0
 
+      path.highest_i = 0
+
       -- get initial tangent
       local p1, _ = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
                                  path_var.initial_ori, path_var.initial_ef_pos)

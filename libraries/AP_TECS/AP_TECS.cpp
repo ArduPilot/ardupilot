@@ -238,7 +238,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SYNAIRSPEED
     // @DisplayName: Enable the use of synthetic airspeed
-    // @Description: This enable the use of synthetic airspeed for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate.
+    // @Description: This enables the use of synthetic airspeed in TECS for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate. This option has no effect if a healthy airspeed sensor is being used for airspeed measurements.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
@@ -831,6 +831,9 @@ float AP_TECS::_get_i_gain(void)
  */
 void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
 {
+    // reset clip status after possible use of synthetic airspeed
+    _thr_clip_status = clipStatus::NONE;
+
     // Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
@@ -1047,10 +1050,30 @@ void AP_TECS::_update_pitch(void)
     _last_pitch_dem = _pitch_dem;
 
     if (AP::logger().should_log(_log_bitmask)){
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
-                                    "Qffffffffffff",
+        // log to AP_Logger
+        // @LoggerMessage: TEC2
+        // @Vehicles: Plane
+        // @Description: Additional information about the Total Energy Control System
+        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: PEW: Potential energy weighting
+        // @Field: KEW: Kinetic energy weighting
+        // @Field: EBD: Energy balance demand
+        // @Field: EBE: Energy balance error
+        // @Field: EBDD: Energy balance rate demand
+        // @Field: EBDE: Energy balance rate error
+        // @Field: EBDDT: Energy balance rate demand + Energy balance rate error*pitch_damping
+        // @Field: Imin: Minimum integrator value
+        // @Field: Imax: Maximum integrator value
+        // @Field: I: Energy balance error integral
+        // @Field: KI: Pitch demand kinetic energy integral
+        // @Field: pmin: Pitch min
+        // @Field: pmax: Pitch max
+        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
+                                    "Qfffffffffffff",
                                     AP_HAL::micros64(),
                                     (double)SPE_weighting,
+                                    (double)_SKE_weighting,
                                     (double)SEB_dem,
                                     (double)SEB_est,
                                     (double)SEBdot_dem,
@@ -1088,6 +1111,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
         _takeoff_start_ms = 0;
+        _use_synthetic_airspeed_once = false;
 
         _flags.underspeed            = false;
         _flags.badDescent            = false;

@@ -16,7 +16,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_RATE_MAX_RADS radians(90) // maximum physical rotation rate of gimbal in radans/sec
 #define AP_MOUNT_SIYI_PITCH_P       1.50    // pitch controller P gain (converts pitch angle error to target rate)
 #define AP_MOUNT_SIYI_YAW_P         1.50    // yaw controller P gain (converts yaw angle error to target rate)
-#define AP_MOUNT_SIYI_LOCK_RESEND_COUNT 5   // lock value is resent to gimbal every 5 iterations
 #define AP_MOUNT_SIYI_TIMEOUT_MS    1000    // timeout for health and rangefinder readings
 
 #define AP_MOUNT_SIYI_DEBUG 0
@@ -435,21 +434,43 @@ void AP_Mount_Siyi::process_packet()
         break;
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
-        // update gimbal's mounting direction
-        if (_parsed_msg.data_bytes_received > 5) {
-            _gimbal_mounting_dir = (_msg_buff[_msg_buff_data_start+5] == 2) ? GimbalMountingDirection::UPSIDE_DOWN : GimbalMountingDirection::NORMAL;
+        const RecordingStatus prev_record_status = _config_info.record_status;
+
+        // Update Gimbal Config Information
+        size_t config_sz = MIN(_parsed_msg.data_bytes_received, sizeof(_config_info));
+        memcpy(&_config_info, &_msg_buff[_msg_buff_data_start], config_sz);
+
+        // Alert user if recording status changed
+        if (prev_record_status != _config_info.record_status) {
+            const char * msg = "?";
+            MAV_SEVERITY sev = MAV_SEVERITY_INFO;
+            switch (_config_info.record_status) {
+                case RecordingStatus::OFF:
+                    msg = "OFF";
+                    break;
+                case RecordingStatus::ON:
+                    msg = "ON";
+                    break;
+                case RecordingStatus::NO_CARD:
+                    msg = "NO CARD!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
+                case RecordingStatus::DATA_LOSS:
+                    msg = "DATA LOSS!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
+            }
+            GCS_SEND_TEXT(sev, "Siyi: recording %s", msg);
         }
 
-        // update recording state and warn user of mismatch
-        const bool recording = _msg_buff[_msg_buff_data_start+3] > 0;
-        if (recording != _last_record_video) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
-        }
-        _last_record_video = recording;
-        debug("GimConf hdr:%u rec:%u foll:%u mntdir:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
-                                                         (unsigned)_msg_buff[_msg_buff_data_start+3],
-                                                         (unsigned)_msg_buff[_msg_buff_data_start+4],
-                                                         (unsigned)_msg_buff[_msg_buff_data_start+5]);
+        debug(
+            "GimConf hdr:%u rec:%u foll:%u mntdir:%u vid:%u",
+            (uint8_t)_config_info.hdr_status,
+            (uint8_t)_config_info.record_status,
+            (uint8_t)_config_info.motion_mode,
+            (uint8_t)_config_info.mounting_dir,
+            (uint8_t)_config_info.video_mode
+        );
         break;
     }
 
@@ -594,25 +615,42 @@ bool AP_Mount_Siyi::send_1byte_packet(SiyiCommandId cmd_id, uint8_t data_byte)
 // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
 void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef)
 {
-    // send lock/follow value if it has changed
-    if ((yaw_is_ef != _last_lock) || (_lock_send_counter >= AP_MOUNT_SIYI_LOCK_RESEND_COUNT)) {
-        set_lock(yaw_is_ef);
-        _lock_send_counter = 0;
-        _last_lock = yaw_is_ef;
-    } else {
-        _lock_send_counter++;
+    // send lock/follow value
+    const GimbalMotionMode mode = yaw_is_ef ? GimbalMotionMode::LOCK : GimbalMotionMode::FOLLOW;
+    if (!set_motion_mode(mode)) {
+        // couldn't set mode, so don't send rotation
+        return;
     }
 
     const uint8_t yaw_and_pitch_rates[] {(uint8_t)yaw_scalar, (uint8_t)pitch_scalar};
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
 }
 
-// set gimbal's lock vs follow mode
-// lock should be true if gimbal should maintain an earth-frame target
-// lock is false to follow / maintain a body-frame target
-void AP_Mount_Siyi::set_lock(bool lock)
+// Set gimbal's motion mode if it has changed. Use force=true to always send.
+//   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
+//   LOCK: roll, pitch and yaw are all in earth-frame
+//   FPV: roll, pitch and yaw are all in body-frame
+// Returns true if mode successfully sent to Gimbal
+bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool force)
 {
-    send_1byte_packet(SiyiCommandId::PHOTO, lock ? (uint8_t)PhotoFunction::LOCK_MODE : (uint8_t)PhotoFunction::FOLLOW_MODE);
+    if (!force && (mode == _config_info.motion_mode)) {
+        // we're already in the right mode...
+        return true;
+    }
+
+    PhotoFunction data = PhotoFunction::LOCK_MODE;
+    switch (mode) {
+        case GimbalMotionMode::LOCK:   data = PhotoFunction::LOCK_MODE; break;
+        case GimbalMotionMode::FOLLOW: data = PhotoFunction::FOLLOW_MODE; break;
+        case GimbalMotionMode::FPV:    data = PhotoFunction::FPV_MODE; break;
+    }
+    bool sent = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
+    if (sent) {
+        // assume the mode is set correctly until told otherwise
+        _config_info.motion_mode = mode;
+        request_configuration();
+    }
+    return sent;
 }
 
 // send target pitch and yaw rates to gimbal
@@ -637,7 +675,7 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
 
     // if gimbal mounting direction is 2 i.e. upside down, then transform the angles
     Vector3f current_angle_transformed = _current_angle_rad;
-    if (_gimbal_mounting_dir == GimbalMountingDirection::UPSIDE_DOWN) {
+    if (_config_info.mounting_dir == GimbalMountingDirection::UPSIDE_DOWN) {
         current_angle_transformed.y = -wrap_PI(_current_angle_rad.y + M_PI);
         current_angle_transformed.z = -_current_angle_rad.z;
     }
@@ -681,18 +719,45 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
         return false;
     }
 
-    // check desired recording state has changed
-    bool ret = true;
-    if (_last_record_video != start_recording) {
-        // request recording start or stop (sadly the same message is used)
-        const uint8_t func_type = (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE;
-        ret = send_packet(SiyiCommandId::PHOTO, &func_type, 1);
+    bool success = true;
+    bool send_toggle = false;
+    if (start_recording) {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                // already recording...
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+                send_toggle = true;
+                break;
+            case RecordingStatus::NO_CARD:
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Siyi: can't start recording: No Card");
+                success = false;
+                break;
+        }
+    } else {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                send_toggle = true;
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+            case RecordingStatus::NO_CARD:
+                // already off...
+                break;
+        }
+    }
+
+    if (send_toggle) {
+        success = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE);
     }
 
     // request recording state update from gimbal
     request_configuration();
 
-    return ret;
+    return success;
 }
 
 // send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
@@ -929,6 +994,7 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
 {
+    const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
     const float NaN = nanf("0x4152");
     const float zoom_mult_max = get_zoom_mult_max();
     float zoom_pct = 0.0;
@@ -940,7 +1006,7 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
-        _last_record_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
+        mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }

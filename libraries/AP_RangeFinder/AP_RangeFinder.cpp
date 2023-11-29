@@ -768,6 +768,10 @@ void RangeFinder::Log_RFND() const
             continue;
         }
 
+        int8_t signal_quality;
+        if (!s->get_signal_quality_pct(signal_quality)) {
+          signal_quality = -1;
+        }
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
@@ -775,6 +779,7 @@ void RangeFinder::Log_RFND() const
                 dist         : s->distance_cm(),
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
+                quality      : signal_quality,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }

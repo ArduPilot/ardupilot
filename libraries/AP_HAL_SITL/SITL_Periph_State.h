@@ -51,7 +51,7 @@ class HALSITL::SITL_State : public SITL_State_Common {
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
 public:
-    void init(int argc, char * const argv[]);
+    void init(int argc, char * const argv[]) override;
 
     bool use_rtscts(void) const {
         return _use_rtscts;
@@ -66,7 +66,7 @@ public:
         "none:0",
         "GPS1",
         "none:1",
-        "none:2",
+        "sim:adsb",
         "none:3",
         "none:4",
         "none:5",

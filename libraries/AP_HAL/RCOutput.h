@@ -215,6 +215,7 @@ public:
         MODE_PWM_DSHOT1200,
         MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
         MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
+        MODE_NEOPIXELRGB,  // same as MODE_NEOPIXEL but RGB ordering
     };
     // true when the output mode is of type dshot
     // static to allow use in the ChibiOS thread stuff
@@ -223,6 +224,7 @@ public:
     static bool is_led_protocol(const enum output_mode mode) {
       switch (mode) {
       case MODE_NEOPIXEL:
+      case MODE_NEOPIXELRGB:
       case MODE_PROFILED:
         return true;
       default:
@@ -330,7 +332,7 @@ public:
 
     const static uint32_t ALL_CHANNELS = 255;
     /*
-      Send a dshot command, if command timout is 0 then 10 commands are sent
+      Send a dshot command, if command timeout is 0 then 10 commands are sent
       chan is the servo channel to send the command to
      */
     virtual void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) {}
@@ -351,7 +353,7 @@ public:
       and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
     virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
-    
+
     /*
       trigger send of serial led
      */
@@ -372,7 +374,7 @@ public:
     /*
      * calculate the prescaler required to achieve the desire bitrate
      */
-    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
+    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool at_least_freq = false);
 
     /*
      * bit width values for different protocols

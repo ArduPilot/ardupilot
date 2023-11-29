@@ -151,7 +151,7 @@ public:
     // wrap longitude at -180e7 to 180e7
     static int32_t wrap_longitude(int64_t lon);
 
-    // limit lattitude to -90e7 to 90e7
+    // limit latitude to -90e7 to 90e7
     static int32_t limit_lattitude(int32_t lat);
     
     // get lon1-lon2, wrapping at -180e7 to 180e7

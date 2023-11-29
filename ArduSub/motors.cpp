@@ -78,7 +78,7 @@ bool Sub::verify_motor_test()
     return true;
 }
 
-bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
+bool Sub::handle_do_motor_test(mavlink_command_int_t command) {
     last_do_motor_test_ms = AP_HAL::millis();
 
     // If we are not already testing motors, initialize test
@@ -103,9 +103,9 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     float throttle = command.param3;
     // float timeout_s = command.param4; // not used
     // float motor_count = command.param5; // not used
-    float test_type = command.param6;
+    const uint32_t test_type = command.y;
 
-    if (!is_equal(test_type, (float)MOTOR_TEST_ORDER_BOARD)) {
+    if (test_type != MOTOR_TEST_ORDER_BOARD) {
         gcs().send_text(MAV_SEVERITY_WARNING, "bad test type %0.2f", (double)test_type);
         return false; // test type not supported here
     }

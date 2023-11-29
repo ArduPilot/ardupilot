@@ -45,7 +45,7 @@ public:
     // grabbed - returns true if currently in grabbed position
     virtual bool grabbed() const = 0;
 
-    // type-specific intiailisations:
+    // type-specific initialisations:
     virtual void init_gripper() = 0;
 
     // type-specific periodic updates:

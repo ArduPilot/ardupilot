@@ -125,6 +125,9 @@ extern const AP_HAL::HAL& hal;
 #define INV3BANK_456_IPREG_SYS1_ADDR 0xA400
 #define INV3BANK_456_IPREG_SYS2_ADDR 0xA500
 
+// ICM42688 specific registers
+#define INV3REG_42688_INTF_CONFIG1  0x4d
+
 // WHOAMI values
 #define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
@@ -133,6 +136,9 @@ extern const AP_HAL::HAL& hal;
 #define INV3_ID_IIM42652      0x6f
 #define INV3_ID_ICM42670      0x67
 #define INV3_ID_ICM45686      0xE9
+
+// enable logging at FIFO rate for debugging
+#define INV3_ENABLE_FIFO_LOGGING 0
 
 /*
   really nice that this sensor has an option to request little-endian
@@ -333,6 +339,9 @@ void AP_InertialSensor_Invensensev3::accumulate()
 
 bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, uint8_t n_samples)
 {
+#if INV3_ENABLE_FIFO_LOGGING
+    const uint64_t tstart = AP_HAL::micros64();
+#endif
     for (uint8_t i = 0; i < n_samples; i++) {
         const FIFOData &d = data[i];
 
@@ -348,6 +357,10 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
 
         accel *= accel_scale;
         gyro *= gyro_scale;
+
+#if INV3_ENABLE_FIFO_LOGGING
+        Write_GYR(gyro_instance, tstart+(i*backend_period_us), gyro, true);
+#endif
 
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
@@ -909,6 +922,10 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         // disable STC
         uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68);  // I3C_STC_MODE b2
         register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68, reg & ~0x04);
+    } else if (inv3_type == Invensensev3_Type::ICM42688) {
+        // fix for the "stuck gyro" issue
+        const uint8_t v = register_read(INV3REG_42688_INTF_CONFIG1);
+        register_write(INV3REG_42688_INTF_CONFIG1, (v & 0x3F) | 0x40);
     }
 
     return true;

@@ -44,6 +44,14 @@ bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
     case SRV_Channel::k_gripper:
     case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16: // rc pass-thru
         break;
+    case SRV_Channel::k_rcin1_mapped ... SRV_Channel::k_rcin16_mapped: {
+        // mapped channels are set up with a -/+ 4500 angle range by
+        // SRV_Channel::aux_servo_function_setup
+        int16_t angle_scaled = constrain_uint16(pwm, 1000, 2000);
+        angle_scaled = (angle_scaled - 1500) * 9; // 1000 ... 2000 -> -500 ... 500 -> -4500 ... 4500
+        pwm = c->pwm_from_scaled_value(angle_scaled);
+        break;
+    }
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ServoRelayEvent: Channel %d is already in use", _channel);
         return false;
@@ -101,6 +109,14 @@ bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_valu
     case SRV_Channel::k_gripper:
     case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16: // rc pass-thru
         break;
+    case SRV_Channel::k_rcin1_mapped ... SRV_Channel::k_rcin16_mapped: {
+        // mapped channels are set up with a -/+ 4500 angle range by
+        // SRV_Channel::aux_servo_function_setup
+        int16_t angle_scaled = constrain_uint16(_servo_value, 1000, 2000);
+        angle_scaled = (angle_scaled - 1500) * 9; // 1000 ... 2000 -> -500 ... 500 -> -4500 ... 4500
+        _servo_value = c->pwm_from_scaled_value(angle_scaled);
+        break;
+    }
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ServoRelayEvent: Channel %d is already in use", _channel);
         return false;

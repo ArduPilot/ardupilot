@@ -278,9 +278,11 @@ private:
     // direct attached radio
     AP_Radio _radio;
 #endif
-    
+
+#if AP_RTC_ENABLED
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
+#endif
 
 #if HAL_HAVE_BOARD_VOLTAGE
     AP_Float _vbus_min;

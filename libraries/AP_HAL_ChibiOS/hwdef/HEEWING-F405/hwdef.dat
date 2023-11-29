@@ -165,33 +165,7 @@ define HAL_GYROFFT_ENABLED 0
 # --------------------- save flash ----------------------
 define AP_BATTMON_SMBUS_ENABLE 0
 
-include ../include/minimal.inc
+include ../include/minimize_fpv_osd.inc
 include ../include/save_some_flash.inc
-
-# features that users are likely to want
-define AP_TRAMP_ENABLED 1
-define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED 1
-
-# features that users are unlikely to want
-define AC_OAPATHPLANNER_ENABLED 0
-define AC_PRECLAND_ENABLED 0
-define AP_ICENGINE_ENABLED 0
-define AP_OPTICALFLOW_ENABLED 0
-define HAL_GENERATOR_ENABLED 0
-
-define HAL_SPRAYER_ENABLED 0
-define PRECISION_LANDING 0
-define GRIPPER_ENABLED 0
-define HAL_HOTT_TELEM_ENABLED 0
-define HAL_NMEA_OUTPUT_ENABLED 0
-define HAL_BUTTON_ENABLED 0
-define HAL_OREO_LED_ENABLED 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0
-define AP_RANGEFINDER_ENABLED 0
-define AP_RPM_EFI_ENABLED 0
-define AP_RPM_PIN_ENABLED 0
-define AP_RPM_GENERATOR_ENABLED 0
-define HAL_PARACHUTE_ENABLED 0
 
 AUTOBUILD_TARGETS Plane

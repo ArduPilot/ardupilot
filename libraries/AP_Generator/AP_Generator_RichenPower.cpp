@@ -190,7 +190,7 @@ bool AP_Generator_RichenPower::generator_ok_to_run() const
 constexpr float AP_Generator_RichenPower::heat_required_for_run()
 {
     // assume that heat is proportional to RPM.  Return a number
-    // proportial to RPM.  Reduce it to account for the cooling some%/s
+    // proportional to RPM.  Reduce it to account for the cooling some%/s
     // cooling
     return (45 * IDLE_RPM) * heat_environment_loss_30s;
 }
@@ -235,7 +235,9 @@ void AP_Generator_RichenPower::update(void)
 
     update_frontend_readings();
 
+#if HAL_LOGGING_ENABLED
     Log_Write();
+#endif
 }
 
 // update_runstate updates the servo output we use to control the
@@ -308,6 +310,7 @@ void AP_Generator_RichenPower::update_runstate()
     }
 }
 
+#if HAL_LOGGING_ENABLED
 // log generator status to the onboard log
 void AP_Generator_RichenPower::Log_Write()
 {
@@ -336,6 +339,7 @@ void AP_Generator_RichenPower::Log_Write()
         last_reading.mode
         );
 }
+#endif
 
 // generator prearm checks; notably, if we never see a generator we do
 // not run the checks.  Generators are attached/detached at will, and

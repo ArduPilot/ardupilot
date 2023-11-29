@@ -1354,7 +1354,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     case VoltageType::RESTING_CELL: { 
         blinkvolt = osd->warn_avgcellrestvolt;
         v = battery.voltage_resting_estimate(instance);
-         FALLTHROUGH;
+        FALLTHROUGH;
     }
     case VoltageType::AVG_CELL: {         
        if (type == VoltageType::AVG_CELL) { //for fallthrough of RESTING_CELL
@@ -1376,10 +1376,18 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
     }    
     if (!show_remaining_pct) {
         // Do not show battery percentage
-        backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+            backend->write(x,y, v < blinkvolt, "%1.2f%c", (double)v, SYMBOL(SYM_VOLT));
+        } else {
+            backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        }
         return;
     }
-    backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    if (type == VoltageType::RESTING_CELL || type == VoltageType::AVG_CELL) {
+        backend->write(x,y, v < blinkvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    } else {
+        backend->write(x,y, v < blinkvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
+    }
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
@@ -2141,6 +2149,7 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 #endif
 }
 
+#if AP_RTC_ENABLED
 void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
 {
     AP_RTC &rtc = AP::rtc();
@@ -2152,6 +2161,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%02u:%02u", SYMBOL(SYM_CLK), hour, min);
     }
 }
+#endif
 
 #if HAL_PLUSCODE_ENABLE
 void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
@@ -2321,7 +2331,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
+#if AP_RTC_ENABLED
     DRAW_SETTING(clk);
+#endif
 #if AP_VIDEOTX_ENABLED
     DRAW_SETTING(vtx_power);
 #endif

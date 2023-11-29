@@ -8,7 +8,11 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
-        // log when new commands start
+#if AP_TERRAIN_AVAILABLE
+    plane.target_altitude.terrain_following_pending = false;
+#endif
+
+    // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
@@ -542,7 +546,11 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay.time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
+#if AP_RTC_ENABLED
         nav_delay.time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+#else
+        nav_delay.time_max_ms = 0;
+#endif
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay.time_max_ms/1000));
 }
@@ -552,7 +560,11 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 bool Plane::verify_takeoff()
 {
-    if (ahrs.dcm_yaw_initialised() && steer_state.hold_course_cd == -1) {
+    bool trust_ahrs_yaw = AP::ahrs().initialised();
+#if AP_AHRS_DCM_ENABLED
+    trust_ahrs_yaw |= ahrs.dcm_yaw_initialised();
+#endif
+    if (trust_ahrs_yaw && steer_state.hold_course_cd == -1) {
         const float min_gps_speed = 5;
         if (auto_state.takeoff_speed_time_ms == 0 && 
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 

@@ -383,10 +383,11 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         Location loc = { };
         loc.lat = msg.latitude_deg_1e8 / 10;
         loc.lng = msg.longitude_deg_1e8 / 10;
-        loc.alt = msg.height_msl_mm / 10;
+        const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         interim_state.have_undulation = true;
         interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
+        set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
         handle_velocity(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
 
@@ -799,7 +800,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 {
     // we only handle this if we are the first DroneCAN GPS or we are
     // using a different uavcan instance than the first GPS, as we
-    // send the data as broadcast on all DroneCAN devive ports and we
+    // send the data as broadcast on all DroneCAN device ports and we
     // don't want to send duplicates
     const uint32_t now_ms = AP_HAL::millis();
     if (_detected_module == 0 ||

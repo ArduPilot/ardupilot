@@ -315,10 +315,12 @@ private:
 
     bool should_log_imu_raw() const ;
     void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel) __RAMFUNC__;
-    void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo) __RAMFUNC__;
+    void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &raw_gyro, const Vector3f &filtered_gyro) __RAMFUNC__;
 
     // logging
     void Write_ACC(const uint8_t instance, const uint64_t sample_us, const Vector3f &accel) const __RAMFUNC__; // Write ACC data packet: raw accel data
-    void Write_GYR(const uint8_t instance, const uint64_t sample_us, const Vector3f &gyro) const __RAMFUNC__;  // Write GYR data packet: raw gyro data
+
+protected:
+    void Write_GYR(const uint8_t instance, const uint64_t sample_us, const Vector3f &gyro, bool use_sample_timestamp=false) const __RAMFUNC__;  // Write GYR data packet: raw gyro data
 
 };

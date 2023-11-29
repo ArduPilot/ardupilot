@@ -35,7 +35,7 @@ class ExtractFeatures(object):
         # FEATURE_NAME will have substitutions made from the match.
         # the substitutions will be upper-cased
         self.features = [
-            ('AP_ADVANCEDFAILSAFE_ENABLED', 'AP::advancedfailsafe',),
+            ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
@@ -146,6 +146,8 @@ class ExtractFeatures(object):
             ('AP_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
             ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
 
+            ('AP_CHECK_FIRMWARE_ENABLED', 'AP_CheckFirmware::check_signed_bootloader',),
+
             ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),
             ('QAUTOTUNE_ENABLED', 'ModeQAutotune::_enter',),
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
@@ -171,6 +173,8 @@ class ExtractFeatures(object):
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
+
+            ('AP_OPENDRONEID_ENABLED', 'AP_OpenDroneID::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
             ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
@@ -215,9 +219,11 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'GCS_MAVLINK::handle_device_op_write'),
             ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
-
+            ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_mission_request\b'),
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
+            ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
+            ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
         ]
 
     def progress(self, msg):

@@ -1,3 +1,7 @@
+#include <AP_Tuning/AP_Tuning_config.h>
+
+#if AP_TUNING_ENABLED
+
 #include "Plane.h"
 
 /*
@@ -90,6 +94,7 @@ const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
     { TUNING_PIT_I,        "PitchI" },
     { TUNING_PIT_D,        "PitchD" },
     { TUNING_PIT_FF,       "PitchFF" },
+    { TUNING_Q_FWD_THR,    "QModeFwdThr" },
     { TUNING_NONE, nullptr }
 };
 
@@ -186,6 +191,9 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 
     case TUNING_RATE_YAW_FF:
         return &plane.quadplane.attitude_control->get_rate_yaw_pid().ff();
+
+    case TUNING_Q_FWD_THR:
+        return &plane.quadplane.q_fwd_thr_gain;
 #endif // HAL_QUADPLANE_ENABLED
 
     // fixed wing tuning parameters
@@ -305,3 +313,4 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
     }
 }
 
+#endif  // AP_TUNING_ENABLED

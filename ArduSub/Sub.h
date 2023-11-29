@@ -72,6 +72,7 @@
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
 #include "mode.h"
+#include "script_button.h"
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
@@ -529,7 +530,7 @@ private:
     uint16_t get_pilot_speed_dn() const;
 
     void convert_old_parameters(void);
-    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();
 
@@ -580,8 +581,26 @@ private:
     AutoSubMode auto_mode;   // controls which auto controller is run
     GuidedSubMode guided_mode;
 
+#if AP_SCRIPTING_ENABLED
+    ScriptButton script_buttons[4];
+#endif // AP_SCRIPTING_ENABLED
+
 public:
     void mainloop_failsafe_check();
+
+    static Sub *_singleton;
+
+    static Sub *get_singleton() {
+        return _singleton;
+    }
+
+#if AP_SCRIPTING_ENABLED
+    // For Lua scripting, so index is 1..4, not 0..3
+    bool is_button_pressed(uint8_t index);
+
+    // For Lua scripting, so index is 1..4, not 0..3
+    uint8_t get_and_clear_button_count(uint8_t index);
+#endif // AP_SCRIPTING_ENABLED
 };
 
 extern const AP_HAL::HAL& hal;

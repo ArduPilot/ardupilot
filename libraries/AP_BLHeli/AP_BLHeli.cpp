@@ -51,7 +51,7 @@ extern const AP_HAL::HAL& hal;
 // the MSP protocol on hal.console
 #define BLHELI_UART_LOCK_KEY 0x20180402
 
-// if no packets are received for this time and motor control is active BLH will disconect (stoping motors)
+// if no packets are received for this time and motor control is active BLH will disconnect (stoping motors)
 #define MOTOR_ACTIVE_TIMEOUT 1000
 
 const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
@@ -395,7 +395,7 @@ void AP_BLHeli::msp_process_command(void)
         break;
 
     case MSP_UID:
-        // MCU identifer
+        // MCU identifier
         debug("MSP_UID");
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
         break;
@@ -1421,7 +1421,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
     motor_mask = mask;
     debug("ESC: %u motors mask=0x%08lx", num_motors, mask);
 
-    // check if we have a combination of reversable and normal
+    // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
 
     if (num_motors != 0 && telem_rate > 0) {

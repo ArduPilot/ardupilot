@@ -22,7 +22,7 @@ This provides some support code and variables for MAVLink enabled sketches
 
 #include "GCS_config.h"
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
 
 #include "GCS.h"
 #include "GCS_MAVLink.h"
@@ -40,6 +40,10 @@ extern const AP_HAL::HAL& hal;
 #include "include/mavlink/v2.0/mavlink_helpers.h"
 #pragma GCC diagnostic pop
 #endif
+
+#endif // HAL_MAVLINK_BINDINGS_ENABLED
+
+#if HAL_GCS_ENABLED
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];

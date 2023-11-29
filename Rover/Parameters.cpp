@@ -29,7 +29,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
     // @CopyValuesFrom: MODE1
     // @User: Advanced
-    GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
+    GSCALAR(initial_mode,        "INITIAL_MODE",     (int8_t)Mode::Number::MANUAL),
 
     // @Param: SYSID_THISMAV
     // @DisplayName: MAVLink system ID of this vehicle
@@ -109,7 +109,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: What to do on a failsafe event
     // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
     // @User: Standard
-    GSCALAR(fs_action,    "FS_ACTION",     Failsafe_Action_Hold),
+    GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
@@ -174,38 +174,38 @@ const AP_Param::Info Rover::var_info[] = {
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
-    GSCALAR(mode1,           "MODE1",         Mode::Number::MANUAL),
+    GSCALAR(mode1,           "MODE1",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
     // @CopyValuesFrom: MODE1
     // @User: Standard
-    GSCALAR(mode2,           "MODE2",         Mode::Number::MANUAL),
+    GSCALAR(mode2,           "MODE2",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE3
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    GSCALAR(mode3,           "MODE3",         Mode::Number::MANUAL),
+    GSCALAR(mode3,           "MODE3",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE4
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    GSCALAR(mode4,           "MODE4",         Mode::Number::MANUAL),
+    GSCALAR(mode4,           "MODE4",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE5
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    GSCALAR(mode5,           "MODE5",         Mode::Number::MANUAL),
+    GSCALAR(mode5,           "MODE5",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE6
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    GSCALAR(mode6,           "MODE6",         Mode::Number::MANUAL),
+    GSCALAR(mode6,           "MODE6",         (int8_t)Mode::Number::MANUAL),
 
     // variables not in the g class which contain EEPROM saved variables
 

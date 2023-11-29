@@ -28,8 +28,12 @@ extern const AP_HAL::HAL &hal;
 
 void AP_Periph_FW::rcout_init()
 {
+#if AP_PERIPH_SAFETY_SWITCH_ENABLED
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
+#else
+    hal.rcout->force_safety_off();
+#endif
 
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     if (g.esc_telem_port >= 0) {

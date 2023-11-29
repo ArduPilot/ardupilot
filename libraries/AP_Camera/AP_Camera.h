@@ -111,13 +111,22 @@ public:
     void cam_mode_toggle();
     void cam_mode_toggle(uint8_t instance);
 
-    // take a picture
-    void take_picture();
-    void take_picture(uint8_t instance);
+    // take a picture.  If instance is not provided, all available cameras affected
+    // returns true if at least one camera took a picture
+    bool take_picture();
+    bool take_picture(uint8_t instance);
 
     // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+    // if instance is not provided, all available cameras affected
+    // time_interval_ms must be positive
     // total_num is number of pictures to be taken, -1 means capture forever
-    void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+    // returns true if at least one camera is successful
+    bool take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+    bool take_multiple_pictures(uint8_t instance, uint32_t time_interval_ms, int16_t total_num);
+
+    // stop capturing multiple image sequence
+    void stop_capture();
+    bool stop_capture(uint8_t instance);
 
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording

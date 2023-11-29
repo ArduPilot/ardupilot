@@ -514,6 +514,7 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     hemisphere |= (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) ? 0x80 : 0;  // isInvalid
     pkt.payload[35] = hemisphere;
 
+#if AP_RTC_ENABLED
     // time
     uint64_t time_usec;
     if (AP::rtc().get_utc_usec(time_usec)) {
@@ -526,6 +527,9 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     } else {
         memset(&pkt.payload[36],' ', 10);
     }
+#else
+    memset(&pkt.payload[36],' ', 10);
+#endif
 
     send_msg(pkt);
 }

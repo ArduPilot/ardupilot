@@ -14,6 +14,7 @@ from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
 from common import AutoTest
+from common import Test
 from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 import operator
@@ -351,7 +352,8 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QLAND")
         self.wait_altitude(0, 2, relative=True, timeout=60)
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=30)
         self.mav.motors_disarmed_wait()
 
     def EXTENDED_SYS_STATE(self):
@@ -743,6 +745,40 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_heading(275)
         self.set_rc(4, 1500)
         self.do_RTL()
+
+    def FwdThrInVTOL(self):
+        '''test use of fwd motor throttle into wind'''
+        self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
+                             "SIM_WIND_DIR": 360,
+                             "Q_WVANE_ENABLE": 1,
+                             "Q_WVANE_GAIN": 1,
+                             "STICK_MIXING": 0,
+                             "Q_FWD_THR_USE": 2,
+                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
+
+        self.takeoff(10, mode="QLOITER")
+        self.set_rc(2, 1000)
+        self.delay_sim_time(10)
+        # Check that it is using some forward throttle
+        fwd_thr_pwm = self.get_servo_channel_value(3)
+        if fwd_thr_pwm < 1150 :
+            raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
+        # check that pitch is on limit
+        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+        pitch = math.degrees(m.pitch)
+        if abs(pitch + 3.0) > 0.5 :
+            raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
+        self.set_rc(2, 1500)
+        self.delay_sim_time(5)
+        loc1 = self.mav.location()
+        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
+        self.delay_sim_time(20)
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=60)
+        loc2 = self.mav.location()
+        position_drift = self.get_distance(loc1, loc2)
+        if position_drift > 5.0 :
+            raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
 
     def Weathervane(self):
         '''test nose-into-wind functionality'''
@@ -1407,11 +1443,82 @@ class AutoTestQuadPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_NAV_TAKEOFF(self):
+        '''test issuing takeoff command via mavlink'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
+        self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
+        self.change_mode('QLAND')
+        self.wait_disarmed()
+
+        self.start_subtest("Check NAV_TAKEOFF is above current location, not home location")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        # reset home 20 metres above current location
+        current_alt_abs = self.get_altitude(relative=False)
+
+        loc = self.mav.location()
+
+        home_z_ofs = 20
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=current_alt_abs + home_z_ofs,
+        )
+
+        self.arm_vehicle()
+        takeoff_alt = 5
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=takeoff_alt)
+        self.wait_altitude(
+            current_alt_abs + takeoff_alt - 0.5,
+            current_alt_abs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('QLAND')
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def Q_GUIDED_MODE(self):
+        '''test moving in VTOL mode with SET_POSITION_TARGET_GLOBAL_INT'''
+        self.set_parameter('Q_GUIDED_MODE', 1)
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=15)
+        self.wait_altitude(14, 16, relative=True)
+
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 50, 50)
+
+        # set position target
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            1,  # reposition flags; 1 means "change to guided"
+            0,
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            30,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_location(loc, timeout=120)
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
+            self.FwdThrInVTOL,
             self.AirMode,
             self.TestMotorMask,
             self.PilotYaw,
@@ -1435,8 +1542,16 @@ class AutoTestQuadPlane(AutoTest):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            Test(self.MotorTest, kwargs={  # tests motors 4 and 2
+                "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
+                "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
+                "wait_finish_text": False,
+                "quadplane": True,
+            }),
             self.RCDisableAirspeedUse,
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
+            self.MAV_CMD_NAV_TAKEOFF,
+            self.Q_GUIDED_MODE,
         ])
         return ret

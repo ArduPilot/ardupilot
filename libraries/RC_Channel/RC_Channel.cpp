@@ -228,6 +228,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 165:Arm/Emergency Motor Stop
     // @Values{Copter, Rover, Plane, Blimp}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
     // @Values{Plane}: 170:QSTABILIZE Mode
+    // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
     // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
     // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
@@ -1556,7 +1557,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
-    
+
+#if COMPASS_CAL_ENABLED
     case AUX_FUNC::MAG_CAL: {
         Compass &compass = AP::compass();
         switch (ch_flag) {
@@ -1580,6 +1582,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
     case AUX_FUNC::ARM_EMERGENCY_STOP: {
         switch (ch_flag) {

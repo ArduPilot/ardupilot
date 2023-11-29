@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  generic CAN sensor class, for easy creation of CAN sensors using prioprietary protocols
+  generic CAN sensor class, for easy creation of CAN sensors using proprietary protocols
  */
 #include <AP_HAL/AP_HAL.h>
 

@@ -157,6 +157,12 @@
  *   Note also that f103-GPS explicitly disables some of these backends.
  */
 #define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+#ifndef AP_GPS_UBLOX_ENABLED
+#define AP_GPS_UBLOX_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
+#endif
+#ifndef HAL_MSP_GPS_ENABLED
+#define HAL_MSP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS) && HAL_MSP_SENSORS_ENABLED
+#endif
 
 #ifndef AP_GPS_ERB_ENABLED
 #define AP_GPS_ERB_ENABLED 0
@@ -311,9 +317,10 @@
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
-#define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
+#define AP_GPS_ENABLED 1  // FIXME: should be defined(HAL_PERIPH_ENABLE_GPS)
 #define AP_RPM_ENABLED defined(HAL_PERIPH_ENABLE_RPM)
 #define AP_RCPROTOCOL_ENABLED defined(HAL_PERIPH_ENABLE_RCIN)
+#define AP_RTC_ENABLED defined(HAL_PERIPH_ENABLE_RTC)
 
 #ifndef AP_BOOTLOADER_ALWAYS_ERASE
 #define AP_BOOTLOADER_ALWAYS_ERASE 1
@@ -324,7 +331,7 @@
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED
-#define AP_UART_MONITOR_ENABLED AP_GPS_ENABLED && (GPS_MOVING_BASELINE || BOARD_FLASH_SIZE>=256)
+#define AP_UART_MONITOR_ENABLED defined(HAL_PERIPH_ENABLE_GPS) && (GPS_MOVING_BASELINE || BOARD_FLASH_SIZE>=256)
 #endif
 
 #ifndef HAL_BOARD_LOG_DIRECTORY
@@ -335,9 +342,46 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 #endif
 
+#ifndef HAL_MAVLINK_BINDINGS_ENABLED
+#define HAL_MAVLINK_BINDINGS_ENABLED defined(HAL_PERIPH_ENABLE_ADSB) || HAL_GCS_ENABLED
+#endif
+
 // for boards other than AP_Periph we are always expecting delays when
 // not initialised.  We can't afford that on AP_Periph as you may end
 // up with a bricked node if you write a bad firmware to it.
 #ifndef AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 0
 #endif
+
+#ifndef AP_SERIALLED_ENABLED
+#define AP_SERIALLED_ENABLED 0
+#endif
+
+#ifndef AP_OPTICALFLOW_ENABLED
+#define AP_OPTICALFLOW_ENABLED 0
+#endif
+
+#ifndef HAL_BUTTON_ENABLED
+#define HAL_BUTTON_ENABLED 0
+#endif
+
+#ifndef AP_NOTIFY_SCRIPTING_LED_ENABLED
+#define AP_NOTIFY_SCRIPTING_LED_ENABLED 0
+#endif
+
+#ifndef AP_PARAM_DYNAMIC_ENABLED
+#define AP_PARAM_DYNAMIC_ENABLED 0
+#endif
+
+#ifndef HAL_MOUNT_ENABLED
+#define HAL_MOUNT_ENABLED 0
+#endif
+
+#ifndef AP_CAMERA_ENABLED
+#define AP_CAMERA_ENABLED 0
+#endif
+
+#ifndef AP_TERRAIN_AVAILABLE
+#define AP_TERRAIN_AVAILABLE 0
+#endif
+
