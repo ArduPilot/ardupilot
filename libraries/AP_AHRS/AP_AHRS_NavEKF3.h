@@ -60,12 +60,6 @@ public:
         return EKF3.setLatLng(loc, posErr, timestamp_ms);
     }
 
-    // return estimate of true airspeed vector in body frame in m/s
-    // returns false if estimate is unavailable
-    bool airspeed_vector_true(Vector3f &vec) const override {
-        return EKF3.getAirSpdVec(vec);
-    }
-
     bool use_compass() override { return EKF3.use_compass(); }
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
