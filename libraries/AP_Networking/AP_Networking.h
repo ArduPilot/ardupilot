@@ -54,13 +54,22 @@ public:
     // returns true if DHCP is enabled
     bool get_dhcp_enabled() const
     {
+#if AP_NETWORKING_DHCP_AVAILABLE
         return param.dhcp;
+#else
+        // DHCP is not available from our scope but could be enabled/controlled
+        // by the OS which is the case on Linux builds, including SITL
+        // TODO: ask the OS if DHCP is enabled
+        return false;
+#endif
     }
 
     // Sets DHCP to be enabled or disabled
     void set_dhcp_enable(const bool enable)
     {
+#if AP_NETWORKING_DHCP_AVAILABLE
         param.dhcp.set(enable);
+#endif
     }
 
     // returns the 32bit value of the active IP address that is currently in use
@@ -69,7 +78,12 @@ public:
     // returns the 32bit value of the user-parameter static IP address
     uint32_t get_ip_param() const
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         return param.ipaddr.get_uint32();
+#else
+        // TODO: ask the OS for the IP address
+        return 0;
+#endif
     }
 
     /*
@@ -84,7 +98,9 @@ public:
     // sets the user-parameter static IP address from a 32bit value
     void set_ip_param(const uint32_t ip)
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         param.ipaddr.set_uint32(ip);
+#endif
     }
 
     // returns the 32bit value of the active Netmask that is currently in use
@@ -93,7 +109,12 @@ public:
     // returns the 32bit value of the of the user-parameter static Netmask
     uint32_t get_netmask_param() const
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         return convert_netmask_bitcount_to_ip(param.netmask.get());
+#else
+        // TODO: ask the OS for the Netmask
+        return 0;
+#endif
     }
 
     // returns a null terminated string of the active Netmask address. Example: "192.168.12.13"
@@ -114,14 +135,21 @@ public:
 
     void set_netmask_param(const uint32_t nm)
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         param.netmask.set(convert_netmask_ip_to_bitcount(nm));
+#endif
     }
 
     uint32_t get_gateway_active() const;
 
     uint32_t get_gateway_param() const
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         return param.gwaddr.get_uint32();
+#else
+        // TODO: ask the OS for the Gateway
+        return 0;
+#endif
     }
 
     const char *get_gateway_active_str()
@@ -141,7 +169,9 @@ public:
 
     void set_gateway_param(const uint32_t gw)
     {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         param.gwaddr.set_uint32(gw);
+#endif
     }
 
     // wait in a thread for network startup
@@ -166,14 +196,19 @@ private:
     void announce_address_changes();
 
     struct {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
         AP_Networking_IPV4 ipaddr{AP_NETWORKING_DEFAULT_STATIC_IP_ADDR};
         AP_Int8 netmask;    // bits to mask. example: (16 == 255.255.0.0) and (24 == 255.255.255.0)
         AP_Networking_IPV4 gwaddr{AP_NETWORKING_DEFAULT_STATIC_GW_ADDR};
-
-        AP_Int8 dhcp;
         AP_Networking_MAC macaddr{AP_NETWORKING_DEFAULT_MAC_ADDR};
+#if AP_NETWORKING_DHCP_AVAILABLE
+        AP_Int8 dhcp;
+#endif
+#endif
+
         AP_Int8 enabled;
         AP_Int32 options;
+
 #if AP_NETWORKING_TESTS_ENABLED
         AP_Int32 tests;
         AP_Networking_IPV4 test_ipaddr{AP_NETWORKING_TEST_IP};

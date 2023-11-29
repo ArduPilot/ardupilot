@@ -102,10 +102,6 @@ bool AP_Networking_ChibiOS::init()
         return false;
     }
 
-#if !AP_NETWORKING_DHCP_AVAILABLE
-    frontend.set_dhcp_enable(false);
-#endif
-
     lwip_options = new lwipthread_opts;
 
     if (frontend.get_dhcp_enabled()) {

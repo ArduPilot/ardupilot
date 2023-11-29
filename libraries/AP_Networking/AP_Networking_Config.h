@@ -8,16 +8,24 @@
 #define AP_NETWORKING_BACKEND_DEFAULT_ENABLED AP_NETWORKING_ENABLED
 #endif
 
+#ifndef AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+// AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED should only be true if we have the ability to
+// change the IP address. If not then the IP, GW, NetMask, MAC and DHCP params are hidden. 
+// This does not mean that the system/OS does not have the ability to set the IP, just that
+// we have no control from this scope. For example, Linux systems (including SITL) have
+// their own DHCP client running but we have no control over it.
+#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS)
+#endif
 
 // ---------------------------
 // Backends
 // ---------------------------
 #ifndef AP_NETWORKING_BACKEND_CHIBIOS
-#define AP_NETWORKING_BACKEND_CHIBIOS AP_NETWORKING_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_NETWORKING_BACKEND_CHIBIOS (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS))
 #endif
 
 #ifndef AP_NETWORKING_BACKEND_SITL
-#define AP_NETWORKING_BACKEND_SITL AP_NETWORKING_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define AP_NETWORKING_BACKEND_SITL (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
 
 #define AP_NETWORKING_SOCKETS_ENABLED (HAL_OS_SOCKETS || AP_NETWORKING_BACKEND_CHIBIOS)
@@ -25,10 +33,13 @@
 // ---------------------------
 // IP Features
 // ---------------------------
-#if AP_NETWORKING_BACKEND_CHIBIOS
-#define AP_NETWORKING_DHCP_AVAILABLE    LWIP_DHCP
-#else
-#define AP_NETWORKING_DHCP_AVAILABLE    1 // for non-ChibiOS, assume it's available
+#ifndef AP_NETWORKING_DHCP_AVAILABLE
+// AP_NETWORKING_DHCP_AVAILABLE should only be true if, by setting the NET_DHCP parameter,
+// we have the ability to turn on/off the DHCP client which effects the assigned IP address.
+// Otherwise, param NET_DHCP will be hidden. This does not mean that the system/OS does not
+// have DHCP, just that we have no control from this scope. For example, Linux systems
+// (including SITL) have their own DHCP client running but we have no control over it.
+#define AP_NETWORKING_DHCP_AVAILABLE (AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED || AP_NETWORKING_BACKEND_CHIBIOS)
 #endif
 
 
@@ -38,7 +49,7 @@
 
 // Default DHCP
 #ifndef AP_NETWORKING_DEFAULT_DHCP_ENABLE
-#define AP_NETWORKING_DEFAULT_DHCP_ENABLE 1
+#define AP_NETWORKING_DEFAULT_DHCP_ENABLE AP_NETWORKING_DHCP_AVAILABLE
 #endif
 
 // Default Static IP Address: 192.168.13.14
