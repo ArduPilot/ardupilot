@@ -358,6 +358,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
                              AP_Arming::ARMING_CHECK_BATTERY},
     { "CIRCLE_RATE",         2.0f},
     { "ATC_ACCEL_Y_MAX",     110000.0f},
+    { "ATC_RATE_Y_MAX",      180.0f},
     { "RC3_TRIM",            1100},
     { "COMPASS_OFFS_MAX",    1000},
     { "INS_GYR_CAL",         0},
@@ -368,4 +369,24 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC8_OPTION",          213},   // MOUNT1_PITCH
     { "MOT_PWM_MIN",         1100},
     { "MOT_PWM_MAX",         1900},
+    { "PSC_JERK_Z",          50.0f},
+    { "WPNAV_SPEED",         100.0f},
+    { "PILOT_SPEED_UP",      100.0f},
+    { "PSC_VELXY_P",         6.0f},
+    { "EK3_SRC1_VELZ",       0},
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
+    { "BARO_PROBE_EXT",      0},
+    { "BATT_MONITOR",        4},
+    { "BATT_CAPACITY",       0},
+    { "LEAK1_PIN",           27},
+    { "SCHED_LOOP_RATE",     200},
+    { "SERVO13_FUNCTION",    59},    // k_rcin9, lights 1
+    { "SERVO14_FUNCTION",    60},    // k_rcin10, lights 2
+    { "SERVO16_FUNCTION",    7},     // k_mount_tilt
+    { "SERVO16_REVERSED",    1},
+#else
+    { "BARO_PROBE_EXT",      768},
+    { "SERVO9_FUNCTION",     59},    // k_rcin9, lights 1
+    { "SERVO10_FUNCTION",    7},     // k_mount_tilt
+#endif
 };
