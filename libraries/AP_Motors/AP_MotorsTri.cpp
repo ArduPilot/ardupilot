@@ -360,6 +360,30 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
     return ret;
 }
 
+// This function is currently only used by AP_Motors_test
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+float AP_MotorsTri::get_pitch_factor_json(uint8_t i)
+{
+    float ret = 0.0f;
+
+    switch (i) {
+    case AP_MOTORS_MOT_1: // front motors
+    case AP_MOTORS_MOT_2:
+        ret = 0.5f;
+        break;
+    case AP_MOTORS_MOT_4: // rear motor
+        ret = -1.0f;
+        break;
+    }
+
+    if (_pitch_reversed) {
+        ret *= -1.0f;
+    }
+
+    return ret;
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+
 // Run arming checks
 bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
 {
@@ -374,3 +398,23 @@ bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
     // run base class checks
     return AP_MotorsMulticopter::arming_checks(buflen, buffer);
 }
+
+// This function is currently only used by AP_Motors_test
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// Get the testing order for the motors
+uint8_t AP_MotorsTri::get_motor_test_order(uint8_t i)
+{
+    switch (i) {
+    case AP_MOTORS_MOT_1: // front right motor
+        return 1;
+    case AP_MOTORS_MOT_4: // back motor
+        return 2;
+    case AP_MOTORS_CH_TRI_YAW: // back servo
+        return 3;
+    case AP_MOTORS_MOT_2: // front left motor
+        return 4;
+    default:
+        return 0;
+    }
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
