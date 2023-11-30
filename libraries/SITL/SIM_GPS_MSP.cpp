@@ -6,6 +6,8 @@
 
 #include <SITL/SITL.h>
 
+#include <time.h>
+
 using namespace SITL;
 
 /*
