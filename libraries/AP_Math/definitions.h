@@ -95,6 +95,9 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 #define INCH_OF_H2O_TO_PASCAL 248.84f
 
+#define UTESLA_TO_MGAUSS   10.0f // uT to mGauss conversion
+#define NTESLA_TO_MGAUSS   0.01f // nT to mGauss conversion
+
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX
   clock.h
