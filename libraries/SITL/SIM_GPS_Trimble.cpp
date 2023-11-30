@@ -6,6 +6,7 @@
 
 #include <SITL/SITL.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include <assert.h>
 
