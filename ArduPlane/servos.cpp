@@ -516,9 +516,6 @@ void Plane::set_servos_controlled(void)
     throttle_watt_limiter(min_throttle, max_throttle);
 #endif
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
-                                    constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
-    
     if (!arming.is_armed_and_safety_off()) {
         // Always set 0 scaled even if overriding to zero pwm.
         // This ensures slew limits and other functions using the scaled value pick up in the correct place
@@ -532,14 +529,18 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         }
     } else if (suppress_throttle()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0); // default
-        // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
-        if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
-        }
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+
+        } else if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
+            // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
+
+        } else {
+            // default
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+
         }
 #if AP_SCRIPTING_ENABLED
     } else if (nav_scripting_active()) {
@@ -575,6 +576,11 @@ void Plane::set_servos_controlled(void)
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);
 #endif  // HAL_QUADPLANE_ENABLED
+
+    } else {
+        // Apply min/max limits to throttle output from flight mode
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                                        constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
     }
 
 }
