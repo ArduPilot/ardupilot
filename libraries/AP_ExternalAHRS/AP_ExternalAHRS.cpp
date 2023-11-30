@@ -26,6 +26,7 @@
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_Scripting.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -126,6 +127,12 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
     case DevType::InertialLabs:
         backend = new AP_ExternalAHRS_InertialLabs(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_SCRIPTING_ENABLED
+    case DevType::Scripting:
+        backend = new AP_ExternalAHRS_Scripting(this, state);
         return;
 #endif
 
@@ -278,7 +285,7 @@ bool AP_ExternalAHRS::get_accel(Vector3f &accel)
 void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
-        backend->send_status_report(link);
+        backend->send_EKF_status_report(link);
     }
 }
 
@@ -345,6 +352,12 @@ const char* AP_ExternalAHRS::get_name() const
         return backend->get_name();
     }
     return nullptr;
+}
+
+// handle input from scripting backend
+bool AP_ExternalAHRS::handle_scripting(const state_t &_state, nav_filter_status_flags_t &_filter_status)
+{
+    return backend->handle_scripting(_state, _filter_status);
 }
 
 namespace AP {
