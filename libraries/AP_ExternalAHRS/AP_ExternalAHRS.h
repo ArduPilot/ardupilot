@@ -49,9 +49,11 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+        InertialLabs = 5,
+#endif
         // 3 reserved for AdNav
         // 4 reserved for CINS
-        // 5 reserved for InertialLabs
         // 6 reserved for Trimble
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
         MicroStrain7 = 7,
@@ -156,6 +158,11 @@ public:
         float temperature;
     } ins_data_message_t;
 
+    typedef struct {
+        float differential_pressure; // Pa
+        float temperature; // degC
+    } airspeed_data_message_t;
+    
 protected:
 
     enum class OPTIONS {
