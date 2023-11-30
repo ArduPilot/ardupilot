@@ -8,6 +8,8 @@
 #include <AP_Common/NMEA.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include <time.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
