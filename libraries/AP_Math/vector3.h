@@ -281,6 +281,12 @@ public:
         return Vector3<double>{x,y,z};
     }
 
+    // convert from right-front-up to front-right-down
+    // or ENU to NED
+    Vector3<T> rfu_to_frd() const {
+        return Vector3<T>{y,x,-z};
+    }
+
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the
     // zero vector the return from the function will always be the
