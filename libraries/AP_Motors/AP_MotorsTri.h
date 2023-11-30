@@ -48,8 +48,14 @@ public:
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override;
 
+    // return the pitch factor of any motor, this is used for AP_Motors_test
+    float               get_pitch_factor_json(uint8_t i);
+
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
+
+    // Get the testing order for the motors, this is used for AP_Motors_test
+    uint8_t get_motor_test_order(uint8_t i);
 
 protected:
     // output - sends commands to the motors
