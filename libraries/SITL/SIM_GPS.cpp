@@ -87,12 +87,12 @@ ssize_t GPS::write_to_autopilot(const char *p, size_t size) const
 
     size_t ret = 0;
     while (size--) {
-            float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
-            if (r < byteloss) {
-                // lose the byte
-                p++;
-                continue;
-            }
+        float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
+        if (r < byteloss) {
+            // lose the byte
+            p++;
+            continue;
+        }
 
         const ssize_t pret = SerialDevice::write_to_autopilot(p, 1);
         if (pret == 0) {
@@ -262,85 +262,85 @@ void GPS::update()
 
     const uint8_t idx = instance;  // alias to avoid code churn
 
-        struct GPS_Data d {};
+    struct GPS_Data d {};
 
-        // simulate delayed lock times
-        bool have_lock = (!_sitl->gps_disable[idx] && now_ms >= _sitl->gps_lock_time[idx]*1000UL);
+    // simulate delayed lock times
+    bool have_lock = (!_sitl->gps_disable[idx] && now_ms >= _sitl->gps_lock_time[idx]*1000UL);
 
-        // Only let physics run and GPS write at configured GPS rate (default 5Hz).
-        if ((now_ms - last_write_update_ms) < (uint32_t)(1000/_sitl->gps_hertz[instance])) {
-            // Reading runs every iteration.
-            // Beware- physics don't update every iteration with this approach.
-            // Currently, none of the drivers rely on quickly updated physics.
-            backend->update_read();
-            return;
-        }
+    // Only let physics run and GPS write at configured GPS rate (default 5Hz).
+    if ((now_ms - last_write_update_ms) < (uint32_t)(1000/_sitl->gps_hertz[instance])) {
+        // Reading runs every iteration.
+        // Beware- physics don't update every iteration with this approach.
+        // Currently, none of the drivers rely on quickly updated physics.
+        backend->update_read();
+        return;
+    }
 
     last_write_update_ms = now_ms;
 
-        d.latitude = latitude;
-        d.longitude = longitude;
-        d.yaw_deg = _sitl->state.yawDeg;
-        d.roll_deg = _sitl->state.rollDeg;
-        d.pitch_deg = _sitl->state.pitchDeg;
+    d.latitude = latitude;
+    d.longitude = longitude;
+    d.yaw_deg = _sitl->state.yawDeg;
+    d.roll_deg = _sitl->state.rollDeg;
+    d.pitch_deg = _sitl->state.pitchDeg;
 
-        // add an altitude error controlled by a slow sine wave
-        d.altitude = altitude + _sitl->gps_noise[idx] * sinf(now_ms * 0.0005f) + _sitl->gps_alt_offset[idx];
+    // add an altitude error controlled by a slow sine wave
+    d.altitude = altitude + _sitl->gps_noise[idx] * sinf(now_ms * 0.0005f) + _sitl->gps_alt_offset[idx];
 
-        // Add offset to c.g. velocity to get velocity at antenna and add simulated error
-        Vector3f velErrorNED = _sitl->gps_vel_err[idx];
-        d.speedN = speedN + (velErrorNED.x * rand_float());
-        d.speedE = speedE + (velErrorNED.y * rand_float()); 
-        d.speedD = speedD + (velErrorNED.z * rand_float());
-        d.have_lock = have_lock;
+    // Add offset to c.g. velocity to get velocity at antenna and add simulated error
+    Vector3f velErrorNED = _sitl->gps_vel_err[idx];
+    d.speedN = speedN + (velErrorNED.x * rand_float());
+    d.speedE = speedE + (velErrorNED.y * rand_float());
+    d.speedD = speedD + (velErrorNED.z * rand_float());
+    d.have_lock = have_lock;
 
-        if (_sitl->gps_drift_alt[idx] > 0) {
-            // add slow altitude drift controlled by a slow sine wave
-            d.altitude += _sitl->gps_drift_alt[idx]*sinf(now_ms*0.001f*0.02f);
-        }
+    if (_sitl->gps_drift_alt[idx] > 0) {
+        // add slow altitude drift controlled by a slow sine wave
+        d.altitude += _sitl->gps_drift_alt[idx]*sinf(now_ms*0.001f*0.02f);
+    }
 
-        // correct the latitude, longitude, height and NED velocity for the offset between
-        // the vehicle c.g. and GPS antenna
-        Vector3f posRelOffsetBF = _sitl->gps_pos_offset[idx];
-        if (!posRelOffsetBF.is_zero()) {
-            // get a rotation matrix following DCM conventions (body to earth)
-            Matrix3f rotmat;
-            _sitl->state.quaternion.rotation_matrix(rotmat);
+    // correct the latitude, longitude, height and NED velocity for the offset between
+    // the vehicle c.g. and GPS antenna
+    Vector3f posRelOffsetBF = _sitl->gps_pos_offset[idx];
+    if (!posRelOffsetBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        _sitl->state.quaternion.rotation_matrix(rotmat);
 
-            // rotate the antenna offset into the earth frame
-            Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
+        // rotate the antenna offset into the earth frame
+        Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
 
-            // Add the offset to the latitude, longitude and height using a spherical earth approximation
-            double const earth_rad_inv = 1.569612305760477e-7; // use Authalic/Volumetric radius
-            double lng_scale_factor = earth_rad_inv / cos(radians(d.latitude));
-            d.latitude += degrees(posRelOffsetEF.x * earth_rad_inv);
-            d.longitude += degrees(posRelOffsetEF.y * lng_scale_factor);
-            d.altitude -= posRelOffsetEF.z;
+        // Add the offset to the latitude, longitude and height using a spherical earth approximation
+        double const earth_rad_inv = 1.569612305760477e-7; // use Authalic/Volumetric radius
+        double lng_scale_factor = earth_rad_inv / cos(radians(d.latitude));
+        d.latitude += degrees(posRelOffsetEF.x * earth_rad_inv);
+        d.longitude += degrees(posRelOffsetEF.y * lng_scale_factor);
+        d.altitude -= posRelOffsetEF.z;
 
-            // calculate a velocity offset due to the antenna position offset and body rotation rate
-            // note: % operator is overloaded for cross product
-            Vector3f gyro(radians(_sitl->state.rollRate),
-                          radians(_sitl->state.pitchRate),
-                          radians(_sitl->state.yawRate));
-            Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
+        // calculate a velocity offset due to the antenna position offset and body rotation rate
+        // note: % operator is overloaded for cross product
+        Vector3f gyro(radians(_sitl->state.rollRate),
+                      radians(_sitl->state.pitchRate),
+                      radians(_sitl->state.yawRate));
+        Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
 
-            // rotate the velocity offset into earth frame and add to the c.g. velocity
-            Vector3f velRelOffsetEF = rotmat * velRelOffsetBF;
-            d.speedN += velRelOffsetEF.x;
-            d.speedE += velRelOffsetEF.y;
-            d.speedD += velRelOffsetEF.z;
-        }
+        // rotate the velocity offset into earth frame and add to the c.g. velocity
+        Vector3f velRelOffsetEF = rotmat * velRelOffsetBF;
+        d.speedN += velRelOffsetEF.x;
+        d.speedE += velRelOffsetEF.y;
+        d.speedD += velRelOffsetEF.z;
+    }
 
-        // get delayed data
-        d.timestamp_ms = now_ms;
-        d = interpolate_data(d, _sitl->gps_delay_ms[instance]);
+    // get delayed data
+    d.timestamp_ms = now_ms;
+    d = interpolate_data(d, _sitl->gps_delay_ms[instance]);
 
-        // Applying GPS glitch
-        // Using first gps glitch
-        Vector3f glitch_offsets = _sitl->gps_glitch[idx];
-        d.latitude += glitch_offsets.x;
-        d.longitude += glitch_offsets.y;
-        d.altitude += glitch_offsets.z;
+    // Applying GPS glitch
+    // Using first gps glitch
+    Vector3f glitch_offsets = _sitl->gps_glitch[idx];
+    d.latitude += glitch_offsets.x;
+    d.longitude += glitch_offsets.y;
+    d.altitude += glitch_offsets.z;
 
     backend->publish(&d);
 }
