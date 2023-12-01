@@ -30,6 +30,7 @@
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
+#include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -198,6 +199,9 @@ private:
     // simulated MicroStrain Series 7 system
     SITL::MicroStrain7 *microstrain7;
 
+    // simulated InertialLabs INS-U
+    SITL::InertialLabs *inertiallabs;
+    
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
