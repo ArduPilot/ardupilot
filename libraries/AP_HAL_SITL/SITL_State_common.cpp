@@ -276,6 +276,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         microstrain7 = new SITL::MicroStrain7();
         return microstrain7;
+
+    } else if (streq(name, "ILabs")) {
+        if (inertiallabs != nullptr) {
+            AP_HAL::panic("Only one InertialLabs INS at a time");
+        }
+        inertiallabs = new SITL::InertialLabs();
+        return inertiallabs;
+
 #if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
@@ -444,6 +452,9 @@ void SITL_State_Common::sim_update(void)
 
     if (microstrain7 != nullptr) {
         microstrain7->update();
+    }
+    if (inertiallabs != nullptr) {
+        inertiallabs->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
