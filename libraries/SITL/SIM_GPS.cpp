@@ -130,6 +130,71 @@ void GPS_Backend::simulation_timeval(struct timeval *tv)
 }
 
 /*
+  simple simulation of jamming
+ */
+void GPS::simulate_jamming(struct GPS_Data &d)
+{
+    auto &jam = jamming[instance];
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - jam.last_jam_ms > 1000) {
+        jam.jam_start_ms = now_ms;
+        jam.latitude = d.latitude;
+        jam.longitude = d.longitude;
+    }
+    jam.last_jam_ms = now_ms;
+
+    // how often each of the key state variables change during jamming
+    const float vz_change_hz = 0.5;
+    const float vel_change_hz = 0.8;
+    const float pos_change_hz = 1.1;
+    const float sats_change_hz = 3;
+    const float acc_change_hz = 3;
+
+    if (now_ms - jam.jam_start_ms < unsigned(1000U+(get_random16()%5000))) {
+        // total loss of signal for a period at the start is common
+        d.num_sats = 0;
+        d.have_lock = false;
+    } else {
+        if ((now_ms - jam.last_sats_change_ms)*0.001 > 2*fabsf(rand_float())/sats_change_hz) {
+            jam.last_sats_change_ms = now_ms;
+            d.num_sats = 2 + (get_random16() % 15);
+            if (d.num_sats >= 4) {
+                if (get_random16() % 2 == 0) {
+                    d.have_lock = false;
+                } else {
+                    d.have_lock = true;
+                }
+            } else {
+                d.have_lock = false;
+            }
+        }
+        if ((now_ms - jam.last_vz_change_ms)*0.001 > 2*fabsf(rand_float())/vz_change_hz) {
+            jam.last_vz_change_ms = now_ms;
+            d.speedD = rand_float() * 400;
+        }
+        if ((now_ms - jam.last_vel_change_ms)*0.001 > 2*fabsf(rand_float())/vel_change_hz) {
+            jam.last_vel_change_ms = now_ms;
+            d.speedN = rand_float() * 400;
+            d.speedE = rand_float() * 400;
+        }
+        if ((now_ms - jam.last_pos_change_ms)*0.001 > 2*fabsf(rand_float())/pos_change_hz) {
+            jam.last_pos_change_ms = now_ms;
+            jam.latitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
+            jam.longitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
+        }
+        if ((now_ms - jam.last_acc_change_ms)*0.001 > 2*fabsf(rand_float())/acc_change_hz) {
+            jam.last_acc_change_ms = now_ms;
+            d.vertical_acc = fabsf(rand_float())*300;
+            d.horizontal_acc = fabsf(rand_float())*300;
+            d.speed_acc = fabsf(rand_float())*50;
+        }
+    }
+
+    d.latitude = constrain_float(jam.latitude, -90, 90);
+    d.longitude = constrain_float(jam.longitude, -180, 180);
+}
+
+/*
   return GPS time of week
  */
 GPS_Backend::GPS_TOW GPS_Backend::gps_time()
@@ -341,6 +406,10 @@ void GPS::update()
     d.latitude += glitch_offsets.x;
     d.longitude += glitch_offsets.y;
     d.altitude += glitch_offsets.z;
+
+        if (_sitl->gps_jam[idx] == 1) {
+            simulate_jamming(d);
+        }
 
     backend->publish(&d);
 }
