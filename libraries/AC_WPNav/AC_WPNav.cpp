@@ -350,6 +350,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 
     _this_leg_is_spline = false;
     _scurve_next_leg.init();
+    _next_destination.zero();       // clear next destination
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.reached_destination = false;
 
@@ -379,6 +380,9 @@ bool AC_WPNav::set_wp_destination_next(const Vector3f& destination, bool terrain
 
     // next destination provided so fast waypoint
     _flags.fast_waypoint = true;
+
+    // record next destination
+    _next_destination = destination;
 
     return true;
 }
