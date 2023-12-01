@@ -273,6 +273,7 @@ protected:
     float       _wp_desired_speed_xy_cms;   // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
+    Vector3f    _next_destination;      // next target destination in cm from ekf origin
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
     float       _offset_vel;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel;          // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
