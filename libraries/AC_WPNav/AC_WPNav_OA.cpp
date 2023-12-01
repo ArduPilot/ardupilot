@@ -91,7 +91,10 @@ bool AC_WPNav_OA::update_wpnav()
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
                 // object avoidance has become inactive so reset target to original destination
-                set_wp_destination(_destination_oabak, _terrain_alt_oabak);
+                if (!set_wp_destination(_destination_oabak, _terrain_alt_oabak)) {
+                    // trigger terrain failsafe
+                    return false;
+                }
                 _oa_state = oa_retstate;
             }
             break;
