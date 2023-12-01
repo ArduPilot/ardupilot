@@ -161,8 +161,6 @@ void ModeSystemId::run()
     float pilot_throttle_scaled = 0.0f;
     float target_climb_rate = 0.0f;
     Vector2f input_vel;
-    Vector2f pilot_vel;
-    Vector2f vel_correction;
 
     if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
          && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
@@ -226,17 +224,6 @@ void ModeSystemId::run()
         pilot_throttle_scaled = get_pilot_desired_throttle();
 #endif
 
-    } else {
-        if (!copter.failsafe.radio) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // convert pilot input to reposition velocity
-            // use half maximum acceleration as the maximum velocity to ensure aircraft will
-            // stop from full reposition speed in less than 1 second.
-            const float max_pilot_vel = wp_nav->get_wp_acceleration() * 0.5;
-            vel_correction = get_pilot_desired_velocity(max_pilot_vel);
-        }
     }
 
     if ((systemid_state == SystemIDModeState::SYSTEMID_STATE_TESTING) &&
@@ -374,7 +361,7 @@ void ModeSystemId::run()
         }
 
         Vector2f accel;
-        pos_control->input_vel_accel_xy(vel_correction, accel);
+        pos_control->input_vel_accel_xy(input_vel, accel);
 
         // run pos controller
         pos_control->update_xy_controller();
