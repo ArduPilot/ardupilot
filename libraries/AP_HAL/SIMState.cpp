@@ -230,6 +230,9 @@ void SIMState::fdm_input_local(void)
     if (microstrain5 != nullptr) {
         microstrain5->update();
     }
+    if (inertiallabs != nullptr) {
+        inertiallabs->update();
+    }
 
 #if HAL_SIM_AIS_ENABLED
     if (ais != nullptr) {
