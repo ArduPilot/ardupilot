@@ -672,6 +672,8 @@ void AP_Airspeed::read(uint8_t i)
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
+    WITH_SEMAPHORE(sem);
+
     if (!lib_enabled()) {
         return;
     }
