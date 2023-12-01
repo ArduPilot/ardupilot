@@ -27,6 +27,7 @@
 #include "AP_ExternalAHRS_MicroStrain7.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -241,6 +242,20 @@ void AP_ExternalAHRS::update(void)
 {
     if (backend) {
         backend->update();
+    }
+
+    /*
+      if backend has not supplied an origin and AHRS has an origin
+      then use that origin so we get a common origin for minimum
+      disturbance when switching backends
+     */
+    WITH_SEMAPHORE(state.sem);
+    if (!state.have_origin) {
+        Location origin;
+        if (AP::ahrs().get_origin(origin)) {
+            state.origin = origin;
+            state.have_origin = true;
+        }
     }
 }
 
