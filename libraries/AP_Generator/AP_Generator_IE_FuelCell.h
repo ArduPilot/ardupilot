@@ -49,6 +49,8 @@ protected:
 
     uint32_t _err_code;       // The error code from fuel cell
     uint32_t _last_err_code;  // The previous error code from fuel cell
+    uint32_t _sub_err_code;       // The sub error code from fuel cell
+    uint32_t _last_sub_err_code;  // The previous sub error code from fuel cell
     State _state;          // The PSU state
     State _last_state;     // The previous PSU state
     uint32_t _last_time_ms;   // Time we got a reading
@@ -66,19 +68,22 @@ protected:
         int16_t battery_pwr;
         uint8_t state;
         uint32_t err_code;
+        uint32_t sub_err_code;
     } _parsed;
 
     // Constants
-    static const uint8_t TERM_BUFFER = 12; // Max length of term we expect
+    static const uint8_t TERM_BUFFER = 33; // Max length of term we expect
     static const uint16_t HEALTHY_TIMEOUT_MS = 5000; // Time for driver to be marked un-healthy
 
     // Decoding vars
+    char _start_char;           // inital sentence character giving sentence type
     char _term[TERM_BUFFER];    // Term buffer
     bool _sentence_valid;       // Is current sentence valid
     bool _data_valid;           // Is data within expected limits
     uint8_t _term_number;       // Term index within the current sentence
     uint8_t _term_offset;       // Offset within the _term buffer where the next character should be placed
     bool _in_string;            // True if we should be decoding
+    uint8_t _checksum;          // Basic checksum used by V2 protocol
 
     // Assigns the unit specific measurements once a valid sentence is obtained
     virtual void assign_measurements(const uint32_t now) = 0;
@@ -100,8 +105,17 @@ protected:
     // Check error codes and populate message with error code
     virtual bool check_for_err_code(char* msg_txt, uint8_t msg_len) const = 0;
 
+    // Check if we have received an warning code and populate message with warning code
+    virtual bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const { return false; }
+
     // Only check the error code if it has changed since we last checked
-    bool check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len);
+    void check_for_err_code_if_changed();
+
+    // Return true is fuel cell is in running state suitable for arming
+    virtual bool is_running() const;
+
+    // Print msg to user updating on state change
+    virtual void update_state_msg();
 
 };
 #endif  // AP_GENERATOR_IE_ENABLED

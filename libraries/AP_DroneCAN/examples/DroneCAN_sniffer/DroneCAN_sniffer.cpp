@@ -117,15 +117,18 @@ static void cb_GetNodeInfoRequest(const CanardRxTransfer &transfer, const uavcan
 
 void DroneCAN_sniffer::init(void)
 {
-    const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
+    // we need to mutate the HAL to install new CAN interfaces
+    AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
+
+    hal_mutable.can[driver_index] = new HAL_CANIface(driver_index);
     
-    if (hal.can[driver_index] == nullptr) {
+    if (hal_mutable.can[driver_index] == nullptr) {
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
     }
 
-    hal.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
+    hal_mutable.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
 
-    if (!hal.can[driver_index]->is_initialized()) {
+    if (!hal_mutable.can[driver_index]->is_initialized()) {
         debug_dronecan("Can not initialised\n");
         return;
     }
@@ -135,7 +138,7 @@ void DroneCAN_sniffer::init(void)
         return;
     }
 
-    if (!_uavcan_iface_mgr->add_interface(hal.can[driver_index])) {
+    if (!_uavcan_iface_mgr->add_interface(hal_mutable.can[driver_index])) {
         debug_dronecan("Failed to add iface");
         return;
     }

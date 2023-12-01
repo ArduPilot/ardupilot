@@ -23,8 +23,19 @@ private:
     // Process characters received and extract terms for IE 2.4kW
     void decode_latest_term(void) override;
 
+    // Decode a data packet
+    void decode_data_packet();
+    void decode_legacy_data();
+    void decode_v2_data();
+
+    // Decode a info packet
+    void decode_info_packet();
+
     // Check if we have received an error code and populate message with error code
     bool check_for_err_code(char* msg_txt, uint8_t msg_len) const override;
+
+    // Check if we have received an warning code and populate message with warning code
+    bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const override;
 
     // Check for error codes that are deemed critical
     bool is_critical_error(const uint32_t err_in) const;
@@ -35,6 +46,12 @@ private:
 #if HAL_LOGGING_ENABLED
     void log_write(void) override;
 #endif
+
+    // Return true is fuel cell is in running state suitable for arming
+    bool is_running() const override;
+
+    // Print msg to user updating on state change
+    void update_state_msg() override;
 
     // IE 2.4kW failsafes
     enum class ErrorCode {
@@ -53,6 +70,59 @@ private:
     // These measurements are only available on this unit
     int16_t _pwr_out;  // Output power (Watts)
     uint16_t _spm_pwr; // Stack Power Module (SPM) power draw (Watts)
+    float _fuel_rem; // fuel remaining 0 to 1
+    int16_t _battery_pwr; // Battery charging power
+
+    // Extra data in the V2 packet
+    struct V2_data {
+        float inlet_press;
+        uint8_t unit_fault; // Unit number with issue
+        char info_str[33];
+    };
+    V2_data _parsed_V2;
+    V2_data _valid_V2;
+
+    // Info packet
+    struct {
+        char PCM_number[TERM_BUFFER];
+        char Software_version[TERM_BUFFER];
+        char Protocol_version[TERM_BUFFER];
+        char Serial_number[TERM_BUFFER];
+    } _info;
+    bool _had_info;
+
+    enum class ProtocolVersion {
+        DETECTING = 0,
+        LEGACY = 1,
+        V2 = 2,
+        UNKNOWN = 3,
+    } _version;
+
+    ProtocolVersion _last_version;
+    uint8_t _last_version_packet_count;
+
+    enum class PacketType {
+        NONE = 0,
+        LEGACY_DATA = 1,
+        V2_DATA = 2,
+        V2_INFO = 3,
+    } _type;
+
+    enum class V2_State {
+        FCPM_Off = 0,
+        Starting = 1,
+        Running = 2,
+        Stopping = 3,
+        Go_to_Sleep = 4,
+    } _v2_state;
+    V2_State _last_v2_state;
+
+    // State enum to string lookup
+    struct Lookup_State_V2 {
+        V2_State option;
+        const char *msg_txt;
+    };
+    static const Lookup_State_V2 lookup_state_V2[];
 
 };
 #endif  // AP_GENERATOR_IE_2400_ENABLED

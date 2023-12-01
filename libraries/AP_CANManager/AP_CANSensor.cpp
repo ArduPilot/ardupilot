@@ -40,7 +40,13 @@ void CANSensor::register_driver(AP_CAN::Protocol dtype)
 {
 #if HAL_CANMANAGER_ENABLED
     if (!AP::can().register_driver(dtype, this)) {
-        debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", _driver_name);
+        if (AP::can().register_11bit_driver(dtype, this, _driver_index)) {
+            is_aux_11bit_driver = true;
+            _can_driver = AP::can().get_driver(_driver_index);
+            _initialized = true;
+        } else {
+            debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", _driver_name);
+        }
     } else {
         debug_can(AP_CANManager::LOG_INFO, "%s: constructed", _driver_name);
     }
@@ -133,6 +139,10 @@ bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized for write_frame");
         return false;
+    }
+
+    if (is_aux_11bit_driver && _can_driver != nullptr) {
+        return _can_driver->write_aux_frame(out_frame, timeout_us);
     }
 
     bool read_select = false;

@@ -119,6 +119,9 @@ void AP_CANManager::init()
 {
     WITH_SEMAPHORE(_sem);
 
+    // we need to mutate the HAL to install new CAN interfaces
+    AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (AP::sitl() == nullptr) {
         AP_HAL::panic("CANManager: SITL not initialised!");
@@ -146,17 +149,17 @@ void AP_CANManager::init()
         }
         drv_num--;
 
-        if (hal.can[i] == nullptr) {
+        if (hal_mutable.can[i] == nullptr) {
             // So if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            const_cast <AP_HAL::HAL&> (hal).can[i] = new HAL_CANIface(i);
+            hal_mutable.can[i] = new HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
-        if (hal.can[i] == nullptr) {
+        if (hal_mutable.can[i] == nullptr) {
             continue;
         }
-        AP_HAL::CANIface* iface = hal.can[i];
+        AP_HAL::CANIface* iface = hal_mutable.can[i];
 
         // Find the driver type that we need to allocate and register this interface with
         drv_type[drv_num] = (AP_CAN::Protocol) _drv_param[drv_num]._driver_type.get();
@@ -166,13 +169,13 @@ void AP_CANManager::init()
 #if AP_CAN_SLCAN_ENABLED
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
         } else {
 #else
         if (true) {
 #endif
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
+            can_initialised = hal_mutable.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
         }
 
         if (!can_initialised) {
@@ -245,8 +248,8 @@ void AP_CANManager::init()
         bool enable_filter = false;
         for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
             if (_interfaces[i]._driver_number == (drv_num+1) &&
-                hal.can[i] != nullptr &&
-                hal.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
+                hal_mutable.can[i] != nullptr &&
+                hal_mutable.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
                 // Don't worry we don't enable Filters for Normal Ifaces under the driver
                 // this is just to ensure we enable them for the ones we already decided on
                 enable_filter = true;
@@ -277,12 +280,16 @@ void AP_CANManager::init()
     }
 }
 #endif
+
 /*
   register a new CAN driver
  */
 bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver)
 {
     WITH_SEMAPHORE(_sem);
+
+    // we need to mutate the HAL to install new CAN interfaces
+    AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
 
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         uint8_t drv_num = _interfaces[i]._driver_number;
@@ -302,17 +309,17 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
             continue;
         }
 
-        if (hal.can[i] == nullptr) {
+        if (hal_mutable.can[i] == nullptr) {
             // if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            const_cast <AP_HAL::HAL&> (hal).can[i] = new HAL_CANIface(i);
+            hal_mutable.can[i] = new HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
-        if (hal.can[i] == nullptr) {
+        if (hal_mutable.can[i] == nullptr) {
             continue;
         }
-        AP_HAL::CANIface* iface = hal.can[i];
+        AP_HAL::CANIface* iface = hal_mutable.can[i];
 
         _drivers[drv_num] = driver;
         _drivers[drv_num]->add_interface(iface);
@@ -326,6 +333,32 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
         return true;
     }
     return false;
+}
+
+// register a new auxillary sensor driver for 11 bit address frames
+bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sensor, uint8_t &driver_index)
+{
+    WITH_SEMAPHORE(_sem);
+
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        uint8_t drv_num = _interfaces[i]._driver_number;
+        if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
+            continue;
+        }
+        // from 1 based to 0 based
+        drv_num--;
+
+        if (dtype != (AP_CAN::Protocol)_drv_param[drv_num]._driver_type_11bit.get()) {
+            continue;
+        }
+        if (_drivers[drv_num] != nullptr &&
+            _drivers[drv_num]->add_11bit_driver(sensor)) {
+            driver_index = drv_num;
+            return true;
+        }
+    }
+    return false;
+
 }
 
 // Method used by CAN related library methods to report status and debug info

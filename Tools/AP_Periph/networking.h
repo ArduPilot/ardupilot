@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_Periph.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
+
+#include <AP_Networking/AP_Networking.h>
 
 #ifndef HAL_PERIPH_NETWORK_NUM_PASSTHRU
 #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2

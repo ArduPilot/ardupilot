@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "networking.h"
+#include "AP_Periph.h"
 
 #if defined(HAL_PERIPH_ENABLE_NETWORKING) && HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
 

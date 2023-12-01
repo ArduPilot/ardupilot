@@ -113,6 +113,9 @@ bool Mode::enter()
         plane.adsb.set_is_auto_mode(does_auto_navigation());
 #endif
 
+        // set the nav controller stale AFTER _enter() so that we can check if we're currently in a loiter during the mode change
+        plane.nav_controller->set_data_is_stale();
+
         // reset steering integrator on mode change
         plane.steerController.reset_I();
 

@@ -81,6 +81,7 @@ bool SocketAPM::connect(const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     int ret;
+    int one = 1;
     make_sockaddr(address, port, sockaddr);
 
     if (datagram && is_multicast_address(sockaddr)) {
@@ -92,7 +93,6 @@ bool SocketAPM::connect(const char *address, uint16_t port)
             return false;
         }
         struct sockaddr_in sockaddr_mc = sockaddr;
-        int one = 1;
         struct ip_mreq mreq {};
 #ifdef FD_CLOEXEC
         CALL_PREFIX(fcntl)(fd_in, F_SETFD, FD_CLOEXEC);
@@ -109,7 +109,7 @@ bool SocketAPM::connect(const char *address, uint16_t port)
     
         ret = CALL_PREFIX(bind)(fd_in, (struct sockaddr *)&sockaddr_mc, sizeof(sockaddr));
         if (ret == -1) {
-            goto fail_mc;
+            goto fail_multi;
         }
 
         mreq.imr_multiaddr.s_addr = sockaddr.sin_addr.s_addr;
@@ -117,10 +117,14 @@ bool SocketAPM::connect(const char *address, uint16_t port)
 
         ret = CALL_PREFIX(setsockopt)(fd_in, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
         if (ret == -1) {
-            goto fail_mc;
+            goto fail_multi;
         }
-    } else if (datagram && sockaddr.sin_addr.s_addr == INADDR_BROADCAST) {
+    }
+
+    if (datagram && sockaddr.sin_addr.s_addr == INADDR_BROADCAST) {
+        // setup for bi-directional UDP broadcast
         set_broadcast();
+        reuseaddress();
     }
 
     ret = CALL_PREFIX(connect)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
@@ -128,9 +132,27 @@ bool SocketAPM::connect(const char *address, uint16_t port)
         return false;
     }
     connected = true;
+
+    if (datagram && sockaddr.sin_addr.s_addr == INADDR_BROADCAST) {
+        // for bi-directional UDP broadcast we need 2 sockets
+        struct sockaddr_in send_addr;
+        socklen_t send_len = sizeof(send_addr);
+        ret = CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len);
+        fd_in = CALL_PREFIX(socket)(AF_INET, SOCK_DGRAM, 0);
+        if (fd_in == -1) {
+            goto fail_multi;
+        }
+        CALL_PREFIX(setsockopt)(fd_in, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        // 2nd socket needs to be bound to wildcard
+        send_addr.sin_addr.s_addr = INADDR_ANY;
+        ret = CALL_PREFIX(bind)(fd_in, (struct sockaddr *)&send_addr, sizeof(send_addr));
+        if (ret == -1) {
+            goto fail_multi;
+        }
+    }
     return true;
 
-fail_mc:
+fail_multi:
     CALL_PREFIX(close)(fd_in);
     fd_in = -1;
     return false;
@@ -247,6 +269,7 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
 ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
+        errno = EWOULDBLOCK;
         return -1;
     }
     socklen_t len = sizeof(in_addr);
@@ -282,6 +305,19 @@ void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
     ip_addr = inet_ntoa(in_addr.sin_addr);
     port = ntohs(in_addr.sin_port);
+}
+
+/*
+  return the IP address and port of the last received packet, using caller supplied buffer
+ */
+const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const
+{
+    const char *ret = inet_ntop(AF_INET, (void*)&in_addr.sin_addr, ip_addr_buf, buflen);
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    port = ntohs(in_addr.sin_port);
+    return ret;
 }
 
 void SocketAPM::set_broadcast(void) const
@@ -350,13 +386,11 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
         return nullptr;
     }
 
-    int newfd = CALL_PREFIX(accept)(fd, nullptr, nullptr);
+    socklen_t len = sizeof(in_addr);
+    int newfd = CALL_PREFIX(accept)(fd, (sockaddr *)&in_addr, &len);
     if (newfd == -1) {
         return nullptr;
     }
-    // turn off nagle for lower latency
-    int one = 1;
-    CALL_PREFIX(setsockopt)(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     return new SocketAPM(false, newfd);
 }
 

@@ -77,12 +77,14 @@ void AP_Generator_IE_FuelCell::update()
 bool AP_Generator_IE_FuelCell::decode(char c)
 {
     // Start of a string
-    if (c == '<') {
+    if ((c == '<') || (c == '[')) {
+        _start_char = c;
         _sentence_valid = false;
         _data_valid = true;
         _term_number = 0;
         _term_offset = 0;
         _in_string = true;
+        _checksum = c;
         return false;
     }
     if (!_in_string) {
@@ -90,7 +92,8 @@ bool AP_Generator_IE_FuelCell::decode(char c)
     }
 
     // End of a string
-    if (c == '>') {
+    const char end_char = (_start_char == '[') ? ']' : '>';
+    if (c == end_char) {
         decode_latest_term();
         _in_string = false;
 
@@ -100,11 +103,13 @@ bool AP_Generator_IE_FuelCell::decode(char c)
     // End of a term in the string
     if (c == ',') {
         decode_latest_term();
+        _checksum += c;
         return false;
     }
 
     // Otherwise add the char to the current term
     _term[_term_offset++] = c;
+    _checksum += c;
 
     // We have overrun the expected sentence
     if (_term_offset >TERM_BUFFER) {
@@ -124,7 +129,7 @@ bool AP_Generator_IE_FuelCell::pre_arm_check(char *failmsg, uint8_t failmsg_len)
     }
 
     // Refuse arming if not in running state
-    if (_state != State::RUNNING) {
+    if (!is_running()) {
         strncpy(failmsg, "Status not running", failmsg_len);
         return false;
     }
@@ -160,6 +165,44 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
     }
 
     // If fuel cell state has changed send gcs message
+    update_state_msg();
+
+    // Check error codes
+    check_for_err_code_if_changed();
+}
+
+// Check error codes and populate message with error code
+void AP_Generator_IE_FuelCell::check_for_err_code_if_changed()
+{
+    // Only check if there has been a change in error code
+    if ((_err_code == _last_err_code) && (_sub_err_code == _last_sub_err_code)) {
+        return;
+    }
+
+    char msg_txt[64];
+    if (check_for_err_code(msg_txt, sizeof(msg_txt)) || check_for_warning_code(msg_txt, sizeof(msg_txt))) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
+
+    } else if ((_err_code == 0) && (_sub_err_code == 0)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fuel cell error cleared");
+
+    }
+
+    _last_err_code = _err_code;
+    _last_sub_err_code = _sub_err_code;
+
+}
+
+// Return true is fuel cell is in running state suitable for arming
+bool AP_Generator_IE_FuelCell::is_running() const
+{
+    return _state == State::RUNNING;
+}
+
+// Print msg to user updating on state change
+void AP_Generator_IE_FuelCell::update_state_msg()
+{
+    // If fuel cell state has changed send gcs message
     if (_state != _last_state) {
         for (const struct Lookup_State entry : lookup_state) {
             if (_state == entry.option) {
@@ -169,27 +212,6 @@ void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
         }
         _last_state = _state;
     }
-
-    // Check error codes
-    char msg_txt[32];
-    if (check_for_err_code_if_changed(msg_txt, sizeof(msg_txt))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
-    }
 }
 
-// Check error codes and populate message with error code
-bool AP_Generator_IE_FuelCell::check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len)
-{
-    // Only check if there has been a change in error code
-    if (_err_code == _last_err_code) {
-        return false;
-    }
-
-    if (check_for_err_code(msg_txt, msg_len)) {
-        _last_err_code = _err_code;
-        return true;
-    }
-
-    return false;
-}
 #endif  // AP_GENERATOR_IE_ENABLED
