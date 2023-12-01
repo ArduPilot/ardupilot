@@ -44,6 +44,10 @@ struct GPS_Data {
     double roll_deg;
     double pitch_deg;
     bool have_lock;
+    float horizontal_acc;
+    float vertical_acc;
+    float speed_acc;
+    uint8_t num_sats;
 
     // Get heading [rad], where 0 = North in WGS-84 coordinate system
     float heading() const WARN_IF_UNUSED;
@@ -141,8 +145,23 @@ private:
     // last 20 samples, allowing for up to 20 samples of delay
     GPS_Data _gps_history[20];
 
+    // state of jamming simulation
+    struct {
+        uint32_t last_jam_ms;
+        uint32_t jam_start_ms;
+        uint32_t last_sats_change_ms;
+        uint32_t last_vz_change_ms;
+        uint32_t last_vel_change_ms;
+        uint32_t last_pos_change_ms;
+        uint32_t last_acc_change_ms;
+        double latitude;
+        double longitude;
+    } jamming[2];
+
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
+
+    void simulate_jamming(GPS_Data &d);
 
     // get delayed data
     GPS_Data interpolate_data(const GPS_Data &d, uint32_t delay_ms);
