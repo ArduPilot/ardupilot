@@ -74,13 +74,6 @@ public:
     virtual void update_read();
     // writing fix information to autopilot (e.g.)
     virtual void publish(const GPS_Data *d) = 0;
-    
-protected:
-
-    uint8_t instance;
-    GPS &front;
-
-    class SIM *_sitl;
 
     struct GPS_TOW {
         // Number of weeks since midnight 5-6 January 1980
@@ -90,6 +83,14 @@ protected:
     };
 
     static GPS_TOW gps_time();
+
+protected:
+
+    uint8_t instance;
+    GPS &front;
+
+    class SIM *_sitl;
+
     static void simulation_timeval(struct timeval *tv);
 };
 
