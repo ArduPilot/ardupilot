@@ -41,6 +41,8 @@ public:
 
 private:
     bool new_data;
+    AP_GPS::GPS_State interim_state;
+    HAL_Semaphore sem;
 };
 
 #endif // HAL_EXTERNAL_AHRS_ENABLED
