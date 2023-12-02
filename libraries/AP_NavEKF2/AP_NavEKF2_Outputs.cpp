@@ -531,7 +531,7 @@ void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
     if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
-    if (!filterStatus.flags.initalized) {
+    if (!filterStatus.flags.initialized) {
         flags |= EKF_UNINITIALIZED;
     }
 

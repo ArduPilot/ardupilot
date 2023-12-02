@@ -523,7 +523,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
                                             (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
                                             (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
-    filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
+    filterStatus.flags.initialized = filterStatus.flags.initialized || healthy();
 }
 
 void NavEKF2_core::runYawEstimatorPrediction()
