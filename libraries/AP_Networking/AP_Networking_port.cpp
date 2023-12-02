@@ -31,8 +31,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Port type
-    // @Description: Port type for network serial port. For the two client types a valid destination IP address must be set. For the two server types either 0.0.0.0 or a local address can be used.
-    // @Values: 0:Disabled, 1:UDP client, 2:TCP client, 3:TCP server
+    // @Description: Port type for network serial port. For the two client types a valid destination IP address must be set. For the two server types either 0.0.0.0 or a local address can be used. The UDP client type will use broadcast if the IP is set to 255.255.255.255 and will use UDP multicast if the IP is in the multicast address range.
+    // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @DisplayName: protocol
     // @Description: protocol
     // @User: Advanced
-    // @CopyFieldsFrom: SERIAL0_PROTOCOL
+    // @CopyFieldsFrom: SERIAL1_PROTOCOL
     AP_GROUPINFO("PROTOCOL", 2,  AP_Networking::Port, state.protocol, 0),
 
     // @Group: IP
