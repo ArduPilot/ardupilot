@@ -257,6 +257,9 @@ public:
     // This function is overriden in motors_heli class.   Always true for multicopters.
     virtual bool init_targets_on_arming() const { return true; }
 
+    virtual void restart_motors(uint32_t failed_motor_mask) {}
+    virtual bool restarting() const { return false; }
+
     // returns true if the configured PWM type is digital and should have fixed endpoints
     bool is_digital_pwm_type() const;
 

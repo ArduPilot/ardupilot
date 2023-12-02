@@ -41,6 +41,9 @@ public:
     // determine whether all the motors in servo_channel_mask are running
     bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const;
 
+    // return all the motors in servo_channel_mask that are not running
+    uint32_t get_motors_not_running(uint32_t servo_channel_mask) const;
+
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
 

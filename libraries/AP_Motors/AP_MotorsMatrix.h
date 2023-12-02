@@ -75,6 +75,10 @@ public:
     // as vectoring is used for yaw control
     void                disable_yaw_torque(void) override;
 
+    // restart motors
+    void                restart_motors(uint32_t failed_motor_mask) override;
+    bool                restarting() const override { return _restart_state != MotorRestartState::Running; };
+
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor = 1.0f);
 
@@ -149,6 +153,18 @@ protected:
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
     uint8_t             _motor_lost_index;  // index number of the lost motor
 
+    // motor restart handling
+    enum class MotorRestartState {
+        Running,
+        Disarming,
+        Arming,
+        SpoolingUp
+    };
+    uint32_t            _motors_to_restart;
+    MotorRestartState   _restart_state;
+    uint32_t            _restart_start_ms;
+    uint32_t            _channel_mask_update_ms;
+
     motor_frame_class   _active_frame_class; // active frame class (i.e. quad, hexa, octa, etc)
     motor_frame_type    _active_frame_type;  // active frame type (i.e. plus, x, v, etc)
 
@@ -168,6 +184,8 @@ private:
     bool setup_dodecahexa_matrix(motor_frame_type frame_type);
     bool setup_y6_matrix(motor_frame_type frame_type);
     bool setup_octaquad_matrix(motor_frame_type frame_type);
+
+    void run_restart_motors();
 
     static AP_MotorsMatrix *_singleton;
 };

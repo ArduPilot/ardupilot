@@ -79,6 +79,7 @@ public:
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         BLACKBOX = 34,
         DDS = 35,
+        DESYNC_FAILSAFE = 36, // only disarm uses this...
         UNKNOWN = 100,
     };
 

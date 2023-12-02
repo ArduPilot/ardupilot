@@ -229,6 +229,68 @@ void Copter::yaw_imbalance_check()
     }
 }
 
+// check for motor desync
+void Copter::desync_check()
+{
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
+    // If we are on the ground do nothing
+    if (!motors->armed() || motors->restarting() || copter.g2.failsafe_mr_timeout == 0 || SRV_Channels::get_emergency_stop()
+#ifndef AP_MOTOR_DESYNC_DEBUG
+        || ap.land_complete
+#endif
+        ) {
+        return;
+    }
+
+#ifdef AP_MOTOR_DESYNC_DEBUG
+    if (motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+        return;
+    }
+#endif
+    // check ESCs are sending RPM at expected level
+    uint32_t motor_mask = motors->get_motor_mask();
+    const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
+    // check that all motors are running
+    const uint32_t failed_motors = AP::esc_telem().get_motors_not_running(motor_mask);
+    uint32_t now_ms = AP_HAL::millis();
+
+    // all good
+    if ((telem_active && !failed_motors) || !telem_active) {
+        motor_failure_start_ms = 0;
+        return;
+    }
+
+    // start the clock on restart logic
+    if (!motor_failure_start_ms) {
+        motor_failure_start_ms = now_ms;
+        return;
+    }
+
+    // see whether the timeout has expired
+    if (now_ms - motor_failure_start_ms < uint32_t(copter.g2.failsafe_mr_timeout.get())) {
+        return;
+    }
+
+    motors->restart_motors(failed_motors);
+    motor_failure_start_ms = 0;
+
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Desync detected on %u motor(s), first motor: %u - restarting",
+        __builtin_popcount(failed_motors), __builtin_ffs(failed_motors));
+
+    // log error
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_DESYNC, LogErrorCode::FAILSAFE_OCCURRED);
+
+    // immediately disarm while landed
+    if (should_disarm_on_failsafe()) {
+        arming.disarm(AP_Arming::Method::DESYNC_FAILSAFE);
+        return;
+    }
+
+    // take user specified action
+    do_failsafe_action((FailsafeAction)g2.failsafe_mr_enable.get(), ModeReason::DESYNC_FAILSAFE);
+#endif
+}
+
 #if PARACHUTE == ENABLED
 
 // Code to detect a crash main ArduCopter code
