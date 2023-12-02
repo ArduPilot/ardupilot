@@ -739,7 +739,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
                                             (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
                                             (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
-    status.flags.initalized = status.flags.initalized || healthy();
+    status.flags.initialized = status.flags.initialized || healthy();
     status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
 
     filterStatus.value = status.value;
