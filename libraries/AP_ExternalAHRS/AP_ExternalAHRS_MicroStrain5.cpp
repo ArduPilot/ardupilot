@@ -250,7 +250,7 @@ void AP_ExternalAHRS_MicroStrain5::get_filter_status(nav_filter_status &status) 
 {
     memset(&status, 0, sizeof(status));
     if (last_imu_pkt != 0 && last_gps_pkt != 0) {
-        status.flags.initalized = true;
+        status.flags.initialized = true;
     }
     if (healthy() && last_imu_pkt != 0) {
         status.flags.attitude = true;
@@ -304,7 +304,7 @@ void AP_ExternalAHRS_MicroStrain5::send_status_report(GCS_MAVLINK &link) const
     if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
-    if (!filterStatus.flags.initalized) {
+    if (!filterStatus.flags.initialized) {
         flags |= EKF_UNINITIALIZED;
     }
 

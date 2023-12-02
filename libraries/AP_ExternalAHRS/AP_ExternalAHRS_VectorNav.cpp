@@ -718,7 +718,7 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
     memset(&status, 0, sizeof(status));
     if (type == TYPE::VN_300) {
         if (last_pkt1 && last_pkt2) {
-            status.flags.initalized = true;
+            status.flags.initialized = true;
         }
         if (healthy() && last_pkt2) {
             status.flags.attitude = true;
@@ -736,7 +736,7 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
             }
         }
     } else {
-        status.flags.initalized = initialised();
+        status.flags.initialized = initialised();
         if (healthy()) {
             status.flags.attitude = true;
         }
@@ -783,7 +783,7 @@ void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
     if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
-    if (!filterStatus.flags.initalized) {
+    if (!filterStatus.flags.initialized) {
         flags |= EKF_UNINITIALIZED;
     }
 
