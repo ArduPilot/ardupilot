@@ -167,6 +167,19 @@ bool AP_ExternalAHRS::get_location(Location &loc)
     }
     WITH_SEMAPHORE(state.sem);
     loc = state.location;
+
+    if (state.last_location_update_us != 0 &&
+        state.have_velocity) {
+        // extrapolate position based on velocity to cope with slow backends
+        const float dt = (AP_HAL::micros() - state.last_location_update_us)*1.0e-6;
+        if (dt < 1) {
+            // only extrapolate for 1s max
+            Vector3p ofs = state.velocity.topostype();
+            ofs *= dt;
+            loc.offset(ofs);
+        }
+    }
+
     return true;
 }
 
