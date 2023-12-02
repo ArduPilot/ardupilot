@@ -3293,6 +3293,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test InertialLabs EAHRS support'''
         self.fly_external_AHRS("ILabs", 5, "ap1.txt")
 
+    def AdvancedNavigationEAHRS(self):
+        '''Test AdvancedNavigation EAHRS series 5 support'''
+        self.fly_external_AHRS("AdNav", 3, "ap1.txt")
+
     def get_accelvec(self, m):
         return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
 
@@ -5408,6 +5412,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.AdvancedNavigationEAHRS,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,
