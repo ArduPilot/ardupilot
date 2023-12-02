@@ -176,6 +176,7 @@ private:
 
     AP_Enum<DevType> devtype;
     AP_Int16         rate;
+    AP_Int16         log_rate;
     AP_Int16         options;
     AP_Int16         sensors;
 
@@ -190,6 +191,8 @@ private:
     void set_default_sensors(uint16_t _sensors) {
         sensors.set_default(_sensors);
     }
+
+    uint32_t last_log_ms;
 };
 
 namespace AP {

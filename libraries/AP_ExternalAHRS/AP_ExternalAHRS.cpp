@@ -29,6 +29,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -80,6 +81,13 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
     // @User: Advanced
     AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
+
+    // @Param: _LOG_RATE
+    // @DisplayName: AHRS logging rate
+    // @Description: Logging rate for EARHS devices
+    // @Units: Hz
+    // @User: Standard
+    AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
     
     AP_GROUPEND
 };
@@ -280,6 +288,39 @@ void AP_ExternalAHRS::update(void)
             state.origin = origin;
             state.have_origin = true;
         }
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (log_rate.get() > 0 && now_ms - last_log_ms >= uint32_t(1000U/log_rate.get())) {
+        last_log_ms = now_ms;
+
+        // @LoggerMessage: EAHR
+        // @Description: External AHRS data
+        // @Field: TimeUS: Time since system startup
+        // @Field: Roll: euler roll
+        // @Field: Pitch: euler pitch
+        // @Field: Yaw: euler yaw
+        // @Field: VN: velocity north
+        // @Field: VE: velocity east
+        // @Field: VD: velocity down
+        // @Field: Lat: latitude
+        // @Field: Lon: longitude
+        // @Field: Alt: altitude AMSL
+        // @Field: Flg: nav status flags
+
+        float roll, pitch, yaw;
+        state.quat.to_euler(roll, pitch, yaw);
+        nav_filter_status filterStatus {};
+        get_filter_status(filterStatus);
+
+        AP::logger().WriteStreaming("EAHR", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,Flg",
+                                    "sdddnnnDUm-",
+                                    "F000000GG0-",
+                                    "QffffffLLfI",
+                                    AP_HAL::micros64(),
+                                    degrees(roll), degrees(pitch), degrees(yaw),
+                                    state.velocity.x, state.velocity.y, state.velocity.z,
+                                    state.location.lat, state.location.lng, state.location.alt*0.01,
+                                    filterStatus.value);
     }
 }
 
