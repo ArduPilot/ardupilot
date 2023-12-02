@@ -62,7 +62,7 @@ jobs:
           ./install.sh
           source ./export.sh
           cd ../..
-          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan
+          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
           which cmake
           ./waf configure --board ${{matrix.config}}
           ./waf plane
