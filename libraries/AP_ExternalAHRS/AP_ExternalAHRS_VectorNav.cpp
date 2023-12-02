@@ -475,6 +475,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
                                   int32_t(pkt1.positionLLA[1] * 1.0e7),
                                   int32_t(pkt1.positionLLA[2] * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
+        state.last_location_update_us = AP_HAL::micros();
         state.have_location = true;
     }
 
