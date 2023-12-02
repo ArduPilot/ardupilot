@@ -99,3 +99,16 @@ bool AP_Baro_Backend::pressure_ok(float press)
     }
     return ret;
 }
+
+/*
+  set an instance as calibrated
+ */
+void AP_Baro_Backend::set_calibrated(uint8_t instance, float pressure)
+{
+    if (!_frontend.sensors[instance].calibrated) {
+        // ahrs external baro may not update at boot, so mark
+        // calibrated on first reading
+        _frontend.sensors[instance].ground_pressure.set_and_save(pressure);
+        _frontend.sensors[instance].calibrated = true;
+    }
+}

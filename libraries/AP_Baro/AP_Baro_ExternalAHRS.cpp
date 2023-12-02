@@ -15,6 +15,9 @@ void AP_Baro_ExternalAHRS::update(void)
     if (count) {
         WITH_SEMAPHORE(_sem);
         _copy_to_frontend(instance, sum_pressure/count, sum_temp/count);
+
+        set_calibrated(instance, sum_pressure/count);
+
         sum_pressure = sum_temp = 0;
         count = 0;
     }
