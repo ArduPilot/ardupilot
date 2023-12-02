@@ -326,21 +326,26 @@ void AP_ExternalAHRS::update(void)
         // @Field: Lon: longitude
         // @Field: Alt: altitude AMSL
         // @Field: Flg: nav status flags
+        // @Field: VVar: velocity variance
+        // @Field: PVar: position variance
+        // @Field: HVar: height variance
 
         float roll, pitch, yaw;
         state.quat.to_euler(roll, pitch, yaw);
         nav_filter_status filterStatus {};
         get_filter_status(filterStatus);
 
-        AP::logger().WriteStreaming("EAHR", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,Flg",
-                                    "sdddnnnDUm-",
-                                    "F000000GG0-",
-                                    "QffffffLLfI",
+        AP::logger().WriteStreaming("EAHR", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,Flg,VVar,PVar,HVar",
+                                    "sdddnnnDUm-nmm",
+                                    "F000000GG0-000",
+                                    "QffffffLLfIfff",
                                     AP_HAL::micros64(),
                                     degrees(roll), degrees(pitch), degrees(yaw),
                                     state.velocity.x, state.velocity.y, state.velocity.z,
                                     state.location.lat, state.location.lng, state.location.alt*0.01,
-                                    filterStatus.value);
+                                    filterStatus.value,
+                                    state.velocity_variance, state.pos_horiz_variance,
+                                    state.pos_vert_variance);
     }
 #endif  // HAL_LOGGING_ENABLED
 }
