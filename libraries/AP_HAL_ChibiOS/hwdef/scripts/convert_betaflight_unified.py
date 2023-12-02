@@ -192,6 +192,9 @@ define STORAGE_FLASH_PAGE 1
         line = lines[i]
         if line.startswith('resource'):
             a = line.split()
+
+            if a[3] == 'NONE':
+                continue
             # function, number, pin
             pin = convert_pin(a[3])
             resource = [ a[2] , pin, a[1].split('_')[0], a[1] ]
