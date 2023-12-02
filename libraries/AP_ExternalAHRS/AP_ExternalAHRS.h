@@ -175,6 +175,11 @@ private:
     bool has_sensor(AvailableSensor sensor) const {
         return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
     }
+
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t _sensors) {
+        sensors.set_default(_sensors);
+    }
 };
 
 namespace AP {

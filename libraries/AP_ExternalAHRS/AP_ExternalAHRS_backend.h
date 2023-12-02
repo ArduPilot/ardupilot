@@ -53,6 +53,11 @@ protected:
     uint16_t get_rate(void) const;
     bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t sensors) {
+        frontend.set_default_sensors(sensors);
+    }
+    
 private:
     AP_ExternalAHRS &frontend;
 };
