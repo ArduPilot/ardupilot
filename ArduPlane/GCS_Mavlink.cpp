@@ -1520,13 +1520,3 @@ MAV_VTOL_STATE GCS_MAVLINK_Plane::vtol_state() const
 #endif
 };
 
-MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
-{
-    if (plane.is_flying()) {
-        // note that Q-modes almost always consider themselves as flying
-        return MAV_LANDED_STATE_IN_AIR;
-    }
-
-    return MAV_LANDED_STATE_ON_GROUND;
-}
-

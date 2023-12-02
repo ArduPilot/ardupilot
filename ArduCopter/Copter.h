@@ -699,6 +699,7 @@ private:
 #endif // AP_SCRIPTING_ENABLED
     bool is_landing() const override;
     bool is_taking_off() const override;
+    AP_Vehicle::LandedState get_landed_state() const override;
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);

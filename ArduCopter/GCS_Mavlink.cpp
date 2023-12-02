@@ -1551,20 +1551,6 @@ uint64_t GCS_MAVLINK_Copter::capabilities() const
             GCS_MAVLINK::capabilities());
 }
 
-MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
-{
-    if (copter.ap.land_complete) {
-        return MAV_LANDED_STATE_ON_GROUND;
-    }
-    if (copter.flightmode->is_landing()) {
-        return MAV_LANDED_STATE_LANDING;
-    }
-    if (copter.flightmode->is_taking_off()) {
-        return MAV_LANDED_STATE_TAKEOFF;
-    }
-    return MAV_LANDED_STATE_IN_AIR;
-}
-
 void GCS_MAVLINK_Copter::send_wind() const
 {
     Vector3f airspeed_vec_bf;

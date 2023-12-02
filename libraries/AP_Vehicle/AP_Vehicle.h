@@ -226,6 +226,19 @@ public:
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
 
+    // Landed state codes.  These are kept aligned with MAVLink by
+    // static_assert in AP_Vehicle.cpp
+    enum class LandedState {
+        Undefined = 0,      // landed state unknown/not available
+        OnGround = 1,       // vehicle is landed (on ground)
+        InAir = 2,          // vehicle is in air
+        TakeOff = 3,        // vehicle currently taking off
+        Landing = 4,        // vehicle currently landing
+    };
+
+    // returns landed state
+    virtual AP_Vehicle::LandedState get_landed_state() const { return LandedState::Undefined; }
+
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
 

@@ -565,20 +565,6 @@ uint64_t GCS_MAVLINK_Blimp::capabilities() const
             GCS_MAVLINK::capabilities());
 }
 
-MAV_LANDED_STATE GCS_MAVLINK_Blimp::landed_state() const
-{
-    if (blimp.ap.land_complete) {
-        return MAV_LANDED_STATE_ON_GROUND;
-    }
-    if (blimp.flightmode->is_landing()) {
-        return MAV_LANDED_STATE_LANDING;
-    }
-    // if (blimp.flightmode->is_taking_off()) {
-    //     return MAV_LANDED_STATE_TAKEOFF;
-    // }
-    return MAV_LANDED_STATE_IN_AIR;
-}
-
 void GCS_MAVLINK_Blimp::send_wind() const
 {
     Vector3f airspeed_vec_bf;

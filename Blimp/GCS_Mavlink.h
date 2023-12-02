@@ -42,7 +42,6 @@ protected:
     {
         return MAV_VTOL_STATE_MC;
     };
-    virtual MAV_LANDED_STATE landed_state() const override;
 
 private:
 
