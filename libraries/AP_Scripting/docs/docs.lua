@@ -452,6 +452,51 @@ function motor_factor_table_ud:roll(index) end
 ---@param value number
 function motor_factor_table_ud:roll(index, value) end
 
+-- network socket class
+---@class SocketAPM_ud
+local SocketAPM_ud = {}
+
+-- desc
+---@return boolean
+function SocketAPM_ud:is_connected() end
+
+-- desc
+---@param param1 boolean
+---@return boolean
+function SocketAPM_ud:set_blocking(param1) end
+
+-- desc
+---@param param1 integer
+---@return boolean
+function SocketAPM_ud:listen(param1) end
+
+-- desc
+---@param param1 string
+---@param param2 uint32_t_ud
+---@return integer
+function SocketAPM_ud:send(param1, param2) end
+
+-- desc
+---@param param1 string
+---@param param2 integer
+---@return boolean
+function SocketAPM_ud:bind(param1, param2) end
+
+-- desc
+---@param param1 string
+---@param param2 integer
+---@return boolean
+function SocketAPM_ud:connect(param1, param2) end
+
+-- desc
+function SocketAPM_ud:__gc() end
+
+-- desc
+function SocketAPM_ud:accept(param1) end
+
+-- desc
+function SocketAPM_ud:recv(param1) end
+
 
 -- desc
 ---@class AP_HAL__PWMSource_ud
