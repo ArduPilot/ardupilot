@@ -7,17 +7,10 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 PARAM_TABLE_KEY = 46
 PARAM_TABLE_PREFIX = "NT_"
 
--- bind a parameter to a variable given
-function bind_param(name)
-    local p = Parameter()
-    assert(p:init(name), string.format('could not find %s parameter', name))
-    return p
-end
-
 -- add a parameter and bind it to a variable
 function bind_add_param(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-    return bind_param(PARAM_TABLE_PREFIX .. name)
+    return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
 -- Setup Parameters
@@ -57,27 +50,13 @@ local sock_tcp_in = SocketAPM(0)
 local sock_tcp_in2 = nil
 local sock_udp_in = SocketAPM(1)
 
-if not sock_tcp_echo then
-   gcs:send_text(MAV_SEVERITY.ERROR, "net_test: failed to create tcp echo socket")
-   return
-end
-
-if not sock_udp_echo then
-   gcs:send_text(MAV_SEVERITY.ERROR, "net_test: failed to create udp echo socket")
-   return
-end
-
-if not sock_tcp_in:bind("0.0.0.0", NT_BIND_PORT:get()) then
-   gcs:send_text(MAV_SEVERITY.ERROR, "net_test: failed to bind to TCP 5001")
-end
-
-if not sock_tcp_in:listen(1) then
-   gcs:send_text(MAV_SEVERITY.ERROR, "net_test: failed to listen")
-end
-
-if not sock_udp_in:bind("0.0.0.0", NT_BIND_PORT:get()) then
-   gcs:send_text(MAV_SEVERITY.ERROR, "net_test: failed to bind to UDP 5001")
-end
+assert(sock_tcp_echo, "net_test: failed to create tcp echo socket")
+assert(sock_udp_echo, "net_test: failed to create udp echo socket")
+assert(sock_tcp_in:bind("0.0.0.0",
+                        NT_BIND_PORT:get()), string.format("net_test: failed to bind to TCP %u", NT_BIND_PORT:get()))
+assert(sock_tcp_in:listen(1), "net_test: failed to listen")
+assert(sock_udp_in:bind("0.0.0.0",
+                        NT_BIND_PORT:get()), string.format("net_test: failed to bind to UDP %u", NT_BIND_PORT:get()))
 
 --[[
    test TCP or UDP echo
