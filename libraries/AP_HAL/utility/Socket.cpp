@@ -52,14 +52,7 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
 
 SocketAPM::~SocketAPM()
 {
-    if (fd != -1) {
-        CALL_PREFIX(close)(fd);
-        fd = -1;
-    }
-    if (fd_in != -1) {
-        CALL_PREFIX(close)(fd_in);
-        fd_in = -1;
-    }
+    close();
 }
 
 void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
@@ -79,6 +72,9 @@ void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockadd
  */
 bool SocketAPM::connect(const char *address, uint16_t port)
 {
+    if (fd == -1) {
+        return false;
+    }
     struct sockaddr_in sockaddr;
     int ret;
     int one = 1;
@@ -163,6 +159,9 @@ fail_multi:
  */
 bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms)
 {
+    if (fd == -1) {
+        return false;
+    }
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
@@ -194,12 +193,16 @@ bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t tim
  */
 bool SocketAPM::bind(const char *address, uint16_t port)
 {
+    if (fd == -1) {
+        return false;
+    }
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
     if (CALL_PREFIX(bind)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
         return false;
     }
+    reuseaddress();
     return true;
 }
 
@@ -209,6 +212,9 @@ bool SocketAPM::bind(const char *address, uint16_t port)
  */
 bool SocketAPM::reuseaddress(void) const
 {
+    if (fd == -1) {
+        return false;
+    }
     int one = 1;
     return (CALL_PREFIX(setsockopt)(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
 }
@@ -218,6 +224,9 @@ bool SocketAPM::reuseaddress(void) const
  */
 bool SocketAPM::set_blocking(bool blocking) const
 {
+    if (fd == -1) {
+        return false;
+    }
     int fcntl_ret;
     if (blocking) {
         fcntl_ret = CALL_PREFIX(fcntl)(fd, F_SETFL, CALL_PREFIX(fcntl)(fd, F_GETFL, 0) & ~O_NONBLOCK);
@@ -238,6 +247,9 @@ bool SocketAPM::set_blocking(bool blocking) const
  */
 bool SocketAPM::set_cloexec() const
 {
+    if (fd == -1) {
+        return false;
+    }
 #ifdef FD_CLOEXEC
     return (CALL_PREFIX(fcntl)(fd, F_SETFD, FD_CLOEXEC) != -1);
 #else
@@ -250,6 +262,9 @@ bool SocketAPM::set_cloexec() const
  */
 ssize_t SocketAPM::send(const void *buf, size_t size) const
 {
+    if (fd == -1) {
+        return -1;
+    }
     return CALL_PREFIX(send)(fd, buf, size, 0);
 }
 
@@ -258,6 +273,9 @@ ssize_t SocketAPM::send(const void *buf, size_t size) const
  */
 ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
+    if (fd == -1) {
+        return -1;
+    }
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
     return CALL_PREFIX(sendto)(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
@@ -322,6 +340,9 @@ const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint
 
 void SocketAPM::set_broadcast(void) const
 {
+    if (fd == -1) {
+        return;
+    }
     int one = 1;
     CALL_PREFIX(setsockopt)(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
 }
@@ -336,6 +357,9 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
 
     FD_ZERO(&fds);
     int fin = get_read_fd();
+    if (fin == -1) {
+        return false;
+    }
     FD_SET(fin, &fds);
 
     tv.tv_sec = timeout_ms / 1000;
@@ -353,6 +377,9 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
  */
 bool SocketAPM::pollout(uint32_t timeout_ms)
 {
+    if (fd == -1) {
+        return false;
+    }
     fd_set fds;
     struct timeval tv;
 
@@ -373,6 +400,9 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
  */
 bool SocketAPM::listen(uint16_t backlog) const
 {
+    if (fd == -1) {
+        return false;
+    }
     return CALL_PREFIX(listen)(fd, (int)backlog) == 0;
 }
 
@@ -382,6 +412,9 @@ bool SocketAPM::listen(uint16_t backlog) const
 */
 SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
 {
+    if (fd == -1) {
+        return nullptr;
+    }
     if (!pollin(timeout_ms)) {
         return nullptr;
     }
@@ -391,11 +424,7 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    auto *ret = new SocketAPM(false, newfd);
-    if (ret) {
-        ret->connected = true;
-    }
-    return ret;
+    return new SocketAPM(false, newfd);
 }
 
 /*
@@ -407,6 +436,18 @@ bool SocketAPM::is_multicast_address(struct sockaddr_in &addr) const
     const uint32_t mc_upper = 0xEFFFFFFF; // 239.255.255.255
     const uint32_t haddr = ntohl(addr.sin_addr.s_addr);
     return haddr >= mc_lower && haddr <= mc_upper;
+}
+
+void SocketAPM::close(void)
+{
+    if (fd != -1) {
+        CALL_PREFIX(close)(fd);
+        fd = -1;
+    }
+    if (fd_in != -1) {
+        CALL_PREFIX(close)(fd_in);
+        fd_in = -1;
+    }
 }
 
 #endif // AP_NETWORKING_BACKEND_ANY
