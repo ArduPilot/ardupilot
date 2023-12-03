@@ -7,7 +7,7 @@ import sys
 try:
     import em
 except ImportError:
-    print("you need to install empy with 'python -m pip install empy'")
+    print("you need to install empy with 'python -m pip install empy==3.3.4'")
     sys.exit(1)
 
 try:

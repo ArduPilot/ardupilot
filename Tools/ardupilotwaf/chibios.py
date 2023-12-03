@@ -112,7 +112,7 @@ class upload_fw(Task.Task):
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy pyserial
+        pip.exe install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)
