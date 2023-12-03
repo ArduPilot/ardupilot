@@ -69,6 +69,9 @@ public:
     // start listening for new tcp connections
     bool listen(uint16_t backlog) const;
 
+    // close socket
+    void close(void);
+
     // accept a new connection. Only valid for TCP connections after
     // listen has been used. A new socket is returned
     SocketAPM *accept(uint32_t timeout_ms);
