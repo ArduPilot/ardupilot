@@ -53,6 +53,10 @@ static_assert(SCRIPTING_STACK_SIZE <= SCRIPTING_STACK_MAX_SIZE, "Scripting requi
 #define SCRIPTING_ENABLE_DEFAULT 0
 #endif
 
+#if AP_NETWORKING_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Scripting::var_info[] = {
@@ -287,6 +291,17 @@ void AP_Scripting::thread(void) {
         }
         num_pwm_source = 0;
 
+#if AP_NETWORKING_ENABLED
+        // clear allocated sockets
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+            if (_net_sockets[i] != nullptr) {
+                delete _net_sockets[i];
+                _net_sockets[i] = nullptr;
+            }
+        }
+        num_net_sockets = 0;
+#endif // AP_NETWORKING_ENABLED
+        
         // Clear blocked commands
         {
             WITH_SEMAPHORE(mavlink_command_block_list_sem);
