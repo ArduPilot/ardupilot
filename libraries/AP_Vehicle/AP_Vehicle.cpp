@@ -313,14 +313,14 @@ void AP_Vehicle::setup()
     gcs().init();
 #endif
 
-#if AP_NETWORKING_ENABLED
-    networking.init();
-#endif
-
     // initialise serial ports
     serial_manager.init();
 #if HAL_GCS_ENABLED
     gcs().setup_console();
+#endif
+
+#if AP_NETWORKING_ENABLED
+    networking.init();
 #endif
 
     // Register scheduler_delay_cb, which will run anytime you have
