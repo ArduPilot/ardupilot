@@ -101,5 +101,4 @@ python -m pip install --progress-bar off --user -U argparse pyserial pexpect fut
 python -m pip install --progress-bar off --user -U intelhex
 python -m pip install --progress-bar off --user -U numpy
 python -m pip install --progress-bar off --user -U edn_format
-python -m pip install --progress-bar off --user -U empy
-
+python -m pip install --progress-bar off --user -U empy==3.3.4
