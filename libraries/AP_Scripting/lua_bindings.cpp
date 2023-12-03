@@ -638,6 +638,30 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
+int AP_HAL__UARTDriver_readstring(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
+
+    const uint16_t count = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t*)malloc(count);
+    if (data == nullptr) {
+        return 0;
+    }
+
+    const auto ret = ud->read(data, count);
+    if (ret < 0) {
+        free(data);
+        return 0;
+    }
+
+    // push to lua string
+    lua_pushlstring(L, (const char *)data, ret);
+    free(data);
+
+    return 1;
+}
+
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 

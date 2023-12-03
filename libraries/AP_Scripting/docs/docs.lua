@@ -1140,6 +1140,14 @@ function AP_HAL__UARTDriver_ud:read() end
 ---@param baud_rate uint32_t_ud
 function AP_HAL__UARTDriver_ud:begin(baud_rate) end
 
+--[[
+  read count bytes from a uart and return as a lua string. Note
+  that the returned string can be shorter than the requested length
+--]]
+---@param count integer
+---@return string|nil
+function AP_HAL__UARTDriver_ud:readstring(count) end
+
 
 -- desc
 ---@class RC_Channel_ud
