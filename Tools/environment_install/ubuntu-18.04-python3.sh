@@ -17,4 +17,4 @@ echo 'export PATH=$HOME/bin:$PATH' >>$HOME/.profile
 sudo apt install -y python3-wxgtk4.0 python3-opencv python3-matplotlib python3-pip
 
 # pip-install python packages (also swiped from install-prereqs-ubuntu.sh):
-pip3 install future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan pygame intelhex empy
+pip3 install future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy==3.3.4 configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan pygame intelhex empy
