@@ -391,7 +391,11 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    return new SocketAPM(false, newfd);
+    auto *ret = new SocketAPM(false, newfd);
+    if (ret) {
+        ret->connected = true;
+    }
+    return ret;
 }
 
 /*
