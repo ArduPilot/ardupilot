@@ -421,7 +421,7 @@ void AP_ToneAlarm::update()
 
     if (AP_Notify::events.tune_started) {
         play_tone(AP_NOTIFY_TONE_TUNING_START);
-        AP_Notify::events.tune_started = 0;
+        AP_Notify::events.tune_started = false;
     }
     if (AP_Notify::events.tune_next) {
         // signify which parameter in the set is starting
@@ -430,11 +430,11 @@ void AP_ToneAlarm::update()
     }
     if (AP_Notify::events.tune_save) {
         play_tone(AP_NOTIFY_TONE_TUNING_SAVE);
-        AP_Notify::events.tune_save = 0;
+        AP_Notify::events.tune_save = false;
     }
     if (AP_Notify::events.tune_error) {
         play_tone(AP_NOTIFY_TONE_TUNING_ERROR);
-        AP_Notify::events.tune_error = 0;
+        AP_Notify::events.tune_error = false;
     }
 
     // notify the user when ekf failsafe is triggered

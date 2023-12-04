@@ -485,12 +485,12 @@ void Sub::failsafe_terrain_act()
         if (!set_mode(Mode::Number::POSHOLD, ModeReason::TERRAIN_FAILSAFE)) {
             set_mode(Mode::Number::ALT_HOLD, ModeReason::TERRAIN_FAILSAFE);
         }
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
         break;
 
     case FS_TERRAIN_SURFACE:
         set_mode(Mode::Number::SURFACE, ModeReason::TERRAIN_FAILSAFE);
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
         break;
 
     case FS_TERRAIN_DISARM:

@@ -385,7 +385,7 @@ void Copter::set_mode_RTL_or_land_with_pause(ModeReason reason)
         set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
     }
 }
 
@@ -398,7 +398,7 @@ void Copter::set_mode_SmartRTL_or_land_with_pause(ModeReason reason)
         gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
         set_mode_land_with_pause(reason);
     } else {
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
     }
 }
 
@@ -412,7 +412,7 @@ void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
         gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
         set_mode_RTL_or_land_with_pause(reason);
     } else {
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
     }
 }
 
@@ -422,7 +422,7 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 {
 #if MODE_AUTO_ENABLED == ENABLED
     if (set_mode(Mode::Number::AUTO_RTL, reason)) {
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
         return;
     }
 #endif
@@ -437,7 +437,7 @@ void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
 {
 #if MODE_BRAKE_ENABLED == ENABLED
     if (set_mode(Mode::Number::BRAKE, reason)) {
-        AP_Notify::events.failsafe_mode_change = 1;
+        AP_Notify::events.failsafe_mode_change = true;
         return;
     }
 #endif

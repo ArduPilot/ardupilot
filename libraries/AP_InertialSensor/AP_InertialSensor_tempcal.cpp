@@ -353,7 +353,7 @@ void AP_InertialSensor_TCal::update_accel_learning(const Vector3f &accel, float 
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance()+1,
                           temperature, learn->start_tmax);
-            AP_Notify::events.initiated_temp_cal = 1;
+            AP_Notify::events.initiated_temp_cal = true;
         }
     }
     if (learn != nullptr) {
@@ -397,7 +397,7 @@ void AP_InertialSensor_TCal::Learn::finish_calibration(float temperature)
 {
     if (!save_calibration(temperature)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed fit", instance()+1);
-        AP_Notify::events.temp_cal_failed = 1;
+        AP_Notify::events.temp_cal_failed = true;
         tcal.enable.set_and_save_ifchanged(int8_t(AP_InertialSensor_TCal::Enable::Disabled));
         return;
     }
