@@ -29,6 +29,8 @@
 
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 
+#define MAX_FILTERS 8
+
 #include <AP_CANManager/AP_CANSensor.h>
 
 class ScriptingCANBuffer;
@@ -38,6 +40,10 @@ public:
     ScriptingCANSensor(AP_CAN::Protocol dtype)
         : CANSensor("Script") {
         register_driver(dtype);
+        for (int i=0;i<MAX_FILTERS;i++) {
+            filter_mask[i] = UINT32_MAX;
+            filter_value[i] = UINT32_MAX;
+        }
     }
 
     // handler for outgoing frames, using uint32
@@ -48,6 +54,19 @@ public:
 
     // add a new buffer to this sensor
     ScriptingCANBuffer* add_buffer(uint32_t buffer_len);
+
+    uint32_t filter_mask[MAX_FILTERS]; 
+    uint32_t filter_value[MAX_FILTERS];
+
+    void add_filter(uint32_t mask, uint32_t value) {
+        for (int i=0;i<MAX_FILTERS;i++) {
+            if (filter_mask[i] == UINT32_MAX) {
+                filter_mask[i] = mask;
+                filter_value[i] = value;
+                return;
+            }
+        }
+    }
 
 private:
 
@@ -73,6 +92,10 @@ public:
 
     // recursively add new buffer
     void add_buffer(ScriptingCANBuffer* new_buff);
+
+    void add_filter(uint32_t mask, uint32_t value) {
+        sensor.add_filter(mask, value);
+    }
 
 private:
 

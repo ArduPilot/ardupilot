@@ -29,7 +29,19 @@ bool ScriptingCANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t
 void ScriptingCANSensor::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(sem);
-    if (buffer_list != nullptr) {
+    // Check if frame matches any filters
+    bool find = false;
+    for (int i=0;i<MAX_FILTERS;i++) {
+        if (filter_mask[i] == UINT32_MAX) {
+            break;
+        }
+        if ((frame.id & filter_mask[i]) == filter_value[i]) {
+            find = true;
+            break;
+        }
+    }
+
+    if (buffer_list != nullptr && find) {
         buffer_list->handle_frame(frame);
     }
 }
