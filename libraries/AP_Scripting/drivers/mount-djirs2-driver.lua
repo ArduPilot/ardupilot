@@ -673,6 +673,10 @@ function parse_byte(b)
               local yaw_deg = int16_value(parse_buff[yaw_field+1],parse_buff[yaw_field]) * 0.1
               local pitch_deg = int16_value(parse_buff[pitch_field+1],parse_buff[pitch_field]) * 0.1
               local roll_deg = int16_value(parse_buff[roll_field+1],parse_buff[roll_field]) * 0.1
+              -- if upsidedown, subtract 180deg from yaw to undo addition of target
+              if DJIR_UPSIDEDOWN:get() > 0 then
+                yaw_deg = wrap_180(yaw_deg - 180)
+              end
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then
                 gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
