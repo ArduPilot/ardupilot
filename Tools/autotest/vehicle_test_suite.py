@@ -3972,15 +3972,19 @@ class TestSuite(ABC):
         if not temp_ok:
             raise NotAchievedException("target temperature")
 
+    def message_has_field_values_field_values_equal(self, fieldname, value, got, epsilon=None):
+        if isinstance(value, float):
+            if math.isnan(value) or math.isnan(got):
+                return math.isnan(value) and math.isnan(got)
+
+        if type(value) is not str and epsilon is not None:
+            return abs(got - value) <= epsilon
+
+        return got == value
+
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
             got = getattr(m, fieldname)
-            if math.isnan(value) or math.isnan(got):
-                equal = math.isnan(value) and math.isnan(got)
-            elif epsilon is not None:
-                equal = abs(got - value) <= epsilon
-            else:
-                equal = got == value
 
             value_string = value
             got_string = got
@@ -3994,7 +3998,9 @@ class TestSuite(ABC):
                 value_string = "%s (%s)" % (value, enum[value].name)
                 got_string = "%s (%s)" % (got, enum[got].name)
 
-            if not equal:
+            if not self.message_has_field_values_field_values_equal(
+                    fieldname, value, got, epsilon=epsilon
+            ):
                 # see if this is an enumerated field:
                 self.progress(self.dump_message_verbose(m))
                 self.progress("Expected %s.%s to be %s, got %s" %
