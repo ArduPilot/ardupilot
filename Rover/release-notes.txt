@@ -1,5 +1,23 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.4.0-beta11 05-Dec-2023
+Changes from 4.4.0-beta10
+1) Autopilot related enhancement and fixes
+    - CubeOrange Sim-on-hardware compilation fix
+    - RADIX2HD supports external I2C compasses
+    - SpeedyBeeF405v4 support
+2) Bug fixes
+    - DroneCAN battery monitor with cell monitor SoC reporting fix
+    - NTF_LED_TYPES parameter description fixed (was missing IS31FL3195)
+    - ProfiLED output fixed in both Notify and Scripting
+    - Scripting bug that could cause crash if parameters were added in flight
+    - STAT_BOOTCNT param fix (was not updating in some cases)
+    - don't query hobbywing DroneCAN ESC IDs while armed
+3) Rover specific changes
+    - Auto mode keeps navigating while paused at waypoints (reduces overshoot)
+    - QuikTune script simplification (only tunes rate and speed controllers)
+    - Torqeedo battery nearly empty reporting fix
+------------------------------------------------------------------
 Rover 4.4.0-beta10 14-Nov-2023
 Changes from 4.4.0-beta9
 1) AP_GPS: correct uBlox M10 configuration on low flash boards
