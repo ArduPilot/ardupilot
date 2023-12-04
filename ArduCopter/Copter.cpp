@@ -404,13 +404,7 @@ bool Copter::set_circle_rate(float rate_dps)
 // set desired speed (m/s). Used for scripting.
 bool Copter::set_desired_speed(float speed)
 {
-    // exit if vehicle is not in auto mode
-    if (!flightmode->is_autopilot()) {
-        return false;
-    }
-
-    wp_nav->set_speed_xy(speed * 100.0f);
-    return true;
+    return flightmode->set_speed_xy(speed * 100.0f);
 }
 
 #if MODE_AUTO_ENABLED == ENABLED
