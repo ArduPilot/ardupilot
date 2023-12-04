@@ -10,14 +10,6 @@ mavlink.init(1, 10)
 -- register message id to receive
 mavlink.register_rx_msgid(heartbeat_msgid)
 local test_named_value = 0.0
-function str_to_bytes(str)
-    local str_len = string.len(str)
-    local bytes =  {}
-    for i = 1, str_len do
-        bytes[i] = string.byte(str, i)
-    end
-    return bytes
-end
 function update()
     local msg,chan,timestamp_ms = mavlink.receive_chan()
     if msg then
@@ -31,7 +23,7 @@ function update()
     end
     test_named_value = test_named_value + 1.0
     -- send named value float
-    mavlink.send_chan(0, mavlink_msgs.encode("NAMED_VALUE_FLOAT", {time_boot_ms = millis():toint(), name = str_to_bytes("test"), value = test_named_value}))
+    mavlink.send_chan(0, mavlink_msgs.encode("NAMED_VALUE_FLOAT", {time_boot_ms = millis():toint(), name = "test", value = test_named_value}))
     return update, 1000
 end
 
