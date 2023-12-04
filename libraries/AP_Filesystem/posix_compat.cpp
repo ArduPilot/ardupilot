@@ -170,7 +170,8 @@ int apfs_fseek(APFS_FILE *stream, long offset, int whence)
 {
     CHECK_STREAM(stream, EOF);
     stream->eof = false;
-    return AP::FS().lseek(stream->fd, offset, whence);
+    AP::FS().lseek(stream->fd, offset, whence);
+    return 0;
 }
 
 int apfs_ferror(APFS_FILE *stream)
