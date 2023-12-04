@@ -1,3 +1,19 @@
+Release 4.4.4-beta1 5th December 2023
+-------------------------------------
+
+Changes from 4.4.3:
+
+- CubeOrange Sim-on-hardware compilation fix
+- RADIX2HD supports external I2C compasses
+- SpeedyBeeF405v4 support
+- DroneCAN battery monitor with cell monitor SoC reporting fix
+- ProfiLED output fixed in both Notify and Scripting
+- NTF_LED_TYPES parameter description fixed (was missing IS31FL3195)
+- Scripting bug that could cause crash if parameters were added in flight
+- STAT_BOOTCNT param fix (was not updating in some cases)
+- don't query hobbywing DroneCAN ESC IDs while armed
+- clamp empy version to prevent build errors
+
 Release 4.4.3 14th November 2023
 --------------------------------
 
