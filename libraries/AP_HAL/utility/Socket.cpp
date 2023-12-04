@@ -199,10 +199,10 @@ bool SocketAPM::bind(const char *address, uint16_t port)
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
+    reuseaddress();
     if (CALL_PREFIX(bind)(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
         return false;
     }
-    reuseaddress();
     return true;
 }
 
@@ -265,7 +265,7 @@ ssize_t SocketAPM::send(const void *buf, size_t size) const
     if (fd == -1) {
         return -1;
     }
-    return CALL_PREFIX(send)(fd, buf, size, 0);
+    return CALL_PREFIX(send)(fd, buf, size, MSG_NOSIGNAL);
 }
 
 /*
@@ -424,7 +424,12 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    return new SocketAPM(false, newfd);
+    auto *ret = new SocketAPM(false, newfd);
+    if (ret != nullptr) {
+        ret->connected = true;
+        ret->reuseaddress();
+    }
+    return ret;
 }
 
 /*
