@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Example script for multi-vehicle simulation with AirSim
 # see https://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details

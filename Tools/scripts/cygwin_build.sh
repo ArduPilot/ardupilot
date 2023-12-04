@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # script to build cygwin binaries for using in MissionPlanner
 # the contents of artifacts directory is uploaded to:
