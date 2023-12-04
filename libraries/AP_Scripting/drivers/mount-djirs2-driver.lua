@@ -74,7 +74,7 @@
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
-local REPLY_TIMEOUT_MS = 1000           -- timeout waiting for reply after 1 sec
+local REPLY_TIMEOUT_MS = 100            -- timeout waiting for reply after 0.1 sec
 local REQUEST_ATTITUDE_INTERVAL_MS = 100-- request attitude at 10hz
 local SET_ATTITUDE_INTERVAL_MS = 100    -- set attitude at 10hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
