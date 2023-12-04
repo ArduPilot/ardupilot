@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_ND210.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -416,6 +417,11 @@ void AP_Airspeed::allocate()
         case TYPE_I2C_ASP5033:
 #if AP_AIRSPEED_ASP5033_ENABLED
             sensor[i] = new AP_Airspeed_ASP5033(*this, i);
+#endif
+            break;
+        case TYPE_I2C_ND210:
+#if AP_AIRSPEED_ND210_ENABLED
+            sensor[i] = new AP_Airspeed_ND210(*this, i);
 #endif
             break;
         case TYPE_UAVCAN:
