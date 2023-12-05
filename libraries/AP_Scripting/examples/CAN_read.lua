@@ -10,6 +10,11 @@ if not driver1 and not driver2 then
    return
 end
 
+-- Only accept DroneCAN node status msg on second driver
+-- node status is message ID 341
+-- Message ID is 16 bits left shifted by 8 in the CAN frame ID.
+driver2:add_filter(uint32_t(0xFFFF) << 8, uint32_t(341) << 8)
+
 function show_frame(dnum, frame)
     gcs:send_text(0,string.format("CAN[%u] msg from " .. tostring(frame:id()) .. ": %i, %i, %i, %i, %i, %i, %i, %i", dnum, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
 end
