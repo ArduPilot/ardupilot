@@ -220,12 +220,12 @@ void AP_AHRS::init()
     }
 #if !HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
     if (_ekf_type.get() == 2) {
-        _ekf_type.set(3);
+        _ekf_type.set(EKFType::THREE);
         EKF3.set_enable(true);
     }
 #elif !HAL_NAVEKF3_AVAILABLE && HAL_NAVEKF2_AVAILABLE
     if (_ekf_type.get() == 3) {
-        _ekf_type.set(2);
+        _ekf_type.set(EKFType::TWO);
         EKF2.set_enable(true);
     }
 #endif
@@ -234,7 +234,7 @@ void AP_AHRS::init()
     // a special case to catch users who had AHRS_EKF_TYPE=2 saved and
     // updated to a version where EK2_ENABLE=0
     if (_ekf_type.get() == 2 && !EKF2.get_enable() && EKF3.get_enable()) {
-        _ekf_type.set(3);
+        _ekf_type.set(EKFType::THREE);
     }
 #endif
 
