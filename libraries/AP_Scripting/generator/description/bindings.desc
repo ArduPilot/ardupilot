@@ -620,7 +620,7 @@ userdata AP_HAL::CANFrame method isErrorFrame boolean
 ap_object ScriptingCANBuffer depends AP_SCRIPTING_CAN_SENSOR_ENABLED
 ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t'skip_check
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
-
+ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
