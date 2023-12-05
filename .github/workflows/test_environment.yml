@@ -39,6 +39,8 @@ jobs:
           - os: archlinux
             name: latest
           - os: debian
+            name: bookworm
+          - os: debian
             name: bullseye
           - os: debian
             name: buster
