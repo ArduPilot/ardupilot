@@ -185,6 +185,7 @@
 
 #include "mode.h"
 #include "AP_GPSParser.h"
+#include "AP_Follow_Location.h"
 
 class Copter : public AP_Vehicle {
 public:
@@ -236,6 +237,7 @@ public:
     friend class ModeAutorotate;
     friend class ModeTurtle;
     friend class AP_ExternalControl_Copter;
+    friend class AP_Follow_Location;
 
     Copter(void);
 
@@ -547,6 +549,10 @@ private:
     
     //GpsParser Handling
     AP_GPSParser gpsParser;
+
+    //Follow Location
+    AP_Follow_Location followLocation;
+
     // Precision Landing
 #if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
@@ -956,6 +962,9 @@ private:
     void terrain_update();
     void terrain_logging();
     void gpsparser_init();
+
+    // Follow_Location.cpp
+    void follow_location();
 
     // tuning.cpp
     void tuning();

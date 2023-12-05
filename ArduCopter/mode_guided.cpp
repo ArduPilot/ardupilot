@@ -435,12 +435,12 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         if (guided_mode != SubMode::WP) {
             wp_control_start();
         }
-
+         
         if (!wp_nav->set_wp_destination_loc(dest_loc)) {
-            // failure to set destination can only be because of missing terrain data
-            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
-            // failure is propagated to GCS with NAK
-            return false;
+                // failure to set destination can only be because of missing terrain data
+            // AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
+                // failure is propagated to GCS with NAK
+            // return false;
         }
 
         // set yaw state
@@ -613,7 +613,8 @@ bool ModeGuided::stabilizing_vel_xy() const
 // returns true if GUIDED_OPTIONS param specifies waypoint navigation should be used for position control (allow path planning to be used but updates must be slower)
 bool ModeGuided::use_wpnav_for_position_control() const
 {
-    return ((copter.g2.guided_options.get() & uint32_t(Options::WPNavUsedForPosControl)) != 0);
+    //return ((copter.g2.guided_options.get() & uint32_t(Options::WPNavUsedForPosControl)) != 0);
+    return true;
 }
 
 // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)

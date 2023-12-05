@@ -263,6 +263,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 
 SCHED_TASK(gpsparser_init,              5, 2500, 175),
 
+SCHED_TASK(follow_location,              5, 2500, 179),
+
 };
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -297,7 +299,7 @@ bool Copter::start_takeoff(float alt)
 
 // set target location (for use by scripting)
 bool Copter::set_target_location(const Location& target_loc)
-{
+{   
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
