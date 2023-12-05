@@ -1974,6 +1974,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         
         // Handle loss of global position when we still have a GPS fix
         if (hal.util->get_soft_armed() &&
+            (_gps_use != GPSUse::Disable) &&
             should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
             (!filt_state.flags.using_gps || !filt_state.flags.horiz_pos_abs)) {
