@@ -295,6 +295,10 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     ssize_t ret;
     ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
     if (ret <= 0) {
+        if (!datagram && connected && ret == 0) {
+            // remote host has closed connection
+            connected = false;
+        }
         return ret;
     }
     if (fd_in != -1) {
