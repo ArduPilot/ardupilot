@@ -8,40 +8,71 @@ AP_Follow_Location::AP_Follow_Location(){
 }
 
 void AP_Follow_Location::_init(){
-   StartLoc.alt = 13;
+   // Temporary start location for testing
    StartLoc.lat = 570138730;
    StartLoc.lng = 99874617;
-
-   NewLoc.alt = StartLoc.alt;
-   NewLoc.lat = StartLoc.lat;
-   NewLoc.lng = StartLoc.lng;
+   StartLoc.alt = 13;
 }
 
 bool AP_Follow_Location::get_location(){
-   // This function gets the location from the Link module
+   // This function checks if the location has been received from the Link module
+   mavBuffer[] = get_buffer(); //Function from AP_GPSParser.cpp
+   num = 0;
 
-   /*
-   if (received_location()){
-      NewLoc.alt = receivedLoc.alt;
+   //create a for loop that takes every char up to a comma and puts it into receivedLoc.lat, receivedLoc.lng, and receivedLoc.alt
+   for (size_t i = 0; i < sizeof(mavBuffer); i++){
+      if (mavBuffer[i] != ','){
+            switch (num)
+         {
+         case 0:
+            mavBuffLat[i] = mavBuffer[i];
+            break;
+         case 1:
+            mavBuffLng[i] = mavBuffer[i];
+            break;
+         case 2:
+            mavBuffAlt[i] = mavBuffer[i];
+            break;
+         default:
+            return false;
+            break;
+         }
+      } else {
+         num += 1;
+      }
+   }
+   receivedLoc.lat = int32_t(mavBuffLat);
+   receivedLoc.lng = int32_t(mavBuffLng);
+   receivedLoc.alt = int32_t(mavBuffAlt);
+   return true;
+}
+
+bool AP_Follow_Location::change_location(){
+   // This function gets the location from the Link module
+   if (get_location()){                   // TODO: add that it only goes into this if statement if the location has changed as well
+      NewLoc.alt = receivedLoc.alt; 
       NewLoc.lat = receivedLoc.lat;
       NewLoc.lng = receivedLoc.lng;
       return true;
    } else{
       return false;
    }
-   */
-
+   
    // Temporary location for testing
    // NewLoc.alt = StartLoc.alt;
    // NewLoc.lat = StartLoc.lat;
    // NewLoc.lng = StartLoc.lng;
    
+   /* ________________________________________________For testing _______________________________________________
+
    if (count != previous_count) { //whenever the count variable changes, add 5 to the lattitude and longitude
       NewLoc.lat -= 500;
       NewLoc.lng -= 500;
       previous_count = count;
    }
    return true;
+   
+   // ____________________________________________________________________________________________________________*/
 }
 
 bool AP_Follow_Location::check_location(){
@@ -56,15 +87,18 @@ bool AP_Follow_Location::check_location(){
    }
 }
 
-void AP_Follow_Location::update_velocity(){
-   range = 100; //The range of the allowed follow mode
-   kp = 1; //The proportional gain for the velocity controller
-
+bool AP_Follow_Location::get_distance(){
    x1 = copter.current_loc.get_distance_NE(NewLoc).x;
    y1 = copter.current_loc.get_distance_NE(NewLoc).y;
    z1 = copter.current_loc.get_alt_cm(NewLoc.get_alt_frame(),NewLoc.alt);
    wp_len = sqrt(x1*x1 + y1*y1);
+}
 
+void AP_Follow_Location::update_velocity(){
+   range = 100; //The range of the allowed follow mode
+   kp = 1; //The proportional gain for the velocity controller
+
+ 
    // if the drone is out of range, it should land
    if (wp_len > range){
       copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND);
@@ -82,25 +116,4 @@ void AP_Follow_Location::update_velocity(){
    copter.mode_guided.set_velocity(vel);
 }
 
-
-void AP_Follow_Location::update_destination(){
-   // we need to do this first, as we don't want to change the flight mode unless we can also set the target
-   if (!copter.mode_guided.set_destination(NewLoc, false, 0, false, 0)) {
-      //copter.mode_guided.set_speed_xy(100*100);
-      DoesItWork = false;
-      return; 
-   }
-
-   if (!copter.flightmode->in_guided_mode()) {
-      if (!copter.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
-         DoesItWork = false;
-         return;  
-      }
-      // the position won't have been loaded if we had to change the flight mode, so load it again
-      if (!copter.mode_guided.set_destination(NewLoc, false, 0, false, 0)) {
-         DoesItWork = false;
-         return;  
-      }
-   }
-}
 

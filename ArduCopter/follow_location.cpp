@@ -12,9 +12,8 @@ void Copter::follow_location(){
     }
 
     if(setupDone){
-        if ((!flightmode->is_taking_off()) && followLocation.get_location()){ //If the drone has taken off and the locations are valid
+        if ((!flightmode->is_taking_off()) && followLocation.change_location()){ //If the drone has taken off and the locations has been changed
             if (followLocation.check_location()){
-                // followLocation.update_destination(); // Outdated and is not nedded.
                 followLocation.update_velocity();       // Update the velocity and the direction of the drone
                 return;
             }
