@@ -1713,7 +1713,7 @@ void AP_UAVCAN::logging(void)
  */
 void AP_UAVCAN::hobbywing_ESC_update(void)
 {
-    if (!hobbywing.enabled) {
+    if (!hobbywing.enabled || hal.util->get_soft_armed()) {
         return;
     }
     uint32_t now = AP_HAL::millis();
