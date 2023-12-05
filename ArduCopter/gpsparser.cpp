@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-void Copter::gpsparser_init() {
+void Copter::gps_parser_task() {
     
     // Perform the setup only once
     gpsParser.setup();

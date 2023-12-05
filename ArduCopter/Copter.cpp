@@ -261,7 +261,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
 
-SCHED_TASK(gpsparser_init,              1, 2500, 29),
+SCHED_TASK(gps_parser_task,              10, 2500, 29),
 
 };
 
@@ -671,9 +671,6 @@ void Copter::one_hz_loop()
 
     // log terrain data
     terrain_logging();
-
-    // run gpsparser
-    gpsparser_init();
 
 #if HAL_ADSB_ENABLED
     adsb.set_is_flying(!ap.land_complete);

@@ -15,8 +15,10 @@ public:
     void setup_uart(AP_HAL::UARTDriver *uart, const char *name);
     void setup();
     void process();
-    void test_uart(AP_HAL::UARTDriver *uart, const char *name);
+    void read_from_serial(AP_HAL::UARTDriver *uart, const char *name);
+    void save_to_buffer(uint8_t data);
     bool get_isReady();
+    uint8_t* get_buffer();
 private:
     //extern AP_SerialManager serial_manager;
     bool is_ready;
