@@ -24,8 +24,6 @@ private:
     AP_HAL::UARTDriver* uart;
     uint8_t mavlink_buffer[255];
     ssize_t mavlink_buffer_index;
-    bool parseMavlinkByte(uint8_t byte);
-    bool processMavlinkMessage(const uint8_t* buffer, uint16_t length);
 };
 
 #endif // AP_GPSParser_H
