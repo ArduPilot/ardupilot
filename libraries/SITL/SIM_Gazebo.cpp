@@ -66,7 +66,9 @@ void Gazebo::send_servos(const struct sitl_input &input)
     for (unsigned i = 0; i < 16; ++i)
     {
       pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
+      
     }
+    
     socket_sitl.sendto(&pkt, sizeof(pkt), _gazebo_address, _gazebo_port);
 }
 
@@ -100,6 +102,7 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
                           static_cast<float>(pkt.imu_linear_acceleration_xyz[1]),
                           static_cast<float>(pkt.imu_linear_acceleration_xyz[2]));
 
+    
     gyro = Vector3f(static_cast<float>(pkt.imu_angular_velocity_rpy[0]),
                     static_cast<float>(pkt.imu_angular_velocity_rpy[1]),
                     static_cast<float>(pkt.imu_angular_velocity_rpy[2]));

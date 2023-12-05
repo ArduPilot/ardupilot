@@ -292,6 +292,11 @@ class VehicleInfo(object):
                 "default_params_filename": "default_params/gazebo_quadplane.parm",
                 "external": True,
             },
+            "gazebo-mr300": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/gazebo-zephyr.parm",
+                "external": True,
+            },
             "last_letter": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane.parm",
