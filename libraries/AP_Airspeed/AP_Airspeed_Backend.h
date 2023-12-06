@@ -59,7 +59,7 @@ protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;
     uint8_t get_bus(void) const;
-    bool bus_is_confgured(void) const;
+    bool bus_is_configured(void) const;
     uint8_t get_instance(void) const {
         return instance;
     }
