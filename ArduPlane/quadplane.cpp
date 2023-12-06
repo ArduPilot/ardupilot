@@ -529,6 +529,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: FST_GRND_BRK
+    // @DisplayName: Faster ground break
+    // @Description: On intializes the accz controller with a parameterized integrator value.
+    // @Values: 0:Off,1:On
+    // @User: Advanced
+    AP_GROUPINFO("FST_GRND_BRK", 38, QuadPlane, is_fast_ground_break_enabled, uint8_t(FstGrndBrk::OFF)),
+
+    // @Param: FST_GRND_BRK_I
+    // @DisplayName: Initial integrator value for accz at takeoff
+    // @Description: Integrator value to use in throttle percent/100. 0 is a good starting point.
+    // @Range: -1.0 1.0
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("FST_GRND_BRK_I", 39, QuadPlane, fast_ground_break_integrator, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -1023,6 +1038,13 @@ void QuadPlane::run_z_controller(void)
         // initialise the vertical position controller
         if (!tailsitter.enabled()) {
             pos_control->init_z_controller();
+            // When enabled, the z controller will be pre-initialized with a parameterized
+            // integrator.
+            // The 1000.0f multiplier is to convert %/100 to m/s/s to cm/s/s in accel_z_pid units.
+            if (not_done_takeoff_set_integrator) {
+                pos_control->get_accel_z_pid().set_integrator(fast_ground_break_integrator*1000.0f);
+                not_done_takeoff_set_integrator = false;
+            }
         } else {
             // initialise the vertical position controller with no descent
             pos_control->init_z_controller_no_descent();
@@ -2782,6 +2804,10 @@ void QuadPlane::vtol_position_controller(void)
         // relax when close to the ground
         if (should_relax()) {
             pos_control->relax_velocity_controller_xy();
+            // reset the accz integrator flag in case we are doing multiple landings and takeoffs
+            if (not_done_takeoff_set_integrator) {
+                not_done_takeoff_set_integrator = true;
+            }
         } else {
             Vector2f zero;
             Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
@@ -3094,6 +3120,9 @@ void QuadPlane::takeoff_controller(void)
     plane.nav_pitch_cd = 0;
 
     if (!plane.arming.is_armed_and_safety_off()) {
+        if (is_fast_ground_break_enabled == FstGrndBrk::ON) {
+            not_done_takeoff_set_integrator = true;
+        }
         return;
     }
 

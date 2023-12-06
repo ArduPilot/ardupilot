@@ -421,6 +421,19 @@ private:
     // return which vfwd method to use
     ActiveFwdThr get_vfwd_method(void) const;
 
+    // initial accz integrator value to use at takeoff
+    AP_Float fast_ground_break_integrator;
+
+    // flag to only set the integrator once per takeoff
+    bool not_done_takeoff_set_integrator;
+
+    // specifies if fast ground break is enabled to pre-initialize the accz integrator
+    enum class FstGrndBrk : uint8_t {
+        OFF = 0,
+        ON  = 1,
+    };
+    AP_Enum<FstGrndBrk> is_fast_ground_break_enabled;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
