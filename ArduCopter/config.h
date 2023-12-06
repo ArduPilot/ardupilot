@@ -433,10 +433,6 @@
  # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
-#ifndef RTL_ABS_MIN_CLIMB
- # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
-#endif
-
 #ifndef RTL_CONE_SLOPE_DEFAULT
  # define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
 #endif
