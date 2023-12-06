@@ -22,6 +22,7 @@
   <test_depend>ament_cmake_uncrustify</test_depend>
   <test_depend>ament_cmake_xmllint</test_depend>
 
+  <build_depend>ardupilot_msgs</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
