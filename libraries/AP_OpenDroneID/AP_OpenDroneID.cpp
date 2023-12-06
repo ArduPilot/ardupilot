@@ -527,7 +527,7 @@ void AP_OpenDroneID::send_system_update_message()
     if (_chan != MAV_CHAN_INVALID) {
         const auto pkt_system_update = mavlink_open_drone_id_system_update_t {
         operator_latitude : pkt_system.operator_latitude,
-        operator_longitude : pkt_system.operator_longxitude,
+        operator_longitude : pkt_system.operator_longitude,
         operator_altitude_geo : pkt_system.operator_altitude_geo,
         timestamp : pkt_system.timestamp,
         target_system : pkt_system.target_system,
@@ -750,16 +750,16 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         if (chan == _chan) {
             mavlink_msg_open_drone_id_arm_status_decode(&msg, &arm_status);
             last_arm_status_ms = AP_HAL::millis();
+            gcs().send_text(MAV_SEVERITY_INFO, "ODID Arming ready");
         }
         break;
     }
     case MAVLINK_MSG_ID_UAV_FOUND: {
-        if (chan == _chan) {
-            mavlink_msg_uav_found_decode(&msg, &uav_found);
-            // Do data processing
-            gcs().send_text(MAV_SEVERITY_INFO, "UAV lat:%d,lon:%d", uav_found.lat, uav_found.lon);
+        mavlink_msg_uav_found_decode(&msg, &uav_found);
+        // Do data processing
+        gcs().send_text(MAV_SEVERITY_INFO, "UAV lat:%f,lon:%f", uav_found.lat, uav_found.lon);
             
-        }
+        break;
     }
     // accept other messages from the GCS
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_OPERATOR_ID:
