@@ -168,7 +168,7 @@ if not sock_listen:bind("0.0.0.0", WEB_BIND_PORT:get()) then
    return
 end
 
-if not sock_listen:listen(50) then
+if not sock_listen:listen(1) then
    gcs:send_text(MAV_SEVERITY.ERROR, "WebServer: failed to listen")
    return
 end
@@ -202,9 +202,12 @@ local function startswith(str, s)
    return string.sub(str,1,len2) == s
 end
 
+local debug_count=0
+
 function DEBUG(txt)
    if WEB_DEBUG:get() ~= 0 then
-      gcs:send_text(MAV_SEVERITY.DEBUG, txt)
+      gcs:send_text(MAV_SEVERITY.DEBUG, txt .. string.format(" [%u]", debug_count))
+      debug_count = debug_count + 1
    end
 end
 
@@ -250,6 +253,7 @@ local function Client(_sock, _idx)
    local protocol = nil
    local file = nil
    local start_time = millis()
+   local offset = 0
 
    function self.read_header()
       local s = sock:recv(2048)
@@ -257,7 +261,7 @@ local function Client(_sock, _idx)
          local now = millis()
          if not sock:is_connected() or now - start_time > WEB_TIMEOUT:get()*1000 then
             -- EOF while looking for header
-            DEBUG("EOF")
+            DEBUG(string.format("%u: EOF", idx))
             self.remove()
             return false
          end
@@ -269,7 +273,7 @@ local function Client(_sock, _idx)
       header = header .. s
       local eoh = string.find(s, '\r\n\r\n')
       if eoh then
-         DEBUG("got header")
+         DEBUG(string.format("%u: got header", idx))
          have_header = true
          header_lines = split(header, "[^\r\n]+")
          -- blocking for reply
@@ -311,14 +315,14 @@ local function Client(_sock, _idx)
 
    -- get size of a file
    function self.file_size(fname)
-      DEBUG(string.format("size of '%s'", fname))
+      DEBUG(string.format("%u: size of '%s'", idx, fname))
       local f = io.open(fname, "rb")
       if not f then
          return -1
       end
       local ret = f:seek("end")
       f:close()
-      DEBUG(string.format("size of '%s' -> %u", fname, ret))
+      DEBUG(string.format("%u: size of '%s' -> %u", idx, fname, ret))
       return ret
    end
 
@@ -327,7 +331,7 @@ local function Client(_sock, _idx)
       return full path with .. resolution
    --]]
    function self.full_path(path, name)
-      DEBUG(string.format("full_path(%s,%s)", path, name))
+      DEBUG(string.format("%u: full_path(%s,%s)", idx, path, name))
       local ret = path
       if path == "/" and startswith(name,"@") then
          return name
@@ -349,15 +353,16 @@ local function Client(_sock, _idx)
          ret = ret .. "/"
       end
       ret = ret .. name
-      DEBUG(string.format("full_path(%s,%s) -> %s", path, name, ret))
+      DEBUG(string.format("%u: full_path(%s,%s) -> %s", idx, path, name, ret))
       return ret
    end
    
    function self.directory_list(path)
+      sock:set_blocking(true)
       if startswith(path, "/@") then
          path = string.sub(path, 2, #path-1)
       end
-      DEBUG(string.format("directory_list(%s)", path))
+      DEBUG(string.format("%u: directory_list(%s)", idx, path))
       local dlist = dirlist(path)
       if not dlist then
          dlist = {}
@@ -412,14 +417,27 @@ local function Client(_sock, _idx)
 
    -- send file content
    function self.send_file()
+      if not sock:pollout(0) then
+         return
+      end
       local chunk = WEB_BLOCK_SIZE:get()
       local b = file:read(chunk)
+      sock:set_blocking(true)
       if b and #b > 0 then
-         sock:send(b, #b)
+         local sent = sock:send(b, #b)
+         if sent == -1 then
+            run = nil
+            self.remove()
+            return
+         end
+         if sent < #b then
+            file:seek(offset+sent)
+         end
+         offset = offset + sent
       end
       if not b or #b < chunk then
          -- EOF
-         DEBUG("sent file")
+         DEBUG(string.format("%u: sent file", idx))
          run = nil
          self.remove()
          return
@@ -469,6 +487,7 @@ local function Client(_sock, _idx)
       process a file as a lua CGI
    --]]
    function self.send_cgi()
+      sock:set_blocking(true)
       local contents = self.load_file()
       local s = self.evaluate(contents)
       if s then
@@ -487,6 +506,7 @@ local function Client(_sock, _idx)
       automatically
    --]]
    function self.send_processed_file()
+      sock:set_blocking(true)
       local contents = self.load_file()
       while #contents > 0 do
          local pat1 = "(.-)[<][?]lua[ \n](.-)[?][>](.*)"
@@ -526,10 +546,10 @@ local function Client(_sock, _idx)
       if startswith(path, "/@") then
          path = string.sub(path, 2, #path)
       end
-      DEBUG(string.format("file_download(%s)", path))
+      DEBUG(string.format("%u: file_download(%s)", idx, path))
       file = io.open(path,"rb")
       if not file then
-         DEBUG(string.format("Failed to open '%s'", path))
+         DEBUG(string.format("%u: Failed to open '%s'", idx, path))
          return false
       end
       local vars = {["Content-Type"]=self.content_type(path)}
@@ -541,10 +561,10 @@ local function Client(_sock, _idx)
       end
       self.send_header(200, "OK", vars)
       if server_side_processing then
-         DEBUG(string.format("shtml processing %s", path))
+         DEBUG(string.format("%u: shtml processing %s", idx, path))
          run = self.send_processed_file
       elseif cgi_processing then
-         DEBUG(string.format("CGI processing %s", path))
+         DEBUG(string.format("%u: CGI processing %s", idx, path))
          run = self.send_cgi
       else
          run = self.send_file
@@ -561,7 +581,7 @@ local function Client(_sock, _idx)
          relpath = "/" .. relpath
       end
       local location = string.format("http://%s%s", header_vars['Host'], relpath)
-      DEBUG(string.format("Redirect -> %s", location))
+      DEBUG(string.format("%u: Redirect -> %s", idx, location))
       self.send_header(301, "Moved Permanently", {["Location"]=location})
    end
    
@@ -569,7 +589,7 @@ local function Client(_sock, _idx)
    function self.process_request()
       local h1 = header_lines[1]
       if not h1 or #h1 == 0 then
-         DEBUG("empty request")
+         DEBUG(string.format("%u: empty request", idx))
          return
       end
       local cmd = split(header_lines[1], "%S+")
@@ -587,12 +607,14 @@ local function Client(_sock, _idx)
          return
       end
       local path = cmd[2]
-      DEBUG(string.format("path='%s'", path))
+      DEBUG(string.format("%u: path='%s'", idx, path))
 
       -- extract header variables
       for i = 2,#header_lines do
          local key, var = string.match(header_lines[i], '(.*): (.*)')
-         header_vars[key] = var
+         if key then
+            header_vars[key] = var
+         end
       end
 
       if isdirectory(path) and not endswith(path,"/") and header_vars['Host'] and not is_hidden_dir(path) then
@@ -610,7 +632,7 @@ local function Client(_sock, _idx)
 
       -- see if we have an index file
       if isdirectory(path) and file_exists(path .. "/index.html") then
-         DEBUG("found index.html")
+         DEBUG(string.format("%u: found index.html", idx))
          if self.file_download(path .. "/index.html") then
             return
          end
@@ -647,7 +669,7 @@ local function Client(_sock, _idx)
    end
 
    function self.remove()
-      DEBUG(string.format("Removing client %u", idx))
+      DEBUG(string.format("%u: removing client OFFSET=%u", idx, offset))
       sock:close()
       self.closed = true
    end
@@ -660,14 +682,22 @@ end
    see if any new clients want to connect
 --]]
 local function check_new_clients()
-   local sock = sock_listen:accept()
-   if sock then
+   while true do
+      local sock = sock_listen:accept()
+      if not sock then
+         return
+      end
       -- non-blocking for header read
       sock:set_blocking(false)
-      local idx = #clients+1
-      local client = Client(sock, idx)
-      DEBUG(string.format("New client %u", idx))
-      table.insert(clients, client)
+      -- find free client slot
+      for i = 1, #clients+1 do
+         if clients[i] == nil then
+            local idx = i
+            local client = Client(sock, idx)
+            DEBUG(string.format("%u: New client", idx))
+            clients[idx] = client
+         end
+      end
    end
 end
 
@@ -686,9 +716,9 @@ local function check_clients()
 end
 
 local function update()
-   check_clients()
    check_new_clients()
-   return update,1
+   check_clients()
+   return update,5
 end
 
 return update,100
