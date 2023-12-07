@@ -168,7 +168,7 @@ if not sock_listen:bind("0.0.0.0", WEB_BIND_PORT:get()) then
    return
 end
 
-if not sock_listen:listen(1) then
+if not sock_listen:listen(20) then
    gcs:send_text(MAV_SEVERITY.ERROR, "WebServer: failed to listen")
    return
 end
@@ -682,7 +682,7 @@ end
    see if any new clients want to connect
 --]]
 local function check_new_clients()
-   while true do
+   while sock_listen:pollin(0) do
       local sock = sock_listen:accept()
       if not sock then
          return
