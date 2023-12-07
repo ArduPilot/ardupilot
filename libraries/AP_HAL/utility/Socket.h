@@ -81,6 +81,10 @@ public:
         return fd_in != -1? fd_in : fd;
     }
 
+    // create a new socket with same fd, but new memory
+    // the old socket gets fd of -1
+    SocketAPM *duplicate(void);
+
     bool is_connected(void) const {
         return connected;
     }

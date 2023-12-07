@@ -459,4 +459,21 @@ void SocketAPM::close(void)
     }
 }
 
+/*
+  duplicate a socket, giving a new object with the same contents,
+  the fd in the old object is set to -1
+ */
+SocketAPM *SocketAPM::duplicate(void)
+{
+    auto *ret = new SocketAPM(datagram, fd);
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    ret->fd_in = fd_in;
+    ret->connected = connected;
+    fd = -1;
+    fd_in = -1;
+    return ret;
+}
+
 #endif // AP_NETWORKING_BACKEND_ANY
