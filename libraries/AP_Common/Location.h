@@ -15,9 +15,9 @@ public:
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 
     // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
-    int32_t alt;
-    int32_t lat;
-    int32_t lng;
+    int32_t alt; // in cm
+    int32_t lat; // in 1E7 degrees
+    int32_t lng; // in 1E7 degrees
 
     /// enumeration of possible altitude types
     enum class AltFrame {
