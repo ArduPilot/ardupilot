@@ -1364,7 +1364,7 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             
         bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
-        
+
         if (pos_target.type_mask & alt_mask)
         {
             cmd.content.location.alt = pos_target.alt * 100;
@@ -1391,7 +1391,95 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             if (msg_valid) {
                 handle_change_alt_request(cmd);
             }
-        } // end if alt_mask       
+        } // end if alt_mask
+
+        //! @todo(srmainwaring) handle mode general control...
+        //!                     check the ignore flags
+        //!                     check for valid inputs
+        if (pos_target.type_mask == 0) {
+
+            cmd.content.location.lat = pos_target.lat_int;
+            cmd.content.location.lng = pos_target.lon_int;
+
+            cmd.content.location.alt = pos_target.alt * 100;
+            cmd.content.location.relative_alt = false;
+            cmd.content.location.terrain_alt = false;
+            switch (pos_target.coordinate_frame) 
+            {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+                    cmd.content.location.relative_alt = true;
+                    break;
+                default:
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+                    msg_valid = false;
+                    break;
+            }    
+            if (msg_valid) {
+                //! @todo(srmainwaring) remove - used for debugging
+                if (0) {
+                    float act_lat = plane.current_loc.lat * 1.0E-7;
+                    float act_lng = plane.current_loc.lng * 1.0E-7;
+                    int32_t act_alt_cm;
+                    bool alt_valid = plane.current_loc.get_alt_cm(
+                        Location::AltFrame::ABOVE_HOME, act_alt_cm);
+
+                    float tgt_lat = cmd.content.location.lat * 1.0E-7;
+                    float tgt_lng = cmd.content.location.lng * 1.0E-7;
+                    int32_t tgt_alt_cm;
+                    bool tgt_valid = cmd.content.location.get_alt_cm(
+                        Location::AltFrame::ABOVE_HOME, tgt_alt_cm);
+
+                    if (alt_valid && tgt_valid) {
+                        gcs().send_text(MAV_SEVERITY_DEBUG,
+                            "err: lat: %f, lng: %f, alt: %f",
+                            tgt_lat - act_lat, tgt_lng - act_lng,
+                            (tgt_alt_cm - act_alt_cm) * 1.0E-2);
+                    }
+                }
+
+                handle_guided_request(cmd);
+
+                {
+                    //! @todo(srmainwaring) add checks that velocity and accel
+                    //! are present and valid.
+
+                    // if the setpoint includes velocity and acceleration,
+                    // calculate a loiter radius and direction. 
+                    float vx = pos_target.vx;
+                    float vy = pos_target.vy;
+                    float ax = pos_target.afx;
+                    float ay = pos_target.afy;
+
+                    // loiter radius is determined from the acceleration normal
+                    // to the planar velocity and the equation for uniform
+                    // circular motion: a = v^2 / r.
+                    Vector2f vel(vx, vy);
+                    Vector2f accel(ax, ay);
+                    if (!vel.is_zero() && !accel.is_zero()) {
+                      Vector2f vel_unit = vel.normalized();
+                      Vector2f accel_normal = accel - vel_unit * accel.dot(vel);
+                      Vector2f accel_normal_unit = accel_normal.normalized();
+                      // % is cross product, -1 converts to body frame with z-dn
+                      // See: ModeGuided::set_radius_and_direction
+                      //    plane.loiter.direction = direction_is_ccw ? -1 : 1;
+                      float dir = -1.0 * (vel_unit % accel_normal_unit);
+                      float radius = vel.length_squared() / accel_normal.length();
+                      bool dir_is_ccw = dir < 0.0;
+                      plane.mode_guided.set_radius_and_direction(radius, dir_is_ccw);
+
+                      // //! @todo(srmainwaring) remove - used for debugging
+                      // gcs().send_text(MAV_SEVERITY_DEBUG,
+                      //     "radius: %f, dir: %f", radius, dir);
+                    }
+                }
+
+                // update adjust_altitude_target immediately rather than wait
+                // for the scheduler. See also: Plane::set_next_WP
+                plane.adjust_altitude_target();
+            }
+        }
+
+        break;
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
