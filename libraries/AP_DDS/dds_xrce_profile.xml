@@ -276,4 +276,19 @@
     <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
     <reply_topic_name>rr/ap/mode_switchReply</reply_topic_name>
   </replier>
+  <topic profile_name="globalposcontrol__t">
+    <name>rt/ap/cmd_gps_pose</name>
+    <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="globalposcontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_gps_pose</name>
+      <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    </topic>
+  </data_reader>
 </profiles>
