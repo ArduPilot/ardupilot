@@ -292,4 +292,31 @@ AP_Networking &network()
 }
 }
 
+/*
+  debug printfs from LWIP
+ */
+int ap_networking_printf(const char *fmt, ...)
+{
+#ifdef AP_NETWORKING_LWIP_DEBUG_PORT
+    static AP_HAL::UARTDriver *uart;
+    if (uart == nullptr) {
+        uart = hal.serial(AP_NETWORKING_LWIP_DEBUG_PORT);
+        if (uart == nullptr) {
+            return -1;
+        }
+        uart->begin(921600, 0, 50000);
+    }
+    va_list ap;
+    va_start(ap, fmt);
+    uart->vprintf(fmt, ap);
+    va_end(ap);
+#else
+    va_list ap;
+    va_start(ap, fmt);
+    hal.console->vprintf(fmt, ap);
+    va_end(ap);
+#endif
+    return 0;
+}
+
 #endif // AP_NETWORKING_ENABLED
