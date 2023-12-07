@@ -62,6 +62,8 @@
 #define MEMP_MEM_MALLOC 1
 #define SO_REUSE 1
 #define SO_REUSE_RXTOALL 1
+#define DEFAULT_ACCEPTMBOX_SIZE 20
+#define MEMP_NUM_PBUF 64
 
 /*
   map LWIP debugging onto ap_networking_printf to allow for easier
