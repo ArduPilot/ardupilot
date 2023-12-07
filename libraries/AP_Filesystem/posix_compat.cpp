@@ -30,14 +30,6 @@
 #include <stdarg.h>
 #include <AP_Math/AP_Math.h>
 
-struct apfs_file {
-    int fd;
-    bool error;
-    bool eof;
-    int16_t unget;
-    char *tmpfile_name;
-};
-
 #define CHECK_STREAM(stream, ret) while (stream == NULL || stream->fd < 0) { errno = EBADF; return ret; }
 
 #define modecmp(str, pat) (strcmp(str, pat) == 0 ? 1: 0)
