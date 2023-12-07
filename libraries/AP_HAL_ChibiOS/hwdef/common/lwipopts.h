@@ -49,7 +49,6 @@
    -----------------------------------------------
 */
 
-#define LWIP_PLATFORM_DIAG(x)    do {__wrap_printf x; } while(0)
 // #define LWIP_DEBUG
 #define U16_F "u"
 #define X8_F  "x"
@@ -58,12 +57,24 @@
 #define ETHARP_STATS 1
 #define LWIP_IGMP 1
 #define MEMP_NUM_NETCONN 50 // up to 50 sockets
-#define MEMP_NUM_TCP_PCB 50
+#define MEMP_NUM_TCP_PCB 200
 #define MEM_LIBC_MALLOC 1
 #define MEMP_MEM_MALLOC 1
 #define SO_REUSE 1
 #define SO_REUSE_RXTOALL 1
-#define DHCP_DEBUG LWIP_DBG_ON
+
+/*
+  map LWIP debugging onto ap_networking_printf to allow for easier
+  redirection to a file or dedicated serial port
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int ap_networking_printf(const char *fmt, ...);
+#ifdef __cplusplus
+}
+#endif
+#define LWIP_PLATFORM_DIAG(x)    do {ap_networking_printf x; } while(0)
 
 #ifndef LWIP_IPV6
   // This uses an additional 18KB Flash
