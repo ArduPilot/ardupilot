@@ -566,6 +566,8 @@ local function Client(_sock, _idx)
       elseif cgi_processing then
          DEBUG(string.format("%u: CGI processing %s", idx, path))
          run = self.send_cgi
+      elseif sock:sendfile(file) then
+         return true
       else
          run = self.send_file
       end
