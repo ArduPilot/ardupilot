@@ -85,7 +85,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
-#include <AP_ExternalControl/AP_ExternalControl.h>
+#include "AP_ExternalControl_Plane.h"
 #endif
 
 #include "GCS_Mavlink.h"
@@ -166,6 +166,10 @@ public:
     friend class ModeTakeoff;
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Plane;
+#endif
 
     Plane(void);
 
@@ -776,9 +780,9 @@ private:
 
     AP_Param param_loader {var_info};
 
-    // dummy implementation of external control
+    // external control library
 #if AP_EXTERNAL_CONTROL_ENABLED
-    AP_ExternalControl external_control;
+    AP_ExternalControl_Plane external_control;
 #endif
 
     static const AP_Scheduler::Task scheduler_tasks[];
