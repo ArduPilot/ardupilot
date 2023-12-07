@@ -634,6 +634,10 @@ private:
     uint32_t takeoff_last_run_ms;
     float takeoff_start_alt;
 
+    // ramp time of throttle during take-off
+    AP_Float q_takeoff_throttle_slew_time;
+    AP_Float q_takeoff_throttle_max;
+
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
     bool delay_arming;

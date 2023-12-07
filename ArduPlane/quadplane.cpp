@@ -529,6 +529,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: TKOFF_THR_MAX
+    // @DisplayName: Takeoff maximum throttle during take-off ramp up
+    // @Description: Takeoff maximum throttle allowed before controllers assume the aircraft is airborne during the takeoff process.
+    // @Range: 0.0 0.9
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_THR_MAX", 38, QuadPlane, q_takeoff_throttle_max, 0.9f),
+
+    // @Param: TKOFF_SLEW_S
+    // @DisplayName: Slew time of throttle during take-off
+    // @Description: Time to slew in seconds for the throttle to go from minimum to maximum while checking for a succsessful takeoff.
+    // @Units: s
+    // @Range: 0.25 5.0
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_SLEW_S", 39, QuadPlane, q_takeoff_throttle_slew_time, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -3152,6 +3167,30 @@ void QuadPlane::takeoff_controller(void)
         }
     }
     takeoff_last_run_ms = now;
+
+    // aircraft stays in NONE state until vertical movement is detected or 90% throttle is reached
+    if (poscontrol.get_state() == QPOS_NONE || poscontrol.get_state() == QPOS_LAND_COMPLETE) {
+        // send throttle to attitude controller with angle boost
+        float throttle = constrain_float(attitude_control->get_throttle_in() + plane.G_Dt / q_takeoff_throttle_slew_time, 0.0, 1.0);
+        attitude_control->set_throttle_out(throttle, true, 0.0);
+        // tell position controller to reset alt target and reset I terms
+        pos_control->init_z_controller();
+        pos_control->relax_velocity_controller_xy();
+        pos_control->update_xy_controller();
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        if (throttle >= MIN(q_takeoff_throttle_max, 0.9) || 
+            (pos_control->get_z_accel_cmss() >= 0.5 * pos_control->get_max_accel_z_cmss()) ||
+            (pos_control->get_vel_desired_cms().z >= 0.1 * pos_control->get_max_speed_up_cms()) || 
+            ( no_navigation && (inertial_nav.get_position_z_up_cm() * 0.01 >= takeoff_navalt_min * 0.5))) {
+            // throttle > 90%
+            // acceleration > 50% maximum acceleration
+            // velocity > 10% maximum velocity
+            // altitude change greater than half auto_takeoff_no_nav_alt_cm
+            poscontrol.set_state(QPOS_POSITION1);  // initialize the position controller
+        }
+        return;
+    }
 
     if (no_navigation) {
         pos_control->relax_velocity_controller_xy();
