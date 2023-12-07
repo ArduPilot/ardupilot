@@ -4,6 +4,8 @@
 
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
+
+#include "ardupilot_msgs/msg/GlobalPosition.h"
 #include "builtin_interfaces/msg/Time.h"
 
 #include "sensor_msgs/msg/NavSatFix.h"
@@ -65,6 +67,8 @@ private:
     static sensor_msgs_msg_Joy rx_joy_topic;
     // incoming REP147 velocity control
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
+    // incoming REP147 goal interface global position
+    static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     tf2_msgs_msg_TFMessage tx_dynamic_transforms_topic;
