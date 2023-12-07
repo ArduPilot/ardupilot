@@ -19,6 +19,7 @@
 #if AP_NETWORKING_ENABLED
 #include <AP_HAL/utility/Socket.h>
 #endif
+#include "lua/src/lauxlib.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -834,6 +835,42 @@ int SocketAPM_close(lua_State *L) {
     }
 
     return 0;
+}
+
+/*
+  socket sendfile, for offloading file send to AP_Networking
+ */
+int SocketAPM_sendfile(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    SocketAPM *ud = *check_SocketAPM(L, 1);
+
+    auto *scripting = AP::scripting();
+
+    if (scripting->num_net_sockets == 0) {
+        return luaL_argerror(L, 1, "socket close error");
+    }
+
+    auto *p = (luaL_Stream *)luaL_checkudata(L, 2, LUA_FILEHANDLE);
+    int fd = p->f->fd;
+    bool ret = false;
+
+    // find the socket
+    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+        if (scripting->_net_sockets[i] == ud) {
+            ret = AP::network().sendfile(ud, fd);
+            if (ret) {
+                // remove from scripting, leave socket and fd open
+                p->f->fd = -1;
+                scripting->_net_sockets[i] = nullptr;
+                scripting->num_net_sockets--;
+            }
+            break;
+        }
+    }
+
+    lua_pushboolean(L, ret);
+    return 1;
 }
 
 /*

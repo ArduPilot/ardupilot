@@ -549,6 +549,7 @@ ap_object SocketAPM method is_connected boolean
 ap_object SocketAPM method pollout boolean uint32_t'skip_check
 ap_object SocketAPM method pollin boolean uint32_t'skip_check
 ap_object SocketAPM method reuseaddress boolean
+ap_object SocketAPM manual sendfile SocketAPM_sendfile 1
 ap_object SocketAPM manual close SocketAPM_close 0
 ap_object SocketAPM manual recv SocketAPM_recv 1
 ap_object SocketAPM manual accept SocketAPM_accept 1
