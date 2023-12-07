@@ -319,4 +319,8 @@ namespace AP
     AP_Networking &network();
 };
 
+extern "C" {
+int ap_networking_printf(const char *fmt, ...);
+}
+
 #endif // AP_NETWORKING_ENABLED
