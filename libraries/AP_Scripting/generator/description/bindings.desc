@@ -816,7 +816,6 @@ userdata uint32_t manual tofloat uint32_t_tofloat 0
 
 global manual dirlist lua_dirlist 1
 global manual remove lua_removefile 1
-global manual isdirectory lua_isdirectory 1
 global manual print lua_print 1
 
 singleton mavlink depends HAL_GCS_ENABLED
@@ -832,3 +831,23 @@ singleton AC_Fence depends AP_FENCE_ENABLED
 singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
+
+include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
+include AP_Filesystem/AP_Filesystem_config.h
+userdata AP_Filesystem::stat_t depends AP_FILESYSTEM_FILE_READING_ENABLED
+userdata AP_Filesystem::stat_t rename stat_t
+userdata AP_Filesystem::stat_t field size uint32_t read
+userdata AP_Filesystem::stat_t field mode int32_t read
+userdata AP_Filesystem::stat_t field mtime uint32_t read
+userdata AP_Filesystem::stat_t field atime uint32_t read
+userdata AP_Filesystem::stat_t field ctime uint32_t read
+userdata AP_Filesystem::stat_t method is_directory boolean
+
+singleton AP_Filesystem rename fs
+singleton AP_Filesystem method stat boolean string AP_Filesystem::stat_t'Null
+
+include AP_RTC/AP_RTC.h depends AP_RTC_ENABLED
+include AP_RTC/AP_RTC_config.h
+singleton AP_RTC rename rtc
+singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
+singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check

@@ -3062,11 +3062,6 @@ function scripting:restart_all() end
 ---@return table -- table of filenames
 function dirlist(directoryname) end
 
--- return true if path is a directory
----@param path string
----@return result
-function isdirectory(path) end
-
 --desc
 ---@param filename string
 function remove(filename) end

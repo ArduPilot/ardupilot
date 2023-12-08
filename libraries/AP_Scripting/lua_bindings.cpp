@@ -722,25 +722,6 @@ int lua_dirlist(lua_State *L) {
 }
 
 /*
-  return true if path is a directory
- */
-int lua_isdirectory(lua_State *L) {
-    binding_argcheck(L, 1);
-
-    const char *path = luaL_checkstring(L, 1);
-    
-    struct stat st;
-    if (AP::FS().stat(path, &st) != 0) {
-        lua_pushnil(L);  /* return nil and ... */
-        lua_pushstring(L, strerror(errno));  /* error message */
-        return 2;
-    }
-    bool ret = (st.st_mode & S_IFMT) == S_IFDIR;
-    lua_pushboolean(L, ret);
-    return 1;
-}
-
-/*
   remove a file
  */
 int lua_removefile(lua_State *L) {
