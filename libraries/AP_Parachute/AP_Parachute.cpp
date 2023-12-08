@@ -142,7 +142,7 @@ void AP_Parachute::update()
                 // set relay
                 AP_Relay*_relay = AP::relay();
                 if (_relay != nullptr) {
-                    _relay->on(_release_type);
+                    _relay->set(AP_Relay_Params::FUNCTION::PARACHUTE, true); 
                 }
 #endif
             }
@@ -159,7 +159,7 @@ void AP_Parachute::update()
             // set relay back to zero volts
             AP_Relay*_relay = AP::relay();
             if (_relay != nullptr) {
-                _relay->off(_release_type);
+                _relay->set(AP_Relay_Params::FUNCTION::PARACHUTE, false);
             }
 #endif
         }
@@ -218,8 +218,8 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
         } else {
 #if AP_RELAY_ENABLED
             AP_Relay*_relay = AP::relay();
-            if (_relay == nullptr || !_relay->enabled(_release_type)) {
-                hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
+            if (_relay == nullptr || !_relay->enabled(AP_Relay_Params::FUNCTION::PARACHUTE)) {
+                hal.util->snprintf(buffer, buflen, "Chute has no relay");
                 return false;
             }
 #else
@@ -234,6 +234,19 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
     }
     return true;
 }
+
+#if AP_RELAY_ENABLED
+// Return the relay index that would be used for param conversion to relay functions
+bool AP_Parachute::get_legacy_relay_index(int8_t &index) const
+{
+    // PARAMETER_CONVERSION - Added: Dec-2023
+    if (!enabled() || (_release_type > AP_PARACHUTE_TRIGGER_TYPE_RELAY_3)) {
+        return false;
+    }
+    index = _release_type; 
+    return true;
+}
+#endif
 
 // singleton instance
 AP_Parachute *AP_Parachute::_singleton;
