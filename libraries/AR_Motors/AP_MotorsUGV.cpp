@@ -465,21 +465,21 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
        !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
        !has_sail()) {
         if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
         }
         return false;
     }
     // check if only one of skid-steering output has been configured
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
         if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
         }
         return false;
     }
     // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
     if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }
         return false;
     }
@@ -488,7 +488,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::function_assigned(function)) {
             if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
             }
             return false;
         }
@@ -613,7 +613,7 @@ void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
         }
     }
 }
