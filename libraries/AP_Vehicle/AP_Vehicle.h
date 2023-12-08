@@ -301,7 +301,10 @@ protected:
 #endif
     RangeFinder rangefinder;
 
+#if AP_RSSI_ENABLED
     AP_RSSI rssi;
+#endif
+
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
 #endif
