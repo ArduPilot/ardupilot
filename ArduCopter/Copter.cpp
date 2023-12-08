@@ -341,14 +341,23 @@ bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const 
     return mode_guided.set_pos_vel_accel_NED_m(target_pos_ned_m.topostype(), target_vel_ned_ms, target_accel_ned_mss, use_yaw, radians(yaw_deg), use_yaw_rate, radians(yaw_rate_degs), yaw_relative);
 }
 
-bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms)
+bool Copter::set_target_velocity_NED(const Vector3f& target_vel_ned_ms, bool align_yaw_to_target)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
-    mode_guided.set_vel_NED_ms(target_vel_ned_ms);
+    // optionally line up the copter with the velocity vector
+    float yaw_rads = 0.0f;
+    if (align_yaw_to_target) {
+        const float speed_sq = target_vel_ned_ms.xy().length_squared();
+        if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED_MS * YAW_LOOK_AHEAD_MIN_SPEED_MS))) {
+            yaw_rads = atan2f(target_vel_ned_ms.y, target_vel_ned_ms.x);
+        }
+    }
+
+    mode_guided.set_vel_accel_NED_m(target_vel_ned_ms, Vector3f(), align_yaw_to_target, yaw_rads);
     return true;
 }
 
@@ -397,6 +406,25 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
 
     // Pass to guided mode
     mode_guided.set_angle(q, ang_vel_body, throttle, true);
+    return true;
+}
+
+// set target roll pitch and yaw angles and roll pitch and yaw rates with throttle (for use by scripting)
+bool Copter::set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_degs, float pitch_rate_degs, float yaw_rate_degs, float throttle)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    Quaternion q;
+    q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
+
+    // Convert from degrees per second to radians per second
+    Vector3f ang_vel_body_degs { roll_rate_degs, pitch_rate_degs, yaw_rate_degs };
+    ang_vel_body_degs *= DEG_TO_RAD;
+
+    mode_guided.set_angle(q, ang_vel_body_degs, throttle, true);
     return true;
 }
 
