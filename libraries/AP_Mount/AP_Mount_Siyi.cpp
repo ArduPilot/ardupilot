@@ -84,7 +84,7 @@ void AP_Mount_Siyi::update()
     // send attitude to gimbal at 10Hz
     if (now_ms - _last_attitude_send_ms > 100) {
         _last_attitude_send_ms = now_ms;
-        send_attitude();
+        send_attitude_position();
     }
 
     // run zoom control
@@ -1161,9 +1161,9 @@ void AP_Mount_Siyi::check_firmware_version() const
 }
 
 /*
- send ArduPilot attitude to gimbal
+  send ArduPilot attitude and position to gimbal
 */
-void AP_Mount_Siyi::send_attitude(void)
+void AP_Mount_Siyi::send_attitude_position(void)
 {
     const auto &ahrs = AP::ahrs();
     struct {
@@ -1185,6 +1185,28 @@ void AP_Mount_Siyi::send_attitude(void)
     attitude.yawspeed = gyro.z;
 
     send_packet(SiyiCommandId::EXTERNAL_ATTITUDE, (const uint8_t *)&attitude, sizeof(attitude));
+
+    struct {
+        uint32_t time_boot_ms;
+        int32_t lat, lon;
+        int32_t alt_msl, alt_ellipsoid;
+        Vector3f velocity_ned;
+    } position;
+    Location loc;
+    float undulation = 0;
+    if (!ahrs.get_location(loc) ||
+        !ahrs.get_velocity_NED(position.velocity_ned)) {
+        return;
+    }
+    AP::gps().get_undulation(undulation);
+
+    position.time_boot_ms = now_ms;
+    position.lat = loc.lat;
+    position.lon = loc.lng;
+    position.alt_msl = loc.alt;
+    position.alt_ellipsoid = position.alt_msl - undulation*100;
+
+    send_packet(SiyiCommandId::POSITION_DATA, (const uint8_t *)&position, sizeof(position));
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED
