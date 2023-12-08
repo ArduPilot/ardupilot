@@ -326,6 +326,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const
 bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
     constexpr float minimum_antenna_seperation = 0.05; // meters
     constexpr float permitted_error_length_pct = 0.2;  // percentage
+
 #if HAL_LOGGING_ENABLED || AP_AHRS_ENABLED
     float min_D = 0.0f;
     float max_D = 0.0f;
@@ -402,6 +403,8 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
                 goto bad_yaw;
             }
         }
+#else
+    (void)lag;
 #endif // AP_AHRS_ENABLED
 
         {

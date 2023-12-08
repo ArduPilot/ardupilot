@@ -64,8 +64,10 @@ struct PACKED log_GPS {
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
 // @Field: Und: Undulation
-// @Field: RTCMFU: RTCM fragments used
-// @Field: RTCMFD: RTCM fragments discarded
+// @Field: RFU: RTCM fragments used
+// @Field: RFD: RTCM fragments discarded
+// @Field: lag: GPS lag
+// @Field: C: clock drift
 struct PACKED log_GPA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -81,6 +83,8 @@ struct PACKED log_GPA {
     float undulation;
     uint16_t rtcm_fragments_used;
     uint16_t rtcm_fragments_discarded;
+    float lag;
+    int64_t clock_drift;
 };
 
 /*
@@ -207,7 +211,7 @@ struct PACKED log_GPS_RAWS {
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#-s-S-DUmnhnh-", "F--C-0BGGB000--" , true }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QBCCCCfBIHfHH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,Und,RTCMFU,RTCMFD", "s#-mmnd-ssm--", "F-BBBB0-CC0--" , true }, \
+      "GPA",  "QBCCCCfBIHfHHfq", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,Und,RFU,RFD,lag,C", "s#mmmnd-ssm--ss", "F-BBBB0-CC0--0F" , true }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  , true }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \

@@ -72,6 +72,10 @@ public:
     static bool instance_exists(const AP_DroneCAN* ap_dronecan);
 #endif
 
+    int64_t get_clock_drift() override {
+        return clock_drift;
+    }
+
 private:
 
     bool param_configured = true;
@@ -90,6 +94,12 @@ private:
     // returns true once configuration has finished
     bool do_config(void);
 
+    bool get_lag(float &lag) const override {
+        return get_fix_lag(lag);
+    }
+
+    bool get_fix_lag(float &lag) const;
+
     void handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uint64_t timestamp_usec);
     void handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg);
     void handle_heading_msg(const ardupilot_gnss_Heading& msg);
@@ -105,6 +115,9 @@ private:
     static void give_registry();
     static AP_GPS_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
+    uint64_t last_gnss_timestamp_usec;
+
+    uint32_t _fix_lag_us;
     bool _new_data;
     AP_GPS::GPS_State interim_state;
 
@@ -154,6 +167,9 @@ private:
         uint32_t last_send_ms;
         ByteBuffer *buf;
     } _rtcm_stream;
+
+    uint16_t last_transfer_id;
+    int64_t clock_drift;
 };
 
 #endif  // AP_GPS_DRONECAN_ENABLED
