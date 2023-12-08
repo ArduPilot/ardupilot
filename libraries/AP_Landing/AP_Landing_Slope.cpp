@@ -38,7 +38,7 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
     type_slope_flags.post_stats = false;
 
     type_slope_stage = SlopeStage::NORMAL;
-    gcs().send_text(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
 }
 
 void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed)
@@ -106,9 +106,9 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         if (type_slope_stage != SlopeStage::FINAL) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
             } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
                                   (double)height, (double)sink_rate,
                                   (double)gps.ground_speed(),
                                   (double)current_loc.get_distance(next_WP_loc));
@@ -122,7 +122,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             AP_LandingGear *LG_inst = AP_LandingGear::get_singleton();
             if (LG_inst != nullptr && !LG_inst->check_before_land()) {
                 type_slope_request_go_around();
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
             }
 #endif
         }
@@ -158,7 +158,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
     if (type_slope_flags.post_stats && !is_armed) {
         type_slope_flags.post_stats = false;
-        gcs().send_text(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)current_loc.get_distance(next_WP_loc));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)current_loc.get_distance(next_WP_loc));
     }
 
     // check if we should auto-disarm after a confirmed landing
@@ -226,7 +226,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_FixedWi
 
         // is projected slope too steep?
         if (new_slope_deg - initial_slope_deg > slope_recalc_steep_threshold_to_abort) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Landing slope too steep, aborting (%.0fm %.1fdeg)",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing slope too steep, aborting (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
             alt_offset = rangefinder_state.correction;
             flags.commanded_go_around = true;
@@ -319,7 +319,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     bool is_first_calc = is_zero(slope);
     slope = (sink_height - aim_height) / (total_distance - flare_distance);
     if (is_first_calc) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(slope)));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(slope)));
     }
 
     // calculate point along that slope 500m ahead
