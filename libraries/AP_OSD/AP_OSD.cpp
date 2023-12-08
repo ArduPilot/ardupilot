@@ -511,6 +511,7 @@ void AP_OSD::update_current_screen()
         return;
     }
 
+#if AP_RC_CHANNEL_ENABLED
     RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
     if (channel == nullptr) {
         return;
@@ -566,6 +567,7 @@ void AP_OSD::update_current_screen()
         break;
     }
     switch_debouncer = false;
+#endif  // AP_RC_CHANNEL_ENABLED
 }
 
 //select next avaliable screen, do nothing if all screens disabled
