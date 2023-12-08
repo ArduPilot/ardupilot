@@ -718,6 +718,7 @@ bool AP_Arming::hardware_safety_check(bool report)
     return true;
 }
 
+#if AP_RC_CHANNEL_ENABLED
 bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
 {
     // don't check the trims if we are in a failsafe
@@ -835,6 +836,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
     return rc_in_calibration_check(report);
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 bool AP_Arming::mission_checks(bool report)
 {
@@ -1523,6 +1525,7 @@ bool AP_Arming::estop_checks(bool display_failure)
        // not emergency-stopped, so no prearm failure:
        return true;
     }
+#if AP_RC_CHANNEL_ENABLED
     // vehicle is emergency-stopped; if this *appears* to have been done via switch then we do not fail prearms:
     const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP);
     if (chan != nullptr) {
@@ -1531,7 +1534,8 @@ bool AP_Arming::estop_checks(bool display_failure)
             // switch is configured and is in estop position, so likely the reason we are estopped, so no prearm failure
             return true;  // no prearm failure
         }
-    }   
+    }
+#endif  // AP_RC_CHANNEL_ENABLED
     check_failed(display_failure,"Motors Emergency Stopped");
     return false;
 }
@@ -1558,7 +1562,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  gps_checks(report)
         &  battery_checks(report)
         &  logging_checks(report)
+#if AP_RC_CHANNEL_ENABLED
         &  manual_transmitter_checks(report)
+#endif
         &  mission_checks(report)
         &  rangefinder_checks(report)
         &  servo_checks(report)
@@ -1576,7 +1582,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
 #endif
+#if AP_RC_CHANNEL_ENABLED
         &  disarm_switch_checks(report)
+#endif
         &  fence_checks(report)
         &  opendroneid_checks(report)
         &  serial_protocol_checks(report)
@@ -1592,11 +1600,13 @@ bool AP_Arming::pre_arm_checks(bool report)
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
+#if AP_RC_CHANNEL_ENABLED
     if (check_enabled(ARMING_CHECK_RC)) {
         if (!rc_arm_checks(method)) {
             return false;
         }
     }
+#endif
 
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(ARMING_CHECK_GPS_CONFIG)) {
@@ -1772,6 +1782,7 @@ AP_Arming::Required AP_Arming::arming_required() const
     return require;
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // Copter and sub share the same RC input limits
 // Copter checks that min and max have been configured by default, Sub does not
 bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4]) const
@@ -1800,6 +1811,7 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     }
     return ret;
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 // check visual odometry is working
 bool AP_Arming::visodom_checks(bool display_failure) const
@@ -1822,6 +1834,7 @@ bool AP_Arming::visodom_checks(bool display_failure) const
     return true;
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // check disarm switch is asserted
 bool AP_Arming::disarm_switch_checks(bool display_failure) const
 {
@@ -1834,6 +1847,7 @@ bool AP_Arming::disarm_switch_checks(bool display_failure) const
 
     return true;
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
 {
