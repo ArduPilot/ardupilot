@@ -539,4 +539,4 @@ AP_Follow &follow()
 
 }
 
-#endif
+#endif  // AP_FOLLOW_ENABLED
