@@ -66,6 +66,11 @@ public:
     // do we have throttle while disarmed enabled?
     bool allow_throttle_while_disarmed(void) const;
 
+#if AP_RELAY_ENABLED
+    // Needed for param conversion from relay numbers to functions
+    bool get_legacy_ignition_relay_index(int8_t &num);
+#endif
+
     static AP_ICEngine *get_singleton() { return _singleton; }
 
 private:
@@ -134,11 +139,6 @@ private:
 
     // Idle Controller Slew Rate
     AP_Float idle_slew;
-#endif
-
-#if AP_RELAY_ENABLED
-    // relay number for ignition
-    AP_Int8 ignition_relay;
 #endif
 
     // height when we enter ICE_START_HEIGHT_DELAY
