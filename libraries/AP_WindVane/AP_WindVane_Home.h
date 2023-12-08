@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_HOME_ENABLED
+
 #include "AP_WindVane_Backend.h"
 #include <RC_Channel/RC_Channel.h>
 
@@ -26,3 +30,5 @@ public:
     // update state
     void update_direction() override;
 };
+
+#endif  // AP_WINDVANE_HOME_ENABLED
