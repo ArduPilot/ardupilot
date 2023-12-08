@@ -244,6 +244,7 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     }
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
 
+#if HAL_GCS_ENABLED
     MAV_SEVERITY severity = MAV_SEVERITY_CRITICAL;
     if (!check_enabled(check)) {
         // technically should be NOTICE, but will annoy users at that level:
@@ -253,10 +254,12 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     va_start(arg_list, fmt);
     gcs().send_textv(severity, taggedfmt, arg_list);
     va_end(arg_list);
+#endif  // HAL_GCS_ENABLED
 }
 
 void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 {
+#if HAL_GCS_ENABLED
     if (!report) {
         return;
     }
@@ -275,6 +278,7 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
     va_start(arg_list, fmt);
     gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
     va_end(arg_list);
+#endif  // HAL_GCS_ENABLED
 }
 
 bool AP_Arming::barometer_checks(bool report)
@@ -1656,7 +1660,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     running_arming_checks = false;
 
     if (armed && do_arming_checks && checks_to_perform == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
     
 #if HAL_GYROFFT_ENABLED
@@ -1685,7 +1689,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
             // If a fence is set to auto-enable, turn on the fence
             if (fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
                 fence->enable(true);
-                gcs().send_text(MAV_SEVERITY_INFO, "Fence: auto-enabled");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fence: auto-enabled");
             }
         }
     }
@@ -1752,7 +1756,7 @@ void AP_Arming::send_arm_disarm_statustext(const char *str) const
     if (option_enabled(AP_Arming::Option::DISABLE_STATUSTEXT_ON_STATE_CHANGE)) {
         return;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "%s", str);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", str);
 }
 
 AP_Arming::Required AP_Arming::arming_required() const
