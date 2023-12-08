@@ -15,6 +15,10 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_ICEngine/AP_ICEngine.h>
+#include <AP_Parachute/AP_Parachute.h>
+#include <AP_Camera/AP_Camera.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define RELAY1_PIN_DEFAULT 13
 
@@ -113,12 +117,45 @@ AP_Relay::AP_Relay(void)
 
 void AP_Relay::convert_params()
 {
+    // PARAMETER_CONVERSION - Added: Dec-2023
+
+    // Before converting local params we must find any relays being used by index from external libs
+    int8_t relay_index;
+
+    int8_t ice_relay = -1;
+#if AP_ICENGINE_ENABLED
+    AP_ICEngine *ice = AP::ice();
+    if (ice != nullptr && ice->get_legacy_ignition_relay_index(relay_index)) {
+        ice_relay = relay_index;
+    }
+#endif
+
+    int8_t chute_relay = -1;
+#if HAL_PARACHUTE_ENABLED
+    AP_Parachute *parachute = AP::parachute();
+    if (parachute != nullptr && parachute->get_legacy_relay_index(relay_index)) {
+        chute_relay = relay_index;
+    }
+#endif
+
+    int8_t cam_relay = -1;
+#if AP_CAMERA_ENABLED
+    AP_Camera *camera = AP::camera();
+    if ((camera != nullptr) && (camera->get_legacy_relay_index(relay_index))) {
+        cam_relay = relay_index;
+    }
+#endif
+
     // Find old default param
     int8_t default_state = 0; // off was the old behaviour
     const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
 
     // grab the old values if they were set
     for (uint8_t i = 0; i < MIN(AP_RELAY_NUM_RELAYS, 6); i++) {
+        if (_params[i].function.configured()) {
+            // Conversion already done, or user has configured manually
+            continue;
+        }
 
         uint8_t param_index = i;
         if (i > 3) {
@@ -128,15 +165,34 @@ void AP_Relay::convert_params()
 
         int8_t pin = 0;
         if (!_params[i].pin.configured() && AP_Param::get_param_by_index(this, param_index, AP_PARAM_INT8, &pin) && (pin >= 0)) {
-            // if the pin isn't negative we can assume the user might have been using it, map it to the old school relay interface
+            // Copy old pin parameter
             _params[i].pin.set_and_save(pin);
+        }
+        if (_params[i].pin < 0) {
+            // Don't enable if pin is invalid
+            continue;
+        }
+        // Valid pin, this is either due to the param conversion or default value
+
+        // Work out what function this relay should be
+        if (i == chute_relay) {
+            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::parachute));
+
+        } else if (i == ice_relay) {
+            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::ignition));
+
+        } else if (i == cam_relay) {
+            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::camera));
+
+        } else {
             _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::relay));
 
-            if (have_default) {
-                _params[i].default_state.set_and_save(default_state);
-            }
         }
 
+        // Set the default state
+        if (have_default) {
+            _params[i].default_state.set_and_save(default_state);
+        }
     }
 }
 
@@ -302,13 +358,12 @@ bool AP_Relay::enabled(uint8_t instance) const
 // see if the relay is enabled
 bool AP_Relay::enabled(AP_Relay_Params::Function function) const
 {
-    bool valid = false;
     for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
         if ((_params[instance].function == function) && (_params[instance].pin != -1)) {
-            valid = true;
+            return true;
         }
     }
-    return valid;
+    return false;
 }
 
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
