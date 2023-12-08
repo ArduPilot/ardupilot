@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AR_WPNav.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
