@@ -457,11 +457,13 @@ void AP_OSD::update_stats()
     if (voltage > 0) {
         _stats.min_voltage_v = fminf(_stats.min_voltage_v, voltage);
     }
+#if AP_RSSI_ENABLED
     // minimum rssi
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         _stats.min_rssi = fminf(_stats.min_rssi, ap_rssi->read_receiver_rssi());
     }
+#endif
     // max airspeed either true or synthetic
     if (have_airspeed_estimate) {
         _stats.max_airspeed_mps = fmaxf(_stats.max_airspeed_mps, aspd_mps);
