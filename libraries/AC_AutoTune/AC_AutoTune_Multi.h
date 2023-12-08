@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune.h"
 
 class AC_AutoTune_Multi : public AC_AutoTune
@@ -168,3 +172,5 @@ private:
     AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
     AP_Float min_d;               // minimum rate d gain allowed during tuning
 };
+
+#endif  // AC_AUTOTUNE_ENABLED
