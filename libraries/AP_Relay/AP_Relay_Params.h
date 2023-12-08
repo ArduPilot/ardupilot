@@ -21,6 +21,9 @@ public:
     enum class Function : uint8_t {
         none     = 0,
         relay    = 1,
+        ignition = 2,
+        parachute = 3,
+        camera = 4,
         num_functions // must be the last entry
     };
 
