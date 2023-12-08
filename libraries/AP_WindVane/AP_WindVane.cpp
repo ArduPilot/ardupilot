@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ENABLED
+
 #include "AP_WindVane.h"
 
 #include "AP_WindVane_Home.h"
@@ -202,36 +206,46 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
         case WindVaneType::WINDVANE_NONE:
             // WindVane disabled
             return;
+#if AP_WINDVANE_HOME_ENABLED
         case WindVaneType::WINDVANE_HOME_HEADING:
         case WindVaneType::WINDVANE_PWM_PIN:
             _direction_driver = new AP_WindVane_Home(*this);
             break;
+#endif
+#if AP_WINDVANE_ANALOG_ENABLED
         case WindVaneType::WINDVANE_ANALOG_PIN:
             _direction_driver = new AP_WindVane_Analog(*this);
             break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif
+#if AP_WINDVANE_SIM_ENABLED
         case WindVaneType::WINDVANE_SITL_TRUE:
         case WindVaneType::WINDVANE_SITL_APPARENT:
             _direction_driver = new AP_WindVane_SITL(*this);
             break;
 #endif
+#if AP_WINDVANE_NMEA_ENABLED
         case WindVaneType::WINDVANE_NMEA:
             _direction_driver = new AP_WindVane_NMEA(*this);
             _direction_driver->init(serial_manager);
             break;
+#endif
     }
 
     // wind speed
     switch (_speed_sensor_type) {
         case Speed_type::WINDSPEED_NONE:
             break;
+#if AP_WINDVANE_AIRSPEED_ENABLED
         case Speed_type::WINDSPEED_AIRSPEED:
             _speed_driver = new AP_WindVane_Airspeed(*this);
             break;
+#endif
+#if AP_WINDVANE_MODERNDEVICE_ENABLED
         case Speed_type::WINDVANE_WIND_SENSOR_REV_P:
             _speed_driver = new AP_WindVane_ModernDevice(*this);
             break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif
+#if AP_WINDVANE_SIM_ENABLED
         case Speed_type::WINDSPEED_SITL_TRUE:
         case Speed_type::WINDSPEED_SITL_APPARENT:
             // single driver does both speed and direction
@@ -241,7 +255,8 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
                 _speed_driver = _direction_driver;
             }
             break;
-#endif
+#endif  // AP_WINDVANE_SIM_ENABLED
+#if AP_WINDVANE_NMEA_ENABLED
         case Speed_type::WINDSPEED_NMEA:
             // single driver does both speed and direction
             if (_direction_type != WindVaneType::WINDVANE_NMEA) {
@@ -251,9 +266,12 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
                 _speed_driver = _direction_driver;
             }
             break;
+#endif  // AP_WINDVANE_NMEA_ENABLED
+#if AP_WINDVANE_RPM_ENABLED
         case Speed_type::WINDSPEED_RPM:
             _speed_driver = new AP_WindVane_RPM(*this);
             break;
+#endif
     }
 }
 
@@ -476,3 +494,5 @@ namespace AP {
         return AP_WindVane::get_singleton();
     }
 };
+
+#endif  // AP_WINDVANE_ENABLED
