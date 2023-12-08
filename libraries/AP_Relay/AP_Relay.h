@@ -57,6 +57,9 @@ public:
 
     void set(AP_Relay_Params::Function function, bool value);
 
+    // see if the relay is enabled
+    bool enabled(AP_Relay_Params::Function function) const;
+
 private:
     static AP_Relay *singleton;
 

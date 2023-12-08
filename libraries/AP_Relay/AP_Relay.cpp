@@ -299,6 +299,18 @@ bool AP_Relay::enabled(uint8_t instance) const
     return (instance < AP_RELAY_NUM_RELAYS) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::Function::relay);
 }
 
+// see if the relay is enabled
+bool AP_Relay::enabled(AP_Relay_Params::Function function) const
+{
+    bool valid = false;
+    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+        if ((_params[instance].function == function) && (_params[instance].pin != -1)) {
+            valid = true;
+        }
+    }
+    return valid;
+}
+
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
 // this method may only return false if there is no space in the
 // supplied link for the message.
