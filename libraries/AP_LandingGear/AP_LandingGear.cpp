@@ -2,7 +2,6 @@
 
 #if AP_LANDINGGEAR_ENABLED
 
-#include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/AP_HAL.h>
