@@ -66,7 +66,7 @@ void AP_WindVane_ModernDevice::update_speed()
 
 void AP_WindVane_ModernDevice::calibrate()
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "WindVane: rev P. zero wind voltage offset set to %.1f",double(_current_analog_voltage));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: rev P. zero wind voltage offset set to %.1f",double(_current_analog_voltage));
     _frontend._speed_sensor_voltage_offset.set_and_save(_current_analog_voltage);
     _frontend._calibration.set_and_save(0);
 }
