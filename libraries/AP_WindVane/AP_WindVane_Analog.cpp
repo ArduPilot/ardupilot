@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ANALOG_ENABLED
+
 #include "AP_WindVane_Analog.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -82,3 +86,5 @@ void AP_WindVane_Analog::calibrate()
         _cal_start_ms = 0;
     }
 }
+
+#endif  // AP_WINDVANE_ANALOG_ENABLED
