@@ -333,6 +333,30 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
 }
 #endif
 
+/*
+  stat wrapper for scripting
+ */
+bool AP_Filesystem::stat(const char *pathname, stat_t &stbuf)
+{
+    struct stat st;
+    if (fs.stat(pathname, &st) != 0) {
+        return false;
+    }
+    stbuf.size = st.st_size;
+    stbuf.mode = st.st_mode;
+    // these wrap in 2038
+    stbuf.atime = st.st_atime;
+    stbuf.ctime = st.st_ctime;
+    stbuf.mtime = st.st_mtime;
+    return true;
+}
+
+// get_singleton for scripting
+AP_Filesystem *AP_Filesystem::get_singleton(void)
+{
+    return &fs;
+}
+
 namespace AP
 {
 AP_Filesystem &FS()
