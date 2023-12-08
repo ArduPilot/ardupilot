@@ -64,6 +64,8 @@
 #define SO_REUSE_RXTOALL 1
 #define DEFAULT_ACCEPTMBOX_SIZE 20
 #define MEMP_NUM_PBUF 64
+#define TCP_WND 12000
+#define TCP_SND_BUF 12000
 
 /*
   map LWIP debugging onto ap_networking_printf to allow for easier
