@@ -268,7 +268,7 @@ private:
 #endif
 
 #if AP_SCRIPTING_ENABLED
-    bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+    bool set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_steering_and_throttle(float& steering, float& throttle) override;
     // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
