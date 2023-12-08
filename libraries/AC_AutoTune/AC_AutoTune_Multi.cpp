@@ -1,3 +1,7 @@
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune_Multi.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -1246,3 +1250,5 @@ uint32_t AC_AutoTune_Multi::get_testing_step_timeout_ms() const
     return AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
 }
 
+
+#endif  // AC_AUTOTUNE_ENABLED

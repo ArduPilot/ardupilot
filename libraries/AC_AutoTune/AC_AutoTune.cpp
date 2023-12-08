@@ -1,3 +1,7 @@
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -757,3 +761,4 @@ void AC_AutoTune::next_tune_type(TuneType &curr_tune_type, bool reset)
     curr_tune_type = tune_seq[tune_seq_curr];
 }
 
+#endif  // AC_AUTOTUNE_ENABLED
