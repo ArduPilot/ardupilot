@@ -329,6 +329,8 @@ public:
 
     // get the difference between WGS84 and AMSL. A positive value means
     // the AMSL height is higher than WGS84 ellipsoid height
+    // to go from ellipsoid height to AMSL height add undulation
+    // to go from AMSL height to ellipsoid height subtract undulation
     bool get_undulation(uint8_t instance, float &undulation) const;
 
     // get the difference between WGS84 and AMSL. A positive value means
