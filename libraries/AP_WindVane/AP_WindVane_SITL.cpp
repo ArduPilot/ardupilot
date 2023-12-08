@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_WindVane_SITL.h"
+#include "AP_WindVane_config.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_WINDVANE_SIM_ENABLED
+
+#include "AP_WindVane_SITL.h"
 
 #include <SITL/SITL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -71,4 +73,4 @@ void AP_WindVane_SITL::update_speed()
         _frontend._speed_apparent_raw = AP::sitl()->get_apparent_wind_spd();
     }
 }
-#endif
+#endif  // AP_WINDVANE_SIM_ENABLED

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ENABLED
+
 #include "AP_WindVane.h"
 #include "AP_WindVane_Backend.h"
 
@@ -31,3 +35,5 @@ void AP_WindVane_Backend::calibrate()
     _frontend._calibration.set_and_save(0);
     return;
 }
+
+#endif  // AP_WINDVANE_ENABLED
