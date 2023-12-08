@@ -229,7 +229,7 @@ bool AP_RTC::get_date_and_time_utc(uint16_t& year, uint8_t& month, uint8_t& day,
     hour = tm->tm_hour;         /* Hours.	[0-23] */
     min = tm->tm_min;           /* Minutes.	[0-59] */
     sec = tm->tm_sec;           /* Seconds.	[0-60] (1 leap second) */
-    ms = time_us / 1000U;       /* milliseconds [0-999] */
+    ms = (time_us / 1000U) % 1000U; /* milliseconds [0-999] */
     return true;
 }
 
