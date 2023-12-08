@@ -58,6 +58,7 @@ public:
 #endif
         // 8 reserved for SBG
         // 9 reserved for EulerNav
+        // 10 reserved for Pollux
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
