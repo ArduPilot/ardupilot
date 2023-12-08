@@ -62,6 +62,8 @@ local WEB_BLOCK_SIZE = bind_add_param('BLOCK_SIZE', 4, 10240)
 --]]
 local WEB_TIMEOUT = bind_add_param('TIMEOUT', 5, 2.0)
 
+local BRD_RTC_TZ_MIN = Parameter("BRD_RTC_TZ_MIN")
+
 gcs:send_text(MAV_SEVERITY.INFO, string.format("WebServer: starting on port %u", WEB_BIND_PORT:get()))
 
 local counter = 0
@@ -212,28 +214,109 @@ function DEBUG(txt)
 end
 
 --[[
-   return true if a table contains a given element
+   return index of element in a table
 --]]
-function contains(t,el)
-   for _,v in ipairs(t) do
+function table_index(t,el)
+   for i,v in ipairs(t) do
       if v == el then
-         return true
+         return i
       end
    end
-   return false
+   return nil
+end
+
+--[[
+   return true if a table contains a given element
+--]]
+function table_contains(t,el)
+   local i = table_index(t, el)
+   return i ~= nil
 end
 
 function is_hidden_dir(path)
-   return contains(HIDDEN_FOLDERS, path)
+   return table_contains(HIDDEN_FOLDERS, path)
 end
 
-function file_exists(path)
-   local f = io.open(path, "rb")
-   if f then
-      return true
-   end
-   return false
+local DAYS = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
+local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+
+function isdirectory(path)
+   local s = fs:stat(path)
+   return s and s:is_directory()
 end
+
+--[[
+   time string for directory listings
+--]]
+function file_timestring(path)
+   local s = fs:stat(path)
+   if not s then
+      return ""
+   end
+   local mtime = s:mtime()
+   mtime = mtime + BRD_RTC_TZ_MIN:get()*60
+   local year, month, day, hour, min, sec, wday = rtc:clock_s_to_date_fields(mtime)
+   if not year then
+      return ""
+   end
+   return string.format("%04u-%02u-%02u %02u:%02u", year, month+1, day, hour, min, sec)
+end
+
+--[[
+   time string for Last-Modified
+--]]
+function file_timestring_http(mtime)
+   local year, month, day, hour, min, sec, wday = rtc:clock_s_to_date_fields(mtime)
+   if not year then
+      return ""
+   end
+   return string.format("%s, %02u %s %u %02u:%02u:%02u GMT",
+                        DAYS[wday+1],
+                        day,
+                        MONTHS[month+1],
+                        year,
+                        hour,
+                        min,
+                        sec)
+end
+
+--[[
+   parse a http time string to a uint32_t seconds timestamp
+--]]
+function file_timestring_http_parse(tstring)
+   local dayname, day, monthname, year, hour, min, sec =
+      string.match(tstring,
+                   '(%w%w%w), (%d+) (%w%w%w) (%d%d%d%d) (%d%d):(%d%d):(%d%d) GMT')
+   if not dayname then
+      return nil
+   end
+   local mon = table_index(MONTHS, monthname)
+   return rtc:date_fields_to_clock_s(year, mon-1, day, hour, min, sec)
+end
+
+--[[
+   return true if path exists and is not a directory
+--]]
+function file_exists(path)
+   local s = fs:stat(path)
+   if not s then
+      return false
+   end
+   return not s:is_directory()
+end
+
+--[[
+   substitute variables of form {xxx} from a table
+   from http://lua-users.org/wiki/StringInterpolation
+--]]
+function substitute_vars(s, vars)
+   s = (string.gsub(s, "({([^}]+)})",
+                    function(whole,i)
+                       return vars[i] or whole
+   end))
+   return s
+end
+   
 
 --[[
    client class for open connections
@@ -293,14 +376,9 @@ local function Client(_sock, _idx)
 
    --[[
       send a string with variable substitution using {varname}
-      from http://lua-users.org/wiki/StringInterpolation
    --]]
    function self.sendstring_vars(s, vars)
-      s = (string.gsub(s, "({([^}]+)})",
-                          function(whole,i)
-                             return vars[i] or whole
-      end))
-      self.sendstring(s)
+      self.sendstring(substitute_vars(s, vars))
    end
    
    function self.send_header(code, codestr, vars)
@@ -315,13 +393,11 @@ local function Client(_sock, _idx)
 
    -- get size of a file
    function self.file_size(fname)
-      DEBUG(string.format("%u: size of '%s'", idx, fname))
-      local f = io.open(fname, "rb")
-      if not f then
-         return -1
+      local s = fs:stat(fname)
+      if not s then
+         return 0
       end
-      local ret = f:seek("end")
-      f:close()
+      local ret = s:size():toint()
       DEBUG(string.format("%u: size of '%s' -> %u", idx, fname, ret))
       return ret
    end
@@ -367,7 +443,7 @@ local function Client(_sock, _idx)
       if not dlist then
          dlist = {}
       end
-      if not contains(dlist, "..") then
+      if not table_contains(dlist, "..") then
          -- on ChibiOS we don't get ..
          table.insert(dlist, "..")
       end
@@ -388,7 +464,7 @@ local function Client(_sock, _idx)
  <body>
 <h1>Index of {path}</h1>
   <table>
-   <tr><th>Name</th><th>Size</th></tr>
+   <tr><th align="left">Name</th><th align="left">Last modified</th><th align="left">Size</th></tr>
 ]], {path=path})
       for _,d in ipairs(dlist) do
          local skip = d == "."
@@ -398,14 +474,19 @@ local function Client(_sock, _idx)
          if not skip then
             local fullpath = self.full_path(path, d)
             local name = d
-            local size = 0
-            if is_hidden_dir(fullpath) or isdirectory(fullpath) then
+            local sizestr = "0"
+            local stat = fs:stat(fullpath)
+            local size = stat and stat:size() or 0
+            if is_hidden_dir(fullpath) or (stat and stat:is_directory()) then
                name = name .. "/"
+            elseif size >= 100*1000*1000 then
+               sizestr = string.format("%uM", (size/(1000*1000)):toint())
             else
-               size = math.max(self.file_size(fullpath),0)
+               sizestr = tostring(size)
             end
-            self.sendstring_vars([[<tr><td><a href="{name}">{name}</a></td><td>{size}</td></tr>
-]], { name=name, size=tostring(size) })
+            local modtime = file_timestring(fullpath)
+            self.sendstring_vars([[<tr><td align="left"><a href="{name}">{name}</a></td><td align="left">{modtime}</td><td align="left">{size}</td></tr>
+]], { name=name, size=sizestr, modtime=modtime })
          end
       end
       self.sendstring([[
@@ -555,9 +636,24 @@ local function Client(_sock, _idx)
       local vars = {["Content-Type"]=self.content_type(path)}
       local cgi_processing = startswith(path, "/cgi-bin/") and endswith(path, ".lua")
       local server_side_processing = endswith(path, ".shtml")
-      if not startswith(path, "@") and not server_side_processing and not cgi_processing then
-         local fsize = self.file_size(path)
+      local stat = fs:stat(path)
+      if not startswith(path, "@") and not server_side_processing and not cgi_processing and stat then
+         local fsize = stat:size()
+         local mtime = stat:mtime()
          vars["Content-Length"]= tostring(fsize)
+         local modtime = file_timestring_http(mtime)
+         if modtime then
+            vars["Last-Modified"] = modtime
+         end
+         local if_modified_since = header_vars['If-Modified-Since']
+         if if_modified_since then
+            local tsec = file_timestring_http_parse(if_modified_since)
+            if tsec and tsec >= mtime then
+               DEBUG(string.format("%u: Not modified: %s %s", idx, modtime, if_modified_since))
+               self.send_header(304, "Not Modified", vars)
+               return true
+            end
+         end
       end
       self.send_header(200, "OK", vars)
       if server_side_processing then
