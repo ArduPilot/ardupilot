@@ -15,6 +15,7 @@ extern const AP_HAL::HAL& hal;
 #if AP_NETWORKING_BACKEND_CHIBIOS
 #include "AP_Networking_ChibiOS.h"
 #include "AP_Networking_SLIP.h"
+#include "AP_Networking_PPP.h"
 #include <hal_mii.h>
 #include <lwip/sockets.h>
 #else
@@ -25,6 +26,10 @@ extern const AP_HAL::HAL& hal;
 
 #if AP_NETWORKING_BACKEND_SLIP
 #include "AP_Networking_SLIP.h"
+#endif
+
+#if AP_NETWORKING_BACKEND_PPP
+#include "AP_Networking_PPP.h"
 #endif
 
 #if AP_NETWORKING_BACKEND_SITL
@@ -129,8 +134,14 @@ void AP_Networking::init()
     }
 #endif
 
+#if AP_NETWORKING_BACKEND_PPP
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
+        backend = new AP_Networking_PPP(*this);
+    }
+#endif
+
 #if AP_NETWORKING_BACKEND_SLIP
-    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_SLIP, 0)) {
+    if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_SLIP, 0)) {
         backend = new AP_Networking_SLIP(*this);
     }
 #endif
