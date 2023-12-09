@@ -643,9 +643,10 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
+#if AP_MISSION_ENABLED
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_jump_tag(const mavlink_command_int_t &packet);
-
+#endif
     MAV_RESULT handle_command_battery_reset(const mavlink_command_int_t &packet);
     void handle_command_long(const mavlink_message_t &msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet);
