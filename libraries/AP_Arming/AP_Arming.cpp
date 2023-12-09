@@ -1125,6 +1125,7 @@ bool AP_Arming::system_checks(bool report)
 
 bool AP_Arming::terrain_database_required() const
 {
+#if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         // no mission support?
@@ -1133,6 +1134,7 @@ bool AP_Arming::terrain_database_required() const
     if (mission->contains_terrain_alt_items()) {
         return true;
     }
+#endif
     return false;
 }
 
