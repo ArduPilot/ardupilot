@@ -24,6 +24,10 @@ public:
         ignition = 2,
         parachute = 3,
         camera = 4,
+        brushed_reverse_1 = 5,
+        brushed_reverse_2 = 6,
+        brushed_reverse_3 = 7,
+        brushed_reverse_4 = 8,
         num_functions // must be the last entry
     };
 
