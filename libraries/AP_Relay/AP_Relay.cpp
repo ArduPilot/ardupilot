@@ -19,6 +19,11 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_Camera/AP_Camera.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AR_Motors/AP_MotorsUGV.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define RELAY1_PIN_DEFAULT 13
 
@@ -146,6 +151,14 @@ void AP_Relay::convert_params()
     }
 #endif
 
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    int8_t rover_relay[] = { -1, -1, -1, -1 };
+    AP_MotorsUGV *motors = AP::motors_ugv();
+    if (motors != nullptr) {
+        motors->get_legacy_relay_index(rover_relay[0], rover_relay[1], rover_relay[2], rover_relay[3]);
+    }
+#endif
+
     // Find old default param
     int8_t default_state = 0; // off was the old behaviour
     const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
@@ -165,29 +178,47 @@ void AP_Relay::convert_params()
 
         int8_t pin = 0;
         if (!_params[i].pin.configured() && AP_Param::get_param_by_index(this, param_index, AP_PARAM_INT8, &pin) && (pin >= 0)) {
-            // Copy old pin parameter
+            // Copy old pin parameter if valid
             _params[i].pin.set_and_save(pin);
         }
-        if (_params[i].pin < 0) {
-            // Don't enable if pin is invalid
-            continue;
-        }
-        // Valid pin, this is either due to the param conversion or default value
 
         // Work out what function this relay should be
+        AP_Relay_Params::Function new_fun;
         if (i == chute_relay) {
-            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::parachute));
+            new_fun = AP_Relay_Params::Function::parachute;
 
         } else if (i == ice_relay) {
-            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::ignition));
+            new_fun = AP_Relay_Params::Function::ignition;
 
         } else if (i == cam_relay) {
-            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::camera));
+            new_fun = AP_Relay_Params::Function::camera;
+
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+        } else if (i == rover_relay[0]) {
+            new_fun = AP_Relay_Params::Function::brushed_reverse_1;
+
+        } else if (i == rover_relay[1]) {
+            new_fun = AP_Relay_Params::Function::brushed_reverse_2;
+
+        } else if (i == rover_relay[2]) {
+            new_fun = AP_Relay_Params::Function::brushed_reverse_3;
+
+        } else if (i == rover_relay[3]) {
+            new_fun = AP_Relay_Params::Function::brushed_reverse_4;
+#endif
 
         } else {
-            _params[i].function.set_and_save(int8_t(AP_Relay_Params::Function::relay));
+            if (_params[i].pin < 0) {
+                // Don't enable as numbered relay if pin is invalid
+                // Other functions should be enabled with a invalid pin
+                // This will result in a pre-arm promoting the user to resolve
+                continue;
+            }
+            new_fun = AP_Relay_Params::Function::relay;
 
         }
+        _params[i].function.set_and_save(int8_t(new_fun));
+
 
         // Set the default state
         if (have_default) {
