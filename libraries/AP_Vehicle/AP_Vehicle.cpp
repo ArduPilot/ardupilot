@@ -850,6 +850,7 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 #if OSD_ENABLED
 void AP_Vehicle::publish_osd_info()
 {
+#if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         return;
@@ -872,6 +873,7 @@ void AP_Vehicle::publish_osd_info()
     }
     nav_info.wp_number = mission->get_current_nav_index();
     osd->set_nav_info(nav_info);
+#endif
 }
 #endif
 
