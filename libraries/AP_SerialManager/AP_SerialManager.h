@@ -81,6 +81,7 @@ public:
         SerialProtocol_DDS_XRCE = 45,
         SerialProtocol_IMUOUT = 46,
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
+        SerialProtocol_PPP = 48,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
