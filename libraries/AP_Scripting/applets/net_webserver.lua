@@ -23,7 +23,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 6), 'net_test: could
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-local WEB_ENABLE = bind_add_param('ENABLE',  1, 0)
+local WEB_ENABLE = bind_add_param('ENABLE',  1, 1)
 
 --[[
   // @Param: WEB_BIND_PORT
@@ -62,11 +62,15 @@ local WEB_BLOCK_SIZE = bind_add_param('BLOCK_SIZE', 4, 10240)
 --]]
 local WEB_TIMEOUT = bind_add_param('TIMEOUT', 5, 2.0)
 
+if WEB_ENABLE:get() ~= 1 then
+   gcs:send_text(MAV_SEVERITY.INFO, "WebServer: disabled")
+   return
+end
+
 local BRD_RTC_TZ_MIN = Parameter("BRD_RTC_TZ_MIN")
 
 gcs:send_text(MAV_SEVERITY.INFO, string.format("WebServer: starting on port %u", WEB_BIND_PORT:get()))
 
-local counter = 0
 local sock_listen = SocketAPM(0)
 local clients = {}
 
@@ -76,8 +80,6 @@ local CONTENT_TEXT_HTML = "text/html;charset=UTF-8"
 local CONTENT_OCTET_STREAM = "application/octet-stream"
 
 local HIDDEN_FOLDERS = { "@SYS", "@ROMFS", "@MISSION", "@PARAM" }
-
-local CGI_BIN_PATH = "cgi-bin"
 
 local MNT_PREFIX = "/mnt"
 local MNT_PREFIX2 = MNT_PREFIX .. "/"
@@ -282,9 +284,7 @@ end
    return true if a string starts with the 2nd string
 --]]
 local function startswith(str, s)
-   local len1 = #str
-   local len2 = #s
-   return string.sub(str,1,len2) == s
+   return string.sub(str,1,#s) == s
 end
 
 local debug_count=0
@@ -338,7 +338,7 @@ function file_timestring(path)
    end
    local mtime = s:mtime()
    mtime = mtime + BRD_RTC_TZ_MIN:get()*60
-   local year, month, day, hour, min, sec, wday = rtc:clock_s_to_date_fields(mtime)
+   local year, month, day, hour, min, sec, _ = rtc:clock_s_to_date_fields(mtime)
    if not year then
       return ""
    end
@@ -520,7 +520,7 @@ local function Client(_sock, _idx)
          if endswith(path,"/") then
             path = string.sub(path, 1, #path-1)
          end
-         local dir, file = string.match(path, '(.*/)(.*)')
+         local dir, _ = string.match(path, '(.*/)(.*)')
          if not dir then
             return path
          end
@@ -646,12 +646,12 @@ local function Client(_sock, _idx)
       local eval_code = "function eval_func()\n" .. code .. "\nend\n"
       local f, errloc, err = load(eval_code, "eval_func", "t", _ENV)
       if not f then
-         DEBUG(string.format("load failed: err=%s", err))
+         DEBUG(string.format("load failed: err=%s errloc=%s", err, errloc))
          return nil
       end
-      local success, err = pcall(f)
+      local success, err2 = pcall(f)
       if not success then
-         DEBUG(string.format("pcall failed: err=%s", err))
+         DEBUG(string.format("pcall failed: err=%s", err2))
          return nil
       end
       local ok, s2 = pcall(eval_func)
@@ -719,7 +719,7 @@ local function Client(_sock, _idx)
       if path == "/" then
          return MIME_TYPES["html"]
       end
-      local file, ext = string.match(path, '(.*[.])(.*)')
+      local _, ext = string.match(path, '(.*[.])(.*)')
       ext = string.lower(ext)
       local ret = MIME_TYPES[ext]
       if not ret then
