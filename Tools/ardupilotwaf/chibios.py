@@ -692,6 +692,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     common_src += bld.path.ant_glob('modules/ChibiOS/ext/lwip/src/**/*.[ch]')
+    common_src += bld.path.ant_glob('modules/ChibiOS/ext/lwip/src/netif/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/ext/lwip/src/core/**/*.[ch]')
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
