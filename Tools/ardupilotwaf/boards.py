@@ -578,6 +578,9 @@ def get_boards_names():
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
+def is_board_based(board, cls):
+    return issubclass(_board_classes[board], cls)
+
 def get_ap_periph_boards():
     '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]

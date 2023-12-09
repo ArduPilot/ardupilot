@@ -674,9 +674,9 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if 'sitl' in board or 'SITL' in board:
+                if boards.is_board_based(board, boards.sitl):
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'replay']
-                elif 'linux' in board:
+                elif boards.is_board_based(board, boards.linux):
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub']
                 else:
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader']
