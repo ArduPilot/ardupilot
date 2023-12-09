@@ -671,13 +671,15 @@ void AP_IOMCU_FW::process_io_packet()
  */
 void AP_IOMCU_FW::page_status_update(void)
 {
+    adc_sample_channels();
+
     if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) == 0) {
         // we can only get VRSSI when sbus is disabled
-        reg_status.vrssi = adc_sample_vrssi();
+        reg_status.vrssi = adc_vrssi();
     } else {
         reg_status.vrssi = 0;
     }
-    reg_status.vservo = adc_sample_vservo();
+    reg_status.vservo = adc_vservo();
 }
 
 bool AP_IOMCU_FW::handle_code_read()
@@ -798,8 +800,10 @@ bool AP_IOMCU_FW::handle_code_write()
                 // or disable SBUS out
                 AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
 
+                adc_disable_vrssi();
                 palClearLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             } else {
+                adc_enable_vrssi();
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             }
             if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
