@@ -128,6 +128,8 @@ protected:
     AP_Float _volt_offset;              /// offset voltage that is subtracted from voltage pin before conversion
     AP_Int8  _volt_pin;                 /// board pin used to measure battery voltage
     AP_Int8  _curr_pin;                 /// board pin used to measure battery current
+
+    bool done_amp_cal;
 };
 
 #endif  // AP_BATTERY_ANALOG_ENABLED
