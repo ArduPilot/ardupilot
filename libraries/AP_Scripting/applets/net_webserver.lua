@@ -79,6 +79,9 @@ local HIDDEN_FOLDERS = { "@SYS", "@ROMFS", "@MISSION", "@PARAM" }
 
 local CGI_BIN_PATH = "cgi-bin"
 
+local MNT_PREFIX = "/mnt"
+local MNT_PREFIX2 = MNT_PREFIX .. "/"
+
 local MIME_TYPES = {
    ["apj"] = CONTENT_OCTET_STREAM,
    ["dat"] = CONTENT_OCTET_STREAM,
@@ -164,6 +167,79 @@ local MIME_TYPES = {
    ["7z"] = "application/x-7z-compressed",
 }
 
+--[[
+ builtin dynamic pages
+--]]
+local DYNAMIC_PAGES = {
+
+-- main home page
+["/"] = [[
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>ArduPilot</title>
+    <script>
+      <?lstr JS_LIBRARY['dynamic_load']?>
+    </script>
+</head>
+
+<h2>ArduPilot Web Server</h2>
+<body onload="javascript: dynamic_load('board_status','/@DYNAMIC/board_status.shtml',1000)">
+
+  <div id="main">
+    <ul>
+      <li><a href="mnt/">SDCard Access</a></li>
+    </ul>
+    </div>
+<h2>Controller Status</h2>
+  <div id="board_status"></div>
+</body>
+</html>
+]],    
+   
+-- board status section on front page
+["@DYNAMIC/board_status.shtml"] = [[
+         <table>
+         <tr><td>Firmware</td><td><?lstr FWVersion:string() ?></td></tr>
+         <tr><td>GIT Hash</td><td><?lstr FWVersion:hash() ?></td></tr>
+         <tr><td>Uptime</td><td><?lstr hms_uptime() ?></td></tr>
+         <tr><td>Arm Status</td><td><?lstr arming:is_armed() and "ARMED" or "DISARMED" ?></td></tr>
+         <tr><td>AHRS Location</td><td><?lstr location_string(ahrs:get_location()) ?></td>
+         <tr><td>GPS Location</td><td><?lstr location_string(ahrs:get_location()) ?></td>
+         </table>
+]]
+}
+
+--[[
+ builtin javascript library functions
+--]]
+JS_LIBRARY = {
+   ["dynamic_load"] = [[
+      function dynamic_load(div_id, uri, period_ms) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', uri);
+          
+          xhr.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
+          xhr.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
+          xhr.setRequestHeader("Pragma", "no-cache");
+          
+          xhr.onload = function () {
+              if (xhr.status === 200) {
+                 var output = document.getElementById(div_id);
+                 if (uri.endsWith('.shtml') || uri.endsWith('.html')) {
+                  output.innerHTML = xhr.responseText;
+                 } else {
+                  output.textContent = xhr.responseText;
+                 }
+              }
+              setTimeout(function() { dynamic_load(div_id,uri, period_ms); }, period_ms);
+          }
+          xhr.send();
+     }
+]]
+}
 
 if not sock_listen:bind("0.0.0.0", WEB_BIND_PORT:get()) then
    gcs:send_text(MAV_SEVERITY.ERROR, string.format("WebServer: failed to bind to TCP %u", WEB_BIND_PORT:get()))
@@ -173,6 +249,13 @@ end
 if not sock_listen:listen(20) then
    gcs:send_text(MAV_SEVERITY.ERROR, "WebServer: failed to listen")
    return
+end
+
+function hms_uptime()
+   local s = (millis()/1000):toint()
+   local min = math.floor(s / 60) % 60
+   local hr = math.floor(s / 3600)
+   return string.format("%u hours %u minutes %u seconds", hr, min, s%60)
 end
 
 --[[
@@ -316,7 +399,25 @@ function substitute_vars(s, vars)
    end))
    return s
 end
-   
+
+--[[
+  lat or lon as a string, working around limited type in ftoa_engine
+--]]
+function latlon_str(ll)
+   local ipart = tonumber(string.match(tostring(ll*1.0e-7), '(.*[.]).*'))
+   local fpart = math.abs(ll - ipart*10000000)
+   return string.format("%d.%u", ipart, fpart, ipart*10000000, ll)
+end
+
+--[[
+ location string for home page
+--]]
+function location_string(loc)
+   return substitute_vars([[<a href="https://www.google.com/maps/search/?api=1&query={lat},{lon}" target="_blank">{lat} {lon}</a> {alt}]],
+      { ["lat"] = latlon_str(loc:lat()),
+        ["lon"] = latlon_str(loc:lng()),
+        ["alt"] = string.format("%.1fm", loc:alt()*1.0e-2) })
+end
 
 --[[
    client class for open connections
@@ -468,9 +569,6 @@ local function Client(_sock, _idx)
 ]], {path=path})
       for _,d in ipairs(dlist) do
          local skip = d == "."
-         if path == "/" and d == ".." then
-            skip = true
-         end
          if not skip then
             local fullpath = self.full_path(path, d)
             local name = d
@@ -586,9 +684,14 @@ local function Client(_sock, _idx)
       Using 'lstr' a return tostring(yourcode) is added to the code
       automatically
    --]]
-   function self.send_processed_file()
+   function self.send_processed_file(dynamic_page)
       sock:set_blocking(true)
-      local contents = self.load_file()
+      local contents
+      if dynamic_page then
+         contents = file
+      else
+         contents = self.load_file()
+      end
       while #contents > 0 do
          local pat1 = "(.-)[<][?]lua[ \n](.-)[?][>](.*)"
          local pat2 = "(.-)[<][?]lstr[ \n](.-)[?][>](.*)"
@@ -613,6 +716,9 @@ local function Client(_sock, _idx)
    
    -- return a content type
    function self.content_type(path)
+      if path == "/" then
+         return MIME_TYPES["html"]
+      end
       local file, ext = string.match(path, '(.*[.])(.*)')
       ext = string.lower(ext)
       local ret = MIME_TYPES[ext]
@@ -628,16 +734,23 @@ local function Client(_sock, _idx)
          path = string.sub(path, 2, #path)
       end
       DEBUG(string.format("%u: file_download(%s)", idx, path))
-      file = io.open(path,"rb")
-      if not file then
-         DEBUG(string.format("%u: Failed to open '%s'", idx, path))
-         return false
+      file = DYNAMIC_PAGES[path]
+      dynamic_page = file ~= nil
+      if not dynamic_page then
+         file = io.open(path,"rb")
+         if not file then
+            DEBUG(string.format("%u: Failed to open '%s'", idx, path))
+            return false
+         end
       end
       local vars = {["Content-Type"]=self.content_type(path)}
       local cgi_processing = startswith(path, "/cgi-bin/") and endswith(path, ".lua")
       local server_side_processing = endswith(path, ".shtml")
       local stat = fs:stat(path)
-      if not startswith(path, "@") and not server_side_processing and not cgi_processing and stat then
+      if not startswith(path, "@") and
+         not server_side_processing and
+         not cgi_processing and stat and
+         not dynamic_page then
          local fsize = stat:size()
          local mtime = stat:mtime()
          vars["Content-Length"]= tostring(fsize)
@@ -656,9 +769,9 @@ local function Client(_sock, _idx)
          end
       end
       self.send_header(200, "OK", vars)
-      if server_side_processing then
+      if server_side_processing or dynamic_page then
          DEBUG(string.format("%u: shtml processing %s", idx, path))
-         run = self.send_processed_file
+         run = self.send_processed_file(dynamic_page)
       elseif cgi_processing then
          DEBUG(string.format("%u: CGI processing %s", idx, path))
          run = self.send_cgi
@@ -715,7 +828,22 @@ local function Client(_sock, _idx)
          end
       end
 
-      if isdirectory(path) and not endswith(path,"/") and header_vars['Host'] and not is_hidden_dir(path) then
+      if DYNAMIC_PAGES[path] ~= nil then
+         self.file_download(path)
+         return
+      end
+
+      if path == MNT_PREFIX then
+         path = "/"
+      end
+      if startswith(path, MNT_PREFIX2) then
+         path = string.sub(path,#MNT_PREFIX2,#path)
+      end
+
+      if isdirectory(path) and
+         not endswith(path,"/") and
+         header_vars['Host'] and
+         not is_hidden_dir(path) then
          self.moved_permanently(path .. "/")
          return
       end
@@ -737,10 +865,15 @@ local function Client(_sock, _idx)
       end
       
       -- see if it is a directory
-      if endswith(path,"/") or isdirectory(path) or is_hidden_dir(path) then
+      if (path == "/" or
+         DYNAMIC_PAGES[path] == nil) and
+         (endswith(path,"/") or
+          isdirectory(path) or
+          is_hidden_dir(path)) then
          self.directory_list(path)
          return
       end
+      
       -- or a file
       if self.file_download(path) then
          return
