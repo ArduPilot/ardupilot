@@ -16,7 +16,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
-#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Relay/AP_Relay.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -145,6 +145,33 @@ void AP_MotorsUGV::init(uint8_t frtype)
     if (is_omni()) {
         setup_omni();
     }
+}
+
+bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const
+{
+    if (_pwm_type != PWM_TYPE_BRUSHED_WITH_RELAY) {
+        // Relays only used if PWM type is set to brushed with relay
+        return false;
+    }
+
+    // First relay is always used, throttle, throttle left or motor 1
+    index1 = 0;
+
+    // Second relay is used for right throttle on skid steer and motor 2 for omni
+    if (have_skid_steering()) {
+        index2 = 1;
+    }
+
+    // Omni can have a variable number of motors
+    if (is_omni()) {
+        // Omni has at least 3 motors
+        index2 = 2;
+        if (_motors_num >= 4) {
+            index2 = 3;
+        }
+    }
+
+    return true;
 }
 
 // setup output in case of main CPU failure
@@ -457,10 +484,14 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
 //  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
 bool AP_MotorsUGV::pre_arm_check(bool report) const
 {
+    const bool have_throttle = SRV_Channels::function_assigned(SRV_Channel::k_throttle);
+    const bool have_throttle_left = SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft);
+    const bool have_throttle_right = SRV_Channels::function_assigned(SRV_Channel::k_throttleRight);
+
     // check that there's defined outputs, inc scripting and sail
-    if(!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
-       !SRV_Channels::function_assigned(SRV_Channel::k_throttleRight) &&
-       !SRV_Channels::function_assigned(SRV_Channel::k_throttle) &&
+    if(!have_throttle_left &&
+       !have_throttle_right &&
+       !have_throttle &&
        !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
        !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
        !has_sail()) {
@@ -470,14 +501,14 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         return false;
     }
     // check if only one of skid-steering output has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+    if (have_throttle_left != have_throttle_right) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
         }
         return false;
     }
     // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
-    if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+    if ((has_sail() || have_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }
@@ -493,6 +524,35 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
             return false;
         }
     }
+
+    // Check relays are configured for brushed with relay outputs
+#if AP_RELAY_ENABLED
+    AP_Relay*relay = AP::relay();
+    if ((_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) && (relay != nullptr)) {
+        // If a output is configured its relay must be enabled
+        struct RelayTable {
+            bool output_assigned;
+            AP_Relay_Params::FUNCTION fun;
+        };
+
+        const RelayTable relay_table[] = {
+            { have_throttle || have_throttle_left || (SRV_Channels::function_assigned(SRV_Channel::k_motor1) && (_motors_num >= 1)), AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1 },
+            { have_throttle_right || (SRV_Channels::function_assigned(SRV_Channel::k_motor2) && (_motors_num >= 2)),                 AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2 },
+            { SRV_Channels::function_assigned(SRV_Channel::k_motor3) && (_motors_num >= 3),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3 },
+            { SRV_Channels::function_assigned(SRV_Channel::k_motor4) && (_motors_num >= 4),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4 },
+        };
+
+        for (uint8_t i=0; i<ARRAY_SIZE(relay_table); i++) {
+            if (relay_table[i].output_assigned && !relay->enabled(relay_table[i].fun)) {
+                if (report) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: relay function %u unassigned", uint8_t(relay_table[i].fun));
+                }
+                return false;
+            }
+        }
+    }
+#endif
+
     return true;
 }
 
@@ -918,9 +978,9 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     throttle = get_rate_controlled_throttle(function, throttle, dt);
 
     // set relay if necessary
-#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
-        auto &_relayEvents { *AP::servorelayevents() };
+#if AP_RELAY_ENABLED
+    AP_Relay*relay = AP::relay();
+    if ((_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) && (relay != nullptr)) {
 
         // find the output channel, if not found return
         const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
@@ -930,30 +990,31 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         const int8_t reverse_multiplier = out_chan->get_reversed() ? -1 : 1;
         bool relay_high = is_negative(reverse_multiplier * throttle);
 
+        AP_Relay_Params::FUNCTION relay_function;
         switch (function) {
             case SRV_Channel::k_throttle:
             case SRV_Channel::k_throttleLeft:
             case SRV_Channel::k_motor1:
-                _relayEvents.do_set_relay(0, relay_high);
+            default:
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1;
                 break;
             case SRV_Channel::k_throttleRight:
             case SRV_Channel::k_motor2:
-                _relayEvents.do_set_relay(1, relay_high);
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2;
                 break;
             case SRV_Channel::k_motor3:
-                _relayEvents.do_set_relay(2, relay_high);
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3;
                 break;
             case SRV_Channel::k_motor4:
-                _relayEvents.do_set_relay(3, relay_high);
-                break;
-            default:
-                // do nothing
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4;
                 break;
         }
+        relay->set(relay_function, relay_high);
+
         // invert the output to always have positive value calculated by calc_pwm
         throttle = reverse_multiplier * fabsf(throttle);
     }
-#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
+#endif  // AP_RELAY_ENABLED
 
     // output to servo channel
     switch (function) {
