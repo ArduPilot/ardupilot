@@ -4497,6 +4497,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_i
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MISSION_ENABLED
 // changes the current waypoint; at time of writing GCS
 // implementations use the mavlink message MISSION_SET_CURRENT to set
 // the current waypoint, rather than this DO command.  It is hoped we
@@ -4555,6 +4556,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_jump_tag(const mavlink_command_int_t &
 
     return MAV_RESULT_ACCEPTED;
 }
+#endif
 
 #if AP_BATTERY_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_int_t &packet)
@@ -5116,11 +5118,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_gripper(packet);
 #endif
 
+#if AP_MISSION_ENABLED
     case MAV_CMD_DO_JUMP_TAG:
         return handle_command_do_jump_tag(packet);
 
     case MAV_CMD_DO_SET_MISSION_CURRENT:
         return handle_command_do_set_mission_current(packet);
+#endif
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
@@ -5304,6 +5308,7 @@ void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) const {
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
     switch (id) {
+#if AP_MISSION_ENABLED
     case MSG_CURRENT_WAYPOINT:
     {
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
@@ -5321,6 +5326,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_MISSION);
         break;
+#endif
 #if HAL_RALLY_ENABLED
     case MSG_NEXT_MISSION_REQUEST_RALLY:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
@@ -6721,11 +6727,13 @@ void GCS_MAVLINK::send_high_latency2() const
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
 #endif
 
-    AP_Mission *mission = AP::mission();
     uint16_t current_waypoint = 0;
+#if AP_MISSION_ENABLED
+    AP_Mission *mission = AP::mission();
     if (mission != nullptr) {
         current_waypoint = mission->get_current_nav_index();
     }
+#endif
 
     uint32_t present;
     uint32_t enabled;
