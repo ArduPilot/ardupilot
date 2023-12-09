@@ -1,3 +1,7 @@
+#include "AP_Mission_config.h"
+
+#if AP_MISSION_ENABLED
+
 #include "AP_Mission.h"
 
 #include <GCS_MAVLink/GCS.h>
@@ -332,3 +336,5 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
     // if we got this far then message is not handled
     return false;
 }
+
+#endif  // AP_MISSION_ENABLED
