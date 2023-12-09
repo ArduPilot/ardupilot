@@ -14,6 +14,7 @@ extern const AP_HAL::HAL& hal;
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
 #include "AP_Networking_ChibiOS.h"
+#include "AP_Networking_SLIP.h"
 #include <hal_mii.h>
 #include <lwip/sockets.h>
 #else
@@ -21,6 +22,10 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #include <AP_HAL/utility/Socket.h>
+
+#if AP_NETWORKING_BACKEND_SLIP
+#include "AP_Networking_SLIP.h"
+#endif
 
 #if AP_NETWORKING_BACKEND_SITL
 #include "AP_Networking_SITL.h"
@@ -124,11 +129,21 @@ void AP_Networking::init()
     }
 #endif
 
+#if AP_NETWORKING_BACKEND_SLIP
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_SLIP, 0)) {
+        backend = new AP_Networking_SLIP(*this);
+    }
+#endif
+
 #if AP_NETWORKING_BACKEND_CHIBIOS
-    backend = new AP_Networking_ChibiOS(*this);
+    if (backend == nullptr) {
+        backend = new AP_Networking_ChibiOS(*this);
+    }
 #endif
 #if AP_NETWORKING_BACKEND_SITL
-    backend = new AP_Networking_SITL(*this);
+    if (backend == nullptr) {
+        backend = new AP_Networking_SITL(*this);
+    }
 #endif
 
     if (backend == nullptr) {
@@ -374,15 +389,16 @@ AP_Networking &network()
  */
 int ap_networking_printf(const char *fmt, ...)
 {
-#ifdef AP_NETWORKING_LWIP_DEBUG_PORT
+#if AP_NETWORKING_LWIP_DEBUG_PORT >= 0
     static AP_HAL::UARTDriver *uart;
     if (uart == nullptr) {
         uart = hal.serial(AP_NETWORKING_LWIP_DEBUG_PORT);
         if (uart == nullptr) {
             return -1;
         }
-        uart->begin(921600, 0, 50000);
+        uart->begin(AP_NETWORKING_LWIP_DEBUG_BAUD, 1000, 50000);
     }
+    uart->begin(0);
     va_list ap;
     va_start(ap, fmt);
     uart->vprintf(fmt, ap);
