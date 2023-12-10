@@ -457,7 +457,7 @@ function motor_factor_table_ud:roll(index, value) end
 local SocketAPM_ud = {}
 
 -- desc
-function SocketAPM(param1) end
+function Socket(param1) end
 
 -- return true if a socket is connected
 ---@return boolean

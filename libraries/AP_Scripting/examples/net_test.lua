@@ -44,11 +44,11 @@ local function test_ip()
 end
 
 local counter = 0
-local sock_tcp_echo = SocketAPM(0)
-local sock_udp_echo = SocketAPM(1)
-local sock_tcp_in = SocketAPM(0)
+local sock_tcp_echo = Socket(0)
+local sock_udp_echo = Socket(1)
+local sock_tcp_in = Socket(0)
 local sock_tcp_in2 = nil
-local sock_udp_in = SocketAPM(1)
+local sock_udp_in = Socket(1)
 
 assert(sock_tcp_echo, "net_test: failed to create tcp echo socket")
 assert(sock_udp_echo, "net_test: failed to create udp echo socket")
