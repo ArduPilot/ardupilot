@@ -82,9 +82,9 @@ static Empty::WSPIDeviceManager wspi_mgr_instance;
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
         &sitlUart0Driver,   /* uartA */
-        &sitlUart1Driver,   /* uartB */
-        &sitlUart2Driver,   /* uartC */
+        &sitlUart2Driver,   /* uartC */ // ordering captures the historical use of uartB as SERIAL3
         &sitlUart3Driver,   /* uartD */
+        &sitlUart1Driver,   /* uartB */
         &sitlUart4Driver,   /* uartE */
         &sitlUart5Driver,   /* uartF */
         &sitlUart6Driver,   /* uartG */
