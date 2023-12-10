@@ -770,8 +770,6 @@ int lua_get_SocketAPM(lua_State *L) {
     const uint8_t datagram = get_uint8_t(L, 1);
     auto *scripting = AP::scripting();
 
-    lua_gc(L, LUA_GCCOLLECT, 0);
-
     if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
         return luaL_argerror(L, 1, "no sockets available");
     }
@@ -829,7 +827,7 @@ int SocketAPM_sendfile(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->num_net_sockets == 0) {
-        return luaL_argerror(L, 1, "socket close error");
+        return luaL_argerror(L, 1, "sendfile error");
     }
 
     auto *p = (luaL_Stream *)luaL_checkudata(L, 2, LUA_FILEHANDLE);
