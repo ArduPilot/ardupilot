@@ -103,7 +103,8 @@ function maybe_prompt_user() {
 # see https://github.com/orgs/Homebrew/discussions/3895
 find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
 
-brew update
+# brew update randomly failing on CI, so ignore errors:
+brew update || true
 brew install gawk curl coreutils wget
 
 PIP=pip
