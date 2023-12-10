@@ -26,9 +26,9 @@ static Flash flashDriver;
 HAL_Empty::HAL_Empty() :
     AP_HAL::HAL(
         &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
+        &uartCDriver, // ordering captures the historical use of uartB as SERIAL3
         nullptr,            /* no uartD */
+        &uartBDriver,
         nullptr,            /* no uartE */
         nullptr,            /* no uartF */
         nullptr,            /* no uartG */
