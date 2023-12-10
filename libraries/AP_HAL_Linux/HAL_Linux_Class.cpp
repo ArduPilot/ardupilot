@@ -248,9 +248,9 @@ static CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
         &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
+        &uartCDriver, // ordering captures the historical use of uartB as SERIAL3
         &uartDDriver,
+        &uartBDriver,
         &uartEDriver,
         &uartFDriver,
         &uartGDriver,
