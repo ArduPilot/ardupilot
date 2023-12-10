@@ -73,9 +73,9 @@ extern const AP_HAL::HAL& hal;
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
         &cons, //Console/mavlink
-        &uartBDriver, //GPS 1
-        &uartCDriver, //Telem 1
+        &uartCDriver, //Telem 1, ordering captures the historical use of uartB as SERIAL3
         &uartDDriver, //Telem 2
+        &uartBDriver, //GPS 1
         &uartEDriver, //GPS 2
         &uartFDriver, //Extra 1
         &uartGDriver, //Extra 2
