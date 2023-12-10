@@ -137,9 +137,9 @@ AP_IOMCU iomcu(uart_io);
 HAL_ChibiOS::HAL_ChibiOS() :
     AP_HAL::HAL(
         &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
+        &uartCDriver, // ordering captures the historical use of uartB as SERIAL3
         &uartDDriver,
+        &uartBDriver,
         &uartEDriver,
         &uartFDriver,
         &uartGDriver,
