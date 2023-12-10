@@ -829,8 +829,13 @@ void Plane::set_servos(void)
     quadplane.update();
 #endif
 
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+        // allow landing to override servos if it would like to
+        landing.override_servos();
+    }
+
     if (control_mode != &mode_manual) {
-        set_servos_controlled();
+        set_throttle();
         set_takeoff_expected();
     }
 
