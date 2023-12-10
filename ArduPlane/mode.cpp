@@ -135,6 +135,9 @@ bool Mode::enter()
            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "In landing sequence: mission reset");
            plane.mission.reset();
         }
+
+        // Make sure the flight stage is correct for the new mode
+        plane.update_flight_stage();
     }
 
     return enter_result;
