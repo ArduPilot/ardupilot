@@ -336,7 +336,7 @@ float AC_PID::get_d() const
     return _kd * _derivative;
 }
 
-float AC_PID::get_ff()
+float AC_PID::get_ff() const
 {
     return  _pid_info.FF + _pid_info.DFF;
 }
