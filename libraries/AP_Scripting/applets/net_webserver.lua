@@ -71,7 +71,7 @@ local BRD_RTC_TZ_MIN = Parameter("BRD_RTC_TZ_MIN")
 
 gcs:send_text(MAV_SEVERITY.INFO, string.format("WebServer: starting on port %u", WEB_BIND_PORT:get()))
 
-local sock_listen = SocketAPM(0)
+local sock_listen = Socket(0)
 local clients = {}
 
 local DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">"
