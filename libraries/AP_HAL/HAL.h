@@ -20,16 +20,16 @@ class AP_Param;
 
 class AP_HAL::HAL {
 public:
-    HAL(AP_HAL::UARTDriver* _uartA, // console
-        AP_HAL::UARTDriver* _uartB, // 1st GPS
-        AP_HAL::UARTDriver* _uartC, // telem1
-        AP_HAL::UARTDriver* _uartD, // telem2
-        AP_HAL::UARTDriver* _uartE, // 2nd GPS
-        AP_HAL::UARTDriver* _uartF, // extra1
-        AP_HAL::UARTDriver* _uartG, // extra2
-        AP_HAL::UARTDriver* _uartH, // extra3
-        AP_HAL::UARTDriver* _uartI, // extra4
-        AP_HAL::UARTDriver* _uartJ, // extra5
+    HAL(AP_HAL::UARTDriver* _serial0, // console
+        AP_HAL::UARTDriver* _serial1, // telem1
+        AP_HAL::UARTDriver* _serial2, // telem2
+        AP_HAL::UARTDriver* _serial3, // 1st GPS
+        AP_HAL::UARTDriver* _serial4, // 2nd GPS
+        AP_HAL::UARTDriver* _serial5, // extra1
+        AP_HAL::UARTDriver* _serial6, // extra2
+        AP_HAL::UARTDriver* _serial7, // extra3
+        AP_HAL::UARTDriver* _serial8, // extra4
+        AP_HAL::UARTDriver* _serial9, // extra5
         AP_HAL::I2CDeviceManager* _i2c_mgr,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::WSPIDeviceManager* _wspi,
@@ -54,16 +54,16 @@ public:
 #endif
         :
         serial_array{
-            _uartA,
-            _uartC, // ordering captures the historical use of uartB as SERIAL3
-            _uartD,
-            _uartB,
-            _uartE,
-            _uartF,
-            _uartG,
-            _uartH,
-            _uartI,
-            _uartJ},
+            _serial0,
+            _serial1,
+            _serial2,
+            _serial3,
+            _serial4,
+            _serial5,
+            _serial6,
+            _serial7,
+            _serial8,
+            _serial9},
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         wspi(_wspi),
