@@ -92,16 +92,16 @@ void SITL_State::_usage(void)
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
-           "\t--uartA device           set device string for UARTA\n"
-           "\t--uartB device           set device string for UARTB\n"
-           "\t--uartC device           set device string for UARTC\n"
-           "\t--uartD device           set device string for UARTD\n"
-           "\t--uartE device           set device string for UARTE\n"
-           "\t--uartF device           set device string for UARTF\n"
-           "\t--uartG device           set device string for UARTG\n"
-           "\t--uartH device           set device string for UARTH\n"
-           "\t--uartI device           set device string for UARTI\n"
-           "\t--uartJ device           set device string for UARTJ\n"
+           "\t--uartA device           set device string for SERIAL0\n"
+           "\t--uartB device           set device string for SERIAL3\n" // ordering captures the historical use of uartB as SERIAL3
+           "\t--uartC device           set device string for SERIAL1\n"
+           "\t--uartD device           set device string for SERIAL2\n"
+           "\t--uartE device           set device string for SERIAL4\n"
+           "\t--uartF device           set device string for SERIAL5\n"
+           "\t--uartG device           set device string for SERIAL6\n"
+           "\t--uartH device           set device string for SERIAL7\n"
+           "\t--uartI device           set device string for SERIAL8\n"
+           "\t--uartJ device           set device string for SERIAL9\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -246,17 +246,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_FGVIEW,
         CMDLINE_AUTOTESTDIR,
         CMDLINE_DEFAULTS,
-        CMDLINE_UARTA,
-        CMDLINE_UARTB,
-        CMDLINE_UARTC,
-        CMDLINE_UARTD,
-        CMDLINE_UARTE,
-        CMDLINE_UARTF,
-        CMDLINE_UARTG,
-        CMDLINE_UARTH,
-        CMDLINE_UARTI,
-        CMDLINE_UARTJ,
-        CMDLINE_SERIAL0,
+        CMDLINE_SERIAL0, // must be in 0-9 order and numbered consecutively
         CMDLINE_SERIAL1,
         CMDLINE_SERIAL2,
         CMDLINE_SERIAL3,
@@ -305,16 +295,16 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
-        {"uartB",           true,   0, CMDLINE_UARTB},
-        {"uartC",           true,   0, CMDLINE_UARTC},
-        {"uartD",           true,   0, CMDLINE_UARTD},
-        {"uartE",           true,   0, CMDLINE_UARTE},
-        {"uartF",           true,   0, CMDLINE_UARTF},
-        {"uartG",           true,   0, CMDLINE_UARTG},
-        {"uartH",           true,   0, CMDLINE_UARTH},
-        {"uartI",           true,   0, CMDLINE_UARTI},
-        {"uartJ",           true,   0, CMDLINE_UARTJ},
+        {"uartA",           true,   0, CMDLINE_SERIAL0},
+        {"uartB",           true,   0, CMDLINE_SERIAL3}, // ordering captures the historical use of uartB as SERIAL3
+        {"uartC",           true,   0, CMDLINE_SERIAL1},
+        {"uartD",           true,   0, CMDLINE_SERIAL2},
+        {"uartE",           true,   0, CMDLINE_SERIAL4},
+        {"uartF",           true,   0, CMDLINE_SERIAL5},
+        {"uartG",           true,   0, CMDLINE_SERIAL6},
+        {"uartH",           true,   0, CMDLINE_SERIAL7},
+        {"uartI",           true,   0, CMDLINE_SERIAL8},
+        {"uartJ",           true,   0, CMDLINE_SERIAL9},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
@@ -449,18 +439,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_DEFAULTS:
             defaults_path = strdup(gopt.optarg);
             break;
-        case CMDLINE_UARTA:
-        case CMDLINE_UARTB:
-        case CMDLINE_UARTC:
-        case CMDLINE_UARTD:
-        case CMDLINE_UARTE:
-        case CMDLINE_UARTF:
-        case CMDLINE_UARTG:
-        case CMDLINE_UARTH:
-        case CMDLINE_UARTI:
-        case CMDLINE_UARTJ:
-            _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
-            break;
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:
         case CMDLINE_SERIAL2:
@@ -470,11 +448,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
-        case CMDLINE_SERIAL9: {
-            static const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
-            _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
+        case CMDLINE_SERIAL9:
+            _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
-        }
         case CMDLINE_RTSCTS:
             _use_rtscts = true;
             break;

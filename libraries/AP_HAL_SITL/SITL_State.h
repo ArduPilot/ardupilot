@@ -29,11 +29,11 @@ public:
     }
     
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_serial_path[9] {
         "tcp:0:wait",
-        "GPS1",
         "tcp:2",
         "tcp:3",
+        "GPS1",
         "GPS2",
         "tcp:5",
         "tcp:6",

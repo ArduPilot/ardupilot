@@ -89,9 +89,6 @@ private:
     const char *_uart_path;
     uint32_t _uart_baudrate;
 
-    // IPv4 address of target for uartC
-    const char *_tcp_client_addr;
-
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
     void _uart_start_connection(void);
     void _check_reconnect();
