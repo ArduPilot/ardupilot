@@ -323,7 +323,7 @@ void AC_PID::update_i(float dt, bool limit)
 
 float AC_PID::get_p() const
 {
-    return _error * _kp;
+    return _pid_info.P;
 }
 
 float AC_PID::get_i() const
@@ -333,7 +333,7 @@ float AC_PID::get_i() const
 
 float AC_PID::get_d() const
 {
-    return _kd * _derivative;
+    return _pid_info.D;
 }
 
 float AC_PID::get_ff() const
