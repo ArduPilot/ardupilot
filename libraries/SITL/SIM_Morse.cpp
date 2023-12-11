@@ -602,7 +602,7 @@ void Morse::send_report(void)
     if (now < 10000) {
         // don't send lidar reports until 10s after startup. This
         // avoids a windows threading issue with non-blocking sockets
-        // and the initial wait on uartA
+        // and the initial wait on SERIAL0
         return;
     }
 #endif

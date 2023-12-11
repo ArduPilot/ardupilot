@@ -15,7 +15,7 @@
 /*
   Simulator for the RDS02UF rangefinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rds02uf --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:rds02uf --speedup=1
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 36

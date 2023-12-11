@@ -18,7 +18,7 @@
   Usage example:
 param set SERIAL5_PROTOCOL 5
 
-     sim_vehicle.py -D --console --map -A --uartB=sim:gps:2
+     sim_vehicle.py -D --console --map -A --serial5=sim:gps:2
 */
 
 #pragma once
