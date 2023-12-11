@@ -64,16 +64,17 @@ static UtilRPI utilInstance;
 static Util utilInstance;
 #endif
 
-// 9 serial ports on Linux
-static UARTDriver uartADriver(true);
-static UARTDriver uartCDriver(false);
-static UARTDriver uartDDriver(false);
-static UARTDriver uartEDriver(false);
-static UARTDriver uartFDriver(false);
-static UARTDriver uartGDriver(false);
-static UARTDriver uartHDriver(false);
-static UARTDriver uartIDriver(false);
-static UARTDriver uartJDriver(false);
+// 10 serial ports on Linux
+static UARTDriver serial0Driver(true);
+static UARTDriver serial1Driver(false);
+static UARTDriver serial2Driver(false);
+// serial3Driver declared below depending on board type
+static UARTDriver serial4Driver(false);
+static UARTDriver serial5Driver(false);
+static UARTDriver serial6Driver(false);
+static UARTDriver serial7Driver(false);
+static UARTDriver serial8Driver(false);
+static UARTDriver serial9Driver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
@@ -81,9 +82,9 @@ static SPIDeviceManager spi_mgr_instance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-static SPIUARTDriver uartBDriver;
+static SPIUARTDriver serial3Driver;
 #else
-static UARTDriver uartBDriver(false);
+static UARTDriver serial3Driver(false);
 #endif
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
@@ -247,22 +248,22 @@ static CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartCDriver, // ordering captures the historical use of uartB as SERIAL3
-        &uartDDriver,
-        &uartBDriver,
-        &uartEDriver,
-        &uartFDriver,
-        &uartGDriver,
-        &uartHDriver,
-        &uartIDriver,
-        &uartJDriver,
+        &serial0Driver,
+        &serial1Driver,
+        &serial2Driver,
+        &serial3Driver,
+        &serial4Driver,
+        &serial5Driver,
+        &serial6Driver,
+        &serial7Driver,
+        &serial8Driver,
+        &serial9Driver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
         &wspi_mgr_instance,
         &analogIn,
         &storageDriver,
-        &uartADriver,
+        &serial0Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -281,16 +282,16 @@ HAL_Linux::HAL_Linux() :
 
 void _usage(void)
 {
-    printf("Usage: --serial0 serial0Path --serial1 serial2Path \n");
+    printf("Usage: --serial0 serial0Path --serial1 serial1Path \n");
     printf("Examples:\n");
     printf("\tserial (0 through 9 available):\n");
     printf("\t                  --serial0 /dev/ttyO4\n");
     printf("\t                  --serial3 /dev/ttyS1\n");
     printf("\tlegacy UART options still work, their mappings are:\n");
     printf("\t                  -A/--uartA is SERIAL0\n");
-    printf("\t                  -B/--uartB is SERIAL3\n");
     printf("\t                  -C/--uartC is SERIAL1\n");
     printf("\t                  -D/--uartD is SERIAL2\n");
+    printf("\t                  -B/--uartB is SERIAL3\n");
     printf("\t                  -E/--uartE is SERIAL4\n");
     printf("\t                  -F/--uartF is SERIAL5\n");
     printf("\t                  -G/--uartG is SERIAL6\n");
@@ -334,12 +335,12 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
         {"serial0",       true,  0, 'A'},
-        {"uartB",         true,  0, 'B'},
-        {"serial3",       true,  0, 'B'},
-        {"uartC",         true,  0, 'C'},
+        {"uartC",         true,  0, 'C'}, // ordering captures the historical use of uartB as SERIAL3
         {"serial1",       true,  0, 'C'},
         {"uartD",         true,  0, 'D'},
         {"serial2",       true,  0, 'D'},
+        {"uartB",         true,  0, 'B'},
+        {"serial3",       true,  0, 'B'},
         {"uartE",         true,  0, 'E'},
         {"serial4",       true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
@@ -371,34 +372,34 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'A':
-            uartADriver.set_device_path(gopt.optarg);
-            break;
-        case 'B':
-            uartBDriver.set_device_path(gopt.optarg);
+            serial0Driver.set_device_path(gopt.optarg);
             break;
         case 'C':
-            uartCDriver.set_device_path(gopt.optarg);
+            serial1Driver.set_device_path(gopt.optarg);
             break;
         case 'D':
-            uartDDriver.set_device_path(gopt.optarg);
+            serial2Driver.set_device_path(gopt.optarg);
+            break;
+        case 'B':
+            serial3Driver.set_device_path(gopt.optarg);
             break;
         case 'E':
-            uartEDriver.set_device_path(gopt.optarg);
+            serial4Driver.set_device_path(gopt.optarg);
             break;
         case 'F':
-            uartFDriver.set_device_path(gopt.optarg);
+            serial5Driver.set_device_path(gopt.optarg);
             break;
         case 'G':
-            uartGDriver.set_device_path(gopt.optarg);
+            serial6Driver.set_device_path(gopt.optarg);
             break;
         case 'H':
-            uartHDriver.set_device_path(gopt.optarg);
+            serial7Driver.set_device_path(gopt.optarg);
             break;
         case 'I':
-            uartIDriver.set_device_path(gopt.optarg);
+            serial8Driver.set_device_path(gopt.optarg);
             break;
         case 'J':
-            uartJDriver.set_device_path(gopt.optarg);
+            serial9Driver.set_device_path(gopt.optarg);
             break;
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
