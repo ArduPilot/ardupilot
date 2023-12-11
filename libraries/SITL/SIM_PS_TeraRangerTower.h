@@ -15,7 +15,7 @@
 /*
   Simulator for the TeraRangerTower proximity sensor
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:terarangertower --speedup=1 -l 51.8752066,14.6487840,54.15,0
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:terarangertower --speedup=1 -l 51.8752066,14.6487840,54.15,0
 
 param set SERIAL5_PROTOCOL 11
 param set PRX1_TYPE 3  # terarangertower
