@@ -65,6 +65,7 @@ protected:
     void                thrust_compensation(void) override;
 
     const char* _get_frame_string() const override { return "TRI"; }
+    const char*  get_type_string() const override { return _pitch_reversed ? "pitch-reversed" : ""; }
 
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame

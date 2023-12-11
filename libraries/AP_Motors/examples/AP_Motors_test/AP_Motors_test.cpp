@@ -391,7 +391,7 @@ void print_motor_tri(uint8_t frame_class, uint8_t frame_type)
         hal.console->printf("\t\t\t\"Class\": %i,\n", frame_class);
         hal.console->printf("\t\t\t\"ClassName\": \"%s\",\n", frame_string+2);
         hal.console->printf("\t\t\t\"Type\": %i,\n", frame_type);
-        hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "?");
+        hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "default");
         hal.console->printf("\t\t\t\"motors\": [\n");
         bool first_motor = true;
         for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
