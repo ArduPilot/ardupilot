@@ -25,7 +25,7 @@
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartJ, plus IOMCU
+// enough for serial0 to serial9, plus IOMCU
 #define UART_MAX_DRIVERS 11
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
@@ -148,13 +148,13 @@ private:
     static thread_t* volatile uart_rx_thread_ctx;
 
     // table to find UARTDrivers from serial number, used for event handling
-    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+    static UARTDriver *serial_drivers[UART_MAX_DRIVERS];
     
     // thread used for writing and reading
     thread_t* volatile uart_thread_ctx;
     char uart_thread_name[6];
 
-    // index into uart_drivers table
+    // index into serial_drivers table
     uint8_t serial_num;
 
     uint32_t _baudrate;
