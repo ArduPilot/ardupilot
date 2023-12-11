@@ -15,12 +15,12 @@ LOC2="-35.36274593,149.16516256,585,353.8"
 }
 
 # setup multicast
-#UARTA="tcp:0"
-UARTA="mcast:"
+#SERIAL0="tcp:0"
+SERIAL0="mcast:"
 
 PLANE_DEFAULTS="$ROOTDIR/Tools/autotest/models/plane-3d.parm"
 
-(cd ArduPlane/AeroBatics1 && $PLANE --instance 1 --home $LOC1 --model plane-3d --uartA $UARTA --defaults $PLANE_DEFAULTS) &
-(cd ArduPlane/AeroBatics2 && $PLANE --instance 2 --home $LOC2 --model plane-3d --uartA $UARTA --defaults $PLANE_DEFAULTS) &
+(cd ArduPlane/AeroBatics1 && $PLANE --instance 1 --home $LOC1 --model plane-3d --serial0 $SERIAL0 --defaults $PLANE_DEFAULTS) &
+(cd ArduPlane/AeroBatics2 && $PLANE --instance 2 --home $LOC2 --model plane-3d --serial0 $SERIAL0 --defaults $PLANE_DEFAULTS) &
 
 wait
