@@ -635,13 +635,13 @@ def run_in_terminal_window(name, cmd, **kw):
         subprocess.Popen(runme, **kw)
 
 
-tracker_uarta = None  # blemish
+tracker_serial0 = None  # blemish
 
 
 def start_antenna_tracker(opts):
     """Compile and run the AntennaTracker, add tracker to mavproxy"""
 
-    global tracker_uarta
+    global tracker_serial0
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(opts.tracker_location)
     vehicledir = os.path.join(autotest_dir, "../../" + "AntennaTracker")
@@ -652,7 +652,7 @@ def start_antenna_tracker(opts):
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
-    tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
+    tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     binary_basedir = "build/sitl"
     exe = os.path.join(root_dir,
                        binary_basedir,
@@ -669,7 +669,6 @@ def start_antenna_tracker(opts):
 def start_CAN_Periph(opts, frame_info):
     """Compile and run the sitl_periph"""
 
-    global can_uarta
     progress("Preparing sitl_periph_gps")
     options = vinfo.options["sitl_periph_gps"]['frames']['gps']
     defaults_path = frame_info.get('periph_params_filename', None)
@@ -838,9 +837,9 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         if spawns is not None:
             c.extend(["--home", spawns[i]])
         if opts.mcast:
-            c.extend(["--uartA", "mcast:"])
+            c.extend(["--serial0", "mcast:"])
         elif opts.udp:
-            c.extend(["--uartA", "udpclient:127.0.0.1:" + str(5760+i*10)])
+            c.extend(["--serial0", "udpclient:127.0.0.1:" + str(5760+i*10)])
         if opts.auto_sysid:
             if opts.sysid is not None:
                 raise ValueError("Can't use auto-sysid and sysid together")
@@ -901,12 +900,12 @@ def start_mavproxy(opts, stuff):
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
-        global tracker_uarta
-        # tracker_uarta is set when we start the tracker...
+        global tracker_serial0
+        # tracker_serial0 is set when we start the tracker...
         extra_cmd += ("module load map;"
                       "tracker set port %s; "
                       "tracker start; "
-                      "tracker arm;" % (tracker_uarta,))
+                      "tracker arm;" % (tracker_serial0,))
 
     if opts.mavlink_gimbal:
         cmd.extend(["--load-module", "gimbal"])

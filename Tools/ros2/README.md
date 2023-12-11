@@ -187,7 +187,7 @@ ros2 run micro_ros_agent micro_ros_agent serial --baudrate 115200 --dev ./dev/tt
 ```
 
 ```bash
-arducopter --synthetic-clock --wipe --model quad --speedup 1 --slave 0 --instance 0 --uartC uart:./dev/ttyROS1 --defaults $(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_serial.parm --sim-address 127.0.0.1
+arducopter --synthetic-clock --wipe --model quad --speedup 1 --slave 0 --instance 0 --serial1 uart:./dev/ttyROS1 --defaults $(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_serial.parm --sim-address 127.0.0.1
 ```
 
 ```bash
@@ -205,7 +205,7 @@ ros2 launch ardupilot_sitl micro_ros_agent.launch.py transport:=serial refs:=$(r
 ```
 
 ```bash
-ros2 launch ardupilot_sitl sitl.launch.py synthetic_clock:=True wipe:=True model:=quad speedup:=1 slave:=0 instance:=0 uartC:=uart:./dev/ttyROS1 defaults:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_serial.parm sim_address:=127.0.0.1
+ros2 launch ardupilot_sitl sitl.launch.py synthetic_clock:=True wipe:=True model:=quad speedup:=1 slave:=0 instance:=0 serial1:=uart:./dev/ttyROS1 defaults:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_serial.parm sim_address:=127.0.0.1
 ```
 
 ```bash
@@ -231,7 +231,7 @@ model:=quad \
 speedup:=1 \
 slave:=0 \
 instance:=0 \
-uartC:=uart:./dev/ttyROS1 \
+serial1:=uart:./dev/ttyROS1 \
 defaults:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_serial.parm \
 sim_address:=127.0.0.1 \
 \
