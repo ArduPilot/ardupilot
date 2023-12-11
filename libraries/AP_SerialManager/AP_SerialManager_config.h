@@ -27,8 +27,7 @@
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
 #define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
 #else
-// we need a minimum of 4 to allow for a GPS due to the odd ordering
-// of hal.uartB as SERIAL3
+// we want a minimum of 4 as the default GPS port is SERIAL3
 #define SERIALMANAGER_NUM_PORTS 4
 #endif
 #else
