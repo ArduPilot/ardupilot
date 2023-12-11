@@ -52,13 +52,13 @@ using namespace ChibiOS;
 extern ChibiOS::UARTDriver uart_io;
 #endif
 
-const UARTDriver::SerialDef UARTDriver::_serial_tab[] = { HAL_UART_DEVICE_LIST };
+const UARTDriver::SerialDef UARTDriver::_serial_tab[] = { HAL_SERIAL_DEVICE_LIST };
 
 // handle for UART handling thread
 thread_t* volatile UARTDriver::uart_rx_thread_ctx;
 
 // table to find UARTDrivers from serial number, used for event handling
-UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
+UARTDriver *UARTDriver::serial_drivers[UART_MAX_DRIVERS];
 
 // event used to wake up waiting thread. This event number is for
 // caller threads
@@ -104,8 +104,8 @@ serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600)
 {
-    osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
-    uart_drivers[serial_num] = this;
+    osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many SERIALn drivers");
+    serial_drivers[serial_num] = this;
 }
 
 /*
@@ -166,11 +166,11 @@ void UARTDriver::uart_rx_thread(void* arg)
         hal.scheduler->delay_microseconds(1000);
 
         for (uint8_t i=0; i<UART_MAX_DRIVERS; i++) {
-            if (uart_drivers[i] == nullptr) {
+            if (serial_drivers[i] == nullptr) {
                 continue;
             }
-            if (uart_drivers[i]->_rx_initialised) {
-                uart_drivers[i]->_rx_timer_tick();
+            if (serial_drivers[i]->_rx_initialised) {
+                serial_drivers[i]->_rx_timer_tick();
             }
         }
     }
