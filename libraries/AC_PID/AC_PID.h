@@ -134,8 +134,6 @@ public:
     void set_actual_rate(float actual) { _pid_info.actual = actual; }
 
     // integrator setting functions
-    void set_integrator(float target, float measurement, float i);
-    void set_integrator(float error, float i);
     void set_integrator(float i);
     void relax_integrator(float integrator, float dt, float time_constant);
 
