@@ -849,6 +849,7 @@ singleton AP_Filesystem method stat boolean string AP_Filesystem::stat_t'Null
 
 include AP_RTC/AP_RTC.h depends AP_RTC_ENABLED
 include AP_RTC/AP_RTC_config.h
+singleton AP_RTC depends AP_RTC_ENABLED
 singleton AP_RTC rename rtc
 singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
 singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
