@@ -15,7 +15,7 @@
 /*
   simulate Hirth EFI system
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --uartF=sim:hirth --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --serial5=sim:hirth --speedup=1
 param set SERIAL5_PROTOCOL 24
 param set SIM_EFI_TYPE 6
 param set EFI_TYPE 6

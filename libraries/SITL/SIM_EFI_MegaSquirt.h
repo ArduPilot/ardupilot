@@ -15,7 +15,7 @@
 /*
   simulate MegaSquirt EFI system
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --uartF=sim:megasquirt --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --serial5=sim:megasquirt --speedup=1
 param set SERIAL5_PROTOCOL 24
 param set SIM_EFI_TYPE 1
 param set EFI_TYPE 1
