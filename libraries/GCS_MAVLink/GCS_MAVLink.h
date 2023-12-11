@@ -43,7 +43,7 @@
 
 #include "include/mavlink/v2.0/mavlink_types.h"
 
-/// MAVLink stream used for uartA
+/// MAVLink streams used for each telemetry port
 extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 extern bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
