@@ -195,7 +195,7 @@ PE6 SPI4_MOSI SPI4
 # means sensors off, then it is pulled HIGH in peripheral_power_enable()
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
