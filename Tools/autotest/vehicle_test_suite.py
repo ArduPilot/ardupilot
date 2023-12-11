@@ -2942,7 +2942,7 @@ class TestSuite(ABC):
                                    wipe=False,
                                    set_streamrate_callback=None,
                                    binary=None):
-        '''customisations could be "--uartF=sim:nmea" '''
+        '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
         self.stop_SITL()
@@ -11939,8 +11939,8 @@ switch value'''
         self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartE=tcp:%u" % port, # GPS2 is NMEA....
-            "--uartF=tcpclient:127.0.0.1:%u" % port, # serial5 spews to localhost port
+            "--serial4=tcp:%u" % port, # GPS2 is NMEA....
+            "--serial5=tcpclient:127.0.0.1:%u" % port, # serial5 spews to localhost port
         ])
         self.do_timesync_roundtrip()
         self.wait_gps_fix_type_gte(3)
@@ -12556,7 +12556,7 @@ switch value'''
         })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port),
                                  get_time=self.get_sim_time_cached)
@@ -12647,7 +12647,7 @@ switch value'''
         })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port),
                                  get_time=self.get_sim_time_cached)
@@ -12802,7 +12802,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port))
         frsky.connect()
@@ -13077,7 +13077,7 @@ switch value'''
         self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkySPort(("127.0.0.1", port), verbose=True)
         self.wait_ready_to_arm()
@@ -13150,7 +13150,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 3) # serial5 is FRSky output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyD(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13269,7 +13269,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 25) # serial5 is LTM output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port  # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port  # serial5 spews to localhost port
         ])
         ltm = LTM(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13312,7 +13312,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 17) # serial5 is DEVO output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port  # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port  # serial5 spews to localhost port
         ])
         devo = DEVO(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13385,7 +13385,7 @@ switch value'''
         self.set_parameter("MSP_OPTIONS", 1) # telemetry (unpolled) mode
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         msp = MSP_DJI(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13413,7 +13413,7 @@ switch value'''
             self.set_parameter("SERIAL5_PROTOCOL", 23) # serial5 is RCIN input
             port = self.spare_network_port()
             self.customise_SITL_commandline([
-                "--uartF=tcp:%u" % port # serial5 reads from to localhost port
+                "--serial5=tcp:%u" % port # serial5 reads from to localhost port
             ])
             crsf = CRSF(("127.0.0.1", port))
             crsf.connect()

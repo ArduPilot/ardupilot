@@ -6114,14 +6114,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test mulitple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
-            "--uartH=sim:nmea", # NMEA Rangefinder
+            "--serial7=sim:nmea", # NMEA Rangefinder
         ])
 
         # RANGEFINDER_INSTANCES = [0, 2, 5]
         self.set_parameters({
             "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
             "RNGFND1_ORIENT" : 25,   # Set to downward facing
-            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on serial7
             "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
 
             "RNGFND3_TYPE" : 2,      # MaxbotixI2C

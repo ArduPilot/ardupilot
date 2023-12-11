@@ -3052,7 +3052,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Disable GPS navigation, enable Vicon input."""
         # scribble down a location we can set origin to:
 
-        self.customise_SITL_commandline(["--uartF=sim:vicon:"])
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
         self.progress("Waiting for location")
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
@@ -3153,7 +3153,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # only tested on this EKF
             return
 
-        self.customise_SITL_commandline(["--uartF=sim:vicon:"])
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
 
         if self.current_onboard_log_contains_message("XKFD"):
             raise NotAchievedException("Found unexpected XKFD message")
@@ -3293,7 +3293,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
-        self.customise_SITL_commandline(["--uartF=sim:vicon:"])
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
 
         """Setup parameters including switching to EKF3"""
         self.context_push()
@@ -7193,7 +7193,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.start_subtest("Testing %s" % name)
             self.set_parameter("PRX1_TYPE", prx_type)
             self.customise_SITL_commandline([
-                "--uartF=sim:%s:" % name,
+                "--serial5=sim:%s:" % name,
                 "--home", home_string,
             ])
             self.wait_ready_to_arm()
@@ -7630,7 +7630,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.set_rc(9, 1000) # remember this is a switch position - stop
-        self.customise_SITL_commandline(["--uartF=sim:richenpower"])
+        self.customise_SITL_commandline(["--serial5=sim:richenpower"])
         self.wait_statustext("requested state is not RUN", timeout=60)
 
         self.set_message_rate_hz("GENERATOR_STATUS", 10)
@@ -7697,7 +7697,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1,
         })
 
-        self.customise_SITL_commandline(["--uartF=sim:ie24"])
+        self.customise_SITL_commandline(["--serial5=sim:ie24"])
 
         self.start_subtest("Protocol %i: ensure that BATTERY_STATUS for electrical generator message looks right" % proto_ver)
         self.start_subsubtest("Protocol %i: Checking original voltage (electrical)" % proto_ver)
@@ -8182,7 +8182,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERIAL5_PROTOCOL": 1,
             "RNGFND1_TYPE": 10,
         })
-        self.customise_SITL_commandline(['--uartF=sim:rf_mavlink'])
+        self.customise_SITL_commandline(['--serial5=sim:rf_mavlink'])
 
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
@@ -8329,17 +8329,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             drivers = drivers[3:]
             command_line_args = []
             self.context_push()
-            for (offs, cmdline_argument, serial_num) in [(0, '--uartE', 4),
-                                                         (1, '--uartF', 5),
-                                                         (2, '--uartG', 6)]:
+            for offs in range(3):
+                serial_num = offs + 4
                 if len(do_drivers) > offs:
                     if len(do_drivers[offs]) > 2:
                         (sim_name, rngfnd_param_value, kwargs) = do_drivers[offs]
                     else:
                         (sim_name, rngfnd_param_value) = do_drivers[offs]
                         kwargs = {}
-                    command_line_args.append("%s=sim:%s" %
-                                             (cmdline_argument, sim_name))
+                    command_line_args.append("--serial%s=sim:%s" %
+                                             (serial_num, sim_name))
                     sets = {
                         "SERIAL%u_PROTOCOL" % serial_num: 9, # rangefinder
                         "RNGFND%u_TYPE" % (offs+1): rngfnd_param_value,
@@ -8380,7 +8379,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "WPNAV_SPEED_UP": 1000,  # cm/s
         })
         self.customise_SITL_commandline([
-            "--uartE=sim:lightwareserial",
+            "--serial4=sim:lightwareserial",
         ])
         self.takeoff(95, mode='GUIDED', timeout=240, max_err=0.5)
         self.assert_rangefinder_distance_between(90, 100)
@@ -9776,7 +9775,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERVO8_FUNCTION": 36,
             "SIM_ESC_TELEM": 0,
         })
-        self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
+        self.customise_SITL_commandline(["--serial5=sim:fetteconewireesc"])
         self.FETtecESC_safety_switch()
         self.FETtecESC_esc_power_checks()
         self.FETtecESC_btw_mask_checks()
@@ -10251,7 +10250,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "PRX1_TYPE": 5,
         })
         self.customise_SITL_commandline([
-            "--uartF=sim:%s:" % sim_device_name,
+            "--serial5=sim:%s:" % sim_device_name,
             "--home", "51.8752066,14.6487840,0,0",  # SITL has "posts" here
         ])
 
