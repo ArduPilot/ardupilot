@@ -184,6 +184,7 @@ protected:
     // flags
     struct ac_pid_flags {
         bool _reset_filter :1; // true when input filter should be reset during next call to set_input
+        bool _I_set :1; // true if if the I terms has been set externally including zeroing
     } _flags;
 
     // internal variables
