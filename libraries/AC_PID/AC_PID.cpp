@@ -402,16 +402,6 @@ float AC_PID::get_filt_D_alpha(float dt) const
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
-void AC_PID::set_integrator(float target, float measurement, float integrator)
-{
-    set_integrator(target - measurement, integrator);
-}
-
-void AC_PID::set_integrator(float error, float integrator)
-{
-    _integrator = constrain_float(integrator - error * _kp, -_kimax, _kimax);
-}
-
 void AC_PID::set_integrator(float integrator)
 {
     _integrator = constrain_float(integrator, -_kimax, _kimax);
