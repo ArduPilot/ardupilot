@@ -3160,7 +3160,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
         """Fly with external AHRS (VectorNav)"""
-        self.customise_SITL_commandline(["--uartE=sim:%s" % sim])
+        self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
             "EAHRS_TYPE": eahrs_type,
@@ -4218,7 +4218,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.customise_SITL_commandline(
-            ["--uartF=sim:%s" % sim_name,
+            ["--serial5=sim:%s" % sim_name,
              ],
         )
         self.wait_ready_to_arm()
