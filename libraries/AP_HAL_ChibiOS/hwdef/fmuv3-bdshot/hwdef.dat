@@ -356,7 +356,7 @@ PE1 UART8_TX UART8
 # timing affecting sensor stability. We pull it high by default.
 PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
