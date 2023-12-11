@@ -61,11 +61,11 @@ public:
     }
 
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_serial_path[9] {
         "none:0",
-        "GPS1",
         "none:1",
         "sim:adsb",
+        "GPS1",
         "udpclient:127.0.0.1:15550", // for CAN UART test
         "none:5",
         "none:6",
