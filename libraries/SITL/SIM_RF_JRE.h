@@ -15,7 +15,7 @@
 /*
   Simulator for the JAE JRE radio altimiter
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:jre --speedup=1 -L KalaupapaCliffs --map
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:jre --speedup=1 -L KalaupapaCliffs --map
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 38
