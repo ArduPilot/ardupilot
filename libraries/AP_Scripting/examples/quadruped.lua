@@ -18,7 +18,6 @@
 -- Output12: back right tibia (shin) servo
 --
 -- CAUTION: This script should only be used with ArduPilot Rover's firmware
--- luacheck: only 0
 
 
 local FRAME_LEN = 80    -- frame length in mm
@@ -183,7 +182,7 @@ end
 --   a) body rotations: body_rot_x, body_rot_y, body_rot_z
 --   b) body position: body_pos_x, body_pos_y, body_pos_z
 --   c) offset of the center of body
-function body_forward_kinematics(X, Y, Z, Xdist, Ydist, Zrot)
+function body_forward_kinematics(X, Y, _, Xdist, Ydist, Zrot)
     local totaldist_x = X + Xdist + body_pos_x
     local totaldist_y = Y + Ydist + body_pos_y
     local distBodyCenterFeet = math.sqrt(totaldist_x^2 + totaldist_y^2)
