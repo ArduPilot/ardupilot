@@ -248,6 +248,7 @@ void AP_Logger::Write_RCOUT(void)
 
 }
 
+#if AP_RSSI_ENABLED
 // Write an RSSI packet
 void AP_Logger::Write_RSSI()
 {
@@ -264,6 +265,7 @@ void AP_Logger::Write_RSSI()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               uint8_t source_system,
