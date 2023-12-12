@@ -2,7 +2,7 @@
 #include "AP_InertialSensor_SITL.h"
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
-#include <fcntl.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #if AP_SIM_INS_ENABLED
 
@@ -410,7 +410,7 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
     if (gyro_fd == -1) {
         char namebuf[32];
         snprintf(namebuf, 32, "/tmp/gyro%d.dat", gyro_instance);
-        gyro_fd = open(namebuf, O_RDONLY|O_CLOEXEC);
+        gyro_fd = AP::FS().open(namebuf, O_RDONLY);
         if (gyro_fd == -1) {
             AP_HAL::panic("gyro data file %s not found", namebuf);
         }
