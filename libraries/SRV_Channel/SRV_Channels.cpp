@@ -57,6 +57,10 @@ AP_RobotisServo *SRV_Channels::robotis_ptr;
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
 
+#if AP_IQUART_ENABLED
+AP_IQ_Motor *SRV_Channels::iq_ptr;
+#endif
+
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -217,6 +221,12 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
+#endif
+
+#if AP_IQUART_ENABLED
+    // @Group: _IQ_
+    // @Path: ../AP_IQ_Motor/AP_IQ_Motor.cpp
+    AP_SUBGROUPINFO(iq, "_IQ_",  45, SRV_Channels, AP_IQ_Motor),
 #endif
 
     // @Param: _DSHOT_RATE
@@ -399,6 +409,10 @@ SRV_Channels::SRV_Channels(void)
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
+
+#if AP_IQUART_ENABLED
+    iq_ptr = &iq;
+#endif // AP_IQUART_ENABLED
 }
 
 // SRV_Channels initialization
@@ -537,6 +551,10 @@ void SRV_Channels::push()
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr->update();
+#endif
+
+#if AP_IQUART_ENABLED
+    iq_ptr->update();
 #endif
 
 #if AP_KDECAN_ENABLED

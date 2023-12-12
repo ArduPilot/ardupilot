@@ -80,6 +80,7 @@ public:
         SerialProtocol_Tramp = 44,
         SerialProtocol_DDS_XRCE = 45,
         SerialProtocol_IMUOUT = 46,
+        SerialProtocol_IQ = 47,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
