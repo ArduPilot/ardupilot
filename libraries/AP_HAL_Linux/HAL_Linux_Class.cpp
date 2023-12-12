@@ -87,6 +87,19 @@ static SPIUARTDriver serial3Driver;
 static UARTDriver serial3Driver(false);
 #endif
 
+static UARTDriver* serialDrivers[] = {
+    &serial0Driver,
+    &serial1Driver,
+    &serial2Driver,
+    &serial3Driver,
+    &serial4Driver,
+    &serial5Driver,
+    &serial6Driver,
+    &serial7Driver,
+    &serial8Driver,
+    &serial9Driver,
+};
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -287,9 +300,9 @@ void _usage(void)
     printf("\tserial (0 through 9 available):\n");
     printf("\t                  --serial0 /dev/ttyO4\n");
     printf("\t                  --serial3 /dev/ttyS1\n");
-    printf("\tlegacy UART options still work, their mappings are:\n");
+    printf("\tlegacy UART options are deprecated, their mappings are:\n");
     printf("\t                  -A/--uartA is SERIAL0\n");
-    printf("\t                  -C/--uartC is SERIAL1\n");
+    printf("\t                  -C/--uartC is SERIAL1\n"); // ordering captures the historical use of uartB as SERIAL3
     printf("\t                  -D/--uartD is SERIAL2\n");
     printf("\t                  -B/--uartB is SERIAL3\n");
     printf("\t                  -E/--uartE is SERIAL4\n");
@@ -331,28 +344,41 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
 #endif
 
+    enum long_options {
+        CMDLINE_SERIAL0 = 1, // must be in 0-9 order and numbered consecutively
+        CMDLINE_SERIAL1,
+        CMDLINE_SERIAL2,
+        CMDLINE_SERIAL3,
+        CMDLINE_SERIAL4,
+        CMDLINE_SERIAL5,
+        CMDLINE_SERIAL6,
+        CMDLINE_SERIAL7,
+        CMDLINE_SERIAL8,
+        CMDLINE_SERIAL9,
+    };
+
     int opt;
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
-        {"serial0",       true,  0, 'A'},
-        {"uartC",         true,  0, 'C'}, // ordering captures the historical use of uartB as SERIAL3
-        {"serial1",       true,  0, 'C'},
-        {"uartD",         true,  0, 'D'},
-        {"serial2",       true,  0, 'D'},
         {"uartB",         true,  0, 'B'},
-        {"serial3",       true,  0, 'B'},
+        {"uartC",         true,  0, 'C'},
+        {"uartD",         true,  0, 'D'},
         {"uartE",         true,  0, 'E'},
-        {"serial4",       true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
-        {"serial5",       true,  0, 'F'},
         {"uartG",         true,  0, 'G'},
-        {"serial6",       true,  0, 'G'},
         {"uartH",         true,  0, 'H'},
-        {"serial7",       true,  0, 'H'},
         {"uartI",         true,  0, 'I'},
-        {"serial8",       true,  0, 'I'},
         {"uartJ",         true,  0, 'J'},
-        {"serial9",       true,  0, 'J'},
+        {"serial0",       true,  0, CMDLINE_SERIAL0},
+        {"serial1",       true,  0, CMDLINE_SERIAL1},
+        {"serial2",       true,  0, CMDLINE_SERIAL2},
+        {"serial3",       true,  0, CMDLINE_SERIAL3},
+        {"serial4",       true,  0, CMDLINE_SERIAL4},
+        {"serial5",       true,  0, CMDLINE_SERIAL5},
+        {"serial6",       true,  0, CMDLINE_SERIAL6},
+        {"serial7",       true,  0, CMDLINE_SERIAL7},
+        {"serial8",       true,  0, CMDLINE_SERIAL8},
+        {"serial9",       true,  0, CMDLINE_SERIAL9},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
@@ -372,34 +398,36 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'A':
-            serial0Driver.set_device_path(gopt.optarg);
-            break;
-        case 'C':
-            serial1Driver.set_device_path(gopt.optarg);
-            break;
-        case 'D':
-            serial2Driver.set_device_path(gopt.optarg);
-            break;
         case 'B':
-            serial3Driver.set_device_path(gopt.optarg);
-            break;
+        case 'C':
+        case 'D':
         case 'E':
-            serial4Driver.set_device_path(gopt.optarg);
-            break;
         case 'F':
-            serial5Driver.set_device_path(gopt.optarg);
-            break;
         case 'G':
-            serial6Driver.set_device_path(gopt.optarg);
-            break;
         case 'H':
-            serial7Driver.set_device_path(gopt.optarg);
-            break;
         case 'I':
-            serial8Driver.set_device_path(gopt.optarg);
+        case 'J': {
+            int uart_idx = opt - 'A';
+            // ordering captures the historical use of uartB as SERIAL3
+            static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
+            int serial_idx = mapping[uart_idx];
+            printf("WARNING: deprecated option --uart%c/-%c will be removed in "
+                "a future release. Use --serial%d instead.\n",
+                (char)opt, (char)opt, serial_idx);
+            serialDrivers[serial_idx]->set_device_path(gopt.optarg);
             break;
-        case 'J':
-            serial9Driver.set_device_path(gopt.optarg);
+        }
+        case CMDLINE_SERIAL0:
+        case CMDLINE_SERIAL1:
+        case CMDLINE_SERIAL2:
+        case CMDLINE_SERIAL3:
+        case CMDLINE_SERIAL4:
+        case CMDLINE_SERIAL5:
+        case CMDLINE_SERIAL6:
+        case CMDLINE_SERIAL7:
+        case CMDLINE_SERIAL8:
+        case CMDLINE_SERIAL9:
+            serialDrivers[opt - CMDLINE_SERIAL0]->set_device_path(gopt.optarg);
             break;
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
