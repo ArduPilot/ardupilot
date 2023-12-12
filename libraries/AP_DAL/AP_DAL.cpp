@@ -6,6 +6,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -46,8 +47,12 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     end_frame();
 
     _RFRF.frame_types = uint8_t(frametype);
-    
+
+#if AP_VEHICLE_ENABLED
     _RFRH.time_flying_ms = AP::vehicle()->get_time_flying_ms();
+#else
+    _RFRH.time_flying_ms = 0;
+#endif
     _RFRH.time_us = AP_HAL::micros64();
     WRITE_REPLAY_BLOCK(RFRH, _RFRH);
 
