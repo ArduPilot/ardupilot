@@ -19,22 +19,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
+
 #if AP_NETWORKING_SOCKETS_ENABLED
 
 #if HAL_OS_SOCKETS
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#elif AP_NETWORKING_BACKEND_CHIBIOS
-#include <AP_Networking/AP_Networking_ChibiOS.h>
-#include <lwip/sockets.h>
-#endif
+struct sockaddr_in;
 
 class SocketAPM {
 public:
@@ -91,7 +81,13 @@ public:
 
 private:
     bool datagram;
-    struct sockaddr_in in_addr {};
+    struct {
+        uint16_t sin_family;
+        uint16_t sin_port;
+        struct {
+            uint32_t s_addr;
+        } sin_addr;
+    } last_in_addr;
     bool is_multicast_address(struct sockaddr_in &addr) const;
 
     int fd = -1;
@@ -104,4 +100,5 @@ private:
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };
 
+#endif // HAL_OS_SOCKETS
 #endif // AP_NETWORKING_SOCKETS_ENABLED
