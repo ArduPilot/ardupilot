@@ -1,3 +1,7 @@
+#include "AP_Vehicle_config.h"
+
+#if AP_VEHICLE_ENABLED
+
 #include "AP_Vehicle.h"
 
 #include <AP_BLHeli/AP_BLHeli.h>
@@ -1029,3 +1033,4 @@ AP_Vehicle *vehicle()
 
 };
 
+#endif  // AP_VEHICLE_ENABLED
