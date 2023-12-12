@@ -14,7 +14,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/select.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
@@ -108,28 +113,25 @@ void SITL_State::_sitl_setup()
 /*
   setup a SITL FDM listening UDP port
  */
-void SITL_State::_setup_fdm(void)
+bool SITL_State::_setup_fdm(void)
 {
+    if (_rc_in_started) {
+        return true;
+    }
     if (!_sitl_rc_in.reuseaddress()) {
-        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
-        fprintf(stderr, "Aborting launch...\n");
-        exit(1);
+        return false;
     }
     if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
-        fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
-        fprintf(stderr, "Aborting launch...\n");
-        exit(1);
+        return false;
     }
     if (!_sitl_rc_in.set_blocking(false)) {
-        fprintf(stderr, "SITL: socket set_blocking(false) failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
-        fprintf(stderr, "Aborting launch...\n");
-        exit(1);
+        return false;
     }
     if (!_sitl_rc_in.set_cloexec()) {
-        fprintf(stderr, "SITL: socket set_cloexec() failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
-        fprintf(stderr, "Aborting launch...\n");
-        exit(1);
+        return false;
     }
+    _rc_in_started = true;
+    return true;
 }
 
 
@@ -244,6 +246,9 @@ bool SITL_State::_read_rc_sitl_input()
         uint16_t pwm[16];
     } pwm_pkt;
 
+    if (!_setup_fdm()) {
+        return false;
+    }
     const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
 
     // if we are simulating no pulses RC failure, do not update pwm_input
