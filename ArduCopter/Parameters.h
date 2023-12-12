@@ -383,6 +383,8 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param_throw_altitude_min,
+        k_param_throw_altitude_max,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -463,6 +465,8 @@ public:
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
+    AP_Int16         throw_altitude_min; // minimum altitude in m above which a throw can be detected
+    AP_Int16         throw_altitude_max; // maximum altitude in m below which a throw can be detected
 #endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
