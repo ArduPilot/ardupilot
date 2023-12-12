@@ -377,6 +377,11 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     if (pthread_create(&thread, &a->attr, thread_create_trampoline, a) != 0) {
         goto failed;
     }
+
+#if !defined(__APPLE__)
+    pthread_setname_np(thread, name);
+#endif
+
     a->next = threads;
     threads = a;
     return true;
