@@ -62,6 +62,15 @@ local WEB_BLOCK_SIZE = bind_add_param('BLOCK_SIZE', 4, 10240)
 --]]
 local WEB_TIMEOUT = bind_add_param('TIMEOUT', 5, 2.0)
 
+--[[
+  // @Param: WEB_SENDFILE_MIN
+  // @DisplayName: web server minimum file size for sendfile
+  // @Description: sendfile is an offloading mechanism for faster file download. If this is non-zero and the file is larger than this size then sendfile will be used for file download
+  // @Range: 0 10000000
+  // @User: Advanced
+--]]
+local WEB_SENDFILE_MIN = bind_add_param('SENDFILE_MIN', 6, 100000)
+
 if WEB_ENABLE:get() ~= 1 then
    gcs:send_text(MAV_SEVERITY.INFO, "WebServer: disabled")
    return
@@ -775,7 +784,10 @@ local function Client(_sock, _idx)
       elseif cgi_processing then
          DEBUG(string.format("%u: CGI processing %s", idx, path))
          run = self.send_cgi
-      elseif sock:sendfile(file) then
+      elseif stat and
+         WEB_SENDFILE_MIN:get() > 0 and
+         stat:size() >= WEB_SENDFILE_MIN:get() and
+         sock:sendfile(file) then
          return true
       else
          run = self.send_file
