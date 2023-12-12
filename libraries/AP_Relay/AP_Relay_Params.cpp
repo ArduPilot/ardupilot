@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Values{Rover}: 8:Bushed motor reverse 4 omni motor 4
 
     // @User: Standard
-    AP_GROUPINFO_FLAGS("FUNCTION", 1, AP_Relay_Params, function, (float)Function::none, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("FUNCTION", 1, AP_Relay_Params, function, (float)FUNCTION::NONE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PIN
     // @DisplayName: Relay pin
