@@ -347,7 +347,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200, ignored when bit 5 isset,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Bypass automatic baud detection and use the baud from SERIALN_BAUD instead.
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -616,7 +616,7 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
 void AP_GPS::send_blob_start(uint8_t instance)
 {
 #if AP_GPS_UBLOX_ENABLED
-    if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
+    if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200) && !option_set(DriverOptions::BypassGPSDetection)) {
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -767,20 +767,54 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         return nullptr;
     }
 
-    // all remaining drivers automatically cycle through baud rates to detect
-    // the correct baud rate, and should have the selected baud broadcast
-    dstate->auto_detected_baud = true;
-    const uint32_t now = AP_HAL::millis();
+    // By default, all remaining drivers automatically cycle through baud rates to detect
+    // the correct baud rate, and should have the selected baud broadcast.
+    // This is disabled when DriverOptions::BypassGPSDetection is turned on.
+    dstate->auto_detected_baud = !option_set(AP_GPS::DriverOptions::BypassGPSDetection);
 
-    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
-        // incrementing like this will skip the first element in array of bauds
-        // this is okay, and relied upon
-        dstate->current_baud++;
-        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-            dstate->current_baud = 0;
+
+    if (dstate->auto_detected_baud) {
+        const uint32_t now = AP_HAL::millis();
+        if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
+            // try the next baud rate
+            // incrementing like this will skip the first element in array of bauds
+            // this is okay, and relied upon
+            dstate->current_baud++;
+            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                dstate->current_baud = 0;
+            }
+            uint32_t baudrate = _baudrates[dstate->current_baud];
+            uint16_t rx_size=0, tx_size=0;
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                tx_size = 2048;
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+                rx_size = 2048;
+            }
+            _port[instance]->begin(baudrate, rx_size, tx_size);
+            _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+            dstate->last_baud_change_ms = now;
+
+            if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+                send_blob_start(instance);
+            }
         }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
+    } else {
+        // TODO set current_baud from serial param
+        // TODO handle whether to send the blob start and blob update based on GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY
+
+        const AP_SerialManager& sm = AP::serialmanager();
+        // TODO may be confused between serial instance number and GPS instance number
+        // Check AP_GPS::init for more info.
+        const auto uart_state = sm.find_protocol_instance(AP_SerialManager::SerialProtocol_GPS, instance);
+        if (uart_state == nullptr) {
+            return nullptr;
+        }
+        const auto serial_baud = uart_state->baudrate();
+        // Rely on above wrap if the user sets DriverOptions::BypassGPSDetection
+        dstate->current_baud = ARRAY_SIZE(_baudrates);
+
+        // TODO this is duplicated with above logic
         uint16_t rx_size=0, tx_size=0;
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
             tx_size = 2048;
@@ -788,13 +822,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        _port[instance]->begin(baudrate, rx_size, tx_size);
+        _port[instance]->begin(serial_baud, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        dstate->last_baud_change_ms = now;
-
-        if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
-            send_blob_start(instance);
-        }
     }
 
     if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
@@ -834,6 +863,19 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
+        if (option_set(AP_GPS::DriverOptions::BypassGPSDetection))
+        {
+            if (_type[instance] == GPS_TYPE_UBLOX) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_MB_BASE);
+            }
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                return new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_MB_ROVER);
+            }
+        }
+
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
@@ -858,8 +900,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
-                 AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
+if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             return new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
@@ -870,14 +912,16 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
-                 AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
+        if ((option_set(AP_GPS::DriverOptions::BypassGPSDetection) && _type[instance] == GPS_TYPE_SIRF) ||
+            ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) && 
+                 AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data))) {
             return new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
-                 AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
+        if ((option_set(AP_GPS::DriverOptions::BypassGPSDetection) && _type[instance] == GPS_TYPE_ERB) ||
+            ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
+                 AP_GPS_ERB::_detect(dstate->erb_detect_state, data))) {
             return new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
 #endif // AP_GPS_ERB_ENABLED
@@ -889,7 +933,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
                     _type[instance] == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
 #endif
                     _type[instance] == GPS_TYPE_ALLYSTAR) &&
-                   AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
+                   (AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data) ||
+                        option_set(AP_GPS::DriverOptions::BypassGPSDetection))) {
             return new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_NMEA_ENABLED
@@ -2344,6 +2389,9 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
         accuracy_deg = 10;
     }
     return true;
+}
+
+void AP_GPS::change_to_next_baud() {
 }
 
 namespace AP {
