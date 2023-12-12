@@ -55,10 +55,10 @@ public:
 
     bool send_relay_status(const class GCS_MAVLINK &link) const;
 
-    void set(AP_Relay_Params::Function function, bool value);
+    void set(AP_Relay_Params::FUNCTION function, bool value);
 
     // see if the relay is enabled
-    bool enabled(AP_Relay_Params::Function function) const;
+    bool enabled(AP_Relay_Params::FUNCTION function) const;
 
 private:
     static AP_Relay *singleton;
