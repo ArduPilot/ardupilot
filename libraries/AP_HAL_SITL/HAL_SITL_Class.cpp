@@ -6,6 +6,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"

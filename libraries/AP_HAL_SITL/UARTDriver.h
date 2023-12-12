@@ -76,7 +76,6 @@ private:
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
-    struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
     ByteBuffer _readbuffer{16384};

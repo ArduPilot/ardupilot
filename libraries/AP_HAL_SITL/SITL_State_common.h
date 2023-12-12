@@ -56,10 +56,6 @@
 #include "RCInput.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/udp.h>
-#include <arpa/inet.h>
 #include <vector>
 
 #include <AP_Baro/AP_Baro.h>
