@@ -183,28 +183,28 @@ void AP_Relay::convert_params()
         }
 
         // Work out what function this relay should be
-        AP_Relay_Params::Function new_fun;
+        AP_Relay_Params::FUNCTION new_fun;
         if (i == chute_relay) {
-            new_fun = AP_Relay_Params::Function::parachute;
+            new_fun = AP_Relay_Params::FUNCTION::PARACHUTE;
 
         } else if (i == ice_relay) {
-            new_fun = AP_Relay_Params::Function::ignition;
+            new_fun = AP_Relay_Params::FUNCTION::IGNITION;
 
         } else if (i == cam_relay) {
-            new_fun = AP_Relay_Params::Function::camera;
+            new_fun = AP_Relay_Params::FUNCTION::CAMERA;
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
         } else if (i == rover_relay[0]) {
-            new_fun = AP_Relay_Params::Function::brushed_reverse_1;
+            new_fun = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1;
 
         } else if (i == rover_relay[1]) {
-            new_fun = AP_Relay_Params::Function::brushed_reverse_2;
+            new_fun = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2;
 
         } else if (i == rover_relay[2]) {
-            new_fun = AP_Relay_Params::Function::brushed_reverse_3;
+            new_fun = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3;
 
         } else if (i == rover_relay[3]) {
-            new_fun = AP_Relay_Params::Function::brushed_reverse_4;
+            new_fun = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4;
 #endif
 
         } else {
@@ -214,7 +214,7 @@ void AP_Relay::convert_params()
                 // This will result in a pre-arm promoting the user to resolve
                 continue;
             }
-            new_fun = AP_Relay_Params::Function::relay;
+            new_fun = AP_Relay_Params::FUNCTION::RELAY;
 
         }
         _params[i].function.set_and_save(int8_t(new_fun));
@@ -257,13 +257,13 @@ void AP_Relay::init()
             continue;
         }
 
-        const AP_Relay_Params::Function function = _params[instance].function;
-        if (function < AP_Relay_Params::Function::relay || function >= AP_Relay_Params::Function::num_functions) {
+        const AP_Relay_Params::FUNCTION function = _params[instance].function;
+        if (function <= AP_Relay_Params::FUNCTION::NONE || function >= AP_Relay_Params::FUNCTION::NUM_FUNCTIONS) {
             // invalid function, skip it
             continue;
         }
 
-        if (function == AP_Relay_Params::Function::relay) {
+        if (function == AP_Relay_Params::FUNCTION::RELAY) {
             // relay by instance number, set the state to match our output
             const AP_Relay_Params::DefaultState default_state = _params[instance].default_state;
             if ((default_state == AP_Relay_Params::DefaultState::OFF) ||
@@ -279,8 +279,8 @@ void AP_Relay::init()
     }
 }
 
-void AP_Relay::set(const AP_Relay_Params::Function function, const bool value) {
-    if (function <= AP_Relay_Params::Function::none && function >= AP_Relay_Params::Function::num_functions) {
+void AP_Relay::set(const AP_Relay_Params::FUNCTION function, const bool value) {
+    if (function <= AP_Relay_Params::FUNCTION::NONE && function >= AP_Relay_Params::FUNCTION::NUM_FUNCTIONS) {
         // invalid function
         return;
     }
@@ -328,7 +328,7 @@ void AP_Relay::set(const uint8_t instance, const bool value)
         return;
     }
 
-    if (_params[instance].function != AP_Relay_Params::Function::relay) {
+    if (_params[instance].function != AP_Relay_Params::FUNCTION::RELAY) {
         return;
     }
 
@@ -383,11 +383,11 @@ bool AP_Relay::get(uint8_t instance) const
 bool AP_Relay::enabled(uint8_t instance) const 
 {
     // Must be a valid instance with function relay and pin set
-    return (instance < AP_RELAY_NUM_RELAYS) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::Function::relay);
+    return (instance < AP_RELAY_NUM_RELAYS) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::FUNCTION::RELAY);
 }
 
 // see if the relay is enabled
-bool AP_Relay::enabled(AP_Relay_Params::Function function) const
+bool AP_Relay::enabled(AP_Relay_Params::FUNCTION function) const
 {
     for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
         if ((_params[instance].function == function) && (_params[instance].pin != -1)) {

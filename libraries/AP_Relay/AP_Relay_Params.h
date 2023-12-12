@@ -18,20 +18,20 @@ public:
         NO_CHANGE = 2,
     };
 
-    enum class Function : uint8_t {
-        none     = 0,
-        relay    = 1,
-        ignition = 2,
-        parachute = 3,
-        camera = 4,
-        brushed_reverse_1 = 5,
-        brushed_reverse_2 = 6,
-        brushed_reverse_3 = 7,
-        brushed_reverse_4 = 8,
-        num_functions // must be the last entry
+    enum class FUNCTION : uint8_t {
+        NONE     = 0,
+        RELAY    = 1,
+        IGNITION = 2,
+        PARACHUTE = 3,
+        CAMERA = 4,
+        BRUSHED_REVERSE_1 = 5,
+        BRUSHED_REVERSE_2 = 6,
+        BRUSHED_REVERSE_3 = 7,
+        BRUSHED_REVERSE_4 = 8,
+        NUM_FUNCTIONS // must be the last entry
     };
 
-    AP_Enum<Function> function;            // relay function
+    AP_Enum<FUNCTION> function;            // relay function
     AP_Int16 pin;                          // gpio pin number
     AP_Enum<DefaultState> default_state;  // default state
 };
