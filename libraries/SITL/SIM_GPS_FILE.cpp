@@ -6,6 +6,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <SITL/SITL.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 extern const AP_HAL::HAL& hal;
 
