@@ -1997,7 +1997,12 @@ void GCS_MAVLINK::send_rc_channels() const
         values[15],
         values[16],
         values[17],
-        receiver_rssi());
+#if AP_RSSI_ENABLED
+        receiver_rssi()
+#else
+        255  // meaning "unknown"
+#endif
+        );
 }
 
 bool GCS_MAVLINK::sending_mavlink1() const
@@ -2028,7 +2033,12 @@ void GCS_MAVLINK::send_rc_channels_raw() const
         values[5],
         values[6],
         values[7],
-        receiver_rssi());
+#if AP_RSSI_ENABLED
+        receiver_rssi()
+#else
+        255  // meaning "unknown"
+#endif
+);
 }
 
 void GCS_MAVLINK::send_raw_imu()
@@ -6643,6 +6653,7 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 }
 
 
+#if AP_RSSI_ENABLED
 uint8_t GCS_MAVLINK::receiver_rssi() const
 {
     AP_RSSI *aprssi = AP::rssi();
@@ -6657,6 +6668,7 @@ uint8_t GCS_MAVLINK::receiver_rssi() const
     // scale across the full valid range
     return aprssi->read_receiver_rssi() * 254;
 }
+#endif
 
 GCS &gcs()
 {
