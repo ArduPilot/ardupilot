@@ -1245,8 +1245,10 @@ public:
     void failsafe_check(void);
     bool is_landing() const override;
     bool is_taking_off() const override;
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     bool set_target_location(const Location& target_loc) override;
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_SCRIPTING_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_velocity_match(const Vector2f &velocity) override;
