@@ -61,7 +61,10 @@ public:
     HAL_Semaphore &get_semaphore(void) {
         return rsem;
     }
-    
+
+    bool clock_s_to_date_fields(const uint32_t utc_sec32, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint8_t &wday) const;
+    uint32_t date_fields_to_clock_s(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec) const;
+
 private:
 
     static AP_RTC *_singleton;
@@ -70,6 +73,10 @@ private:
     source_type rtc_source_type = SOURCE_NONE;
     int64_t rtc_shift;
 
+    void clock_ms_to_hms_fields(const uint64_t time_ms, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const;
+
+    static bool _is_leap(uint32_t y);
+    static uint32_t _timegm(struct tm &tm);
 };
 
 namespace AP {

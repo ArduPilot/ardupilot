@@ -483,14 +483,14 @@ void ModeRTL::compute_return_target()
     int32_t target_alt = MAX(rtl_path.return_target.alt, 0);
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
-    target_alt = MAX(target_alt, curr_alt + MAX(0, g.rtl_climb_min));
-    target_alt = MAX(target_alt, MAX(g.rtl_altitude, RTL_ALT_MIN));
+    const float min_rtl_alt = MAX(RTL_ALT_MIN, curr_alt + MAX(0, g.rtl_climb_min));
+    target_alt = MAX(target_alt, MAX(g.rtl_altitude, min_rtl_alt));
 
     // reduce climb if close to return target
     float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
     // don't allow really shallow slopes
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
-        target_alt = MAX(curr_alt, MIN(target_alt, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
+        target_alt = MIN(target_alt, MAX(rtl_return_dist_cm * g.rtl_cone_slope, min_rtl_alt));
     }
 
     // set returned target alt to new target_alt (don't change altitude type)

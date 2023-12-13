@@ -24,12 +24,20 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
 #include "AP_Scripting_CANSensor.h"
+#include <AP_Networking/AP_Networking_Config.h>
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
   #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
 #endif
 
 #define SCRIPTING_MAX_NUM_PWM_SOURCE 4
+
+#if AP_NETWORKING_ENABLED
+#ifndef SCRIPTING_MAX_NUM_NET_SOCKET
+#define SCRIPTING_MAX_NUM_NET_SOCKET 50
+#endif
+class SocketAPM;
+#endif
 
 class AP_Scripting
 {
@@ -110,6 +118,12 @@ public:
     AP_HAL::PWMSource *_pwm_source[SCRIPTING_MAX_NUM_PWM_SOURCE];
     int get_current_ref() { return current_ref; }
     void set_current_ref(int ref) { current_ref = ref; }
+
+#if AP_NETWORKING_ENABLED
+    // SocketAPM storage
+    uint8_t num_net_sockets;
+    SocketAPM *_net_sockets[SCRIPTING_MAX_NUM_NET_SOCKET];
+#endif
 
     struct mavlink_msg {
         mavlink_message_t msg;

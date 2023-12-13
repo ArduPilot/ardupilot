@@ -8,6 +8,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,6 +19,8 @@ extern const AP_HAL::HAL& hal;
 #else
 #include <arpa/inet.h>
 #endif
+
+#include <AP_HAL/utility/Socket.h>
 
 #if AP_NETWORKING_BACKEND_SITL
 #include "AP_Networking_SITL.h"
@@ -150,6 +153,9 @@ void AP_Networking::init()
 
     // init network mapped serialmanager ports
     ports_init();
+
+    // register sendfile handler
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Networking::sendfile_check, void));
 }
 
 /*
@@ -282,6 +288,77 @@ void AP_Networking::startup_wait(void) const
 #endif
 }
 
+/*
+  send the rest of a file to a socket
+ */
+bool AP_Networking::sendfile(SocketAPM *sock, int fd)
+{
+    WITH_SEMAPHORE(sem);
+    if (sendfile_buf == nullptr) {
+        sendfile_buf = (uint8_t *)malloc(AP_NETWORKING_SENDFILE_BUFSIZE);
+        if (sendfile_buf == nullptr) {
+            return false;
+        }
+    }
+    for (auto &s : sendfiles) {
+        if (s.sock == nullptr) {
+            s.sock = sock->duplicate();
+            if (s.sock == nullptr) {
+                return false;
+            }
+            s.fd = fd;
+            return true;
+        }
+    }
+    return false;
+}
+
+void AP_Networking::SendFile::close(void)
+{
+    AP::FS().close(fd);
+    delete sock;
+    sock = nullptr;
+}
+
+#include <stdio.h>
+/*
+  check for sendfile updates
+ */
+void AP_Networking::sendfile_check(void)
+{
+    if (sendfile_buf == nullptr) {
+        return;
+    }
+    WITH_SEMAPHORE(sem);
+    bool none_active = true;
+    for (auto &s : sendfiles) {
+        if (s.sock == nullptr) {
+            continue;
+        }
+        none_active = false;
+        if (!s.sock->pollout(0)) {
+            continue;
+        }
+        const auto nread = AP::FS().read(s.fd, sendfile_buf, AP_NETWORKING_SENDFILE_BUFSIZE);
+        if (nread <= 0) {
+            s.close();
+            continue;
+        }
+        const auto nsent = s.sock->send(sendfile_buf, nread);
+        if (nsent <= 0) {
+            s.close();
+            continue;
+        }
+        if (nsent < nread) {
+            AP::FS().lseek(s.fd, nsent - nread, SEEK_CUR);
+        }
+    }
+    if (none_active) {
+        free(sendfile_buf);
+        sendfile_buf = nullptr;
+    }
+}
+
 AP_Networking *AP_Networking::singleton;
 
 namespace AP
@@ -290,6 +367,33 @@ AP_Networking &network()
 {
     return *AP_Networking::get_singleton();
 }
+}
+
+/*
+  debug printfs from LWIP
+ */
+int ap_networking_printf(const char *fmt, ...)
+{
+#ifdef AP_NETWORKING_LWIP_DEBUG_PORT
+    static AP_HAL::UARTDriver *uart;
+    if (uart == nullptr) {
+        uart = hal.serial(AP_NETWORKING_LWIP_DEBUG_PORT);
+        if (uart == nullptr) {
+            return -1;
+        }
+        uart->begin(921600, 0, 50000);
+    }
+    va_list ap;
+    va_start(ap, fmt);
+    uart->vprintf(fmt, ap);
+    va_end(ap);
+#else
+    va_list ap;
+    va_start(ap, fmt);
+    hal.console->vprintf(fmt, ap);
+    va_end(ap);
+#endif
+    return 0;
 }
 
 #endif // AP_NETWORKING_ENABLED

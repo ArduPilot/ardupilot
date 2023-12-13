@@ -357,6 +357,7 @@ include AP_SerialManager/AP_SerialManager.h
 ap_object AP_HAL::UARTDriver depends HAL_GCS_ENABLED
 ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
 ap_object AP_HAL::UARTDriver method read int16_t
+ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1
 ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
 ap_object AP_HAL::UARTDriver method available uint32_t
 ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
@@ -536,6 +537,23 @@ ap_object AP_HAL::I2CDevice method write_register boolean uint8_t'skip_check uin
 ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
 ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
+include AP_HAL/utility/Socket.h depends (AP_NETWORKING_ENABLED==1)
+global manual Socket lua_get_SocketAPM 1 depends (AP_NETWORKING_ENABLED==1)
+
+ap_object SocketAPM depends (AP_NETWORKING_ENABLED==1)
+ap_object SocketAPM method connect boolean string uint16_t'skip_check
+ap_object SocketAPM method bind boolean string uint16_t'skip_check
+ap_object SocketAPM method send int32_t string uint32_t'skip_check
+ap_object SocketAPM method listen boolean uint8_t'skip_check
+ap_object SocketAPM method set_blocking boolean boolean
+ap_object SocketAPM method is_connected boolean
+ap_object SocketAPM method pollout boolean uint32_t'skip_check
+ap_object SocketAPM method pollin boolean uint32_t'skip_check
+ap_object SocketAPM method reuseaddress boolean
+ap_object SocketAPM manual sendfile SocketAPM_sendfile 1
+ap_object SocketAPM manual close SocketAPM_close 0
+ap_object SocketAPM manual recv SocketAPM_recv 1
+ap_object SocketAPM manual accept SocketAPM_accept 1
 
 ap_object AP_HAL::AnalogSource depends !defined(HAL_DISABLE_ADC_DRIVER)
 ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t'skip_check
@@ -602,7 +620,7 @@ userdata AP_HAL::CANFrame method isErrorFrame boolean
 ap_object ScriptingCANBuffer depends AP_SCRIPTING_CAN_SENSOR_ENABLED
 ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t'skip_check
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
-
+ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
@@ -814,3 +832,24 @@ singleton AC_Fence depends AP_FENCE_ENABLED
 singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
+
+include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
+include AP_Filesystem/AP_Filesystem_config.h
+userdata AP_Filesystem::stat_t depends AP_FILESYSTEM_FILE_READING_ENABLED
+userdata AP_Filesystem::stat_t rename stat_t
+userdata AP_Filesystem::stat_t field size uint32_t read
+userdata AP_Filesystem::stat_t field mode int32_t read
+userdata AP_Filesystem::stat_t field mtime uint32_t read
+userdata AP_Filesystem::stat_t field atime uint32_t read
+userdata AP_Filesystem::stat_t field ctime uint32_t read
+userdata AP_Filesystem::stat_t method is_directory boolean
+
+singleton AP_Filesystem rename fs
+singleton AP_Filesystem method stat boolean string AP_Filesystem::stat_t'Null
+
+include AP_RTC/AP_RTC.h depends AP_RTC_ENABLED
+include AP_RTC/AP_RTC_config.h
+singleton AP_RTC depends AP_RTC_ENABLED
+singleton AP_RTC rename rtc
+singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
+singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check

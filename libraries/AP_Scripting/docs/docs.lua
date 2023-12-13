@@ -452,6 +452,82 @@ function motor_factor_table_ud:roll(index) end
 ---@param value number
 function motor_factor_table_ud:roll(index, value) end
 
+-- network socket class
+---@class SocketAPM_ud
+local SocketAPM_ud = {}
+
+-- desc
+function Socket(param1) end
+
+-- return true if a socket is connected
+---@return boolean
+function SocketAPM_ud:is_connected() end
+
+-- set blocking state of socket
+---@param blocking boolean
+---@return boolean
+function SocketAPM_ud:set_blocking(blocking) end
+
+-- setup a socket to listen
+---@param backlog integer
+---@return boolean
+function SocketAPM_ud:listen(backlog) end
+
+-- send a lua string. May contain binary data
+---@param str string
+---@param len uint32_t_ud
+---@return integer
+function SocketAPM_ud:send(str, len) end
+
+-- bind to an address. Use "0.0.0.0" for wildcard bind
+---@param IP_address string
+---@param port integer
+---@return boolean
+function SocketAPM_ud:bind(IP_address, port) end
+
+-- connect a socket to an endpoint
+---@param IP_address string
+---@param port integer
+---@return boolean
+function SocketAPM_ud:connect(IP_address, port) end
+
+--[[ accept new incoming sockets, returning a new socket.
+     Must be used on a stream socket in listen state
+--]]
+function SocketAPM_ud:accept(param1) end
+
+-- receive data from a socket
+---@param length
+---@return data
+function SocketAPM_ud:recv(length) end
+
+-- check for available input
+---@param timeout_ms uint32_t_ud
+---@return boolean
+function SocketAPM_ud:pollin(timeout_ms) end
+
+-- check for availability of space to write to socket
+---@param timeout_ms uint32_t_ud
+---@return boolean
+function SocketAPM_ud:pollout(timeout_ms) end
+
+--[[
+   close a socket. Note that there is no automatic garbage
+   collection of sockets so you must close a socket when you are
+   finished with it or you will run out of sockets
+--]]
+function SocketAPM_ud:close() end
+
+--[[
+   setup to send all remaining data from a filehandle to the socket
+   this also "closes" the socket and the file from the point of view of lua
+   the underlying socket and file are both closed on end of file
+--]]
+function SocketAPM_ud:sendfile(filehandle) end
+
+-- enable SO_REUSEADDR on a socket
+---@return boolean
+function SocketAPM_ud:reuseaddress() end
 
 -- desc
 ---@class AP_HAL__PWMSource_ud
@@ -981,6 +1057,14 @@ local ScriptingCANBuffer_ud = {}
 ---@return CANFrame_ud|nil
 function ScriptingCANBuffer_ud:read_frame() end
 
+-- Add a filter to the CAN buffer, mask is bitwise ANDed with the frame id and compared to value if not match frame is not buffered
+-- By default no filters are added and all frames are buffered, write is not affected by filters
+-- Maximum number of filters is 8
+---@param mask uint32_t_ud
+---@param value uint32_t_ud
+---@return boolean -- returns true if the filler was added successfully
+function ScriptingCANBuffer_ud:add_filter(mask, value) end
+
 -- desc
 ---@param frame CANFrame_ud
 ---@param timeout_us uint32_t_ud
@@ -1063,6 +1147,14 @@ function AP_HAL__UARTDriver_ud:read() end
 -- desc
 ---@param baud_rate uint32_t_ud
 function AP_HAL__UARTDriver_ud:begin(baud_rate) end
+
+--[[
+  read count bytes from a uart and return as a lua string. Note
+  that the returned string can be shorter than the requested length
+--]]
+---@param count integer
+---@return string|nil
+function AP_HAL__UARTDriver_ud:readstring(count) end
 
 
 -- desc
@@ -3066,3 +3158,68 @@ function fence:get_breach_time() end
 ---| 4 # Polygon
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
+
+-- desc
+---@class stat_t_ud
+local stat_t_ud = {}
+
+---@return stat_t_ud
+function stat_t() end
+
+-- get creation time in seconds
+---@return uint32_t_ud
+function stat_t_ud:ctime() end
+
+-- get last access time in seconds
+---@return uint32_t_ud
+function stat_t_ud:atime() end
+
+-- get last modification time in seconds
+---@return uint32_t_ud
+function stat_t_ud:mtime() end
+
+-- get file mode
+---@return integer
+function stat_t_ud:mode() end
+
+-- get file size in bytes
+---@return uint32_t_ud
+function stat_t_ud:size() end
+
+-- return true if this is a directory
+---@return boolean
+function stat_t_ud:is_directory() end
+
+-- desc
+---@class rtc
+rtc = {}
+
+-- return a time since 1970 in seconds from GMT date elements
+---@param year integer -- 20xx
+---@param month integer -- 0-11
+---@param day  integer -- 1-31
+---@param hour  integer -- 0-23
+---@param min integer -- 0-60
+---@param sec integer -- 0-60
+---@return uint32_t_ud
+function rtc:date_fields_to_clock_s(year, month, day, hour, min, sec) end
+
+-- break a time in seconds since 1970 to GMT date elements
+---@param param1 uint32_t_ud
+---@return integer|nil -- year 20xx
+---@return integer|nil -- month 0-11
+---@return integer|nil -- day 1-31
+---@return integer|nil -- hour 0-23
+---@return integer|nil -- min 0-60
+---@return integer|nil -- sec 0-60
+---@return integer|nil -- weekday 0-6, sunday is 0
+function rtc:clock_s_to_date_fields(param1) end
+
+-- desc
+---@class fs
+fs = {}
+
+-- desc
+---@param param1 string
+---@return stat_t_ud|nil
+function fs:stat(param1) end

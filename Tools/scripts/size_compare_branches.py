@@ -164,6 +164,7 @@ class SizeCompareBranches(object):
             'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
             'RADIX2HD',
+            'canzero',
         ])
 
         # blacklist all linux boards for bootloader build:
@@ -197,6 +198,7 @@ class SizeCompareBranches(object):
             'rst_zynq',
             'obal',
             'SITL_x86_64_linux_gnu',
+            'canzero',
         ]
 
     def esp32_board_names(self):

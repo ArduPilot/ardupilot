@@ -15,6 +15,12 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
+#include <AP_Networking/AP_Networking_Config.h>
+#if AP_NETWORKING_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
+#include "lua/src/lauxlib.h"
+
 extern const AP_HAL::HAL& hal;
 
 extern "C" {
@@ -632,6 +638,30 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
+int AP_HAL__UARTDriver_readstring(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
+
+    const uint16_t count = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t*)malloc(count);
+    if (data == nullptr) {
+        return 0;
+    }
+
+    const auto ret = ud->read(data, count);
+    if (ret < 0) {
+        free(data);
+        return 0;
+    }
+
+    // push to lua string
+    lua_pushlstring(L, (const char *)data, ret);
+    free(data);
+
+    return 1;
+}
+
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
@@ -754,6 +784,155 @@ int lua_get_PWMSource(lua_State *L) {
 
     return 1;
 }
+
+#if AP_NETWORKING_ENABLED
+/*
+  allocate a SocketAPM
+ */
+int lua_get_SocketAPM(lua_State *L) {
+    binding_argcheck(L, 1);
+    const uint8_t datagram = get_uint8_t(L, 1);
+    auto *scripting = AP::scripting();
+
+    if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
+        return luaL_argerror(L, 1, "no sockets available");
+    }
+
+    auto *sock = new SocketAPM(datagram);
+    if (sock == nullptr) {
+        return luaL_argerror(L, 1, "SocketAPM device nullptr");
+    }
+    scripting->_net_sockets[scripting->num_net_sockets] = sock;
+
+    new_SocketAPM(L);
+    *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[scripting->num_net_sockets];
+
+    scripting->num_net_sockets++;
+
+    return 1;
+}
+
+/*
+  socket close
+ */
+int SocketAPM_close(lua_State *L) {
+    binding_argcheck(L, 1);
+
+    SocketAPM *ud = *check_SocketAPM(L, 1);
+
+    auto *scripting = AP::scripting();
+
+    if (scripting->num_net_sockets == 0) {
+        return luaL_argerror(L, 1, "socket close error");
+    }
+
+    // clear allocated socket
+    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+        if (scripting->_net_sockets[i] == ud) {
+            ud->close();
+            delete ud;
+            scripting->_net_sockets[i] = nullptr;
+            scripting->num_net_sockets--;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+/*
+  socket sendfile, for offloading file send to AP_Networking
+ */
+int SocketAPM_sendfile(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    SocketAPM *ud = *check_SocketAPM(L, 1);
+
+    auto *scripting = AP::scripting();
+
+    if (scripting->num_net_sockets == 0) {
+        return luaL_argerror(L, 1, "sendfile error");
+    }
+
+    auto *p = (luaL_Stream *)luaL_checkudata(L, 2, LUA_FILEHANDLE);
+    int fd = p->f->fd;
+    bool ret = false;
+
+    // find the socket
+    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+        if (scripting->_net_sockets[i] == ud) {
+            ret = AP::network().sendfile(ud, fd);
+            if (ret) {
+                // remove from scripting, leave socket and fd open
+                p->f->fd = -1;
+                scripting->_net_sockets[i] = nullptr;
+                scripting->num_net_sockets--;
+            }
+            break;
+        }
+    }
+
+    lua_pushboolean(L, ret);
+    return 1;
+}
+
+/*
+  receive from a socket to a lua string
+ */
+int SocketAPM_recv(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    SocketAPM * ud = *check_SocketAPM(L, 1);
+
+    const uint16_t count = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t*)malloc(count);
+    if (data == nullptr) {
+        return 0;
+    }
+
+    const auto ret = ud->recv(data, count, 0);
+    if (ret < 0) {
+        free(data);
+        return 0;
+    }
+
+    // push to lua string
+    lua_pushlstring(L, (const char *)data, ret);
+    free(data);
+
+    return 1;
+}
+
+/*
+  TCP socket accept() call
+ */
+int SocketAPM_accept(lua_State *L) {
+    binding_argcheck(L, 1);
+
+    SocketAPM * ud = *check_SocketAPM(L, 1);
+
+    auto *scripting = AP::scripting();
+    if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
+        return luaL_argerror(L, 1, "no sockets available");
+    }
+
+    auto *sock = ud->accept(0);
+    if (sock == nullptr) {
+        return 0;
+    }
+
+    scripting->_net_sockets[scripting->num_net_sockets] = sock;
+
+    new_SocketAPM(L);
+    *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[scripting->num_net_sockets];
+
+    scripting->num_net_sockets++;
+
+    return 1;
+}
+
+#endif // AP_NETWORKING_ENABLED
+
 
 int lua_get_current_ref()
 {

@@ -27,8 +27,10 @@ public:
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
+#if HAL_GCS_ENABLED
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+#endif
 
     // consume vision pose estimate data and send to EKF. distances in meters
     virtual void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) = 0;

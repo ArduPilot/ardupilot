@@ -188,6 +188,11 @@ public:
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
 
+    /*
+      send contents of a file to a socket then close both socket and file
+     */
+    bool sendfile(SocketAPM *sock, int fd);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -311,6 +316,16 @@ private:
     // ports for registration with serial manager
     Port ports[AP_NETWORKING_NUM_PORTS];
 
+    // support for sendfile()
+    struct SendFile {
+        SocketAPM *sock;
+        int fd;
+        void close(void);
+    } sendfiles[AP_NETWORKING_NUM_SENDFILES];
+
+    uint8_t *sendfile_buf;
+    void sendfile_check(void);
+
     void ports_init(void);
 };
 
@@ -318,5 +333,9 @@ namespace AP
 {
     AP_Networking &network();
 };
+
+extern "C" {
+int ap_networking_printf(const char *fmt, ...);
+}
 
 #endif // AP_NETWORKING_ENABLED

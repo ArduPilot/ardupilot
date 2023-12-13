@@ -472,13 +472,8 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 /*
   setup output channels all non-manual modes
  */
-void Plane::set_servos_controlled(void)
+void Plane::set_throttle(void)
 {
-    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
-        // allow landing to override servos if it would like to
-        landing.override_servos();
-    }
-
     // convert 0 to 100% (or -100 to +100) into PWM
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
@@ -829,10 +824,17 @@ void Plane::set_servos(void)
     quadplane.update();
 #endif
 
-    if (control_mode != &mode_manual) {
-        set_servos_controlled();
-        set_takeoff_expected();
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+        // allow landing to override servos if it would like to
+        landing.override_servos();
     }
+
+    if (control_mode != &mode_manual) {
+        set_throttle();
+    }
+
+    // Warn AHRS if we might take off soon
+    set_takeoff_expected();
 
     // setup flap outputs
     set_servos_flaps();
