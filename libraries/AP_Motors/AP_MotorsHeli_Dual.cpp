@@ -525,25 +525,8 @@ void AP_MotorsHeli_Dual::output_to_motors()
     _swashplate1.output();
     _swashplate2.output();
 
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            update_motor_control(AP_MotorsHeli_RSC::RotorControlState::STOP);
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
-            update_motor_control(AP_MotorsHeli_RSC::RotorControlState::IDLE);
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-            // set motor output based on thrust requests
-            update_motor_control(AP_MotorsHeli_RSC::RotorControlState::ACTIVE);
-            break;
-        case SpoolState::SPOOLING_DOWN:
-            // sends idle output to motors and wait for rotor to stop
-            update_motor_control(AP_MotorsHeli_RSC::RotorControlState::IDLE);
-            break;
-    }
+    update_motor_control(get_rotor_control_state());
+
 }
 
 // servo_test - move servos through full range of movement
