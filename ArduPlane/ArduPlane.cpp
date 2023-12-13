@@ -798,8 +798,8 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
-// set target location (for use by scripting)
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+// set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
@@ -816,7 +816,9 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
+#if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {
