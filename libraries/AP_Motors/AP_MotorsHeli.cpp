@@ -190,7 +190,7 @@ void AP_MotorsHeli::output_min()
     // move swash to mid
     move_actuators(0.0f,0.0f,0.5f,0.0f);
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+    update_motor_control(AP_MotorsHeli_RSC::RotorControlState::STOP);
 
     // override limits flags
     set_limit_flag_pitch_roll_yaw(true);
