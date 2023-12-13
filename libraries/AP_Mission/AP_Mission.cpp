@@ -754,12 +754,12 @@ union PackedContent {
 
 };
 
-assert_storage_size<PackedContent, 12> assert_storage_size_PackedContent;
-
 /// load_cmd_from_storage - load command from storage
 ///     true is return if successful
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
+    ASSERT_STORAGE_SIZE(PackedContent, 12);
+
     WITH_SEMAPHORE(_rsem);
 
     // special handling for command #0 which is home
