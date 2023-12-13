@@ -644,14 +644,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     ASCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
-    // @Param: TRIM_PITCH_CD
+    // @Param: TRIM_PITCH_DEG
     // @DisplayName: Pitch angle offset
-    // @Description: Offset applied to AHRS pitch used for in-flight pitch trimming. Correct ground leveling is better than changing this parameter.
-    // @Units: cdeg
-    // @Range: -4500 4500
-    // @Increment: 10
-    // @User: Advanced
-    GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
+    // @Description: Offset in degrees used for in-flight pitch trimming for level flight. Correct ground leveling is an alternative to changing this parameter.
+    // @Units: deg
+    // @Range: -45 45
+    // @User: Standard
+    GSCALAR(pitch_trim,             "TRIM_PITCH_DEG",  0.0f),
 
     // @Param: ALT_HOLD_RTL
     // @DisplayName: RTL altitude
@@ -1095,8 +1094,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 5: Enable yaw damper in acro mode
     // @Bitmask: 6: Supress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
     // @Bitmask: 7: EnableDefaultAirspeed for takeoff
-    // @Bitmask: 8: Remove the TRIM_PITCH_CD on the GCS horizon
-    // @Bitmask: 9: Remove the TRIM_PITCH_CD on the OSD horizon
+    // @Bitmask: 8: Remove the TRIM_PITCH on the GCS horizon
+    // @Bitmask: 9: Remove the TRIM_PITCH on the OSD horizon
     // @Bitmask: 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
     // @Bitmask: 11: Disable suppression of fixed wing rate gains in ground mode
     // @Bitmask: 12: Enable FBWB style loiter altitude control
@@ -1545,6 +1544,10 @@ void Plane::load_parameters(void)
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, 0, true);
 #endif
+  
+    // PARAMETER_CONVERSION - Added: Dec 2023
+    // Convert _CM (centimeter) parameters to meters and _CD (centidegrees) parameters to meters
+    g.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
