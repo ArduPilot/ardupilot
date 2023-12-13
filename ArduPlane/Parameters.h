@@ -56,7 +56,7 @@ public:
         //
         k_param_auto_trim      = 10, // unused
         k_param_log_bitmask_old,  // unused
-        k_param_pitch_trim_cd,
+        k_param_pitch_trim,  // replaced by pitch_trim
         k_param_mix_mode,
         k_param_reverse_elevons, // unused
         k_param_reverse_ch1_elevon, // unused
@@ -437,7 +437,7 @@ public:
     AP_Int16 dspoiler_rud_rate;
     AP_Int32 log_bitmask;
     AP_Int32 RTL_altitude_cm;
-    AP_Int16 pitch_trim_cd;
+    AP_Float pitch_trim;
     AP_Int16 FBWB_min_altitude_cm;
 
     AP_Int8 flap_1_percent;
