@@ -191,6 +191,9 @@ protected:
     // update_motor_controls - sends commands to motor controllers
     virtual void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) = 0;
 
+    // Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
+    AP_MotorsHeli_RSC::RotorControlState get_rotor_control_state() const;
+
     // run spool logic
     void                output_logic();
 
