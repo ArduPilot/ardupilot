@@ -86,7 +86,7 @@ protected:
     void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;

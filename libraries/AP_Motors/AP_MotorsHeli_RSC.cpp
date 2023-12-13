@@ -275,7 +275,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
     }
 
     switch (state) {
-    case ROTOR_CONTROL_STOP:
+    case RotorControlState::STOP:
         // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
         update_rotor_ramp(0.0f, dt);
 
@@ -296,7 +296,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         _idle_throttle = get_idle_output();
         break;
 
-    case ROTOR_CONTROL_IDLE:
+    case RotorControlState::IDLE:
         // set rotor ramp to decrease speed to zero
         update_rotor_ramp(0.0f, dt);
 
@@ -348,7 +348,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         _control_output = _idle_throttle;
         break;
 
-    case ROTOR_CONTROL_ACTIVE:
+    case RotorControlState::ACTIVE:
         // set main rotor ramp to increase to full speed
         update_rotor_ramp(1.0f, dt);
 
