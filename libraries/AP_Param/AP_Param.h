@@ -467,13 +467,18 @@ public:
 
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
+    // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
+    static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
     /*
       convert width of a parameter, allowing update to wider scalar
       values without changing the parameter indexes. This will return
       true if the parameter was converted from an old parameter value
     */
-    bool convert_parameter_width(ap_var_type old_ptype);
+    bool convert_parameter_width(ap_var_type old_ptype, float scale_factor=1.0);
+    bool convert_centi_parameter(ap_var_type old_ptype) {
+        return convert_parameter_width(old_ptype, 0.01f);
+    }
     
     // convert a single parameter with scaling
     enum {
