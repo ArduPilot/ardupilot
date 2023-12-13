@@ -1922,7 +1922,6 @@ bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *v
     return true;
 }
 
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 // convert one old vehicle parameter to new object parameter
@@ -1983,11 +1982,17 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 #pragma GCC diagnostic pop
 
 
-// convert old vehicle parameters to new object parametersv
+// convert old vehicle parameters to new object parameters
 void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags)
 {
+    convert_old_parameters_scaled(conversion_table, table_size, 1.0f,flags);
+}
+
+// convert old vehicle parameters to new object parameters with scaling - assumes all parameters will have the same scaling factor
+void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags)
+{
     for (uint8_t i=0; i<table_size; i++) {
-        convert_old_parameter(&conversion_table[i], 1.0f, flags);
+        convert_old_parameter(&conversion_table[i], scaler, flags);
     }
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter
@@ -2043,7 +2048,7 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
  convert width of a parameter, allowing update to wider scalar values
  without changing the parameter indexes
 */
-bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
+bool AP_Param::convert_parameter_width(ap_var_type old_ptype, float scale_factor)
 {
     if (configured_in_storage()) {
         // already converted or set by the user
@@ -2090,14 +2095,13 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     // going via float is safe as the only time we would be converting
     // from AP_Int32 is when converting to float
     float old_float_value = old_ap->cast_to_float(old_ptype);
-    set_value(new_ptype, this, old_float_value);
+    set_value(new_ptype, this, old_float_value*scale_factor);
 
     // force save as the new type
     save(true);
 
     return true;
 }
-
 
 /*
   set a parameter to a float value
