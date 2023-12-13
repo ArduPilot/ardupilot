@@ -33,6 +33,7 @@
 #include "AP_RCProtocol_FPort.h"
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
+#include "AP_RCProtocol_GHST.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -81,6 +82,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
     backend[AP_RCProtocol::DRONECAN] = new AP_RCProtocol_DroneCAN(*this);
+#endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+    backend[AP_RCProtocol::GHST] = new AP_RCProtocol_GHST(*this);
 #endif
 }
 
@@ -303,6 +307,10 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
     { 2000000, 0,   1, false },
 #endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+    // Ghost:
+    { 420000,  0,   1, false },
+#endif
 };
 
 static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
@@ -504,6 +512,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
     case DRONECAN:
         return "DroneCAN";
+#endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+    case GHST:
+        return "GHST";
 #endif
     case NONE:
         break;
