@@ -33,6 +33,7 @@
 #include "AP_RCProtocol_FPort.h"
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
+#include "AP_RCProtocol_MAVLinkRadio.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -81,6 +82,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
     backend[AP_RCProtocol::DRONECAN] = new AP_RCProtocol_DroneCAN(*this);
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    backend[AP_RCProtocol::MAVLINK_RADIO] = new AP_RCProtocol_MAVLinkRadio(*this);
 #endif
 }
 
@@ -505,6 +509,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case DRONECAN:
         return "DroneCAN";
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    case MAVLINK_RADIO:
+        return "MAVRadio";
+#endif
     case NONE:
         break;
     }
@@ -538,6 +546,36 @@ bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
     }
     return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
+
+void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet)
+{
+    // receiving this message is also used to check if the receiver is present
+    // so let's first do the receiver detection
+    if (_detected_protocol == AP_RCProtocol::NONE) { // still searching
+#if AP_RC_CHANNEL_ENABLED
+        rc_protocols_mask = rc().enabled_protocols();
+#endif
+        if (!protocol_enabled(MAVLINK_RADIO)) {
+            return; // not our turn
+        }
+        _detected_protocol = AP_RCProtocol::MAVLINK_RADIO;
+    }
+
+    // here now comes the message handling itself
+
+    if (_detected_protocol != AP_RCProtocol::MAVLINK_RADIO) {
+        return;
+    }
+
+    // now update the backend
+    backend[_detected_protocol]->update_radio_rc_channels(packet);
+
+    // now we can ask the backend if it got a new input
+    if (backend[_detected_protocol]->new_input()) {
+        _new_input = true;
+        _last_input_ms = AP_HAL::millis();
+    }
+};
 
 namespace AP {
     AP_RCProtocol &RC()
