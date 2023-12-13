@@ -49,7 +49,7 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
     void calculate_roll_pitch_collective_factors ();

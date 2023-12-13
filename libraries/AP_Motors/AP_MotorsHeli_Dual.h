@@ -65,7 +65,7 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // get_swashplate - calculate movement of each swashplate based on configuration
     float get_swashplate(int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input);
