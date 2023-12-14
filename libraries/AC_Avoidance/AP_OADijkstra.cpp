@@ -934,7 +934,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 }
 
 // return point from final path as an offset (in cm) from the ekf origin
-bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
+bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos) const
 {
     if ((_path_numpoints == 0) || (point_num >= _path_numpoints)) {
         return false;
