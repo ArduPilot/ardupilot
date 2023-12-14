@@ -182,7 +182,7 @@ private:
     Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
     // return point from final path as an offset (in cm) from the ekf origin
-    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos);
+    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos) const;
 
     // find the position of a node as an offset (in cm) from the ekf origin
     // returns true if successful and pos is updated
