@@ -859,7 +859,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     _pitch_demand_lpf.apply(_pitch_dem, _DT);
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
     _pitch_measured_lpf.apply(_ahrs.get_pitch(), _DT);
-    const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(0.01f * (float)aparm.pitch_trim_cd);
+    const float pitch_corrected_lpf = _pitch_measured_lpf.get();
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
     if (pitch_blended > 0.0f && _PITCHmaxf > 0.0f)
