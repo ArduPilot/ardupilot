@@ -324,6 +324,7 @@ bool AP_Arming::airspeed_checks(bool report)
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 bool AP_Arming::logging_checks(bool report)
 {
     if (check_enabled(ARMING_CHECK_LOGGING)) {
@@ -346,6 +347,7 @@ bool AP_Arming::logging_checks(bool report)
     }
     return true;
 }
+#endif  // HAL_LOGGING_ENABLED
 
 #if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
@@ -900,6 +902,7 @@ bool AP_Arming::mission_checks(bool report)
     }
 #endif
 
+#if AP_VEHICLE_ENABLED
     // do not allow arming if there are no mission items and we are in
     // (e.g.) AUTO mode
     if (AP::vehicle()->current_mode_requires_mission() &&
@@ -907,6 +910,7 @@ bool AP_Arming::mission_checks(bool report)
         check_failed(ARMING_CHECK_MISSION, report, "Mode requires mission");
         return false;
     }
+#endif
 
     return true;
 }
@@ -1561,7 +1565,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  compass_checks(report)
         &  gps_checks(report)
         &  battery_checks(report)
+#if HAL_LOGGING_ENABLED
         &  logging_checks(report)
+#endif
 #if AP_RC_CHANNEL_ENABLED
         &  manual_transmitter_checks(report)
 #endif
@@ -1660,10 +1666,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
         _last_arm_method = method;
 
+#if HAL_LOGGING_ENABLED
         Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks
+#endif
 
     } else {
+#if HAL_LOGGING_ENABLED
         AP::logger().arming_failure();
+#endif
         armed = false;
     }
 
@@ -1719,9 +1729,11 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     armed = false;
     _last_disarm_method = method;
 
+#if HAL_LOGGING_ENABLED
     Log_Write_Disarm(!do_disarm_checks, method);  // Log_Write_Disarm takes "force"
 
     check_forced_logging(method);
+#endif
 
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
@@ -1849,6 +1861,7 @@ bool AP_Arming::disarm_switch_checks(bool display_failure) const
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
+#if HAL_LOGGING_ENABLED
 void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
 {
     const struct log_Arm_Disarm pkt {
@@ -1927,6 +1940,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
             return;
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 AP_Arming *AP_Arming::_singleton = nullptr;
 
