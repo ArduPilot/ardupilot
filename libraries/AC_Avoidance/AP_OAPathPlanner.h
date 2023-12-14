@@ -48,13 +48,17 @@ public:
     };
 
     // provides an alternative target location if path planning around obstacles is required
-    // returns true and updates result_origin and result_destination with an intermediate path
+    // returns true and updates result_origin, result_destination and result_next_destination with an intermediate path
+    // result_dest_to_next_dest_clear is set to true if the path from result_destination to result_next_destination is clear  (only supported by Dijkstras)
     // path_planner_used updated with which path planner produced the result
     OA_RetState mission_avoidance(const Location &current_loc,
                            const Location &origin,
                            const Location &destination,
+                           const Location &next_destination,
                            Location &result_origin,
                            Location &result_destination,
+                           Location &result_next_destination,
+                           bool &result_dest_to_next_dest_clear,
                            OAPathPlannerUsed &path_planner_used) WARN_IF_UNUSED;
 
     // enumerations for _TYPE parameter
@@ -90,6 +94,7 @@ private:
         Location current_loc;
         Location origin;
         Location destination;
+        Location next_destination;
         Vector2f ground_speed_vec;
         uint32_t request_time_ms;
     } avoidance_request, avoidance_request2;
@@ -97,8 +102,11 @@ private:
     // an avoidance result from the avoidance thread
     struct {
         Location destination;       // destination vehicle is trying to get to (also used to verify the result matches a recent request)
+        Location next_destination;  // next destination vehicle is trying to get to (also used to verify the result matches a recent request)
         Location origin_new;        // intermediate origin.  The start of line segment that vehicle should follow
         Location destination_new;   // intermediate destination vehicle should move towards
+        Location next_destination_new; // intermediate next destination vehicle should move towards
+        bool dest_to_next_dest_clear; // true if the path from destination_new to next_destination_new is clear and does not require path planning  (only supported by Dijkstras)
         uint32_t result_time_ms;    // system time the result was calculated (used to verify the result is recent)
         OAPathPlannerUsed path_planner_used;    // path planner that produced the result
         OA_RetState ret_state;      // OA_SUCCESS if the vehicle should move along the path from origin_new to destination_new
