@@ -424,8 +424,16 @@ public:
                           uint16_t data_type_id,
                           uint8_t priority,
                           const void* payload,
-                          uint16_t payload_len);
+                          uint16_t payload_len,
+                          uint8_t iface_mask=0);
 
+    bool canard_respond(CanardInstance* canard_instance,
+                        CanardRxTransfer* transfer,
+                        uint64_t data_type_signature,
+                        uint16_t data_type_id,
+                        const uint8_t *payload,
+                        uint16_t payload_len);
+    
     void onTransferReceived(CanardInstance* canard_instance,
                             CanardRxTransfer* transfer);
     bool shouldAcceptTransfer(const CanardInstance* canard_instance,
@@ -473,7 +481,7 @@ public:
 #if HAL_PERIPH_CAN_MIRROR
     void processMirror(void);
 #endif // HAL_PERIPH_CAN_MIRROR
-    void cleanup_stale_transactions(uint64_t &timestamp_usec);
+    void cleanup_stale_transactions(uint64_t timestamp_usec);
     void update_rx_protocol_stats(int16_t res);
     void node_status_send(void);
     bool can_do_dna();
