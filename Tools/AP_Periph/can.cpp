@@ -62,6 +62,9 @@ extern AP_Periph_FW periph;
 #endif
 #endif
 
+// timeout all frames at 1s
+#define CAN_FRAME_TIMEOUT 1000000ULL
+
 #define DEBUG_PKTS 0
 
 #if HAL_PERIPH_CAN_MIRROR
@@ -207,25 +210,12 @@ void AP_Periph_FW::handle_get_node_info(CanardInstance* canard_instance,
 
     uint16_t total_size = uavcan_protocol_GetNodeInfoResponse_encode(&pkt, buffer, !canfdout());
 
-    const int16_t resp_res = canardRequestOrRespond(canard_instance,
-                                                    transfer->source_node_id,
-                                                    UAVCAN_PROTOCOL_GETNODEINFO_SIGNATURE,
-                                                    UAVCAN_PROTOCOL_GETNODEINFO_ID,
-                                                    &transfer->transfer_id,
-                                                    transfer->priority,
-                                                    CanardResponse,
-                                                    &buffer[0],
-                                                    total_size
-#if CANARD_MULTI_IFACE
-                                                    , IFACE_ALL
-#endif
-#if HAL_CANFD_SUPPORTED
-                                                    , canfdout()
-#endif
-);
-    if (resp_res <= 0) {
-        printf("Could not respond to GetNodeInfo: %d\n", resp_res);
-    }
+    canard_respond(canard_instance,
+                   transfer,
+                   UAVCAN_PROTOCOL_GETNODEINFO_SIGNATURE,
+                   UAVCAN_PROTOCOL_GETNODEINFO_ID,
+                   &buffer[0],
+                   total_size);
 }
 
 /*
@@ -316,23 +306,12 @@ void AP_Periph_FW::handle_param_getset(CanardInstance* canard_instance, CanardRx
     uint8_t buffer[UAVCAN_PROTOCOL_PARAM_GETSET_RESPONSE_MAX_SIZE] {};
     uint16_t total_size = uavcan_protocol_param_GetSetResponse_encode(&pkt, buffer, !canfdout());
 
-    canardRequestOrRespond(canard_instance,
-                           transfer->source_node_id,
-                           UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE,
-                           UAVCAN_PROTOCOL_PARAM_GETSET_ID,
-                           &transfer->transfer_id,
-                           transfer->priority,
-                           CanardResponse,
-                           &buffer[0],
-                           total_size
-#if CANARD_MULTI_IFACE
-                            , IFACE_ALL
-#endif
-#if HAL_CANFD_SUPPORTED
-                           ,canfdout()
-#endif
-);
-
+    canard_respond(canard_instance,
+                   transfer,
+                   UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE,
+                   UAVCAN_PROTOCOL_PARAM_GETSET_ID,
+                   &buffer[0],
+                   total_size);
 }
 
 /*
@@ -376,22 +355,12 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
     uint8_t buffer[UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_RESPONSE_MAX_SIZE] {};
     uint16_t total_size = uavcan_protocol_param_ExecuteOpcodeResponse_encode(&pkt, buffer, !canfdout());
 
-    canardRequestOrRespond(canard_instance,
-                           transfer->source_node_id,
-                           UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE,
-                           UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID,
-                           &transfer->transfer_id,
-                           transfer->priority,
-                           CanardResponse,
-                           &buffer[0],
-                           total_size
-#if CANARD_MULTI_IFACE
-                            , IFACE_ALL
-#endif
-#if HAL_CANFD_SUPPORTED
-                           ,canfdout()
-#endif
-);
+    canard_respond(canard_instance,
+                   transfer,
+                   UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE,
+                   UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID,
+                   &buffer[0],
+                   total_size);
 }
 
 void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance, CanardRxTransfer* transfer)
@@ -419,22 +388,12 @@ void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance,
     reply.error = UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_ERROR_OK;
 
     uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer, !canfdout());
-    canardRequestOrRespond(canard_instance,
-                           transfer->source_node_id,
-                           UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
-                           UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID,
-                           &transfer->transfer_id,
-                           transfer->priority,
-                           CanardResponse,
-                           &buffer[0],
-                           total_size
-#if CANARD_MULTI_IFACE
-                            ,IFACE_ALL
-#endif
-#if HAL_CANFD_SUPPORTED
-                           ,canfdout()
-#endif
-);
+    canard_respond(canard_instance,
+                   transfer,
+                   UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
+                   UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID,
+                   &buffer[0],
+                   total_size);
     uint8_t count = 50;
     while (count--) {
         processTx();
@@ -1015,7 +974,7 @@ static bool shouldAcceptTransfer_trampoline(const CanardInstance* canard_instanc
     return fw->shouldAcceptTransfer(canard_instance, out_data_type_signature, data_type_id, transfer_type, source_node_id);
 }
 
-void AP_Periph_FW::cleanup_stale_transactions(uint64_t &timestamp_usec)
+void AP_Periph_FW::cleanup_stale_transactions(uint64_t timestamp_usec)
 {
     canardCleanupStaleTransfers(&dronecan.canard, timestamp_usec);
 }
@@ -1058,9 +1017,11 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
                                     uint16_t data_type_id,
                                     uint8_t priority,
                                     const void* payload,
-                                    uint16_t payload_len)
+                                    uint16_t payload_len,
+                                    uint8_t iface_mask)
 {
-    if (canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
+    const bool is_dna = data_type_id == UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID;
+    if (!is_dna && canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
         return false;
     }
 
@@ -1069,21 +1030,69 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
         return false;
     }
 
-    const int16_t res = canardBroadcast(&dronecan.canard,
-                    data_type_signature,
-                    data_type_id,
-                    tid_ptr,
-                    priority,
-                    payload,
-                    payload_len
+    // create transfer object
+    CanardTxTransfer transfer_object = {
+        .transfer_type = CanardTransferTypeBroadcast,
+        .data_type_signature = data_type_signature,
+        .data_type_id = data_type_id,
+        .inout_transfer_id = tid_ptr,
+        .priority = priority,
+        .payload = (uint8_t*)payload,
+        .payload_len = payload_len,
+#if CANARD_ENABLE_CANFD
+        .canfd = is_dna? false : canfdout(),
+#endif
+        .deadline_usec = AP_HAL::micros64()+CAN_FRAME_TIMEOUT,
 #if CANARD_MULTI_IFACE
-                    , IFACE_ALL // send over all ifaces
+        .iface_mask = iface_mask==0 ? uint8_t(IFACE_ALL) : iface_mask,
 #endif
-#if HAL_CANFD_SUPPORTED
-                    , canfdout()
-#endif
-                    );
+    };
+    const int16_t res = canardBroadcastObj(&dronecan.canard, &transfer_object);
 
+#if DEBUG_PKTS
+    if (res < 0) {
+        can_printf("Tx error %d\n", res);
+    }
+#endif
+#if HAL_ENABLE_SENDING_STATS
+    if (res <= 0) {
+        protocol_stats.tx_errors++;
+    } else {
+        protocol_stats.tx_frames += res;
+    }
+#endif
+    return res > 0;
+}
+
+/*
+  send a response
+ */
+bool AP_Periph_FW::canard_respond(CanardInstance* canard_instance,
+                                  CanardRxTransfer *transfer,
+                                  uint64_t data_type_signature,
+                                  uint16_t data_type_id,
+                                  const uint8_t *payload,
+                                  uint16_t payload_len)
+{
+    CanardTxTransfer transfer_object = {
+        .transfer_type = CanardTransferTypeResponse,
+        .data_type_signature = data_type_signature,
+        .data_type_id = data_type_id,
+        .inout_transfer_id = &transfer->transfer_id,
+        .priority = transfer->priority,
+        .payload = payload,
+        .payload_len = payload_len,
+#if CANARD_ENABLE_CANFD
+        .canfd = canfdout(),
+#endif
+        .deadline_usec = AP_HAL::micros64()+CAN_FRAME_TIMEOUT,
+#if CANARD_MULTI_IFACE
+        .iface_mask = IFACE_ALL,
+#endif
+    };
+    const auto res = canardRequestOrRespondObj(canard_instance,
+                                               transfer->source_node_id,
+                                               &transfer_object);
 #if DEBUG_PKTS
     if (res < 0) {
         can_printf("Tx error %d\n", res);
@@ -1151,15 +1160,17 @@ void AP_Periph_FW::processTx(void)
             canardPopTxQueue(&dronecan.canard);
             dronecan.tx_fail_count = 0;
         } else {
-            // just exit and try again later. If we fail 8 times in a row
-            // then start discarding to prevent the pool filling up
+            // exit and try again later. If we fail 8 times in a row
+            // then cleanup any stale transfers to keep the queue from
+            // filling
             if (dronecan.tx_fail_count < 8) {
                 dronecan.tx_fail_count++;
             } else {
 #if HAL_ENABLE_SENDING_STATS
                 protocol_stats.tx_errors++;
 #endif
-                canardPopTxQueue(&dronecan.canard);
+                dronecan.tx_fail_count = 0;
+                cleanup_stale_transactions(now_us);
             }
             break;
         }
@@ -1490,8 +1501,6 @@ bool AP_Periph_FW::can_do_dna()
 
     const uint32_t now = AP_HAL::millis();
 
-    static uint8_t node_id_allocation_transfer_id = 0;
-
     if (AP_Periph_FW::no_iface_finished_dna) {
         printf("Waiting for dynamic node ID allocation %x... (pool %u)\n",  IFACE_ALL, pool_peak_percent());
     }
@@ -1525,24 +1534,11 @@ bool AP_Periph_FW::can_do_dna()
     memmove(&allocation_request[1], &my_unique_id[dronecan.node_id_allocation_unique_id_offset], uid_size);
 
     // Broadcasting the request
-    const int16_t bcast_res = canardBroadcast(&dronecan.canard,
-                                                UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
-                                                UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
-                                                &node_id_allocation_transfer_id,
-                                                CANARD_TRANSFER_PRIORITY_LOW,
-                                                &allocation_request[0],
-                                                (uint16_t) (uid_size + 1)
-#if CANARD_MULTI_IFACE
-                                                ,(1U << dronecan.dna_interface)
-#endif
-#if HAL_CANFD_SUPPORTED
-                                                // always send allocation request as non-FD
-                                                ,false
-#endif
-                                                );
-    if (bcast_res < 0) {
-        printf("Could not broadcast ID allocation req; error %d\n", bcast_res);
-    }
+    canard_broadcast(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
+                     UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     &allocation_request[0],
+                     (uint16_t) (uid_size + 1));
 
     // Preparing for timeout; if response is received, this value will be updated from the callback.
     dronecan.node_id_allocation_unique_id_offset = 0;
