@@ -78,8 +78,8 @@ AP_OABendyRuler::AP_OABendyRuler()
     _bearing_prev = FLT_MAX;
 }
 
-// run background task to find best path and update avoidance_results
-// returns true and updates origin_new and destination_new if a best path has been found
+// run background task to find best path
+// returns true and updates origin_new and destination_new if a best path has been found.  returns false if OA is not required
 // bendy_type is set to the type of BendyRuler used
 bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only)
 {
