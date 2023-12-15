@@ -159,6 +159,18 @@ private:
     // The full range of uint32 integers cannot be represented by a float.
     const uint32_t checksum_param_mask = 0x007FFFFF;
 
+    enum class ThreadPriority : uint8_t {
+        NORMAL = 0,
+        IO = 1,
+        STORAGE = 2,
+        UART = 3,
+        I2C = 4,
+        SPI = 5,
+        TIMER = 6,
+        MAIN = 7,
+        BOOST = 8
+    };
+
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
@@ -167,6 +179,7 @@ private:
     AP_Int32 _required_loaded_checksum;
     AP_Int32 _required_running_checksum;
 
+    AP_Enum<ThreadPriority> _thd_priority;
 
     bool _thread_failed; // thread allocation failed
     bool _init_failed;  // true if memory allocation failed

@@ -153,6 +153,14 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RUN_CHECKSUM", 13, AP_Scripting, _required_running_checksum, -1),
 
+    // @Param: THD_PRIORITY
+    // @DisplayName: Scripting thread priority
+    // @Description: This sets the priority of the scripting thread. This is normally set to a low priority to prevent scripts from interfering with other parts of the system. Advanced users can change this priority if scripting needs to be prioritised for realtime applications. WARNING: changing this parameter can impact the stability of your flight controller. The scipting thread priority in this parameter is chosen based on a set of system level priorities for other subsystems. It is strongly recommended that you use the lowest priority that is sufficient for your application. Note that all scripts run at the same priority, so if you raise this priority you must carefully audit all lua scripts for behaviour that does not interfere with the operation of the system.
+    // @Values: 0:Normal, 1:IO Priority, 2:Storage Priority, 3:UART Priority, 4:I2C Priority, 5:SPI Priority, 6:Timer Priority, 7:Main Priority, 8:Boost Priority
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("THD_PRIORITY", 14, AP_Scripting, _thd_priority, uint8_t(ThreadPriority::NORMAL)),
+    
     AP_GROUPEND
 };
 
@@ -179,8 +187,29 @@ void AP_Scripting::init(void) {
         }
     }
 
+    AP_HAL::Scheduler::priority_base priority = AP_HAL::Scheduler::PRIORITY_SCRIPTING;
+    static const struct {
+        ThreadPriority scr_priority;
+        AP_HAL::Scheduler::priority_base hal_priority;
+    } priority_map[] = {
+        { ThreadPriority::NORMAL, AP_HAL::Scheduler::PRIORITY_SCRIPTING },
+        { ThreadPriority::IO, AP_HAL::Scheduler::PRIORITY_IO },
+        { ThreadPriority::STORAGE, AP_HAL::Scheduler::PRIORITY_STORAGE },
+        { ThreadPriority::UART, AP_HAL::Scheduler::PRIORITY_UART },
+        { ThreadPriority::I2C, AP_HAL::Scheduler::PRIORITY_I2C },
+        { ThreadPriority::SPI, AP_HAL::Scheduler::PRIORITY_SPI },
+        { ThreadPriority::TIMER, AP_HAL::Scheduler::PRIORITY_TIMER },
+        { ThreadPriority::MAIN, AP_HAL::Scheduler::PRIORITY_MAIN },
+        { ThreadPriority::BOOST, AP_HAL::Scheduler::PRIORITY_BOOST },
+    };
+    for (const auto &p : priority_map) {
+        if (p.scr_priority == _thd_priority) {
+            priority = p.hal_priority;
+        }
+    }
+
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
-                                      "Scripting", SCRIPTING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0)) {
+                                      "Scripting", SCRIPTING_STACK_SIZE, priority, 0)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "failed to start");
         _thread_failed = true;
     }
