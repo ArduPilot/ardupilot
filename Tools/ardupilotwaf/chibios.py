@@ -468,6 +468,20 @@ def setup_canmgr_build(cfg):
 
     cfg.get_board().with_can = True
 
+def setup_canperiph_build(cfg):
+    '''enable CAN build for peripherals'''
+    env = cfg.env
+    env.DEFINES += [
+        'CANARD_ENABLE_DEADLINE=1',
+        ]
+
+    if cfg.env.HAL_CANFD_SUPPORTED:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
+    else:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
+
+    cfg.get_board().with_can = True
+    
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
     print("Checking for env.py")
@@ -578,6 +592,8 @@ def configure(cfg):
     load_env_vars(cfg.env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
+    if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
+        setup_canperiph_build(cfg)
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and int(env.HAL_NUM_CAN_IFACES)>1 and not env.BOOTLOADER:
         env.DEFINES += [ 'CANARD_MULTI_IFACE=1' ]
     setup_optimization(cfg.env)
