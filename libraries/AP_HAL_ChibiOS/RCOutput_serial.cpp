@@ -151,7 +151,7 @@ void RCOutput::update_channel_masks() {
     }
 
 #if HAL_PWM_COUNT > 0
-    for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
+    for (uint8_t i=chan_offset; i<HAL_PWM_COUNT+chan_offset; i++) {
         switch (_dshot_esc_type) {
             case DSHOT_ESC_BLHELI:
             case DSHOT_ESC_BLHELI_S:
