@@ -1175,7 +1175,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("FWD_BAT_VOLT_MAX", 23, ParametersG2, fwd_thr_batt_voltage_max, 0.0f),
+    AP_GROUPINFO("FWD_BAT_VOLT_MAX", 23, ParametersG2, fwd_batt_cmp.batt_voltage_max, 0.0f),
 
     // @Param: FWD_BAT_VOLT_MIN
     // @DisplayName: Forward throttle battery voltage compensation minimum voltage
@@ -1184,14 +1184,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("FWD_BAT_VOLT_MIN", 24, ParametersG2, fwd_thr_batt_voltage_min, 0.0f),
+    AP_GROUPINFO("FWD_BAT_VOLT_MIN", 24, ParametersG2, fwd_batt_cmp.batt_voltage_min, 0.0f),
 
     // @Param: FWD_BAT_IDX
     // @DisplayName: Forward throttle battery compensation index
     // @Description: Which battery monitor should be used for doing compensation for the forward throttle
     // @Values: 0:First battery, 1:Second battery
     // @User: Advanced
-    AP_GROUPINFO("FWD_BAT_IDX", 25, ParametersG2, fwd_thr_batt_idx, 0),
+    AP_GROUPINFO("FWD_BAT_IDX", 25, ParametersG2, fwd_batt_cmp.batt_idx, 0),
 
     // @Param: FS_EKF_THRESH
     // @DisplayName: EKF failsafe variance threshold

@@ -384,23 +384,26 @@ void Plane::set_servos_idle(void)
 
 
 /*
-  Scale the throttle to conpensate for battery voltage drop
+  Calculate the throttle scale to compensate for battery voltage drop
  */
-void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const
+void ParametersG2::FWD_BATT_CMP::update()
 {
+    // Assume disabled
+    enabled = false;
+
     // return if not enabled, or setup incorrectly
-    if (!is_positive(g2.fwd_thr_batt_voltage_min) || g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max) {
+    if (!is_positive(batt_voltage_min) || batt_voltage_min >= batt_voltage_max) {
         return;
     }
 
-    float batt_voltage_resting_estimate = AP::battery().voltage_resting_estimate(g2.fwd_thr_batt_idx);
+    float batt_voltage_resting_estimate = AP::battery().voltage_resting_estimate(batt_idx);
     // Return for a very low battery
-    if (batt_voltage_resting_estimate < 0.25f * g2.fwd_thr_batt_voltage_min) {
+    if (batt_voltage_resting_estimate < 0.25f * batt_voltage_min) {
         return;
     }
 
     // constrain read voltage to min and max params
-    batt_voltage_resting_estimate = constrain_float(batt_voltage_resting_estimate,g2.fwd_thr_batt_voltage_min,g2.fwd_thr_batt_voltage_max);
+    batt_voltage_resting_estimate = constrain_float(batt_voltage_resting_estimate, batt_voltage_min, batt_voltage_max);
 
     // don't apply compensation if the voltage is excessively low
     if (batt_voltage_resting_estimate < 1) {
@@ -409,14 +412,38 @@ void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) co
 
     // Scale the throttle up to compensate for voltage drop
     // Ratio = 1 when voltage = voltage max, ratio increases as voltage drops
-    const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
+    ratio = batt_voltage_max / batt_voltage_resting_estimate;
+
+    // Got this far then ratio is valid
+    enabled = true;
+}
+
+// Apply throttle scale to min and max limits
+void ParametersG2::FWD_BATT_CMP::apply_min_max(int8_t &min_throttle, int8_t &max_throttle) const
+{
+    // return if not enabled
+    if (!enabled) {
+        return;
+    }
 
     // Scale the throttle limits to prevent subsequent clipping
+    // Ratio will always be >= 1, ensure still within max limits
     min_throttle = int8_t(MAX((ratio * (float)min_throttle), -100));
     max_throttle = int8_t(MIN((ratio * (float)max_throttle),  100));
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
-                                        constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
+}
+
+// Apply throttle scale to throttle demand
+float ParametersG2::FWD_BATT_CMP::apply_throttle(float throttle) const
+{
+    // return if not enabled
+    if (!enabled) {
+        return throttle;
+    }
+
+    // Ratio will always be >= 1, ensure still within max limits
+    return constrain_float(throttle * ratio, -100, 100);
+
 }
 
 /*
@@ -504,7 +531,8 @@ void Plane::set_throttle(void)
     }
 
     // compensate for battery voltage drop
-    throttle_voltage_comp(min_throttle, max_throttle);
+    g2.fwd_batt_cmp.update();
+    g2.fwd_batt_cmp.apply_min_max(min_throttle, max_throttle);
 
 #if AP_BATTERY_WATT_MAX_ENABLED
     // apply watt limiter
@@ -573,9 +601,9 @@ void Plane::set_throttle(void)
 #endif  // HAL_QUADPLANE_ENABLED
 
     } else {
-        // Apply min/max limits to throttle output from flight mode
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
-                                        constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
+        // Apply min/max limits and voltage compensation to throttle output from flight mode
+        const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_float(throttle, min_throttle, max_throttle));
     }
 
 }
