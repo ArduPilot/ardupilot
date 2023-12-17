@@ -55,7 +55,9 @@ static_assert(sizeof(last_in_addr) == sizeof(struct sockaddr_in), "last_in_addr 
 SocketAPM::SocketAPM(bool _datagram) :
     SocketAPM(_datagram, 
               CALL_PREFIX(socket)(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
-{}
+{
+    static_assert(sizeof(SocketAPM::last_in_addr) >= sizeof(struct sockaddr_in), "last_in_addr must be at least sockaddr_in size");
+}
 
 SocketAPM::SocketAPM(bool _datagram, int _fd) :
     datagram(_datagram),
@@ -310,10 +312,10 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
         errno = EWOULDBLOCK;
         return -1;
     }
-    socklen_t len = sizeof(last_in_addr);
+    socklen_t len = sizeof(struct sockaddr_in);
     int fin = get_read_fd();
     ssize_t ret;
-    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&last_in_addr, &len);
+    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&last_in_addr[0], &len);
     if (ret <= 0) {
         if (!datagram && connected && ret == 0) {
             // remote host has closed connection
@@ -330,9 +332,10 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
         if (CALL_PREFIX(getsockname)(fd, (struct sockaddr *)&send_addr, &send_len) != 0) {
             return -1;
         }
-        if (last_in_addr.sin_port == send_addr.sin_port &&
-            last_in_addr.sin_family == send_addr.sin_family &&
-            last_in_addr.sin_addr.s_addr == send_addr.sin_addr.s_addr) {
+        const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
+        if (sin.sin_port == send_addr.sin_port &&
+            sin.sin_family == send_addr.sin_family &&
+            sin.sin_addr.s_addr == send_addr.sin_addr.s_addr) {
             // discard packets from ourselves
             return -1;
         }
@@ -355,11 +358,13 @@ void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
  */
 const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const
 {
-    const char *ret = CALL_PREFIX(inet_ntop)(AF_INET, (void*)&last_in_addr.sin_addr, ip_addr_buf, buflen);
+    const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
+
+    const char *ret = inet_addr_to_str((void*)&sin.sin_addr, ip_addr_buf, buflen);
     if (ret == nullptr) {
         return nullptr;
     }
-    port = ntohs(last_in_addr.sin_port);
+    port = ntohs(sin.sin_port);
     return ret;
 }
 
@@ -444,8 +449,9 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
         return nullptr;
     }
 
-    socklen_t len = sizeof(last_in_addr);
-    int newfd = CALL_PREFIX(accept)(fd, (sockaddr *)&last_in_addr, &len);
+    struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
+    socklen_t len = sizeof(sin);
+    int newfd = CALL_PREFIX(accept)(fd, (sockaddr *)&sin, &len);
     if (newfd == -1) {
         return nullptr;
     }
@@ -495,6 +501,11 @@ SocketAPM *SocketAPM::duplicate(void)
     fd = -1;
     fd_in = -1;
     return ret;
+}
+
+const char *SocketAPM::inet_addr_to_str(const void *src, char *dst, uint16_t len)
+{
+    return CALL_PREFIX(inet_ntop)(AF_INET, src, dst, len);
 }
 
 #endif // AP_NETWORKING_BACKEND_ANY
