@@ -15,6 +15,7 @@
 
 #if HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <arm_math.h>
+#include <hrt.h>
 #endif
 
 void setup();
@@ -129,6 +130,13 @@ static void show_timings(void)
     TIMEIT("millis16()", AP_HAL::millis16(), 200);
     TIMEIT("micros64()", AP_HAL::micros64(), 200);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    TIMEIT("hrt_micros32()", hrt_micros32(), 200);
+    TIMEIT("hrt_micros64()", hrt_micros64(), 200);
+    TIMEIT("hrt_millis32()", hrt_millis32(), 200);
+    TIMEIT("hrt_millis64()", hrt_millis64(), 200);
+#endif
+    
     TIMEIT("fadd", v_out += v_f, 100);
     TIMEIT("fsub", v_out -= v_f, 100);
     TIMEIT("fmul", v_out *= v_f, 100);
