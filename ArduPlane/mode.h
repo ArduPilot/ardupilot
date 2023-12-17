@@ -787,6 +787,9 @@ protected:
     Location start_loc;
 
     bool _enter() override;
+#if AP_FENCE_ENABLED
+    void _exit() override;
+#endif
 };
 
 #if HAL_SOARING_ENABLED

@@ -137,10 +137,6 @@ void ModeTakeoff::update()
         plane.next_WP_loc.alt += alt*100.0;
 
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-
-#if AP_FENCE_ENABLED
-        plane.fence.auto_enable_fence_after_takeoff();
-#endif
     }
 
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
@@ -164,4 +160,11 @@ void ModeTakeoff::navigate()
     // Zero indicates to use WP_LOITER_RAD
     plane.update_loiter(0);
 }
-
+#if AP_FENCE_ENABLED
+void ModeTakeoff::_exit()
+{
+    if (plane.is_flying() && plane.is_flying()) {
+        plane.fence.auto_enable_fence_after_takeoff();
+    }
+}
+#endif
