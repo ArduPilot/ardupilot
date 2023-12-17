@@ -22,10 +22,6 @@
 
 #if AP_NETWORKING_SOCKETS_ENABLED
 
-#if HAL_OS_SOCKETS
-
-struct sockaddr_in;
-
 class SocketAPM {
 public:
     SocketAPM(bool _datagram);
@@ -79,15 +75,14 @@ public:
         return connected;
     }
 
+    // access to inet_ntop
+    static const char *inet_addr_to_str(const void *src, char *dst, uint16_t len);
+
 private:
     bool datagram;
-    struct {
-        uint16_t sin_family;
-        uint16_t sin_port;
-        struct {
-            uint32_t s_addr;
-        } sin_addr;
-    } last_in_addr;
+    // we avoid using struct sockaddr_in here to keep support for
+    // mixing native sockets and lwip sockets in SITL
+    uint32_t last_in_addr[4];
     bool is_multicast_address(struct sockaddr_in &addr) const;
 
     int fd = -1;
@@ -100,5 +95,4 @@ private:
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };
 
-#endif // HAL_OS_SOCKETS
 #endif // AP_NETWORKING_SOCKETS_ENABLED
