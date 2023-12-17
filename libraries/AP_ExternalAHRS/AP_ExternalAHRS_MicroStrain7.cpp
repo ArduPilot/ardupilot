@@ -16,7 +16,7 @@
     $ sim_vehicle.py -v Plane -A "--serial3=uart:/dev/3dm-gq7" --console --map -DG
     $ ./Tools/autotest/sim_vehicle.py -v Plane -A "--serial3=uart:/dev/3dm-gq7" -DG
     param set AHRS_EKF_TYPE 11
-    param set EAHRS_TYPE 4
+    param set EAHRS_TYPE 7
     param set GPS_TYPE 21
     param set SERIAL3_BAUD 115
     param set SERIAL3_PROTOCOL 36
