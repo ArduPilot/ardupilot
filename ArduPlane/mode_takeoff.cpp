@@ -63,7 +63,7 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_started = false;
-
+    have_auto_enabled_fence = false;
     return true;
 }
 
@@ -138,9 +138,6 @@ void ModeTakeoff::update()
 
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
 
-#if AP_FENCE_ENABLED
-        plane.fence.auto_enable_fence_after_takeoff();
-#endif
     }
 
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
@@ -152,6 +149,13 @@ void ModeTakeoff::update()
         plane.calc_nav_pitch();
         plane.calc_throttle();
         //check if in long failsafe, if it is recall long failsafe now to get fs action via events call
+#if AP_FENCE_ENABLED
+        const uint16_t altitude = plane.relative_ground_altitude(false,true);
+        if (altitude >= alt && !have_auto_enabled_fence) {
+            plane.fence.auto_enable_fence_after_takeoff();
+            have_auto_enabled_fence = true;
+        }
+#endif
         if (plane.long_failsafe_pending) {
         plane.long_failsafe_pending = false;
         plane.failsafe_long_on_event(FAILSAFE_LONG, ModeReason::MODE_TAKEOFF_FAILSAFE);

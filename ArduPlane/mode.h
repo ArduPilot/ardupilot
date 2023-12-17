@@ -784,6 +784,7 @@ protected:
     AP_Int8 level_pitch;
 
     bool takeoff_started;
+    bool have_auto_enabled_fence;
     Location start_loc;
 
     bool _enter() override;
