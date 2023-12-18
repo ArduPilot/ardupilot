@@ -164,7 +164,7 @@ void AP_Relay::convert_params()
     const bool have_default = AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &default_state);
 
     // grab the old values if they were set
-    for (uint8_t i = 0; i < MIN(AP_RELAY_NUM_RELAYS, 6); i++) {
+    for (uint8_t i = 0; i < MIN(ARRAY_SIZE(_params), 6U); i++) {
         if (_params[i].function.configured()) {
             // Conversion already done, or user has configured manually
             continue;
@@ -235,7 +235,7 @@ void AP_Relay::set_defaults() {
                              RELAY5_PIN_DEFAULT,
                              RELAY6_PIN_DEFAULT };
 
-    for (uint8_t i = 0; i < MIN(uint8_t(AP_RELAY_NUM_RELAYS), ARRAY_SIZE(pins)); i++) {
+    for (uint8_t i = 0; i < MIN(ARRAY_SIZE(_params), ARRAY_SIZE(pins)); i++) {
         // set the default
         if (pins[i] != -1) {
             _params[i].pin.set_default(pins[i]);
@@ -250,7 +250,7 @@ void AP_Relay::init()
     convert_params();
 
     // setup the actual default values of all the pins
-    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+    for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
         const int8_t pin = _params[instance].pin;
         if (pin == -1) {
             // no valid pin to set it on, skip it
@@ -285,7 +285,7 @@ void AP_Relay::set(const AP_Relay_Params::FUNCTION function, const bool value) {
         return;
     }
 
-    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+    for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
         if (function != _params[instance].function) {
             continue;
         }
@@ -324,7 +324,7 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
 
 void AP_Relay::set(const uint8_t instance, const bool value)
 {
-    if (instance >= AP_RELAY_NUM_RELAYS) {
+    if (instance >= ARRAY_SIZE(_params)) {
         return;
     }
 
@@ -337,7 +337,7 @@ void AP_Relay::set(const uint8_t instance, const bool value)
 
 void AP_Relay::toggle(uint8_t instance)
 {
-    if (instance < AP_RELAY_NUM_RELAYS) {
+    if (instance < ARRAY_SIZE(_params)) {
         set(instance, !get(instance));
     }
 }
@@ -345,7 +345,7 @@ void AP_Relay::toggle(uint8_t instance)
 // check settings are valid
 bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
-    for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_params); i++) {
         const int8_t pin = _params[i].pin.get();
         if (pin != -1 && !hal.gpio->valid_pin(pin)) {
             char param_name_buf[14];
@@ -364,7 +364,7 @@ bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 
 bool AP_Relay::get(uint8_t instance) const
 {
-    if (instance >= AP_RELAY_NUM_RELAYS) {
+    if (instance >= ARRAY_SIZE(_params)) {
         // invalid instance
         return false;
     }
@@ -383,13 +383,13 @@ bool AP_Relay::get(uint8_t instance) const
 bool AP_Relay::enabled(uint8_t instance) const 
 {
     // Must be a valid instance with function relay and pin set
-    return (instance < AP_RELAY_NUM_RELAYS) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::FUNCTION::RELAY);
+    return (instance < ARRAY_SIZE(_params)) && (_params[instance].pin != -1) && (_params[instance].function == AP_Relay_Params::FUNCTION::RELAY);
 }
 
 // see if the relay is enabled
 bool AP_Relay::enabled(AP_Relay_Params::FUNCTION function) const
 {
-    for (uint8_t instance = 0; instance < AP_RELAY_NUM_RELAYS; instance++) {
+    for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
         if ((_params[instance].function == function) && (_params[instance].pin != -1)) {
             return true;
         }
@@ -408,7 +408,7 @@ bool AP_Relay::send_relay_status(const GCS_MAVLINK &link) const
 
     uint16_t present_mask = 0;
     uint16_t on_mask = 0;
-    for (auto i=0; i<AP_RELAY_NUM_RELAYS; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_params); i++) {
         if (!enabled(i)) {
             continue;
         }
