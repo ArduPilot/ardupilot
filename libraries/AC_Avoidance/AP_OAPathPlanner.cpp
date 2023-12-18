@@ -199,7 +199,13 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
         return OA_NOT_REQUIRED;
     }
 
+    // check if just activated to avoid initial timeout error
     const uint32_t now = AP_HAL::millis();
+    if (now - _last_update_ms > 200) {
+        _activated_ms = now;
+    }
+    _last_update_ms = now;
+
     WITH_SEMAPHORE(_rsem);
 
     // place new request for the thread to work on
@@ -213,7 +219,7 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
     const bool destination_matches = (destination.lat == avoidance_result.destination.lat) && (destination.lng == avoidance_result.destination.lng);
 
     // check results have not timed out
-    const bool timed_out = now - avoidance_result.result_time_ms > OA_TIMEOUT_MS;
+    const bool timed_out = (now - avoidance_result.result_time_ms > OA_TIMEOUT_MS) && (now - _activated_ms > OA_TIMEOUT_MS);
 
     // return results from background thread's latest checks
     if (destination_matches && !timed_out) {
