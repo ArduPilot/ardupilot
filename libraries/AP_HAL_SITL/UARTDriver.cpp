@@ -56,6 +56,12 @@ bool UARTDriver::_console;
 
 void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
+    if (baud == 0 && rxSpace == 0 && txSpace == 0) {
+        // this is a claim of the uart for the current thread, which
+        // is currently not implemented in SITL
+        return;
+    }
+
     if (_portNumber >= ARRAY_SIZE(_sitlState->_serial_path)) {
         AP_HAL::panic("port number out of range; you may need to extend _sitlState->_serial_path");
     }
