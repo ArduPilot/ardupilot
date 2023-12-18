@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <cstring>
+#include <cstdint>
 #include "Scheduler.h"
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/ExpandingString.h>
