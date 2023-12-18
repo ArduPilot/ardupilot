@@ -1,6 +1,6 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.4.0-beta11 05-Dec-2023
+Rover 4.4.0 19-Dec-2023 / Rover 4.4.0-beta11 05-Dec-2023
 Changes from 4.4.0-beta10
 1) Autopilot related enhancement and fixes
     - CubeOrange Sim-on-hardware compilation fix
