@@ -163,6 +163,11 @@ public:
     // returns true if update_wpnav has been run very recently
     bool is_active() const;
 
+    // force stopping at next waypoint.  Used by Dijkstra's object avoidance when path from destination to next destination is not clear
+    // only affects regular (e.g. non-spline) waypoints
+    // returns true if this had any affect on the path
+    bool force_stop_at_next_wp();
+
     ///
     /// spline methods
     ///
