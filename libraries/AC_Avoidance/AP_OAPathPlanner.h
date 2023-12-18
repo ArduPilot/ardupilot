@@ -115,7 +115,9 @@ private:
     AP_OABendyRuler *_oabendyruler; // Bendy Ruler algorithm
     AP_OADijkstra *_oadijkstra;     // Dijkstra's algorithm
     AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
-    uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
+    uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran (in the avoidance thread)
+    uint32_t _last_update_ms;       // system time that mission_avoidance was called in main thread
+    uint32_t _activated_ms;         // system time that object avoidance was most recently activated (used to avoid timeout error on first run)
 
     bool proximity_only = true;
     static AP_OAPathPlanner *_singleton;
