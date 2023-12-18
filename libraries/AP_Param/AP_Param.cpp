@@ -2999,6 +2999,11 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
  */
 bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
 {
+    if (_var_info_dynamic == nullptr) {
+        // No dynamic tables available
+        return false;
+    }
+
     // check for valid values
     if (param_num == 0 || param_num > 63 || strlen(pname) > 16) {
         return false;

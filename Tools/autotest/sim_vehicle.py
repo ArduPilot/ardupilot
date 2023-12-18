@@ -378,8 +378,8 @@ def do_build(opts, frame_options):
     if opts.math_check_indexes:
         cmd_configure.append("--enable-math-check-indexes")
 
-    if opts.disable_ekf2:
-        cmd_configure.append("--disable-ekf2")
+    if opts.enable_ekf2:
+        cmd_configure.append("--enable-ekf2")
 
     if opts.disable_ekf3:
         cmd_configure.append("--disable-ekf3")
@@ -410,16 +410,12 @@ def do_build(opts, frame_options):
 
     if opts.enable_dds:
         cmd_configure.append("--enable-dds")
-        if configure_target == 'sitl' and "--enable-networking" not in cmd_configure:
-            cmd_configure.append("--enable-networking")
 
-    if opts.disable_networking or configure_target != "sitl":
+    if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
-        if "--enable-networking" not in cmd_configure:
-            cmd_configure.append("--enable-networking")
 
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
@@ -1299,7 +1295,7 @@ group_sim.add_option("--flash-storage",
 group_sim.add_option("--fram-storage",
                      action='store_true',
                      help="use fram storage emulation")
-group_sim.add_option("--disable-ekf2",
+group_sim.add_option("--enable-ekf2",
                      action='store_true',
                      help="disable EKF2 in build")
 group_sim.add_option("--disable-ekf3",

@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("3DMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
 
-#ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
     // @Param: BDMASK
     // @DisplayName: BLHeli bitmask of bi-directional dshot channels
     // @Description: Mask of channels which support bi-directional dshot. This is used for ESCs which have firmware that supports bi-directional dshot allowing fast rpm telemetry values to be returned for the harmonic notch.
@@ -1409,6 +1409,8 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
     hal.rcout->set_motor_poles(motor_poles);
+#endif
+#if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
     hal.rcout->set_bidir_dshot_mask(uint32_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
     // add motors from channel mask

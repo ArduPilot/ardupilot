@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_SIM_ENABLED
+
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_SITL : public AP_WindVane_Backend
@@ -29,3 +33,5 @@ public:
         void update_speed() override;
     #endif
 };
+
+#endif  // AP_WINDVANE_SIM_ENABLED

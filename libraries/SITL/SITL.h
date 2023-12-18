@@ -206,6 +206,7 @@ public:
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Float gps_accuracy[2];
     AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
+    AP_Int8 gps_jam[2]; // jamming simulation enable
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;

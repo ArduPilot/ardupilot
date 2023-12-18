@@ -114,7 +114,7 @@ class upload_fw(Task.Task):
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy pyserial
+        pip.exe install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)
@@ -675,6 +675,8 @@ def build(bld):
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
+    common_src += bld.path.ant_glob('modules/ChibiOS/ext/lwip/src/**/*.[ch]')
+    common_src += bld.path.ant_glob('modules/ChibiOS/ext/lwip/src/core/**/*.[ch]')
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
 

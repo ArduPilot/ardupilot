@@ -42,6 +42,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR  1023
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
+#define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -169,8 +170,12 @@
 #define HAL_WITH_IO_MCU 0
 #endif
 
+#ifndef HAL_WITH_IO_MCU_BIDIR_DSHOT
+#define HAL_WITH_IO_MCU_BIDIR_DSHOT 0
+#endif
+
 #ifndef HAL_WITH_IO_MCU_DSHOT
-#define HAL_WITH_IO_MCU_DSHOT 0
+#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
 #endif
 
 // this is used as a general mechanism to make a 'small' build by

@@ -586,10 +586,12 @@ private:
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 
+#if AP_BATTERY_WATT_MAX_ENABLED
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
     uint32_t throttle_watt_limit_timer_ms;
+#endif
 
     AP_FixedWing::FlightStage flight_stage = AP_FixedWing::FlightStage::NORMAL;
 
@@ -1089,7 +1091,7 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
-    void set_servos_controlled(void);
+    void set_throttle(void);
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);

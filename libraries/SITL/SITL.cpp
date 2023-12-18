@@ -499,7 +499,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Param: GPS_TYPE
     // @DisplayName: GPS 1 type
     // @Description: Sets the type of simulation used for GPS 1
-    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
+    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:Trimble, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     // @Param: GPS_BYTELOSS
@@ -569,6 +569,12 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Vector3Parameter: 1
     // @User: Advanced
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
+    // @Param: GPS_JAM
+    // @DisplayName: GPS jamming enable
+    // @Description: Enable simulated GPS jamming
+    // @User: Advanced
+    // @Values: 0:Disabled, 1:Enabled
+    AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
     // @Description: Disables GPS 2
@@ -671,6 +677,13 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @DisplayName: GPS Log Number
     // @Description: Log number for GPS:update_file()
     AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
+
+    // @Param: GPS2_JAM
+    // @DisplayName: GPS jamming enable
+    // @Description: Enable simulated GPS jamming
+    // @User: Advanced
+    // @Values: 0:Disabled, 1:Enabled
+    AP_GROUPINFO("GPS2_JAM",      49, SIM,  gps_jam[1], 0),
 
     AP_GROUPEND
 };

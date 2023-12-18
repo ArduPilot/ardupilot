@@ -1261,6 +1261,7 @@ bool AP_MSP_Telem_Backend::displaying_stats_screen() const
 
 bool AP_MSP_Telem_Backend::get_rssi(float &rssi) const
 {
+#if AP_RSSI_ENABLED
     AP_RSSI* ap_rssi = AP::rssi();
     if (ap_rssi == nullptr) {
         return false;
@@ -1270,5 +1271,9 @@ bool AP_MSP_Telem_Backend::get_rssi(float &rssi) const
     }
     rssi =  ap_rssi->read_receiver_rssi(); // range is [0-1]
     return true;
+#else
+    return false;
+#endif
 }
+
 #endif //HAL_MSP_ENABLED

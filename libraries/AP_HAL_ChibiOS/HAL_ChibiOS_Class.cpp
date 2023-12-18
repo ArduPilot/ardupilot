@@ -344,8 +344,13 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     main_loop();
 }
 
+static HAL_ChibiOS hal_chibios;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_ChibiOS hal_chibios;
+    return hal_chibios;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_chibios;
 }
 

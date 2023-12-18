@@ -10,6 +10,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
+#include <RC_Channel/RC_Channel_config.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -405,8 +406,10 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     }
 
     switch (cmd.id) {
+#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
         return start_command_do_aux_function(cmd);
+#endif
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);

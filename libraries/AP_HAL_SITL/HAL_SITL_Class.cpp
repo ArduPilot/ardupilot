@@ -33,7 +33,7 @@
 
 using namespace HALSITL;
 
-HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL();
+HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL_mutable();
 
 static Storage sitlStorage;
 static SITL_State sitlState;
@@ -299,9 +299,14 @@ void HAL_SITL::actually_reboot()
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
+static HAL_SITL hal_sitl_inst;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_SITL hal;
-    return hal;
+    return hal_sitl_inst;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
+    return hal_sitl_inst;
 }
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

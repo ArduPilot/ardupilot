@@ -49,6 +49,17 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+        InertialLabs = 5,
+#endif
+        // 3 reserved for AdNav
+        // 4 reserved for CINS
+        // 6 reserved for Trimble
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+        MicroStrain7 = 7,
+#endif
+        // 8 reserved for SBG
+        // 9 reserved for EulerNav
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -87,6 +98,8 @@ public:
         bool have_origin;
         bool have_location;
         bool have_velocity;
+
+        uint32_t last_location_update_us;
     } state;
 
     // accessors for AP_AHRS
@@ -145,6 +158,11 @@ public:
         float temperature;
     } ins_data_message_t;
 
+    typedef struct {
+        float differential_pressure; // Pa
+        float temperature; // degC
+    } airspeed_data_message_t;
+    
 protected:
 
     enum class OPTIONS {
@@ -165,6 +183,11 @@ private:
     // check if a sensor type is enabled
     bool has_sensor(AvailableSensor sensor) const {
         return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
+    }
+
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t _sensors) {
+        sensors.set_default(_sensors);
     }
 };
 

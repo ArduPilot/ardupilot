@@ -573,7 +573,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #if HAL_GENERATOR_ENABLED
     MSG_GENERATOR_STATUS,
 #endif
+#if AP_WINCH_ENABLED
     MSG_WINCH_STATUS,
+#endif
 #if HAL_EFI_ENABLED
     MSG_EFI_STATUS,
 #endif

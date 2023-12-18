@@ -69,6 +69,7 @@
 
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
+class CANSensor;
 
 class AP_DroneCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
     friend class AP_DroneCAN_DNA_Server;
@@ -85,6 +86,12 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // add an 11 bit auxillary driver
+    bool add_11bit_driver(CANSensor *sensor) override;
+
+    // handler for outgoing frames for auxillary drivers
+    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
+    
     uint8_t get_driver_index() const { return _driver_index; }
 
     // define string with length structure

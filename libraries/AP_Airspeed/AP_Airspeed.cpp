@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -435,6 +436,11 @@ void AP_Airspeed::allocate()
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
             break;
+        case TYPE_EXTERNAL:
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+            sensor[i] = new AP_Airspeed_External(*this, i);
+#endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -726,6 +732,24 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         if (sensor[i]) {
             sensor[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif 
+
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+/*
+  handle airspeed airspeed data
+ */
+void AP_Airspeed::handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt)
+{
+    if (!lib_enabled()) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (param[i].type == TYPE_EXTERNAL && sensor[i]) {
+            sensor[i]->handle_external(pkt);
         }
     }
 }

@@ -1479,15 +1479,15 @@ class Result(object):
     def __str__(self):
         ret = "  %s (%s)" % (self.test.name, self.test.description)
         if self.passed:
-            return ret + " OK"
+            return f"{ret} OK"
         if self.reason is not None:
-            ret += " (" + self.reason + ")"
+            ret += f" ({self.reason} )"
         if self.exception is not None:
-            ret += " (" + str(self.exception) + ")"
+            ret += f" ({str(self.exception)})"
         if self.debug_filename is not None:
-            ret += " (see " + self.debug_filename + ")"
+            ret += f" (see {self.debug_filename})"
         if self.time_elapsed is not None:
-            ret += " (duration " + self.time_elapsed + "s)"
+            ret += f" (duration {self.time_elapsed} s)"
         return ret
 
 
@@ -3972,15 +3972,19 @@ class TestSuite(ABC):
         if not temp_ok:
             raise NotAchievedException("target temperature")
 
+    def message_has_field_values_field_values_equal(self, fieldname, value, got, epsilon=None):
+        if isinstance(value, float):
+            if math.isnan(value) or math.isnan(got):
+                return math.isnan(value) and math.isnan(got)
+
+        if type(value) is not str and epsilon is not None:
+            return abs(got - value) <= epsilon
+
+        return got == value
+
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
             got = getattr(m, fieldname)
-            if math.isnan(value) or math.isnan(got):
-                equal = math.isnan(value) and math.isnan(got)
-            elif epsilon is not None:
-                equal = abs(got - value) <= epsilon
-            else:
-                equal = got == value
 
             value_string = value
             got_string = got
@@ -3994,7 +3998,9 @@ class TestSuite(ABC):
                 value_string = "%s (%s)" % (value, enum[value].name)
                 got_string = "%s (%s)" % (got, enum[got].name)
 
-            if not equal:
+            if not self.message_has_field_values_field_values_equal(
+                    fieldname, value, got, epsilon=epsilon
+            ):
                 # see if this is an enumerated field:
                 self.progress(self.dump_message_verbose(m))
                 self.progress("Expected %s.%s to be %s, got %s" %
@@ -4267,28 +4273,94 @@ class TestSuite(ABC):
         self.context_push()
         self.set_parameters({
             "NET_ENABLED": 1,
-            "NET_DHCP": 0,
+            "LOG_DARM_RATEMAX": 2, # make small logs
+            # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 15004,
+            "NET_P1_PORT": 16001,
             "NET_P1_IP0": 127,
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
-            "NET_P1_IP3": 1
+            "NET_P1_IP3": 1,
+            # UDP server
+            "NET_P2_TYPE": 2,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16002,
+            "NET_P2_IP0": 0,
+            "NET_P2_IP1": 0,
+            "NET_P2_IP2": 0,
+            "NET_P2_IP3": 0,
+            # TCP client
+            "NET_P3_TYPE": 3,
+            "NET_P3_PROTOCOL": 2,
+            "NET_P3_PORT": 16003,
+            "NET_P3_IP0": 127,
+            "NET_P3_IP1": 0,
+            "NET_P3_IP2": 0,
+            "NET_P3_IP3": 1,
+            # TCP server
+            "NET_P4_TYPE": 4,
+            "NET_P4_PROTOCOL": 2,
+            "NET_P4_PORT": 16004,
+            "NET_P4_IP0": 0,
+            "NET_P4_IP1": 0,
+            "NET_P4_IP2": 0,
+            "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
-        filename = "MAVProxy-downloaded-net-log.BIN"
-        mavproxy = self.start_mavproxy(master=':15004')
-        self.mavproxy_load_module(mavproxy, 'log')
-        mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
-        mavproxy.send("set shownoise 0\n")
-        mavproxy.send("log download latest %s\n" % filename)
-        mavproxy.expect("Finished downloading", timeout=120)
-        self.mavproxy_unload_module(mavproxy, 'log')
-        self.stop_mavproxy(mavproxy)
+        endpoints = [('UDPClient', ':16001') ,
+                     ('UDPServer', 'udpout:127.0.0.1:16002'),
+                     ('TCPClient', 'tcpin:0.0.0.0:16003'),
+                     ('TCPServer', 'tcp:127.0.0.1:16004')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e)
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
+        self.set_parameters({
+            # multicast UDP client
+            "NET_P1_TYPE": 1,
+            "NET_P1_PROTOCOL": 2,
+            "NET_P1_PORT": 14550,
+            "NET_P1_IP0": 239,
+            "NET_P1_IP1": 255,
+            "NET_P1_IP2": 145,
+            "NET_P1_IP3": 50,
+            # Broadcast UDP client
+            "NET_P2_TYPE": 1,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16005,
+            "NET_P2_IP0": 255,
+            "NET_P2_IP1": 255,
+            "NET_P2_IP2": 255,
+            "NET_P2_IP3": 255,
+            })
+        self.reboot_sitl()
+        endpoints = [('UDPMulticast', 'mcast:') ,
+                     ('UDPBroadcast', ':16005')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e)
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
         self.context_pop()
 
     def TestLogDownloadMAVProxyCAN(self, upload_logs=False):

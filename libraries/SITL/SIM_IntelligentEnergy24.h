@@ -60,6 +60,8 @@ private:
 
     void update_send();
 
+    const char * get_error_string(const uint32_t code);
+
     AP_Int8 enabled;  // enable sim
     AP_Int8 set_state;
     AP_Int32 err_code;
@@ -67,7 +69,8 @@ private:
     float battery_voltage = 50.4f;
     float bat_capacity_mAh = 3300;
     bool discharge = true; // used to switch between battery charging and discharging
-    uint32_t last_sent_ms;
+    uint32_t last_data_sent_ms;
+    uint32_t last_ver_sent_ms;
 
 };
 

@@ -16,6 +16,7 @@
  * Bi-directional dshot based on Betaflight, code by Andy Piper and Siddharth Bharat Purohit
  * 
  * There really is no dshot reference. For information try these resources:
+ * https://brushlesswhoop.com/dshot-and-bidirectional-dshot/
  * https://blck.mn/2016/11/dshot-the-new-kid-on-the-block/
  * https://www.swallenhardware.io/battlebots/2019/4/20/a-developers-guide-to-dshot-escs
  */
@@ -100,6 +101,10 @@ void RCOutput::init()
     if (AP_BoardConfig::io_enabled()) {
         // with IOMCU the local (FMU) channels start at 8
         chan_offset = 8;
+        iomcu_enabled = true;
+    }
+    if (AP_BoardConfig::io_dshot()) {
+        iomcu_dshot = true;
     }
 #endif
 
@@ -144,7 +149,7 @@ void RCOutput::init()
     }
 
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.init();
     }
 #endif
@@ -336,8 +341,9 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
             continue;
         }
 
+        // dma handle will only be unlocked if the send was aborted
         if (group.dma_handle != nullptr && group.dma_handle->is_locked()) {
-            // calculate how long we have left
+            // if we have time left wait for the event
             const sysinterval_t wait_ticks = calc_ticks_remaining(group, time_out_us,
                                                                   led_thread ? LED_OUTPUT_PERIOD_US : _dshot_period_us);
             const eventmask_t mask = chEvtWaitOneTimeout(group.dshot_event_mask, wait_ticks);
@@ -350,13 +356,11 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
 #ifdef HAL_WITH_BIDIR_DSHOT
             // if using input capture DMA then clean up
             if (group.bdshot.enabled) {
-                // the channel index only moves on with success
-                const uint8_t chan = mask ? group.bdshot.prev_telem_chan
-                    : group.bdshot.curr_telem_chan;
                 // only unlock if not shared
-                if (group.bdshot.ic_dma_handle[chan] != nullptr
-                    && group.bdshot.ic_dma_handle[chan] != group.dma_handle) {
-                    group.bdshot.ic_dma_handle[chan]->unlock();
+                if (group.bdshot.curr_ic_dma_handle != nullptr
+                    && group.bdshot.curr_ic_dma_handle != group.dma_handle) {
+                    group.bdshot.curr_ic_dma_handle->unlock();
+                    group.bdshot.curr_ic_dma_handle = nullptr;
                 }
             }
 #endif
@@ -443,7 +447,7 @@ void RCOutput::set_freq_group(pwm_group &group)
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         // change frequency on IOMCU
         uint16_t io_chmask = chmask & 0xFF;
         if (io_chmask) {
@@ -500,7 +504,7 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 void RCOutput::set_default_rate(uint16_t freq_hz)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.set_default_rate(freq_hz);
     }
 #endif
@@ -527,7 +531,7 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
         _dshot_period_us = 1000UL;
         _dshot_rate = 0;
 #if HAL_WITH_IO_MCU
-        if (AP_BoardConfig::io_dshot()) {
+        if (iomcu_dshot) {
             iomcu.set_dshot_period(1000UL, 0);
         }
 #endif
@@ -543,7 +547,7 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
 #if HAL_WITH_IO_MCU
             // this is not strictly neccessary since the iomcu could run at a different rate,
             // but there is only one parameter to control this
-            if (AP_BoardConfig::io_dshot()) {
+            if (iomcu_dshot) {
                 iomcu.set_dshot_period(1000UL, 0);
             }
 #endif
@@ -567,7 +571,7 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
     }
     _dshot_period_us = 1000000UL / drate;
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot()) {
+    if (iomcu_dshot) {
         iomcu.set_dshot_period(_dshot_period_us, _dshot_rate);
     }
 #endif
@@ -593,6 +597,11 @@ void RCOutput::set_dshot_esc_type(DshotEscType dshot_esc_type)
             DSHOT_BIT_1_TICKS = DSHOT_BIT_1_TICKS_DEFAULT;
             break;
     }
+#if HAL_WITH_IO_MCU
+    if (iomcu_dshot) {
+        iomcu.set_dshot_esc_type(dshot_esc_type);
+    }
+#endif
 }
 #endif // #if HAL_DSHOT_ENABLED
 
@@ -666,7 +675,7 @@ uint16_t RCOutput::get_freq(uint8_t chan)
 void RCOutput::enable_ch(uint8_t chan)
 {
 #if HAL_WITH_IO_MCU
-    if (chan < chan_offset && AP_BoardConfig::io_enabled()) {
+    if (chan < chan_offset && iomcu_enabled) {
         iomcu.enable_ch(chan);
         return;
     }
@@ -682,7 +691,7 @@ void RCOutput::enable_ch(uint8_t chan)
 void RCOutput::disable_ch(uint8_t chan)
 {
 #if HAL_WITH_IO_MCU
-    if (chan < chan_offset && AP_BoardConfig::io_enabled()) {
+    if (chan < chan_offset && iomcu_enabled) {
         iomcu.disable_ch(chan);
         return;
     }
@@ -713,7 +722,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
 #if HAL_WITH_IO_MCU
     // handle IO MCU channels
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.write_channel(chan, period_us);
     }
 #endif
@@ -973,10 +982,11 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 
 #ifdef HAL_WITH_BIDIR_DSHOT
     // configure input capture DMA if required
-    if (is_bidir_dshot_enabled()) {
+    if (is_bidir_dshot_enabled(group)) {
         if (!bdshot_setup_group_ic_DMA(group)) {
-            group.dma_handle->unlock();
-            return false;
+            _bdshot.mask &= ~group.ch_mask; // only use dshot on this group
+            _bdshot.disabled_mask |= group.ch_mask;
+            active_high = true;
         }
     }
 #endif
@@ -1107,7 +1117,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
 #if HAL_DSHOT_ENABLED
         const uint32_t rate = protocol_bitrate(group.current_mode);
-        bool active_high = is_bidir_dshot_enabled() ? false : true;
+        bool active_high = is_bidir_dshot_enabled(group) ? false : true;
         bool at_least_freq = false;
         // calculate min time between pulses
         const uint32_t pulse_send_time_us = 1000000UL * dshot_bit_length / rate;
@@ -1123,7 +1133,7 @@ void RCOutput::set_group_mode(pwm_group &group)
             group.current_mode = MODE_PWM_NORMAL;
             break;
         }
-        if (is_bidir_dshot_enabled()) {
+        if (is_bidir_dshot_enabled(group)) {
             group.dshot_pulse_send_time_us = pulse_send_time_us;
             // to all intents and purposes the pulse time of send and receive are the same
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
@@ -1188,13 +1198,14 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
         }
     }
 #if HAL_WITH_IO_MCU
+    const uint16_t iomcu_mask = (mask & ((1U<<chan_offset)-1));
     if ((mode == MODE_PWM_ONESHOT ||
          mode == MODE_PWM_ONESHOT125 ||
          mode == MODE_PWM_BRUSHED ||
          (mode >= MODE_PWM_DSHOT150 && mode <= MODE_PWM_DSHOT600)) &&
-        (mask & ((1U<<chan_offset)-1)) &&
-        AP_BoardConfig::io_enabled()) {
-        iomcu.set_output_mode(mask, mode);
+        iomcu_mask &&
+        iomcu_enabled) {
+        iomcu.set_output_mode(iomcu_mask, mode);
         return;
     }
 #endif
@@ -1229,7 +1240,7 @@ RCOutput::output_mode RCOutput::get_output_mode(uint32_t& mask)
 void RCOutput::set_telem_request_mask(uint32_t mask)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_dshot() && (mask & ((1U<<chan_offset)-1))) {
+    if (iomcu_dshot && (mask & ((1U<<chan_offset)-1))) {
         iomcu.set_telem_request_mask(mask);
     }
 #endif
@@ -1252,7 +1263,7 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
 
 #if HAL_WITH_IO_MCU
     // fill in ch_mode array for IOMCU channels
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         uint8_t iomcu_mask;
         const output_mode iomcu_mode = iomcu.get_output_mode(iomcu_mask);
         for (uint8_t i = 0; i < chan_offset; i++ ) {
@@ -1315,7 +1326,7 @@ void RCOutput::cork(void)
 {
     corked = true;
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.cork();
     }
 #endif
@@ -1329,7 +1340,7 @@ void RCOutput::push(void)
     corked = false;
     push_local();
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.push();
     }
 #endif
@@ -1341,7 +1352,7 @@ void RCOutput::push(void)
 bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         return iomcu.enable_sbus_out(rate_hz);
     }
 #endif
@@ -1453,14 +1464,25 @@ void RCOutput::dshot_send_groups(uint64_t time_out_us)
     }
 
     for (auto &group : pwm_group_list) {
+        bool pulse_sent;
         // send a dshot command
         if (is_dshot_protocol(group.current_mode)
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
+            pulse_sent = true;
         // actually do a dshot send
         } else if (group.can_send_dshot_pulse()) {
             dshot_send(group, time_out_us);
+            pulse_sent = true;
         }
+#if defined(HAL_WITH_BIDIR_DSHOT) && defined(HAL_TIM_UP_SHARED)
+        // prevent the next send going out until the previous send has released its DMA channel
+        if (pulse_sent && group.shared_up_dma && group.bdshot.enabled) {
+            chEvtWaitOneTimeout(DSHOT_CASCADE, calc_ticks_remaining(group, time_out_us, _dshot_period_us));
+        }
+#else
+        (void)pulse_sent;
+#endif
     }
 
     if (command_sent) {
@@ -1488,17 +1510,19 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
         if (group.dma_handle == ctx && group.dma == nullptr) {
             chSysLock();
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_up_irq_callback, &group);
-#if defined(IOMCU_FW)
-            if (group.pwm_started) {
-                pwmStart(group.pwm_drv, &group.pwm_cfg);
+#if defined(STM32F1)
+            if (group.pwm_started && group.dma_handle->is_shared()) {
+                /* Timer configured and started.*/
+                group.pwm_drv->tim->CR1   = STM32_TIM_CR1_ARPE | STM32_TIM_CR1_URS | STM32_TIM_CR1_CEN;
+                group.pwm_drv->tim->DIER  = group.pwm_drv->config->dier & ~STM32_TIM_DIER_IRQ_MASK;
             }
 #endif
-            chSysUnlock();
 #if STM32_DMA_SUPPORTS_DMAMUX
             if (group.dma) {
                 dmaSetRequestSource(group.dma, group.dma_up_channel);
             }
 #endif
+            chSysUnlock();
         }
     }
 }
@@ -1511,11 +1535,13 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (auto &group : pwm_group_list) {
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
-#if defined(IOMCU_FW)
+#if defined(STM32F1)
             // leaving the peripheral running on IOMCU plays havoc with the UART that is
-            // also sharing this channel
-            if (group.pwm_started) {
-                pwmStop(group.pwm_drv);
+            // also sharing this channel, we only turn it off rather than resetting so
+            // that we don't have to worry about line modes etc
+            if (group.pwm_started && group.dma_handle->is_shared()) {
+                group.pwm_drv->tim->CR1   = 0;
+                group.pwm_drv->tim->DIER  = 0;
             }
 #endif
             dmaStreamFreeI(group.dma);
@@ -1588,7 +1614,7 @@ void RCOutput::fill_DMA_buffer_dshot(dmar_uint_t *buffer, uint8_t stride, uint16
 void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
 {
 #if HAL_DSHOT_ENABLED
-    if (soft_serial_waiting() || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+    if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return;
     }
@@ -1601,7 +1627,7 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
-    if (time_out_us > 0 && AP_HAL::micros64() + group.dshot_pulse_time_us > time_out_us) {
+    if (AP_HAL::micros64() + group.dshot_pulse_time_us > time_out_us) {
         group.dma_handle->unlock();
         return;
     }
@@ -1681,7 +1707,7 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
         }
     }
 
-    chEvtGetAndClearEvents(group.dshot_event_mask);
+    chEvtGetAndClearEvents(group.dshot_event_mask | DSHOT_CASCADE);
     // start sending the pulses out
     send_pulses_DMAR(group, DSHOT_BUFFER_LENGTH);
 #endif // HAL_DSHOT_ENABLED
@@ -1700,7 +1726,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
     }
 
 #if HAL_DSHOT_ENABLED
-    if (soft_serial_waiting() || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)
+    if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
         || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
@@ -1721,7 +1747,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
 
     group.dshot_waiter = led_thread_ctx;
 
-    chEvtGetAndClearEvents(group.dshot_event_mask);
+    chEvtGetAndClearEvents(group.dshot_event_mask | DSHOT_CASCADE);
 
     // start sending the pulses out
     send_pulses_DMAR(group, group.dma_buffer_len);
@@ -1766,10 +1792,18 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 #endif
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |
-                     STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_PSIZE_WORD | 
-#if defined(IOMCU_FW)
-                     STM32_DMA_CR_MSIZE_BYTE |
+                     STM32_DMA_CR_DIR_M2P |
+#if defined(STM32F1)
+#ifdef HAL_WITH_BIDIR_DSHOT
+                     STM32_DMA_CR_PSIZE_HWORD |
+                     STM32_DMA_CR_MSIZE_HWORD |
 #else
+                     STM32_DMA_CR_PSIZE_WORD |
+                     STM32_DMA_CR_MSIZE_BYTE |
+#endif
+
+#else
+                     STM32_DMA_CR_PSIZE_WORD |
                      STM32_DMA_CR_MSIZE_WORD |
 #endif
                      STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
@@ -1858,7 +1892,7 @@ void RCOutput::dma_cancel(pwm_group& group)
         }
     }
     chVTResetI(&group.dma_timeout);
-    chEvtGetAndClearEventsI(group.dshot_event_mask);
+    chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 
     group.dshot_state = DshotState::IDLE;
     chSysUnlock();
@@ -2201,7 +2235,7 @@ void RCOutput::serial_end(void)
 AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         safety_state = iomcu.get_safety_switch_state();
     }
 #endif
@@ -2217,7 +2251,7 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
 bool RCOutput::force_safety_on(void)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         return iomcu.force_safety_on();
     }
 #endif
@@ -2231,7 +2265,7 @@ bool RCOutput::force_safety_on(void)
 void RCOutput::force_safety_off(void)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.force_safety_off();
         return;
     }
@@ -2299,7 +2333,7 @@ void RCOutput::safety_update(void)
 void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 {
 #if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
+    if (iomcu_enabled) {
         iomcu.set_failsafe_pwm(chmask, period_us);
     }
 #endif

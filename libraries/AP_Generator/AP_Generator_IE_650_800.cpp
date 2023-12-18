@@ -59,6 +59,11 @@ void AP_Generator_IE_650_800::decode_latest_term()
     _term_offset = 0;
     _term_number++;
 
+    if (_start_char != '<') {
+        _sentence_valid = false;
+        return;
+    }
+
     switch (_term_number) {
         case 1:
             _parsed.tank_pct = strtof(_term, NULL);

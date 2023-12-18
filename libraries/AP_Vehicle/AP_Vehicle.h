@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Vehicle_config.h"
+
+#if AP_VEHICLE_ENABLED
+
 /*
   this header holds a parameter structure for each vehicle type for
   parameters needed by multiple libraries
@@ -301,7 +305,10 @@ protected:
 #endif
     RangeFinder rangefinder;
 
+#if AP_RSSI_ENABLED
     AP_RSSI rssi;
+#endif
+
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
 #endif
@@ -487,3 +494,5 @@ extern const AP_HAL::HAL& hal;
 extern const AP_Param::Info vehicle_var_info[];
 
 #include "AP_Vehicle_Type.h"
+
+#endif  // AP_VEHICLE_ENABLED

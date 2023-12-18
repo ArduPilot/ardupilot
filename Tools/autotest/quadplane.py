@@ -1513,6 +1513,41 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def DCMClimbRate(self):
+        '''Test the climb rate measurement in DCM with and without GPS'''
+        self.wait_ready_to_arm()
+
+        self.change_mode('QHOVER')
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(30, 50, relative=True)
+
+        # Start Descending
+        self.set_rc(3, 1000)
+        self.wait_climbrate(-5, -0.5, timeout=10)
+
+        # Switch to DCM
+        self.set_parameter('AHRS_EKF_TYPE', 0)
+        self.delay_sim_time(5)
+
+        # Start Climbing
+        self.set_rc(3, 2000)
+        self.wait_climbrate(0.5, 5, timeout=10)
+
+        # Kill any GPSs
+        self.set_parameters({
+            'SIM_GPS_DISABLE': 1,
+            'SIM_GPS2_DISABLE': 1,
+        })
+        self.delay_sim_time(5)
+
+        # Start Descending
+        self.set_rc(3, 1000)
+        self.wait_climbrate(-5, -0.5, timeout=10)
+
+        # Force disarm
+        self.disarm_vehicle(force=True)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1554,5 +1589,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
             self.MAV_CMD_NAV_TAKEOFF,
             self.Q_GUIDED_MODE,
+            self.DCMClimbRate,
         ])
         return ret
