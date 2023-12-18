@@ -848,7 +848,7 @@ include AP_ExternalAHRS/AP_ExternalAHRS_config.h
 include AP_ExternalAHRS/AP_ExternalAHRS_Scripting.h depends AP_EXTERNAL_AHRS_SCRIPTING_ENABLED
 include AP_NavEKF/AP_Nav_Common.h
 singleton AP_ExternalAHRS rename ExternalAHRS
-singleton AP_ExternalAHRS depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_ExternalAHRS depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 
 userdata AP_ExternalAHRS::state_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 userdata AP_ExternalAHRS::state_t rename EAHRS_State
@@ -870,6 +870,7 @@ userdata AP_ExternalAHRS::state_t field compass_variance float'skip_check write
 userdata AP_ExternalAHRS::state_t field terrain_alt_variance float'skip_check write
 userdata AP_ExternalAHRS::state_t field airspeed_variance float'skip_check write
 
+userdata nav_filter_status_flags_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 userdata nav_filter_status_flags_t field attitude boolean write
 userdata nav_filter_status_flags_t field horiz_vel boolean write
 userdata nav_filter_status_flags_t field vert_vel boolean write
@@ -930,15 +931,15 @@ userdata AP_ExternalAHRS::airspeed_data_message_t field temperature float'skip_c
 
 singleton AP_ExternalAHRS method handle_scripting boolean AP_ExternalAHRS::state_t nav_filter_status_flags_t
 singleton AP_InertialSensor method handle_external void AP_ExternalAHRS::ins_data_message_t
-singleton AP_InertialSensor method handle_external depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_InertialSensor method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 singleton AP_Baro method handle_external void AP_ExternalAHRS::baro_data_message_t
-singleton AP_Baro method handle_external depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_Baro method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 singleton AP_GPS method get_first_external_instance boolean uint8_t'Null
-singleton AP_GPS method get_first_external_instance depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_GPS method get_first_external_instance depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 singleton AP_GPS method handle_external void AP_ExternalAHRS::gps_data_message_t uint8_t'skip_check
-singleton AP_GPS method handle_external depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_GPS method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 singleton Compass method handle_external void AP_ExternalAHRS::mag_data_message_t
-singleton Compass method handle_external depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton Compass method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
 
 include AP_Airspeed/AP_Airspeed.h
 singleton AP_Airspeed depends (AP_AIRSPEED_EXTERNAL_ENABLED == 1) && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
