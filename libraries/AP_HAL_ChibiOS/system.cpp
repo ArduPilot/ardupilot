@@ -30,6 +30,9 @@
 #include "hal.h"
 #include <hrt.h>
 
+// we rely on systimestamp_t for 64 bit timestamps
+static_assert(sizeof(uint64_t) == sizeof(systimestamp_t), "unexpected systimestamp_t size");
+
 #if CH_CFG_ST_RESOLUTION == 16
 static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
 #elif CH_CFG_ST_RESOLUTION == 32
@@ -385,7 +388,7 @@ __FASTRAMFUNC__ uint64_t micros64()
 
 __FASTRAMFUNC__ uint64_t millis64()
 {
-    return hrt_micros64() / 1000U;
+    return hrt_millis64();
 }
 
 
