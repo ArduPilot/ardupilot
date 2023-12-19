@@ -28,7 +28,7 @@ BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/Tools
 }
 
 # start up main copter in the current directory
-$COPTER --model airsim-copter --uartA udpclient:$GCS_IP:14550 --uartB tcp:0 --defaults $BASE_DEFAULTS &
+$COPTER --model airsim-copter --serial0 udpclient:$GCS_IP:14550 --serial3 tcp:0 --defaults $BASE_DEFAULTS &
 
 # Set number of "extra" copters to be simulated, change this for increasing the count
 NCOPTERS="1"
@@ -49,7 +49,7 @@ SYSID_THISMAV $SYSID
 EOF
 
     pushd copter$i
-    $COPTER --model airsim-copter --uartA udpclient:$GCS_IP:$UDP_PORT --uartB tcp:$i \
+    $COPTER --model airsim-copter --serial0 udpclient:$GCS_IP:$UDP_PORT --serial3 tcp:$i \
             --instance $i --defaults $BASE_DEFAULTS,identity.parm &
     popd
 done

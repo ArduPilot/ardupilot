@@ -755,9 +755,6 @@ void Tailsitter::speed_scaling(void)
         spd_scaler /= plane.barometer.get_air_density_ratio();
     }
 
-    // record for QTUN log
-    log_spd_scaler = spd_scaler;
-
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
@@ -778,6 +775,29 @@ void Tailsitter::speed_scaling(void)
     if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
+
+    // Record for log
+    log_data.throttle_scaler = throttle_scaler;
+    log_data.speed_scaler = spd_scaler;
+    log_data.min_throttle = disk_loading_min_throttle;
+
+}
+
+// Write tailsitter specific log
+void Tailsitter::write_log()
+{
+    if (!enabled()) {
+        return;
+    }
+
+    struct log_tailsitter pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
+        time_us             : AP_HAL::micros64(),
+        throttle_scaler     : log_data.throttle_scaler,
+        speed_scaler        : log_data.speed_scaler,
+        min_throttle        : log_data.min_throttle,
+    };
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // return true if pitch control should be relaxed

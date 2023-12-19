@@ -53,16 +53,16 @@ static DSP dspDriver;
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
-static UARTDriver sitlUart0Driver(0, &sitlState);
-static UARTDriver sitlUart1Driver(1, &sitlState);
-static UARTDriver sitlUart2Driver(2, &sitlState);
-static UARTDriver sitlUart3Driver(3, &sitlState);
-static UARTDriver sitlUart4Driver(4, &sitlState);
-static UARTDriver sitlUart5Driver(5, &sitlState);
-static UARTDriver sitlUart6Driver(6, &sitlState);
-static UARTDriver sitlUart7Driver(7, &sitlState);
-static UARTDriver sitlUart8Driver(8, &sitlState);
-static UARTDriver sitlUart9Driver(9, &sitlState);
+static UARTDriver sitlSerial0Driver(0, &sitlState);
+static UARTDriver sitlSerial1Driver(1, &sitlState);
+static UARTDriver sitlSerial2Driver(2, &sitlState);
+static UARTDriver sitlSerial3Driver(3, &sitlState);
+static UARTDriver sitlSerial4Driver(4, &sitlState);
+static UARTDriver sitlSerial5Driver(5, &sitlState);
+static UARTDriver sitlSerial6Driver(6, &sitlState);
+static UARTDriver sitlSerial7Driver(7, &sitlState);
+static UARTDriver sitlSerial8Driver(8, &sitlState);
+static UARTDriver sitlSerial9Driver(9, &sitlState);
 
 static I2CDeviceManager i2c_mgr_instance;
 
@@ -81,22 +81,22 @@ static Empty::WSPIDeviceManager wspi_mgr_instance;
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
-        &sitlUart0Driver,   /* uartA */
-        &sitlUart1Driver,   /* uartB */
-        &sitlUart2Driver,   /* uartC */
-        &sitlUart3Driver,   /* uartD */
-        &sitlUart4Driver,   /* uartE */
-        &sitlUart5Driver,   /* uartF */
-        &sitlUart6Driver,   /* uartG */
-        &sitlUart7Driver,   /* uartH */
-        &sitlUart8Driver,   /* uartI */
-        &sitlUart9Driver,   /* uartJ */
+        &sitlSerial0Driver,
+        &sitlSerial1Driver,
+        &sitlSerial2Driver,
+        &sitlSerial3Driver,
+        &sitlSerial4Driver,
+        &sitlSerial5Driver,
+        &sitlSerial6Driver,
+        &sitlSerial7Driver,
+        &sitlSerial8Driver,
+        &sitlSerial9Driver,
         &i2c_mgr_instance,
         &spi_mgr_instance,  /* spi */
         &wspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
-        &sitlUart0Driver,   /* console */
+        &sitlSerial0Driver, /* console */
         &sitlGPIO,          /* gpio */
         &sitlRCInput,       /* rcinput */
         &sitlRCOutput,      /* rcoutput */

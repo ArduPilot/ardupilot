@@ -182,6 +182,9 @@ public:
     bool get_state(uint8_t instance, camera_state_t& cam_state);
 #endif
 
+    // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
+    bool get_legacy_relay_index(int8_t &index) const;
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore() { return _rsem; }
 

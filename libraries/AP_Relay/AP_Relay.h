@@ -14,6 +14,8 @@
 #if AP_RELAY_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include <AP_Relay/AP_Relay_Params.h>
+#include <AP_Common/Bitmask.h>
 
 #define AP_RELAY_NUM_RELAYS 6
 
@@ -29,9 +31,6 @@ public:
     // setup the relay pin
     void        init();
 
-    // set relay to state
-    void set(uint8_t instance, bool value);
-
     // activate the relay
     void        on(uint8_t instance) { set(instance, true); }
 
@@ -39,12 +38,10 @@ public:
     void        off(uint8_t instance) { set(instance, false); }
 
     // get state of relay
-    uint8_t     get(uint8_t instance) const {
-        return instance < AP_RELAY_NUM_RELAYS ? _pin_states & (1U<<instance) : 0;
-    }
+    bool        get(uint8_t instance) const;
     
     // see if the relay is enabled
-    bool        enabled(uint8_t instance) const { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
+    bool        enabled(uint8_t instance) const;
 
     // toggle the relay status
     void        toggle(uint8_t instance);
@@ -58,14 +55,22 @@ public:
 
     bool send_relay_status(const class GCS_MAVLINK &link) const;
 
+    void set(AP_Relay_Params::FUNCTION function, bool value);
+
+    // see if the relay is enabled
+    bool enabled(AP_Relay_Params::FUNCTION function) const;
+
 private:
     static AP_Relay *singleton;
 
-    AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
-    AP_Int8 _default;
-    uint8_t _pin_states;
-    uint8_t _last_logged_pin_states;
-    uint32_t _last_log_ms;
+    AP_Relay_Params _params[AP_RELAY_NUM_RELAYS];
+
+    void set(uint8_t instance, bool value);
+
+    void set_defaults();
+    void convert_params();
+
+    void set_pin_by_instance(uint8_t instance, bool value);
 };
 
 namespace AP {

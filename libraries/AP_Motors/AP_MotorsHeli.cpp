@@ -190,7 +190,7 @@ void AP_MotorsHeli::output_min()
     // move swash to mid
     move_actuators(0.0f,0.0f,0.5f,0.0f);
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+    update_motor_control(AP_MotorsHeli_RSC::RotorControlState::STOP);
 
     // override limits flags
     set_limit_flag_pitch_roll_yaw(true);
@@ -589,4 +589,27 @@ uint32_t AP_MotorsHeli::get_motor_mask()
 void AP_MotorsHeli::set_desired_rotor_speed(float desired_speed)
 {
     _main_rotor.set_desired_speed(desired_speed);
+}
+
+// Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
+AP_MotorsHeli_RSC::RotorControlState AP_MotorsHeli::get_rotor_control_state() const
+{
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
+            // sends minimum values out to the motors
+            return AP_MotorsHeli_RSC::RotorControlState::STOP;
+        case SpoolState::GROUND_IDLE:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            return AP_MotorsHeli_RSC::RotorControlState::IDLE;
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            return AP_MotorsHeli_RSC::RotorControlState::ACTIVE;
+        case SpoolState::SPOOLING_DOWN:
+            // sends idle output to motors and wait for rotor to stop
+            return AP_MotorsHeli_RSC::RotorControlState::IDLE;
+    }
+
+    // Should be unreachable, but needed to keep the compiler happy
+    return AP_MotorsHeli_RSC::RotorControlState::STOP;
 }

@@ -13,9 +13,13 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "EKF_Maths.h"
 
-#if HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if HAL_WITH_DSP
 #include <arm_math.h>
 #endif
+#include <hrt.h>
+#include <ch.h>
+#endif // HAL_BOARD_CHIBIOS
 
 void setup();
 void loop();
@@ -129,6 +133,13 @@ static void show_timings(void)
     TIMEIT("millis16()", AP_HAL::millis16(), 200);
     TIMEIT("micros64()", AP_HAL::micros64(), 200);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    TIMEIT("hrt_micros32()", hrt_micros32(), 200);
+    TIMEIT("hrt_micros64()", hrt_micros64(), 200);
+    TIMEIT("hrt_millis32()", hrt_millis32(), 200);
+    TIMEIT("hrt_millis64()", hrt_millis64(), 200);
+#endif
+    
     TIMEIT("fadd", v_out += v_f, 100);
     TIMEIT("fsub", v_out -= v_f, 100);
     TIMEIT("fmul", v_out *= v_f, 100);
@@ -194,11 +205,47 @@ static void show_timings(void)
     TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+static void test_div1000(void)
+{
+    hal.console->printf("Testing div1000\n");
+    for (uint32_t i=0; i<2000000; i++) {
+        uint64_t v;
+        hal.util->get_random_vals((uint8_t*)&v, sizeof(v));
+        uint64_t v1 = v / 1000ULL;
+        uint64_t v2 = _hrt_div1000(v);
+        if (v1 != v2) {
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+                          (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
+            return;
+        }
+    }
+    // test from locked context
+    for (uint32_t i=0; i<2000000; i++) {
+        uint64_t v;
+        hal.util->get_random_vals((uint8_t*)&v, sizeof(v));
+        chSysLock();
+        uint64_t v1 = v / 1000ULL;
+        uint64_t v2 = _hrt_div1000(v);
+        chSysUnlock();
+        if (v1 != v2) {
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+                          (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
+            return;
+        }
+    }
+    hal.console->printf("div1000 OK\n");
+}
+#endif
+
 void loop()
 {
     show_sizes();
     hal.console->printf("\n");
     show_timings();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    test_div1000();
+#endif
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }

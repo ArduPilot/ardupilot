@@ -1124,9 +1124,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def TestRCRelay(self):
         '''Test Relay RC Channel Option'''
-        self.set_parameter("RC12_OPTION", 28) # Relay On/Off
+        self.set_parameters({
+            "RELAY1_FUNCTION": 1, # Enable relay as a standard relay pin
+            "RC12_OPTION": 28 # Relay On/Off
+        })
         self.set_rc(12, 1000)
-        self.reboot_sitl() # needed for RC12_OPTION to take effect
+        self.reboot_sitl() # needed for RC12_OPTION and RELAY1_FUNCTION to take effect
 
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
@@ -3160,7 +3163,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
         """Fly with external AHRS (VectorNav)"""
-        self.customise_SITL_commandline(["--uartE=sim:%s" % sim])
+        self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
             "EAHRS_TYPE": eahrs_type,
@@ -4218,7 +4221,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.customise_SITL_commandline(
-            ["--uartF=sim:%s" % sim_name,
+            ["--serial5=sim:%s" % sim_name,
              ],
         )
         self.wait_ready_to_arm()

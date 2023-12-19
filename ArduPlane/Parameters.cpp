@@ -757,9 +757,9 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(arming,                 "ARMING_", AP_Arming_Plane),
 
 #if AP_RELAY_ENABLED
-    // @Group: RELAY_
+    // @Group: RELAY
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY_", AP_Relay),
+    GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
 #if PARACHUTE == ENABLED

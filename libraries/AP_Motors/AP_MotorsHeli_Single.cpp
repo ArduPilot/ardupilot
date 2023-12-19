@@ -347,13 +347,13 @@ uint32_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
+void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
 {
     // Send state update to motors
     _tail_rotor.output(state);
     _main_rotor.output(state);
 
-    if (state == ROTOR_CONTROL_STOP){
+    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -501,25 +501,7 @@ void AP_MotorsHeli_Single::output_to_motors()
     _swashplate.output();
 
     // Output main rotor
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            update_motor_control(ROTOR_CONTROL_STOP);
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-            // set motor output based on thrust requests
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
-            break;
-        case SpoolState::SPOOLING_DOWN:
-            // sends idle output to motors and wait for rotor to stop
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-    }
+    update_motor_control(get_rotor_control_state());
 
     // Output tail rotor
     switch (get_tail_type()) {

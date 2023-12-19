@@ -111,9 +111,6 @@ class ChibiOSHWDef(object):
 
         self.dma_exclude_pattern = []
 
-        # map from uart names to SERIALn numbers
-        self.uart_serial_num = {}
-
         self.mcu_type = None
         self.dual_USB_enabled = False
 
@@ -1817,75 +1814,51 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
-    def get_UART_ORDER(self):
-        '''get UART_ORDER from SERIAL_ORDER option'''
-        if self.get_config('UART_ORDER', required=False, aslist=True) is not None:
-            self.error('Please convert UART_ORDER to SERIAL_ORDER')
-        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
-        if serial_order is None:
-            return None
-        if args.bootloader:
-            # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
-            return serial_order
-        map = [0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        while len(serial_order) < 4:
-            serial_order += ['EMPTY']
-        uart_order = []
-        for i in range(len(serial_order)):
-            uart_order.append(serial_order[map[i]])
-            self.uart_serial_num[serial_order[i]] = i
-        return uart_order
-
     def write_UART_config(self, f):
         '''write UART config defines'''
-        uart_list = self.get_UART_ORDER()
-        if uart_list is None:
+        serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if serial_list is None:
             return
+        while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
+            serial_list += ['EMPTY']
         f.write('\n// UART configuration\n')
 
         # write out which serial ports we actually have
-        idx = 0
         nports = 0
-        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
-        for serial in serial_order:
+        for idx, serial in enumerate(serial_list):
             if serial == 'EMPTY':
                 f.write('#define HAL_HAVE_SERIAL%u 0\n' % idx)
             else:
                 f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
                 nports = nports + 1
-            idx += 1
         f.write('#define HAL_NUM_SERIAL_PORTS %u\n' % nports)
 
         # write out driver declarations for HAL_ChibOS_Class.cpp
-        devnames = "ABCDEFGHIJ"
         sdev = 0
-        idx = 0
-        for dev in uart_list:
+        for idx, dev in enumerate(serial_list):
             if dev == 'EMPTY':
-                f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                        (devnames[idx], devnames[idx]))
+                f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
+                        (idx, idx))
                 sdev += 1
             else:
                 f.write(
-                    '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
-                    % (devnames[idx], devnames[idx], sdev))
+                    '#define HAL_SERIAL%s_DRIVER ChibiOS::UARTDriver serial%sDriver(%u)\n'
+                    % (idx, idx, sdev))
                 sdev += 1
-            idx += 1
-        for idx in range(len(uart_list), len(devnames)):
-            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                    (devnames[idx], devnames[idx]))
+        for idx in range(len(serial_list), 10):
+            f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
+                    (idx, idx))
 
         if 'IOMCU_UART' in self.config:
             if 'io_firmware.bin' not in self.romfs:
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             f.write('#define HAL_WITH_IO_MCU 1\n')
-            idx = len(uart_list)
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
+            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
             f.write(
                 '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
             )
-            uart_list.append(self.config['IOMCU_UART'][0])
+            serial_list.append(self.config['IOMCU_UART'][0])
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
@@ -1900,17 +1873,17 @@ INCLUDE common.ld
         crash_uart = None
 
         # write config for CrashCatcher UART
-        if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
-            crash_uart = uart_list[0]
-        elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
-            crash_uart = uart_list[2]
+        if not serial_list[0].startswith('OTG') and not serial_list[0].startswith('EMPTY'):
+            crash_uart = serial_list[0]
+        elif not serial_list[2].startswith('OTG') and not serial_list[2].startswith('EMPTY'):
+            crash_uart = serial_list[2]
 
         if crash_uart is not None and self.get_config('FLASH_SIZE_KB', type=int) >= 2048:
             f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
             f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
             f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
             f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
-        for dev in uart_list:
+        for num, dev in enumerate(serial_list):
             if dev.startswith('UART'):
                 n = int(dev[4:])
             elif dev.startswith('USART'):
@@ -1921,7 +1894,7 @@ INCLUDE common.ld
                 devlist.append('{}')
                 continue
             else:
-                self.error("Invalid element %s in UART_ORDER" % dev)
+                self.error("Invalid element %s in SERIAL_ORDER" % dev)
             devlist.append('HAL_%s_CONFIG' % dev)
             tx_line = self.make_line(dev + '_TX')
             rx_line = self.make_line(dev + '_RX')
@@ -1929,12 +1902,12 @@ INCLUDE common.ld
             cts_line = self.make_line(dev + '_CTS')
             if rts_line != "0":
                 have_rts_cts = True
-                f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % self.uart_serial_num[dev])
+                f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % num)
 
             if dev.startswith('OTG2'):
                 f.write(
                     '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n' % dev)  # noqa
-                OTG2_index = uart_list.index(dev)
+                OTG2_index = serial_list.index(dev)
                 self.dual_USB_enabled = True
             elif dev.startswith('OTG'):
                 f.write(
@@ -1971,44 +1944,44 @@ INCLUDE common.ld
 #endif
 ''' % (OTG2_index, OTG2_index))
 
-        f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write('#define HAL_SERIAL_DEVICE_LIST %s\n\n' % ','.join(devlist))
         if not need_uart_driver and not args.bootloader:
             f.write('''
 #ifndef HAL_USE_SERIAL
 #define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
-        num_uarts = len(devlist)
+        num_ports = len(devlist)
         if 'IOMCU_UART' in self.config:
-            num_uarts -= 1
-        if num_uarts > 10:
-            self.error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
-        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
+            num_ports -= 1
+        if num_ports > 10:
+            self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
+        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
 
     def write_UART_config_bootloader(self, f):
         '''write UART config defines'''
-        uart_list = self.get_UART_ORDER()
-        if uart_list is None:
+        serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if serial_list is None:
             return
         f.write('\n// UART configuration\n')
         devlist = []
-        have_uart = False
+        have_serial = False
         OTG2_index = None
-        for u in uart_list:
-            if u.startswith('OTG2'):
+        for s in serial_list:
+            if s.startswith('OTG2'):
                 devlist.append('(BaseChannel *)&SDU2')
-                OTG2_index = uart_list.index(u)
-            elif u.startswith('OTG'):
+                OTG2_index = serial_list.index(s)
+            elif s.startswith('OTG'):
                 devlist.append('(BaseChannel *)&SDU1')
             else:
-                unum = int(u[-1])
-                devlist.append('(BaseChannel *)&SD%u' % unum)
-                have_uart = True
+                snum = int(s[-1])
+                devlist.append('(BaseChannel *)&SD%u' % snum)
+                have_serial = True
         if len(devlist) > 0:
             f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
         if OTG2_index is not None:
             f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
-        if not have_uart:
+        if not have_serial:
             f.write('''
 #ifndef HAL_USE_SERIAL
 #define HAL_USE_SERIAL FALSE

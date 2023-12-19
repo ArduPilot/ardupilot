@@ -86,20 +86,17 @@ USB_STRING_MANUFACTURER "Hex/ProfiCNC"
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
-# now the UART order. These map to the hal.uartA to hal.uartF
-# objects. If you use a shorter list then HAL_Empty::UARTDriver
-# objects are substituted for later UARTs, or you can leave a gap by
-# listing one or more of the uarts as EMPTY
-
-# the normal usage of this ordering is:
+# now the SERIALn order. These map to the hal.serial(n) objects. If you use a
+# shorter list then HAL_Empty::UARTDriver objects are substituted for later
+# UARTs, or you can leave a gap by listing one or more of the uarts as EMPTY
 # 1) SERIAL0: console (primary mavlink, usually USB)
-# 2) SERIAL3: primary GPS
-# 3) SERIAL1: telem1
-# 4) SERIAL2: telem2
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
 # 5) SERIAL4: GPS2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
-# order of UARTs (and USB)
+# order of SERIALn (incl. USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
 # if the board has an IOMCU connected via a UART then this defines the
@@ -321,7 +318,7 @@ PE6 SPI4_MOSI SPI4
 # timing affecting sensor stability. We pull it high by default
 PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters)
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 

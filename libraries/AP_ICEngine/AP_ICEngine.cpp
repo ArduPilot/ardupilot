@@ -165,14 +165,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     AP_GROUPINFO("REDLINE_RPM", 17, AP_ICEngine, redline_rpm, 0),
 #endif
 
-#if AP_RELAY_ENABLED
-    // @Param: IGNITION_RLY
-    // @DisplayName: Ignition relay channel
-    // @Description: This is a a relay channel to use for ignition control
-    // @User: Standard
-    // @Values: 0:None,1:Relay1,2:Relay2,3:Relay3,4:Relay4,5:Relay5,6:Relay6
-    AP_GROUPINFO("IGNITION_RLY", 18, AP_ICEngine, ignition_relay, 0),
-#endif
+    // 18 was IGNITION_RLY
+
 
     AP_GROUPEND
 };
@@ -608,15 +602,14 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 void AP_ICEngine::set_ignition(bool on)
 {
     SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, on? pwm_ignition_on : pwm_ignition_off);
+
 #if AP_RELAY_ENABLED
-    // optionally use a relay as well
-    if (ignition_relay > 0) {
-        auto *relay = AP::relay();
-        if (relay != nullptr) {
-            relay->set(ignition_relay-1, on);
-        }
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::IGNITION, on);
     }
 #endif // AP_RELAY_ENABLED
+
 }
 
 /*
@@ -637,6 +630,19 @@ bool AP_ICEngine::allow_throttle_while_disarmed() const
     return option_set(Options::THROTTLE_WHILE_DISARMED) &&
         hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 }
+
+#if AP_RELAY_ENABLED
+bool AP_ICEngine::get_legacy_ignition_relay_index(int8_t &num) 
+{
+    // PARAMETER_CONVERSION - Added: Dec-2023
+    if (!enable || !AP_Param::get_param_by_index(this, 18, AP_PARAM_INT8, &num)) {
+        return false;
+    }
+    // convert to zero indexed
+    num -= 1;
+    return true;
+}
+#endif
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;

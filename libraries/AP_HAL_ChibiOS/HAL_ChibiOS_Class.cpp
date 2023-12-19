@@ -45,27 +45,27 @@
 #endif
 
 #ifndef HAL_NO_UARTDRIVER
-static HAL_UARTA_DRIVER;
-static HAL_UARTB_DRIVER;
-static HAL_UARTC_DRIVER;
-static HAL_UARTD_DRIVER;
-static HAL_UARTE_DRIVER;
-static HAL_UARTF_DRIVER;
-static HAL_UARTG_DRIVER;
-static HAL_UARTH_DRIVER;
-static HAL_UARTI_DRIVER;
-static HAL_UARTJ_DRIVER;
+static HAL_SERIAL0_DRIVER;
+static HAL_SERIAL1_DRIVER;
+static HAL_SERIAL2_DRIVER;
+static HAL_SERIAL3_DRIVER;
+static HAL_SERIAL4_DRIVER;
+static HAL_SERIAL5_DRIVER;
+static HAL_SERIAL6_DRIVER;
+static HAL_SERIAL7_DRIVER;
+static HAL_SERIAL8_DRIVER;
+static HAL_SERIAL9_DRIVER;
 #else
-static Empty::UARTDriver uartADriver;
-static Empty::UARTDriver uartBDriver;
-static Empty::UARTDriver uartCDriver;
-static Empty::UARTDriver uartDDriver;
-static Empty::UARTDriver uartEDriver;
-static Empty::UARTDriver uartFDriver;
-static Empty::UARTDriver uartGDriver;
-static Empty::UARTDriver uartHDriver;
-static Empty::UARTDriver uartIDriver;
-static Empty::UARTDriver uartJDriver;
+static Empty::UARTDriver serial0Driver;
+static Empty::UARTDriver serial1Driver;
+static Empty::UARTDriver serial2Driver;
+static Empty::UARTDriver serial3Driver;
+static Empty::UARTDriver serial4Driver;
+static Empty::UARTDriver serial5Driver;
+static Empty::UARTDriver serial6Driver;
+static Empty::UARTDriver serial7Driver;
+static Empty::UARTDriver serial8Driver;
+static Empty::UARTDriver serial9Driver;
 #endif
 
 #if HAL_USE_I2C == TRUE && defined(HAL_I2C_DEVICE_LIST)
@@ -136,16 +136,16 @@ AP_IOMCU iomcu(uart_io);
 
 HAL_ChibiOS::HAL_ChibiOS() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
-        &uartDDriver,
-        &uartEDriver,
-        &uartFDriver,
-        &uartGDriver,
-        &uartHDriver,
-        &uartIDriver,
-        &uartJDriver,
+        &serial0Driver,
+        &serial1Driver,
+        &serial2Driver,
+        &serial3Driver,
+        &serial4Driver,
+        &serial5Driver,
+        &serial6Driver,
+        &serial7Driver,
+        &serial8Driver,
+        &serial9Driver,
         &i2cDeviceManager,
         &spiDeviceManager,
 #if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
@@ -155,7 +155,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
 #endif
         &analogIn,
         &storageDriver,
-        &uartADriver,
+        &serial0Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,

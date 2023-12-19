@@ -20,7 +20,7 @@
      AHRS_EKF_TYPE = 11
      EAHRS_TYPE=1
 
-     sim_vehicle.py -D --console --map -A --uartF=sim:VectorNav
+     sim_vehicle.py -D --console --map -A --serial5=sim:VectorNav
 */
 
 #pragma once

@@ -15,7 +15,7 @@
 /*
   Simulator for the RichenPower Hybrid generators
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:richenpower --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:richenpower --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 30
 param set SERIAL5_BAUD 9600

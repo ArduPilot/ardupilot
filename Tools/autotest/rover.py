@@ -568,6 +568,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test ServoRelayEvents'''
         for method in self.run_cmd, self.run_cmd_int:
             self.context_push()
+
+            self.set_parameters({
+                "RELAY1_FUNCTION": 1, # Enable relay 1 as a standard relay pin
+                "RELAY2_FUNCTION": 1, # Enable relay 2 as a standard relay pin
+            })
+            self.reboot_sitl() # Needed for relay functions to take effect
+
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
             off = self.get_parameter("SIM_PIN_MASK")
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
@@ -602,8 +609,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "on": 0,
             })
 
-            # add another servo:
-            self.set_parameter("RELAY_PIN6", 14)
+            # add another relay and ensure that it changes the "present field"
+            self.set_parameters({
+                "RELAY6_FUNCTION": 1, # Enable relay 6 as a standard relay pin
+                "RELAY6_PIN": 14, # Set pin number
+            })
+            self.reboot_sitl() # Needed for relay function to take effect
+            self.set_message_rate_hz("RELAY_STATUS", 10) # Need to re-request the message since reboot
+
             self.assert_received_message_field_values('RELAY_STATUS', {
                 "present": 35,
                 "on": 0,
@@ -5352,7 +5365,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_collect("STATUSTEXT")
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "RELAY_PIN": 1,
+            "RELAY1_FUNCTION": 1,
+            "RELAY1_PIN": 1
         })
         self.install_example_script_context("RCIN_test.lua")
         self.reboot_sitl()
@@ -6114,14 +6128,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test mulitple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
-            "--uartH=sim:nmea", # NMEA Rangefinder
+            "--serial7=sim:nmea", # NMEA Rangefinder
         ])
 
         # RANGEFINDER_INSTANCES = [0, 2, 5]
         self.set_parameters({
             "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
             "RNGFND1_ORIENT" : 25,   # Set to downward facing
-            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on serial7
             "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
 
             "RNGFND3_TYPE" : 2,      # MaxbotixI2C

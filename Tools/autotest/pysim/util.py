@@ -539,7 +539,7 @@ def start_SITL(binary,
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
-        cmd.append('--uartC=tcp:2')
+        cmd.append('--serial1=tcp:2')
         if not enable_fgview_output:
             cmd.append("--disable-fgview")
 
