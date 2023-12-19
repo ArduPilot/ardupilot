@@ -51,6 +51,7 @@ public:
     friend class ModeAuto;
     friend class ModeRTL;
     friend class ModeAvoidADSB;
+    friend class ModeTerrainNavigation;
     friend class ModeGuided;
     friend class ModeQHover;
     friend class ModeQLand;

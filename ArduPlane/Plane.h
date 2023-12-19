@@ -152,6 +152,7 @@ public:
     friend class ModeRTL;
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
+    friend class ModeTerrainNavigation;
     friend class ModeGuided;
     friend class ModeInitializing;
     friend class ModeManual;
@@ -273,6 +274,7 @@ private:
 #if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoidADSB;
 #endif
+    ModeTerrainNavigation mode_terrain_navigation;
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;

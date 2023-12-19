@@ -12,6 +12,8 @@ Mode::Mode() :
 {
 }
 
+Mode::~Mode() = default;
+
 void Mode::exit()
 {
     // call sub-classes exit
