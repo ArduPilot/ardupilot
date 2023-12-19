@@ -88,6 +88,7 @@ public:
         k_param_can_terminate0,
         k_param_can_terminate1,
         k_param_can_terminate2,
+        k_param_serial_options,
     };
 
     AP_Int16 format_version;
