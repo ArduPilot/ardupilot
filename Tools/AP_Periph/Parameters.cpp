@@ -610,6 +610,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+    // @Group: UART
+    // @Path: serial_options.cpp
+    GOBJECT(serial_options, "UART",  SerialOptions),
+#endif
+    
     // NOTE: sim parameters should go last
 #if AP_SIM_ENABLED
     // @Group: SIM_
