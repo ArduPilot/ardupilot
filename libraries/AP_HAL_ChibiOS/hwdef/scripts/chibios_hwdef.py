@@ -2430,8 +2430,10 @@ INCLUDE common.ld
 
         bp = self.bootloader_path()
         if not os.path.exists(bp):
-            self.error("Bootloader (%s) does not exist and AP_BOOTLOADER_FLASHING_ENABLED" %
-                       (bp,))
+            self.error('''Bootloader (%s) does not exist and AP_BOOTLOADER_FLASHING_ENABLED
+Please run: Tools/scripts/build_bootloaders.py %s
+''' %
+                       (bp,os.path.basename(os.path.dirname(args.hwdef[0]))))
 
         bp = os.path.realpath(bp)
 
