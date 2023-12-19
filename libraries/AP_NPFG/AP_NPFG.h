@@ -3,11 +3,22 @@
 
 #pragma once
 
-#include <AP_Navigation/AP_Navigation.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
+#include <AP_Navigation/AP_Navigation.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_TECS/AP_TECS.h>
+
+#include "AP_NPFG/npfg.h"
 
 class AP_NPFG : public  AP_Navigation {
 public:
+    AP_NPFG(AP_AHRS &ahrs, const AP_TECS *tecs);
+
+    // do not permit copies
+    CLASS_NO_COPY(AP_NPFG);
+
     // return the desired roll angle in centi-degrees to move towards
     // the target waypoint
     int32_t nav_roll_cd(void) const override;
@@ -110,4 +121,32 @@ public:
     bool data_is_stale(void) const override;
 
     void set_reverse(bool reverse) override;
+
+    // store the NPFG_* user settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    void update_parameters();
+
+    // reference to the AHRS object
+    AP_AHRS &_ahrs;
+
+    // pointer to the SpdHgtControl object
+    const AP_TECS *_tecs;
+
+    // nonlinear path following guidance implementation
+    NPFG _npfg;
+
+    // parameters
+    AP_Int8 _npfg_en_period_lb;
+    AP_Int8 _npfg_en_period_ub;
+    AP_Int8 _npfg_en_track_keeping;
+    AP_Int8 _npfg_en_min_gsp;
+    AP_Int8 _npfg_en_wind_reg;
+    AP_Float _npfg_period;
+    AP_Float _npfg_damping;
+    AP_Float _npfg_track_keeping_gsp_max;
+    AP_Float _npfg_roll_time_const;
+    AP_Float _npfg_switch_distance_multiplier;
+    AP_Float _npfg_period_safety_factor;
 };
