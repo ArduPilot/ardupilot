@@ -91,8 +91,6 @@ public:
 
     // helper functions
     bool restart_landing_sequence(void);
-    float wind_alignment(const float heading_deg);
-    float head_wind(void);
     int32_t get_target_airspeed_cm(void);
 
     // accessor functions for the params and states
