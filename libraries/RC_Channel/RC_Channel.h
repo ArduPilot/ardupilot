@@ -250,6 +250,7 @@ public:
         CAMERA_LENS =        175, // camera lens selection
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
 
+        TERRAIN_NAVIGATION = 177, // guided terrain navigation mode
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
