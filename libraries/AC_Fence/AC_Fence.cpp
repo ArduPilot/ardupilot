@@ -205,6 +205,9 @@ void AC_Fence::disable_floor()
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
 {
+    if (_enabled) {
+        return;
+    } 
     switch(auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
