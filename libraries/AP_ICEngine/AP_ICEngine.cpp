@@ -622,6 +622,13 @@ void AP_ICEngine::set_starter(bool on)
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
     tca9554_starter.set_starter(on);
 #endif
+
+#if AP_RELAY_ENABLED
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::ICE_STARTER, on);
+    }
+#endif // AP_RELAY_ENABLED
 }
 
 
