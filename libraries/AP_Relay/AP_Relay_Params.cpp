@@ -14,6 +14,7 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Values{Rover}: 6:Bushed motor reverse 2 throttle-right or omni motor 2
     // @Values{Rover}: 7:Bushed motor reverse 3 omni motor 3
     // @Values{Rover}: 8:Bushed motor reverse 4 omni motor 4
+    // @Values{Plane}: 9:ICE Starter
 
     // @User: Standard
     AP_GROUPINFO_FLAGS("FUNCTION", 1, AP_Relay_Params, function, (float)FUNCTION::NONE, AP_PARAM_FLAG_ENABLE),
