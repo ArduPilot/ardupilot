@@ -28,6 +28,7 @@ public:
         BRUSHED_REVERSE_2 = 6,
         BRUSHED_REVERSE_3 = 7,
         BRUSHED_REVERSE_4 = 8,
+        ICE_STARTER = 9,
         NUM_FUNCTIONS // must be the last entry
     };
 
