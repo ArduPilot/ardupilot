@@ -36,6 +36,7 @@
 #include "rc_in.h"
 #include "batt_balance.h"
 #include "networking.h"
+#include "serial_options.h"
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -330,6 +331,10 @@ public:
 #ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
     void batt_balance_update();
     BattBalance battery_balance;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+    SerialOptions serial_options;
 #endif
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
