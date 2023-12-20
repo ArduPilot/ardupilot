@@ -13,7 +13,7 @@ void AP_ODIDScanner::init() {
 void AP_ODIDScanner::update_recv() {
     mavlink_message_t msg;
     mavlink_status_t status;
-    // uint32_t now_ms = AP_HAL::millis();
+    uint32_t now_ms = AP_HAL::millis();
 
     status.packet_rx_drop_count = 0;
 
@@ -22,7 +22,14 @@ void AP_ODIDScanner::update_recv() {
     {
         const uint8_t c = (uint8_t)_port->read();
         if (mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status) == MAVLINK_FRAMING_OK) {
-            // TODO: How do I process this?
+            switch(msg.msgid) {
+                case MAVLINK_MSG_ID_HEARTBEAT: 
+                {
+                    mavlink_msg_heartbeat_t packet;
+                    mavlink_msg_heartbeat_decode(&msg, &packet);
+                    last_dev_hb_ms = now_ms;
+                }
+            }
         }
     }
 }
