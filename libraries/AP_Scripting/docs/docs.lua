@@ -3008,6 +3008,18 @@ function ahrs:groundspeed_vector() end
 ---@return Vector3f_ud
 function ahrs:wind_estimate() end
 
+-- Determine how aligned heading_deg is with the wind. Return result
+-- is 1.0 when perfectly aligned heading into wind, -1 when perfectly
+-- aligned with-wind, and zero when perfect cross-wind. There is no
+-- distinction between a left or right cross-wind. Wind speed is ignored
+---@param heading_deg number
+---@return number
+function ahrs:wind_alignment(heading_deg) end
+
+-- Forward head-wind component in m/s. Negative means tail-wind
+---@return number
+function ahrs:head_wind() end
+
 -- desc
 ---@return number|nil
 function ahrs:get_hagl() end
