@@ -10,6 +10,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/div1000.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "EKF_Maths.h"
 
@@ -205,28 +206,34 @@ static void show_timings(void)
     TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 static void test_div1000(void)
 {
     hal.console->printf("Testing div1000\n");
     for (uint32_t i=0; i<2000000; i++) {
-        uint64_t v;
-        hal.util->get_random_vals((uint8_t*)&v, sizeof(v));
+        uint64_t v = 0;
+        if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
+            AP_HAL::panic("ERROR: div1000 no random\n");
+            break;
+        }
         uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = _hrt_div1000(v);
+        uint64_t v2 = uint64_div1000(v);
         if (v1 != v2) {
             AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
                           (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // test from locked context
     for (uint32_t i=0; i<2000000; i++) {
-        uint64_t v;
-        hal.util->get_random_vals((uint8_t*)&v, sizeof(v));
+        uint64_t v = 0;
+        if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
+            AP_HAL::panic("ERROR: div1000 no random\n");
+            break;
+        }
         chSysLock();
         uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = _hrt_div1000(v);
+        uint64_t v2 = uint64_div1000(v);
         chSysUnlock();
         if (v1 != v2) {
             AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
@@ -234,18 +241,16 @@ static void test_div1000(void)
             return;
         }
     }
+#endif
     hal.console->printf("div1000 OK\n");
 }
-#endif
 
 void loop()
 {
     show_sizes();
     hal.console->printf("\n");
     show_timings();
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     test_div1000();
-#endif
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }
