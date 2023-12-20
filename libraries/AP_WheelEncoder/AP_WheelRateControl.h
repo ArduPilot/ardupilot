@@ -51,6 +51,9 @@ public:
     // get pid objects for reporting
     AC_PID& get_pid(uint8_t instance);
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate);
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:

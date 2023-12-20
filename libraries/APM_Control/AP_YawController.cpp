@@ -150,6 +150,24 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Description: Yaw axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0 1
     // @Increment: 0.01
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Yaw Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Yaw Target notch filter index
+    // @Description: Yaw Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Yaw Error notch filter index
+    // @Description: Yaw Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_YawController, AC_PID),
@@ -326,6 +344,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.DFF *= deg_scale;
     pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied
@@ -333,7 +352,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.actual = degrees(rate_z);
 
     // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
 
     // remember the last output to trigger the I limit
     _last_out = out;

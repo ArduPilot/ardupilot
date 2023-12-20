@@ -67,11 +67,17 @@ public:
     // yaw is in body-frame.
     virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
+    // get angular velocity of mount. Only available on some backends
+    virtual bool get_angular_velocity(Vector3f& rates) { return false; }
+
+    // returns true if mode is a valid mode, false otherwise:
+    bool valid_mode(MAV_MOUNT_MODE mode) const;
+
     // get mount's mode
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
     // set mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
+    bool set_mode(enum MAV_MOUNT_MODE mode);
 
     // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle

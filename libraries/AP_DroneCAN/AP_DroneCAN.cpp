@@ -51,6 +51,10 @@
 #include <AP_Mount/AP_Mount_Xacti.h>
 #include <string.h>
 
+#if AP_DRONECAN_SERIAL_ENABLED
+#include "AP_DroneCAN_serial.h"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
@@ -148,7 +152,106 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_RV", 9, AP_DroneCAN, _esc_rv, 0),
-    
+
+#if AP_DRONECAN_SERIAL_ENABLED
+    /*
+      due to the parameter tree depth limitation we can't use a sub-table for the serial parameters
+     */
+
+    // @Param: SER_EN
+    // @DisplayName: DroneCAN Serial enable
+    // @Description: Enable DroneCAN virtual serial ports
+    // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("SER_EN", 10,  AP_DroneCAN, serial.enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: S1_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN remote node number for serial port
+    // @Range: 0 127
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_NOD", 11,  AP_DroneCAN, serial.ports[0].node, 0),
+
+    // @Param: S1_IDX
+    // @DisplayName: DroneCAN Serial1 index
+    // @Description: Serial port number on remote CAN node
+    // @Range: 0 100
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_IDX", 12,  AP_DroneCAN, serial.ports[0].idx, -1),
+
+    // @Param: S1_BD
+    // @DisplayName: DroneCAN Serial default baud rate
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: SERIAL1_BAUD
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_BD", 13,  AP_DroneCAN, serial.ports[0].state.baud, 57600),
+
+    // @Param: S1_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: SERIAL1_PROTOCOL
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_PRO", 14,  AP_DroneCAN, serial.ports[0].state.protocol, -1),
+
+#if AP_DRONECAN_SERIAL_NUM_PORTS > 1
+    // @Param: S2_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN remote node number for serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_NOD
+    AP_GROUPINFO("S2_NOD", 15,  AP_DroneCAN, serial.ports[1].node, 0),
+
+    // @Param: S2_IDX
+    // @DisplayName: Serial port number on remote CAN node
+    // @Description: Serial port number on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_IDX
+    AP_GROUPINFO("S2_IDX", 16,  AP_DroneCAN, serial.ports[1].idx, -1),
+
+    // @Param: S2_BD
+    // @DisplayName: DroneCAN Serial default baud rate
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_BD
+    AP_GROUPINFO("S2_BD", 17,  AP_DroneCAN, serial.ports[1].state.baud, 57600),
+
+    // @Param: S2_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_PRO
+    AP_GROUPINFO("S2_PRO", 18,  AP_DroneCAN, serial.ports[1].state.protocol, -1),
+#endif
+
+#if AP_DRONECAN_SERIAL_NUM_PORTS > 2
+    // @Param: S3_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN node number for serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_NOD
+    AP_GROUPINFO("S3_NOD", 19,  AP_DroneCAN, serial.ports[2].node, 0),
+
+    // @Param: S3_IDX
+    // @DisplayName: Serial port number on remote CAN node
+    // @Description: Serial port number on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_IDX
+    AP_GROUPINFO("S3_IDX", 20,  AP_DroneCAN, serial.ports[2].idx, 0),
+
+    // @Param: S3_BD
+    // @DisplayName: Serial baud rate on remote CAN node
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_BD
+    AP_GROUPINFO("S3_BD", 21,  AP_DroneCAN, serial.ports[2].state.baud, 57600),
+
+    // @Param: S3_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_PRO
+    AP_GROUPINFO("S3_PRO", 22,  AP_DroneCAN, serial.ports[2].state.protocol, -1),
+#endif
+#endif // AP_DRONECAN_SERIAL_ENABLED
+
     AP_GROUPEND
 };
 
@@ -369,6 +472,10 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+#if AP_DRONECAN_SERIAL_ENABLED
+    serial.init(this);
+#endif
+
     _initialized = true;
     debug_dronecan(AP_CANManager::LOG_INFO, "DroneCAN: init done\n\r");
 }
@@ -421,12 +528,21 @@ void AP_DroneCAN::loop(void)
                 }
             }
         }
+
+#if AP_DRONECAN_SERIAL_ENABLED
+        serial.update();
+#endif
     }
 }
 
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 void AP_DroneCAN::hobbywing_ESC_update(void)
 {
+    if (hal.util->get_soft_armed()) {
+        // don't update ID database while disarmed, as it can cause
+        // some hobbywing ESCs to stutter
+        return;
+    }
     uint32_t now = AP_HAL::millis();
     if (now - hobbywing.last_GetId_send_ms >= 1000U) {
         hobbywing.last_GetId_send_ms = now;
@@ -1633,6 +1749,22 @@ void AP_DroneCAN::logging(void)
                                 _srv_send_count,
                                 _fail_send_count);
 #endif // HAL_LOGGING_ENABLED
+}
+
+// add an 11 bit auxillary driver
+bool AP_DroneCAN::add_11bit_driver(CANSensor *sensor)
+{
+    return canard_iface.add_11bit_driver(sensor);
+}
+
+// handler for outgoing frames for auxillary drivers
+bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+{
+    if (out_frame.isExtended()) {
+        // don't allow extended frames to be sent by auxillary driver
+        return false;
+    }
+    return canard_iface.write_aux_frame(out_frame, timeout_us);
 }
 
 #endif // HAL_NUM_CAN_IFACES

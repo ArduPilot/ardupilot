@@ -139,7 +139,9 @@ FrSky Telemetry is supported using the Tx pin of any UART. You need to set the f
 The SDH7V1 supports OSD using OSD_TYPE 1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART1.
 PWM Output¶
 
-The KakuteH7 supports up to 8 PWM outputs. Outputs are available via two JST-SH connectors. All 8 outputs support DShot and bi-directional DShot, as well as all PWM types.
+## PWM Outputs
+
+The SDH7V1 supports up to 8 PWM outputs. Outputs are available via two JST-SH connectors. All 8 outputs support DShot and bi-directional DShot, as well as all PWM types.
 
 The PWM is in 3 groups:
 

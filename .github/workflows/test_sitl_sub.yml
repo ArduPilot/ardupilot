@@ -164,7 +164,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -174,7 +174,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -210,7 +210,7 @@ jobs:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-base:v0.1.0
+      image: ardupilot/ardupilot-dev-base:v0.1.3
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -221,7 +221,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build

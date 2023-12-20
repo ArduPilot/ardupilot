@@ -352,12 +352,12 @@ public:
       setup serial led output data for a given output channel
       and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
-    virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
+    virtual bool set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) { return false; }
 
     /*
       trigger send of serial led
      */
-    virtual void serial_led_send(const uint16_t chan) {}
+    virtual bool serial_led_send(const uint16_t chan) { return false; }
 
     virtual void timer_info(ExpandingString &str) {}
 

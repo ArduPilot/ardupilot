@@ -404,15 +404,12 @@ void AP_Baro::update_calibration()
 // given base_pressure in Pascal
 float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
 {
-    float ret;
     float temp    = C_TO_KELVIN(get_ground_temperature());
     float scaling = pressure / base_pressure;
 
     // This is an exact calculation that is within +-2.5m of the standard
     // atmosphere tables in the troposphere (up to 11,000 m amsl).
-    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)))-_field_elevation_active;
-
-    return ret;
+    return 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)))-_field_elevation_active;
 }
 
 // return sea level pressure where in which the current measured pressure

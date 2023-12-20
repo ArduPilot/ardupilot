@@ -179,7 +179,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
     // filter actuator without I term so we can take ratios without
     // accounting for trim offsets. We first need to include the I and
     // clip to 45 degrees to get the right value of the real surface
-    const float clipped_actuator = constrain_float(pinfo.FF + pinfo.P + pinfo.D + pinfo.I, -45, 45) - pinfo.I;
+    const float clipped_actuator = constrain_float(pinfo.FF + pinfo.P + pinfo.D + pinfo.DFF + pinfo.I, -45, 45) - pinfo.I;
     const float actuator = actuator_filter.apply(clipped_actuator);
     const float actual_rate = rate_filter.apply(pinfo.actual);
 

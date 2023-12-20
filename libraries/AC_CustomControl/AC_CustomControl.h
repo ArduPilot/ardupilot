@@ -32,6 +32,9 @@ public:
     bool is_safe_to_run(void);
     void log_switch(void);
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate);
+
     // zero index controller type param, only use it to access _backend or _backend_var_info array
     uint8_t get_type() { return _controller_type > 0 ? (_controller_type - 1) : 0; };
 

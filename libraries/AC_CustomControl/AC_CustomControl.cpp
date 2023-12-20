@@ -184,4 +184,13 @@ void AC_CustomControl::log_switch(void) {
                             _custom_controller_active);
 }
 
+void AC_CustomControl::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    if (_backend != nullptr) {
+        _backend->set_notch_sample_rate(sample_rate);
+    }
+#endif
+}
+
 #endif

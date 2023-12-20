@@ -280,6 +280,7 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: I: integral part of PID
     // @Field: D: derivative part of PID
     // @Field: FF: controller feed-forward portion of response
+    // @Field: DFF: controller derivative feed-forward portion of response
     // @Field: Dmod: scaler applied to D gain to reduce limit cycling
     // @Field: SRate: slew rate
     // @Field: Flags: bitmask of PID state flags

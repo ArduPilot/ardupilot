@@ -491,3 +491,8 @@ const AP_HAL::HAL &AP_HAL::get_HAL()
 {
     return hal_linux;
 }
+
+AP_HAL::HAL &AP_HAL::get_HAL_mutable()
+{
+    return hal_linux;
+}

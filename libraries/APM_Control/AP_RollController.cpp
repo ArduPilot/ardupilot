@@ -119,6 +119,24 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Description: Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0 1
     // @Increment: 0.01
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Roll Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Roll Target notch filter index
+    // @Description: Roll Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Roll Error notch filter index
+    // @Description: Roll Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
@@ -188,13 +206,14 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.DFF *= deg_scale;
 
     // fix the logged target and actual values to not have the scalers applied
     pinfo.target = desired_rate;
     pinfo.actual = degrees(rate_x);
 
     // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
     if (ground_mode) {
         // when on ground suppress D term to prevent oscillations
         out -= pinfo.D + 0.5*pinfo.P;

@@ -405,6 +405,7 @@ struct PACKED log_PID {
     float   I;
     float   D;
     float   FF;
+    float   DFF;
     float   Dmod;
     float   slew_rate;
     uint8_t flags;
@@ -679,10 +680,10 @@ struct PACKED log_VER {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod,SRate,Flags"
-#define PID_FMT    "QfffffffffB"
-#define PID_UNITS  "s----------"
-#define PID_MULTS  "F----------"
+#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,DFF,Dmod,SRate,Flags"
+#define PID_FMT    "QffffffffffB"
+#define PID_UNITS  "s-----------"
+#define PID_MULTS  "F-----------"
 
 #define PIDx_FMT "Qffffffff"
 #define PIDx_UNITS "smmnnnooo"
@@ -910,6 +911,7 @@ struct PACKED log_VER {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
+// @Field: DFF: controller derivative feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
 // @Field: SRate: slew rate used in slew limiter
 // @Field: Flags: bitmask of PID state flags

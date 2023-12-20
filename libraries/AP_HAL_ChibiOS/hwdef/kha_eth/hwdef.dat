@@ -135,11 +135,12 @@ define DISABLE_SERIAL_ESC_COMM TRUE
 define HAL_NO_RCIN_THREAD
 #define HAL_NO_GPIO_IRQ
 define HAL_DISABLE_LOOP_DELAY
+define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS
 
 
 define PERIPH_FW TRUE
 #define NO_DATAFLASH TRUE
-define HAL_LOGGING_ENABLED TRUE
+define HAL_LOGGING_ENABLED FALSE
 
 #################################
 # AP_Periph - configurations specific to this App

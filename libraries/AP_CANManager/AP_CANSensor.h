@@ -72,6 +72,10 @@ private:
     const uint16_t _stack_size;
     bool _initialized;
     uint8_t _driver_index;
+
+    // this is true when we are setup as an auxillary driver using CAN_Dn_PROTOCOL2
+    bool is_aux_11bit_driver;
+
     AP_CANDriver *_can_driver;
     HAL_EventHandle _event_handle;
     AP_HAL::CANIface* _can_iface;

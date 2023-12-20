@@ -317,7 +317,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
             mission_data = nullptr;
         }
         if (mission_data == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: %s", "unable to receive mission command");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "unable to receive mission command");
             return;
         }
     }

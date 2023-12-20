@@ -1,5 +1,7 @@
 #include "UserParameters.h"
+#include "config.h"
 
+#if USER_PARAMS_ENABLED == ENABLED
 // "USR" + 13 chars remaining for param name
 const AP_Param::GroupInfo UserParameters::var_info[] = {
 
@@ -16,3 +18,4 @@ UserParameters::UserParameters()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
+#endif // USER_PARAMS_ENABLED

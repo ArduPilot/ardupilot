@@ -81,6 +81,9 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) override;
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

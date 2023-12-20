@@ -69,12 +69,42 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SMAX", 12, AC_HELI_PID, _slew_rate_max, 0),
 
+    // @Param: PDMX
+    // @DisplayName: PD sum maximum
+    // @Description: The maximum/minimum value that the sum of the P and D term can output
+    // @User: Advanced
+    AP_GROUPINFO("PDMX", 13, AC_HELI_PID, _kpdmax, 0),
+
+    // @Param: D_FF
+    // @DisplayName: PID Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+    AP_GROUPINFO("D_FF", 14, AC_HELI_PID, _kdff, 0),
+
+#if AP_FILTER_ENABLED
+    // @Param: NTF
+    // @DisplayName: PID Target notch filter index
+    // @Description: PID Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    AP_GROUPINFO("NTF", 15, AC_HELI_PID, _notch_T_filter, 0),
+
+    // @Param: NEF
+    // @DisplayName: PID Error notch filter index
+    // @Description: PID Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    AP_GROUPINFO("NEF", 16, AC_HELI_PID, _notch_E_filter, 0),
+#endif
+
     AP_GROUPEND
 };
 
 /// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz) :
-    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz)
+AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dff_val) :
+    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz, dff_val)
 {
     _last_requested_rate = 0;
 }

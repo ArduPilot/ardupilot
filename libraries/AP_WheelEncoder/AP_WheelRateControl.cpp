@@ -90,6 +90,24 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @DisplayName: Wheel rate control PD sum maximum
     // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0.000 1.000
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Wheel rate Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the error
+    // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Wheel rate Target notch filter index
+    // @Description: Wheel rate Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Wheel rate Error notch filter index
+    // @Description: Wheel rate Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
@@ -166,6 +184,24 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @DisplayName: Wheel rate control PD sum maximum
     // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
     // @Range: 0.000 1.000
+
+    // @Param: 2_RATE_D_FF
+    // @DisplayName: Wheel rate Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: 2_RATE_NTF
+    // @DisplayName: Wheel rate Target notch filter index
+    // @Description: Wheel rate Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: 2_RATE_NEF
+    // @DisplayName: Wheel rate Error notch filter index
+    // @Description: Wheel rate Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),
@@ -236,4 +272,12 @@ AC_PID& AP_WheelRateControl::get_pid(uint8_t instance)
     } else {
         return _rate_pid1;
     }
+}
+
+void AP_WheelRateControl::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    _rate_pid0.set_notch_sample_rate(sample_rate);
+    _rate_pid1.set_notch_sample_rate(sample_rate);
+#endif
 }

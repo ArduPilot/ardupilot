@@ -53,8 +53,6 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     uint16_t valid_count = 0;   // number of valid readings
     uint16_t invalid_count = 0; // number of invalid readings
     float sum = 0;
-    // max distance the sensor can reliably measure - read from parameters
-    const int16_t distance_cm_max = max_distance_cm();
 
     // read a maximum of 8192 bytes per call to this function:
     uint16_t bytes_available = MIN(uart->available(), 8192U);
@@ -136,7 +134,7 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
         no_signal = true;
-        reading_m = MIN(MAX(DIST_MAX_CM, distance_cm_max + OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
+        reading_m = MIN(MAX(DIST_MAX_CM, max_distance_cm() + OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
         return true;
     }
 

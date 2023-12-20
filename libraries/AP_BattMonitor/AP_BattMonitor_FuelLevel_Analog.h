@@ -48,7 +48,6 @@ public:
 private:
 
     AP_Float _fuel_level_empty_voltage;
-    AP_Float _fuel_level_max_voltage;
     AP_Float _fuel_level_voltage_mult;
     AP_Float _fuel_level_filter_frequency;
     AP_Int8  _pin;

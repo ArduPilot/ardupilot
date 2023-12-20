@@ -190,6 +190,9 @@ public:
      */
     bool should_disable_TECS() const;
 
+    // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
+    float get_throttle_input() const;
+
 private:
     AP_AHRS &ahrs;
 

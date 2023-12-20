@@ -23,6 +23,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @DisplayName: Ground station MAVLink system ID
     // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
     // @Range: 1 255
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
@@ -387,6 +388,25 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Units: d%
     // @User: Advanced
 
+    // @Param: PITCH2SRV_D_FF
+    // @DisplayName: Pitch Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: PITCH2SRV_NTF
+    // @DisplayName: Pitch Target notch filter index
+    // @Description: Pitch Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: PITCH2SRV_NEF
+    // @DisplayName: Pitch Error notch filter index
+    // @Description: Pitch Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
@@ -462,6 +482,25 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0 4000
     // @Increment: 10
     // @Units: d%
+    // @User: Advanced
+
+    // @Param: YAW2SRV_D_FF
+    // @DisplayName: Yaw Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: YAW2SRV_NTF
+    // @DisplayName: Yaw Target notch filter index
+    // @Description: Yaw Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: YAW2SRV_NEF
+    // @DisplayName: Yaw Error notch filter index
+    // @Description: Yaw Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),

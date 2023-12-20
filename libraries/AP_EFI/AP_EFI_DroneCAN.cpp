@@ -1,8 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_EFI_DroneCAN.h"
+#include "AP_EFI_config.h"
 
 #if AP_EFI_DRONECAN_ENABLED
+#include "AP_EFI_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>

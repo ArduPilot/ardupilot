@@ -50,7 +50,11 @@ repos:
       rev: 23.7.0
       hooks:
         - id: black
-          files: libraries\/AP_DDS\/(wscript|.*\.py)$
+          files: |
+            (?x)^(
+              libraries\/AP_DDS\/(wscript|.*\.py)$ |
+              Tools/ros2/.*\.py
+            )$
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort

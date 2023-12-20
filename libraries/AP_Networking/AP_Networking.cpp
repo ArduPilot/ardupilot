@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: TESTS
     // @DisplayName: Test enable flags
     // @Description: Enable/Disable networking tests
-    // @Bitmask: 0:UDP echo test,1:TCP echo test
+    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
@@ -140,6 +140,9 @@ void AP_Networking::init()
 #if AP_NETWORKING_TESTS_ENABLED
     start_tests();
 #endif
+
+    // init network mapped serialmanager ports
+    ports_init();
 }
 
 /*

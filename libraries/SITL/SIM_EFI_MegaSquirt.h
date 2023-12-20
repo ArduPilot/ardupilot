@@ -96,6 +96,8 @@ private:
         uint8_t pad[128-67];
         uint16_t fuelPressure;
     } table7;
+
+    float tps;
 };
 
 }

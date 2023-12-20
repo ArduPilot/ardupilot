@@ -42,6 +42,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: MAVLink ground station ID
     // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
     // @Range: 1 255
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 

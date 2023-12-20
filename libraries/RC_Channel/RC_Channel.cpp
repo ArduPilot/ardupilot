@@ -171,7 +171,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 69:POSHOLD Mode
     // @Values{Copter}: 70:ALTHOLD Mode
     // @Values{Copter}: 71:FLOWHOLD Mode
-    // @Values{Copter,Plane}: 72:CIRCLE  Mode
+    // @Values{Copter,Rover,Plane}: 72:CIRCLE Mode
     // @Values{Copter}: 73:DRIFT Mode
     // @Values{Rover}: 74:Sailboat motoring 3pos
     // @Values{Copter}: 75:SurfaceTrackingUpDown

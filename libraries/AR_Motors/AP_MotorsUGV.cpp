@@ -457,6 +457,18 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
 //  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
 bool AP_MotorsUGV::pre_arm_check(bool report) const
 {
+    // check that there's defined outputs, inc scripting and sail
+    if(!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_throttleRight) &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_throttle) &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
+       !has_sail()) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
+        }
+        return false;
+    }
     // check if only one of skid-steering output has been configured
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
         if (report) {

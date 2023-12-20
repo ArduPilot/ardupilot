@@ -240,7 +240,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
     auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Lua: open directory (%s) failed", dirname);
         return;
     }
 
@@ -317,7 +317,7 @@ void lua_scripts::run_next_script(lua_State *L) {
             // script has consumed an excessive amount of CPU time
             set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s exceeded time limit", script->name);
         } else {
-            set_and_print_new_error_message(MAV_SEVERITY_INFO, "%s", lua_tostring(L, -1));
+            set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s", lua_tostring(L, -1));
         }
         remove_script(L, script);
         lua_pop(L, 1);
@@ -452,7 +452,7 @@ void lua_scripts::run(void) {
     bool succeeded_initial_load = false;
 
     if (!_heap.available()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Unable to allocate a heap");
         return;
     }
 

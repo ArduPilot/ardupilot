@@ -296,6 +296,7 @@ public:
     enum EFIType {
         EFI_TYPE_NONE = 0,
         EFI_TYPE_MS = 1,
+        EFI_TYPE_HIRTH = 8,
     };
     
     AP_Int8  efi_type;

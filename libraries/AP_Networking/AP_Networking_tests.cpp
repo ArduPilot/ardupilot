@@ -28,6 +28,11 @@ void AP_Networking::start_tests(void)
                                      "TCP_client",
                                      8192, AP_HAL::Scheduler::PRIORITY_IO, -1);
     }
+    if (param.tests & TEST_TCP_DISCARD) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_discard, void),
+                                     "TCP_discard",
+                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+    }
 }
 
 /*
@@ -96,6 +101,46 @@ void AP_Networking::test_TCP_client(void)
         const ssize_t ret = sock->recv(buf, sizeof(buf), 10);
         if (ret > 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_client: reply '%s'", (const char *)buf);
+        }
+    }
+}
+
+/*
+  start TCP discard (throughput) test
+ */
+void AP_Networking::test_TCP_discard(void)
+{
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay(100);
+    }
+    hal.scheduler->delay(1000);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: starting");
+    const char *dest = param.test_ipaddr.get_str();
+    auto *sock = new SocketAPM(false);
+    if (sock == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_discard: failed to create socket");
+        return;
+    }
+    // connect to the discard service, which is port 9
+    if (!sock->connect(dest, 9)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_discard: connect failed");
+        return;
+    }
+    const uint32_t bufsize = 1024;
+    uint8_t *buf = (uint8_t*)malloc(bufsize);
+    for (uint32_t i=0; i<bufsize; i++) {
+        buf[i] = i & 0xFF;
+    }
+    uint32_t last_report_ms = AP_HAL::millis();
+    uint32_t total_sent = 0;
+    while (true) {
+        total_sent += sock->send(buf, bufsize);
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_report_ms >= 1000) {
+            float dt = (now - last_report_ms)*0.001;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Discard throughput %.3f kbyte/sec", (total_sent/dt)*1.0e-3);
+            total_sent = 0;
+            last_report_ms = now;
         }
     }
 }

@@ -44,9 +44,45 @@ bool SerialDevice::init_sitl_pointer()
     return true;
 }
 
+#if AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED
+ssize_t SerialDevice::corrupt_transfer(char *buffer, const ssize_t ret, const size_t size) const
+{
+    if (ret > 0 && (rand() % 100) < 2) {
+        // drop a random byte from returned data:
+        const size_t byte_ofs_to_drop = rand() % ret;
+        fprintf(stderr, "dropping byte at offset %u\n", unsigned(byte_ofs_to_drop));
+        memmove(&buffer[byte_ofs_to_drop], &buffer[byte_ofs_to_drop+1], ret - byte_ofs_to_drop - 1);
+        return ret - 1;
+    }
+
+    if (ret > 0 && size_t(ret) < size && (rand() % 100) < 2) {
+        // add a random byte to the stream:
+        const size_t byte_ofs_to_add = rand() % ret;
+        fprintf(stderr, "adding byte at offset %u\n", unsigned(byte_ofs_to_add));
+        memmove(&buffer[byte_ofs_to_add+1], &buffer[byte_ofs_to_add], ret - byte_ofs_to_add);
+        buffer[byte_ofs_to_add] = rand()*256;
+        return ret + 1;
+    }
+
+    if (ret > 0 && unsigned(ret) < size && (rand() % 100) < 2) {
+        // corrupt a random byte in the stream:
+        const size_t byte_ofs_to_corrupt = rand() % ret;
+        fprintf(stderr, "corrupting byte at offset=%u\n", unsigned(byte_ofs_to_corrupt));
+        buffer[byte_ofs_to_corrupt] = rand()*256;
+        return ret;
+    }
+
+    return ret;
+}
+#endif
+
 ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
 {
-    const ssize_t ret = from_autopilot->read((uint8_t*)buffer, size);
+    ssize_t ret = from_autopilot->read((uint8_t*)buffer, size);
+#if AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED
+    ret = corrupt_transfer(buffer, ret, size);
+#endif
+
     // if (ret > 0) {
     //     ::fprintf(stderr, "SIM_SerialDevice: read from autopilot (%u): (", (unsigned)ret);
     //     for (ssize_t i=0; i<ret; i++) {
@@ -69,15 +105,6 @@ ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) 
     }
 
     const ssize_t ret = to_autopilot->write((uint8_t*)buffer, size);
-    // ::fprintf(stderr, "write to autopilot: (");
-    // for (ssize_t i=0; i<ret; i++) {
-    //     ::fprintf(stderr, "%02X", (uint8_t)buffer[i]);
-    // }
-    // ::fprintf(stderr, ") (\n");
-    // for (ssize_t i=0; i<ret; i++) {
-    //     ::fprintf(stderr, "%c", (uint8_t)buffer[i]);
-    // }
-    // ::fprintf(stderr, ")\n");
     return ret;
 }
 
@@ -87,7 +114,19 @@ ssize_t SerialDevice::read_from_device(char *buffer, const size_t size) const
         return -1;
     }
 
-    const ssize_t ret = to_autopilot->read((uint8_t*)buffer, size);
+    ssize_t ret = to_autopilot->read((uint8_t*)buffer, size);
+#if AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED
+    ret = corrupt_transfer(buffer, ret, size);
+#endif
+    // ::fprintf(stderr, "read_from_device: (");
+    // for (ssize_t i=0; i<ret; i++) {
+    //     ::fprintf(stderr, "%02X", (uint8_t)buffer[i]);
+    // }
+    // ::fprintf(stderr, ") (\n");
+    // for (ssize_t i=0; i<ret; i++) {
+    //     ::fprintf(stderr, "%c", (uint8_t)buffer[i]);
+    // }
+    // ::fprintf(stderr, ")\n");
     return ret;
 }
 ssize_t SerialDevice::write_to_device(const char *buffer, const size_t size) const

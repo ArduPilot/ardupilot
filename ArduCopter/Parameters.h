@@ -591,7 +591,7 @@ public:
     AP_Follow follow;
 #endif
 
-#ifdef USER_PARAMS_ENABLED
+#if USER_PARAMS_ENABLED == ENABLED
     // User custom parameters
     UserParameters user_parameters;
 #endif

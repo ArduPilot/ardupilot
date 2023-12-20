@@ -74,3 +74,7 @@
 #define AP_NETWORKING_TEST_IP "192.168.13.2"
 #endif
 #endif
+
+#ifndef AP_NETWORKING_NUM_PORTS
+#define AP_NETWORKING_NUM_PORTS 4
+#endif
