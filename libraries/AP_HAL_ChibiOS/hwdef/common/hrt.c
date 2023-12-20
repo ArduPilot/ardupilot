@@ -25,6 +25,8 @@
 
 #pragma GCC optimize("O2")
 
+#include "../../../AP_Math/div1000.h"
+
 /*
   we have 4 possible configurations of boards, made up of boards that
   have the following properties:
@@ -139,9 +141,9 @@ uint32_t hrt_micros32()
 #endif
 }
 
-uint32_t hrt_millis64()
+uint64_t hrt_millis64()
 {
-    return _hrt_div1000(hrt_micros64());
+    return uint64_div1000(hrt_micros64());
 }
         
 uint32_t hrt_millis32()
