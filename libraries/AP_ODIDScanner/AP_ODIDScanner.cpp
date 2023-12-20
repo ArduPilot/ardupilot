@@ -1,4 +1,6 @@
 #include "AP_ODIDScanner.h"
+#include "GCS_MAVLink/GCS_MAVLink.h"
+#include "GCS_MAVLink/GCS.h"
 
 // TODO: Random default for mav_port needs fix
 AP_ODIDScanner::AP_ODIDScanner() : _mav_port(7){
@@ -25,7 +27,7 @@ void AP_ODIDScanner::update_recv() {
             switch(msg.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT: 
                 {
-                    mavlink_msg_heartbeat_t packet;
+                    mavlink_heartbeat_t packet;
                     mavlink_msg_heartbeat_decode(&msg, &packet);
                     last_dev_hb_ms = now_ms;
                 }
