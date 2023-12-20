@@ -13,8 +13,7 @@ void AP_ODIDScanner::init() {
 void AP_ODIDScanner::update_recv() {
     mavlink_message_t msg;
     mavlink_status_t status;
-    uint32_t tstart_us = AP_HAL::micros();
-    uint32_t now_ms = AP_HAL::millis();
+    // uint32_t now_ms = AP_HAL::millis();
 
     status.packet_rx_drop_count = 0;
 
