@@ -14,6 +14,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -33,6 +34,7 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_ALT_MIN_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further down
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 #define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
+#define AC_FENCE_MIN_ALT_ATTAINED_FLAG_RESET_ALT    3.0     // if alt < 3m above home alt, allow floor to be renabled after climbing to min_alt
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
@@ -348,9 +350,9 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
-    // check no limits are currently breached
-    if (_breached_fences) {
-        fail_msg =  "vehicle outside fence";
+    // check no limits are currently breached,except min_alt fence
+    if (_breached_fences && !(_breached_fences & AC_FENCE_TYPE_ALT_MIN)) {
+        fail_msg =  "Vehicle outside fence";
         return false;
     }
 
@@ -427,21 +429,31 @@ bool AC_Fence::check_fence_alt_max()
 /// cause the altitude fence to be freshly breached
 bool AC_Fence::check_fence_alt_min()
 {
-    // altitude fence check
-    if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
-        // not enabled; no breach
-        return false;
-    }
-
     AP::ahrs().get_relative_position_D_home(_curr_alt);
     _curr_alt = -_curr_alt; // translate Down to Up
+    
+    if (_curr_alt >= _alt_min && !_been_above_min_alt) {
+        _been_above_min_alt = true;
+        if (!_floor_enabled){
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Min Alt Fence Floor Enabled");
+        enable_floor();
+        }
+    }
+    
+    // altitude fence check
+    if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MIN) || !_been_above_min_alt) {
+        // not enabled or havent climbed above it yet;no breach
+        return false;
+    }
+    
+    if ((!AP::arming().is_armed() ||_curr_alt < AC_FENCE_MIN_ALT_ATTAINED_FLAG_RESET_ALT) && !_floor_enabled){
+        _been_above_min_alt = false;
+    }
 
     // check if we are under the altitude fence
     if (_curr_alt <= _alt_min) {
-
         // record distance below breach
         _alt_min_breach_distance = _alt_min - _curr_alt;
-
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
             (!is_zero(_alt_min_backup) && _curr_alt <= _alt_min_backup)) {
@@ -569,7 +581,7 @@ uint8_t AC_Fence::check()
     }
 
     // minimum altitude fence check
-    if (_floor_enabled && check_fence_alt_min()) {
+    if (check_fence_alt_min() &&_floor_enabled) {
         ret |= AC_FENCE_TYPE_ALT_MIN;
     }
 

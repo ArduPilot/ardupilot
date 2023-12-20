@@ -212,7 +212,8 @@ private:
     // other internal variables
     bool            _floor_enabled;         // fence floor is enabled
     float           _home_distance;         // distance from home in meters (provided by main code)
-    float           _curr_alt;
+    float           _curr_alt;              // above home in meters
+    bool            _been_above_min_alt;    // used to enable floor after takeoffs
 
 
     // breach information
