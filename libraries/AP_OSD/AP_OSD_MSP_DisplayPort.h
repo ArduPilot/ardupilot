@@ -81,8 +81,8 @@ private:
     static const uint8_t SYM_WSPD = 0x57;
     static const uint8_t SYM_VSPD = 0x5E;
     static const uint8_t SYM_WPNO = 0x23;
-    static const uint8_t SYM_WPDIR = 0xE6;
-    static const uint8_t SYM_WPDST = 0xE7;
+    static const uint8_t SYM_WPDIR = 0x44;
+    static const uint8_t SYM_WPDST = 0x77;
     static const uint8_t SYM_FTMIN = 0xE8;
     static const uint8_t SYM_FTSEC = 0x99;
 
@@ -137,14 +137,14 @@ private:
     static const uint8_t SYM_FLY = 0x9C;
     static const uint8_t SYM_EFF = 0xF2;
     static const uint8_t SYM_AH = 0xF3;
-    static const uint8_t SYM_MW = 0xF4;
+    static const uint8_t SYM_MW = 0x5E;
     static const uint8_t SYM_CLK = 0x08;
     static const uint8_t SYM_KILO = 0x4B;
     static const uint8_t SYM_TERALT = 0x7F;
     static const uint8_t SYM_FENCE_ENABLED = 0xF5;
     static const uint8_t SYM_FENCE_DISABLED = 0xF6;
     static const uint8_t SYM_RNGFD = 0x7F;
-    static const uint8_t SYM_LQ = 0xF8;
+    static const uint8_t SYM_LQ = 0x51;
 
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
