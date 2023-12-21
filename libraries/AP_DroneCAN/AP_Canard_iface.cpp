@@ -70,7 +70,9 @@ Interface(iface_index) {
 
 void CanardInterface::init(void* mem_arena, size_t mem_arena_size, uint8_t node_id) {
     canardInit(&canard, mem_arena, mem_arena_size, onTransferReception, shouldAcceptTransfer, this);
-    canardSetLocalNodeID(&canard, node_id);
+    if (node_id != 0) {
+        canardSetLocalNodeID(&canard, node_id);
+    }
     initialized = true;
 }
 
