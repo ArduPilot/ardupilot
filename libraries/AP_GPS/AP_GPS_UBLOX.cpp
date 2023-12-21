@@ -184,9 +184,10 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
   data from a GPS previously configured as a base
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
+ { ConfigKey::CFG_UART2_ENABLED, 1},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART2INPROT_RTCM3X, 0},
+ { ConfigKey::CFG_UART1INPROT_RTCM3X, 0},
+ { ConfigKey::CFG_UART2INPROT_RTCM3X, 1},
  { ConfigKey::CFG_HWANT_CFG_SHORTDET, 1},
  { ConfigKey::CFG_HWANT_CFG_OPENDET , 1},
  { ConfigKey::CFG_HWANT_CFG_VOLTCTRL , 1},
