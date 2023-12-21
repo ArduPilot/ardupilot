@@ -1,7 +1,7 @@
 #include "AP_Canard_iface.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS || defined(HAL_BUILD_AP_PERIPH)
 #include <canard/handler_list.h>
 #include <canard/transfer_object.h>
 #include <AP_Math/AP_Math.h>
@@ -20,6 +20,12 @@ DEFINE_HANDLER_LIST_SEMAPHORES();
 
 DEFINE_TRANSFER_OBJECT_HEADS();
 DEFINE_TRANSFER_OBJECT_SEMAPHORES();
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+#define CAN_LOG(...) AP::can().log_text(__VA_ARGS__)
+#else
+#define CAN_LOG(...) do {} while(0)
+#endif
 
 #if AP_TEST_DRONECAN_DRIVERS
 CanardInterface* CanardInterface::canard_ifaces[] = {nullptr, nullptr, nullptr};
@@ -93,11 +99,12 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
 #endif
         .deadline_usec = AP_HAL::micros64() + (bcast_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-        .iface_mask = uint8_t((1<<num_ifaces) - 1),
+        .iface_mask = bcast_transfer.iface_mask,
 #endif
     };
     // do canard broadcast
-    int16_t ret = canardBroadcastObj(&canard, &tx_transfer);
+    int16_t ret;
+    ret = canardBroadcastObj(&canard, &tx_transfer);
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.give();
@@ -130,7 +137,7 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
 #endif
         .deadline_usec = AP_HAL::micros64() + (req_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-        .iface_mask = uint8_t((1<<num_ifaces) - 1),
+        .iface_mask = req_transfer.iface_mask,
 #endif
     };
     // do canard request
@@ -162,7 +169,7 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
 #endif
         .deadline_usec = AP_HAL::micros64() + (res_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-        .iface_mask = uint8_t((1<<num_ifaces) - 1),
+        .iface_mask = res_transfer.iface_mask,
 #endif
     };
     // do canard respond
@@ -215,17 +222,15 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         if (txq == nullptr) {
             return;
         }
-        // volatile as the value can change at any time during can interrupt
-        // we need to ensure that this is not optimized
-        volatile const auto *stats = ifaces[iface]->get_statistics();
-        uint64_t last_transmit_us = stats==nullptr?0:stats->last_transmit_us;
+        const auto *stats = ifaces[iface]->get_statistics();
         bool iface_down = true;
-        if (stats == nullptr || (AP_HAL::micros64() - last_transmit_us) < 200000UL) {
+        if (stats == nullptr || (AP_HAL::micros64() - stats->last_transmit_us) < 200000UL) {
             /*
             We were not able to queue the frame for
             sending. Only mark the send as failing if the
             interface is active. We consider an interface as
-            active if it has had successful transmits for some time.
+            active if it has had a successful transmit in the
+            last 500 milliseconds
             */
             iface_down = false;
         } 
@@ -419,29 +424,36 @@ void CanardInterface::process(uint32_t duration_ms) {
 bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
 {
     if (num_ifaces > HAL_NUM_CAN_IFACES) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Num Ifaces Exceeded\n");
+        CAN_LOG(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Num Ifaces Exceeded\n");
         return false;
     }
     if (can_iface == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface Null\n");
+        CAN_LOG(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface Null\n");
         return false;
     }
     if (ifaces[num_ifaces] != nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface already added\n");
+        CAN_LOG(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface already added\n");
         return false;
     }
     ifaces[num_ifaces] = can_iface;
     if (ifaces[num_ifaces] == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Can't alloc uavcan::iface\n");
+        CAN_LOG(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Can't alloc uavcan::iface\n");
         return false;
     }
     if (!can_iface->set_event_handle(&sem_handle)) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Setting event handle failed\n");
+        CAN_LOG(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Setting event handle failed\n");
         return false;
     }
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "DroneCANIfaceMgr: Successfully added interface %d\n", int(num_ifaces));
+    CAN_LOG(AP_CANManager::LOG_INFO, LOG_TAG, "DroneCANIfaceMgr: Successfully added interface %d\n", int(num_ifaces));
     num_ifaces++;
     return true;
+}
+
+uint16_t CanardInterface::pool_peak_percent()
+{
+    const CanardPoolAllocatorStatistics stats = canardGetPoolAllocatorStatistics(&canard);
+    const uint16_t peak_percent = (uint16_t)(100U * stats.peak_usage_blocks / stats.capacity_blocks);
+    return peak_percent;
 }
 
 // add an 11 bit auxillary driver
@@ -468,4 +480,4 @@ bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_
     return ret;
 }
 
-#endif // #if HAL_ENABLE_DRONECAN_DRIVERS
+#endif // HAL_ENABLE_DRONECAN_DRIVERS || defined(HAL_BUILD_AP_PERIPH)
