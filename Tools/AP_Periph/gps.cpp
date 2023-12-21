@@ -20,26 +20,18 @@
 /*
   handle gnss::RTCMStream
  */
-void AP_Periph_FW::handle_RTCMStream(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+void AP_Periph_DroneCAN::handle_RTCMStream(const CanardRxTransfer& transfer, const uavcan_equipment_gnss_RTCMStream &req)
 {
-    uavcan_equipment_gnss_RTCMStream req;
-    if (uavcan_equipment_gnss_RTCMStream_decode(transfer, &req)) {
-        return;
-    }
-    gps.handle_gps_rtcm_fragment(0, req.data.data, req.data.len);
+    periph.gps.handle_gps_rtcm_fragment(0, req.data.data, req.data.len);
 }
 
 /*
     handle gnss::MovingBaselineData
 */
 #if GPS_MOVING_BASELINE
-void AP_Periph_FW::handle_MovingBaselineData(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+void AP_Periph_DroneCAN::handle_MovingBaselineData(const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData &msg)
 {
-    ardupilot_gnss_MovingBaselineData msg;
-    if (ardupilot_gnss_MovingBaselineData_decode(transfer, &msg)) {
-        return;
-    }
-    gps.inject_MBL_data(msg.data.data, msg.data.len);
+    periph.gps.inject_MBL_data((uint8_t*)msg.data.data, msg.data.len);
     Debug("MovingBaselineData: len=%u\n", msg.data.len);
 }
 #endif // GPS_MOVING_BASELINE
@@ -159,14 +151,7 @@ void AP_Periph_FW::can_gps_update(void)
 
         check_float16_range(pkt.covariance.data, pkt.covariance.len);
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_FIX2_MAX_SIZE] {};
-        uint16_t total_size = uavcan_equipment_gnss_Fix2_encode(&pkt, buffer, !canfdout());
-
-        canard_broadcast(UAVCAN_EQUIPMENT_GNSS_FIX2_SIGNATURE,
-                         UAVCAN_EQUIPMENT_GNSS_FIX2_ID,
-                         CANARD_TRANSFER_PRIORITY_LOW,
-                         &buffer[0],
-                         total_size);
+        dronecan->gnss_fix2_pub.broadcast(pkt);
     }
     
     /*
@@ -177,13 +162,7 @@ void AP_Periph_FW::can_gps_update(void)
         aux.hdop = gps.get_hdop() * 0.01;
         aux.vdop = gps.get_vdop() * 0.01;
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_AUXILIARY_MAX_SIZE] {};
-        uint16_t total_size = uavcan_equipment_gnss_Auxiliary_encode(&aux, buffer, !canfdout());
-        canard_broadcast(UAVCAN_EQUIPMENT_GNSS_AUXILIARY_SIGNATURE,
-                        UAVCAN_EQUIPMENT_GNSS_AUXILIARY_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        &buffer[0],
-                        total_size);
+        dronecan->gnss_aux_pub.broadcast(aux);
     }
 
     // send the gnss status packet
@@ -204,13 +183,7 @@ void AP_Periph_FW::can_gps_update(void)
             status.error_codes = error_codes;
         }
 
-        uint8_t buffer[ARDUPILOT_GNSS_STATUS_MAX_SIZE] {};
-        const uint16_t total_size = ardupilot_gnss_Status_encode(&status, buffer, !canfdout());
-        canard_broadcast(ARDUPILOT_GNSS_STATUS_SIGNATURE,
-                        ARDUPILOT_GNSS_STATUS_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        &buffer[0],
-                        total_size);
+        dronecan->gnss_status_pub.broadcast(status);
 
     }
 
@@ -226,13 +199,7 @@ void AP_Periph_FW::can_gps_update(void)
             heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
             heading.heading_rad = radians(yaw_deg);
             heading.heading_accuracy_rad = radians(yaw_acc_deg);
-            uint8_t buffer[ARDUPILOT_GNSS_HEADING_MAX_SIZE] {};
-            const uint16_t total_size = ardupilot_gnss_Heading_encode(&heading, buffer, !canfdout());
-            canard_broadcast(ARDUPILOT_GNSS_HEADING_SIGNATURE,
-                             ARDUPILOT_GNSS_HEADING_ID,
-                             CANARD_TRANSFER_PRIORITY_LOW,
-                             &buffer[0],
-                             total_size);
+            dronecan->gnss_heading_pub.broadcast(heading);
         }
     }
 }
@@ -255,21 +222,8 @@ void AP_Periph_FW::send_moving_baseline_msg()
     static_assert(sizeof(ardupilot_gnss_MovingBaselineData::data.data) == RTCM3_MAX_PACKET_LEN, "Size of Moving Base data is wrong");
     mbldata.data.len = len;
     memcpy(mbldata.data.data, data, len);
-    uint8_t buffer[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE] {};
-    const uint16_t total_size = ardupilot_gnss_MovingBaselineData_encode(&mbldata, buffer, !canfdout());
 
-    uint8_t iface_mask = 0;
-#if HAL_NUM_CAN_IFACES >= 2 && CANARD_MULTI_IFACE
-    if (gps_mb_can_port != -1 && (gps_mb_can_port < HAL_NUM_CAN_IFACES)) {
-        iface_mask = 1U<<gps_mb_can_port;
-    }
-#endif
-    canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
-                     ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                     CANARD_TRANSFER_PRIORITY_LOW,
-                     &buffer[0],
-                     total_size,
-                     iface_mask);
+    dronecan->moving_baseline_pub.broadcast(mbldata);
     gps.clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE
 }
@@ -293,13 +247,7 @@ void AP_Periph_FW::send_relposheading_msg() {
     relpos.relative_down_pos_m = relative_down_pos;
     relpos.reported_heading_acc_deg = reported_heading_acc;
     relpos.reported_heading_acc_available = !is_zero(relpos.reported_heading_acc_deg);
-    uint8_t buffer[ARDUPILOT_GNSS_RELPOSHEADING_MAX_SIZE] {};
-    const uint16_t total_size = ardupilot_gnss_RelPosHeading_encode(&relpos, buffer, !canfdout());
-    canard_broadcast(ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
-                    ARDUPILOT_GNSS_RELPOSHEADING_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    dronecan->relposheading_pub.broadcast(relpos);
 #endif // GPS_MOVING_BASELINE
 }
 

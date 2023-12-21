@@ -4,14 +4,8 @@
 
 #include <dronecan_msgs.h>
 
-void AP_Periph_FW::handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+void AP_Periph_FW::handle_hardpoint_command(const CanardRxTransfer& transfer, const uavcan_equipment_hardpoint_Command &cmd)
 {
-    uavcan_equipment_hardpoint_Command cmd {};
-    if (uavcan_equipment_hardpoint_Command_decode(transfer, &cmd)) {
-        // Failed to decode
-        return;
-    }
-
     // Command must be 0 or 1, other values may be supported in the future
     // rejecting them now ensures no change in behaviour
     if ((cmd.command != 0) && (cmd.command != 1)) {

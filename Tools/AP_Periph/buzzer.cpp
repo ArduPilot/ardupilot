@@ -16,12 +16,8 @@ static uint32_t buzzer_len_ms;
 /*
   handle BeepCommand
  */
-void AP_Periph_FW::handle_beep_command(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+void AP_Periph_DroneCAN::handle_beep_command(const CanardRxTransfer& transfer, const uavcan_equipment_indication_BeepCommand &req)
 {
-    uavcan_equipment_indication_BeepCommand req;
-    if (uavcan_equipment_indication_BeepCommand_decode(transfer, &req)) {
-        return;
-    }
     static bool initialised;
     if (!initialised) {
         initialised = true;

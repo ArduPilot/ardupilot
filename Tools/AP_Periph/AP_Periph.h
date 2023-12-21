@@ -39,6 +39,13 @@
 #include "rc_in.h"
 #include "batt_balance.h"
 #include "networking.h"
+#include <AP_DroneCAN/AP_Canard_iface.h>
+#include <dronecan_msgs.h>
+#include <canard.h>
+#include <canard/publisher.h>
+#include <canard/subscriber.h>
+#include <canard/service_client.h>
+#include <canard/service_server.h>
 #include "serial_options.h"
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
@@ -90,10 +97,6 @@
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
 #endif
 
-#ifndef HAL_PERIPH_CAN_MIRROR
-#define HAL_PERIPH_CAN_MIRROR 0
-#endif
-
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
 /* this checking for reboot can lose bytes on GPS modules and other
  * serial devices. It is really only relevent on a debug build if you
@@ -135,6 +138,7 @@ struct CanardRxTransfer;
 #endif
 #endif
 
+class AP_Periph_DroneCAN;
 class AP_Periph_FW {
 public:
     AP_Periph_FW();
@@ -328,7 +332,7 @@ public:
 
     void rcout_init();
     void rcout_init_1Hz();
-    void rcout_esc(int16_t *rc, uint8_t num_channels);
+    void rcout_esc(const int16_t *rc, uint8_t num_channels);
     void rcout_srv_unitless(const uint8_t actuator_id, const float command_value);
     void rcout_srv_PWM(const uint8_t actuator_id, const float command_value);
     void rcout_update();
@@ -447,33 +451,10 @@ public:
     static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
 
-    bool canard_broadcast(uint64_t data_type_signature,
-                          uint16_t data_type_id,
-                          uint8_t priority,
-                          const void* payload,
-                          uint16_t payload_len,
-                          uint8_t iface_mask=0);
-
-    bool canard_respond(CanardInstance* canard_instance,
-                        CanardRxTransfer* transfer,
-                        uint64_t data_type_signature,
-                        uint16_t data_type_id,
-                        const uint8_t *payload,
-                        uint16_t payload_len);
-    
-    void onTransferReceived(CanardInstance* canard_instance,
-                            CanardRxTransfer* transfer);
-    bool shouldAcceptTransfer(const CanardInstance* canard_instance,
-                              uint64_t* out_data_type_signature,
-                              uint16_t data_type_id,
-                              CanardTransferType transfer_type,
-                              uint8_t source_node_id);
-
     // reboot the peripheral, optionally holding in bootloader
     void reboot(bool hold_in_bootloader);
 
 #if AP_UART_MONITOR_ENABLED
-    void handle_tunnel_Targetted(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void send_serial_monitor_data();
     int8_t get_default_tunnel_serial_port(void) const;
 
@@ -489,60 +470,184 @@ public:
     } uart_monitor;
 #endif
 
-    // handlers for incoming messages
-    void handle_get_node_info(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_param_getset(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_param_executeopcode(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_begin_firmware_update(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_allocation_response(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_safety_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_arming_status(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_RTCMStream(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_MovingBaselineData(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_esc_rawcommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_act_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_beep_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-    void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
-
     void process1HzTasks(uint64_t timestamp_usec);
-    void processTx(void);
-    void processRx(void);
-#if HAL_PERIPH_CAN_MIRROR
-    void processMirror(void);
-#endif // HAL_PERIPH_CAN_MIRROR
-    void cleanup_stale_transactions(uint64_t timestamp_usec);
+
     void update_rx_protocol_stats(int16_t res);
     void node_status_send(void);
     bool can_do_dna();
-    uint8_t *get_tid_ptr(uint32_t transfer_desc);
-    uint16_t pool_peak_percent();
     void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue);
 
-    struct dronecan_protocol_t {
-        CanardInstance canard;
-        uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];
-        struct tid_map {
-            uint32_t transfer_desc;
-            uint8_t tid;
-            tid_map *next;
-        } *tid_map_head;
-        /*
-         * Variables used for dynamic node ID allocation.
-         * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
-         */
-        uint32_t send_next_node_id_allocation_request_at_ms; ///< When the next node ID allocation request should be sent
-        uint8_t node_id_allocation_unique_id_offset;         ///< Depends on the stage of the next request
-        uint8_t tx_fail_count;
-        uint8_t dna_interface = 1;
-    } dronecan;
+    AP_Periph_DroneCAN* dronecan;
+    /*
+    * Variables used for dynamic node ID allocation.
+    * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
+    */
+    uint32_t send_next_node_id_allocation_request_at_ms; ///< When the next node ID allocation request should be sent
+    uint8_t node_id_allocation_unique_id_offset;         ///< Depends on the stage of the next request
 
 #if AP_SIM_ENABLED
     SITL::SIM sitl;
 #endif
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
+#endif
+};
+
+class AP_Periph_DroneCAN {
+    uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];
+    uint8_t tx_fail_count;
+    uint8_t dna_interface = 1;
+public:
+    AP_Periph_DroneCAN();
+
+    CanardInterface canard_iface{0};
+
+#if AP_UART_MONITOR_ENABLED
+    Canard::Publisher<uavcan_tunnel_Targetted> tunnel_pub{canard_iface};
+#endif
+
+    Canard::Publisher<uavcan_protocol_dynamic_node_id_Allocation> dynamic_node_id_pub{canard_iface};
+    Canard::Publisher<uavcan_protocol_NodeStatus> node_status_pub{canard_iface};
+#if HAL_ENABLE_SENDING_STATS
+    Canard::Publisher<dronecan_protocol_Stats> stats_pub{canard_iface};
+    Canard::Publisher<dronecan_protocol_CanStats> can_stats_pub{canard_iface};
+#endif
+    Canard::Publisher<uavcan_equipment_ahrs_MagneticFieldStrength> mag_pub{canard_iface};
+
+#ifdef HAL_PERIPH_ENABLE_GPS
+    Canard::Publisher<uavcan_equipment_gnss_Fix2> gnss_fix2_pub{canard_iface};
+    Canard::Publisher<uavcan_equipment_gnss_Auxiliary> gnss_aux_pub{canard_iface};
+    Canard::Publisher<ardupilot_gnss_Status> gnss_status_pub{canard_iface};
+
+    Canard::Publisher<ardupilot_gnss_MovingBaselineData> moving_baseline_pub{canard_iface};
+
+    Canard::Publisher<ardupilot_gnss_RelPosHeading> relposheading_pub{canard_iface};
+    Canard::Publisher<ardupilot_gnss_Heading> gnss_heading_pub{canard_iface};
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BARO
+    Canard::Publisher<uavcan_equipment_air_data_StaticPressure> static_pressure_pub{canard_iface};
+    Canard::Publisher<uavcan_equipment_air_data_StaticTemperature> static_temperature_pub{canard_iface};
+#endif
+
+    Canard::Publisher<uavcan_protocol_debug_LogMessage> log_pub{canard_iface};
+
+#ifdef HAL_GPIO_PIN_SAFE_BUTTON
+    Canard::Publisher<ardupilot_indication_Button> button_pub{canard_iface};
+#endif
+
+    Canard::Publisher<uavcan_equipment_esc_Status> esc_status_pub{canard_iface};
+    Canard::Publisher<ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_pub{canard_iface};
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    Canard::Publisher<uavcan_equipment_air_data_RawAirData> raw_air_data_pub{canard_iface};
+#endif
+    Canard::Publisher<ardupilot_equipment_power_BatteryInfoAux> battery_info_aux_pub{canard_iface};
+    Canard::Publisher<uavcan_equipment_power_BatteryInfo> battery_info_pub{canard_iface};
+
+#ifdef HAL_PERIPH_ENABLE_EFI
+    Canard::Publisher<uavcan_equipment_ice_reciprocating_Status> reciprocating_engine_status_pub{canard_iface};
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    Canard::Publisher<uavcan_equipment_hardpoint_Command> hardpoint_command_pub{canard_iface};
+#endif
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+    Canard::Publisher<ardupilot_equipment_proximity_sensor_Proximity> proximity_pub{canard_iface};
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    Canard::Publisher<uavcan_equipment_range_sensor_Measurement> range_sensor_measurement_pub{canard_iface};
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    Canard::Publisher<dronecan_sensors_rc_RCInput> rc_input_pub{canard_iface};
+#endif
+
+    // handlers for incoming messages
+    static void handle_get_node_info(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest &req);
+    Canard::StaticCallback<uavcan_protocol_GetNodeInfoRequest> get_node_info_callback{&AP_Periph_DroneCAN::handle_get_node_info};
+    Canard::Server<uavcan_protocol_GetNodeInfoRequest> get_node_info_server{canard_iface, get_node_info_callback};
+
+    static void handle_param_getset(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetRequest &req);
+    Canard::StaticCallback<uavcan_protocol_param_GetSetRequest> param_getset_callback{&AP_Periph_DroneCAN::handle_param_getset};
+    Canard::Server<uavcan_protocol_param_GetSetRequest> param_getset_server{canard_iface, param_getset_callback};
+
+    static void handle_param_executeopcode(const CanardRxTransfer& transfer, const uavcan_protocol_param_ExecuteOpcodeRequest &req);
+    Canard::StaticCallback<uavcan_protocol_param_ExecuteOpcodeRequest> param_executeopcode_callback{&AP_Periph_DroneCAN::handle_param_executeopcode};
+    Canard::Server<uavcan_protocol_param_ExecuteOpcodeRequest> param_executeopcode_server{canard_iface, param_executeopcode_callback};
+
+    static void handle_begin_firmware_update(const CanardRxTransfer& transfer, const uavcan_protocol_file_BeginFirmwareUpdateRequest &req);
+    Canard::StaticCallback<uavcan_protocol_file_BeginFirmwareUpdateRequest> begin_firmware_update_callback{&AP_Periph_DroneCAN::handle_begin_firmware_update};
+    Canard::Server<uavcan_protocol_file_BeginFirmwareUpdateRequest> begin_firmware_update_server{canard_iface, begin_firmware_update_callback};
+
+    static void handle_allocation_response(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation &msg);
+    Canard::StaticCallback<uavcan_protocol_dynamic_node_id_Allocation> allocation_response_callback{&AP_Periph_DroneCAN::handle_allocation_response};
+    Canard::Subscriber<uavcan_protocol_dynamic_node_id_Allocation> allocation_response_sub{allocation_response_callback, 0};
+
+#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+    static void handle_safety_state(const CanardRxTransfer& transfer, const ardupilot_indication_SafetyState &msg);
+    Canard::StaticCallback<ardupilot_indication_SafetyState> safety_state_callback{&AP_Periph_DroneCAN::handle_safety_state};
+    Canard::Subscriber<ardupilot_indication_SafetyState> safety_state_sub{safety_state_callback, 0};
+#endif
+
+    static void handle_arming_status(const CanardRxTransfer& transfer, const uavcan_equipment_safety_ArmingStatus &msg);
+    Canard::StaticCallback<uavcan_equipment_safety_ArmingStatus> arming_status_callback{&AP_Periph_DroneCAN::handle_arming_status};
+    Canard::Subscriber<uavcan_equipment_safety_ArmingStatus> arming_status_sub{arming_status_callback, 0};
+
+#ifdef HAL_PERIPH_ENABLE_GPS
+    static void handle_RTCMStream(const CanardRxTransfer& transfer, const uavcan_equipment_gnss_RTCMStream &req);
+    Canard::StaticCallback<uavcan_equipment_gnss_RTCMStream> RTCMStream_callback{&AP_Periph_DroneCAN::handle_RTCMStream};
+    Canard::Subscriber<uavcan_equipment_gnss_RTCMStream> RTCMStream_sub{RTCMStream_callback, 0};
+
+#if GPS_MOVING_BASELINE
+    static void handle_MovingBaselineData(const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData &msg);
+    Canard::StaticCallback<ardupilot_gnss_MovingBaselineData> MovingBaselineData_callback{&AP_Periph_DroneCAN::handle_MovingBaselineData};
+    Canard::Subscriber<ardupilot_gnss_MovingBaselineData> MovingBaselineData_sub{MovingBaselineData_callback, 0};
+#endif
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+    static void handle_esc_rawcommand(const CanardRxTransfer& transfer, const uavcan_equipment_esc_RawCommand &msg);
+    Canard::StaticCallback<uavcan_equipment_esc_RawCommand> esc_rawcommand_callback{&AP_Periph_DroneCAN::handle_esc_rawcommand};
+    Canard::Subscriber<uavcan_equipment_esc_RawCommand> esc_rawcommand_sub{esc_rawcommand_callback, 0};
+
+    static void handle_act_command(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_ArrayCommand &msg);
+    Canard::StaticCallback<uavcan_equipment_actuator_ArrayCommand> act_command_callback{&AP_Periph_DroneCAN::handle_act_command};
+    Canard::Subscriber<uavcan_equipment_actuator_ArrayCommand> act_command_sub{act_command_callback, 0};
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY)
+    static void handle_beep_command(const CanardRxTransfer& transfer, const uavcan_equipment_indication_BeepCommand &msg);
+    Canard::StaticCallback<uavcan_equipment_indication_BeepCommand> beep_command_callback{&AP_Periph_DroneCAN::handle_beep_command};
+    Canard::Subscriber<uavcan_equipment_indication_BeepCommand> beep_command_sub{beep_command_callback, 0};
+#endif
+
+#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+    static void handle_lightscommand(const CanardRxTransfer& transfer, const uavcan_equipment_indication_LightsCommand &msg);
+    Canard::StaticCallback<uavcan_equipment_indication_LightsCommand> lightscommand_callback{&AP_Periph_DroneCAN::handle_lightscommand};
+    Canard::Subscriber<uavcan_equipment_indication_LightsCommand> lightscommand_sub{lightscommand_callback, 0};
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+    static void handle_notify_state(const CanardRxTransfer& transfer, const ardupilot_indication_NotifyState &msg);
+    Canard::StaticCallback<ardupilot_indication_NotifyState> notify_state_callback{&AP_Periph_DroneCAN::handle_notify_state};
+    Canard::Subscriber<ardupilot_indication_NotifyState> notify_state_sub{notify_state_callback, 0};
+#endif
+
+#if AP_UART_MONITOR_ENABLED
+    static void handle_tunnel_Targetted(const CanardRxTransfer& transfer, const uavcan_tunnel_Targetted &pkt);
+    Canard::StaticCallback<uavcan_tunnel_Targetted> tunnel_targetted_callback{&AP_Periph_DroneCAN::handle_tunnel_Targetted};
+    Canard::Subscriber<uavcan_tunnel_Targetted> tunnel_targetted_sub{tunnel_targetted_callback, 0};
+#endif
+
+    static void handle_restart_node(const CanardRxTransfer& transfer, const uavcan_protocol_RestartNodeRequest &req);
+    Canard::StaticCallback<uavcan_protocol_RestartNodeRequest> restart_node_callback{&AP_Periph_DroneCAN::handle_restart_node};
+    Canard::Server<uavcan_protocol_RestartNodeRequest> restart_node_server{canard_iface, restart_node_callback};
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    static void handle_hardpoint_command(const CanardRxTransfer& transfer, const uavcan_equipment_hardpoint_Command &cmd);
+    Canard::StaticCallback<uavcan_equipment_hardpoint_Command> hardpoint_command_callback{&AP_Periph_DroneCAN::handle_hardpoint_command};
+    Canard::Subscriber<uavcan_equipment_hardpoint_Command> hardpoint_command_sub{hardpoint_command_callback, 0};
 #endif
 };
 

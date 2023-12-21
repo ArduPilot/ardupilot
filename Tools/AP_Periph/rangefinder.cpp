@@ -84,14 +84,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
 
     pkt.range = dist_cm * 0.01;
 
-    uint8_t buffer[UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_MAX_SIZE] {};
-    uint16_t total_size = uavcan_equipment_range_sensor_Measurement_encode(&pkt, buffer, !periph.canfdout());
-
-    canard_broadcast(UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SIGNATURE,
-                    UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    dronecan->range_sensor_measurement_pub.broadcast(pkt);
 }
 
 #endif // HAL_PERIPH_ENABLE_RANGEFINDER

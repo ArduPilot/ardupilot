@@ -53,13 +53,7 @@ void AP_Periph_FW::pwm_hardpoint_update()
         cmd.hardpoint_id = g.hardpoint_id;
         cmd.command = value;
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_MAX_SIZE] {};
-        uint16_t total_size = uavcan_equipment_hardpoint_Command_encode(&cmd, buffer, !canfdout());
-        canard_broadcast(UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE,
-                        UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        &buffer[0],
-                        total_size);
+        dronecan->hardpoint_command_pub.broadcast(cmd);
     }
 }
 

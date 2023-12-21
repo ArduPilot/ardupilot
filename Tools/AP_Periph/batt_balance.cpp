@@ -121,14 +121,7 @@ void AP_Periph_FW::batt_balance_update()
     pkt->nominal_voltage = nanf("");
     pkt->battery_id = uint8_t(battery_balance.id);
 
-    // encode and send message:
-    const uint16_t total_size = ardupilot_equipment_power_BatteryInfoAux_encode(pkt, buffer, !periph.canfdout());
-
-    canard_broadcast(ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_SIGNATURE,
-                     ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_ID,
-                     CANARD_TRANSFER_PRIORITY_LOW,
-                     buffer,
-                     total_size);
+    dronecan->battery_info_aux_pub.broadcast(*pkt);
 
     delete pkt;
     delete [] buffer;
