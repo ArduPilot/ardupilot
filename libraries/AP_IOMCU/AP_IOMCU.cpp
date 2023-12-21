@@ -691,7 +691,10 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 */
 bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
 {
-    while (count > PKT_MAX_REGS) {
+    // The use of offset is very, very evil - it can either be a command within the page
+    // or a genuine offset, offsets within PAGE_SETUP are assumed to be commands, otherwise to be an
+    // actual offset
+    while (page != PAGE_SETUP && count > PKT_MAX_REGS) {
         if (!write_registers(page, offset, PKT_MAX_REGS, regs)) {
             return false;
         }
