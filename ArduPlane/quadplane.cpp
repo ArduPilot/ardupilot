@@ -4742,4 +4742,10 @@ float QuadPlane::get_throttle_input() const
     return ret;
 }
 
+// return true if forward throttle from forward_throttle_pct() should be used
+bool QuadPlane::allow_forward_throttle_in_vtol_mode() const
+{
+    return in_vtol_mode() && motors->armed() && (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN);
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
