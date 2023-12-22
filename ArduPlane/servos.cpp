@@ -591,10 +591,8 @@ void Plane::set_throttle(void)
 #if HAL_QUADPLANE_ENABLED
     } else if (quadplane.in_vtol_mode()) {
         float fwd_thr = 0;
-        // if armed and not spooled down ask quadplane code for forward throttle
-        if (quadplane.motors->armed() &&
-            quadplane.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN) {
-
+        // if enabled ask quadplane code for forward throttle
+        if (quadplane.allow_forward_throttle_in_vtol_mode()) {
             fwd_thr = constrain_float(quadplane.forward_throttle_pct(), min_throttle, max_throttle);
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);

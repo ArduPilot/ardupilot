@@ -729,6 +729,11 @@ private:
      */
     void setup_rp_fw_angle_gains(void);
 
+    /*
+      return true if forward throttle from forward_throttle_pct() should be used
+     */
+    bool allow_forward_throttle_in_vtol_mode() const;
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
