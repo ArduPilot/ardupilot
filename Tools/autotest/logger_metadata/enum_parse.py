@@ -18,6 +18,7 @@ class EnumDocco(object):
         "Copter": "ArduCopter",
         "Plane": "ArduPlane",
         "Tracker": "AntennaTracker",
+        "Blimp": "Blimp",
     }
 
     def __init__(self, vehicle):
