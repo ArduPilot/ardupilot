@@ -1095,6 +1095,7 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
+    float apply_throttle_limits(float throttle_in);
     void set_throttle(void);
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
