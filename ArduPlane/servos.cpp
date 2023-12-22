@@ -551,7 +551,10 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         }
-    } else if (suppress_throttle()) {
+        return;
+    }
+
+    if (suppress_throttle()) {
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
@@ -565,11 +568,15 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
 
         }
+        return;
+    }
+
 #if AP_SCRIPTING_ENABLED
-    } else if (nav_scripting_active()) {
+    if (nav_scripting_active()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
+    } else
 #endif
-    } else if (control_mode == &mode_stabilize ||
+           if (control_mode == &mode_stabilize ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_fbwa ||
