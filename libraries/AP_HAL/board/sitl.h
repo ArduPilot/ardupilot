@@ -55,8 +55,9 @@
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
 
-#include <AP_HAL/EventHandle.h>
+#include <AP_HAL_SITL/EventSource.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_EventSource HALSITL::EventSource
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES

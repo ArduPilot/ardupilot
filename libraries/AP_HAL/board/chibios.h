@@ -64,8 +64,9 @@
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
 
-#include <AP_HAL/EventHandle.h>
+#include <AP_HAL_ChibiOS/EventSource.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_EventSource ChibiOS::EventSource
 #endif
 
 /* string names for well known SPI devices */

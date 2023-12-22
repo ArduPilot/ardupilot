@@ -1,3 +1,4 @@
+#include <AP_HAL/EventHandle.h>
 #include "EventHandle.h"
 #include <AP_HAL/AP_HAL.h>
 

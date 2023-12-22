@@ -2,7 +2,6 @@
 
 #include "AP_HAL_Namespace.h"
 #include <stdint.h>
-#include "AP_HAL_Boards.h"
 
 class AP_HAL::EventSource {
 public:
@@ -15,7 +14,11 @@ public:
 
     // Wait on an Event handle, method for internal use by EventHandle
     virtual bool wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle) = 0;
+
+    virtual ~EventSource() {}
 };
+
+#include "AP_HAL_Boards.h"
 
 class AP_HAL::EventHandle {
 public:
