@@ -4061,6 +4061,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                            target_system=target_system,
                            target_component=target_component)
+        self.set_parameters({
+            "FENCE_TYPE": 2,    # circle only
+        })
         self.delay_sim_time(5) # let breaches clear
         # FIXME: should we allow this?
         self.progress("Ensure we can arm with no poly in place")
@@ -4068,6 +4071,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.disarm_vehicle()
+        self.set_parameters({
+            "FENCE_TYPE": 6,    # polyfence + circle
+        })
 
         self.test_poly_fence_noarms_exclusion_circle(target_system=target_system,
                                                      target_component=target_component)
