@@ -354,7 +354,7 @@ void AC_Autorotation::initial_flare_estimate()
 	 _index_sink_rate = 0;
 	 memset(_curr_sink_deriv, 0, sizeof(_curr_sink_deriv));
 
-	gcs().send_text(MAV_SEVERITY_INFO, "Ct/σ=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/9.8065f, _flare_alt_calc*0.01f, _c);
+	gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/9.8065f, _flare_alt_calc*0.01f, _c);
 
 }
 
