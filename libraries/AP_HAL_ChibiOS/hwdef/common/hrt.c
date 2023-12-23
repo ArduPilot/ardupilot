@@ -84,12 +84,16 @@ static uint32_t get_systime_us32(void)
   wrap and directly gives a uint64_t (aka systimestamp_t)
 */
 
-uint64_t hrt_micros64I()
+static uint64_t hrt_micros64I(void)
 {
-#ifdef AP_BOARD_START_TIME
-    return chVTGetTimeStampI() + AP_BOARD_START_TIME;
+    uint64_t ret = chVTGetTimeStampI();
+#if CH_CFG_ST_FREQUENCY != 1000000U
+    ret *= 1000000U/CH_CFG_ST_FREQUENCY;
 #endif
-    return chVTGetTimeStampI();
+#ifdef AP_BOARD_START_TIME
+    ret += AP_BOARD_START_TIME;
+#endif
+    return ret;
 }
 
 static inline bool is_locked(void) {
@@ -99,17 +103,17 @@ static inline bool is_locked(void) {
 uint64_t hrt_micros64()
 {
     if (is_locked()) {
-        return chVTGetTimeStampI();
+        return hrt_micros64I();
     } else if (port_is_isr_context()) {
         uint64_t ret;
         chSysLockFromISR();
-        ret = chVTGetTimeStampI();
+        ret = hrt_micros64I();
         chSysUnlockFromISR();
         return ret;
     } else {
         uint64_t ret;
         chSysLock();
-        ret = chVTGetTimeStampI();
+        ret = hrt_micros64I();
         chSysUnlock();
         return ret;
     }
