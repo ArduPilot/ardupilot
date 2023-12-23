@@ -31,6 +31,7 @@ const AP_Param::GroupInfo AC_CustomControl_LQR::var_info[] = {
 AC_CustomControl_LQR::AC_CustomControl_LQR(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt) :
     AC_CustomControl_Backend(frontend, ahrs, att_control, motors, dt)
 {
+    _dt = dt;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -82,15 +83,20 @@ Vector3f AC_CustomControl_LQR::update(void)
 //       k21 k22 k23 k24 k25 k26;
 //       k31 k32 k33 k34 k35 k36;]
 // [T1 T2 T3] = -k_gain*[v1 v2 v3 p q r]
-
-
-    Vector3f motor_out;
+    _integralX += 0.01*attitude_error_angle.x*_dt;
+    _integralY += 0.01*attitude_error_angle.y*_dt;
+    _integralZ += 0.01*attitude_error_angle.z*_dt;
+    constrain_float(_integralX, -_kimax_LQR, _kimax_LQR);
+    constrain_float(_integralY, -_kimax_LQR, _kimax_LQR);
+    constrain_float(_integralZ, -_kimax_LQR, _kimax_LQR);
     
-    motor_out.x = -10*attitude_error_angle.x - 4*1.34*gyro_latest.x;
+    Vector3f motor_out;
 
-    motor_out.y = -10*attitude_error_angle.y - 4*1.34*gyro_latest.y;
+    motor_out.x = -_integralX - 0.45*attitude_error_angle.x - 0.094*gyro_latest.x;
+
+    motor_out.y = -_integralY - 0.45*attitude_error_angle.y - 0.094*gyro_latest.y;
    
-    motor_out.z = -10*attitude_error_angle.z - 4*1.34*gyro_latest.z;
+    motor_out.z = -_integralZ - 0.45*attitude_error_angle.z - 0.094*gyro_latest.z;
 
    return motor_out;
 
@@ -100,6 +106,9 @@ Vector3f AC_CustomControl_LQR::update(void)
 // or to provide bumpless transfer from arducopter main controller
 void AC_CustomControl_LQR::reset(void)
 {
+    _integralX = 0;
+    _integralY = 0;
+    _integralZ = 0;
 }
 
 #endif

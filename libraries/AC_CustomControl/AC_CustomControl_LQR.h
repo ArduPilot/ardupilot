@@ -15,12 +15,17 @@ public:
 
     Vector3f update(void) override;
     void reset(void) override;
-
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     // declare parameters here
+
+    float _dt;
+
+    float _integralX, _integralY, _integralZ;
+    float _kimax_LQR = 0.08;
+
     AP_Float param1;
     AP_Float param2;
     AP_Float param3;
