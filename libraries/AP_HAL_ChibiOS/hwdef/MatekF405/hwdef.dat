@@ -156,9 +156,6 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
@@ -168,6 +165,5 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
 include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc

@@ -357,6 +357,16 @@ void Plane::one_second_loop()
         !is_equal(G_Dt, scheduler.get_loop_period_s())) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
+
+    const float loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available()) {
+        quadplane.attitude_control->set_notch_sample_rate(loop_rate);
+    }
+#endif
+    rollController.set_notch_sample_rate(loop_rate);
+    pitchController.set_notch_sample_rate(loop_rate);
+    yawController.set_notch_sample_rate(loop_rate);
 }
 
 void Plane::three_hz_loop()
@@ -788,8 +798,8 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
-// set target location (for use by scripting)
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+// set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
@@ -806,7 +816,9 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
+#if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {

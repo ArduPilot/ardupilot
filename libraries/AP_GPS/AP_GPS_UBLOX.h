@@ -20,10 +20,12 @@
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #pragma once
 
-#include "AP_GPS.h"
-#include "GPS_Backend.h"
+#include "AP_GPS_config.h"
 
 #if AP_GPS_UBLOX_ENABLED
+
+#include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
 

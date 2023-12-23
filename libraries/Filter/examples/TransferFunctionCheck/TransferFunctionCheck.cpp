@@ -61,7 +61,7 @@ public:
         hal.console->printf("NotchFilterFloat\n");
         hal.console->printf("Sample rate: %.9f Hz, Center: %.9f Hz\n", _sample_freq_hz, _center_freq_hz);
         hal.console->printf("Notch filter in the form: H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)\n");
-        hal.console->printf("a0: %.9f, a1: %.9f, a2: %.9f, b0: %.9f, b1: %.9f, b2: %.9f\n", 1.0/a0_inv, a1, a2, b0, b1, b2);
+        hal.console->printf("a0: %.9f, a1: %.9f, a2: %.9f, b0: %.9f, b1: %.9f, b2: %.9f\n", 1.0, a1, a2, b0, b1, b2);
     }
 };
 

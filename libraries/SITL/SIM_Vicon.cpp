@@ -164,9 +164,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             pitch,
             yaw
         };
-        mavlink_msg_vision_position_estimate_encode(
+        mavlink_msg_vision_position_estimate_encode_status(
             system_id,
             component_id,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
             &vision_position_estimate
         );
@@ -184,9 +185,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             pitch,
             yaw
         };
-        mavlink_msg_vicon_position_estimate_encode(
+        mavlink_msg_vicon_position_estimate_encode_status(
             system_id,
             component_id,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
             &vicon_position_estimate);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
@@ -200,9 +202,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             vel_corrected.y,
             vel_corrected.z
         };
-        mavlink_msg_vision_speed_estimate_encode(
+        mavlink_msg_vision_speed_estimate_encode_status(
             system_id,
             component_id,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
             &vicon_speed_estimate
             );
@@ -232,9 +235,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             0,
             MAV_ESTIMATOR_TYPE_VIO
         };
-        mavlink_msg_odometry_encode(
+        mavlink_msg_odometry_encode_status(
             system_id,
             component_id,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
             &odometry);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
@@ -270,9 +274,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             },
             {pos_delta.x, pos_delta.y, pos_delta.z}
         };
-        mavlink_msg_vision_position_delta_encode(
+        mavlink_msg_vision_position_delta_encode_status(
             system_id,
             component_id,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
             &vision_position_delta);
         msg_buf[msg_buf_index].time_send_us = time_send_us;

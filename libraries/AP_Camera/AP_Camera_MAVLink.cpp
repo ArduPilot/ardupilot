@@ -19,7 +19,7 @@ bool AP_Camera_MAVLink::trigger_pic()
 }
 
 // configure camera
-void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time)
+void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time)
 {
     // convert to mavlink message and send to all components
     mavlink_command_long_t mav_cmd_long = {};
@@ -30,8 +30,8 @@ void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, floa
     mav_cmd_long.param2 = shutter_speed;
     mav_cmd_long.param3 = aperture;
     mav_cmd_long.param4 = ISO;
-    mav_cmd_long.param5 = exposure_type;
-    mav_cmd_long.param6 = cmd_id;
+    mav_cmd_long.param5 = float(exposure_type);
+    mav_cmd_long.param6 = float(cmd_id);
     mav_cmd_long.param7 = engine_cutoff_time;
 
     // send to all components
@@ -39,10 +39,10 @@ void AP_Camera_MAVLink::configure(float shooting_mode, float shutter_speed, floa
 }
 
 // handle camera control message
-void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     // take picture and ignore other arguments
-    if (is_equal(shooting_cmd, 1.0f)) {
+    if (shooting_cmd == 1) {
         take_picture();
         return;
     }
@@ -54,8 +54,8 @@ void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, 
     mav_cmd_long.param2 = zoom_pos;
     mav_cmd_long.param3 = zoom_step;
     mav_cmd_long.param4 = focus_lock;
-    mav_cmd_long.param5 = shooting_cmd;
-    mav_cmd_long.param6 = cmd_id;
+    mav_cmd_long.param5 = float(shooting_cmd);
+    mav_cmd_long.param6 = float(cmd_id);
 
     // send to all components
     GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&mav_cmd_long, sizeof(mav_cmd_long));

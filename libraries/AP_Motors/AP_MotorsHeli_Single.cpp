@@ -28,16 +28,16 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
-    // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected. Direct Drive Variable Pitch is used for tails that have a motor that is governed at constant speed by an ESC.  Tail pitch is still accomplished with a servo.  Direct Drive Fixed Pitch (DDFP) CW is used for helicopters with a rotor that spins clockwise when viewed from above. Direct Drive Fixed Pitch (DDFP) CCW is used for helicopters with a rotor that spins counter clockwise when viewed from above. In both DDFP cases, no servo is used for the tail and the tail motor esc is controlled by the yaw axis.
-    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch CW,4:DirectDrive FixedPitch CCW,5:DDVP with external governor
+    // @Description: Tail type selection. Servo Only uses tail rotor pitch to provide yaw control (including stabilization) via an output assigned to Motor4.  Servo with External Gyro uses an external gyro to control tail rotor pitch via a servo.  Yaw control without stabilization is passed to the external gyro via the output assigned to Motor4.  Direct Drive Variable Pitch(DDVP) is used for tails that have a motor whose ESC is connected to an output with function HeliTailRSC. Tail pitch is still accomplished with a servo on an output assigned to Motor4 function.  Direct Drive Fixed Pitch (DDFP) CW is used for helicopters with a rotor that spins clockwise when viewed from above with a motor whose ESC is controlled by an output whose function is Motor4. Direct Drive Fixed Pitch (DDFP) CCW is used for helicopters with a rotor that spins counter clockwise when viewed from above with a motor whose ESC is controlled by an output whose function is Motor4. In both DDFP cases, no servo is used for the tail and the tail motor esc on Motor4 output is used to control the yaw axis using motor speed.
+    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch CW,4:DirectDrive FixedPitch CCW
     // @User: Standard
-    AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO),
+    AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, float(TAIL_TYPE::SERVO)),
 
     // Indice 5 was used by SWASH_TYPE and should not be used
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
-    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    // @Description: PWM in microseconds sent to external gyro on an servo/output whose function is Motor7 when tail type is Servo w/ ExtGyro
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: TAIL_SPEED
     // @DisplayName: DDVP Tail ESC speed
-    // @Description: Direct drive, variable pitch tail ESC speed in percent output to the tail motor esc (HeliTailRSC Servo) when motor interlock enabled (throttle hold off).
+    // @Description: Direct drive, variable pitch tail ESC speed in percent output to the tail motor esc (HeliTailRSC Servo) when motor interlock enabled (throttle hold off) and speed fully ramped up after spoolup.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: GYR_GAIN_ACRO
     // @DisplayName: ACRO External Gyro Gain
-    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
+    // @Description: PWM in microseconds sent to external gyro on an servo/output whose function is Motor7 when tail type is Servo w/ ExtGyro in mode ACRO instead of H_GYR_GAIN. A value of zero means to use H_GYR_GAIN
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -176,6 +176,13 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(thr_lin, "DDFP_", 22, AP_MotorsHeli_Single, Thrust_Linearization),
 
+    // @Param: YAW_TRIM
+    // @DisplayName: Tail Rotor Trim
+    // @Description: Fixed offset applied to yaw output to minimize yaw I-term contribution needed to counter rotor drag. Currently only works of DDFP tails (H_TAIL_TYPE = 3 or H_TAIL_TYPE = 4). If using the H_COL2YAW compensation this trim is used to compensate for the main rotor profile drag. If H_COL2YAW is not used, this value can be set to reduce the yaw I contribution to zero when in a steady hover.
+    // @Range: 0 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_TRIM", 23,  AP_MotorsHeli_Single, _yaw_trim, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -203,22 +210,33 @@ void AP_MotorsHeli_Single::init_outputs()
         // initialize main rotor servo
         _main_rotor.init_servo();
 
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-            _tail_rotor.init_servo();
-        } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-            // external gyro output
-            add_motor_num(AP_MOTORS_HELI_SINGLE_EXTGYRO);
+        switch (get_tail_type()) {
+            case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
+            case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW:
+                // DDFP tails use range as it is easier to ignore servo trim in making for simple implementation of thrust linearisation.
+                SRV_Channels::set_range(SRV_Channel::k_motor4, 1.0f);
+                break;
+
+            case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
+            case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
+                _tail_rotor.init_servo();
+                break;
+
+            case TAIL_TYPE::SERVO_EXTGYRO:
+                // external gyro output
+                add_motor_num(AP_MOTORS_HELI_SINGLE_EXTGYRO);
+
+
+                // External Gyro uses PWM output thus servo endpoints are forced
+                SRV_Channels::set_output_min_max(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_EXTGYRO), 1000, 2000);
+                FALLTHROUGH;
+
+            case TAIL_TYPE::SERVO:
+            default:
+                // yaw servo is an angle from -4500 to 4500
+                SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
+                break;
         }
-    }
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-        // External Gyro uses PWM output thus servo endpoints are forced
-        SRV_Channels::set_output_min_max(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_EXTGYRO), 1000, 2000);
-    }
-
-    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-        // yaw servo is an angle from -4500 to 4500
-        SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
@@ -250,19 +268,19 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-	
+
     // allow use of external governor autorotation bailout
-    if (_heliflags.in_autorotation) {        
+    if (_heliflags.in_autorotation) {
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         // set bailout ramp time
         _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+        if (use_tail_RSC()) {
             _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
             _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
         }
-    }else { 
+    } else {
         _main_rotor.set_autorotation_flag(false);
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+        if (use_tail_RSC()) {
             _tail_rotor.set_autorotation_flag(false);
         }
     }
@@ -300,7 +318,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
     calculate_armed_scalars();
 
     // send setpoints to DDVP rotor controller and trigger recalculation of scalars
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+    if (use_tail_RSC()) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SETPOINT);
         _tail_rotor.set_ramp_time(_main_rotor._ramp_time.get());
         _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
@@ -329,13 +347,13 @@ uint32_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
+void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
 {
     // Send state update to motors
     _tail_rotor.output(state);
     _main_rotor.output(state);
 
-    if (state == ROTOR_CONTROL_STOP){
+    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -360,8 +378,6 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
 //
 void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)
 {
-    float yaw_offset = 0.0f;
-
     // initialize limits flag
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -412,21 +428,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
 
-    // if servo output not in manual mode and heli is not in autorotation, process pre-compensation factors
-    if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED && !_heliflags.in_autorotation) {
-        // rudder feed forward based on collective
-        // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
-        // also not required if we are using external gyro
-        if ((get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-            // sanity check collective_yaw_scale
-            _collective_yaw_scale.set(constrain_float(_collective_yaw_scale, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
-            // This feedforward compensation follows the hover performance theory that hover power required
-            // is a function of gross weight to the 3/2 power
-            yaw_offset = _collective_yaw_scale * powf(fabsf(collective_out - _collective_zero_thrust_pct),1.5f);
-        }
-    } else {
-        yaw_offset = 0.0f;
-    }
+    // Get yaw offset required to cancel out steady state main rotor torque
+    const float yaw_offset = get_yaw_offset(collective_out);
 
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
@@ -460,6 +463,34 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
     _servo4_out = yaw_out;
 }
 
+// Get yaw offset required to cancel out steady state main rotor torque
+float AP_MotorsHeli_Single::get_yaw_offset(float collective)
+{
+    if ((get_tail_type() == TAIL_TYPE::SERVO_EXTGYRO) || (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED)) {
+        // Not in direct control of tail with external gyro or manual servo mode
+        return 0.0;
+    }
+
+    if (_heliflags.in_autorotation || (get_control_output() <= _main_rotor.get_idle_output())) {
+        // Motor is stopped or at idle, and thus not creating torque
+        return 0.0;
+    }
+
+    // sanity check collective_yaw_scale
+    _collective_yaw_scale.set(constrain_float(_collective_yaw_scale, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
+ 
+    // This feedforward compensation follows the hover performance theory that hover power required
+    // is a function of gross weight to the 3/2 power
+    float yaw_offset = _collective_yaw_scale * powf(fabsf(collective - _collective_zero_thrust_pct),1.5f);
+
+    // Add yaw trim for DDFP tails
+    if (have_DDFP_tail()) {
+        yaw_offset += _yaw_trim.get();
+    }
+
+    return yaw_offset;
+}
+
 void AP_MotorsHeli_Single::output_to_motors()
 {
     if (!initialised_ok()) {
@@ -469,87 +500,74 @@ void AP_MotorsHeli_Single::output_to_motors()
     // Write swashplate outputs
     _swashplate.output();
 
-    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-        rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
-    }
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-        // output gain to exernal gyro
-        if (_acro_tail && _ext_gyro_gain_acro > 0) {
-            rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_acro);
-        } else {
-            rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_std);
+    // Output main rotor
+    update_motor_control(get_rotor_control_state());
+
+    // Output tail rotor
+    switch (get_tail_type()) {
+        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW:
+            // Invert output for CCW tail
+            _servo4_out *= -1.0;
+            FALLTHROUGH;
+
+        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW: {
+            // calc filtered battery voltage and lift_max
+            thr_lin.update_lift_max_from_batt_voltage();
+
+            // Only throttle up if in active spool state
+            switch (_spool_state) {
+                case AP_Motors::SpoolState::SHUT_DOWN:
+                case AP_Motors::SpoolState::GROUND_IDLE:
+                case AP_Motors::SpoolState::SPOOLING_DOWN:
+                    // Set DDFP to servo min
+                    output_to_ddfp_tail(0.0);
+                    break;
+
+                case AP_Motors::SpoolState::SPOOLING_UP:
+                case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+                    // Operate DDFP to between DDFP_SPIN_MIN and DDFP_SPIN_MAX using thrust linearisation
+                    output_to_ddfp_tail(thr_lin.thrust_to_actuator(_servo4_out));
+                    break;
+            }
+            break;
         }
+
+        case TAIL_TYPE::SERVO_EXTGYRO:
+            // output gain to external gyro
+            if (_acro_tail && _ext_gyro_gain_acro > 0) {
+                rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_acro);
+            } else {
+                rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_std);
+            }
+            FALLTHROUGH;
+
+        case TAIL_TYPE::SERVO:
+        case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
+        case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
+        default:
+            rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
+            break;
     }
 
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW) {
-        _servo4_out = -_servo4_out;
-    }
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-        // calc filtered battery voltage and lift_max
-        thr_lin.update_lift_max_from_batt_voltage();
-    }
-
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            update_motor_control(ROTOR_CONTROL_STOP);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
-            }
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
-            }
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-            // set motor output based on thrust requests
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                SRV_Channel *c = SRV_Channels::srv_channel(AP_MOTORS_MOT_4);
-                if (c != nullptr) {
-                    _ddfp_pwm_min = c->get_output_min();
-                    _ddfp_pwm_max = c->get_output_max();
-                    _ddfp_pwm_trim = c->get_trim();
-                }
-                float servo_out = 0.0f;
-                if (is_positive((float) (_ddfp_pwm_max - _ddfp_pwm_min))) {
-                    float servo4_trim = constrain_float((_ddfp_pwm_trim - 1000) / (_ddfp_pwm_max - _ddfp_pwm_min), 0.0f, 1.0f);
-                    if (is_positive(_servo4_out)) {
-                        servo_out = (1.0f - servo4_trim) * _servo4_out + servo4_trim;
-                    } else {
-                        servo_out = servo4_trim * _servo4_out + servo4_trim;
-                    }
-                } else {
-                    // if servo pwm min and max are bad, convert servo4_out from -1 to 1 to 0 to 1
-                    servo_out = 0.5f * (_servo4_out + 1.0f);
-                    // this should never happen
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                }
-                // output yaw servo to tail rsc
-                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(thr_lin.thrust_to_actuator(constrain_float(servo_out, 0.0f, 1.0f))));
-            }
-            break;
-        case SpoolState::SPOOLING_DOWN:
-            // sends idle output to motors and wait for rotor to stop
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
-            }
-            break;
-
-    }
 }
 
-// calculate the motor output for DDFP tails from yaw_out
-uint16_t AP_MotorsHeli_Single::calculate_ddfp_output(float yaw_out)
+// handle output limit flags and send throttle to servos lib
+void AP_MotorsHeli_Single::output_to_ddfp_tail(float throttle)
 {
-    uint16_t ret = _ddfp_pwm_min + (_ddfp_pwm_max - _ddfp_pwm_min) * yaw_out;
-    return ret;
+    // Note: yaw trim thrust has already been applied. the output should only be from 0 to 1.
+    // Upper limit
+    if (throttle >= 1.0){
+        throttle = 1.0;
+        limit.yaw = true;
+    }
+
+    // Lower limit
+    if (throttle <= 0.0){
+        throttle = 0.0;
+        limit.yaw = true;
+    }
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_motor4, throttle);
 }
 
 // servo_test - move servos through full range of movement
@@ -634,4 +652,46 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
     }
 
     return true;
+}
+
+// Helper function for param conversions which are easier to be done in the motors class
+// Called from system.cpp
+void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
+{
+    // PARAMETER_CONVERSION - Added: Nov-2023
+    // Convert trim for DDFP tails
+    // Previous DDFP configs used servo trim for setting the yaw trim, which no longer works with thrust linearisation. Convert servo trim
+    // to H_YAW_TRIM. Default thrust linearisation gives linear thrust to throttle relationship to preserve previous setup behaviours so
+    // we can assume linear relationship in the conversion.
+    if (have_DDFP_tail() && !_yaw_trim.configured()) {
+
+        SRV_Channel *c = SRV_Channels::get_channel_for(SRV_Channel::k_motor4);
+        if (c != nullptr) {
+            uint16_t pwm_min = c->get_output_min();
+            uint16_t pwm_max = c->get_output_max();
+            uint16_t pwm_trim = c->get_trim();
+
+            float trim = (float)(pwm_trim - pwm_min) / constrain_uint16(pwm_max - pwm_min, 1, 2000);
+            _yaw_trim.set(trim);
+        }
+        // Motor 4 may not have been assigned to an output yet in which case this is unlikely to be a conversion from old setup.
+        // Prevent future attempts to convert the param so we don't put a non-sense value in.
+        _yaw_trim.save();
+    }
+}
+
+// Helper to return true for direct drive fixed pitch tail, either CW or CCW
+bool AP_MotorsHeli_Single::have_DDFP_tail() const
+{
+    const TAIL_TYPE type = get_tail_type();
+    return (type == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW) ||
+           (type == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW);
+}
+
+// Helper to return true if the tail RSC should be used
+bool AP_MotorsHeli_Single::use_tail_RSC() const
+{
+    const TAIL_TYPE type = get_tail_type();
+    return (type == TAIL_TYPE::DIRECTDRIVE_VARPITCH) ||
+           (type == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV);
 }

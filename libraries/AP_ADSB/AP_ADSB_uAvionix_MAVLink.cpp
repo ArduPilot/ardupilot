@@ -19,9 +19,6 @@
 #include <stdio.h>  // for sprintf
 #include <limits.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #define ADSB_CHAN_TIMEOUT_MS            15000
 
@@ -45,7 +42,7 @@ void AP_ADSB_uAvionix_MAVLink::update()
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         _frontend.out_state.chan = -1;
         _frontend.out_state.chan_last_ms = 0; // if the time isn't reset we spam the message
-        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_frontend.out_state.chan >= 0 && !_frontend._my_loc.is_zero() && _frontend.out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + _frontend.out_state.chan);
         if (now - _frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
@@ -63,7 +60,9 @@ void AP_ADSB_uAvionix_MAVLink::update()
 
 void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) const
 {
-    const AP_GPS &gps = AP::gps();
+    const auto &_my_loc = _frontend._my_loc;
+    const auto &gps = _my_loc;  // avoid churn
+
     const Vector3f &gps_velocity = gps.velocity();
 
     const int32_t latitude = _frontend._my_loc.lat;
@@ -72,7 +71,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
     const int16_t velVert = -1.0f * gps_velocity.z * 1E2; // convert m/s to cm/s
     const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
     const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
-    const uint8_t fixType = gps.status(); // this lines up perfectly with our enum
+    const AP_GPS_FixType fixType = gps.status(); // this lines up perfectly with our enum
     const uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
     const uint8_t numSats = gps.num_sats();
     const uint16_t squawk = _frontend.out_state.cfg.squawk_octal;
@@ -107,11 +106,10 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
     const uint64_t gps_time = gps.time_epoch_usec();
     const uint32_t utcTime = gps_time / 1000000ULL;
 
-    const AP_Baro &baro = AP::baro();
     int32_t altPres = INT_MAX;
-    if (baro.healthy()) {
+    if (_my_loc.baro_is_healthy) {
         // Altitude difference between sea level pressure and current pressure. Result in millimeters
-        altPres = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure()) * 1E3; // convert m to mm;
+        altPres = _my_loc.baro_alt_press_diff_sea_level * 1E3; // convert m to mm;
     }
 
 
@@ -122,7 +120,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
             latitude,
             longitude,
             altGNSS,
-            fixType,
+            uint8_t(fixType),
             numSats,
             altPres,
             accHoriz,
@@ -140,7 +138,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
 /*
  * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
  * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
- * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
+ * this function is used to create the encoded version without ever writing to the actual ICAO number. It's created on-demand
  */
 uint32_t AP_ADSB_uAvionix_MAVLink::encode_icao(const uint32_t icao_id) const
 {
@@ -253,4 +251,4 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             (uint8_t)_frontend.out_state.cfg.rfSelect);
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED

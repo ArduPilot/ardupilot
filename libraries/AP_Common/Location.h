@@ -15,9 +15,9 @@ public:
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 
     // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
-    int32_t alt;
-    int32_t lat;
-    int32_t lng;
+    int32_t alt; // in cm
+    int32_t lat; // in 1E7 degrees
+    int32_t lng; // in 1E7 degrees
 
     /// enumeration of possible altitude types
     enum class AltFrame {
@@ -79,6 +79,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
     void offset(ftype ofs_north, ftype ofs_east);
+    // extrapolate latitude/longitude given distances (in meters) north
+    // and east. Note that this is metres, *even for the altitude*.
+    void offset(const Vector3p &ofs_ned);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
@@ -148,7 +151,7 @@ public:
     // wrap longitude at -180e7 to 180e7
     static int32_t wrap_longitude(int64_t lon);
 
-    // limit lattitude to -90e7 to 90e7
+    // limit latitude to -90e7 to 90e7
     static int32_t limit_lattitude(int32_t lat);
     
     // get lon1-lon2, wrapping at -180e7 to 180e7

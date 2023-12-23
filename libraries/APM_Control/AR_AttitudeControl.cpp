@@ -141,6 +141,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _STR_RAT_PDMX
+    // @DisplayName: Steering control PD sum maximum
+    // @Description: Steering control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _STR_RAT_D_FF
+    // @DisplayName: Steering control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _STR_RAT_NTF
+    // @DisplayName: Steering control Target notch filter index
+    // @Description: Steering control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _STR_RAT_NEF
+    // @DisplayName: Steering control Error notch filter index
+    // @Description: Steering control Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
 
     // @Param: _SPEED_P
@@ -215,6 +240,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: _SPEED_PDMX
+    // @DisplayName: Speed control PD sum maximum
+    // @Description: Speed control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _SPEED_D_FF
+    // @DisplayName: Speed control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _SPEED_NTF
+    // @DisplayName: Speed control Target notch filter index
+    // @Description: Speed control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _SPEED_NEF
+    // @DisplayName: Speed control Error notch filter index
+    // @Description: Speed control Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
@@ -353,6 +403,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _BAL_PDMX
+    // @DisplayName: Pitch control PD sum maximum
+    // @Description: Pitch control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _BAL_D_FF
+    // @DisplayName: Pitch control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _BAL_NTF
+    // @DisplayName: Pitch control Target notch filter index
+    // @Description: Pitch control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _BAL_NEF
+    // @DisplayName: Pitch control Error notch filter index
+    // @Description: Pitch control Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
 
     // @Param: _BAL_PIT_FF
@@ -435,6 +510,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: _SAIL_PDMX
+    // @DisplayName: Sail Heel control PD sum maximum
+    // @Description: Sail Heel control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _SAIL_D_FF
+    // @DisplayName: Sail Heel Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _SAIL_NTF
+    // @DisplayName: Sail Heel Target notch filter index
+    // @Description: Sail Heel Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _SAIL_NEF
+    // @DisplayName: Sail Heel Error notch filter index
+    // @Description: Sail Heel Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
@@ -975,4 +1075,13 @@ void AR_AttitudeControl::relax_I()
     _steer_rate_pid.reset_I();
     _throttle_speed_pid.reset_I();
     _pitch_to_throttle_pid.reset_I();
+}
+
+void AR_AttitudeControl::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    _steer_rate_pid.set_notch_sample_rate(sample_rate);
+    _throttle_speed_pid.set_notch_sample_rate(sample_rate);
+    _pitch_to_throttle_pid.set_notch_sample_rate(sample_rate);
+#endif
 }

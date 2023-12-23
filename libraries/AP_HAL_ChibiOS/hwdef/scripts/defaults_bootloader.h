@@ -27,10 +27,6 @@
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
 #endif
 
-#ifndef HAL_GCS_ENABLED
-#define HAL_GCS_ENABLED 0
-#endif
-
 // make diagnosing Faults (e.g. HardFault) harder, but save bytes:
 #ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0

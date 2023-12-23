@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindArrow, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair, 5:TranslateArrows, 6:AviationStyleAH
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -352,8 +352,8 @@ bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
         _backends[instance]->init_symbol_set(AP_OSD_AbstractScreen::symbols_lookup_table, AP_OSD_NUM_SYMBOLS);
         return true;
     }
-    return false;
 #endif
+    return false;
 }
 
 #if OSD_ENABLED
@@ -457,11 +457,13 @@ void AP_OSD::update_stats()
     if (voltage > 0) {
         _stats.min_voltage_v = fminf(_stats.min_voltage_v, voltage);
     }
+#if AP_RSSI_ENABLED
     // minimum rssi
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         _stats.min_rssi = fminf(_stats.min_rssi, ap_rssi->read_receiver_rssi());
     }
+#endif
     // max airspeed either true or synthetic
     if (have_airspeed_estimate) {
         _stats.max_airspeed_mps = fmaxf(_stats.max_airspeed_mps, aspd_mps);
@@ -509,6 +511,7 @@ void AP_OSD::update_current_screen()
         return;
     }
 
+#if AP_RC_CHANNEL_ENABLED
     RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
     if (channel == nullptr) {
         return;
@@ -564,6 +567,7 @@ void AP_OSD::update_current_screen()
         break;
     }
     switch_debouncer = false;
+#endif  // AP_RC_CHANNEL_ENABLED
 }
 
 //select next avaliable screen, do nothing if all screens disabled

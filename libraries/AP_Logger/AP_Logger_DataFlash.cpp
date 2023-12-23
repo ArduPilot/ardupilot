@@ -2,12 +2,13 @@
   logging to a DataFlash block based storage device on SPI
 */
 
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_DATAFLASH_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Logger_DataFlash.h"
-
-#if HAL_LOGGING_DATAFLASH_ENABLED
 
 #include <stdio.h>
 

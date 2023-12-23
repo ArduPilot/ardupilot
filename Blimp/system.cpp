@@ -46,6 +46,7 @@ void Blimp::init_ardupilot()
 
     // allocate the motors class
     allocate_motors();
+    loiter = new Loiter(blimp.scheduler.get_loop_rate_hz());
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);

@@ -72,7 +72,7 @@ private:
     char *_write_filename;
     bool last_log_is_marked_discard;
     uint32_t _last_write_ms;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_RTC_ENABLED
     bool _need_rtc_update;
 #endif
     

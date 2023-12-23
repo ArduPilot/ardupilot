@@ -97,6 +97,10 @@ bool Mode::enter()
     quadplane.mode_enter();
 #endif
 
+#if AP_TERRAIN_AVAILABLE
+    plane.target_altitude.terrain_following_pending = false;
+#endif
+
     bool enter_result = _enter();
 
     if (enter_result) {
@@ -108,6 +112,9 @@ bool Mode::enter()
 #if HAL_ADSB_ENABLED
         plane.adsb.set_is_auto_mode(does_auto_navigation());
 #endif
+
+        // set the nav controller stale AFTER _enter() so that we can check if we're currently in a loiter during the mode change
+        plane.nav_controller->set_data_is_stale();
 
         // reset steering integrator on mode change
         plane.steerController.reset_I();
@@ -121,6 +128,16 @@ bool Mode::enter()
         // but it should be harmless to disable the fence temporarily in these situations as well
         plane.fence.manual_recovery_start();
 #endif
+        //reset mission if in landing sequence, disarmed, not flying, and have changed to a non-autothrottle mode to clear prearm
+        if (plane.mission.get_in_landing_sequence_flag() &&
+            !plane.is_flying() && !plane.arming.is_armed_and_safety_off() &&
+            !plane.control_mode->does_auto_navigation()) {
+           GCS_SEND_TEXT(MAV_SEVERITY_INFO, "In landing sequence: mission reset");
+           plane.mission.reset();
+        }
+
+        // Make sure the flight stage is correct for the new mode
+        plane.update_flight_stage();
     }
 
     return enter_result;

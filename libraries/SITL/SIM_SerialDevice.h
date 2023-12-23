@@ -46,13 +46,15 @@ protected:
     ByteBuffer *to_autopilot;
     ByteBuffer *from_autopilot;
 
-    bool init_sitl_pointer();
+    bool init_sitl_pointer() WARN_IF_UNUSED;
 
 private:
 
     bool is_match_baud(void) const;
 
     uint32_t autopilot_baud;
+
+    ssize_t corrupt_transfer(char *buffer, const ssize_t ret, const size_t size) const;
 };
 
 }

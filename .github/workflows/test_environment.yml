@@ -6,12 +6,12 @@ on:
   push:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
   pull_request:
     paths:
       - '.github/workflows/test_environment.yml'
-      - 'Tools/scripts/environment_install/**'
+      - 'Tools/environment_install/**'
 
 
 concurrency:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
       image: ${{matrix.os}}:${{matrix.name}}
       options: --privileged
@@ -29,13 +29,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu
-            name: bionic
-          - os: ubuntu
             name: focal
           - os: ubuntu
             name: jammy
           - os: ubuntu
             name: lunar
+          - os: ubuntu
+            name: mantic
           - os: archlinux
             name: latest
           - os: debian
@@ -68,16 +68,16 @@ jobs:
           software-properties-common
           ;;
           *"archlinux"*)
-          pacman -Sy --noconfirm --needed git sudo
+          pacman -Syu --noconfirm --needed git sudo
           ;;
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
-        timeout-minutes: 30
+        timeout-minutes: 45
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
@@ -115,6 +115,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
+          source $HOME/venv-ardupilot/bin/activate || true
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure
           ./waf rover
@@ -128,6 +129,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
+          source $HOME/venv-ardupilot/bin/activate || true
           case ${{matrix.os}} in
             *"archlinux"*)
               export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH

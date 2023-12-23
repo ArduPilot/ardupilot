@@ -238,7 +238,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SYNAIRSPEED
     // @DisplayName: Enable the use of synthetic airspeed
-    // @Description: This enable the use of synthetic airspeed for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate.
+    // @Description: This enables the use of synthetic airspeed in TECS for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate. This option has no effect if a healthy airspeed sensor is being used for airspeed measurements.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
@@ -390,7 +390,7 @@ void AP_TECS::_update_speed(float DT)
         _vel_dot_lpf = _vel_dot_lpf * (1.0f - alpha) + _vel_dot * alpha;
     }
 
-    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.airspeed_sensor_enabled();
+    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.using_airspeed_sensor();
 
     // Convert equivalent airspeeds to true airspeeds and harmonise limits
 
@@ -831,6 +831,9 @@ float AP_TECS::_get_i_gain(void)
  */
 void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
 {
+    // reset clip status after possible use of synthetic airspeed
+    _thr_clip_status = clipStatus::NONE;
+
     // Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
@@ -920,7 +923,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
     _SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-    if (!(_ahrs.airspeed_sensor_enabled() || _use_synthetic_airspeed)) {
+    if (!(_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed)) {
         _SKE_weighting = 0.0f;
     } else if (_flight_stage == AP_FixedWing::FlightStage::VTOL) {
         // if we are in VTOL mode then control pitch without regard to
@@ -1047,10 +1050,30 @@ void AP_TECS::_update_pitch(void)
     _last_pitch_dem = _pitch_dem;
 
     if (AP::logger().should_log(_log_bitmask)){
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
-                                    "Qffffffffffff",
+        // log to AP_Logger
+        // @LoggerMessage: TEC2
+        // @Vehicles: Plane
+        // @Description: Additional information about the Total Energy Control System
+        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: PEW: Potential energy weighting
+        // @Field: KEW: Kinetic energy weighting
+        // @Field: EBD: Energy balance demand
+        // @Field: EBE: Energy balance error
+        // @Field: EBDD: Energy balance rate demand
+        // @Field: EBDE: Energy balance rate error
+        // @Field: EBDDT: Energy balance rate demand + Energy balance rate error*pitch_damping
+        // @Field: Imin: Minimum integrator value
+        // @Field: Imax: Maximum integrator value
+        // @Field: I: Energy balance error integral
+        // @Field: KI: Pitch demand kinetic energy integral
+        // @Field: pmin: Pitch min
+        // @Field: pmax: Pitch max
+        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
+                                    "Qfffffffffffff",
                                     AP_HAL::micros64(),
                                     (double)SPE_weighting,
+                                    (double)_SKE_weighting,
                                     (double)SEB_dem,
                                     (double)SEB_est,
                                     (double)SEBdot_dem,
@@ -1088,6 +1111,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
         _takeoff_start_ms = 0;
+        _use_synthetic_airspeed_once = false;
 
         _flags.underspeed            = false;
         _flags.badDescent            = false;
@@ -1155,8 +1179,18 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     float hgt_afe,
                                     float load_factor)
 {
-    // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
+    // check how long since we last did the 50Hz update; do nothing in
+    // this loop if that hasn't run for some signficant period of
+    // time.  Notably, it may never have run, leaving _TAS_state as
+    // zero and subsequently division-by-zero errors.
+    const float _DT_for_update_50hz = (now - _update_50hz_last_usec) * 1.0e-6f;
+    if (_update_50hz_last_usec == 0 || _DT_for_update_50hz > 1.0) {
+        // more than 1 second since it was run, don't do anything yet:
+        return;
+    }
+
+    // Calculate time in seconds since last update
     _DT = (now - _update_pitch_throttle_last_usec) * 1.0e-6f;
     _DT = MAX(_DT, 0.001f);
     _update_pitch_throttle_last_usec = now;
@@ -1312,7 +1346,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Note that caller can demand the use of
     // synthetic airspeed for one loop if needed. This is required
     // during QuadPlane transition when pitch is constrained
-    if (_ahrs.airspeed_sensor_enabled() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
+    if (_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
         _update_throttle_with_airspeed();
         _use_synthetic_airspeed_once = false;
         _using_airspeed_for_throttle = true;

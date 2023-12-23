@@ -37,7 +37,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 13), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 14), 'could not add param table')
 
 --[[
   // @Param: QUIK_ENABLE
@@ -157,6 +157,17 @@ local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
   // @User: Standard
 --]]
 local QUIK_MAX_REDUCE  = bind_add_param('MAX_REDUCE',    13, 20)
+
+--[[
+  // @Param: QUIK_OPTIONS
+  // @DisplayName: Quicktune options
+  // @Description: Additional options. When the Two Position Switch option is enabled then a high switch position will start the tune, low will disable the tune. you should also set a QUIK_AUTO_SAVE time so that you will be able to save the tune.
+  // @Bitmask: 0:UseTwoPositionSwitch
+  // @User: Standard
+--]]
+local QUIK_OPTIONS     = bind_add_param('OPTIONS',       14, 0)
+
+local OPTIONS_TWO_POSITION = (1<<0)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
@@ -490,7 +501,13 @@ function update()
    if not sw_pos then
       return
    end
-   if sw_pos == 1 and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
+   local sw_pos_tune = 1
+   local sw_pos_save = 2
+   if (QUIK_OPTIONS:get() & OPTIONS_TWO_POSITION) ~= 0 then
+      sw_pos_tune = 2
+      sw_pos_save = -1
+   end
+   if sw_pos == sw_pos_tune and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
       gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
       last_warning = get_time()
       return
@@ -506,7 +523,7 @@ function update()
       reset_axes_done()
       return
    end
-   if sw_pos == 2 then
+   if sw_pos == sw_pos_save then
       -- save all params
       if need_restore then
          need_restore = false
@@ -514,7 +531,7 @@ function update()
          gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: saved"))
       end
    end
-   if sw_pos ~= 1 then
+   if sw_pos ~= sw_pos_tune then
       return
    end
 

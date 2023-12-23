@@ -68,7 +68,7 @@ void ModeAcro::stabilize()
         int32_t roll_error_cd = -ToDeg(acro_state.locked_roll_err)*100;
         plane.nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
-        // 'stabilze' to true, which disables the roll integrator
+        // 'stabilize' to true, which disables the roll integrator
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_servo_out(roll_error_cd,
                                                                                              speed_scaler,
                                                                                              true, false));

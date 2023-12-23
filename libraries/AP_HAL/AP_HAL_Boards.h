@@ -1,5 +1,5 @@
 /**
- * C preprocesor enumeration of the boards supported by the AP_HAL.
+ * C preprocessor enumeration of the boards supported by the AP_HAL.
  * This list exists so HAL_BOARD == HAL_BOARD_xxx preprocessor blocks
  * can be used to exclude HAL boards from the build when appropriate.
  * It's not an elegant solution but we can improve it in future.
@@ -42,6 +42,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR  1023
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
+#define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -169,8 +170,12 @@
 #define HAL_WITH_IO_MCU 0
 #endif
 
+#ifndef HAL_WITH_IO_MCU_BIDIR_DSHOT
+#define HAL_WITH_IO_MCU_BIDIR_DSHOT 0
+#endif
+
 #ifndef HAL_WITH_IO_MCU_DSHOT
-#define HAL_WITH_IO_MCU_DSHOT 0
+#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
 #endif
 
 // this is used as a general mechanism to make a 'small' build by
@@ -303,6 +308,10 @@
 #endif
 #endif
 
+#ifndef AP_BOOTLOADER_FLASHING_ENABLED
+#define AP_BOOTLOADER_FLASHING_ENABLED 0
+#endif
+
 #ifndef HAL_HNF_MAX_FILTERS
 // On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
@@ -318,7 +327,8 @@
 #else
 // Enough for a notch per motor on an octa quad using two IMUs and one harmonic
 // plus one static notch with one harmonic
-#define HAL_HNF_MAX_FILTERS 18
+// Or triple-notch per motor on one IMU with one harmonic
+#define HAL_HNF_MAX_FILTERS 24
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 

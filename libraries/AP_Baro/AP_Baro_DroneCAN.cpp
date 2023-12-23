@@ -88,7 +88,7 @@ AP_Baro_DroneCAN* AP_Baro_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_droneca
     
     if (create_new) {
         bool already_detected = false;
-        //Check if there's an empty spot for possible registeration
+        //Check if there's an empty spot for possible registration
         for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
             if (_detected_modules[i].ap_dronecan == ap_dronecan && _detected_modules[i].node_id == node_id) {
                 //Already Detected

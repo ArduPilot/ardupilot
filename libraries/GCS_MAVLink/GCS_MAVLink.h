@@ -3,6 +3,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Networking/AP_Networking_Config.h>
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
@@ -14,8 +15,13 @@
 #define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
+#if AP_NETWORKING_ENABLED
+// allow 7 telemetry ports with networking
+#define MAVLINK_COMM_NUM_BUFFERS 7
+#else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
+#endif
 
 #define MAVLINK_GET_CHANNEL_BUFFER 1
 #define MAVLINK_GET_CHANNEL_STATUS 1
@@ -37,7 +43,7 @@
 
 #include "include/mavlink/v2.0/mavlink_types.h"
 
-/// MAVLink stream used for uartA
+/// MAVLink streams used for each telemetry port
 extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 extern bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 

@@ -38,7 +38,6 @@ STM32_VDD 330U
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7
 
-define HAL_NO_LOGGING TRUE
 define HAL_NO_MONITOR_THREAD
 
 # USART3 F9
@@ -146,7 +145,5 @@ PB2 BOOT1 INPUT
 
 # passthrough CAN1
 define HAL_DEFAULT_CPORT 1
-
-define CAN_APP_NODE_NAME "com.cubepilot.herepro"
 
 FULL_CHIBIOS_BOOTLOADER 1

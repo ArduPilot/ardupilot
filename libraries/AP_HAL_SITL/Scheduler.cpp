@@ -276,10 +276,8 @@ void Scheduler::_run_io_procs()
     }
     hal.storage->_timer_tick();
 
-#ifndef HAL_BUILD_AP_PERIPH
     // in lieu of a thread-per-bus:
     ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
-#endif
 
 #if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();

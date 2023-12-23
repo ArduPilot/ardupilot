@@ -179,7 +179,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
     // filter actuator without I term so we can take ratios without
     // accounting for trim offsets. We first need to include the I and
     // clip to 45 degrees to get the right value of the real surface
-    const float clipped_actuator = constrain_float(pinfo.FF + pinfo.P + pinfo.D + pinfo.I, -45, 45) - pinfo.I;
+    const float clipped_actuator = constrain_float(pinfo.FF + pinfo.P + pinfo.D + pinfo.DFF + pinfo.I, -45, 45) - pinfo.I;
     const float actuator = actuator_filter.apply(clipped_actuator);
     const float actual_rate = rate_filter.apply(pinfo.actual);
 
@@ -424,9 +424,17 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
     }
 
     // setup filters to be suitable for time constant and gyro filter
-    rpid.filt_T_hz().set(10.0/(current.tau * 2 * M_PI));
+    // filtering T can  prevent P/D oscillation being seen, so allow the
+    // user to switch it off
+    if (!has_option(DISABLE_FLTT_UPDATE)) {
+        rpid.filt_T_hz().set(10.0/(current.tau * 2 * M_PI));
+    }
     rpid.filt_E_hz().set(0);
-    rpid.filt_D_hz().set(AP::ins().get_gyro_filter_hz()*0.5);
+    // filtering D at the same level as VTOL can allow unwanted oscillations to be seen,
+    // so allow the user to switch it off and select their own (usually lower) value
+    if (!has_option(DISABLE_FLTD_UPDATE)) {
+        rpid.filt_D_hz().set(AP::ins().get_gyro_filter_hz()*0.5);
+    }
 
     current.FF = FF;
     current.P = P;
@@ -548,7 +556,7 @@ void AP_AutoTune::update_rmax(void)
 
     if (level == 0) {
         // this level means to keep current values of RMAX and TCONST
-        target_rmax = constrain_float(current.rmax_pos, 75, 720);
+        target_rmax = constrain_float(current.rmax_pos, 20, 720);
         target_tau = constrain_float(current.tau, 0.1, 2);
     } else {
         target_rmax = tuning_table[level-1].rmax;

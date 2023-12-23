@@ -27,18 +27,6 @@
 
 extern const AP_HAL::HAL &hal;
 
-# if !HAL_GCS_ENABLED
-
-#include "include/mavlink/v2.0/protocol.h"
-#include "include/mavlink/v2.0/mavlink_types.h"
-#include "include/mavlink/v2.0/all/mavlink.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#include "include/mavlink/v2.0/mavlink_helpers.h"
-#pragma GCC diagnostic pop
-
-#endif
-
 /*
   init ADSB support
  */
@@ -51,16 +39,6 @@ void AP_Periph_FW::adsb_init(void)
         }
         uart->begin(AP_SerialManager::map_baudrate(g.adsb_baudrate), 256, 256);
     }
-}
-
-static mavlink_message_t chan_buffer;
-mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
-    return &chan_buffer;
-}
-
-static mavlink_status_t chan_status;
-mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
-    return &chan_status;
 }
 
 /*
@@ -83,7 +61,7 @@ void AP_Periph_FW::adsb_update(void)
         const uint8_t c = (uint8_t)uart->read();
 
         // Try to get a new message
-        if (mavlink_parse_char(MAVLINK_COMM_0, c, &adsb.msg, &adsb.status)) {
+        if (mavlink_frame_char_buffer(&adsb.msg, &adsb.status, c, &adsb.msg, &adsb.status) == MAVLINK_FRAMING_OK) {
             if (adsb.msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
                 // decode and send as UAVCAN TrafficReport
                 static mavlink_adsb_vehicle_t msg;
@@ -91,6 +69,24 @@ void AP_Periph_FW::adsb_update(void)
                 can_send_ADSB(msg);
             }
         }
+    }
+
+    /*
+      some ADSB devices need a heartbeat to get the system ID
+     */
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - adsb.last_heartbeat_ms >= 1000) {
+        adsb.last_heartbeat_ms = now_ms;
+        mavlink_heartbeat_t heartbeat {};
+        mavlink_message_t msg;
+        heartbeat.type = MAV_TYPE_GENERIC;
+        heartbeat.autopilot = MAV_AUTOPILOT_ARDUPILOTMEGA;
+        auto len = mavlink_msg_heartbeat_encode_status(1,
+                                                       MAV_COMP_ID_PERIPHERAL,
+                                                       &adsb.status,
+                                                       &msg, &heartbeat);
+
+        uart->write((uint8_t*)&msg.magic, len);
     }
 }
 

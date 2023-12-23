@@ -43,6 +43,7 @@ private:
     uint16_t distance_cm;
     uint16_t _max_distance_cm;
     uint16_t _min_distance_cm;
+    int8_t signal_quality;
 
     // start a reading
     static bool start_reading(void);

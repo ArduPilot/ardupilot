@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 '''
 This file implements a class that acts as a bridge between ArduPilot SITL and Webots
 

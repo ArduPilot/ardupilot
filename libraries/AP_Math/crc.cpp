@@ -92,6 +92,16 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 	return crc & 0xFF;
 }
 
+// CRC8 that does not use a lookup table: for generic polynomials
+uint8_t crc8_generic(const uint8_t *buf, const uint16_t buf_len, const uint8_t polynomial)
+{
+    uint8_t crc = 0;
+    for (uint16_t i = 0; i < buf_len; i++) {
+        crc = crc8_dvb(buf[i], crc, polynomial);
+    }
+    return crc;
+}
+
 // crc8 from betaflight
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
 {
@@ -374,6 +384,26 @@ uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
     return crc;
 }
 
+// CRC16_CCITT algorithm using right shift
+uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t out)
+{
+	for (uint32_t i = 0; i < len; i++) {
+		crc ^= *buf++;                      // XOR byte into least sig. byte of crc
+		for (uint8_t j = 0; j < 8; j++) {   // loop over each bit
+            if ((crc & 0x0001) != 0) {      // if the LSB is set
+                crc >>= 1;                  // shift right and XOR 0x8408
+                crc ^= 0x8408;
+            } else {
+                crc >>= 1;                  // just shift right
+            }
+		}
+	}
+
+    // output xor
+    crc = crc ^ out;
+	return crc;
+}
+
 uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
     for (uint32_t i = 0; i < len; i++) {
@@ -451,7 +481,7 @@ uint32_t crc_crc24(const uint8_t *bytes, uint16_t len)
 }
 
 // simple 8 bit checksum used by FPort
-uint8_t crc_sum8(const uint8_t *p, uint8_t len)
+uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len)
 {
     uint16_t sum = 0;
     for (uint8_t i=0; i<len; i++) {
@@ -567,4 +597,21 @@ uint8_t parity(uint8_t byte)
     p ^= byte & 0x1;
 
     return p;
+}
+
+// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
+uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
+{
+    uint16_t ret = 0;
+    for (uint32_t i=0; i<count; i++) {
+        ret += data[i];
+    }
+    return ret;
+}
+
+// sums the bytes in the supplied buffer, returns that sum mod 256
+// (i.e. shoved into a uint8_t)
+uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count)
+{
+    return crc_sum_of_bytes_16(data, count) & 0xFF;
 }

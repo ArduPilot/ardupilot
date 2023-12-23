@@ -60,9 +60,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // dead-reckoning support
-    virtual bool get_location(Location &loc) const override;
-
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
 
@@ -118,6 +115,9 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
 private:
+
+    // dead-reckoning support
+    bool get_location(Location &loc) const;
 
 #if HAL_NAVEKF3_AVAILABLE
     // a reference to the EKF3 backend that we can use to send in

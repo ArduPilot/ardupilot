@@ -66,6 +66,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
   pull_request:
     paths-ignore:
@@ -132,6 +134,8 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
 
   workflow_dispatch:
 
@@ -141,7 +145,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -151,7 +155,7 @@ jobs:
         gcc: [10]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - name: Install Prerequisites
@@ -196,7 +200,7 @@ jobs:
           ./install.sh
           source ./export.sh
           cd ../..
-          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan
+          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
           which cmake
           ./waf configure --board ${{matrix.config}}
           ./waf plane

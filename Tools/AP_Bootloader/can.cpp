@@ -47,18 +47,20 @@ static CANConfig cancfg = {
     CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
     0 // filled in below
 };
+// pipelining is not faster when using ChibiOS CAN driver
+#define FW_UPDATE_PIPELINE_LEN 1
 #else
 static ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifndef CAN_APP_VERSION_MAJOR
-#define CAN_APP_VERSION_MAJOR                                           1
+#define CAN_APP_VERSION_MAJOR                                           2
 #endif
 #ifndef CAN_APP_VERSION_MINOR
 #define CAN_APP_VERSION_MINOR                                           0
 #endif
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
+#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
 #endif
 
 static uint8_t node_id_allocation_transfer_id;
@@ -66,14 +68,30 @@ static uavcan_protocol_NodeStatus node_status;
 static uint32_t send_next_node_id_allocation_request_at_ms;
 static uint8_t node_id_allocation_unique_id_offset;
 
+static void processTx(void);
+
+// keep up to 4 transfers in progress
+#ifndef FW_UPDATE_PIPELINE_LEN
+#define FW_UPDATE_PIPELINE_LEN 4
+#endif
+
 static struct {
-    uint64_t ofs;
-    uint32_t last_ms;
+    uint32_t rtt_ms;
+    uint32_t ofs;
     uint8_t node_id;
-    uint8_t transfer_id;
     uint8_t path[sizeof(uavcan_protocol_file_Path::path.data)+1];
     uint8_t sector;
     uint32_t sector_ofs;
+    uint8_t transfer_id;
+    uint8_t idx;
+    struct {
+        uint8_t tx_id;
+        uint32_t sent_ms;
+        uint32_t offset;
+        bool have_reply;
+        uavcan_protocol_file_ReadResponse pkt;
+    } reads[FW_UPDATE_PIPELINE_LEN];
+    uint16_t erased_to;
 } fw_update;
 
 /*
@@ -150,33 +168,83 @@ static void handle_get_node_info(CanardInstance* ins,
 /*
   send a read for a fw update
  */
-static void send_fw_read(void)
+static bool send_fw_read(uint8_t idx)
 {
-    uint32_t now = AP_HAL::millis();
-    if (now - fw_update.last_ms < 750) {
-        // the server may still be responding
-        return;
-    }
-    fw_update.last_ms = now;
+    auto &r = fw_update.reads[idx];
+    r.tx_id = fw_update.transfer_id;
+    r.have_reply = false;
+
+    uavcan_protocol_file_ReadRequest pkt {};
+    pkt.path.path.len = strlen((const char *)fw_update.path);
+    pkt.offset = r.offset;
+    memcpy(pkt.path.path.data, fw_update.path, pkt.path.path.len);
 
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_READ_REQUEST_MAX_SIZE];
-    canardEncodeScalar(buffer, 0, 40, &fw_update.ofs);
-    uint32_t offset = 40;
-    uint8_t len = strlen((const char *)fw_update.path);
-    for (uint8_t i=0; i<len; i++) {
-        canardEncodeScalar(buffer, offset, 8, &fw_update.path[i]);
-        offset += 8;
+    uint16_t total_size = uavcan_protocol_file_ReadRequest_encode(&pkt, buffer, true);
+
+    if (canardRequestOrRespond(&canard,
+                               fw_update.node_id,
+                               UAVCAN_PROTOCOL_FILE_READ_SIGNATURE,
+                               UAVCAN_PROTOCOL_FILE_READ_ID,
+                               &fw_update.transfer_id,
+                               CANARD_TRANSFER_PRIORITY_HIGH,
+                               CanardRequest,
+                               &buffer[0],
+                               total_size) > 0) {
+        // mark it as having been sent
+        r.sent_ms = AP_HAL::millis();
+        return true;
     }
-    uint32_t total_size = (offset+7)/8;
-    canardRequestOrRespond(&canard,
-                           fw_update.node_id,
-                           UAVCAN_PROTOCOL_FILE_READ_SIGNATURE,
-                           UAVCAN_PROTOCOL_FILE_READ_ID,
-                           &fw_update.transfer_id,
-                           CANARD_TRANSFER_PRIORITY_HIGH,
-                           CanardRequest,
-                           &buffer[0],
-                           total_size);
+    return false;
+}
+
+/*
+  send a read for a fw update
+ */
+static void send_fw_reads(void)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    for (uint8_t i=0; i<FW_UPDATE_PIPELINE_LEN; i++) {
+        const uint8_t idx = (fw_update.idx+i) % FW_UPDATE_PIPELINE_LEN;
+        const auto &r = fw_update.reads[idx];
+        if (r.have_reply) {
+            continue;
+        }
+        if (r.sent_ms != 0 && now - r.sent_ms < 10+2*MAX(250,fw_update.rtt_ms)) {
+            // waiting on a response
+            continue;
+        }
+        if (!send_fw_read(idx)) {
+            break;
+        }
+    }
+}
+
+/*
+  erase up to at least the given sector number
+ */
+static void erase_to(uint16_t sector)
+{
+    if (sector < fw_update.erased_to) {
+        return;
+    }
+    flash_func_erase_sector(sector);
+    fw_update.erased_to = sector+1;
+
+    /*
+      pre-erase any non-erased pages up to end of flash. This puts all
+      the load of erasing at the start of flashing which is much
+      faster than flashing as we go on boards with small flash
+      sectors.  We stop at the first already erased page so we don't
+      end up wasting time erasing already erased pages when the
+      firmware is much smaller than the total flash size
+     */
+    while (flash_func_sector_size(fw_update.erased_to) != 0 &&
+           !flash_func_is_erased(fw_update.erased_to)) {
+        flash_func_erase_sector(fw_update.erased_to);
+        fw_update.erased_to++;
+    }
 }
 
 /*
@@ -184,53 +252,100 @@ static void send_fw_read(void)
  */
 static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    if ((transfer->transfer_id+1)%256 != fw_update.transfer_id ||
-        transfer->source_node_id != fw_update.node_id) {
+    if (transfer->source_node_id != fw_update.node_id) {
         return;
     }
-    int16_t error = 0;
-    canardDecodeScalar(transfer, 0, 16, true, (void*)&error);
-    uint16_t len = transfer->payload_len - 2;
-
-    uint32_t offset = 16;
-    uint32_t buf32[(len+3)/4];
-    uint8_t *buf = (uint8_t *)&buf32[0];
-    for (uint16_t i=0; i<len; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&buf[i]);
-        offset += 8;
-    }
-
-    const uint32_t sector_size = flash_func_sector_size(fw_update.sector);
-
-    if (fw_update.sector_ofs == 0) {
-        flash_func_erase_sector(fw_update.sector);
-    }
-    if (fw_update.sector_ofs+len > sector_size) {
-        flash_func_erase_sector(fw_update.sector+1);
-    }
-    for (uint16_t i=0; i<len/4; i++) {
-        flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
-    }
-    fw_update.ofs += len;
-    fw_update.sector_ofs += len;
-    if (fw_update.sector_ofs >= flash_func_sector_size(fw_update.sector)) {
-        fw_update.sector++;
-        fw_update.sector_ofs -= sector_size;
-    }
-    if (len < sizeof(uavcan_protocol_file_ReadResponse::data.data)) {
-        fw_update.node_id = 0;
-        flash_write_flush();
-        const auto ok = check_good_firmware();
-        node_status.vendor_specific_status_code = uint8_t(ok);
-        if (ok == check_fw_result_t::CHECK_FW_OK) {
-            jump_to_app();
+    /*
+      match the response to a sent request
+     */
+    uint8_t idx = 0;
+    bool found = false;
+    for (idx=0; idx<FW_UPDATE_PIPELINE_LEN; idx++) {
+        const auto &r = fw_update.reads[idx];
+        if (r.tx_id == transfer->transfer_id) {
+            found = true;
+            break;
         }
+    }
+    if (!found) {
+        // not a current transfer
+        return;
+    }
+    if (uavcan_protocol_file_ReadResponse_decode(transfer, &fw_update.reads[idx].pkt)) {
+        return;
+    }
+    fw_update.reads[idx].have_reply = true;
+    uint32_t rtt = MIN(3000,MAX(AP_HAL::millis() - fw_update.reads[idx].sent_ms, 25));
+    fw_update.rtt_ms = uint32_t(0.9 * fw_update.rtt_ms + 0.1 * rtt);
+
+    while (fw_update.reads[fw_update.idx].have_reply) {
+        auto &r = fw_update.reads[fw_update.idx];
+        if (r.offset != fw_update.ofs) {
+            // bad sequence
+            r.have_reply = false;
+            r.sent_ms = 0;
+            break;
+        }
+        const auto &pkt = r.pkt;
+        const uint16_t len = pkt.data.len;
+        const uint16_t len_words = (len+3U)/4U;
+        const uint8_t *buf = (uint8_t *)pkt.data.data;
+        uint32_t buf32[len_words] {};
+        memcpy((uint8_t*)buf32, buf, len);
+
+        if (fw_update.ofs == 0) {
+            flash_set_keep_unlocked(true);
+        }
+
+        const uint32_t sector_size = flash_func_sector_size(fw_update.sector);
+        if (sector_size == 0) {
+            // firmware is too big
+            fw_update.node_id = 0;
+            flash_write_flush();
+            flash_set_keep_unlocked(false);
+            node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::FAIL_REASON_BAD_LENGTH_APP);
+            break;
+        }
+        if (fw_update.sector_ofs == 0) {
+            erase_to(fw_update.sector);
+        }
+        if (fw_update.sector_ofs+len > sector_size) {
+            erase_to(fw_update.sector+1);
+        }
+        if (!flash_write_buffer(fw_update.ofs, buf32, len_words)) {
+            continue;
+        }
+
+        fw_update.ofs += len;
+        fw_update.sector_ofs += len;
+        if (fw_update.sector_ofs >= flash_func_sector_size(fw_update.sector)) {
+            fw_update.sector++;
+            fw_update.sector_ofs -= sector_size;
+        }
+
+        if (len < sizeof(uavcan_protocol_file_ReadResponse::data.data)) {
+            fw_update.node_id = 0;
+            flash_write_flush();
+            flash_set_keep_unlocked(false);
+            const auto ok = check_good_firmware();
+            node_status.vendor_specific_status_code = uint8_t(ok);
+            if (ok == check_fw_result_t::CHECK_FW_OK) {
+                jump_to_app();
+            }
+            return;
+        }
+
+        r.have_reply = false;
+        r.sent_ms = 0;
+        r.offset += FW_UPDATE_PIPELINE_LEN*sizeof(uavcan_protocol_file_ReadResponse::data.data);
+        send_fw_read(fw_update.idx);
+        processTx();
+
+        fw_update.idx = (fw_update.idx + 1) % FW_UPDATE_PIPELINE_LEN;
     }
 
     // show offset number we are flashing in kbyte as crude progress indicator
     node_status.vendor_specific_status_code = 1 + (fw_update.ofs / 1024U);
-
-    fw_update.last_ms = 0;
 }
 
 /*
@@ -238,23 +353,21 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
  */
 static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
-        return;
-    }
-
     if (fw_update.node_id == 0) {
-        uint32_t offset = 0;
-        canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
-        offset += 8;
-        for (uint8_t i=0; i<transfer->payload_len-1; i++) {
-            canardDecodeScalar(transfer, offset, 8, false, (void*)&fw_update.path[i]);
-            offset += 8;
+        uavcan_protocol_file_BeginFirmwareUpdateRequest pkt;
+        if (uavcan_protocol_file_BeginFirmwareUpdateRequest_decode(transfer, &pkt)) {
+            return;
         }
-        fw_update.ofs = 0;
-        fw_update.last_ms = 0;
-        fw_update.sector = 0;
-        fw_update.sector_ofs = 0;
+        if (pkt.image_file_remote_path.path.len > sizeof(fw_update.path)-1) {
+            return;
+        }
+        memset(&fw_update, 0, sizeof(fw_update));
+        for (uint8_t i=0; i<FW_UPDATE_PIPELINE_LEN; i++) {
+            fw_update.reads[i].offset = i*sizeof(uavcan_protocol_file_ReadResponse::data.data);
+        }
+        memcpy(fw_update.path, pkt.image_file_remote_path.path.data, pkt.image_file_remote_path.path.len);
+        fw_update.path[pkt.image_file_remote_path.path.len] = 0;
+        fw_update.node_id = pkt.source_node_id;
         if (fw_update.node_id == 0) {
             fw_update.node_id = transfer->source_node_id;
         }
@@ -274,8 +387,6 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
                            CanardResponse,
                            &buffer[0],
                            total_size);
-
-    send_fw_read();
 }
 
 static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -291,35 +402,28 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         return;
     }
 
-    // Copying the unique ID from the message
-    static const uint8_t UniqueIDBitOffset = 8;
-    uint8_t received_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
-    uint8_t received_unique_id_len = 0;
-    for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++) {
-        const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
-        (void) canardDecodeScalar(transfer, bit_offset, 8, false, &received_unique_id[received_unique_id_len]);
+    struct uavcan_protocol_dynamic_node_id_Allocation msg;
+    if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) {
+        return;
     }
-
+    
     // Obtaining the local unique ID
     uint8_t my_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
     readUniqueID(my_unique_id);
 
     // Matching the received UID against the local one
-    if (memcmp(received_unique_id, my_unique_id, received_unique_id_len) != 0) {
+    if (memcmp(msg.unique_id.data, my_unique_id, msg.unique_id.len) != 0) {
         node_id_allocation_unique_id_offset = 0;
         return;         // No match, return
     }
 
-    if (received_unique_id_len < sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)) {
+    if (msg.unique_id.len < sizeof(msg.unique_id.data)) {
         // The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
-        node_id_allocation_unique_id_offset = received_unique_id_len;
+        node_id_allocation_unique_id_offset = msg.unique_id.len;
         send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
     } else {
         // Allocation complete - copying the allocated node ID from the message
-        uint8_t allocated_node_id = 0;
-        (void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
-
-        canardSetLocalNodeID(ins, allocated_node_id);
+        canardSetLocalNodeID(ins, msg.node_id);
     }
 }
 
@@ -617,6 +721,9 @@ bool can_check_update(void)
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
         can_set_node_id(comms->my_node_id);
         fw_update.node_id = comms->server_node_id;
+        for (uint8_t i=0; i<FW_UPDATE_PIPELINE_LEN; i++) {
+            fw_update.reads[i].offset = i*sizeof(uavcan_protocol_file_ReadResponse::data.data);
+        }
         memcpy(fw_update.path, comms->path, sizeof(uavcan_protocol_file_Path::path.data)+1);
         ret = true;
         // clear comms region
@@ -704,8 +811,8 @@ void can_start()
 
 void can_update()
 {
-    // do one loop of CAN support. If we are doing a few update then
-    // loop until it is finished
+    // do one loop of CAN support. If we are doing a firmware update
+    // then loop until it is finished
     do {
         processTx();
         processRx();
@@ -717,8 +824,12 @@ void can_update()
             process1HzTasks(AP_HAL::micros64());
         }
         if (fw_update.node_id != 0) {
-            send_fw_read();
+            send_fw_reads();
         }
+#if CH_CFG_ST_FREQUENCY >= 1000000
+        // give a bit of time for background processing
+        chThdSleepMicroseconds(200);
+#endif
     } while (fw_update.node_id != 0);
 }
 

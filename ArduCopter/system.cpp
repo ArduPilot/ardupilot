@@ -153,8 +153,10 @@ void Copter::init_ardupilot()
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
 
+#if RANGEFINDER_ENABLED == ENABLED
     // initialise rangefinder
     init_rangefinder();
+#endif
 
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
@@ -442,26 +444,24 @@ void Copter::allocate_motors(void)
         AP_BoardConfig::allocation_error("AP_AHRS_View");
     }
 
-    const struct AP_Param::GroupInfo *ac_var_info;
-
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
 #if AP_SCRIPTING_ENABLED
         attitude_control = new AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors);
-        ac_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
+        attitude_control_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // AP_SCRIPTING_ENABLED
     } else {
         attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors);
-        ac_var_info = AC_AttitudeControl_Multi::var_info;
+        attitude_control_var_info = AC_AttitudeControl_Multi::var_info;
     }
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors);
-    ac_var_info = AC_AttitudeControl_Heli::var_info;
+    attitude_control_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
         AP_BoardConfig::allocation_error("AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, attitude_control_var_info);
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (pos_control == nullptr) {
@@ -522,6 +522,7 @@ void Copter::allocate_motors(void)
     convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
     convert_tradheli_parameters();
+    motors->heli_motors_param_conversions();
 #endif
 
 #if HAL_PROXIMITY_ENABLED

@@ -43,10 +43,11 @@ uint32_t RF_MAVLink::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t bu
         .vertical_fov = 0, // 0 is unknown vertical fov
         .quaternion = {0,0,0,0} // unknown/unused quat
     };
-    const uint16_t len = mavlink_msg_distance_sensor_encode(system_id,
-                                                            component_id,
-                                                            &msg,
-                                                            &distance_sensor);
+    const uint16_t len = mavlink_msg_distance_sensor_encode_status(system_id,
+                                                                   component_id,
+                                                                   &mav_status,
+                                                                   &msg,
+                                                                   &distance_sensor);
     if (len > buflen) {
         AP_HAL::panic("Insufficient buffer passed in");
     }

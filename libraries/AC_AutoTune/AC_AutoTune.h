@@ -18,6 +18,10 @@
  */
 #pragma once
 
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
@@ -158,7 +162,7 @@ protected:
                         AP_AHRS_View *ahrs_view,
                         AP_InertialNav *inertial_nav);
 
-    // send intermittant updates to user on status of tune
+    // send intermittent updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
 
     // send post test updates to user
@@ -327,3 +331,5 @@ private:
     uint32_t last_pilot_override_warning;
 
 };
+
+#endif  // AC_AUTOTUNE_ENABLED

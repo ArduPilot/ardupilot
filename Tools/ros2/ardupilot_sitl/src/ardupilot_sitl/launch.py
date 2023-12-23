@@ -68,9 +68,7 @@ class VirtualPortsLaunch:
         return action
 
     @staticmethod
-    def generate_launch_description_with_actions() -> (
-        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
-    ):
+    def generate_launch_description_with_actions() -> Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]:
         """Generate a launch description with actions."""
         launch_arguments = VirtualPortsLaunch.generate_launch_arguments()
 
@@ -186,9 +184,7 @@ class MicroRosAgentLaunch:
         return node
 
     @staticmethod
-    def generate_launch_description_with_actions() -> (
-        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
-    ):
+    def generate_launch_description_with_actions() -> Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]:
         """Generate a launch description with actions."""
         launch_arguments = MicroRosAgentLaunch.generate_launch_arguments()
 
@@ -315,9 +311,7 @@ class MAVProxyLaunch:
         return mavproxy_process
 
     @staticmethod
-    def generate_launch_description_with_actions() -> (
-        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
-    ):
+    def generate_launch_description_with_actions() -> Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]:
         """Generate a launch description for MAVProxy."""
         launch_arguments = MAVProxyLaunch.generate_launch_arguments()
 
@@ -486,9 +480,7 @@ class SITLLaunch:
         return sitl_process
 
     @staticmethod
-    def generate_launch_description_with_actions() -> (
-        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
-    ):
+    def generate_launch_description_with_actions() -> Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]:
         """Generate a launch description for SITL."""
         launch_arguments = SITLLaunch.generate_launch_arguments()
 
@@ -553,8 +545,7 @@ class SITLLaunch:
             DeclareLaunchArgument(
                 "instance",
                 default_value="0",
-                description="Set instance of SITL "
-                "(adds 10*instance to all port numbers).",
+                description="Set instance of SITL " "(adds 10*instance to all port numbers).",
             ),
             DeclareLaunchArgument(
                 "defaults",
@@ -599,8 +590,7 @@ class SITLLaunch:
             DeclareLaunchArgument(
                 "base_port",
                 default_value="",
-                description="Set port num for base port(default 5670) "
-                "must be before -I option.",
+                description="Set port num for base port(default 5670) " "must be before -I option.",
             ),
             DeclareLaunchArgument(
                 "rc_in_port",

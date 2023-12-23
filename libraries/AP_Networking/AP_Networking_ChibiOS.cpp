@@ -1,11 +1,9 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_NETWORKING_BACKEND_CHIBIOS
 
-#include "AP_Networking.h"
 #include "AP_Networking_ChibiOS.h"
-#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <lwipthread.h>
@@ -39,7 +37,7 @@ bool AP_Networking_ChibiOS::allocate_buffers()
                                 sizeof(uint32_t)*STM32_MAC_TRANSMIT_BUFFERS*AP_NETWORKING_EXTERN_MAC_BUFFER_SIZE; // typically == 9240
 
     // ensure that we allocate 32-bit aligned memory, and mark it non-cacheable
-    uint32_t size = 2;
+    uint32_t size = 1;
     uint8_t rasr = 0;
     // find size closest to power of 2
     while (size < total_size) {
@@ -104,10 +102,6 @@ bool AP_Networking_ChibiOS::init()
         return false;
     }
 
-#if !AP_NETWORKING_DHCP_AVAILABLE
-    frontend.set_dhcp_enable(false);
-#endif
-
     lwip_options = new lwipthread_opts;
 
     if (frontend.get_dhcp_enabled()) {
@@ -122,6 +116,13 @@ bool AP_Networking_ChibiOS::init()
     lwip_options->macaddress = macaddr;
 
     lwipInit(lwip_options);
+
+#if LWIP_IGMP
+    if (ETH != nullptr) {
+        // enbale "permit multicast" so we can receive multicast packets
+        ETH->MACPFR |= ETH_MACPFR_PM;
+    }
+#endif
 
     return true;
 }
@@ -145,34 +146,5 @@ void AP_Networking_ChibiOS::update()
     }
 }
 
-/*
-  send a UDP packet
- */
-int32_t AP_Networking_ChibiOS::send_udp(struct udp_pcb *pcb, const ip4_addr_t &ip4_addr, const uint16_t port, const uint8_t* data, uint16_t data_len)
-{
-    if (pcb == nullptr) {
-        return ERR_ARG;
-    }
-
-    data_len = (data == nullptr) ? 0 : data_len;
-
-    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, data_len, PBUF_RAM);
-    if (p == nullptr) {
-        return ERR_MEM;
-    }
-
-    ip_addr_t dst;
-    ip_addr_copy_from_ip4(dst, ip4_addr);
-
-    if (data_len > 0) {
-        memcpy(p->payload, data, data_len);
-    }
-
-    const err_t err = udp_sendto(pcb, p, &dst, port);
-    pbuf_free(p);
-
-    return err == ERR_OK ? data_len : err;
-}
-
-#endif // AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif // AP_NETWORKING_BACKEND_CHIBIOS
 

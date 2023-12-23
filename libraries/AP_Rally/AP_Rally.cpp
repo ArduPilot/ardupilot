@@ -1,5 +1,7 @@
-/// @file    AP_Rally.h
-/// @brief   Handles rally point storage and retrieval.
+#include "AP_Rally_config.h"
+
+#if HAL_RALLY_ENABLED
+
 #include "AP_Rally.h"
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -7,7 +9,6 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
@@ -128,12 +129,8 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
         rally_loc.lat,
         rally_loc.lng,
         rally_loc.alt * 100,
-        Location::AltFrame::ABOVE_HOME
+        (rally_loc.alt_frame_valid == 1) ? Location::AltFrame(rally_loc.alt_frame) : Location::AltFrame::ABOVE_HOME
     };
-
-    // notionally the following call can fail, but we have no facility
-    // to return that fact here:
-    ret.change_alt_frame(Location::AltFrame::ABSOLUTE);
 
     return ret;
 }

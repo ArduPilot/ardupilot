@@ -2,7 +2,7 @@
 <profiles>
   <participant profile_name="participant_profile">
     <rtps>
-      <name>Ardupilot_DDS_XRCE_Client</name>
+      <name>ardupilot_dds</name>
     </rtps>
   </participant>
   <topic profile_name="time__t">
@@ -268,6 +268,27 @@
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     </topic>
   </data_reader>
-  <replier profile_name="ArmMotors_Replier" service_name="ArmMotorsService" request_type="ArmMotors_Request" reply_type="ArmMotors_Response">
+  <replier profile_name="arm_motors__replier" service_name="rs/ap/arm_motorsService" request_type="ardupilot_msgs::srv::dds_::ArmMotors_Request_" reply_type="ardupilot_msgs::srv::dds_::ArmMotors_Response_">
+    <request_topic_name>rq/ap/arm_motorsRequest</request_topic_name>
+    <reply_topic_name>rr/ap/arm_motorsReply</reply_topic_name>
   </replier>
+  <replier profile_name="mode_switch__replier" service_name="rs/ap/mode_switchService" request_type="ardupilot_msgs::srv::dds_::ModeSwitch_Request_" reply_type="ardupilot_msgs::srv::dds_::ModeSwitch_Response_">
+    <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
+    <reply_topic_name>rr/ap/mode_switchReply</reply_topic_name>
+  </replier>
+  <topic profile_name="globalposcontrol__t">
+    <name>rt/ap/cmd_gps_pose</name>
+    <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="globalposcontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_gps_pose</name>
+      <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    </topic>
+  </data_reader>
 </profiles>

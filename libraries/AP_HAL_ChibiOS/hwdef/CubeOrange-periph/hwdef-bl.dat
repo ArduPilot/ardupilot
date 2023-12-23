@@ -27,7 +27,7 @@ define HAL_LED_ON 0
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
@@ -58,6 +58,3 @@ PD1 CAN1_TX CAN1
 PB6 CAN2_TX CAN2
 PB12 CAN2_RX CAN2
 
-
-
-define CAN_APP_NODE_NAME "org.ardupilot.CubeOrange-periph"

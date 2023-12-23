@@ -70,7 +70,7 @@ AP_Compass_MMC5XX3::AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
 
 bool AP_Compass_MMC5XX3::init()
 {
-    // take i2c bus sempahore
+    // take i2c bus semaphore
     WITH_SEMAPHORE(dev->get_semaphore());
 
     dev->set_retries(10);

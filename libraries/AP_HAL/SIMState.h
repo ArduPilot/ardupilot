@@ -30,8 +30,11 @@
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
+#include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
+
+#include <SITL/SIM_EFI_Hirth.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -190,9 +193,15 @@ private:
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
 
-    // simulated LORD MicroStrain system
-    SITL::MicroStrain *microstrain;
+    // simulated MicroStrain Series 5 system
+    SITL::MicroStrain5 *microstrain5;
 
+    // simulated MicroStrain Series 7 system
+    SITL::MicroStrain7 *microstrain7;
+
+    // simulated InertialLabs INS-U
+    SITL::InertialLabs *inertiallabs;
+    
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
@@ -205,6 +214,9 @@ private:
 
     // simulated EFI MegaSquirt device:
     SITL::EFI_MegaSquirt *efi_ms;
+
+    // simulated EFI Hirth device:
+    SITL::EFI_Hirth *efi_hirth;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // output socket for flightgear viewing

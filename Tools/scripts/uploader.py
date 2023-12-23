@@ -90,6 +90,7 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-*_BL_*',
                  '/dev/serial/by-id/usb-Swift-Flyer*',
                  '/dev/serial/by-id/usb-CubePilot*',
+                 '/dev/serial/by-id/usb-Qiotek*',
                  '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
@@ -1006,7 +1007,7 @@ def ports_to_try(args):
     if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
         import glob
         for pattern in patterns:
-            portlist += glob.glob(pattern)
+            portlist += sorted(glob.glob(pattern))
     else:
         portlist = patterns
 

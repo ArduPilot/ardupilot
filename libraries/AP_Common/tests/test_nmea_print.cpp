@@ -30,7 +30,7 @@ static DummyUart test_uart;
 
 TEST(NMEA, Printf)
 {
-    // test not enought space
+    // test not enough space
     test_uart.set_txspace(2);
     EXPECT_FALSE(nmea_printf(&test_uart, "TEST"));
     // normal test

@@ -154,11 +154,17 @@ void AP_Camera_Backend::take_multiple_pictures(uint32_t time_interval_ms, int16_
     time_interval_settings = {time_interval_ms, total_num};
 }
 
+// stop capturing multiple image sequence
+void AP_Camera_Backend::stop_capture()
+{
+    time_interval_settings = {0, 0};
+}
+
 // handle camera control
-void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
     // take picture
-    if (is_equal(shooting_cmd, 1.0f)) {
+    if (shooting_cmd == 1) {
         take_picture();
     }
 }
@@ -241,6 +247,65 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+// send camera field of view status
+void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
+{
+    // getting corresponding mount instance for camera
+    const AP_Mount* mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    Quaternion quat;
+    Location loc;
+    Location poi_loc;
+    if (!mount->get_poi(get_mount_instance(), quat, loc, poi_loc)) {
+        return;
+    }
+    // send camera fov status message only if the last calculated values aren't stale
+    const float NaN = nanf("0x4152");
+    const float quat_array[4] = {
+        quat.q1,
+        quat.q2,
+        quat.q3,
+        quat.q4
+    };
+    mavlink_msg_camera_fov_status_send(
+        chan,
+        AP_HAL::millis(),
+        loc.lat,
+        loc.lng,
+        loc.alt,
+        poi_loc.lat,
+        poi_loc.lng,
+        poi_loc.alt,
+        quat_array,
+        horizontal_fov() > 0 ? horizontal_fov() : NaN,
+        vertical_fov() > 0 ? vertical_fov() : NaN
+    );
+}
+#endif
+
+// send camera capture status message to GCS
+void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+
+    // Current status of image capturing (0: idle, 1: capture in progress, 2: interval set but idle, 3: interval set and capture in progress)
+    const uint8_t image_status = (time_interval_settings.num_remaining > 0) ? 2 : 0;
+
+    // send CAMERA_CAPTURE_STATUS message
+    mavlink_msg_camera_capture_status_send(
+        chan,
+        AP_HAL::millis(),
+        image_status,
+        0,                // current status of video capturing (0: idle, 1: capture in progress)
+        static_cast<float>(time_interval_settings.time_interval_ms) / 1000.0, // image capture interval (s)
+        0,                // elapsed time since recording started (ms)
+        NaN,              // available storage capacity (ms)
+        image_index);     // total number of images captured
+}
+
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()
@@ -318,7 +383,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
-    gcs().send_message(MSG_CAMERA_FEEDBACK);
+    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
 }
 
 // log picture

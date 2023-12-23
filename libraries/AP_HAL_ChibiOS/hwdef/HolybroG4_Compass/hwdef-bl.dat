@@ -68,8 +68,6 @@ PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
-define CAN_APP_NODE_NAME "org.ardupilot.HolybroG4_Compass"
-
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600
 

@@ -143,7 +143,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
         adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_velocity_xy_cms, backup_vel_fence, dt);
         find_max_quadrant_velocity(backup_vel_fence, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
         
-        // backup_vel_fence is set to zero after each fence incase the velocity is unset from previous methods
+        // backup_vel_fence is set to zero after each fence in case the velocity is unset from previous methods
         backup_vel_fence.zero();
         adjust_velocity_inclusion_and_exclusion_polygons(kP, accel_cmss_limited, desired_velocity_xy_cms, backup_vel_fence, dt);
         find_max_quadrant_velocity(backup_vel_fence, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
@@ -229,7 +229,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         }
     
         // let user take control if they are backing away at a greater speed than what we have calculated
-        // this has to be done for x,y,z seperately. For eg, user is doing fine in "x" direction but might need backing up in "y".
+        // this has to be done for x,y,z separately. For eg, user is doing fine in "x" direction but might need backing up in "y".
         if (!is_zero(desired_backup_vel.x)) {
             if (is_positive(desired_backup_vel.x)) {
                 desired_vel_cms.x = MAX(desired_vel_cms.x, desired_backup_vel.x);
@@ -505,7 +505,7 @@ void AC_Avoid::limit_velocity_3D(float kP, float accel_cmss, Vector3f &desired_v
         return;
     }
     // create a margin_cm length vector in the direction of desired_vel_cms
-    // this will create larger margin towards the direction vehicle is traveling in
+    // this will create larger margin towards the direction vehicle is travelling in
     const Vector3f margin_vector = desired_vel_cms.normalized() * margin_cm;
     const Vector2f limit_direction_xy{obstacle_vector.x, obstacle_vector.y};
     

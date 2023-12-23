@@ -153,7 +153,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
-    auto_takeoff_start(alt_target_cm, alt_target_terrain);
+    auto_takeoff.start(alt_target_cm, alt_target_terrain);
 
     // record takeoff has not completed
     takeoff_complete = false;
@@ -656,8 +656,8 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 //      called by guided_run at 100hz or more
 void ModeGuided::takeoff_run()
 {
-    auto_takeoff_run();
-    if (auto_takeoff_complete && !takeoff_complete) {
+    auto_takeoff.run();
+    if (auto_takeoff.complete && !takeoff_complete) {
         takeoff_complete = true;
 #if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear

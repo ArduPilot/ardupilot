@@ -78,7 +78,8 @@ void ModePoshold::run()
     // Update attitude //
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float yaw_input = channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim());
+    float target_yaw_rate = sub.get_pilot_desired_yaw_rate(yaw_input);
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
@@ -93,7 +94,7 @@ void ModePoshold::run()
 
     } else { // hold current heading
 
-        // this check is required to prevent bounce back after very fast yaw maneuvers
+        // this check is required to prevent bounce back after very fast yaw manoeuvres
         // the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
         if (tnow < sub.last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
             target_yaw_rate = 0; // Stop rotation on yaw axis

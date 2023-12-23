@@ -16,7 +16,7 @@ undef AP_HAL_SHARED_DMA_ENABLED
 define STM32_TIM_TIM2_UP_DMA_STREAM STM32_DMA_STREAM_ID(1, 2)
 define STM32_TIM_TIM2_UP_DMA_CHAN 1
 
-# TIM4_UP (PWM 3/4) cannot be used with sharing as channels used by high speed USART2 RX/TX
+# TIM4_UP (PWM 3/4) cannot be used without sharing as channels used by high speed USART2 RX/TX
 define AP_HAL_SHARED_DMA_ENABLED 1
 define STM32_TIM_TIM4_UP_DMA_STREAM STM32_DMA_STREAM_ID(1, 7)
 define STM32_TIM_TIM4_UP_DMA_CHAN 1

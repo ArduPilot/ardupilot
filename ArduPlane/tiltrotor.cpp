@@ -39,7 +39,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrottor must use the tailsitter frame class (10)
+    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrotor must use the tailsitter frame class (10)
     // @Values: 0:Continuous,1:Binary,2:VectoredYaw,3:Bicopter
     AP_GROUPINFO("TYPE", 5, Tiltrotor, type, TILT_TYPE_CONTINUOUS),
 
@@ -115,7 +115,7 @@ void Tiltrotor::setup()
                         && (type != TILT_TYPE_BICOPTER));
 
 
-    // check if there are any perminant VTOL motors
+    // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
             // enabled motor not set in tilt mask
@@ -193,7 +193,7 @@ void Tiltrotor::slew(float newtilt)
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * current_tilt);
 }
 
-// return the current tilt value that represens forward flight
+// return the current tilt value that represents forward flight
 // tilt wings can sustain forward flight with some amount of wing tilt
 float Tiltrotor::get_fully_forward_tilt() const
 {
@@ -258,21 +258,25 @@ void Tiltrotor::continuous_update(void)
 
     /*
       we are in a VTOL mode. We need to work out how much tilt is
-      needed. There are 4 strategies we will use:
+      needed. There are 5 strategies we will use:
 
-      1) without manual forward throttle control, the angle will be set to zero
-         in QAUTOTUNE QACRO, QSTABILIZE and QHOVER. This
-         enables these modes to be used as a safe recovery mode.
+      1) With use of a forward throttle controlled by Q_FWD_THR_GAIN in
+         VTOL modes except Q_AUTOTUNE determined by Q_FWD_THR_USE. We set the angle based on a calculated
+         forward throttle.
 
-      2) with manual forward throttle control we will set the angle based on
-         the demanded forward throttle via RC input.
+      2) With manual forward throttle control we set the angle based on the
+         RC input demanded forward throttle for QACRO, QSTABILIZE and QHOVER.
 
-      3) in fixed wing assisted flight or velocity controlled modes we
-         will set the angle based on the demanded forward throttle,
-         with a maximum tilt given by Q_TILT_MAX. This relies on
-         Q_VFWD_GAIN being set.
+      3) Without a RC input or calculated forward throttle value, the angle
+         will be set to zero in QAUTOTUNE, QACRO, QSTABILIZE and QHOVER.
+         This enables these modes to be used as a safe recovery mode.
 
-      4) if we are in TRANSITION_TIMER mode then we are transitioning
+      4) In fixed wing assisted flight or velocity controlled modes we will
+         set the angle based on the demanded forward throttle, with a maximum
+         tilt given by Q_TILT_MAX. This relies on Q_FWD_THR_GAIN or Q_VFWD_GAIN
+         being set.
+
+      5) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
 
@@ -283,11 +287,23 @@ void Tiltrotor::continuous_update(void)
     }
 #endif
 
-    // if not in assisted flight and in QACRO, QSTABILIZE or QHOVER mode
     if (!quadplane.assisted_flight &&
-        (plane.control_mode == &plane.mode_qacro ||
-         plane.control_mode == &plane.mode_qstabilize ||
-         plane.control_mode == &plane.mode_qhover)) {
+        quadplane.get_vfwd_method() == QuadPlane::ActiveFwdThr::NEW &&
+        quadplane.is_flying_vtol())
+    {
+        // We are using the rotor tilt functionality controlled by Q_FWD_THR_GAIN which can
+        // operate in all VTOL modes except Q_AUTOTUNE. Forward rotor tilt is used to produce
+        // forward thrust equivalent to what would have been produced by a forward thrust motor
+        // set to quadplane.forward_throttle_pct()
+        const float fwd_g_demand = 0.01f * quadplane.forward_throttle_pct() / plane.quadplane.q_fwd_thr_gain;
+        const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
+        slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
+        return;
+    } else if (!quadplane.assisted_flight &&
+               (plane.control_mode == &plane.mode_qacro ||
+               plane.control_mode == &plane.mode_qstabilize ||
+               plane.control_mode == &plane.mode_qhover))
+    {
         if (quadplane.rc_fwd_thr_ch == nullptr) {
             // no manual throttle control, set angle to zero
             slew(0);

@@ -64,8 +64,6 @@ define HAL_DISABLE_LOOP_DELAY
 # enable CAN support
 PA11 CAN_RX CAN
 PA12 CAN_TX CAN
-define HAL_USE_CAN TRUE
-define STM32_CAN_USE_CAN1 TRUE
 
 # debugger support
 PA13 JTMS-SWDIO SWD

@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Vehicle_config.h"
+
+#if AP_VEHICLE_ENABLED
+
 /*
   this header holds a parameter structure for each vehicle type for
   parameters needed by multiple libraries
@@ -22,6 +26,7 @@
 #include "ModeReason.h" // reasons can't be defined in this header due to circular loops
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
@@ -29,6 +34,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
@@ -61,6 +67,7 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <Filter/AP_Filter.h>
 
 class AP_DDS_Client;
 
@@ -149,12 +156,15 @@ public:
     // returns true if the vehicle has crashed
     virtual bool is_crashed() const;
 
+#if AP_EXTERNAL_CONTROL_ENABLED
+    // Method to control vehicle position for use by external control
+    virtual bool set_target_location(const Location& target_loc) { return false; }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
       methods to control vehicle for use by scripting
     */
     virtual bool start_takeoff(float alt) { return false; }
-    virtual bool set_target_location(const Location& target_loc) { return false; }
     virtual bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) { return false; }
     virtual bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) { return false; }
     virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
@@ -288,7 +298,9 @@ protected:
     float G_Dt;
 
     // sensor drivers
+#if AP_GPS_ENABLED
     AP_GPS gps;
+#endif
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
@@ -297,7 +309,10 @@ protected:
 #endif
     RangeFinder rangefinder;
 
+#if AP_RSSI_ENABLED
     AP_RSSI rssi;
+#endif
+
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
 #endif
@@ -466,6 +481,9 @@ private:
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
     AP_CustomRotations custom_rotations;
+#if AP_FILTER_ENABLED
+    AP_Filters filters;
+#endif
 
     // Bitmask of modes to disable from gcs
     AP_Int32 flight_mode_GCS_block;
@@ -480,3 +498,5 @@ extern const AP_HAL::HAL& hal;
 extern const AP_Param::Info vehicle_var_info[];
 
 #include "AP_Vehicle_Type.h"
+
+#endif  // AP_VEHICLE_ENABLED

@@ -2,11 +2,14 @@
    AP_Logger Remote(via MAVLink) logging
 */
 
-#include "AP_Logger_MAVLink.h"
+#include "AP_Logger_config.h"
 
 #if HAL_LOGGING_MAVLINK_ENABLED
 
+#include "AP_Logger_MAVLink.h"
+
 #include "LogStructure.h"
+#include <AP_Logger/AP_Logger.h>
 
 #define REMOTE_LOG_DEBUGGING 0
 
@@ -22,6 +25,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_Logger_MAVLink::AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+    AP_Logger_Backend(front, writer),
+    _max_blocks_per_send_blocks(8)
+{
+    _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
+    // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
+}
 
 // initialisation
 void AP_Logger_MAVLink::Init()

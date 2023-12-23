@@ -66,11 +66,6 @@ public:
     uint16_t read(uint8_t ch) override;
     void read(uint16_t *period_us, uint8_t len) override;
 
-    void set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
-        _esc_pwm_min = min_pwm;
-        _esc_pwm_max = max_pwm;
-    }
-
     void cork() override;
     void push() override;
 
@@ -92,8 +87,6 @@ private:
     uint8_t _channels_count = MAX_MOTORS;
 
     uint16_t _period[MAX_MOTORS];
-    uint16_t _esc_pwm_min;
-    uint16_t _esc_pwm_max;
     uint32_t _last_led_update_msec;
     int _uart_fd = -1;
 };

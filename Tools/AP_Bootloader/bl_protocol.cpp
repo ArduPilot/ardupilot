@@ -240,6 +240,10 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
 #define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U)
 #endif
 
+#if !defined(STM32_OTG2_IS_OTG1)
+#define STM32_OTG2_IS_OTG1 0
+#endif
+
 void
 jump_to_app()
 {
@@ -324,7 +328,7 @@ jump_to_app()
 #endif
     rccDisableAPB2(~0);
 #if HAL_USE_SERIAL_USB == TRUE
-#if !defined(STM32_OTG2_IS_OTG1)
+#if !STM32_OTG2_IS_OTG1
     rccResetOTG_FS();
 #endif
 #if defined(rccResetOTG_HS)
@@ -630,7 +634,7 @@ bootloader(unsigned timeout)
             led_set(LED_OFF);
 
             // erase all sectors
-            for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
+            for (uint16_t i = 0; flash_func_sector_size(i) != 0; i++) {
 #if defined(STM32F7) || defined(STM32H7)
                 if (!flash_func_erase_sector(i, c == PROTO_CHIP_FULL_ERASE)) {
 #else

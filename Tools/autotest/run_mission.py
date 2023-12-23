@@ -6,7 +6,7 @@ Run a mission in SITL
 AP_FLAKE8_CLEAN
 '''
 
-import common
+import vehicle_test_suite
 import os
 import sys
 import argparse
@@ -14,7 +14,7 @@ import argparse
 from pysim import util
 
 
-class RunMission(common.AutoTest):
+class RunMission(vehicle_test_suite.TestSuite):
     def __init__(self, vehicle_binary, model, mission_filepath, speedup=None, sim_rate_hz=None):
         super(RunMission, self).__init__(vehicle_binary)
         self.mission_filepath = mission_filepath

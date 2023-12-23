@@ -11,6 +11,7 @@ Semaphore::Semaphore()
 {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&_lock, &attr);
 }

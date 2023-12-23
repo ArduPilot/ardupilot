@@ -37,6 +37,7 @@ void ModeQHover::run()
         quadplane.relax_attitude_control();
         pos_control->relax_z_controller(0);
     } else {
+        plane.quadplane.assign_tilt_to_fwd_thr();
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());
     }
 

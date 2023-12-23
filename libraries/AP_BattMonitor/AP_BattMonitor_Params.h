@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include "AP_BattMonitor_config.h"
 
 class AP_BattMonitor_Params {
 public:
@@ -24,6 +25,7 @@ public:
         MPPT_Power_Off_At_Boot              = (1U<<4),  // MPPT Disabled at startup (aka boot), if HW supports it
         MPPT_Power_On_At_Boot               = (1U<<5),  // MPPT Enabled at startup (aka boot), if HW supports it. If Power_Off_at_Boot is also set, the behavior is Power_Off_at_Boot
         GCS_Resting_Voltage                 = (1U<<6),  // send resistance resting voltage to GCS
+        AllowSplitAuxInfo                   = (1U<<7),  // allow different node to provide aux info for DroneCAN
     };
 
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
@@ -37,10 +39,15 @@ public:
     AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
     AP_Int32 _options;                  /// Options
+#if AP_BATTERY_WATT_MAX_ENABLED
     AP_Int16 _watt_max;                 /// max battery power allowed. Reduce max throttle to reduce current to satisfy t    his limit
+#endif
     AP_Int8  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8  _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+    AP_Int8  _esc_telem_outbound_index; /// bitmask of ESCs to forward voltage, current, consumption and temperature to.
+#endif
 };

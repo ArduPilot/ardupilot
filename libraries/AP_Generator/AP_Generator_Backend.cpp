@@ -16,7 +16,7 @@
 
 #if HAL_GENERATOR_ENABLED
 
-// Base class consructor
+// Base class constructor
 AP_Generator_Backend::AP_Generator_Backend(AP_Generator& frontend) :
     _frontend(frontend)
 {

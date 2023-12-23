@@ -17,11 +17,6 @@
 #define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
 #define AP_MOTORS_HELI_DUAL_MODE_INTERMESHING          2 // intermeshing mode (rotors side by side)
 
-// tandem modes
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH           0 // swashplate pitch tilt axis
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL            1 // swashplate roll tilt axis
-#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL            2 // swashplate collective axis
-
 // default differential-collective-pitch scaler
 #define AP_MOTORS_HELI_DUAL_DCP_SCALER             0.25f
 
@@ -55,12 +50,6 @@ public:
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars() override;
 
-    // has_flybar - returns true if we have a mechical flybar
-    bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }
-
-    // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const  override { return false; }
-
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
@@ -76,7 +65,7 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // get_swashplate - calculate movement of each swashplate based on configuration
     float get_swashplate(int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input);
@@ -110,4 +99,16 @@ protected:
 
     // internal variables
     float _collective2_zero_thrst_pct;
+
+private:
+
+    // Mix and output swashplates for tandem
+    void mix_tandem(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
+    // Mix and output swashplates for transverse
+    void mix_transverse(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
+    // Mix and output swashplates for intermeshing
+    void mix_intermeshing(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input);
+
 };

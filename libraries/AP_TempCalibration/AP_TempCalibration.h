@@ -18,6 +18,10 @@
   and opportunistically calibrates sensors when the vehicle is still
  */
 
+#include "AP_TempCalibration_config.h"
+
+#if AP_TEMPCALIBRATION_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -79,3 +83,5 @@ private:
     float calculate_p_range(float baro_factor) const;
     
 };
+
+#endif  // AP_TEMPCALIBRATION_ENABLED

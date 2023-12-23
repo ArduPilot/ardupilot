@@ -7,11 +7,11 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 
-static const float MAX_POS_ERROR_M = 0.75f;  // Maximum possition error for retry locations
+static const float MAX_POS_ERROR_M = 0.75f;  // Maximum position error for retry locations
 static const uint32_t FAILSAFE_INIT_TIMEOUT_MS = 7000;   // Timeout in ms before failsafe measures are started. During this period vehicle is completely stopped to give user the time to take over
 static const float RETRY_OFFSET_ALT_M = 1.5f;  // This gets added to the altitude of the retry location
 
-// Initialize the state machine. This is called everytime vehicle switches mode
+// Initialize the state machine. This is called every time vehicle switches mode
 void AC_PrecLand_StateMachine::init()
 {
     AC_PrecLand *_precland = AP::ac_precland();
@@ -24,14 +24,14 @@ void AC_PrecLand_StateMachine::init()
         // precland is not enabled, prec land state machine methods should not be called!
         return;
     }
-    // init is only called ONCE per mode change. So in a particuar mode we can retry only a finite times.
+    // init is only called ONCE per mode change. So in a particular mode we can retry only a finite times.
     // The counter will be reset if the statemachine is called from a different mode
     _retry_count = 0;
     // reset every other statemachine
     reset_failed_landing_statemachine();
 }
 
-// Reset the landing statemachines. This needs to be called everytime the landing target is back in sight.
+// Reset the landing statemachines. This needs to be called every time the landing target is back in sight.
 // So that if the landing target goes out of sight again, we can start the failed landing procedure back from the beginning stage
 void AC_PrecLand_StateMachine::reset_failed_landing_statemachine()
 {

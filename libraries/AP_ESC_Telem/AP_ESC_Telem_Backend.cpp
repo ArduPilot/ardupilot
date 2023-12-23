@@ -40,4 +40,15 @@ void AP_ESC_Telem_Backend::update_telem_data(const uint8_t esc_index, const Tele
     _frontend->update_telem_data(esc_index, new_data, data_present_mask);
 }
 
+/*
+  return true if the data is stale
+ */
+bool AP_ESC_Telem_Backend::TelemetryData::stale(uint32_t now_ms) const volatile
+{
+    if (now_ms == 0) {
+        now_ms = AP_HAL::millis();
+    }
+    return last_update_ms == 0 || now_ms - last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS;
+}
+
 #endif

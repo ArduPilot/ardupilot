@@ -43,6 +43,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_BARO_ENABLE_DEFAULT 1
 #endif
 
+#ifndef HAL_PERIPH_BATT_HIDE_MASK_DEFAULT
+#define HAL_PERIPH_BATT_HIDE_MASK_DEFAULT 0
+#endif
+
 #ifndef AP_PERIPH_EFI_PORT_DEFAULT
 #define AP_PERIPH_EFI_PORT_DEFAULT 3
 #endif
@@ -103,6 +107,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
 #endif
 
+#ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
+    // @Param: CAN_TERMINATE
+    // @DisplayName: Enable CAN software temination in this node
+    // @Description: Enable CAN software temination in this node
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_terminate,   0, "CAN_TERMINATE", 0),
+#endif
+
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
@@ -120,6 +134,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN2_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
+    // @Param: CAN2_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    1, "CAN2_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
@@ -131,6 +151,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN3_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
+    // @Param: CAN3_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    2, "CAN3_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -171,7 +197,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec, 3:Enable sending stats
+    // @Bitmask: 0:Show free stack space, 1:Auto Reboot after 15sec, 2:Enable sending stats
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
@@ -223,7 +249,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery, "BATT", AP_BattMonitor),
+    GOBJECT(battery_lib, "BATT", AP_BattMonitor),
+
+    // @Param: BATT_HIDE_MASK
+    // @DisplayName: Battery hide mask
+    // @Description: Instance mask of local battery index(es) to prevent transmitting their status over CAN. This is useful for hiding a "battery" instance that is used locally in the peripheral but don't want them to be treated as a battery source(s) to the autopilot. For example, an AP_Periph battery monitor with multiple batteries that monitors each locally for diagnostic or other purposes, but only reports as a single SUM battery monitor to the autopilot.
+    // @Bitmask: 0:BATT, 1:BATT2, 2:BATT3, 3:BATT4, 4:BATT5, 5:BATT6, 6:BATT7, 7:BATT8, 8:BATT9, 9:BATTA, 10:BATTB, 11:BATTC, 12:BATTD, 13:BATTE, 14:BATTF, 15:BATTG
+    // @User: Advanced
+    GSCALAR(battery_hide_mask, "BATT_HIDE_MASK", HAL_PERIPH_BATT_HIDE_MASK_DEFAULT),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
@@ -432,7 +465,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+#endif
 
+#if HAL_GCS_ENABLED || defined(HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS)
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -475,7 +510,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#if HAL_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -507,7 +542,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif  // HAL_PROXIMITY_ENABLED
+#endif  // HAL_PERIPH_ENABLE_PROXIMITY
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
@@ -553,8 +588,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
     // @Group: NET_
-    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
-    GOBJECT(networking, "NET_", AP_Networking),
+    // @Path: networking.cpp
+    GOBJECT(networking_periph, "NET_", Networking_Periph),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RPM
@@ -567,6 +602,40 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: RC
     // @Path: rc_in.cpp
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    // @Group: BAL
+    // @Path: batt_balance.cpp
+    GOBJECT(battery_balance, "BAL",  BattBalance),
+#endif
+
+    // NOTE: sim parameters should go last
+#if AP_SIM_ENABLED
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
+    GOBJECT(sitl, "SIM_", SITL::SIM),
+
+#if AP_AHRS_ENABLED
+    // @Group: AHRS_
+    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+#endif
+#endif // AP_SIM_ENABLED
+
+#if HAL_PERIPH_CAN_MIRROR
+    // @Param: CAN_MIRROR_PORTS
+    // @DisplayName: CAN ports to mirror traffic between
+    // @Description: Any set ports will participate in blindly mirroring traffic from one port to the other. It is the users responsibility to ensure that no loops exist that cause traffic to be infinitly repeated, and both ports must be running the same baud rates.
+    // @Bitmask: 0:CAN1, 1:CAN2, 2:CAN3
+    // @User: Advanced
+    GSCALAR(can_mirror_ports, "CAN_MIRROR_PORTS", 0),
+#endif // HAL_PERIPH_CAN_MIRROR
+
+#ifdef HAL_PERIPH_ENABLE_RTC
+    // @Group: RTC
+    // @Path: ../libraries/AP_RTC/AP_RTC.cpp
+    GOBJECT(rtc,                   "RTC",    AP_RTC),
 #endif
 
     AP_VAREND

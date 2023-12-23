@@ -17,6 +17,10 @@
   Converted to a library by Andrew Tridgell, and rewritten to include helicopters by Bill Geyer
  */
 
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune_Heli.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -678,7 +682,7 @@ void AC_AutoTune_Heli::report_final_gains(AxisType test_axis) const
     }
 }
 
-// report gain formating helper
+// report gain formatting helper
 void AC_AutoTune_Heli::report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const
 {
     gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
@@ -1353,7 +1357,7 @@ void AC_AutoTune_Heli::set_gains_post_tune(AxisType test_axis)
 }
 
 // updating_rate_ff_up - adjust FF to ensure the target is reached
-// FF is adjusted until rate requested is acheived
+// FF is adjusted until rate requested is achieved
 void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command)
 {
 
@@ -1565,7 +1569,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     // once finished with sweep of frequencies, cnt = 12 is used to then tune for max response gain
     if (freq_cnt >= 12 && is_equal(start_freq,stop_freq)) {
         if (gain[freq_cnt] < max_resp_gain && tune_p < AUTOTUNE_SP_MAX && !find_peak) {
-            // keep increasing tuning gain unless phase changes or max response gain is acheived
+            // keep increasing tuning gain unless phase changes or max response gain is achieved
             if (phase[freq_cnt]-phase_max > 20.0f && phase[freq_cnt] < 210.0f) {
                 freq[freq_cnt] += 0.5 * test_freq_incr;
                 find_peak = true;
@@ -1837,7 +1841,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneSweep(float freq, float gain, float pha
         phase);
 }
 
-// reset the test vaariables for each vehicle
+// reset the test variables for each vehicle
 void AC_AutoTune_Heli::reset_vehicle_test_variables()
 {
     // reset dwell test variables if sweep was interrupted in order to restart sweep
@@ -1941,3 +1945,5 @@ bool AC_AutoTune_Heli::exceeded_freq_range(float frequency)
     }
     return ret;
 }
+
+#endif  // AC_AUTOTUNE_ENABLED

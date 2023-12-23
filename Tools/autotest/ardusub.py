@@ -11,9 +11,9 @@ import time
 
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import NotAchievedException
-from common import AutoTestTimeoutException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import AutoTestTimeoutException
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -33,7 +33,7 @@ class Joystick():
     Lateral = 6
 
 
-class AutoTestSub(AutoTest):
+class AutoTestSub(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
         return []
@@ -317,12 +317,14 @@ class AutoTestSub(AutoTest):
     def GripperMission(self):
         '''Test gripper mission items'''
         self.load_mission("sub-gripper-mission.txt")
-        self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
+        self.wait_waypoint(1, 2, max_dist=5)
         self.wait_statustext("Gripper Grabbed", timeout=60)
+        self.wait_waypoint(1, 4, max_dist=5)
         self.wait_statustext("Gripper Released", timeout=60)
+        self.wait_waypoint(1, 6, max_dist=5)
         self.disarm_vehicle()
 
     def SET_POSITION_TARGET_GLOBAL_INT(self):
@@ -373,12 +375,12 @@ class AutoTestSub(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        # out battery is reset to full on reboot.  So reduce it to 10%
+        # our battery is reset to full on reboot.  So reduce it to 10%
         # and wait for it to go above 50.
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=255,  # battery mask
-            p2=10,   # percentage
+            p1=65535,   # battery mask
+            p2=10,      # percentage
         )
         self.run_cmd_reboot()
         tstart = time.time()
@@ -425,6 +427,96 @@ class AutoTestSub(AutoTest):
         })
         return ret
 
+    def MAV_CMD_NAV_LOITER_UNLIM(self):
+        '''test handling of MAV_CMD_NAV_LOITER_UNLIM received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
+            self.assert_mode('POSHOLD')
+
+    def MAV_CMD_NAV_LAND(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
+            self.assert_mode('SURFACE')
+
+    def MAV_CMD_MISSION_START(self):
+        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.assert_mode('AUTO')
+        self.disarm_vehicle()
+
+    def MAV_CMD_DO_CHANGE_SPEED(self):
+        '''ensure vehicle changes speeds when DO_CHANGE_SPEED received'''
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -3),  # Dive so we have constrat drag
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, -1),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ]
+        self.upload_simple_relhome_mission(items)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+        self.progress("SENT MISSION START")
+        self.wait_mode('AUTO')
+        self.wait_current_waypoint(2)  # wait after we finish diving to 3m
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            for speed in [1, 1.5, 0.5]:
+                run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
+                self.wait_groundspeed(speed-0.2, speed+0.2, minimum_duration=2, timeout=60)
+        self.disarm_vehicle()
+
+    def _MAV_CMD_CONDITION_YAW(self, run_cmd):
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+        for angle in 5, 30, 60, 10:
+            angular_rate = 10
+            direction = 1
+            relative_or_absolute = 0
+            run_cmd(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=angle,
+                p2=angular_rate,
+                p3=direction,
+                p4=relative_or_absolute,  # 1 for relative, 0 for absolute
+            )
+            self.wait_heading(angle, minimum_duration=2)
+
+        self.start_subtest('Relative angle')
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=0,
+            p2=10,
+            p3=1,
+            p4=0,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(0, minimum_duration=2)
+        run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=20,
+            p2=10,
+            p3=1,
+            p4=1,  # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(20, minimum_duration=2)
+
+        self.disarm_vehicle()
+
+    def MAV_CMD_CONDITION_YAW(self):
+        '''ensure vehicle yaws according to GCS command'''
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd)
+        self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -440,6 +532,12 @@ class AutoTestSub(AutoTest):
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
+            self.TestLogDownloadMAVProxyNetwork,
+            self.MAV_CMD_NAV_LOITER_UNLIM,
+            self.MAV_CMD_NAV_LAND,
+            self.MAV_CMD_MISSION_START,
+            self.MAV_CMD_DO_CHANGE_SPEED,
+            self.MAV_CMD_CONDITION_YAW,
         ])
 
         return ret

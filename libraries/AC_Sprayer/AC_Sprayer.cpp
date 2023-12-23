@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
 
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
-    // @Description: Desired pump speed when traveling 1m/s expressed as a percentage
+    // @Description: Desired pump speed when travelling 1m/s expressed as a percentage
     // @Units: %
     // @Range: 0 100
     // @User: Standard
@@ -174,7 +174,7 @@ void AC_Sprayer::update()
         _speed_over_min_time = 0;
     }
 
-    // if testing pump output speed as if traveling at 1m/s
+    // if testing pump output speed as if travelling at 1m/s
     if (_flags.testing) {
         ground_speed = 100.0f;
         should_be_spraying = true;

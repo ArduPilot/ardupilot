@@ -78,12 +78,16 @@ void AP_IOMCU::init(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
+#if IOMCU_DEBUG_ENABLE
+    crc_is_ok = true;
+#else
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if ((!boardconfig || boardconfig->io_enabled() == 1) && !hal.util->was_watchdog_reset()) {
         check_crc();
     } else {
         crc_is_ok = true;
     }
+#endif
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
@@ -113,14 +117,21 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    uint16_t erpm_period_ms = 10; // default 100Hz
+    if (blh && blh->get_telemetry_rate() > 0) {
+        erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
+    }
+#endif
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
         // check if we have lost contact with the IOMCU
         const uint32_t now_ms = AP_HAL::millis();
-        if (last_reg_read_ms != 0 && now_ms - last_reg_read_ms > 1000U) {
+        if (last_reg_access_ms != 0 && now_ms - last_reg_access_ms > 1000) {
             INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
-            last_reg_read_ms = 0;
+            last_reg_access_ms = 0;
         }
 
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
@@ -307,7 +318,23 @@ void AP_IOMCU::thread_main(void)
             read_servo();
             last_servo_read_ms = AP_HAL::millis();
         }
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+        if (AP_BoardConfig::io_dshot() && now - last_erpm_read_ms > erpm_period_ms) {
+            // read erpm at configured rate. A more efficient scheme might be to 
+            // send erpm info back with the response from a PWM send, but that would
+            // require a reworking of the registers model
+            read_erpm();
+            last_erpm_read_ms = AP_HAL::millis();
+        }
 
+        if (AP_BoardConfig::io_dshot() && now - last_telem_read_ms > 100) {
+            // read dshot telemetry at 10Hz
+            // needs to be at least 4Hz since each ESC updates at ~1Hz and we
+            // are reading 4 at a time
+            read_telem();
+            last_telem_read_ms = AP_HAL::millis();
+        }
+#endif
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
             last_safety_option_check_ms = now;
@@ -370,6 +397,64 @@ void AP_IOMCU::read_rc_input()
         rc_last_input_ms = AP_HAL::millis();
     }
 }
+
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+/*
+  read dshot erpm
+ */
+void AP_IOMCU::read_erpm()
+{
+    uint16_t *r = (uint16_t *)&dshot_erpm;
+    if (!read_registers(PAGE_RAW_DSHOT_ERPM, 0, sizeof(dshot_erpm)/2, r)) {
+        return;
+    }
+    uint8_t motor_poles = 14;
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    if (blh) {
+        motor_poles = blh->get_motor_poles();
+    }
+    for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
+        for (uint8_t j = 0; j < 4; j++) {
+            const uint8_t esc_id = (i * 4 + j);
+            if (dshot_erpm.update_mask & 1U<<esc_id) {
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+            }
+        }
+    }
+}
+
+/*
+  read dshot telemetry
+ */
+void AP_IOMCU::read_telem()
+{
+    struct page_dshot_telem* telem = &dshot_telem[esc_group];
+    uint16_t *r = (uint16_t *)telem;
+    iopage page = PAGE_RAW_DSHOT_TELEM_1_4;
+    switch (esc_group) {
+#if IOMCU_MAX_TELEM_CHANNELS > 4
+    case 1:
+        page = PAGE_RAW_DSHOT_TELEM_5_8;
+        break;
+#endif
+    default:
+        break;
+    }
+
+    if (!read_registers(page, 0, sizeof(page_dshot_telem)/2, r)) {
+        return;
+    }
+    for (uint i = 0; i<4; i++) {
+        TelemetryData t {
+            .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
+            .voltage = float(telem->voltage_cvolts[i]) * 0.01,
+            .current = float(telem->current_camps[i]) * 0.01
+        };
+        update_telem_data(esc_group * 4 + i, t, telem->types[i]);
+    }
+    esc_group = (esc_group + 1) % (IOMCU_MAX_TELEM_CHANNELS / 4);
+}
+#endif
 
 /*
   read status registers
@@ -597,7 +682,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
-    last_reg_read_ms = AP_HAL::millis();
+    last_reg_access_ms = AP_HAL::millis();
     return true;
 }
 
@@ -673,6 +758,9 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
+
+    last_reg_access_ms = AP_HAL::millis();
+
     return true;
 }
 
@@ -792,7 +880,7 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
     if (last_frame_us != uint32_t(rc_last_input_ms * 1000U)) {
-        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
+        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_RC_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
         last_frame_us = uint32_t(rc_last_input_ms * 1000U);
         return true;
@@ -841,6 +929,13 @@ void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
     trigger_event(IOEVENT_SET_DSHOT_PERIOD);
 }
 
+// set the dshot esc_type
+void AP_IOMCU::set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType dshot_esc_type)
+{
+    mode_out.esc_type = uint16_t(dshot_esc_type);
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
 // set output mode
 void AP_IOMCU::set_telem_request_mask(uint32_t mask)
 {
@@ -870,6 +965,13 @@ void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
 {
     mode_out.mask = mask;
     mode_out.mode = mode;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set output mode
+void AP_IOMCU::set_bidir_dshot_mask(uint16_t mask)
+{
+    mode_out.bdmask = mask;
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
 }
 
@@ -980,7 +1082,7 @@ bool AP_IOMCU::check_crc(void)
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
     // avoid internal error on fw upload delay
-    last_reg_read_ms = 0;
+    last_reg_access_ms = 0;
 
     if (!upload_fw()) {
         AP_ROMFS::free(fw);

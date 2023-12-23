@@ -29,6 +29,12 @@ protected:
     // implement this:
     virtual bool get_reading(float &reading_m) = 0;
 
+    // returns 0-100 or -1. This virtual method is for
+    // serial drivers and is a companion to the previous method get_reading().
+    // Like get_reading() this method is called in the base-class update() method.
+    virtual int8_t get_signal_quality_pct() const WARN_IF_UNUSED
+    { return RangeFinder::SIGNAL_QUALITY_UNKNOWN; }
+
     // maximum time between readings before we change state to NoData:
     virtual uint16_t read_timeout_ms() const { return 200; }
 };

@@ -140,7 +140,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     void initOnce(bool enable_irq);
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
     /*
       additional statistics
      */
@@ -218,7 +218,9 @@ public:
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
     void get_stats(ExpandingString &str) override;
+#endif
 
+#if !defined(HAL_BOOTLOADER_BUILD)
     /*
       return statistics structure
      */
@@ -226,6 +228,7 @@ public:
         return &stats;
     }
 #endif
+
     /************************************
      * Methods used inside interrupt    *
      ************************************/

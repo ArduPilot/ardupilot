@@ -32,7 +32,7 @@ bool AP_BattMonitor_Generator_FuelLevel::has_current(void) const
     return has_consumed_energy();
 }
 
-// This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
+// This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel level remaining
 bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
 {
     // Get pointer to generator singleton
@@ -149,7 +149,7 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Generator_Elec::update_failsafes()
 
     AP_Generator *generator = AP::generator();
 
-    // Only check for failsafes on the electrical moniter
+    // Only check for failsafes on the electrical monitor
     // no point in having the same failsafe on two battery monitors
     if (generator != nullptr) {
         failsafe = generator->update_failsafes();

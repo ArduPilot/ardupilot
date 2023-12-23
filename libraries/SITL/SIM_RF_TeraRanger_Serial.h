@@ -12,7 +12,7 @@
  */
 /*
   Simulator for the TeraRanger NEO RangeFinder
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:teraranger_serial --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:teraranger_serial --speedup=1
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 35
 graph RANGEFINDER.distance

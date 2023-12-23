@@ -53,6 +53,10 @@ static_assert(SCRIPTING_STACK_SIZE <= SCRIPTING_STACK_MAX_SIZE, "Scripting requi
 #define SCRIPTING_ENABLE_DEFAULT 0
 #endif
 
+#if AP_NETWORKING_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Scripting::var_info[] = {
@@ -84,7 +88,12 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Param: DEBUG_OPTS
     // @DisplayName: Scripting Debug Level
     // @Description: Debugging options
-    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time, 4:Disable pre-arm check
+    // @Bitmask: 0: No Scripts to run message if all scripts have stopped
+    // @Bitmask: 1: Runtime messages for memory usage and execution time
+    // @Bitmask: 2: Suppress logging scripts to dataflash
+    // @Bitmask: 3: log runtime memory usage and execution time
+    // @Bitmask: 4: Disable pre-arm check
+    // @Bitmask: 5: Save CRC of current scripts to loaded and running checksum parameters enabling pre-arm
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
@@ -132,6 +141,26 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIR_DISABLE", 9, AP_Scripting, _dir_disable, 0),
 
+    // @Param: LD_CHECKSUM
+    // @DisplayName: Loaded script checksum
+    // @Description: Required XOR of CRC32 checksum of loaded scripts, vehicle will not arm with incorrect scripts loaded, -1 disables
+    // @User: Advanced
+    AP_GROUPINFO("LD_CHECKSUM", 12, AP_Scripting, _required_loaded_checksum, -1),
+
+    // @Param: RUN_CHECKSUM
+    // @DisplayName: Running script checksum
+    // @Description: Required XOR of CRC32 checksum of running scripts, vehicle will not arm with incorrect scripts running, -1 disables
+    // @User: Advanced
+    AP_GROUPINFO("RUN_CHECKSUM", 13, AP_Scripting, _required_running_checksum, -1),
+
+    // @Param: THD_PRIORITY
+    // @DisplayName: Scripting thread priority
+    // @Description: This sets the priority of the scripting thread. This is normally set to a low priority to prevent scripts from interfering with other parts of the system. Advanced users can change this priority if scripting needs to be prioritised for realtime applications. WARNING: changing this parameter can impact the stability of your flight controller. The scipting thread priority in this parameter is chosen based on a set of system level priorities for other subsystems. It is strongly recommended that you use the lowest priority that is sufficient for your application. Note that all scripts run at the same priority, so if you raise this priority you must carefully audit all lua scripts for behaviour that does not interfere with the operation of the system.
+    // @Values: 0:Normal, 1:IO Priority, 2:Storage Priority, 3:UART Priority, 4:I2C Priority, 5:SPI Priority, 6:Timer Priority, 7:Main Priority, 8:Boost Priority
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("THD_PRIORITY", 14, AP_Scripting, _thd_priority, uint8_t(ThreadPriority::NORMAL)),
+    
     AP_GROUPEND
 };
 
@@ -154,17 +183,39 @@ void AP_Scripting::init(void) {
     const char *dir_name = SCRIPTING_DIRECTORY;
     if (AP::FS().mkdir(dir_name)) {
         if (errno != EEXIST) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Scripting: failed to create (%s)", dir_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: failed to create (%s)", dir_name);
+        }
+    }
+
+    AP_HAL::Scheduler::priority_base priority = AP_HAL::Scheduler::PRIORITY_SCRIPTING;
+    static const struct {
+        ThreadPriority scr_priority;
+        AP_HAL::Scheduler::priority_base hal_priority;
+    } priority_map[] = {
+        { ThreadPriority::NORMAL, AP_HAL::Scheduler::PRIORITY_SCRIPTING },
+        { ThreadPriority::IO, AP_HAL::Scheduler::PRIORITY_IO },
+        { ThreadPriority::STORAGE, AP_HAL::Scheduler::PRIORITY_STORAGE },
+        { ThreadPriority::UART, AP_HAL::Scheduler::PRIORITY_UART },
+        { ThreadPriority::I2C, AP_HAL::Scheduler::PRIORITY_I2C },
+        { ThreadPriority::SPI, AP_HAL::Scheduler::PRIORITY_SPI },
+        { ThreadPriority::TIMER, AP_HAL::Scheduler::PRIORITY_TIMER },
+        { ThreadPriority::MAIN, AP_HAL::Scheduler::PRIORITY_MAIN },
+        { ThreadPriority::BOOST, AP_HAL::Scheduler::PRIORITY_BOOST },
+    };
+    for (const auto &p : priority_map) {
+        if (p.scr_priority == _thd_priority) {
+            priority = p.hal_priority;
         }
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
-                                      "Scripting", SCRIPTING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0)) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting: %s", "failed to start");
+                                      "Scripting", SCRIPTING_STACK_SIZE, priority, 0)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "failed to start");
         _thread_failed = true;
     }
 }
 
+#if HAL_GCS_ENABLED
 MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &packet) {
     switch ((SCRIPTING_CMD)packet.param1) {
         case SCRIPTING_CMD_REPL_START:
@@ -186,6 +237,7 @@ MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &
 
     return MAV_RESULT_UNSUPPORTED;
 }
+#endif
 
 bool AP_Scripting::repl_start(void) {
     if (terminal.session) { // it's already running, this is fine
@@ -197,7 +249,7 @@ bool AP_Scripting::repl_start(void) {
     if ((AP::FS().stat(REPL_DIRECTORY, &st) == -1) &&
         (AP::FS().unlink(REPL_DIRECTORY)  == -1) &&
         (errno != EEXIST)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Scripting: Unable to delete old REPL %s", strerror(errno));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: Unable to delete old REPL %s", strerror(errno));
     }
 
     // create a new folder
@@ -209,7 +261,7 @@ bool AP_Scripting::repl_start(void) {
     // make the output pointer
     terminal.output_fd = AP::FS().open(REPL_OUT, O_WRONLY|O_CREAT|O_TRUNC);
     if (terminal.output_fd == -1) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Scripting: %s", "Unable to make new REPL");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: %s", "Unable to make new REPL");
         return false;
     }
 
@@ -240,14 +292,14 @@ void AP_Scripting::thread(void) {
 
         lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options, terminal);
         if (lua == nullptr || !lua->heap_allocated()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
             _init_failed = true;
         } else {
             // run won't return while scripting is still active
             lua->run();
 
             // only reachable if the lua backend has died for any reason
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "stopped");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "stopped");
         }
         delete lua;
         lua = nullptr;
@@ -268,6 +320,17 @@ void AP_Scripting::thread(void) {
         }
         num_pwm_source = 0;
 
+#if AP_NETWORKING_ENABLED
+        // clear allocated sockets
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+            if (_net_sockets[i] != nullptr) {
+                delete _net_sockets[i];
+                _net_sockets[i] = nullptr;
+            }
+        }
+        num_net_sockets = 0;
+#endif // AP_NETWORKING_ENABLED
+        
         // Clear blocked commands
         {
             WITH_SEMAPHORE(mavlink_command_block_list_sem);
@@ -289,11 +352,11 @@ void AP_Scripting::thread(void) {
             }
             // must be enabled to get this far
             if (cleared || _restart) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "restarted");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "restarted");
                 break;
             }
             if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Scripting: %s", "stopped");
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Scripting: %s", "stopped");
             }
         }
     }
@@ -302,6 +365,7 @@ void AP_Scripting::thread(void) {
 
 void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd_in)
 {
+#if AP_MISSION_ENABLED
     if (!_enable) {
         return;
     }
@@ -314,7 +378,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
             mission_data = nullptr;
         }
         if (mission_data == nullptr) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Scripting: %s", "unable to receive mission command");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "unable to receive mission command");
             return;
         }
     }
@@ -326,6 +390,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
                                       AP_HAL::millis()};
 
     mission_data->push(cmd);
+#endif
 }
 
 bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
@@ -353,6 +418,25 @@ bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
     }
     lua_scripts::get_last_error_semaphore()->give();
 
+    // Use -1 for disabled, this means we don't have to avoid 0 in the CRC, the sign bit is masked off anyway
+    if (_required_loaded_checksum != -1) {
+        const uint32_t expected_loaded = (uint32_t)_required_loaded_checksum.get() & checksum_param_mask;
+        const uint32_t loaded = lua_scripts::get_loaded_checksum() & checksum_param_mask;
+        if (expected_loaded != loaded) {
+            hal.util->snprintf(buffer, buflen, "Scripting: loaded CRC incorrect want: 0x%x", (unsigned int)loaded);
+            return false;
+        }
+    }
+
+    if (_required_running_checksum != -1) {
+        const uint32_t expected_running = (uint32_t)_required_running_checksum.get() & checksum_param_mask;
+        const uint32_t running = lua_scripts::get_running_checksum() & checksum_param_mask;
+        if (expected_running != running) {
+            hal.util->snprintf(buffer, buflen, "Scripting: running CRC incorrect want: 0x%x", (unsigned int)running);
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -362,6 +446,7 @@ void AP_Scripting::restart_all()
     _stop = true;
 }
 
+#if HAL_GCS_ENABLED
 void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
     if (mavlink_data.rx_buffer == nullptr) {
         return;
@@ -395,6 +480,35 @@ bool AP_Scripting::is_handling_command(uint16_t cmd_id)
     }
 
     return false;
+}
+#endif // HAL_GCS_ENABLED
+
+// Update called at 1Hz from AP_Vehicle
+void AP_Scripting::update() {
+
+    save_checksum();
+
+}
+
+// Check if DEBUG_OPTS bit has been set to save current checksum values to params
+void AP_Scripting::save_checksum() {
+
+    const uint8_t opts = _debug_options.get();
+    const uint8_t save_bit = uint8_t(lua_scripts::DebugLevel::SAVE_CHECKSUM);
+    if ((opts & save_bit) == 0) {
+        // Bit not set, nothing to do
+        return;
+    }
+
+    // Save two checksum parameters to there current values
+    _required_loaded_checksum.set_and_save(lua_scripts::get_loaded_checksum() & checksum_param_mask);
+    _required_running_checksum.set_and_save(lua_scripts::get_running_checksum() & checksum_param_mask);
+
+    // Un-set debug option bit
+    _debug_options.set_and_save(opts & ~save_bit);
+
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Scripting: %s", "saved checksums");
+
 }
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;

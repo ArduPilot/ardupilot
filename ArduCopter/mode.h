@@ -2,12 +2,68 @@
 
 #include "Copter.h"
 #include <AP_Math/chirp.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
 class Parameters;
 class ParametersG2;
 
 class GCS_Copter;
 
+// object shared by both Guided and Auto for takeoff.
+// position controller controls vehicle but the user can control the yaw.
+class _AutoTakeoff {
+public:
+    void run();
+    void start(float complete_alt_cm, bool terrain_alt);
+    bool get_position(Vector3p& completion_pos);
+
+    bool complete;          // true when takeoff is complete
+
+private:
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    bool no_nav_active;
+    float no_nav_alt_cm;
+
+    // auto takeoff variables
+    float complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
+    bool terrain_alt;       // true if altitudes are above terrain
+    Vector3p complete_pos;  // target takeoff position as offset from ekf origin in cm
+};
+
+#if AC_PAYLOAD_PLACE_ENABLED
+class PayloadPlace {
+public:
+    void run();
+    void start_descent();
+    bool verify();
+
+    enum class State : uint8_t {
+        FlyToLocation,
+        Descent_Start,
+        Descent,
+        Release,
+        Releasing,
+        Delay,
+        Ascent_Start,
+        Ascent,
+        Done,
+    };
+
+    // these are set by the Mission code:
+    State state = State::Descent_Start; // records state of payload place
+    float descent_max_cm;
+
+private:
+
+    uint32_t descent_established_time_ms; // milliseconds
+    uint32_t place_start_time_ms; // milliseconds
+    float descent_thrust_level;
+    float descent_start_altitude_cm;
+    float descent_speed_cms;
+};
+#endif
+
 class Mode {
+    friend class PayloadPlace;
 
 public:
 
@@ -49,6 +105,8 @@ public:
 
     // do not allow copying
     CLASS_NO_COPY(Mode);
+
+    friend class _AutoTakeoff;
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
@@ -143,6 +201,11 @@ protected:
         land_run_vertical_control(pause_descent);
     }
 
+#if AC_PAYLOAD_PLACE_ENABLED
+    // payload place flight behaviour:
+    static PayloadPlace payload_place;
+#endif
+
     // run normal or precision landing (if enabled)
     // pause_descent is true if vehicle should not descend
     void land_run_normal_or_precland(bool pause_descent = false);
@@ -178,7 +241,7 @@ protected:
     AC_PosControl *&pos_control;
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
-    AC_AttitudeControl_t *&attitude_control;
+    AC_AttitudeControl *&attitude_control;
     MOTOR_CLASS *&motors;
     RC_Channel *&channel_roll;
     RC_Channel *&channel_pitch;
@@ -214,21 +277,7 @@ protected:
 
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
-    // method shared by both Guided and Auto for takeoff.
-    // position controller controls vehicle but the user can control the yaw.
-    void auto_takeoff_run();
-    void auto_takeoff_start(float complete_alt_cm, bool terrain_alt);
-    bool auto_takeoff_get_position(Vector3p& completion_pos);
-
-    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
-    static bool auto_takeoff_no_nav_active;
-    static float auto_takeoff_no_nav_alt_cm;
-
-    // auto takeoff variables
-    static float auto_takeoff_complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
-    static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
-    static bool auto_takeoff_complete;          // true when takeoff is complete
-    static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm
+    static _AutoTakeoff auto_takeoff;
 
 public:
     // Navigation Yaw control
@@ -422,10 +471,11 @@ private:
 
 };
 
-
 class ModeAuto : public Mode {
 
 public:
+    friend class PayloadPlace;  // in case wp_run is accidentally required
+
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return auto_RTL? Number::AUTO_RTL : Number::AUTO; }
@@ -451,7 +501,9 @@ public:
         NAVGUIDED,
         LOITER,
         LOITER_TO_ALT,
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
         NAV_PAYLOAD_PLACE,
+#endif
         NAV_SCRIPT_TIME,
         NAV_ATTITUDE_TIME,
     };
@@ -546,12 +598,6 @@ private:
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
-    void payload_place_run();
-    bool payload_place_run_should_run();
-    void payload_place_run_hover();
-    void payload_place_run_descent();
-    void payload_place_run_release();
-
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     bool shift_alt_to_current_alt(Location& target_loc) const;
@@ -633,21 +679,12 @@ private:
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
 
+    // Land within Auto state
     enum class State {
         FlyToLocation = 0,
         Descending = 1
     };
     State state = State::FlyToLocation;
-
-    struct {
-        PayloadPlaceStateType state = PayloadPlaceStateType_Descent_Start; // records state of payload place
-        uint32_t descent_established_time_ms; // milliseconds
-        uint32_t place_start_time_ms; // milliseconds
-        float descent_thrust_level;
-        float descent_start_altitude_cm;
-        float descent_speed_cms;
-        float descent_max_cm;
-    } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 
@@ -677,6 +714,13 @@ private:
         float climb_rate;   // climb rate in m/s. provided by mission command
         uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
+
+    // desired speeds
+    struct {
+        float xy;     // desired speed horizontally in m/s. 0 if unset
+        float up;     // desired speed upwards in m/s. 0 if unset
+        float down;   // desired speed downwards in m/s. 0 if unset
+    } desired_speed_override;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -957,6 +1001,10 @@ private:
 class ModeGuided : public Mode {
 
 public:
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Copter;
+#endif
+
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::GUIDED; }

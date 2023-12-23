@@ -60,7 +60,15 @@ void SRV_Channel::output_ch(void)
                 int16_t radio_in = c->get_radio_in();
                 if (passthrough_mapped) {
                     if (rc().has_valid_input()) {
-                        radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                        switch (c->get_type()) {
+                        case RC_Channel::ControlType::ANGLE:
+                            radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                            break;
+                        case RC_Channel::ControlType::RANGE:
+                            // convert RC normalised input from -1 to +1 range to 0 to +1 and output as range
+                            radio_in = pwm_from_range((c->norm_input_ignore_trim() + 1.0) * 0.5 * 4500);
+                            break;
+                        }
                     } else {
                         // no valid input.  If we are in radio
                         // failsafe then go to trim values (if

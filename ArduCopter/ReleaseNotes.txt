@@ -1,5 +1,91 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.4.4 19-Dec-2023 / 4.4.4-beta1 05-Dec-2023
+Changes from 4.4.3
+1) Autopilot related enhancement and fixes
+    - CubeOrange Sim-on-hardware compilation fix
+    - RADIX2HD supports external I2C compasses
+    - SpeedyBeeF405v4 support
+2) Bug fixes
+    - DroneCAN battery monitor with cell monitor SoC reporting fix
+    - NTF_LED_TYPES parameter description fixed (was missing IS31FL3195)
+    - ProfiLED output fixed in both Notify and Scripting
+    - Scripting bug that could cause crash if parameters were added in flight
+    - STAT_BOOTCNT param fix (was not updating in some cases)
+    - Takeoff RPM check fixed where motors are attached to AUX channels
+    - don't query hobbywing DroneCAN ESC IDs while armed
+------------------------------------------------------------------
+Copter 4.4.3 14-Nov-2023
+Changes from 4.4.3-beta1
+1) AP_GPS: correct uBlox M10 configuration on low flash boards
+------------------------------------------------------------------
+Copter 4.4.3-beta1 07-Nov-2023
+Changes from 4.4.2
+1) Autopilot related enhancements and fixes
+    - BETAFTP-F405 board configuration fixes
+    - CubeOrangePlus-BG edition ICM45486 IMU setup fixed
+    - YJUAV_A6SE_H743 support
+2) Minor enhancements
+    - GPS_DRV_OPTION allows using ellipsoid height in more GPS drivers
+    - Lua script support for fully populating ESC telemetry data
+3) Bug fixes
+   - AK09916 compass being non-responsive fixed
+   - IxM42xxx IMUs "stuck" gyros fixed
+   - MAVLink response fixed when no airspeed sensor during preflight calibration
+   - Notch filtering protection when using uninitialised RPM source in ESC telemetry
+   - SIYI gimbal driver parsing bug fixed (was causing lost packets)
+------------------------------------------------------------------
+Copter 4.4.2 22-Oct-2023 / Copter 4.4.2-beta1 13-Oct-2023
+Changes from 4.4.1
+1) Autopilot related enhancements and fixes
+    - BETAFPV-F405 support
+    - MambaF405v2 battery and serial setup corrected
+    - mRo Control Zero OEM H7 bdshot support
+    - SpeedyBee-F405-Wing gets VTX power control
+    - SpeedyBee-F405-Mini support
+    - T-Motor H743 Mini support
+2) EKF3 supports baroless boards
+3) GPS-for-yaw allows base GPS to update at only 3Hz
+4) INA battery monitor supports config of shunt resistor used (see BATTx_SHUNT)
+5) Log VER message includes vehicle type
+6) OpenDroneId option to auto-store IDs in persistent flash
+7) RC SBUS protection against invalid data in first 4 channels
+8) Bug fixes
+    - BMI088 IMU error value handling fixed to avoid occasional negative spike
+    - Dev environment CI autotest stability improvements
+    - OSD correct DisplayPort BF MSP symbols
+    - OSD option to correct direction arrows for BF font set
+    - Sensor status reporting to GCS fixed for baroless boards
+------------------------------------------------------------------
+Copter 4.4.1 26-Sep-2023 / 4.4.1-beta2 14-Sep-2023
+Changes from 4.4.1-beta1
+1) Autopilot related enhancements
+    - H750 external flash optimisations for to lower CPU load
+    - MambaF405Mini fixes to match manufacturer's recommended wiring
+    - RADIX2 HD support
+    - YJUAV_A6SE support
+2) Bug fixes
+    - Airbotf4 features minimised to build for 4.4
+    - ChibiOS clock fix for 480Mhz H7 boards (affected FDCAN)
+    - RPI hardware version check fix
+------------------------------------------------------------------
+Copter 4.4.1-beta1 05-Sep-2023
+Changes from 4.4.0
+1) Autopilot related fixes and enhancements
+    - KakuteH7-wing get 8 bit directional dshot channel support
+    - Luminousbee5 boards defaults updated
+    - Navigator autopilot GPIOs fix (PWM output was broken)
+    - Pixhawk6C Serial RTS lines pulled low on startup
+    - QiotekZealotF427 and QiotekZealotH743 battery monitor default fixed
+    - SDMODELH7V1 support
+2) Driver enhancements
+    - DroneCAN battery monitors allow reset of battery SoC
+    - Himark DroneCAN servo support
+    - Hobbywing DroneCAN ESC support
+3) EKF3 high vibration handling improved with EK3_GLITCH_RADIUS option
+4) Custom build server gets mission storage on SDCard selection
+5) SITL default parameter handling bug fix
+------------------------------------------------------------------
 Copter 4.4.0 18-Aug-2023 / 4.4.0-beta5 12-Aug-2023
 Changes from 4.4.0-beta4
 1) Autopilots specific changes
@@ -165,7 +251,6 @@ Changes from 4.3.6
         - Touchdown detection threshold is configurable (see PLDP_THRESH)
     - Position controller angle max adjusted inflight with CH6 Tuning knob (set TUNE=59)
     - Surface tracking time constant allows tuning response (see SURFTRAK_TC)
-    - Takeoff throttle max is configurable (see TKOFF_TH_MAX)
     - Throttle-Gain boost increases attitude control gains when throttle high (see ATC_THR_G_BOOST)
     - Waypoint navigation cornering acceleration is configurable (see WPNAV_ACCEL_C)
     - WeatherVane into the wind in Auto and Guided modes (see WVANE_ENABLE)
@@ -288,7 +373,7 @@ Changes from 4.3.6
     - Webots 2023a simulator support
     - XPlane support for wider range of aircraft
 ------------------------------------------------------------------
-Copter 4.3.8-beta1 12-Aug-2023
+Copter 4.3.8 24-Aug-2023 / 4.3.8-beta1 12-Aug-2023
 Changes from 4.3.7
 1) Bug fixes
     - DroneCAN GPS RTK injection fix

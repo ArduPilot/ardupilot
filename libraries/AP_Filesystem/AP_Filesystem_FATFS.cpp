@@ -879,7 +879,7 @@ bool AP_Filesystem_FATFS::format(void)
 #if FF_USE_MKFS
     WITH_SEMAPHORE(sem);
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Filesystem_FATFS::format_handler, void));
-    // the format is handled asyncronously, we inform user of success
+    // the format is handled asynchronously, we inform user of success
     // via a text message.  format_status can be polled for progress
     format_status = FormatStatus::PENDING;
     return true;

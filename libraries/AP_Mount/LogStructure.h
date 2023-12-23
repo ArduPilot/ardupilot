@@ -6,17 +6,18 @@
     LOG_MOUNT_MSG
 
 // @LoggerMessage: MNT
-// @Description: Mount's actual and Target/Desired RPY information
+// @Description: Mount's desired and actual roll, pitch and yaw angles
 // @Field: TimeUS: Time since system startup
 // @Field: I: Instance number
-// @Field: DesRoll: mount's desired roll
-// @Field: Roll: mount's actual roll
-// @Field: DesPitch: mount's desired pitch
-// @Field: Pitch: mount's actual pitch
-// @Field: DesYawB: mount's desired yaw in body frame
-// @Field: YawB: mount's actual yaw in body frame
-// @Field: DesYawE: mount's desired yaw in earth frame
-// @Field: YawE: mount's actual yaw in earth frame
+// @Field: DRoll: Desired roll
+// @Field: Roll: Actual roll
+// @Field: DPitch: Desired pitch
+// @Field: Pitch: Actual pitch
+// @Field: DYawB: Desired yaw in body frame
+// @Field: YawB: Actual yaw in body frame
+// @Field: DYawE: Desired yaw in earth frame
+// @Field: YawE: Actual yaw in earth frame
+// @Field: Dist: Rangefinder distance
 
 struct PACKED log_Mount {
     LOG_PACKET_HEADER;
@@ -30,9 +31,10 @@ struct PACKED log_Mount {
     float    actual_yaw_bf;
     float    desired_yaw_ef;
     float    actual_yaw_ef;
+    float    rangefinder_dist;
 };
 
 #define LOG_STRUCTURE_FROM_MOUNT \
     { LOG_MOUNT_MSG, sizeof(log_Mount), \
-      "MNT", "QBffffffff","TimeUS,I,DesRoll,Roll,DesPitch,Pitch,DesYawB,YawB,DesYawE,YawE", "s#dddddddd", "F---------" },
+      "MNT", "QBfffffffff","TimeUS,I,DRoll,Roll,DPitch,Pitch,DYawB,YawB,DYawE,YawE,Dist", "s#ddddddddm", "F---------0" },
 

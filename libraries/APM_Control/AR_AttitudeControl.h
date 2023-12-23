@@ -100,6 +100,9 @@ public:
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
     const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate);
+
     // get the slew rate value for speed and steering for oscillation detection in lua scripts
     void get_srate(float &steering_srate, float &speed_srate);
 

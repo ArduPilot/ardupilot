@@ -1,7 +1,5 @@
 include ../MatekL431/hwdef.inc
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-GPS"
-
 # enable GPS and compass
 define HAL_PERIPH_ENABLE_GPS
 define GPS_MAX_RATE_MS 200
@@ -54,3 +52,8 @@ define HAL_CAN_POOL_SIZE 12000
 define HAL_PERIPH_ENABLE_MSP
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
+
+undef PB10
+undef PB11
+PB10 USART3_TX USART3 SPEED_HIGH
+PB11 USART3_RX USART3 SPEED_HIGH

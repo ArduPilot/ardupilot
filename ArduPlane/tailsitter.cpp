@@ -27,7 +27,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable Tailsitter
     // @Values: 0:Disable, 1:Enable, 2:Enable Always
-    // @Description: This enables Tailsitter functionality. A value of 2 forces Qassist active and always stabilize in forward flight with airmode for stabalisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
+    // @Description: This enables Tailsitter functionality. A value of 2 forces Qassist active and always stabilize in forward flight with airmode for stabilisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Tailsitter, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -161,7 +161,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: MIN_VO
     // @DisplayName: Tailsitter Disk loading minimum outflow speed
-    // @Description: Use in conjunction with disk therory gain scaling and Q_TAILSIT_DSKLD to specify minumum airspeed over control surfaces, this will be used to boost throttle, when decending for example, 0 disables
+    // @Description: Use in conjunction with disk theory gain scaling and Q_TAILSIT_DSKLD to specify minumum airspeed over control surfaces, this will be used to boost throttle, when descending for example, 0 disables
     // @Range: 0 15
     AP_GROUPINFO("MIN_VO", 22, Tailsitter, disk_loading_min_outflow, 0),
 
@@ -330,7 +330,7 @@ void Tailsitter::output(void)
                 SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, throttle_pwm);
                 SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, throttle_pwm);
 
-                // throttle output is not used by AP_Motors so might have diffrent PWM range, set scaled
+                // throttle output is not used by AP_Motors so might have different PWM range, set scaled
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100.0);
             }
         }
@@ -366,20 +366,32 @@ void Tailsitter::output(void)
         if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
             // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
             // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
-            // Assume there is always roll and pitch control surfaces, otherwise motors only assist should not be set.
+            // Assume there is always roll control surfaces, otherwise motors only assist should not be set.
             const float dt = quadplane.attitude_control->get_dt();
-            quadplane.attitude_control->get_rate_pitch_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
-            motors->limit.pitch = true;
+
+            // VTOL yaw / FW roll
             quadplane.attitude_control->get_rate_yaw_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
             motors->limit.yaw = true;
 
+            // VTOL and FW pitch
+            if (_have_elevator || _have_elevon || _have_v_tail) {
+                // have pitch control surfaces, use them
+                quadplane.attitude_control->get_rate_pitch_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
+                motors->limit.pitch = true;
+            } else {
+                // no pitch control surfaces, zero plane I terms and use motors
+                // We skip the outputting to surfaces for this axis from the copter controller but there are none setup
+                plane.pitchController.reset_I();
+            }
+
+            // VTOL roll / FW yaw
             if (_have_rudder || _have_v_tail) {
                 // there are yaw control  surfaces, zero motor I term
                 quadplane.attitude_control->get_rate_roll_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
                 motors->limit.roll = true;
             } else {
                 // no yaw control surfaces, zero plane I terms and use motors
-                // We skip the outputing to surfaces for this axis from the copter controller but there are none setup
+                // We skip the outputting to surfaces for this axis from the copter controller but there are none setup
                 plane.yawController.reset_I();
             }
 
@@ -501,7 +513,7 @@ void Tailsitter::output(void)
 bool Tailsitter::transition_fw_complete(void)
 {
     if (!plane.arming.is_armed_and_safety_off()) {
-        // instant trainsition when disarmed, no message
+        // instant transition when disarmed, no message
         return true;
     }
     if (labs(quadplane.ahrs_view->pitch_sensor) > transition_angle_fw*100) {
@@ -527,7 +539,7 @@ bool Tailsitter::transition_fw_complete(void)
 bool Tailsitter::transition_vtol_complete(void) const
 {
     if (!plane.arming.is_armed_and_safety_off()) {
-        // instant trainsition when disarmed, no message
+        // instant transition when disarmed, no message
         return true;
     }
     // for vectored tailsitters at zero pilot throttle
@@ -622,7 +634,7 @@ void Tailsitter::speed_scaling(void)
     float spd_scaler = 1.0f;
     float disk_loading_min_throttle = 0.0;
 
-    // Scaleing with throttle
+    // Scaling with throttle
     float throttle_scaler = throttle_scale_max;
     if (is_positive(throttle)) {
         throttle_scaler = constrain_float(hover_throttle / throttle, gain_scaling_min, throttle_scale_max);
@@ -743,9 +755,6 @@ void Tailsitter::speed_scaling(void)
         spd_scaler /= plane.barometer.get_air_density_ratio();
     }
 
-    // record for QTUN log
-    log_spd_scaler = spd_scaler;
-
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
@@ -766,6 +775,29 @@ void Tailsitter::speed_scaling(void)
     if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
+
+    // Record for log
+    log_data.throttle_scaler = throttle_scaler;
+    log_data.speed_scaler = spd_scaler;
+    log_data.min_throttle = disk_loading_min_throttle;
+
+}
+
+// Write tailsitter specific log
+void Tailsitter::write_log()
+{
+    if (!enabled()) {
+        return;
+    }
+
+    struct log_tailsitter pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
+        time_us             : AP_HAL::micros64(),
+        throttle_scaler     : log_data.throttle_scaler,
+        speed_scaler        : log_data.speed_scaler,
+        min_throttle        : log_data.min_throttle,
+    };
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // return true if pitch control should be relaxed
@@ -918,7 +950,7 @@ bool Tailsitter_Transition::allow_stick_mixing() const
     if (tailsitter.in_vtol_transition()) {
         return false;
     }
-    // Transitioning into fixed wing flight, leveling off
+    // Transitioning into fixed wing flight, levelling off
     if ((transition_state == TRANSITION_DONE) && (fw_limit_start_ms != 0)) {
         return false;
     }

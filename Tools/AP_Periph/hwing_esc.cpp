@@ -6,8 +6,11 @@
   This protocol only allows for one ESC per UART RX line, so using a
   CAN node per ESC works well.
  */
+
+#include "AP_Periph.h"
 #include "hwing_esc.h"
 #include <AP_HAL/utility/sparse-endian.h>
+#include <dronecan_msgs.h>
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
 
@@ -39,7 +42,7 @@ bool HWESC_Telem::update()
     }
 
     // we expect at least 50ms idle between frames
-    uint32_t now = AP_HAL::native_millis();
+    uint32_t now = AP_HAL::millis();
     bool frame_gap = (now - last_read_ms) > 10;
 
     last_read_ms = now;
@@ -141,6 +144,31 @@ bool HWESC_Telem::parse_packet(void)
     }
 
     return true;
+}
+
+void AP_Periph_FW::hwesc_telem_update()
+{
+    if (!hwesc_telem.update()) {
+        return;
+    }
+    const HWESC_Telem::HWESC &t = hwesc_telem.get_telem();
+
+    uavcan_equipment_esc_Status pkt {};
+    pkt.esc_index = g.esc_number[0]; // only supports a single ESC
+    pkt.voltage = t.voltage;
+    pkt.current = t.current;
+    pkt.temperature = C_TO_KELVIN(MAX(t.mos_temperature, t.cap_temperature));
+    pkt.rpm = t.rpm;
+    pkt.power_rating_pct = t.phase_current;
+    pkt.error_count = t.error_count;
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+    uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());
+    canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
 }
 
 #endif // HAL_PERIPH_ENABLE_HWESC

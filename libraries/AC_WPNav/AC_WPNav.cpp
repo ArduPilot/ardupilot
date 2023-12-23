@@ -482,7 +482,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // Use vel_scaler_dt to slow down the trajectory time
-    // vel_scaler_dt scales the velocity and acceleration to be kinematically constent
+    // vel_scaler_dt scales the velocity and acceleration to be kinematically consistent
     float vel_scaler_dt = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
         update_vel_accel(_offset_vel, _offset_accel, dt, 0.0, 0.0);

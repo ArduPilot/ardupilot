@@ -164,3 +164,19 @@ bool ModeAuto::is_landing() const
 {
     return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
 }
+
+void ModeAuto::run()
+{
+    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT) {
+        // Wiggle servos
+        plane.set_servos_idle();
+
+        // Relax attitude control
+        reset_controllers();
+
+    } else {
+        // Normal flight, run base class
+        Mode::run();
+
+    }
+}

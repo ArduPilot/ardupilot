@@ -40,14 +40,40 @@ public:
 
 private:
 
+    // A subset of the port identifiers in the GSOF protocol that are used for serial.
+    // Ethernet, USB, etc are not supported by the GPS driver at this time so they are omitted.
+    // These values are not documented in the API.
+    enum class HW_Port {
+        COM1 = 0, // RS232 serial
+        COM2 = 1, // TTL serial
+    };
+
+    // A subset of the data frequencies in the GSOF protocol that are used for serial.
+    // These values are not documented in the API.
+    enum class Output_Rate {
+        FREQ_10_HZ = 1,
+        FREQ_50_HZ = 15,
+        FREQ_100_HZ = 16,
+    };
+
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-    void requestBaud(const uint8_t portindex);
-    void requestGSOF(const uint8_t messagetype, const uint8_t portindex);
+
+    // Send a request to the GPS to set the baud rate on the specified port.
+    // Note - these request functions currently ignore the ACK from the device.
+    // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
+    // According to the manufacturer, the best approach is to switch to ethernet.
+    void requestBaud(const HW_Port portIndex);
+    // Send a request to the GPS to enable a message type on the port at the specified rate.
+    void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
+
     double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
+
+    bool validate_baud(const uint8_t baud) const WARN_IF_UNUSED;
+    bool validate_com_port(const uint8_t com_port) const WARN_IF_UNUSED;
 
     struct Msg_Parser
     {

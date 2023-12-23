@@ -6,7 +6,7 @@
 
 // Toggle the shutter on the GoPro
 // This is so ArduPilot can toggle the shutter directly, either for mission/GCS commands, or when the
-// Solo's gimbal is installed on a vehicle other than a Solo.  The usual GoPro controls thorugh the 
+// Solo's gimbal is installed on a vehicle other than a Solo.  The usual GoPro controls through the 
 // Solo app and Solo controller do not use this, as it is done offboard on the companion computer.
 // entry point to actually take a picture.  returns true on success
 bool AP_Camera_SoloGimbal::trigger_pic()

@@ -83,6 +83,8 @@ void ModeQLoiter::run()
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
 
+    plane.quadplane.assign_tilt_to_fwd_thr();
+
     if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
         pos_control->set_externally_limited_xy();
     }
@@ -102,7 +104,7 @@ void ModeQLoiter::run()
 #if AP_ICENGINE_ENABLED
             // cut IC engine if enabled
             if (quadplane.land_icengine_cut != 0) {
-                plane.g2.ice_control.engine_control(0, 0, 0);
+                plane.g2.ice_control.engine_control(0, 0, 0, false);
             }
 #endif  // AP_ICENGINE_ENABLED
         }

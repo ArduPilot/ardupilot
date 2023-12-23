@@ -16,13 +16,17 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "GCS_config.h"
+#include <AP_Rally/AP_Rally_config.h>
+
+#if HAL_GCS_ENABLED && HAL_RALLY_ENABLED
+
 #include "MissionItemProtocol_Rally.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/GCS.h>
-
-#if HAL_RALLY_ENABLED
+#include <AP_Terrain/AP_Terrain.h>
 
 MAV_MISSION_RESULT MissionItemProtocol_Rally::append_item(const mavlink_mission_item_int_t &cmd)
 {
@@ -54,10 +58,6 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyL
     if (cmd.command != MAV_CMD_NAV_RALLY_POINT) {
         return MAV_MISSION_UNSUPPORTED;
     }
-    if (cmd.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
-        cmd.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
-        return MAV_MISSION_UNSUPPORTED_FRAME;
-    }
     if (!check_lat(cmd.x)) {
         return MAV_MISSION_INVALID_PARAM5_X;
     }
@@ -68,6 +68,32 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyL
         return MAV_MISSION_INVALID_PARAM7;
     }
     ret = {};
+
+    switch (cmd.frame) {
+        case MAV_FRAME_GLOBAL:
+        case MAV_FRAME_GLOBAL_INT:
+            ret.alt_frame = uint8_t(Location::AltFrame::ABSOLUTE);
+            break;
+
+        case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+        case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+            ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_HOME);
+            break;
+
+#if AP_TERRAIN_AVAILABLE
+        case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+        case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+            ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_TERRAIN);
+            break;
+#endif
+
+        default:
+            return MAV_MISSION_UNSUPPORTED_FRAME;
+    }
+
+    // Fresh points always use new alt frame format
+    ret.alt_frame_valid = true;
+
     ret.lat = cmd.x;
     ret.lng = cmd.y;
     ret.alt = cmd.z;
@@ -88,7 +114,29 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
         return false;
     }
 
+    // Default to relative to home
     ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+
+    if (rallypoint.alt_frame_valid == 1) {
+        switch (Location::AltFrame(rallypoint.alt_frame)) {
+            case Location::AltFrame::ABSOLUTE:
+                ret_packet.frame = MAV_FRAME_GLOBAL;
+                break;
+
+            case Location::AltFrame::ABOVE_HOME:
+                ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                break;
+
+            case Location::AltFrame::ABOVE_ORIGIN:
+                // Above origin alt frame is not supported
+                return false;
+
+            case Location::AltFrame::ABOVE_TERRAIN:
+                ret_packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
+                break;
+        }
+    }
+
     ret_packet.command = MAV_CMD_NAV_RALLY_POINT;
     ret_packet.x = rallypoint.lat;
     ret_packet.y = rallypoint.lng;
@@ -139,4 +187,4 @@ void MissionItemProtocol_Rally::truncate(const mavlink_mission_count_t &packet)
     rally.truncate(packet.count);
 }
 
-#endif  // HAL_RALLY_ENABLED
+#endif  // HAL_GCS_ENABLED && HAL_RALLY_ENABLED

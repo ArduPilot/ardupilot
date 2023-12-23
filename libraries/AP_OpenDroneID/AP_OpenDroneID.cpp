@@ -27,10 +27,11 @@
  * and DroneCAN
  */
 
-#include "AP_OpenDroneID.h"
+#include "AP_OpenDroneID_config.h"
 
 #if AP_OPENDRONEID_ENABLED
 
+#include "AP_OpenDroneID.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
@@ -132,9 +133,6 @@ void AP_OpenDroneID::set_basic_id() {
     if (pkt_basic_id.id_type != MAV_ODID_ID_TYPE_NONE) {
         return;
     }
-    if (id_len == 0) {
-        load_UAS_ID_from_persistent_memory();
-    }
     if (id_len > 0) {
         // prepare basic id pkt
         uint8_t val = gcs().sysid_this_mav();
@@ -209,10 +207,12 @@ void AP_OpenDroneID::update()
 
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
         && (_options & LockUASIDOnFirstBasicIDRx)
-        && id_len == 0) {
+        && id_len == 0
+        && !bootloader_flashed) {
         hal.util->flash_bootloader();
         // reset the basic id on next set_basic_id call
         pkt_basic_id.id_type = MAV_ODID_ID_TYPE_NONE;
+        bootloader_flashed = true;
     }
 
     set_basic_id();
@@ -554,7 +554,7 @@ void AP_OpenDroneID::send_operator_id_message()
 */
 MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 18520.0) {
         return MAV_ODID_HOR_ACC_UNKNOWN;
     }
@@ -595,7 +595,7 @@ MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy)
 */
 MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 150.0) {
         return MAV_ODID_VER_ACC_UNKNOWN;
     }
@@ -630,7 +630,7 @@ MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) c
 */
 MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 10.0) {
         return MAV_ODID_SPEED_ACC_UNKNOWN;
     }
@@ -657,7 +657,7 @@ MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) co
 */
 MAV_ODID_TIME_ACC AP_OpenDroneID::create_enum_timestamp_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 1.5) {
         return MAV_ODID_TIME_ACC_UNKNOWN;
     }

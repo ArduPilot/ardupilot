@@ -118,8 +118,6 @@ PB11  USART3_RX USART3 SPEED_HIGH
 
 # use DNA for node allocation
 
-define CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"
-
 # added QMC5883L mag on I2C
 COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 

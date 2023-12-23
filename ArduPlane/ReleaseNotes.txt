@@ -1,3 +1,106 @@
+Release 4.4.4 19th December 2023
+--------------------------------
+
+Changes from 4.4.3:
+
+- CubeOrange Sim-on-hardware compilation fix
+- RADIX2HD supports external I2C compasses
+- SpeedyBeeF405v4 support
+- DroneCAN battery monitor with cell monitor SoC reporting fix
+- ProfiLED output fixed in both Notify and Scripting
+- NTF_LED_TYPES parameter description fixed (was missing IS31FL3195)
+- Scripting bug that could cause crash if parameters were added in flight
+- STAT_BOOTCNT param fix (was not updating in some cases)
+- don't query hobbywing DroneCAN ESC IDs while armed
+- clamp empy version to prevent build errors
+
+Release 4.4.3 14th November 2023
+--------------------------------
+
+Changes from 4.4.2:
+
+ - fixed setup of ICM45486 IMU on CubeOrangePlus-BG edition
+ - disable AFSR on IxM42xxx IMUs to prevent gyro bias for "stuck" gyros
+ - fixed AK09916 compass being non-responsive
+ - implement GPS_DRV_OPTION for using ellipsoid height in more GPS drivers
+ - fixed SIYI AP_Mount parsing bug
+ - configuration fixes for BETAFTP-F405 boards
+ - fixed origin versus home relative bug in quadplane landing and guided takeoff
+ - correct mavlink response for no airspeed sensor on preflight calibration
+ - protect against notch filtering with uninitialised RPM source in ESC telemetry
+ - allow lua scripts to populate full ESC telemetry data
+ - added YJUAV_A6SE_H743 support
+ - fixed uBlox M10 GPS support on boards with 1M flash
+
+Release 4.4.2 23th October 2023
+-------------------------------
+
+Changes from 4.4.1
+
+- BETAFPV-F405 support
+- MambaF405v2 battery and serial setup corrected
+- mRo Control Zero OEM H7 bdshot support
+- SpeedyBee-F405-Wing gets VTX power control
+- SpeedyBee-F405-Mini support
+- T-Motor H743 Mini support
+- EKF3 supports baroless boards
+- INA battery monitor supports config of shunt resistor used (see BATTx_SHUNT)
+- BMI088 IMU error value handling fixed to avoid occasional negative spike
+- Dev environment CI autotest stability improvements
+- OSD correct DisplayPort BF MSP symbols
+- OSD option to correct direction arrows for BF font set
+- Sensor status reporting to GCS fixed for baroless boards
+- added opendroneid option to auto-store IDs in persistent flash
+- fixed TECS bug that could cause inability to climb or descend
+- fixed race condition when starting TECS controlled mode
+- fixed RTL with rally point and terrain follow
+- protect against invalid data in SBUS for first 4 channels
+- added build type to VER message
+- allow moving baseline rover at 3Hz
+- use RC deadzones in stick mixing
+
+
+Release 4.4.1 26th September 2023
+---------------------------------
+
+No changes from beta2
+
+Release 4.4.1-beta2 12th September 2023
+--------------------------------------
+
+Changes from 4.4.1-beta1
+
+- Airbotf4 features minimised to build for 4.4
+- ChibiOS clock fix for 480Mhz H7 boards (affected FDCAN)
+- H750 external flash optimisations for to lower CPU load
+- MambaF405Mini fixes to match manufacturer's recommended wiring
+- RADIX2 HD support
+- RPI hardware version check fix
+- YJUAV_A6SE support
+
+Release 4.4.1-beta1 5th September 2023
+--------------------------------------
+
+Changes from 4.4.1
+
+- support Himark DroneCAN servos
+- support Hobbywing DroneCAN ESCs
+- fixed control surface deflection on quadplanes in VTOL takeoff wait
+- fixed bug in parameter default handling in SITL
+- allow selection of mission sdcard storage on custom.ardupilot.org
+- added support for SDMODELH7V1
+- fixed battery monitor default for QiotekZealotF427 and QiotekZealotH743
+- support 8 bit directional dshot channels on KakuteH7-wing
+- improved handling of high vibration in EKF3 with new EK3_GLITCH_RADIUS options
+- allow reset of battery SoC for DroneCAN battery monitors
+- update GPIOs for Navigator board in HAL_Linux
+- pull RTS lines low on Pixhawk6C on startup
+- added log_file_content in scripting for aerobatics
+- added asymmetry factor for skid steering on rovers
+- updated defaults for luminousbee5 boards
+
+Happy flying!
+
 Release 4.4.0 18th August 2023
 ------------------------------
 
@@ -243,7 +346,7 @@ of changes. Many thanks to all the people who have contributed!
     - Gimbal/Mount2 can be moved to retracted or neutral position
     - Gremsy ZIO support
     - IMAGE_START_CAPTURE, SET_CAMERA_ZOOM/FOCUS, VIDEO_START/STOP_CAPTURE command support
-    - Paramters renamed and rescaled
+    - Parameters renamed and rescaled
         i) CAM_TRIGG_TYPE renamed to CAM1_TYPE and options have changed
         ii) CAM_DURATION renamed to CAM1_DURATION and scaled in seconds
         iii) CAM_FEEDBACK_PIN/POL renamed to CAM1_FEEBAK_PIN/POL

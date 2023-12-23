@@ -352,6 +352,7 @@ struct method {
   struct type return_type;
   struct argument * arguments;
   uint32_t flags; // filled out with TYPE_FLAGS
+  char *dependency;
 };
 
 enum alias_type {
@@ -367,6 +368,7 @@ struct method_alias {
   int line;
   int num_args;
   enum alias_type type;
+  char *dependency;
 };
 
 struct userdata_field {
@@ -796,6 +798,15 @@ void handle_method(struct userdata *node) {
       }
       string_copy(&(method->deprecate), deprecate);
       return;
+
+    } else if (strcmp(token, keyword_depends) == 0) {
+      char *dependency = strtok(NULL, "");
+      if (dependency == NULL) {
+        error(ERROR_USERDATA, "Expected dependency string for %s %s on line", parent_name, name, state.line_num);
+      }
+      string_copy(&(method->dependency), dependency);
+      return;
+
     }
     error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
   }
@@ -877,6 +888,20 @@ void handle_manual(struct userdata *node, enum alias_type type) {
     }
     alias->num_args = atoi(num_args);
   }
+
+  char *depends_keyword = next_token();
+  if (depends_keyword != NULL) {
+    if (strcmp(depends_keyword, keyword_depends) != 0) {
+      error(ERROR_SINGLETON, "Expected depends keyword for manual method %s %s, got: %s", node->name, name, depends_keyword);
+    } else {
+      char *dependency = strtok(NULL, "");
+      if (dependency == NULL) {
+        error(ERROR_USERDATA, "Expected dependency string for global %s on line", name, state.line_num);
+      }
+      string_copy(&(alias->dependency), dependency);
+    }
+  }
+
   alias->next = node->method_aliases;
   node->method_aliases = alias;
 }
@@ -1227,6 +1252,7 @@ void emit_userdata_allocators(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
     start_dependency(source, node->dependency);
+    // New method used internally
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
@@ -1235,6 +1261,22 @@ void emit_userdata_allocators(void) {
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
     fprintf(source, "}\n");
+
+    // New method used externally, includes argcheck, overridden by custom creation function if provided
+    if (node->creation == NULL) {
+      fprintf(source, "\n");
+      fprintf(source, "int lua_new_%s(lua_State *L) {\n", node->sanatized_name);
+
+      // emit one time warning if augments are parsed
+      fprintf(source, "    static bool warned = false;\n");
+      fprintf(source, "    if (!warned && userdata_zero_arg_check(L)) {\n");
+      fprintf(source, "        warned = true;\n");
+      fprintf(source, "    }\n");
+
+      fprintf(source, "    return new_%s(L);\n", node->sanatized_name);
+      fprintf(source, "}\n");
+    }
+
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
     node = node->next;
@@ -1312,6 +1354,9 @@ void emit_userdata_declarations(void) {
   while (node) {
     start_dependency(header, node->dependency);
     fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
+    if (node->creation == NULL) {
+      fprintf(header, "int lua_new_%s(lua_State *L);\n", node->sanatized_name);
+    }
     fprintf(header, "%s * check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
     end_dependency(header, node->dependency);
     node = node->next;
@@ -1801,6 +1846,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   int arg_count = 1;
 
   start_dependency(source, data->dependency);
+  start_dependency(source, method->dependency);
 
   // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
@@ -2071,6 +2117,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   fprintf(source, "}\n");
+  end_dependency(source, method->dependency);
   end_dependency(source, data->dependency);
   fprintf(source, "\n");
 
@@ -2099,6 +2146,8 @@ void emit_operators(struct userdata *data) {
   trace(TRACE_USERDATA, "Emitting operators for %s", data->name);
 
   assert(data->ud_type == UD_USERDATA);
+
+  start_dependency(source, data->dependency);
 
   for (uint32_t i = 1; i < OP_LAST; i = (i << 1)) {
     const char * op_name = get_name_for_operation((data->operations) & i);
@@ -2139,6 +2188,8 @@ void emit_operators(struct userdata *data) {
     fprintf(source, "}\n\n");
 
   }
+
+  end_dependency(source, data->dependency);
 }
 
 void emit_methods(struct userdata *node) {
@@ -2178,7 +2229,9 @@ void emit_index(struct userdata *head) {
 
     struct method *method = node->methods;
     while (method) {
+      start_dependency(source, method->dependency);
       fprintf(source, "    {\"%s\", %s_%s},\n", method->rename ? method->rename :  method->name, node->sanatized_name, method->name);
+      end_dependency(source, method->dependency);
       method = method->next;
     }
 
@@ -2364,7 +2417,7 @@ void emit_sandbox(void) {
         // expose custom creation function to user (not used internally)
         fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
       } else {
-        fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+        fprintf(source, "    {\"%s\", lua_new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
       }
       end_dependency(source, data->dependency);
     }
@@ -2376,7 +2429,9 @@ void emit_sandbox(void) {
       if (manual_aliases->type != ALIAS_TYPE_MANUAL) {
         error(ERROR_GLOBALS, "Globals only support manual methods");
       }
+      start_dependency(source, manual_aliases->dependency);
       fprintf(source, "    {\"%s\", %s},\n", manual_aliases->alias, manual_aliases->name);
+      end_dependency(source, manual_aliases->dependency);
       manual_aliases = manual_aliases->next;
     }
   }
@@ -2412,6 +2467,40 @@ void emit_argcheck_helper(void) {
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n");
   fprintf(source, "    return 0;\n");
+  fprintf(source, "}\n\n");
+
+  // emit warning if augments are parsed
+  fprintf(source, "bool userdata_zero_arg_check(lua_State *L) {\n");
+  fprintf(source, "    if (lua_gettop(L) == 0) {\n");
+  fprintf(source, "        return false;\n");
+  fprintf(source, "    }\n");
+
+  // Try and get debug info
+  fprintf(source, "    lua_Debug ar;\n");
+
+  // Line number and file name
+  fprintf(source, "    if (lua_getstack(L, 1, &ar)) {\n");
+  fprintf(source, "        lua_getinfo(L, \"Sl\", &ar);\n");
+  fprintf(source, "        if (ar.currentline != 0) {\n");
+
+  // Function name
+  fprintf(source, "            if (lua_getstack(L, 0, &ar)) {\n");
+  fprintf(source, "                lua_getinfo(L, \"n\", &ar);\n");
+  fprintf(source, "                if (ar.name != NULL) {\n");
+
+  // Print warning with debug info
+  fprintf(source, "                    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"%%s:%%d Warning: %%s does not take arguments, will be fatal in future\", ar.short_src, ar.currentline, ar.name);\n");
+  fprintf(source, "                    return true;\n");
+
+  fprintf(source, "                }\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+
+  // Print generic warning
+  fprintf(source, "    lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"Warning: userdate creation does not take arguments, will be fatal in future\");\n");
+
+  fprintf(source, "    return true;\n");
   fprintf(source, "}\n\n");
 
   fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val) {\n");
@@ -2704,6 +2793,11 @@ void emit_index_helpers(void) {
   fprintf(source, "    return false;\n");
   fprintf(source, "}\n\n");
 
+  // If enough stuff is defined out we can end up with no enums.
+  // Rather than work out which defines we would need, just ignore the unused function error.
+  fprintf(source, "#pragma GCC diagnostic push\n");
+  fprintf(source, "#pragma GCC diagnostic ignored \"-Wunused-function\"\n");
+
   fprintf(source, "static bool load_enum(lua_State *L, const userdata_enum *list, const uint8_t length, const char* name) {\n");
   fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
   fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
@@ -2712,7 +2806,10 @@ void emit_index_helpers(void) {
   fprintf(source, "        }\n");
   fprintf(source, "    }\n");
   fprintf(source, "    return false;\n");
-  fprintf(source, "}\n\n");
+  fprintf(source, "}\n");
+
+  fprintf(source, "#pragma GCC diagnostic pop\n\n");
+
 }
 
 void emit_structs(void) {
@@ -2894,6 +2991,7 @@ int main(int argc, char **argv) {
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
   fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
+  fprintf(header, "bool userdata_zero_arg_check(lua_State *L);\n");
   fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
   fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
   fprintf(header, "int16_t get_int16_t(lua_State *L, int arg_num);\n");

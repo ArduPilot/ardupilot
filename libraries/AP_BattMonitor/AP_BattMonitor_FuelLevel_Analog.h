@@ -23,6 +23,7 @@
 
 #include <Filter/LowPassFilter.h>
 #include "AP_BattMonitor.h"
+#include <Filter/Filter.h>             // Filter library
 
 class AP_BattMonitor_FuelLevel_Analog : public AP_BattMonitor_Backend
 {
@@ -40,7 +41,7 @@ public:
     bool has_consumed_energy() const override { return true; }
 
     // returns true if battery monitor provides current info
-    bool has_current() const override { return true; }
+    bool has_current() const override { return false; }
 
     void init(void) override {}
 
@@ -50,10 +51,14 @@ private:
     AP_Float _fuel_level_voltage_mult;
     AP_Float _fuel_level_filter_frequency;
     AP_Int8  _pin;
-
+    AP_Float _fuel_fit_first_order_coeff;
+    AP_Float _fuel_fit_second_order_coeff;
+    AP_Float _fuel_fit_third_order_coeff;
+    AP_Float _fuel_fit_offset;
     AP_HAL::AnalogSource *_analog_source;
 
     LowPassFilterFloat _voltage_filter;
+
 };
 
 #endif  // AP_BATTERY_FUELLEVEL_ANALOG_ENABLED

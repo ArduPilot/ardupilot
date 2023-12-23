@@ -87,7 +87,7 @@ private:
     } _flags;
 
     // internal variables
-    float _dt;              // timestep in seconds
+    float _dt;              // time step in seconds
     Vector2f _integrator;   // integrator value
     Vector2f _input;        // last input for derivative
     float _filt_alpha;      // input filter alpha

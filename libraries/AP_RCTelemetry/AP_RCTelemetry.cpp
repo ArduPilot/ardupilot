@@ -39,7 +39,7 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_RCTelemetry::init(void)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_GCS_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     // make telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
     // add firmware and frame info to message queue
     const char* _frame_string = gcs().frame_string();
@@ -283,7 +283,13 @@ uint32_t AP_RCTelemetry::sensor_status_flags() const
     uint32_t present;
     uint32_t enabled;
     uint32_t health;
+#if HAL_GCS_ENABLED
     gcs().get_sensor_status_flags(present, enabled, health);
+#else
+    present = 0;
+    enabled = 0;
+    health = 0;
+#endif
 
     return ~health & enabled & present;
 }

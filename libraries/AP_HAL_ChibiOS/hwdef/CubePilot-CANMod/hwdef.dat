@@ -52,8 +52,6 @@ PG0 SHUTDOWNCAN OUTPUT PUSHPULL SPEED_LOW LOW
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-define CAN_APP_NODE_NAME "com.cubepilot.CubePilotCANMod-periph"
-
 # override following defines as needed
 define HAL_USE_ADC FALSE
 STORAGE_FLASH_PAGE 14

@@ -129,9 +129,9 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
         return MAV_RESULT_DENIED;
     }
     // fast barometer calibration
-    gcs().send_text(MAV_SEVERITY_INFO, "Updating barometer calibration");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
 #if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -177,7 +177,7 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_request_read(const AP_Frsky_MAVlit
     }
     // find existing param
     if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
     AP_Frsky_MAVlite_Message txmsg;
@@ -223,13 +223,13 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
         }
     }
     if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
     } else if (!AP_Param::set_and_save_by_name(param_name, param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
     }
     // let's read back the last value, either the readonly one or the updated one
     if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
     AP_Frsky_MAVlite_Message txmsg;

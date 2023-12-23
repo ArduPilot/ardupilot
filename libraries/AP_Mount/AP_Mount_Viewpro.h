@@ -84,6 +84,13 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(float& distance_m) const override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success
@@ -384,6 +391,7 @@ private:
     bool _got_firmware_version;                     // true once we have received the firmware version
     uint8_t _model_name[11] {};                     // model name received from gimbal
     bool _got_model_name;                           // true once we have received model name
+    float _rangefinder_dist_m;                      // latest rangefinder distance (in meters)
 };
 
 #endif // HAL_MOUNT_VIEWPRO_ENABLED

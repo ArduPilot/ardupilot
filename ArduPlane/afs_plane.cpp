@@ -103,4 +103,11 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
     }
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }
+
+//to force entering auto mode when datalink loss 
+ void AP_AdvancedFailsafe_Plane::set_mode_auto(void)
+ {
+    plane.set_mode(plane.mode_auto,ModeReason::GCS_FAILSAFE);
+ }
+
 #endif // AP_ADVANCEDFAILSAFE_ENABLED

@@ -594,11 +594,10 @@ AP_GPS_UBLOX::read(void)
     for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        const int16_t rdata = port->read();
-        if (rdata < 0) {
+        uint8_t data;
+        if (!port->read(data)) {
             break;
         }
-        const uint8_t data = rdata;
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&data, 1);
 #endif
@@ -931,7 +930,6 @@ uint8_t AP_GPS_UBLOX::config_key_size(ConfigKey key) const
  */
 int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
 {
-#if GPS_MOVING_BASELINE
     if (active_config.list == nullptr) {
         return -1;
     }
@@ -940,7 +938,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
             return (int8_t)i;
         }
     }
-#endif
+
     return -1;
 }
 
@@ -1103,7 +1101,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                             }
                             if(GNSS_GALILEO ==_buffer.gnss.configBlock[i].gnssId) {
                                 _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
-                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eigh
+                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eight
                             }
                         }
                         _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
@@ -1368,13 +1366,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.posllh.itow;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.posllh.altitude_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.posllh.altitude_msl / 10;
-        }
         state.have_undulation = true;
         state.undulation = (_buffer.posllh.altitude_msl - _buffer.posllh.altitude_ellipsoid) * 0.001;
+        set_alt_amsl_cm(state, _buffer.posllh.altitude_msl / 10);
 
         state.status          = next_fix;
         _new_position = true;
@@ -1532,13 +1526,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.pvt.h_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.pvt.h_msl / 10;
-        }
         state.have_undulation = true;
         state.undulation = (_buffer.pvt.h_msl - _buffer.pvt.h_ellipsoid) * 0.001;
+        set_alt_amsl_cm(state, _buffer.pvt.h_msl / 10);
         switch (_buffer.pvt.fix_type)
         {
             case 0:

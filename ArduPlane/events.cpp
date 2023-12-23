@@ -140,7 +140,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
-            //stop motors to avoide parachute tangling
+            //stop motors to avoid parachute tangling
             plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
@@ -183,7 +183,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
-            //stop motors to avoide parachute tangling
+            //stop motors to avoid parachute tangling
             plane.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE, false);
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {

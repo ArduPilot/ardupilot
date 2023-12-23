@@ -20,6 +20,7 @@
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
 #include "AP_BattMonitor_Synthetic_Current.h"
+#include "AP_BattMonitor_AD7091R5.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -237,6 +238,164 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_var_info[8]),
 #endif
 
+#if AP_BATT_MONITOR_MAX_INSTANCES > 9
+    // @Group: A_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[9], "A_", 32, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: A_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[9], "A_", 50, AP_BattMonitor, backend_var_info[9]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 10
+    // @Group: B_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[10], "B_", 33, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: B_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[10], "B_", 51, AP_BattMonitor, backend_var_info[10]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 11
+    // @Group: C_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[11], "C_", 34, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: C_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[11], "C_", 52, AP_BattMonitor, backend_var_info[11]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 12
+    // @Group: D_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[12], "D_", 35, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: D_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[12], "D_", 53, AP_BattMonitor, backend_var_info[12]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 13
+    // @Group: E_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[13], "E_", 36, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: E_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[13], "E_", 54, AP_BattMonitor, backend_var_info[13]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 14
+    // @Group: F_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[14], "F_", 37, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: F_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[14], "F_", 55, AP_BattMonitor, backend_var_info[14]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 15
+    // @Group: G_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[15], "G_", 38, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: G_
+    // @Path: AP_BattMonitor_Analog.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_Sum.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_DroneCAN.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_Synthetic_Current.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_INA2xx.cpp
+    AP_SUBGROUPVARPTR(drivers[15], "G_", 56, AP_BattMonitor, backend_var_info[15]),
+#endif
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 16
+    #error "AP_BATT_MONITOR_MAX_INSTANCES too large, reset_remaining_mask() will cause an assert above 16"
+#endif
+
     AP_GROUPEND
 };
 
@@ -396,6 +555,11 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_EFI(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_EFI_ENABLED
+#if AP_BATTERY_AD7091R5_ENABLED
+            case Type::AD7091R5:
+                drivers[instance] = new AP_BattMonitor_AD7091R5(*this, state[instance], _params[instance]);
+                break;
+#endif// AP_BATTERY_AD7091R5_ENABLED
             case Type::NONE:
             default:
                 break;
@@ -496,6 +660,10 @@ void AP_BattMonitor::read()
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+            drivers[i]->update_esc_telem_outbound();
+#endif
+
 #if HAL_LOGGING_ENABLED
             if (logger != nullptr && logger->should_log(_log_battery_bit)) {
                 const uint64_t time_us = AP_HAL::micros64();
@@ -562,7 +730,11 @@ bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
 /// consumed_mah - returns total current drawn since start-up in milliampere.hours
 bool AP_BattMonitor::consumed_mah(float &mah, const uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
-        mah = state[instance].consumed_mah;
+        const float consumed_mah = state[instance].consumed_mah;
+        if (isnan(consumed_mah)) {
+            return false;
+        }
+        mah = consumed_mah;
         return true;
     } else {
         return false;
@@ -644,7 +816,7 @@ void AP_BattMonitor::check_failsafes(void)
 #endif
             state[i].failsafe = type;
 
-            // map the desired failsafe action to a prioritiy level
+            // map the desired failsafe action to a priority level
             int8_t priority = 0;
             if (_failsafe_priorities != nullptr) {
                 while (_failsafe_priorities[priority] != -1) {
@@ -669,24 +841,25 @@ void AP_BattMonitor::check_failsafes(void)
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
-    bool result = false;
+#if AP_BATTERY_WATT_MAX_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     for (uint8_t instance = 0; instance < _num_instances; instance++) {
-        result |= overpower_detected(instance);
+        if (overpower_detected(instance)) {
+            return true;
+        }
     }
-    return result;
+#endif
+    return false;
 }
 
 bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_BATTERY_WATT_MAX_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (instance < _num_instances && _params[instance]._watt_max > 0) {
-        float power = state[instance].current_amps * state[instance].voltage;
+        const float power = state[instance].current_amps * state[instance].voltage;
         return state[instance].healthy && (power > _params[instance]._watt_max);
     }
-    return false;
-#else
-    return false;
 #endif
+    return false;
 }
 
 bool AP_BattMonitor::has_cell_voltages(const uint8_t instance) const
@@ -708,23 +881,31 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
     }
 }
 
+// get once cell voltage (for scripting)
+bool AP_BattMonitor::get_cell_voltage(uint8_t instance, uint8_t cell, float &voltage) const
+{
+    if (!has_cell_voltages(instance) ||
+        cell >= AP_BATT_MONITOR_CELLS_MAX) {
+        return false;
+    }
+    const auto &cell_voltages = get_cell_voltages(instance);
+    const uint16_t voltage_mv = cell_voltages.cells[cell];
+    if (voltage_mv == 0 || voltage_mv == UINT16_MAX) {
+        // UINT16_MAX is used as invalid indicator
+        return false;
+    }
+    voltage = voltage_mv*0.001;
+    return true;
+}
+
 // returns true if there is a temperature reading
 bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
 {
     if (instance >= _num_instances || drivers[instance] == nullptr) {
         return false;
-    } 
-    
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    if (state[instance].temperature_external_use) {
-        temperature = state[instance].temperature_external;
-        return true;
     }
-#endif
 
-    temperature = state[instance].temperature;
-
-    return drivers[instance]->has_temperature();
+    return drivers[instance]->get_temperature(temperature);
 }
 
 #if AP_TEMPERATURE_SENSOR_ENABLED

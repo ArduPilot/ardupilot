@@ -18,6 +18,7 @@
 #include "AP_Filesystem_config.h"
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/Util.h>
+#include <AP_Math/AP_Math.h>
 
 static AP_Filesystem fs;
 
@@ -286,6 +287,37 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     return true;
 }
 
+// run crc32 over file with given name, returns true if successful
+bool AP_Filesystem::crc32(const char *fname, uint32_t& checksum)
+{
+    // Open file in readonly mode
+    int fd = open(fname, O_RDONLY);
+    if (fd == -1) {
+        return false;
+    }
+
+    // Buffer to store data temporarily
+    const ssize_t buff_len = 64;
+    uint8_t buf[buff_len];
+
+    // Read into buffer and run crc
+    ssize_t read_size;
+    do {
+        read_size = read(fd, buf, buff_len);
+        if (read_size == -1) {
+            // Read error, note that we have changed the checksum value in this case
+            close(fd);
+            return false;
+        }
+        checksum = crc_crc32(checksum, buf, MIN(read_size, buff_len));
+    } while (read_size > 0);
+
+    close(fd);
+
+    return true;
+}
+
+
 #if AP_FILESYSTEM_FORMAT_ENABLED
 // format filesystem
 bool AP_Filesystem::format(void)
@@ -300,6 +332,30 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
     return LOCAL_BACKEND.fs.get_format_status();
 }
 #endif
+
+/*
+  stat wrapper for scripting
+ */
+bool AP_Filesystem::stat(const char *pathname, stat_t &stbuf)
+{
+    struct stat st;
+    if (fs.stat(pathname, &st) != 0) {
+        return false;
+    }
+    stbuf.size = st.st_size;
+    stbuf.mode = st.st_mode;
+    // these wrap in 2038
+    stbuf.atime = st.st_atime;
+    stbuf.ctime = st.st_ctime;
+    stbuf.mtime = st.st_mtime;
+    return true;
+}
+
+// get_singleton for scripting
+AP_Filesystem *AP_Filesystem::get_singleton(void)
+{
+    return &fs;
+}
 
 namespace AP
 {

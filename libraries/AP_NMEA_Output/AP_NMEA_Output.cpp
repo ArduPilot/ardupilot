@@ -96,9 +96,13 @@ void AP_NMEA_Output::update()
 
     // get time and date
     uint64_t time_usec;
+#if AP_RTC_ENABLED
     if (!AP::rtc().get_utc_usec(time_usec)) {
         return;
     }
+#else
+    time_usec = 0;
+#endif
 
     uint32_t space_required = 0;
 

@@ -148,3 +148,5 @@ define HAL_GPIO_C_LED_PIN 2
 define HAL_GPIO_LED_ON  0
 define HAL_GPIO_LED_OFF 1
 
+include ../include/minimize_features.inc
+

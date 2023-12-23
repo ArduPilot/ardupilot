@@ -23,7 +23,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -111,9 +111,6 @@ class ChibiOSHWDef(object):
 
         self.dma_exclude_pattern = []
 
-        # map from uart names to SERIALn numbers
-        self.uart_serial_num = {}
-
         self.mcu_type = None
         self.dual_USB_enabled = False
 
@@ -122,6 +119,9 @@ class ChibiOSHWDef(object):
 
         # integer defines
         self.intdefines = {}
+
+        # list of shared up timers
+        self.shared_up = []
 
     def is_int(self, str):
         '''check if a string is an integer'''
@@ -411,9 +411,14 @@ class ChibiOSHWDef(object):
                 self.type.startswith('UART')) and (
                 (self.label.endswith('_TX') or
                  self.label.endswith('_RX') or
-                 self.label.endswith('_CTS') or
-                 self.label.endswith('_RTS'))):
+                 self.label.endswith('_CTS'))):
                 v = "PULLUP"
+
+            # pulldown on RTS to prevent radios from staying in bootloader
+            if (self.type.startswith('USART') or
+                self.type.startswith('UART')) and (
+                 self.label.endswith('_RTS')):
+                v = "PULLDOWN"
 
             if (self.type.startswith('SWD') and
                     'SWDIO' in self.label):
@@ -749,7 +754,8 @@ class ChibiOSHWDef(object):
 
     def get_ram_map(self):
         '''get RAM_MAP. May be different for bootloader'''
-        self.env_vars['APP_RAM_START'] = None
+        if 'APP_RAM_START' not in self.env_vars:
+            self.env_vars['APP_RAM_START'] = None
         if args.bootloader:
             ram_map = self.get_mcu_config('RAM_MAP_BOOTLOADER', False)
             if ram_map is not None:
@@ -757,7 +763,7 @@ class ChibiOSHWDef(object):
                 if app_ram_map is not None and app_ram_map[0][0] != ram_map[0][0]:
                     # we need to find the location of app_ram_map[0] in ram_map
                     for i in range(len(ram_map)):
-                        if app_ram_map[0][0] == ram_map[i][0]:
+                        if app_ram_map[0][0] == ram_map[i][0] and self.env_vars['APP_RAM_START'] is None:
                             self.env_vars['APP_RAM_START'] = i
                 return ram_map
         elif self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
@@ -771,7 +777,7 @@ class ChibiOSHWDef(object):
 
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
-        if mcu_series.startswith('STM32F4'):
+        if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
             elif self.get_config('FLASH_SIZE_KB', type=int) == 1024:
@@ -959,18 +965,19 @@ class ChibiOSHWDef(object):
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
         if 'ETH1' in self.bytype:
-            f.write('// Configure for Ethernet support\n')
-            f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
-            f.write('#define HAL_USE_MAC                         TRUE\n')
-            f.write('#define MAC_USE_EVENTS                      TRUE\n')
-            f.write('#define STM32_ETH_BUFFERS_EXTERN\n')
-            f.write('#define AP_NETWORKING_ENABLED               TRUE\n')
             self.build_flags.append('USE_LWIP=yes')
-            self.env_vars['WITH_NETWORKING'] = True
-        else:
-            f.write('#define AP_NETWORKING_ENABLED               FALSE\n')
-            self.build_flags.append('USE_LWIP=no')
-            self.env_vars['WITH_NETWORKING'] = False
+            f.write('''
+
+#ifndef AP_NETWORKING_ENABLED
+// Configure for Ethernet support
+#define AP_NETWORKING_ENABLED               1
+#define CH_CFG_USE_MAILBOXES                TRUE
+#define HAL_USE_MAC                         TRUE
+#define MAC_USE_EVENTS                      TRUE
+#define STM32_ETH_BUFFERS_EXTERN
+#endif
+
+''')
 
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
@@ -1099,16 +1106,17 @@ class ChibiOSHWDef(object):
         cc_regions = []
         total_memory = 0
         for (address, size, flags) in ram_map:
-            cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
+            size *= 1024
+            cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size))
             if self.env_vars['APP_RAM_START'] is not None and address == ram_map[self.env_vars['APP_RAM_START']][0]:
                 ram_reserve_start = self.get_ram_reserve_start()
                 address += ram_reserve_start
                 size -= ram_reserve_start
-            regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+            regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size, flags))
             total_memory += size
         f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
         f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
-        f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
+        f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % (total_memory/1024))
 
         if self.env_vars['APP_RAM_START'] is not None:
             f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[self.env_vars['APP_RAM_START']][0])
@@ -1258,6 +1266,7 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
+#define STM32_FLASH_DISABLE_ISR 0
 ''')
             if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
                 f.write('''
@@ -1475,7 +1484,7 @@ INCLUDE common.ld
         devlist = []
         for dev in self.spidev:
             if len(dev) != 7:
-                print("Badly formed SPIDEV line %s" % dev)
+                self.error("Badly formed SPIDEV line %s" % dev)
             name = '"' + dev[0] + '"'
             bus = dev[1]
             devid = dev[2]
@@ -1515,16 +1524,20 @@ INCLUDE common.ld
             if t.startswith('SPI'):
                 self.spi_list.append(t)
         self.spi_list = sorted(self.spi_list)
-        if len(self.spi_list) == 0:
+        if len(self.spidev) != 0 and len(self.spi_list) == 0:
+            self.error("Have SPI devices but no SPI bus?!")
+        if len(self.spidev) == 0:
             f.write('#define HAL_USE_SPI FALSE\n')
             return
         devlist = []
         for dev in self.spi_list:
             n = int(dev[3:])
             devlist.append('HAL_SPI%u_CONFIG' % n)
+            sck_pin = self.bylabel['SPI%s_SCK' % n]
+            sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
             f.write(
-                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS }\n'
-                % (n, n, n, n))
+                '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS, %s }\n'
+                % (n, n, n, n, sck_line))
         f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
         self.write_SPI_table(f)
 
@@ -1801,62 +1814,51 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
-    def get_UART_ORDER(self):
-        '''get UART_ORDER from SERIAL_ORDER option'''
-        if self.get_config('UART_ORDER', required=False, aslist=True) is not None:
-            self.error('Please convert UART_ORDER to SERIAL_ORDER')
-        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
-        if serial_order is None:
-            return None
-        if args.bootloader:
-            # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
-            return serial_order
-        map = [0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        while len(serial_order) < 4:
-            serial_order += ['EMPTY']
-        uart_order = []
-        for i in range(len(serial_order)):
-            uart_order.append(serial_order[map[i]])
-            self.uart_serial_num[serial_order[i]] = i
-        return uart_order
-
     def write_UART_config(self, f):
         '''write UART config defines'''
-        uart_list = self.get_UART_ORDER()
-        if uart_list is None:
+        serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if serial_list is None:
             return
+        while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
+            serial_list += ['EMPTY']
         f.write('\n// UART configuration\n')
 
+        # write out which serial ports we actually have
+        nports = 0
+        for idx, serial in enumerate(serial_list):
+            if serial == 'EMPTY':
+                f.write('#define HAL_HAVE_SERIAL%u 0\n' % idx)
+            else:
+                f.write('#define HAL_HAVE_SERIAL%u 1\n' % idx)
+                nports = nports + 1
+        f.write('#define HAL_NUM_SERIAL_PORTS %u\n' % nports)
+
         # write out driver declarations for HAL_ChibOS_Class.cpp
-        devnames = "ABCDEFGHIJ"
         sdev = 0
-        idx = 0
-        for dev in uart_list:
+        for idx, dev in enumerate(serial_list):
             if dev == 'EMPTY':
-                f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                        (devnames[idx], devnames[idx]))
+                f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
+                        (idx, idx))
                 sdev += 1
             else:
                 f.write(
-                    '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
-                    % (devnames[idx], devnames[idx], sdev))
+                    '#define HAL_SERIAL%s_DRIVER ChibiOS::UARTDriver serial%sDriver(%u)\n'
+                    % (idx, idx, sdev))
                 sdev += 1
-            idx += 1
-        for idx in range(len(uart_list), len(devnames)):
-            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                    (devnames[idx], devnames[idx]))
+        for idx in range(len(serial_list), 10):
+            f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
+                    (idx, idx))
 
         if 'IOMCU_UART' in self.config:
             if 'io_firmware.bin' not in self.romfs:
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
             f.write('#define HAL_WITH_IO_MCU 1\n')
-            idx = len(uart_list)
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
+            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
             f.write(
                 '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
             )
-            uart_list.append(self.config['IOMCU_UART'][0])
+            serial_list.append(self.config['IOMCU_UART'][0])
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
             # all IOMCU capable boards have SBUS out
             f.write('#define AP_FEATURE_SBUS_OUT 1\n')
@@ -1871,17 +1873,17 @@ INCLUDE common.ld
         crash_uart = None
 
         # write config for CrashCatcher UART
-        if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
-            crash_uart = uart_list[0]
-        elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
-            crash_uart = uart_list[2]
+        if not serial_list[0].startswith('OTG') and not serial_list[0].startswith('EMPTY'):
+            crash_uart = serial_list[0]
+        elif not serial_list[2].startswith('OTG') and not serial_list[2].startswith('EMPTY'):
+            crash_uart = serial_list[2]
 
         if crash_uart is not None and self.get_config('FLASH_SIZE_KB', type=int) >= 2048:
             f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
             f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
             f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
             f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
-        for dev in uart_list:
+        for num, dev in enumerate(serial_list):
             if dev.startswith('UART'):
                 n = int(dev[4:])
             elif dev.startswith('USART'):
@@ -1892,7 +1894,7 @@ INCLUDE common.ld
                 devlist.append('{}')
                 continue
             else:
-                self.error("Invalid element %s in UART_ORDER" % dev)
+                self.error("Invalid element %s in SERIAL_ORDER" % dev)
             devlist.append('HAL_%s_CONFIG' % dev)
             tx_line = self.make_line(dev + '_TX')
             rx_line = self.make_line(dev + '_RX')
@@ -1900,12 +1902,12 @@ INCLUDE common.ld
             cts_line = self.make_line(dev + '_CTS')
             if rts_line != "0":
                 have_rts_cts = True
-                f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % self.uart_serial_num[dev])
+                f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % num)
 
             if dev.startswith('OTG2'):
                 f.write(
                     '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n' % dev)  # noqa
-                OTG2_index = uart_list.index(dev)
+                OTG2_index = serial_list.index(dev)
                 self.dual_USB_enabled = True
             elif dev.startswith('OTG'):
                 f.write(
@@ -1942,44 +1944,44 @@ INCLUDE common.ld
 #endif
 ''' % (OTG2_index, OTG2_index))
 
-        f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write('#define HAL_SERIAL_DEVICE_LIST %s\n\n' % ','.join(devlist))
         if not need_uart_driver and not args.bootloader:
             f.write('''
 #ifndef HAL_USE_SERIAL
 #define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
-        num_uarts = len(devlist)
+        num_ports = len(devlist)
         if 'IOMCU_UART' in self.config:
-            num_uarts -= 1
-        if num_uarts > 10:
-            self.error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
-        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
+            num_ports -= 1
+        if num_ports > 10:
+            self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
+        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
 
     def write_UART_config_bootloader(self, f):
         '''write UART config defines'''
-        uart_list = self.get_UART_ORDER()
-        if uart_list is None:
+        serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if serial_list is None:
             return
         f.write('\n// UART configuration\n')
         devlist = []
-        have_uart = False
+        have_serial = False
         OTG2_index = None
-        for u in uart_list:
-            if u.startswith('OTG2'):
+        for s in serial_list:
+            if s.startswith('OTG2'):
                 devlist.append('(BaseChannel *)&SDU2')
-                OTG2_index = uart_list.index(u)
-            elif u.startswith('OTG'):
+                OTG2_index = serial_list.index(s)
+            elif s.startswith('OTG'):
                 devlist.append('(BaseChannel *)&SDU1')
             else:
-                unum = int(u[-1])
-                devlist.append('(BaseChannel *)&SD%u' % unum)
-                have_uart = True
+                snum = int(s[-1])
+                devlist.append('(BaseChannel *)&SD%u' % snum)
+                have_serial = True
         if len(devlist) > 0:
             f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
         if OTG2_index is not None:
             f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
-        if not have_uart:
+        if not have_serial:
             f.write('''
 #ifndef HAL_USE_SERIAL
 #define HAL_USE_SERIAL FALSE
@@ -2041,6 +2043,7 @@ INCLUDE common.ld
         rc_in_int = None
         alarm = None
         bidir = None
+        up_shared = None
         pwm_out = []
         # start with the ordered list from the dma resolver
         pwm_timers = ordered_timers
@@ -2058,6 +2061,8 @@ INCLUDE common.ld
                         pwm_out.append(p)
                     if p.has_extra('BIDIR'):
                         bidir = p
+                    if p.has_extra('UP_SHARED'):
+                        up_shared = p
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
 
@@ -2144,6 +2149,10 @@ INCLUDE common.ld
         f.write('// PWM timer config\n')
         if bidir is not None:
             f.write('#define HAL_WITH_BIDIR_DSHOT\n')
+        if up_shared is not None:
+            f.write('#define HAL_TIM_UP_SHARED\n')
+            for t in self.shared_up:
+                f.write('#define HAL_%s_SHARED true\n' % t)
         for t in pwm_timers:
             n = int(t[3:])
             f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
@@ -2199,13 +2208,19 @@ INCLUDE common.ld
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
 #endif
 ''' % (n, i, n, i, n, i, n, i, n, i, n, i)
-                hal_icu_cfg += '},  \\'
+                if up_shared is not None:
+                    hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
+                else:
+                    hal_icu_cfg += '}, \\'
 
             f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
 #else
 # define HAL_PWM%u_DMA_CONFIG false, 0, 0
 #endif\n%s''' % (n, n, n, n, n, n, hal_icu_def))
+            f.write('''#if !defined(HAL_TIM%u_UP_SHARED)
+#define HAL_TIM%u_UP_SHARED false
+#endif\n''' % (n, n))
             f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
@@ -2709,6 +2724,7 @@ INCLUDE common.ld
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
+        self.shared_up = []
         done = set()
         prefixes = ['SPI', 'USART', 'UART', 'I2C']
         periph_pins = self.allpins[:]
@@ -2759,6 +2775,8 @@ INCLUDE common.ld
                     (_, _, compl) = self.parse_timer(ch_label)
                     if ch_label not in peripherals and p.has_extra('BIDIR') and not compl:
                         peripherals.append(ch_label)
+                    if label not in self.shared_up and p.has_extra('UP_SHARED') and not compl:
+                        self.shared_up.append(label)
             done.add(type)
         return peripherals
 
@@ -2849,7 +2867,7 @@ INCLUDE common.ld
         patterns = [
             r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
             r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
-            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d'
+            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
         ]
         matches = False
         for p in patterns:
@@ -3009,7 +3027,13 @@ INCLUDE common.ld
             print("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
                 self.error("Bad env line for %s" % a[0])
-            self.env_vars[a[1]] = ' '.join(a[2:])
+            name = a[1]
+            value = ' '.join(a[2:])
+            if name == 'AP_PERIPH' and value != "1":
+                raise ValueError("AP_PERIPH may only have value 1")
+            if name == 'APP_RAM_START':
+                value = int(value, 0)
+            self.env_vars[name] = value
 
     def process_file(self, filename):
         '''process a hwdef.dat file'''
@@ -3068,7 +3092,7 @@ INCLUDE common.ld
 ''' % (description, content, description))
 
     def is_io_fw(self):
-        return self.env_vars.get('IOMCU_FW', 0) != 0
+        return int(self.env_vars.get('IOMCU_FW', 0)) != 0
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3079,16 +3103,16 @@ INCLUDE common.ld
         self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
     def is_periph_fw(self):
-        return self.env_vars.get('AP_PERIPH', 0) != 0
+        return int(self.env_vars.get('AP_PERIPH', 0)) != 0
 
     def is_normal_fw(self):
-        if self.env_vars.get('IOMCU_FW', 0) != 0:
+        if self.is_io_fw():
             # IOMCU firmware
             return False
         if self.is_periph_fw():
             # Periph firmware
             return False
-        if args.bootloader:
+        if self.is_bootloader_fw():
             # guess
             return False
         return True

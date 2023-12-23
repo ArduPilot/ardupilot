@@ -182,13 +182,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
-# disable parachute and sprayer to save flash
-define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_GYROFFT_ENABLED 0
@@ -196,8 +189,6 @@ define HAL_GYROFFT_ENABLED 0
 # save some flash
 include ../include/save_some_flash.inc
 define AP_GRIPPER_ENABLED 0
-define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
-define AP_BATTERY_SMBUS_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
@@ -207,6 +198,5 @@ define HAL_BUTTON_ENABLED 0
 define AP_NOTIFY_OREOLED_ENABLED 0
 define HAL_PICCOLO_CAN_ENABLE 0
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc
+include ../include/minimize_fpv_osd.inc
 

@@ -522,8 +522,10 @@ public:
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
 
+#if AP_TEMPCALIBRATION_ENABLED
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
+#endif
 
 #if AP_BEACON_ENABLED
     // beacon (non-GPS positioning) library
@@ -589,7 +591,7 @@ public:
     AP_Follow follow;
 #endif
 
-#ifdef USER_PARAMS_ENABLED
+#if USER_PARAMS_ENABLED == ENABLED
     // User custom parameters
     UserParameters user_parameters;
 #endif

@@ -169,7 +169,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
             _pack_=True,
         )
 
-        if type(self.types[0]) == str:
+        if isinstance(self.types[0], str):
             fieldtypes = [i for i in self.types]
         else:
             fieldtypes = [chr(i) for i in self.types]
@@ -756,7 +756,7 @@ class DataflashLog(object):
                         else:
                             raise Exception("")
                 else:
-                    if not tokens[0] in self.formats:
+                    if tokens[0] not in self.formats:
                         raise ValueError("Unknown Format {}".format(tokens[0]))
                     e = self.formats[tokens[0]](*tokens[1:])
                     self.process(lineNumber, e)

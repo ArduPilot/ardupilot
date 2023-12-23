@@ -212,7 +212,7 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
     return false;
 }
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_LPS2XH::_timer(void)
 {
     uint8_t status;

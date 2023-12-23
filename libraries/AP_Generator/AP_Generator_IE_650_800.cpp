@@ -28,7 +28,7 @@ void AP_Generator_IE_650_800::init()
     // This unit does not have current but this needs to be true to make use of consumed_mah in BattMonitor
     _frontend._has_current = true;
     _frontend._has_consumed_energy = true;
-    _frontend._has_fuel_remaining = false;
+    _frontend._has_fuel_remaining = true;
 }
 
 // Update fuel cell, expected to be called at 20hz
@@ -58,6 +58,11 @@ void AP_Generator_IE_650_800::decode_latest_term()
     _term[_term_offset] = 0;
     _term_offset = 0;
     _term_number++;
+
+    if (_start_char != '<') {
+        _sentence_valid = false;
+        return;
+    }
 
     switch (_term_number) {
         case 1:

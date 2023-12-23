@@ -58,6 +58,36 @@ const AP_Param::GroupInfo AP_BattMonitor_FuelLevel_Analog::var_info[] = {
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,103:Pixhawk SBUS
     AP_GROUPINFO("FL_PIN", 43, AP_BattMonitor_FuelLevel_Analog, _pin, -1),
 
+ // index 44 unused and available
+
+    // @Param: FL_FF
+    // @DisplayName: First order term
+    // @Description: First order polynomial fit term
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("FL_FF", 45, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_first_order_coeff, 1),
+
+    // @Param: FL_FS
+    // @DisplayName: Second order term
+    // @Description: Second order polynomial fit term
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("FL_FS", 46, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_second_order_coeff, 0),
+
+    // @Param: FL_FT
+    // @DisplayName: Third order term
+    // @Description: Third order polynomial fit term
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("FL_FT", 47, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_third_order_coeff, 0),
+
+    // @Param: FL_OFF
+    // @DisplayName: Offset term
+    // @Description: Offset polynomial fit term
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("FL_OFF", 48, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_offset, 0),    
+
     // Param indexes must be between 40 and 49 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -96,16 +126,24 @@ void AP_BattMonitor_FuelLevel_Analog::read()
     const uint32_t tnow = AP_HAL::micros();
     const uint32_t dt_us = tnow - _state.last_time_micros;
 
-    // get voltage from an ADC pin and filter it
-    const float voltage = _analog_source->voltage_average();
+    // get voltage from an ADC pin
+    const float raw_voltage = _analog_source->voltage_average();
+
+    // Converting sensor reading to actual volume in tank in Litres (quadratic fit)
+    const float voltage = 
+        (_fuel_fit_third_order_coeff * raw_voltage * raw_voltage * raw_voltage) +
+        (_fuel_fit_second_order_coeff * raw_voltage * raw_voltage) + 
+        (_fuel_fit_first_order_coeff * raw_voltage) +
+        _fuel_fit_offset;
+    
     const float filtered_voltage = _voltage_filter.apply(voltage, float(dt_us) * 1.0e-6f);
-    const float &voltage_used = (_fuel_level_filter_frequency >= 0) ? filtered_voltage : voltage;
 
     // output the ADC voltage to the voltage field for easier calibration of sensors
     // also output filtered voltage as a measure of tank slosh filtering
     // this could be useful for tuning the LPF
-    _state.voltage = voltage;
-    _state.current_amps = filtered_voltage;
+    const float &voltage_used = (_fuel_level_filter_frequency >= 0) ? filtered_voltage : voltage;
+
+    _state.voltage = filtered_voltage;
 
     // this driver assumes that CAPACITY is set to tank volume in millilitres.
     // _fuel_level_voltage_mult is calculated by the user as 1 / (full_voltage - empty_voltage)
@@ -114,6 +152,8 @@ void AP_BattMonitor_FuelLevel_Analog::read()
 
     // map consumed_mah to consumed millilitres
     _state.consumed_mah = fuel_level_used_ratio * _params._pack_capacity;
+
+    _state.current_amps = 0;   
 
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;

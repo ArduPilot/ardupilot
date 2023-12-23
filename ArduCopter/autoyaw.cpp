@@ -114,9 +114,9 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
     } else {
         // absolute angle
         _fixed_yaw_offset_cd = wrap_180_cd(angle_deg * 100.0 - _yaw_angle_cd);
-        if ( direction < 0 && is_positive(_fixed_yaw_offset_cd) ) {
+        if (direction < 0 && is_positive(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd -= 36000.0;
-        } else if ( direction > 0 && is_negative(_fixed_yaw_offset_cd) ) {
+        } else if (direction > 0 && is_negative(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd += 36000.0;
         }
     }
@@ -154,9 +154,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         auto_yaw.set_mode_to_default(false);
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
-        if (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-            copter.camera_mount.set_mode_to_default();
-        }
+        copter.camera_mount.clear_roi_target();
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED

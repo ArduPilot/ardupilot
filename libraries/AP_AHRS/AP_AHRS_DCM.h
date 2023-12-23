@@ -21,6 +21,10 @@
  *
  */
 
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_DCM_ENABLED
+
 #include "AP_AHRS_Backend.h"
 
 class AP_AHRS_DCM : public AP_AHRS_Backend {
@@ -59,9 +63,6 @@ public:
     bool yaw_initialised(void) const {
         return have_initial_yaw;
     }
-
-    // dead-reckoning support
-    virtual bool get_location(Location &loc) const override;
 
     // status reporting
     float           get_error_rp() const {
@@ -132,6 +133,9 @@ public:
 
 private:
 
+    // dead-reckoning support
+    bool get_location(Location &loc) const;
+
     // settable parameters
     AP_Float &_kp_yaw;
     AP_Float &_kp;
@@ -168,7 +172,7 @@ private:
     void            reset(bool recover_eulers);
 
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_estimate which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airsped sensor
+    //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
     //               Or if none of the above, fills-in using the previous airspeed estimate
     // Return false: if we are using the previous airspeed estimate
@@ -282,4 +286,8 @@ private:
     // pre-calculated trig cache:
     float _sin_yaw;
     float _cos_yaw;
+
+    uint32_t last_log_ms;
 };
+
+#endif  // AP_AHRS_DCM_ENABLED

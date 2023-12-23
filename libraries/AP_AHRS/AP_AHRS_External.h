@@ -43,9 +43,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override {}
 
-    // dead-reckoning support
-    virtual bool get_location(struct Location &loc) const override;
-
     // return a wind estimation vector, in m/s
     bool wind_estimate(Vector3f &ret) const override {
         return false;

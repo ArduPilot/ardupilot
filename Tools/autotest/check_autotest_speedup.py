@@ -52,7 +52,7 @@ class CheckAutoTestSpeedup(object):
                     # select not available on Windows... probably...
                 time.sleep(0.1)
                 continue
-            if type(x) == bytes:
+            if isinstance(x, bytes):
                 x = x.decode('utf-8')
             self.program_output += x
             x = x.rstrip()

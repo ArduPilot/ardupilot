@@ -112,7 +112,7 @@ bool Plane::ekf_over_threshold()
         return false;
     }
 
-    // Get EKF innovations normalised wrt the innovaton test limits.
+    // Get EKF innovations normalised wrt the innovation test limits.
     // A value above 1.0 means the EKF has rejected that sensor data
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
@@ -157,7 +157,7 @@ void Plane::failsafe_ekf_event()
     ekf_check_state.failsafe_on = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
-    // if not in a VTOL mode requring position, then nothing needs to be done
+    // if not in a VTOL mode requiring position, then nothing needs to be done
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.in_vtol_posvel_mode()) {
         return;

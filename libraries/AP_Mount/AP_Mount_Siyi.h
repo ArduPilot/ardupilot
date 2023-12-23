@@ -27,7 +27,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_MOUNT_SIYI_PACKETLEN_MAX     22  // maximum number of bytes in a packet sent to or received from the gimbal
+#define AP_MOUNT_SIYI_PACKETLEN_MAX     38  // maximum number of bytes in a packet sent to or received from the gimbal
 
 class AP_Mount_Siyi : public AP_Mount_Backend
 {
@@ -72,17 +72,33 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
+    // set camera lens as a value from 0 to 8.  ZT30 only
+    bool set_lens(uint8_t lens) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(float& distance_m) const override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // get angular velocity of mount. Only available on some backends
+    bool get_angular_velocity(Vector3f& rates) override {
+        rates = _current_rates_rads;
+        return true;
+    }
+    
 private:
 
     // serial protocol command ids
@@ -98,7 +114,11 @@ private:
         FUNCTION_FEEDBACK_INFO = 0x0B,
         PHOTO = 0x0C,
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
-        ABSOLUTE_ZOOM = 0x0F
+        ABSOLUTE_ZOOM = 0x0F,
+        SET_CAMERA_IMAGE_TYPE = 0x11,
+        READ_RANGEFINDER = 0x15,
+        EXTERNAL_ATTITUDE = 0x22,
+        SET_TIME = 0x30,
     };
 
     // Function Feedback Info packet info_type values
@@ -137,17 +157,79 @@ private:
 
     // hardware model enum
     enum class HardwareModel : uint8_t {
-        UNKNOWN,
+        UNKNOWN = 0,
+        A2,
         A8,
-        ZR10
+        ZR10,
+        ZR30,
+        ZT30
     } _hardware_model;
 
-    // gimbal mounting method/direction
+    enum class HdrStatus : uint8_t {
+        OFF = 0,
+        ON  = 1,
+    };
+
+    enum class RecordingStatus : uint8_t {
+        OFF       = 0,
+        ON        = 1,
+        NO_CARD   = 2,
+        DATA_LOSS = 3,
+    };
+
+    enum class GimbalMotionMode : uint8_t {
+        LOCK   = 0,
+        FOLLOW = 1,
+        FPV    = 2,
+    };
+
     enum class GimbalMountingDirection : uint8_t {
         UNDEFINED = 0,
         NORMAL = 1,
         UPSIDE_DOWN = 2,
-    } _gimbal_mounting_dir;
+    };
+
+    enum class VideoOutputStatus : uint8_t {
+        HDMI = 0,
+        CVBS = 1,
+    };
+
+    // Response message for "Acquire Gimbal Confuguration Information" (0x0A)
+    typedef struct {
+        uint8_t _reserved1;
+        HdrStatus hdr_status;
+        uint8_t _reserved3;
+        RecordingStatus record_status;
+        GimbalMotionMode motion_mode;
+        GimbalMountingDirection mounting_dir;
+        VideoOutputStatus video_mode;
+    } GimbalConfigInfo;
+    static_assert(sizeof(GimbalConfigInfo) == 7);
+
+    // camera image types (aka lens)
+    enum class CameraImageType : uint8_t {
+        MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE = 0,
+        MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM = 1,
+        MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL = 2,
+        MAIN_ZOOM_SUB_THERMAL = 3,
+        MAIN_ZOOM_SUB_WIDEANGLE = 4,
+        MAIN_WIDEANGLE_SUB_THERMAL = 5,
+        MAIN_WIDEANGLE_SUB_ZOOM = 6,
+        MAIN_THERMAL_SUB_ZOOM = 7,
+        MAIN_THERMAL_SUB_WIDEANGLE = 8
+    };
+
+    typedef struct {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+    } Version;
+    typedef struct {
+        Version camera;
+        Version gimbal;
+        Version zoom;
+        bool received; // true once version information has been received
+    } FirmwareVersion;
 
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure
@@ -167,15 +249,18 @@ private:
     void request_configuration() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO, nullptr, 0); }
     void request_function_feedback_info() { send_packet(SiyiCommandId::FUNCTION_FEEDBACK_INFO, nullptr, 0); }
     void request_gimbal_attitude() { send_packet(SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE, nullptr, 0); }
+    void request_rangefinder_distance() { send_packet(SiyiCommandId::READ_RANGEFINDER, nullptr, 0); }
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
 
-    // set gimbal's lock vs follow mode
-    // lock should be true if gimbal should maintain an earth-frame target
-    // lock is false to follow / maintain a body-frame target
-    void set_lock(bool lock);
+    // Set gimbal's motion mode if it has changed. Use force=true to always send.
+    //   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
+    //   LOCK: roll, pitch and yaw are all in earth-frame
+    //   FPV: roll, pitch and yaw are all in body-frame
+    // Returns true if message successfully sent to Gimbal
+    bool set_motion_mode(const GimbalMotionMode mode, const bool force=false);
 
     // send target pitch and yaw rates to gimbal
     // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
@@ -189,25 +274,26 @@ private:
     bool send_zoom_rate(float zoom_value);
 
     // send zoom multiple command to camera. e.g. 1x, 10x, 30x
-    // only supported by ZR10 and ZR30
     bool send_zoom_mult(float zoom_mult);
 
     // get zoom multiple max
     float get_zoom_mult_max() const;
 
-    // update absolute zoom controller
-    // only used for A8 that does not support abs zoom control
+    // update zoom controller
     void update_zoom_control();
+
+    // get model name string, returns nullptr if hardware id is unknown
+    const char* get_model_name() const;
+
+    // Checks that the firmware version on the Gimbal meets the minimum supported version.
+    void check_firmware_version() const;
 
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
-    bool _got_firmware_version;                     // true once gimbal firmware version has been received
-    struct {
-        uint8_t major;
-        uint8_t minor;
-        uint8_t patch;
-    } _cam_firmware_version;                        // camera firmware version (for reporting for GCS)
+    bool _got_hardware_id;                          // true once hardware id ha been received
+
+    FirmwareVersion _fw_version;                    // firmware version (for reporting for GCS)
 
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
@@ -226,21 +312,40 @@ private:
     // variables for sending packets to gimbal
     uint32_t _last_send_ms;                         // system time (in milliseconds) of last packet sent to gimbal
     uint16_t _last_seq;                             // last sequence number used (should be increment for each send)
-    bool     _last_lock;                            // last lock value sent to gimbal
-    uint8_t  _lock_send_counter;                    // counter used to resend lock status to gimbal at regular intervals
 
     // actual attitude received from gimbal
     Vector3f _current_angle_rad;                    // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
+    Vector3f _current_rates_rads;                   // current angular rates in rad/s (x=roll, y=pitch, z=yaw)
     uint32_t _last_current_angle_rad_ms;            // system time _current_angle_rad was updated
     uint32_t _last_req_current_angle_rad_ms;        // system time that this driver last requested current angle
 
-    // variables for camera state
-    bool _last_record_video;                        // last record_video state sent to gimbal
-
     // absolute zoom control.  only used for A8 that does not support abs zoom control
-    float _zoom_mult_target;                        // current zoom multiple target.  0 if no target
+    ZoomType _zoom_type;                            // current zoom type
+    float _zoom_rate_target;                        // current zoom rate target
     float _zoom_mult;                               // most recent actual zoom multiple received from camera
     uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
+
+    // Configuration info received from gimbal
+    GimbalConfigInfo _config_info;
+    
+    // rangefinder variables
+    uint32_t _last_rangefinder_req_ms;              // system time of last request for rangefinder distance
+    uint32_t _last_rangefinder_dist_ms;             // system time of last successful read of rangefinder distance
+    float _rangefinder_dist_m;                      // distance received from rangefinder
+
+    // sending of attitude to gimbal
+    uint32_t _last_attitude_send_ms;
+    void send_attitude(void);
+
+    // hardware lookup table indexed by HardwareModel enum values (see above)
+    struct HWInfo {
+        uint8_t hwid[2];
+        const char* model_name;
+    };
+    static const HWInfo hardware_lookup_table[];
+
+    // count of SET_TIME packets, we send 5 times to cope with packet loss
+    uint8_t sent_time_count;
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

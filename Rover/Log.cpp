@@ -78,8 +78,10 @@ void Rover::Log_Write_Depth()
                             (double)(s->distance()),
                             temp_C);
     }
+#if AP_RANGEFINDER_ENABLED
     // send water depth and temp to ground station
     gcs().send_message(MSG_WATER_DEPTH);
+#endif
 }
 
 // guided mode logging
@@ -241,7 +243,7 @@ void Rover::Log_Write_RC(void)
 void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode((uint8_t)control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }

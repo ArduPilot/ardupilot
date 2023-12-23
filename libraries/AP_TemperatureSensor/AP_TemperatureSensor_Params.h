@@ -31,6 +31,8 @@ public:
         TSYS01                      = 1,
         MCP9600                     = 2,
         MAX31865                    = 3,
+        TSYS03                      = 4,
+        ANALOG                      = 5,
     };
 
     // option to map to another system component

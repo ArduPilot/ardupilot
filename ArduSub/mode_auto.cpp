@@ -394,9 +394,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
-        if (sub.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-            sub.camera_mount.set_mode_to_default();
-        }
+        sub.camera_mount.clear_roi_target();
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED

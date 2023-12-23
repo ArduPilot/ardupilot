@@ -88,6 +88,7 @@ list some basic and more used commands as example.
     ./waf rover                             # Ground-based rovers and surface boats
     ./waf sub                               # ROV and other submarines
     ./waf antennatracker                    # Antenna trackers
+    ./waf AP_Periph                         # AP Peripheral
     
     ```
 

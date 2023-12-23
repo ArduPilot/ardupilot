@@ -10,8 +10,7 @@ bool AP_Camera_Mount::trigger_pic()
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        mount->take_picture(get_mount_instance());
-        return true;
+        return mount->take_picture(get_mount_instance());
     }
     return false;
 }
@@ -86,6 +85,15 @@ void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
         return mount->send_camera_settings(get_mount_instance(), chan);
+    }
+}
+
+// send camera capture status message to GCS
+void AP_Camera_Mount::send_camera_capture_status(mavlink_channel_t chan) const
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->send_camera_capture_status(get_mount_instance(), chan);
     }
 }
 

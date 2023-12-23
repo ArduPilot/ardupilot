@@ -1,3 +1,7 @@
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Logger_Backend.h"
 
 #include "LoggerMessageWriter.h"
@@ -7,6 +11,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include "AP_Logger.h"
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -514,7 +519,8 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
         sequence        : sequence,
         latitude        : rally_point.lat,
         longitude       : rally_point.lng,
-        altitude        : rally_point.alt
+        altitude        : rally_point.alt,
+        flags           : rally_point.flags
     };
     return WriteBlock(&pkt_rally, sizeof(pkt_rally));
 }
@@ -574,7 +580,7 @@ bool AP_Logger_Backend::Write_VER()
 #ifdef APJ_BOARD_ID
     pkt._APJ_BOARD_ID = APJ_BOARD_ID;
 #endif
-
+    pkt.build_type = fwver.vehicle_type;
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -593,8 +599,9 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
     }
 
     uint32_t log_num = oldest_log + list_entry - 1;
-    if (log_num > MAX_LOG_FILES) {
-        log_num -= MAX_LOG_FILES;
+    const auto max_logs_num = _front.get_max_num_logs();
+    if (log_num > (uint32_t)max_logs_num) {
+        log_num -= max_logs_num;
     }
     return (uint16_t)log_num;
 }
@@ -752,3 +759,5 @@ bool AP_Logger_RateLimiter::should_log(uint8_t msgid, bool writev_streaming)
     }
     return ret;
 }
+
+#endif  // HAL_LOGGING_ENABLED

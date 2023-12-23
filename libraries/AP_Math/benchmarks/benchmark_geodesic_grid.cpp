@@ -86,7 +86,7 @@ static bool section_triangle(unsigned int section_index,
 static void BM_GeodesicGridSections(benchmark::State& state)
 {
     Vector3f v, a, b, c;
-    int section = state.range_x();
+    int section = state.range(0);
 
     section_triangle(section, a, b, c);
     v = (a + b + c) / 3.0f;

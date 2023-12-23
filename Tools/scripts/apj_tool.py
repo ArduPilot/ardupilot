@@ -108,7 +108,7 @@ class embedded_defaults(object):
         magic_str = "PARMDEF".encode('ascii')
         param_magic = [ 0x55, 0x37, 0xf4, 0xa0, 0x38, 0x5d, 0x48, 0x5b ]
         def u_ord(c):
-	        return ord(c) if sys.version_info.major < 3 else c
+            return ord(c) if sys.version_info.major < 3 else c
 
         while True:
             i = self.firmware[self.offset:].find(magic_str)

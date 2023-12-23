@@ -285,9 +285,15 @@
 #ifndef STM32_MCO1SEL
 #define STM32_MCO1SEL                       STM32_MCO1SEL_HSE_CK
 #endif
+#ifndef STM32_MCO1PRE_VALUE
 #define STM32_MCO1PRE_VALUE                 4
+#endif
+#ifndef STM32_MCO2SEL
 #define STM32_MCO2SEL                       STM32_MCO2SEL_SYS_CK
+#endif
+#ifndef STM32_MCO2PRE_VALUE
 #define STM32_MCO2PRE_VALUE                 4
+#endif
 #define STM32_TIMPRE_ENABLE                 TRUE
 #define STM32_HRTIMSEL                      0
 #define STM32_STOPKERWUCK                   0

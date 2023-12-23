@@ -334,6 +334,7 @@ local function sq(x)
    return x*x
 end
 
+local last_trick_action_state = nil
 if TRIK_ENABLE:get() > 0 then
 --[[
     // @Param: TRIK_SEL_FN
@@ -357,6 +358,8 @@ if TRIK_ENABLE:get() > 0 then
 --]]
    TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
    TRICKS = {}
+
+   last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 
    -- setup parameters for tricks
    local count = math.floor(constrain(TRIK_COUNT:get(),1,11))
@@ -2431,6 +2434,8 @@ function do_path()
       path_var.ss_angle_filt = 0.0
       path_var.last_rate_override = 0
 
+      path.highest_i = 0
+
       -- get initial tangent
       local p1, _ = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
                                  path_var.initial_ori, path_var.initial_ef_pos)
@@ -3110,7 +3115,6 @@ function check_auto_mission()
    end
 end
 
-local last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 local trick_sel_chan = nil
 local last_trick_selection = nil
 

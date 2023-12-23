@@ -35,9 +35,6 @@
 #endif
 #endif
 
-#ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED 1
-#endif
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
@@ -387,6 +384,10 @@ private:
     bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
+    void probe_i2c_spi_compasses(void);
+#if AP_COMPASS_DRONECAN_ENABLED
+    void probe_dronecan_compasses(void);
+#endif
 
     // compass cal
     void _update_calibration_trampoline();
@@ -480,7 +481,10 @@ private:
 #if AP_COMPASS_MMC5XX3_ENABLED
         DRIVER_MMC5XX3  =19,
 #endif
-    };
+#if AP_COMPASS_QMC5883P_ENABLED
+        DRIVER_QMC5883P =20,
+#endif
+};
 
     bool _driver_enabled(enum DriverType driver_type);
     
@@ -651,6 +655,8 @@ private:
     uint8_t msp_instance_mask;
 #endif
     bool init_done;
+
+    bool suppress_devid_save;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
 };

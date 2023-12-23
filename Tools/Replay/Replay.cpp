@@ -100,8 +100,10 @@ const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
 };
 GCS_Dummy _gcs;
 
+#if AP_ADVANCEDFAILSAFE_ENABLED
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+#endif
 
 // dummy method to avoid linking AP_Avoidance
 // AP_Avoidance *AP::ap_avoidance() { return nullptr; }

@@ -143,7 +143,7 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) override = 0;
 
-    // Set command header for upcomming transfer call(s)
+    // Set command header for upcoming transfer call(s)
     virtual void set_cmd_header(const CommandHeader& cmd_hdr) override = 0;
 
     virtual bool is_busy() = 0;

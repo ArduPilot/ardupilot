@@ -280,6 +280,9 @@ public:
         return function.configured();
     }
 
+    // convert a scaled value (either range or angle depending on setup) to a pwm
+    uint16_t pwm_from_scaled_value(float scaled_value) const;
+
     // specify that small rc input changes should be ignored during passthrough
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }

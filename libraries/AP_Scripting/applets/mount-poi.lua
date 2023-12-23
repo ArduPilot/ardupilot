@@ -1,7 +1,7 @@
 -- mount-poi.lua: finds the point-of-interest that the gimbal mount is pointing at using the vehicle's current Location, mount attitude and terrain database
 --
 -- How To Use
---   1. set RCx_OPTION to 300 to enable triggering the POI calculation from an auxiliary switch
+--   1. Set RCx_OPTION to 300 or 301 to enable triggering the POI calculation from an auxiliary switch.  If 301 is used the gimbal will also lock onto the location
 --   2. optionally set POI_DIST_MAX to the maximum distance (in meters) that the POI point could be from the vehicle
 --   3. fly the vehicle and point the camera gimbal at a point on the ground
 --   4. raise the RC auxiliary switch and check the GCS's messages tab for the latitude, longitude and alt (above sea-level)
@@ -42,7 +42,8 @@ local POI_DIST_MAX = Parameter("POI_DIST_MAX")
 TERRAIN_SPACING = Parameter("TERRAIN_SPACING")
 
 -- local variables and definitions
-local last_rc_switch_pos = 0            -- last known rc switch position.  Used to detect change in RC switch position
+local last_poi_switch_pos = 0           -- last known rc poi switch position.  Used to detect change in RC switch position
+local last_roi_switch_pos = 0           -- last known rc roi switch position.  Used to detect change in RC switch position
 local success_count = 0                 -- count of the number of POI calculations (sent to GCS in CAMERA_FEEDBACK message)
 
 -- mavlink message definition
@@ -156,35 +157,32 @@ function interpolate(low_output, high_output, var_value, var_low, var_high)
   return (low_output + p * (high_output - low_output))
 end
 
+gcs:send_text(MAV_SEVERITY.INFO, "Mount-poi script started")
 
--- the main update function that performs a simplified version of RTL
+-- the main update function called at 10hz
 function update()
 
-  -- find RC channel used to trigger POI
-  rc_switch_ch = rc:find_channel_for_option(300) --scripting ch 1
-  if (rc_switch_ch == nil) then
-      gcs:send_text(MAV_SEVERITY.ERROR, 'MountPOI: RCx_OPTION = 300 not set')    -- MAV_SEVERITY_ERROR
-      return update, 10000  -- check again in 10 seconds
-  end
+  -- check if user has raised POI switch
+  local poi_switch_pos = rc:get_aux_cached(300) -- scripting ch 1 (drop icon on map where mount is pointing)
+  local poi_switch_pulled_high = (poi_switch_pos ~= nil) and (poi_switch_pos ~= last_poi_switch_pos) and (poi_switch_pos == 2)
+  last_poi_switch_pos = poi_switch_pos
 
-  -- check if user has raised RC switch
-  local rc_switch_pos = rc_switch_ch:get_aux_switch_pos()
-  if rc_switch_pos == last_rc_switch_pos then
+  -- check if user has raised ROI switch
+  local roi_switch_pos = rc:get_aux_cached(301) -- scripting ch 2 (drop icon and lock mount on location)
+  local roi_switch_pulled_high = (roi_switch_pos ~= nil) and (roi_switch_pos ~= last_roi_switch_pos) and (roi_switch_pos == 2)
+  last_roi_switch_pos = roi_switch_pos
+  
+  -- return if neither switch was pulled high
+  if not poi_switch_pulled_high and not roi_switch_pulled_high then
     return update, UPDATE_INTERVAL_MS
   end
 
-  -- switch has changed position
-  last_rc_switch_pos = rc_switch_pos
-  if rc_switch_pos ~= 2 then
-    return update, UPDATE_INTERVAL_MS
-  end
-
-  -- POI has been requested
+  -- POI or ROI has been requested
 
   -- retrieve vehicle location
   local vehicle_loc = ahrs:get_location()
   if vehicle_loc == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: vehicle pos unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: vehicle pos unavailable")
     return update, UPDATE_INTERVAL_MS
   end
   
@@ -194,7 +192,7 @@ function update()
   -- retrieve gimbal attitude
   local _, pitch_deg, yaw_bf_deg = mount:get_attitude_euler(0)
   if pitch_deg == nil or yaw_bf_deg == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: gimbal attitude unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: gimbal attitude unavailable")
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -209,7 +207,7 @@ function update()
 
   -- fail if terrain alt cannot be retrieved
   if terrain_amsl_m == nil then
-    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt")
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -238,7 +236,7 @@ function update()
 
     -- fail if terrain alt cannot be retrieved
     if terrain_amsl_m == nil then
-      gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+      gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt")
       return update, UPDATE_INTERVAL_MS
     end
   end
@@ -255,6 +253,11 @@ function update()
     local poi_loc = prev_test_loc:copy()
     poi_loc:offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m)
     gcs:send_text(MAV_SEVERITY.INFO, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+
+    -- if ROI requested then also lock gimbal to location
+    if roi_switch_pulled_high then
+      mount:set_roi_target(0, poi_loc)
+    end
 
     -- send feedback to GCS so it can display icon on map
     success_count = success_count + 1

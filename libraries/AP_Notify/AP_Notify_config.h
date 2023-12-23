@@ -9,6 +9,10 @@
 #include <AP_SerialLED/AP_SerialLED_config.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 
+#ifndef AP_NOTIFY_DISCRETE_RGB_ENABLED
+#define AP_NOTIFY_DISCRETE_RGB_ENABLED 0
+#endif
+
 #ifndef HAL_DISPLAY_ENABLED
 #define HAL_DISPLAY_ENABLED 1
 #endif

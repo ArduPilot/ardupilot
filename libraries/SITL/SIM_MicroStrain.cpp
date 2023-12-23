@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate LORD MicroStrain serial device
+    simulate MicroStrain GNSS-INS devices
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
@@ -29,10 +29,7 @@ MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 }
 
 
-/*
-  get timeval using simulation time
- */
-static void simulation_timeval(struct timeval *tv)
+void MicroStrain::simulation_timeval(struct timeval *tv)
 {
     uint64_t now = AP_HAL::micros64();
     static uint64_t first_usec;
@@ -135,8 +132,7 @@ void MicroStrain::send_imu_packet(void)
     send_packet(packet);
 }
 
-
-void MicroStrain::send_gnss_packet(void)
+void MicroStrain5::send_gnss_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -148,9 +144,9 @@ void MicroStrain::send_gnss_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x81; // GNSS Descriptor
 
-    // Add GPS Time
+    // Add GPS Timestamp
     packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
-    packet.payload[packet.payload_size++] = 0x09; // Descriptor
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_sec);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0);
@@ -205,7 +201,9 @@ void MicroStrain::send_gnss_packet(void)
     send_packet(packet);
 }
 
-void MicroStrain::send_filter_packet(void)
+
+
+void MicroStrain5::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -217,9 +215,9 @@ void MicroStrain::send_filter_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x82; // Filter Descriptor
 
-    // Add Filter Time
-    packet.payload[packet.payload_size++] = 0x0E; // Filter Time Field Size
-    packet.payload[packet.payload_size++] = 0x11; // Descriptor
+    // Add GPS Timestamp Shared Data
+    packet.payload[packet.payload_size++] = 0x0E; // GPS Timestamp Field Size
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_usec / 1e6);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0x0001);
@@ -262,23 +260,23 @@ void MicroStrain::update(void)
         return;
     }
 
-    uint32_t us_between_imu_packets = 20000;
-    uint32_t us_between_gnss_packets = 250000;
-    uint32_t us_between_filter_packets = 100000;
+    uint32_t ms_between_imu_packets = 40;
+    uint32_t ms_between_gnss_packets = 500;
+    uint32_t ms_between_filter_packets = 40;
 
-    uint32_t now = AP_HAL::micros();
-    if (now - last_imu_pkt_us >= us_between_imu_packets) {
-        last_imu_pkt_us = now;
+    uint32_t now = AP_HAL::millis();
+    if (now - last_imu_pkt_ms >= ms_between_imu_packets) {
+        last_imu_pkt_ms = now;
         send_imu_packet();
     }
 
-    if (now - last_gnss_pkt_us >= us_between_gnss_packets) {
-        last_gnss_pkt_us = now;
+    if (now - last_gnss_pkt_ms >= ms_between_gnss_packets) {
+        last_gnss_pkt_ms = now;
         send_gnss_packet();
     }
 
-    if (now - last_filter_pkt_us >= us_between_filter_packets) {
-        last_filter_pkt_us = now;
+    if (now - last_filter_pkt_ms >= ms_between_filter_packets) {
+        last_filter_pkt_ms = now;
         send_filter_packet();
     }
 }

@@ -253,7 +253,9 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.ctrl.x_bit = rx.decoded.transponder_status.x_bit;
         }
         run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
-        gcs().send_message(MSG_UAVIONIX_ADSB_OUT_STATUS);
+#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
+        GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+#endif
         break;
 #endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
 
@@ -341,8 +343,9 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     GDL90_GPS_DATA_V2 msg {};
     msg.messageId = GDL90_ID_GPS_DATA;
     msg.version = 2;
-    
-    const AP_GPS &gps = AP::gps();
+
+    const AP_ADSB::Loc &gps { _frontend._my_loc };
+
     const GPS_FIX fix = (GPS_FIX)gps.status();
     const bool fix_is_good = (fix >= GPS_FIX_3D);
     const Vector3f velocity = fix_is_good ? gps.velocity() : Vector3f();
@@ -379,7 +382,7 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     nav_state.HrdMagNorth = 0;  // 1 means "north" is magnetic north
 
     msg.navState = nav_state;
-    msg.satsUsed = AP::gps().num_sats();
+    msg.satsUsed = gps.num_sats();
 
     gdl90Transmit((GDL90_TX_MESSAGE&)msg, sizeof(msg));
 }

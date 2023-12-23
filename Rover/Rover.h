@@ -44,6 +44,10 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include "AP_ExternalControl_Rover.h"
+#endif
 
 // Configuration
 #include "defines.h"
@@ -79,6 +83,9 @@ public:
     friend class AP_Arming_Rover;
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Rover;
+#endif
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Rover;
 #endif
     friend class GCS_Rover;
     friend class Mode;
@@ -142,6 +149,11 @@ private:
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
+
+    // external control implementation
+#if AP_EXTERNAL_CONTROL_ENABLED
+    AP_ExternalControl_Rover external_control;
+#endif
 
 #if AP_OPTICALFLOW_ENABLED
     AP_OpticalFlow optflow;
@@ -369,6 +381,7 @@ private:
     bool gcs_mode_enabled(const Mode::Number mode_num) const;
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
+    bool set_mode(Mode::Number new_mode, ModeReason reason);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     bool current_mode_requires_mission() const override {
         return control_mode == &mode_auto;
@@ -385,13 +398,13 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-    enum Failsafe_Action {
-        Failsafe_Action_None          = 0,
-        Failsafe_Action_RTL           = 1,
-        Failsafe_Action_Hold          = 2,
-        Failsafe_Action_SmartRTL      = 3,
-        Failsafe_Action_SmartRTL_Hold = 4,
-        Failsafe_Action_Terminate     = 5
+    enum class FailsafeAction: int8_t {
+        None          = 0,
+        RTL           = 1,
+        Hold          = 2,
+        SmartRTL      = 3,
+        SmartRTL_Hold = 4,
+        Terminate     = 5
     };
 
     enum class Failsafe_Options : uint32_t {
@@ -399,12 +412,12 @@ private:
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
-                                                       Failsafe_Action_Terminate,
-                                                       Failsafe_Action_Hold,
-                                                       Failsafe_Action_RTL,
-                                                       Failsafe_Action_SmartRTL_Hold,
-                                                       Failsafe_Action_SmartRTL,
-                                                       Failsafe_Action_None,
+                                                       (int8_t)FailsafeAction::Terminate,
+                                                       (int8_t)FailsafeAction::Hold,
+                                                       (int8_t)FailsafeAction::RTL,
+                                                       (int8_t)FailsafeAction::SmartRTL_Hold,
+                                                       (int8_t)FailsafeAction::SmartRTL,
+                                                       (int8_t)FailsafeAction::None,
                                                        -1 // the priority list must end with a sentinel of -1
                                                       };
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,

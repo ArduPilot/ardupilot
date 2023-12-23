@@ -38,6 +38,7 @@ SRV_Channels srvs;
 AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
 AP_Motors *motors;
+AP_MotorsHeli *motors_heli;
 AP_MotorsMatrix *motors_matrix;
 
 bool thrust_boost = false;
@@ -120,6 +121,39 @@ void setup()
                     exit(1);
                 }
 
+            } else if (strcmp(cmd,"dual_mode") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI_DUAL) {
+                    ::printf("dual_mode only supported by dual heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI_DUAL, frame_class);
+                    exit(1);
+                }
+
+                // look away now, more dodgy param access.
+                AP_Int8 *dual_mode = (AP_Int8*)motors + AP_MotorsHeli_Dual::var_info[1].offset;
+                dual_mode->set(value);
+
+            } else if (strcmp(cmd,"tail_type") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI) {
+                    ::printf("tail_type only supported by single heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI, frame_class);
+                    exit(1);
+                }
+
+                // Union allows pointers to be aligned despite different sizes
+                // avoids "increases required alignment of target type" error when casting from char* to AP_Int16*
+                union {
+                    char *char_ptr;
+                    AP_Int16 *int16;
+                } tail_type;
+
+                // look away now, more dodgy param access.
+                tail_type.char_ptr = (char*)motors + AP_MotorsHeli_Single::var_info[1].offset;
+                tail_type.int16->set(value);
+
+                // Re-init motors to switch to the new tail type
+                // Have to do this twice to make sure the tail type sticks
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
 
             } else if (strcmp(cmd,"frame_class") == 0) {
                 // We must have the frame_class argument 2nd as resulting class is used to determine if
@@ -142,19 +176,27 @@ void setup()
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI:
-                        motors = new AP_MotorsHeli_Single(400);
-                        // Mot 1-3 swashplate, mot 4 tail rotor pitch, mot 5 for 4th servo in H4-90 swash
-                        num_outputs = 5;
+                        motors_heli = new AP_MotorsHeli_Single(400);
+                        motors = motors_heli;
+                        // Mot 1-3: Swash plate 1 to 3
+                        // Mot 4: Tail rotor
+                        // Mot 5: 4th servo in H4-90 swash
+                        // Mot 6: Unused
+                        // Mot 7: Tail rotor RSC / external governor output
+                        // Mot 8: Main rotor RSC
+                        num_outputs = 8;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_DUAL:
-                        motors = new AP_MotorsHeli_Dual(400);
+                        motors_heli = new AP_MotorsHeli_Dual(400);
+                        motors = motors_heli;
                         // Mot 1-3 swashplate 1, mot 4-6 swashplate 2, mot 7 and 8 for 4th servos on H4-90 swash plates front and back, respectively
                         num_outputs = 8;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_QUAD:
-                        motors = new AP_MotorsHeli_Quad(400);
+                        motors_heli = new AP_MotorsHeli_Quad(400);
+                        motors = motors_heli;
                         num_outputs = 4; // Only 4 collective servos
                         break;
 
@@ -176,6 +218,29 @@ void setup()
                     ::printf("ERROR: frame_class=%d initialisation failed\n", frame_class);
                     exit(1);
                 }
+
+            } else if (strcmp(cmd,"COL2YAW") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI) {
+                    ::printf("COL2YAW only supported by single heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI, frame_class);
+                    exit(1);
+                }
+
+                // Union allows pointers to be aligned despite different sizes
+                // avoids "increases required alignment of target type" error when casting from char* to AP_Int16*
+                union {
+                    char *char_ptr;
+                    AP_Float *ap_float;
+                } collective_yaw_scale;
+
+                collective_yaw_scale.char_ptr = (char*)motors + AP_MotorsHeli_Single::var_info[7].offset;
+                collective_yaw_scale.ap_float->set(value);
+
+            } else if (strcmp(cmd,"autorotation") == 0) {
+                if (motors_heli == nullptr) {
+                    ::printf("autorotation only supported by heli frame types, got %i\n", frame_class);
+                    exit(1);
+                }
+                motors_heli->set_in_autorotation(!is_zero(value));
 
             } else {
                 ::printf("Expected \"frame_class\", \"yaw_headroom\" or \"throttle_avg_max\"\n");

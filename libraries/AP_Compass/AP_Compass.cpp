@@ -27,6 +27,7 @@
 #if AP_COMPASS_DRONECAN_ENABLED
 #include "AP_Compass_DroneCAN.h"
 #endif
+#include "AP_Compass_QMC5883P.h"
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
@@ -66,6 +67,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OFS_X
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
@@ -101,6 +103,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if COMPASS_LEARN_ENABLED
     // @Param: LEARN
@@ -111,6 +114,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: USE
     // @DisplayName: Use compass for yaw
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
@@ -124,6 +128,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
+#endif
 
 #if COMPASS_MOT_ENABLED
     // @Param: MOTCT
@@ -162,6 +167,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: ORIENT
     // @DisplayName: Compass orientation
     // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.
@@ -175,6 +181,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
+#endif
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
@@ -584,6 +591,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OPTIONS
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
@@ -591,6 +599,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Bitmask: 1: Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
+#endif
 
 #if COMPASS_MAX_UNREG_DEV > 0
     // @Param: DEV_ID4
@@ -697,6 +706,25 @@ void Compass::init()
         return;
     }
 
+    /*
+      on init() if any devid is set then we set suppress_devid_save to
+      false. This is used to determine if we save device ids during
+      the init process.
+     */
+    suppress_devid_save = true;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state._priv_instance[i].dev_id != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#if COMPASS_MAX_INSTANCES > 1
+        if (_priority_did_stored_list._priv_instance[i] != 0) {
+            suppress_devid_save = false;
+            break;
+        }
+#endif
+    }
+
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
@@ -741,24 +769,26 @@ void Compass::init()
 
     // Load priority list from storage, the changes to priority list
     // by user only take effect post reboot, after this
-    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_stored_list[i] != 0) {
-            _priority_did_list[i] = _priority_did_stored_list[i];
-        } else {
-            // Maintain a list without gaps and duplicates
-            for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
-                int32_t temp;
-                if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+    if (!suppress_devid_save) {
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (_priority_did_stored_list[i] != 0) {
+                _priority_did_list[i] = _priority_did_stored_list[i];
+            } else {
+                // Maintain a list without gaps and duplicates
+                for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
+                    int32_t temp;
+                    if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+                        _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    }
+                    if (_priority_did_stored_list[j] == 0) {
+                        continue;
+                    }
+                    temp = _priority_did_stored_list[j];
                     _priority_did_stored_list[j].set_and_save_ifchanged(0);
+                    _priority_did_list[i] = temp;
+                    _priority_did_stored_list[i].set_and_save_ifchanged(temp);
+                    break;
                 }
-                if (_priority_did_stored_list[j] == 0) {
-                    continue;
-                }
-                temp = _priority_did_stored_list[j];
-                _priority_did_stored_list[j].set_and_save_ifchanged(0);
-                _priority_did_list[i] = temp;
-                _priority_did_stored_list[i].set_and_save_ifchanged(temp);
-                break;
             }
         }
     }
@@ -777,7 +807,7 @@ void Compass::init()
         // cache the extra devices detected in last boot
         // for detecting replacement mag
         _previously_unreg_mag[i] = extra_dev_id[i];
-        extra_dev_id[i].set_and_save(0);
+        extra_dev_id[i].set(0);
     }
 #endif
 
@@ -786,23 +816,15 @@ void Compass::init()
     // which are set() but not saved() during normal runtime,
     // do not move this call without ensuring that is not happening
     // read comments under set_and_save_ifchanged for details
-    _reorder_compass_params();
+    if (!suppress_devid_save) {
+        _reorder_compass_params();
+    }
 #endif
 
     if (_compass_count == 0) {
         // detect available backends. Only called once
         _detect_backends();
     }
-
-#if COMPASS_MAX_UNREG_DEV
-    // We store the list of unregistered mags detected here,
-    // We don't do this during runtime, as we don't want to detect
-    // compasses connected by user as a replacement while the system
-    // is running
-    for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        extra_dev_id[i].save();
-    }
-#endif
 
     if (_compass_count != 0) {
         // get initial health status
@@ -826,6 +848,7 @@ void Compass::init()
 #endif
 
     init_done = true;
+    suppress_devid_save = false;
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
@@ -846,7 +869,11 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
     // We are not in priority list, let's add at first empty
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_stored_list[i] == 0) {
-            _priority_did_stored_list[i].set_and_save(dev_id);
+            if (suppress_devid_save) {
+                _priority_did_stored_list[i].set(dev_id);
+            } else {
+                _priority_did_stored_list[i].set_and_save(dev_id);
+            }
             _priority_did_list[i] = dev_id;
             if (i >= _compass_count) {
                 _compass_count = uint8_t(i)+1;
@@ -1106,6 +1133,26 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_QMC5883L_ENABLED
 
+#if AP_COMPASS_QMC5883P_ENABLED
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                    true, HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL));
+    }
+
+    // internal i2c bus
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    if (all_external) {
+        // only probe QMC5883P on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                        all_external,
+                        all_external?HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883P_ORIENTATION_INTERNAL));
+        }
+    }
+#endif
+#endif  // AP_COMPASS_QMC5883P_ENABLED
+
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1289,6 +1336,13 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
+#if AP_COMPASS_DRONECAN_ENABLED
+    // probe DroneCAN before I2C and SPI so that DroneCAN compasses
+    // default to first in the list for a new board
+    probe_dronecan_compasses();
+    CHECK_UNREG_LIMIT_RETURN;
+#endif
+
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
@@ -1303,6 +1357,21 @@ void Compass::_detect_backends(void)
     }
 #endif
 
+    // finally look for i2c and spi compasses not found yet
+    CHECK_UNREG_LIMIT_RETURN;
+    probe_i2c_spi_compasses();
+
+    if (_backend_count == 0 ||
+        _compass_count == 0) {
+        DEV_PRINTF("No Compass backends available\n");
+    }
+}
+
+/*
+  probe i2c and SPI compasses
+ */
+void Compass::probe_i2c_spi_compasses(void)
+{
 #if defined(HAL_MAG_PROBE_LIST)
     // driver probes defined by COMPASS lines in hwdef.dat
     HAL_MAG_PROBE_LIST;
@@ -1446,87 +1515,89 @@ void Compass::_detect_backends(void)
         break;
     }
 #endif
-
+}
 
 #if AP_COMPASS_DRONECAN_ENABLED
-    if (_driver_enabled(DRIVER_UAVCAN)) {
-        for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-            AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
-            if (_uavcan_backend) {
-                _add_backend(_uavcan_backend);
-            }
-#if COMPASS_MAX_UNREG_DEV > 0
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
-                break;
-            }
-#endif
+/*
+  look for DroneCAN compasses
+ */
+void Compass::probe_dronecan_compasses(void)
+{
+    if (!_driver_enabled(DRIVER_UAVCAN)) {
+        return;
+    }
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
+        if (_uavcan_backend) {
+            _add_backend(_uavcan_backend);
         }
+#if COMPASS_MAX_UNREG_DEV > 0
+        if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
+            break;
+        }
+#endif
+    }
 
 #if COMPASS_MAX_UNREG_DEV > 0
-        if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT)) {
-            // check if there's any uavcan compass in prio slot that's not found
-            // and replace it if there's a replacement compass
-            for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-                if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
-                    || _get_state(i).registered) {
+    if (option_set(Option::ALLOW_DRONECAN_AUTO_REPLACEMENT) && !suppress_devid_save) {
+        // check if there's any uavcan compass in prio slot that's not found
+        // and replace it if there's a replacement compass
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
+                || _get_state(i).registered) {
+                continue;
+            }
+            // There's a UAVCAN compass missing
+            // Let's check if there's a replacement
+            for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
+                uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
+                // Check if this is a potential replacement mag
+                if (!is_replacement_mag(detected_devid)) {
                     continue;
                 }
-                // There's a UAVCAN compass missing
-                // Let's check if there's a replacement
-                for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
-                    uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
-                    // Check if this is a potential replacement mag
-                    if (!is_replacement_mag(detected_devid)) {
+                // We have found a replacement mag, let's replace the existing one
+                // with this by setting the priority to zero and calling uavcan probe
+                gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
+                _priority_did_stored_list[i].set_and_save(0);
+                _priority_did_list[i] = 0;
+
+                AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
+                if (_uavcan_backend) {
+                    _add_backend(_uavcan_backend);
+                    // we also need to remove the id from unreg list
+                    remove_unreg_dev_id(detected_devid);
+                } else {
+                    // the mag has already been allocated,
+                    // let's begin the replacement
+                    bool found_replacement = false;
+                    for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
+                        if ((uint32_t)_state[k].dev_id == detected_devid) {
+                            if (_state[k].priority <= uint8_t(i)) {
+                                // we are already on higher priority
+                                // nothing to do
+                                break;
+                            }
+                            found_replacement = true;
+                            // reset old priority of replacement mag
+                            _priority_did_stored_list[_state[k].priority].set_and_save(0);
+                            _priority_did_list[_state[k].priority] = 0;
+                            // update new priority
+                            _state[k].priority = i;
+                        }
+                    }
+                    if (!found_replacement) {
                         continue;
                     }
-                    // We have found a replacement mag, let's replace the existing one
-                    // with this by setting the priority to zero and calling uavcan probe 
-                    gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
-                    _priority_did_stored_list[i].set_and_save(0);
-                    _priority_did_list[i] = 0;
-
-                    AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
-                    if (_uavcan_backend) {
-                        _add_backend(_uavcan_backend);
-                        // we also need to remove the id from unreg list
-                        remove_unreg_dev_id(detected_devid);
-                    } else {
-                        // the mag has already been allocated,
-                        // let's begin the replacement
-                        bool found_replacement = false;
-                        for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                            if ((uint32_t)_state[k].dev_id == detected_devid) {
-                                if (_state[k].priority <= uint8_t(i)) {
-                                    // we are already on higher priority
-                                    // nothing to do
-                                    break;
-                                }
-                                found_replacement = true;
-                                // reset old priority of replacement mag
-                                _priority_did_stored_list[_state[k].priority].set_and_save(0);
-                                _priority_did_list[_state[k].priority] = 0;
-                                // update new priority
-                                _state[k].priority = i;
-                            }
-                        }
-                        if (!found_replacement) {
-                            continue;
-                        }
-                        _priority_did_stored_list[i].set_and_save(detected_devid);
-                        _priority_did_list[i] = detected_devid;
-                    }
+                    _priority_did_stored_list[i].set_and_save(detected_devid);
+                    _priority_did_list[i] = detected_devid;
                 }
             }
         }
-#endif  // #if COMPASS_MAX_UNREG_DEV > 0
     }
+#endif  // #if COMPASS_MAX_UNREG_DEV > 0
+}
 #endif  // AP_COMPASS_DRONECAN_ENABLED
 
-    if (_backend_count == 0 ||
-        _compass_count == 0) {
-        DEV_PRINTF("No Compass backends available\n");
-    }
-}
 
 // Check if the devid is a potential replacement compass
 // Following are the checks done to ensure the compass is a replacement
@@ -1570,7 +1641,7 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
 #if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if ((uint32_t)extra_dev_id[i] == devid) {
-            extra_dev_id[i].set_and_save(0);
+            extra_dev_id[i].set(0);
             return;
         }
     }
@@ -1901,31 +1972,55 @@ Compass::get_declination() const
 float
 Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 {
-    float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
+/*
+    This extracts a roll/pitch-only rotation which is then used to rotate the body frame field into earth frame so the heading can be calculated.
+    One could do:
+        float roll, pitch, yaw;
+        dcm_matrix.to_euler(roll, pitch, yaw)
+        Matrix3f rp_rot;
+        rp_rot.from_euler(roll, pitch, 0)
+        Vector3f ef = rp_rot * field
+
+    Because only the X and Y components are needed it's more efficient to manually calculate:
+
+        rp_rot = [ cos(pitch), sin(roll) * sin(pitch),  cos(roll) * sin(pitch)
+                            0,              cos(roll),              -sin(roll)]
+
+    If the whole matrix is multiplied by cos(pitch) the required trigonometric values can be extracted directly from the existing dcm matrix.
+    This multiplication has no effect on the calculated heading as it changes the length of the North/East vector but not its angle.
+
+        rp_rot = [ cos(pitch)^2, sin(roll) * sin(pitch) * cos(pitch),  cos(roll) * sin(pitch) * cos(pitch)
+                              0,              cos(roll) * cos(pitch),              -sin(roll) * cos(pitch)]
+
+    Preexisting values can be substituted in:
+
+        dcm_matrix.c.x = -sin(pitch)
+        dcm_matrix.c.y =  sin(roll) * cos(pitch)
+        dcm_matrix.c.z =  cos(roll) * cos(pitch)
+
+        rp_rot = [ cos(pitch)^2, dcm_matrix.c.y * -dcm_matrix.c.x,  dcm_matrix.c.z * -dcm_matrix.c.x
+                              0,                   dcm_matrix.c.z,                   -dcm_matrix.c.y]
+
+    cos(pitch)^2 is stil needed. This is the same as 1 - sin(pitch)^2.
+    sin(pitch) is avalable as dcm_matrix.c.x
+*/
+
+    const float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
     const Vector3f &field = get_field(i);
 
-    float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
+    const float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
+    const float headX = field.x * cos_pitch_sq - dcm_matrix.c.x * (field.y * dcm_matrix.c.y + field.z * dcm_matrix.c.z);
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
+    const float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
-    // Declination correction (if supplied)
-    if ( fabsf(_declination) > 0.0f ) {
-        heading = heading + _declination;
-        if (heading > M_PI) {  // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * M_PI);
-        } else if (heading < -M_PI) {
-            heading += (2.0f * M_PI);
-        }
-    }
-
-    return heading;
+    // Declination correction
+    return wrap_PI(heading + _declination);
 }
 
 /// Returns True if the compasses have been configured (i.e. offsets saved)
@@ -2128,7 +2223,6 @@ void Compass::force_save_calibration(void)
         }
     }
 }
-
 
 // singleton instance
 Compass *Compass::_singleton;

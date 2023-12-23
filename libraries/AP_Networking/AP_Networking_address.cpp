@@ -6,6 +6,7 @@
 
 #if AP_NETWORKING_ENABLED
 
+#include <arpa/inet.h>
 #include "AP_Networking.h"
 
 const AP_Param::GroupInfo AP_Networking_IPV4::var_info[] = {
@@ -66,6 +67,13 @@ void AP_Networking_IPV4::set_default_uint32(uint32_t v)
     for (uint8_t i=0; i<ARRAY_SIZE(addr); i++) {
         addr[3-i].set_default(b[i]);
     }
+}
+
+const char* AP_Networking_IPV4::get_str()
+{
+    const auto ip = ntohl(get_uint32());
+    inet_ntop(AF_INET, &ip, strbuf, sizeof(strbuf));
+    return strbuf;
 }
 
 #endif // AP_NETWORKING_ENABLED

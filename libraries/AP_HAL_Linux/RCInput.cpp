@@ -15,9 +15,9 @@
 #include <AP_HAL/utility/sumd.h>
 #include <AP_HAL/utility/st24.h>
 #include <AP_HAL/utility/srxl.h>
+#include <AP_RCProtocol/AP_RCProtocol_SBUS.h>
 
 #include "RCInput.h"
-#include "sbus.h"
 
 #define MIN_NUM_CHANNELS 5
 
@@ -182,10 +182,10 @@ void RCInput::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1)
         }
         uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
         uint16_t num_values=0;
-        bool sbus_failsafe=false, sbus_frame_drop=false;
-        if (sbus_decode(bytes, values, &num_values,
-                        &sbus_failsafe, &sbus_frame_drop,
-                        LINUX_RC_INPUT_NUM_CHANNELS) &&
+        bool sbus_failsafe=false;
+        if (AP_RCProtocol_SBUS::sbus_decode(bytes, values, &num_values,
+                                            sbus_failsafe,
+                                            LINUX_RC_INPUT_NUM_CHANNELS) &&
             num_values >= MIN_NUM_CHANNELS) {
             for (i=0; i<num_values; i++) {
                 _pwm_values[i] = values[i];
@@ -528,8 +528,7 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
             uint16_t values[16] {};
             uint16_t num_values=0;
             bool sbus_failsafe;
-            bool sbus_frame_drop;
-            if (sbus_decode(sbus.frame, values, &num_values, &sbus_failsafe, &sbus_frame_drop, 16) &&
+            if (AP_RCProtocol_SBUS::sbus_decode(sbus.frame, values, &num_values, sbus_failsafe, 16) &&
                 num_values >= MIN_NUM_CHANNELS) {
                 for (uint8_t i=0; i<num_values; i++) {
                     if (values[i] != 0) {

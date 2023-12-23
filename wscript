@@ -267,9 +267,14 @@ submodules at specific revisions.
                  help="Enables GPS logging")
     
     g.add_option('--enable-dds', action='store_true',
-                 help="Enable the dds client to connect with ROS2/DDS"
-    )
+                 help="Enable the dds client to connect with ROS2/DDS.")
 
+    g.add_option('--disable-networking', action='store_true',
+                 help="Disable the networking API code")
+
+    g.add_option('--enable-networking-tests', action='store_true',
+                 help="Enable the networking test code. Automatically enables networking.")
+    
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")
@@ -355,10 +360,10 @@ configuration in order to save typing.
         default=False,
         help='Use flash storage emulation.')
 
-    g.add_option('--disable-ekf2',
+    g.add_option('--enable-ekf2',
         action='store_true',
         default=False,
-        help='Configure without EKF2.')
+        help='Configure with EKF2.')
 
     g.add_option('--disable-ekf3',
         action='store_true',
@@ -583,12 +588,6 @@ def configure(cfg):
         cfg.env.ENABLE_HEADER_CHECKS = True
     else:
         cfg.env.ENABLE_HEADER_CHECKS = False
-
-    # TODO: Investigate if code could be changed to not depend on the
-    # source absolute path.
-    cfg.env.prepend_value('DEFINES', [
-        'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
-    ])
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)

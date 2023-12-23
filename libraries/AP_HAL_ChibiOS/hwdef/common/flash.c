@@ -235,6 +235,8 @@ static void stm32_flash_clear_errors(void)
 #if STM32_FLASH_NBANKS > 1
     FLASH->CCR2 = ~0;
 #endif
+#elif defined (STM32L4PLUS)
+    FLASH->SR = 0x0000C3FBU;
 #else
     FLASH->SR = 0xF3;
 #endif

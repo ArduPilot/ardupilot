@@ -302,90 +302,70 @@ void AP_MotorsHeli_Dual::calculate_scalars()
     calculate_armed_scalars();
 }
 
-// get_swashplate - calculate movement of each swashplate based on configuration
-float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input)
+// Mix and output swashplates for tandem
+void AP_MotorsHeli_Dual::mix_tandem(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input)
 {
-    float swash_tilt = 0.0f;
-    if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
-        // roll tilt
-        if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL) {
-            if (swash_num == 1) {
-                swash_tilt = 0.0f;
-            } else if (swash_num == 2) {
-                swash_tilt = 0.0f;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH) {
-        // pitch tilt
-            if (swash_num == 1) {
-                swash_tilt = pitch_input - _yaw_scaler * yaw_input;
-            } else if (swash_num == 2) {
-                swash_tilt = pitch_input + _yaw_scaler * yaw_input;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
-        // collective
-            if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
-            } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
-            }
-        }
-    } else if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING) {
-        // roll tilt
-        if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL) {
-            if (swash_num == 1) {
-                swash_tilt = roll_input;
-            } else if (swash_num == 2) {
-                swash_tilt = roll_input;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH) {
-        // pitch tilt
-            if (swash_num == 1) {
-                swash_tilt = pitch_input - _yaw_scaler * yaw_input;
-            } else if (swash_num == 2) {
-                swash_tilt = pitch_input + _yaw_scaler * yaw_input;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
-        // collective
-            if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * yaw_input + coll_input;
-            } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * yaw_input + coll_input;
-            }
-        }
-    } else { // AP_MOTORS_HELI_DUAL_MODE_TANDEM
-        // roll tilt
-        if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL) {
-            if (swash_num == 1) {
-                swash_tilt = roll_input + _yaw_scaler * yaw_input;
-            } else if (swash_num == 2) {
-                swash_tilt = roll_input - _yaw_scaler * yaw_input;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH) {
-        // pitch tilt
-            if (swash_num == 1) {
-                swash_tilt = 0.0f;
-            } else if (swash_num == 2) {
-                swash_tilt = 0.0f;
-            }
-        } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
-        // collective
-            if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
-            } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
-            }
-        }
-    }
-    return swash_tilt;
+    // Differential cyclic roll is used for yaw and combined for roll
+    const float swash1_roll = roll_input + _yaw_scaler * yaw_input;
+    const float swash2_roll = roll_input - _yaw_scaler * yaw_input;
+
+    // cyclic is not used for pitch control
+    const float swash_pitch = 0.0;
+
+    // Differential collective for pitch and combined for thrust
+    const float swash1_coll =  0.45 * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective1_input;
+    const float swash2_coll = -0.45 * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective2_input;
+
+    // Calculate servo positions in swashplate library
+    _swashplate1.calculate(swash1_roll, swash_pitch, swash1_coll);
+    _swashplate2.calculate(swash2_roll, swash_pitch, swash2_coll);
+}
+
+// Mix and output swashplates for transverse
+void AP_MotorsHeli_Dual::mix_transverse(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input)
+{
+    // cyclic is not used for roll control
+    const float swash_roll = 0.0;
+
+    // Differential cyclic pitch is used for yaw
+    const float swash1_pitch = pitch_input - _yaw_scaler * yaw_input;
+    const float swash2_pitch = pitch_input + _yaw_scaler * yaw_input;
+
+    // Differential collective for roll and combined for thrust
+    const float swash1_coll =  0.45 * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective1_input;
+    const float swash2_coll = -0.45 * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective2_input;
+
+    // Calculate servo positions in swashplate library
+    _swashplate1.calculate(swash_roll, swash1_pitch, swash1_coll);
+    _swashplate2.calculate(swash_roll, swash2_pitch, swash2_coll);
+}
+
+// Mix and output swashplates for intermeshing
+void AP_MotorsHeli_Dual::mix_intermeshing(float pitch_input, float roll_input, float yaw_input, float collective1_input, float collective2_input)
+{
+    // Direct roll control on both swash plates
+    const float swash_roll = roll_input;
+
+    // Differential cyclic pitch is used for yaw and combined for pitch
+    const float swash1_pitch = pitch_input - _yaw_scaler * yaw_input;
+    const float swash2_pitch = pitch_input + _yaw_scaler * yaw_input;
+
+    // Differential collective for yaw and combined for thrust
+    const float swash1_coll =   0.45 * _dcp_scaler * yaw_input + collective1_input;
+    const float swash2_coll =  -0.45 * _dcp_scaler * yaw_input + collective2_input;
+
+    // Calculate servo positions in swashplate library
+    _swashplate1.calculate(swash_roll, swash1_pitch, swash1_coll);
+    _swashplate2.calculate(swash_roll, swash2_pitch, swash2_coll);
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
+void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
 {
     // Send state update to motors
     _main_rotor.output(state);
 
-    if (state == ROTOR_CONTROL_STOP) {
+    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -516,17 +496,22 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     // ToDo: add main rotor cyclic power?
     _main_rotor.set_collective(fabsf(collective_out));
 
-    // compute swashplate tilt
-    float swash1_pitch = get_swashplate(1, AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH, pitch_out, roll_out, yaw_out, collective_out_scaled);
-    float swash1_roll = get_swashplate(1, AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL, pitch_out, roll_out, yaw_out, collective_out_scaled);
-    float swash1_coll = get_swashplate(1, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective_out_scaled);
-    float swash2_pitch = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH, pitch_out, roll_out, yaw_out, collective2_out_scaled);
-    float swash2_roll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
-    float swash2_coll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
- 
-    // Calculate servo positions in swashplate library
-    _swashplate1.calculate(swash1_roll, swash1_pitch, swash1_coll);
-    _swashplate2.calculate(swash2_roll, swash2_pitch, swash2_coll);
+    // Mix swash plate
+    switch (_dual_mode) {
+        case AP_MOTORS_HELI_DUAL_MODE_TANDEM:
+        default:
+            mix_tandem(pitch_out, roll_out, yaw_out, collective_out_scaled, collective2_out_scaled);
+            break;
+
+        case AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE:
+            mix_transverse(pitch_out, roll_out, yaw_out, collective_out_scaled, collective2_out_scaled);
+            break;
+
+        case AP_MOTORS_HELI_DUAL_MODE_INTERMESHING:
+            mix_intermeshing(pitch_out, roll_out, yaw_out, collective_out_scaled, collective2_out_scaled);
+            break;
+
+    }
 
 }
 
@@ -540,25 +525,8 @@ void AP_MotorsHeli_Dual::output_to_motors()
     _swashplate1.output();
     _swashplate2.output();
 
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            update_motor_control(ROTOR_CONTROL_STOP);
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-            // set motor output based on thrust requests
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
-            break;
-        case SpoolState::SPOOLING_DOWN:
-            // sends idle output to motors and wait for rotor to stop
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-    }
+    update_motor_control(get_rotor_control_state());
+
 }
 
 // servo_test - move servos through full range of movement

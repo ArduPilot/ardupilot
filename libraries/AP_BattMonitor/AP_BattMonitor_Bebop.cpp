@@ -103,7 +103,7 @@ float AP_BattMonitor_Bebop::_filter_voltage(float vbat_raw)
         _prev_vbat = vbat_raw;
         only_once = 0;
     } else  if (vbat_raw > 0.0f) {
-        /*  1st order fitler */
+        /*  1st order filter */
         vbat = b[0] * vbat_raw +
             b[1] * _prev_vbat_raw - a[1] * _prev_vbat;
         _prev_vbat_raw = vbat_raw;

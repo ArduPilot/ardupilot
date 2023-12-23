@@ -30,10 +30,6 @@ class ExpandingString;
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS (defined(STM32F7) || defined(STM32H7))
 #endif
 
-#ifndef AP_BOOTLOADER_FLASHING_ENABLED
-#define AP_BOOTLOADER_FLASHING_ENABLED 0
-#endif
-
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {

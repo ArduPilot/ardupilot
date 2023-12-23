@@ -263,4 +263,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     lunar.vm.boot_timeout = 1200
   end
+
+  # 23.10 EOL Jul 2024
+  config.vm.define "mantic", autostart: false do |mantic|
+    mantic.vm.box = "ubuntu/mantic64"
+    mantic.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    mantic.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (mantic)"
+    end
+    mantic.vm.boot_timeout = 1200
+  end
+  config.vm.define "mantic-desktop", autostart: false do |mantic|
+    mantic.vm.box = "ubuntu/mantic64"
+    mantic.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    mantic.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (mantic-desktop)"
+      vb.gui = true
+    end
+    mantic.vm.boot_timeout = 1200
+  end
 end

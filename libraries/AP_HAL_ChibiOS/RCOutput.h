@@ -25,10 +25,17 @@
 
 #if HAL_USE_PWM == TRUE
 
-#if defined(IOMCU_FW)
+#if defined(STM32F1)
+#ifdef HAL_WITH_BIDIR_DSHOT
+typedef uint16_t dmar_uint_t; // save memory to allow dshot on IOMCU
+typedef int16_t dmar_int_t;
+#else
 typedef uint8_t dmar_uint_t; // save memory to allow dshot on IOMCU
+typedef int8_t dmar_int_t;
+#endif
 #else
 typedef uint32_t dmar_uint_t;
+typedef int32_t dmar_int_t;
 #endif
 
 #define RCOU_DSHOT_TIMING_DEBUG 0
@@ -52,21 +59,18 @@ public:
     void     read(uint16_t* period_us, uint8_t len) override;
     uint16_t read_last_sent(uint8_t ch) override;
     void     read_last_sent(uint16_t* period_us, uint8_t len) override;
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
-        _esc_pwm_min = min_pwm;
-        _esc_pwm_max = max_pwm;
-    }
-    bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) override {
-        min_pwm = _esc_pwm_min;
-        max_pwm = _esc_pwm_max;
-        return true;
-    }
+
     // surface dshot telemetry for use by the harmonic notch and status information
 #ifdef HAL_WITH_BIDIR_DSHOT
     uint16_t get_erpm(uint8_t chan) const override { return _bdshot.erpm[chan]; }
     float get_erpm_error_rate(uint8_t chan) const override {
       return 100.0f * float(_bdshot.erpm_errors[chan]) / (1 + _bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan]);
     }
+    /*
+      allow all erpm values to be read and for new updates to be detected - primarily for IOMCU
+     */
+    bool  new_erpm() override { return _bdshot.update_mask != 0; }
+    uint32_t read_erpm(uint16_t* erpm, uint8_t len) override;
 #endif
     void set_output_mode(uint32_t mask, const enum output_mode mode) override;
     enum output_mode get_output_mode(uint32_t& mask) override;
@@ -76,10 +80,6 @@ public:
      * return mask of channels that must be disabled because they share a group with a digital channel
      */
     uint32_t get_disabled_channels(uint32_t digital_mask) override;
-
-    float scale_esc_to_unity(uint16_t pwm) override {
-        return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
-    }
 
     void     cork(void) override;
     void     push(void) override;
@@ -164,14 +164,13 @@ public:
      */
     void set_telem_request_mask(uint32_t mask) override;
 
-#ifdef HAL_WITH_BIDIR_DSHOT
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
       The mask uses servo channel numbering
      */
     void set_bidir_dshot_mask(uint32_t mask) override;
-
+#ifdef HAL_WITH_BIDIR_DSHOT
     void set_motor_poles(uint8_t poles) override { _bdshot.motor_poles = poles; }
 #endif
 
@@ -266,12 +265,12 @@ public:
       setup serial LED output data for a given output channel
       and LEDs number. LED -1 is all LEDs
      */
-    void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
+    bool set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
 
     /*
       trigger send of serial LED data
      */
-    void serial_led_send(const uint16_t chan) override;
+    bool serial_led_send(const uint16_t chan) override;
 #endif
     /*
       rcout thread
@@ -289,7 +288,8 @@ private:
       SEND_START = 1,
       SEND_COMPLETE = 2,
       RECV_START = 3,
-      RECV_COMPLETE = 4
+      RECV_COMPLETE = 4,
+      RECV_FAILED = 5
     };
 
     struct PACKED SerialLed {
@@ -308,8 +308,13 @@ private:
     static const uint16_t DSHOT_BUFFER_LENGTH = dshot_bit_length * 4 * sizeof(dmar_uint_t);
     static const uint16_t MIN_GCR_BIT_LEN = 7;
     static const uint16_t MAX_GCR_BIT_LEN = 22;
+    static const uint16_t TELEM_IC_SAMPLE = 16;
     static const uint16_t GCR_TELEMETRY_BIT_LEN = MAX_GCR_BIT_LEN;
-    static const uint16_t GCR_TELEMETRY_BUFFER_LEN = GCR_TELEMETRY_BIT_LEN*sizeof(uint32_t);
+    // input capture is expecting TELEM_IC_SAMPLE (16) ticks per transition (22) so the maximum
+    // value of the counter in CCR registers is 16*22 == 352, so must be 16-bit
+    static const uint16_t GCR_TELEMETRY_BUFFER_LEN = GCR_TELEMETRY_BIT_LEN*sizeof(dmar_uint_t);
+    static const uint16_t INVALID_ERPM = 0xffffU;
+    static const uint16_t ZERO_ERPM = 0x0fffU;
 
     struct pwm_group {
         // only advanced timers can do high clocks needed for more than 400Hz
@@ -327,6 +332,9 @@ private:
             uint8_t stream_id;
             uint8_t channel;
         } dma_ch[4];
+#ifdef HAL_TIM_UP_SHARED
+        bool shared_up_dma; // do we need to wait for TIMx_UP DMA to be finished after use
+#endif
 #endif
         uint8_t alt_functions[4];
         ioline_t pal_lines[4];
@@ -392,8 +400,9 @@ private:
             uint8_t telem_tim_ch[4];
             uint8_t curr_telem_chan;
             uint8_t prev_telem_chan;
+            Shared_DMA *curr_ic_dma_handle; // a shortcut to avoid logic errors involving the wrong lock
             uint16_t telempsc;
-            uint32_t dma_buffer_copy[GCR_TELEMETRY_BUFFER_LEN];
+            dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BUFFER_LEN];
 #if RCOU_DSHOT_TIMING_DEBUG
             uint16_t telem_rate[4];
             uint16_t telem_err_rate[4];
@@ -426,7 +435,7 @@ private:
 #endif // HAL_WITH_BIDIR_DSHOT
         // are we safe to send another pulse?
         bool can_send_dshot_pulse() const {
-          return is_dshot_protocol(current_mode) && AP_HAL::micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
+          return is_dshot_protocol(current_mode) && AP_HAL::micros64() - last_dmar_send_us > (dshot_pulse_time_us + 50);
         }
 
         // return whether the group channel is both enabled in the group and for output
@@ -510,8 +519,13 @@ private:
 
     static pwm_group pwm_group_list[];
     static const uint8_t NUM_GROUPS;
-    uint16_t _esc_pwm_min;
-    uint16_t _esc_pwm_max;
+
+#if HAL_WITH_IO_MCU
+    // cached values of AP_BoardConfig::io_enabled() and AP_BoardConfig::io_dshot()
+    // in case the user changes them
+    bool iomcu_enabled;
+    bool iomcu_dshot;
+#endif
 
     // offset of first local channel
     uint8_t chan_offset;
@@ -538,7 +552,9 @@ private:
     // handling of bi-directional dshot
     struct {
         uint32_t mask;
+        uint32_t disabled_mask; // record of channels that were tried, but failed
         uint16_t erpm[max_channels];
+        volatile uint32_t update_mask;
 #ifdef HAL_WITH_BIDIR_DSHOT
         uint16_t erpm_errors[max_channels];
         uint16_t erpm_clean_frames[max_channels];
@@ -605,7 +621,11 @@ private:
 
     volatile bool _initialised;
 
-    bool is_bidir_dshot_enabled() const { return _bdshot.mask != 0; }
+    bool is_bidir_dshot_enabled(const pwm_group& group) const { return (_bdshot.mask & group.ch_mask) != 0; }
+
+    static bool is_dshot_send_allowed(DshotState state) {
+      return state == DshotState::IDLE || state == DshotState::RECV_COMPLETE || state == DshotState::RECV_FAILED;
+    }
 
     // are all the ESCs returning data
     bool group_escs_active(const pwm_group& group) const {
@@ -658,12 +678,22 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(dmar_uint_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
+    // event to allow dshot cascading
+#if defined(HAL_TIM_UP_SHARED)
+    static const eventmask_t DSHOT_CASCADE = EVENT_MASK(16);
+#else
+    static const eventmask_t DSHOT_CASCADE = 0;
+#endif
+    static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
+    static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
+
     void dshot_send_groups(uint64_t time_out_us);
     void dshot_send(pwm_group &group, uint64_t time_out_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
+    sysinterval_t calc_ticks_remaining(pwm_group &group, uint64_t time_out_us, uint32_t output_period_us);
     void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(virtual_timer_t*, void *p);
@@ -671,7 +701,7 @@ private:
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
                          const uint16_t buffer_length, uint32_t pulse_time_us,
-                         bool is_dshot);
+                         bool at_least_freq);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
     static uint32_t protocol_bitrate(const enum output_mode mode);
@@ -682,15 +712,21 @@ private:
      */
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
-    static uint32_t bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t count);
+    static uint32_t bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count);
+    static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
     static void bdshot_finish_dshot_gcr_transaction(virtual_timer_t* vt, void *p);
     bool bdshot_setup_group_ic_DMA(pwm_group &group);
+    void bdshot_prepare_for_next_pulse(pwm_group& group);
     static void bdshot_receive_pulses_DMAR(pwm_group* group);
+    static void bdshot_receive_pulses_DMAR_f1(pwm_group* group);
+    static void bdshot_reset_pwm(pwm_group& group, uint8_t telem_channel);
+    static void bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel);
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
+    static void bdshot_config_icu_dshot_f1(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static uint32_t bdshot_get_output_rate_hz(const enum output_mode mode);
 
     /*

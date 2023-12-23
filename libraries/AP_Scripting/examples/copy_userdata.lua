@@ -1,7 +1,6 @@
 --[[
  An example of using the copy() method on userdata
 --]]
--- luacheck: only 0
 
 
 local loc1 = Location()
@@ -24,5 +23,5 @@ local v2 = v1:copy()
 v2:x(v2:x()+100)
 v2:y(v2:y()+300)
 
-local diff = v2 - v1
+diff = v2 - v1
 gcs:send_text(0,string.format("vdiff=(%.2f,%.2f)", diff:x(), diff:y()))

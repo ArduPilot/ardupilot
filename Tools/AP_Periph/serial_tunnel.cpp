@@ -58,7 +58,7 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
         uart_num = g.adsb_port;
     }
 #endif
-#if HAL_PROXIMITY_ENABLED
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     if (uart_num == -1) {
         uart_num = g.proximity_port;
     }
@@ -193,6 +193,7 @@ void AP_Periph_FW::send_serial_monitor_data()
         pkt.protocol.protocol = uart_monitor.protocol;
         pkt.buffer.len = n;
         pkt.baudrate = uart_monitor.baudrate;
+        pkt.serial_id = uart_monitor.uart_num;
         memcpy(pkt.buffer.data, buf, n);
 
         uint8_t buffer[UAVCAN_TUNNEL_TARGETTED_MAX_SIZE] {};

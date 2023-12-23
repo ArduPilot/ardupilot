@@ -19,6 +19,9 @@ public:
         uint32_t last_update_ms;    // last update time in milliseconds, determines whether active
         uint16_t types;             // telemetry types present
         uint16_t count;             // number of times updated
+
+        // return true if the data is stale
+        bool stale(uint32_t now_ms=0) const volatile;
     };
 
     struct RpmData {

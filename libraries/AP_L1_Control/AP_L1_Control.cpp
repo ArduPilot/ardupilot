@@ -240,7 +240,11 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 
     //Calculate groundspeed
     float groundSpeed = _groundspeed_vector.length();
-    if (groundSpeed < 0.1f) {
+
+    // check if we are moving in the direction of the front of the vehicle
+    const bool moving_forwards = fabsf(wrap_PI(_groundspeed_vector.angle() - get_yaw())) < M_PI_2;
+
+    if (groundSpeed < 0.1f || !moving_forwards) {
         // use a small ground speed vector in the right direction,
         // allowing us to use the compass heading at zero GPS velocity
         groundSpeed = 0.1f;

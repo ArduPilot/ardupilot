@@ -54,6 +54,8 @@ public:
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
+    uint32_t bw_in_bytes_per_second() const override;
+
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _console;

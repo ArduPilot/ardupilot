@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
     // @Param: FW_V_P
     // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Determines the propotion of the target acceleration based on the velocity error.
+    // @Description: Velocity (horizontal) P gain.  Determines the proportion of the target acceleration based on the velocity error.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
@@ -153,7 +153,7 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
     _flags.bad_rpm = false;
     _flags.bad_rpm_warning = false;
 
-    // Get current rpm and update healthly signal counters
+    // Get current rpm and update healthy signal counters
     _current_rpm = get_rpm(true);
 
     if (_unhealthy_rpm_counter <=30) {
@@ -220,7 +220,7 @@ float AC_Autorotation::get_rpm(bool update_counter)
         //Get RPM value
         uint8_t instance = _param_rpm_instance;
 
-        //Check RPM sesnor is returning a healthy status
+        //Check RPM sensor is returning a healthy status
         if (!rpm->get_rpm(instance, current_rpm) || current_rpm <= -1) {
             //unhealthy, rpm unreliable
             _flags.bad_rpm = true;
@@ -322,7 +322,7 @@ void AC_Autorotation::update_forward_speed_controller(void)
     _delta_speed_fwd = _speed_forward - _speed_forward_last; //(cm/s)
     _speed_forward_last = _speed_forward; //(cm/s)
 
-    // Limitng the target velocity based on the max acceleration limit
+    // Limiting the target velocity based on the max acceleration limit
     if (_cmd_vel < _vel_target) {
         _cmd_vel += _accel_max * _dt;
         if (_cmd_vel > _vel_target) {

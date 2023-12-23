@@ -5,6 +5,7 @@
 
 #if AP_GENERATOR_RICHENPOWER_ENABLED
 
+#include <AP_Logger/AP_Logger_config.h>
 #include <AP_Common/AP_Common.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -93,9 +94,11 @@ private:
         Mode        mode;
     };
 
+#if HAL_LOGGING_ENABLED
     // method and state to write and entry to the onboard log:
     void Log_Write();
     uint32_t last_logged_reading_ms;
+#endif
 
     struct Reading last_reading;
     uint32_t last_reading_ms;

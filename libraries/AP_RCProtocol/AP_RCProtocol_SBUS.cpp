@@ -88,7 +88,7 @@ AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted,
 
 // decode a full SBUS frame
 bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
-                                     bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values)
+                                     bool &sbus_failsafe, uint16_t max_values)
 {
     /* check frame boundary markers to avoid out-of-sync cases */
     if ((frame[0] != 0x0f)) {
@@ -97,7 +97,7 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
 
     uint16_t chancount = SBUS_INPUT_CHANNELS;
 
-    decode_11bit_channels((const uint8_t*)(&frame[1]), SBUS_INPUT_CHANNELS, values,
+    decode_11bit_channels((const uint8_t*)(&frame[1]), max_values, values,
         SBUS_TARGET_RANGE, SBUS_RANGE_RANGE, SBUS_SCALE_OFFSET);
 
     /* decode switch channels if data fields are wide enough */
@@ -113,11 +113,25 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     /* note the number of channels decoded */
     *num_values = chancount;
 
+    /*
+      as SBUS is such a weak protocol we additionally check if any of
+      the first 4 channels are at or below the minimum value of
+      875. We consider the frame as a failsafe in that case, which
+      means we log the data but won't use it
+     */
+    bool invalid_data = false;
+    for (uint8_t i=0; i<4; i++) {
+        if (values[i] <= SBUS_SCALE_OFFSET) {
+            invalid_data = true;
+        }
+    }
+
     /* decode and handle failsafe and frame-lost flags */
     if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
         /* report that we failed to read anything valid off the receiver */
-        *sbus_failsafe = true;
-        *sbus_frame_drop = true;
+        sbus_failsafe = true;
+    } else if (invalid_data) {
+        sbus_failsafe = true;
     } else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
         /* set a special warning flag
          *
@@ -125,11 +139,9 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
          * condition as fail-safe greatly reduces the reliability and range of the radio link,
          * e.g. by prematurely issuing return-to-launch!!! */
 
-        *sbus_failsafe = false;
-        *sbus_frame_drop = true;
+        sbus_failsafe = false;
     } else {
-        *sbus_failsafe = false;
-        *sbus_frame_drop = false;
+        sbus_failsafe = false;
     }
 
     return true;
@@ -181,9 +193,8 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
         uint16_t values[SBUS_INPUT_CHANNELS];
         uint16_t num_values=0;
         bool sbus_failsafe = false;
-        bool sbus_frame_drop = false;
         if (sbus_decode(byte_input.buf, values, &num_values,
-                        &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
+                        sbus_failsafe, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, sbus_failsafe);
         }

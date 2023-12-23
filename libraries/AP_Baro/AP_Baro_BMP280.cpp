@@ -127,7 +127,7 @@ bool AP_Baro_BMP280::_init()
 
 
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_BMP280::_timer(void)
 {
     uint8_t buf[6];

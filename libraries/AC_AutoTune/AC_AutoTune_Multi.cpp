@@ -1,3 +1,7 @@
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune_Multi.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -484,7 +488,7 @@ void AC_AutoTune_Multi::report_final_gains(AxisType test_axis) const
     }
 }
 
-// report gain formating helper
+// report gain formatting helper
 void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const
 {
     gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
@@ -1246,3 +1250,5 @@ uint32_t AC_AutoTune_Multi::get_testing_step_timeout_ms() const
     return AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
 }
 
+
+#endif  // AC_AUTOTUNE_ENABLED

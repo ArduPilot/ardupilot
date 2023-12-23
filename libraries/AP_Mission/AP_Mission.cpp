@@ -10,6 +10,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
+#include <RC_Channel/RC_Channel_config.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -89,7 +90,7 @@ void AP_Mission::init()
 
     // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
     if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Clearing Mission");
         clear();
     }
 
@@ -265,7 +266,7 @@ void AP_Mission::reset()
 }
 
 /// clear - clears out mission
-///     returns true if mission was running so it could not be cleared
+///     returns false if mission was running so it could not be cleared
 bool AP_Mission::clear()
 {
     // do not allow clearing the mission while it is running unless disarmed
@@ -378,6 +379,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -398,14 +400,16 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     }
 
     if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
     } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     }
 
     switch (cmd.id) {
+#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
         return start_command_do_aux_function(cmd);
+#endif
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
@@ -422,6 +426,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -536,7 +541,7 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 }
 
 // set_current_cmd - jumps to command specified by index
-bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
+bool AP_Mission::set_current_cmd(uint16_t index)
 {
     // read command to check for DO_LAND_START
     Mission_Command cmd;
@@ -544,10 +549,8 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
         _flags.in_landing_sequence = false;
     }
 
-    // mission command has been set and not as rewind command, don't track history.
-    if (!rewind) {
-        reset_wp_history();
-    }
+    // mission command has been set, don't track history.
+    reset_wp_history();
 
     // sanity check index and that we have a mission
     if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
@@ -1245,11 +1248,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.do_engine_control.start_control = (packet.param1>0);
         cmd.content.do_engine_control.cold_start = (packet.param2>0);
         cmd.content.do_engine_control.height_delay_cm = packet.param3*100;
+        cmd.content.do_engine_control.allow_disarmed_start = (((uint32_t)packet.param4) & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
         break;
 
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         cmd.p1 = packet.param1*100; // copy max-descend parameter (m->cm)
         break;
+#endif
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
         cmd.content.set_yaw_speed.angle_deg = packet.param1;        // target angle in degrees
@@ -1312,9 +1318,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_IMAGE_START_CAPTURE:
+        cmd.content.image_start_capture.instance = packet.param1;
         cmd.content.image_start_capture.interval_s = packet.param2;
         cmd.content.image_start_capture.total_num_images = packet.param3;
         cmd.content.image_start_capture.start_seq_number = packet.param4;
+        break;
+
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        cmd.p1 = packet.param1;
         break;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
@@ -1473,24 +1484,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     }
 
     return MAV_MISSION_ACCEPTED;
-}
-
-// mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
-// return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd)
-{
-    mavlink_mission_item_int_t miss_item = {0};
-
-    miss_item.param1 = packet.param1;
-    miss_item.param2 = packet.param2;
-    miss_item.param3 = packet.param3;
-    miss_item.param4 = packet.param4;
-
-    miss_item.command = packet.command;
-    miss_item.target_system = packet.target_system;
-    miss_item.target_component = packet.target_component;
-
-    return mavlink_int_to_mission_cmd(miss_item, cmd);
 }
 
 // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
@@ -1762,11 +1755,16 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.do_engine_control.start_control?1:0;
         packet.param2 = cmd.content.do_engine_control.cold_start?1:0;
         packet.param3 = cmd.content.do_engine_control.height_delay_cm*0.01f;
+        if (cmd.content.do_engine_control.allow_disarmed_start) {
+            packet.param4 = ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED;
+        }
         break;
 
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (cm->m)
         break;
+#endif
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
         packet.param1 = cmd.content.set_yaw_speed.angle_deg;        // target angle in degrees
@@ -1825,9 +1823,14 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_IMAGE_START_CAPTURE:
+        packet.param1 = cmd.content.image_start_capture.instance;
         packet.param2 = cmd.content.image_start_capture.interval_s;
         packet.param3 = cmd.content.image_start_capture.total_num_images;
         packet.param4 = cmd.content.image_start_capture.start_seq_number;
+        break;
+
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        packet.param1 = cmd.p1;
         break;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
@@ -1978,7 +1981,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             // check if the vehicle is resuming and has returned to where it was interrupted
             if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
                 // vehicle has resumed previous position
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
                 _flags.resuming_mission = false;
             }
 
@@ -2245,7 +2248,7 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
             if (send_gcs_msg) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             }
             return;
         } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
@@ -2340,12 +2343,12 @@ bool AP_Mission::jump_to_landing_sequence(void)
             resume();
         }
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing sequence start");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing sequence start");
         _flags.in_landing_sequence = true;
         return true;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
 
@@ -2386,11 +2389,11 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
 
         _flags.in_landing_sequence = false;
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Landing abort sequence start");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing abort sequence start");
         return true;
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
 
@@ -2448,7 +2451,7 @@ bool AP_Mission::is_best_land_sequence(void)
     // compare distances
     if (dist_via_do_land >= dist_continue_to_land) {
         // then the mission should carry on uninterrupted as that is the shorter distance
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Rejecting RTL: closer land if mis continued");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Rejecting RTL: closer land if mis continued");
         return true;
     } else {
         // allow failsafes to interrupt the current mission
@@ -2619,8 +2622,10 @@ const char *AP_Mission::Mission_Command::type() const
     case MAV_CMD_DO_GRIPPER:
         return "Gripper";
 #endif
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         return "PayloadPlace";
+#endif
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
     case MAV_CMD_DO_SPRAYER:
@@ -2653,6 +2658,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "GimbalPitchYaw";
     case MAV_CMD_IMAGE_START_CAPTURE:
         return "ImageStartCapture";
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        return "ImageStopCapture";
     case MAV_CMD_SET_CAMERA_ZOOM:
         return "SetCameraZoom";
     case MAV_CMD_SET_CAMERA_FOCUS:

@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "MissionItemProtocol.h"
 
 #include "GCS.h"
@@ -155,6 +159,7 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
                                                  const mavlink_mission_request_t &packet,
                                                  const mavlink_message_t &msg
@@ -198,6 +203,7 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
     // buffer space is checked by send_message
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
+#endif  // AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 
 void MissionItemProtocol::send_mission_item_warning()
 {
@@ -380,3 +386,5 @@ void MissionItemProtocol::update()
         link->send_message(next_item_ap_message_id());
     }
 }
+
+#endif  // HAL_GCS_ENABLED

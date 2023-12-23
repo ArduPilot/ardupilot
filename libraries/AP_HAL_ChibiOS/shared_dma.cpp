@@ -63,6 +63,11 @@ bool Shared_DMA::is_shared(uint8_t stream_id)
     return (stream_id < SHARED_DMA_MAX_STREAM_ID) && ((1U<<stream_id) & SHARED_DMA_MASK) != 0;
 }
 
+bool Shared_DMA::is_shared()
+{
+    return is_shared(stream_id1) || is_shared(stream_id2);
+}
+
 //remove any assigned deallocator or allocator
 void Shared_DMA::unregister()
 {

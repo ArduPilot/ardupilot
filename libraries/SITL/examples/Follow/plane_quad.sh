@@ -13,14 +13,14 @@ PLANE=$ROOTDIR/build/sitl/bin/arduplane
 }
 
 # setup for either TCP or multicast
-#UARTA="tcp:0"
-UARTA="mcast:"
+#SERIAL0="tcp:0"
+SERIAL0="mcast:"
 
 PLANE_DEFAULTS="$ROOTDIR/Tools/autotest/models/plane.parm"
 COPTER_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm"
 
 mkdir -p swarm/plane swarm/copter
-(cd swarm/plane && $PLANE --model plane --uartA $UARTA --defaults $PLANE_DEFAULTS) &
+(cd swarm/plane && $PLANE --model plane --serial0 $SERIAL0 --defaults $PLANE_DEFAULTS) &
 
 # create default parameter file for the follower
 cat <<EOF > swarm/copter/follow.parm
@@ -32,5 +32,5 @@ FOLL_SYSID 1
 FOLL_DIST_MAX 1000
 EOF
 
-(cd swarm/copter && $COPTER --model quad --uartA $UARTA --instance 1 --defaults $COPTER_DEFAULTS,follow.parm) &
+(cd swarm/copter && $COPTER --model quad --serial0 $SERIAL0 --instance 1 --defaults $COPTER_DEFAULTS,follow.parm) &
 wait

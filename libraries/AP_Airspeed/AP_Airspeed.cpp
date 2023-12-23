@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -156,7 +157,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
     // @Param: _OFF_PCNT
     // @DisplayName: Maximum offset cal speed error 
-    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibraions before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibrations before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
     // @Range: 0.0 10.0
     // @Units: %
     // @User: Advanced
@@ -435,6 +436,11 @@ void AP_Airspeed::allocate()
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
             break;
+        case TYPE_EXTERNAL:
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+            sensor[i] = new AP_Airspeed_External(*this, i);
+#endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -632,7 +638,7 @@ void AP_Airspeed::read(uint8_t i)
     if (!prev_healthy) {
         // if the previous state was not healthy then we should not
         // use an IIR filter, otherwise a bad reading will last for
-        // some time after the sensor becomees healthy again
+        // some time after the sensor becomes healthy again
         state[i].filtered_pressure = airspeed_pressure;
     } else {
         state[i].filtered_pressure = 0.7f * state[i].filtered_pressure + 0.3f * airspeed_pressure;
@@ -726,6 +732,24 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         if (sensor[i]) {
             sensor[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif 
+
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+/*
+  handle airspeed airspeed data
+ */
+void AP_Airspeed::handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt)
+{
+    if (!lib_enabled()) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (param[i].type == TYPE_EXTERNAL && sensor[i]) {
+            sensor[i]->handle_external(pkt);
         }
     }
 }

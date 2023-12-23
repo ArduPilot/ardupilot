@@ -162,6 +162,9 @@ public:
     // output_test_seq - disabled on heli, do nothing
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
 
+    // Helper function for param conversions to be done in motors class
+    virtual void heli_motors_param_conversions(void) { return; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -186,7 +189,10 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
 
     // update_motor_controls - sends commands to motor controllers
-    virtual void update_motor_control(RotorControlState state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) = 0;
+
+    // Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
+    AP_MotorsHeli_RSC::RotorControlState get_rotor_control_state() const;
 
     // run spool logic
     void                output_logic();

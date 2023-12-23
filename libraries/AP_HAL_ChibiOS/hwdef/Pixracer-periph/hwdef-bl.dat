@@ -50,8 +50,4 @@ PE15 MAG_CS CS
 PD0 CAN1_RX CAN1
 PD1 CAN1_TX CAN1
 
-define CAN_APP_NODE_NAME "org.ardupilot.Pixracer-periph"
-
-
-
 PB8 STAY_IN_BOOTLOADER INPUT FLOATING # if pulled low stay in bootloader

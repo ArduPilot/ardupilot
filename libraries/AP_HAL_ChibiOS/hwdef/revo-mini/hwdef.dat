@@ -129,3 +129,4 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 define HAL_GYROFFT_ENABLED 0
 
+include ../include/minimize_fpv_osd.inc

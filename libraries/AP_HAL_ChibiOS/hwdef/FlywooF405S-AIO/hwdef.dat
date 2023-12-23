@@ -151,4 +151,6 @@ define HAL_FRAME_TYPE_DEFAULT 12
 define DEFAULT_NTF_LED_TYPES 257
 
 # save some flash space
-include ../include/no_bootloader_DFU.inc
+include ../include/minimize_fpv_osd.inc
+
+AUTOBUILD_TARGETS Copter

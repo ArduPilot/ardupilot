@@ -536,19 +536,20 @@ def start_SITL(binary,
             cmd.extend(['--speedup', str(speedup)])
         if sim_rate_hz is not None:
             cmd.extend(['--rate', str(sim_rate_hz)])
-        if defaults_filepath is not None:
-            if type(defaults_filepath) == list:
-                defaults = [reltopdir(path) for path in defaults_filepath]
-                if len(defaults):
-                    cmd.extend(['--defaults', ",".join(defaults)])
-            else:
-                cmd.extend(['--defaults', reltopdir(defaults_filepath)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
-        cmd.append('--uartC=tcp:2')
+        cmd.append('--serial1=tcp:2')
         if not enable_fgview_output:
             cmd.append("--disable-fgview")
+
+    if defaults_filepath is not None:
+        if isinstance(defaults_filepath, list):
+            defaults = [reltopdir(path) for path in defaults_filepath]
+            if len(defaults):
+                cmd.extend(['--defaults', ",".join(defaults)])
+        else:
+            cmd.extend(['--defaults', reltopdir(defaults_filepath)])
 
     cmd.extend(customisations)
 
@@ -812,6 +813,14 @@ def load_local_module(fname):
         import imp
         ret = imp.load_source("local_module", fname)
     return ret
+
+
+def get_git_hash(short=False):
+    short_v = "--short=8 " if short else ""
+    githash = run_cmd(f'git rev-parse {short_v}HEAD', output=True, directory=reltopdir('.')).strip()
+    if sys.version_info.major >= 3:
+        githash = githash.decode('utf-8')
+    return githash
 
 
 if __name__ == "__main__":
