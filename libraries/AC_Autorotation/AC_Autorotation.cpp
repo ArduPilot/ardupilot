@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_cushion_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
 
-    // @Param: SOLIDITY
+    // @Param: ROT_SOL
     // @DisplayName: rotor solidity
     // @Description: helicopter specific main rotor solidity
     // @Range: 0.001 0.01
@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ROT_DIAM", 15, AC_Autorotation, _param_diameter, ROT_DIAMETER),
 
-    // @Param: time touchdown
+    // @Param: T_TCH
     // @DisplayName: time touchdown
     // @Description: time touchdown
     // @Units: s
