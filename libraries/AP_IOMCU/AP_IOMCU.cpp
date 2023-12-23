@@ -869,8 +869,13 @@ bool AP_IOMCU::check_crc(void)
         DEV_PRINTF("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
     }
 
+    // get IOMCU into the bootloader. We retry to maximise the chances
+    // of success
     const uint16_t magic = REBOOT_BL_MAGIC;
-    write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+    for (uint8_t i=0; i<16; i++) {
+        write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+        hal.scheduler->delay(1);
+    }
 
     // avoid internal error on fw upload delay
     last_reg_read_ms = 0;
