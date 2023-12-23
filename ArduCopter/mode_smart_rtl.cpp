@@ -118,7 +118,7 @@ void ModeSmartRTL::path_follow_run()
         } else if (path_follow_last_pop_fail_ms == 0) {
             // first time we've failed to pop off (ever, or after a success)
             path_follow_last_pop_fail_ms = AP_HAL::millis();
-        } else if (AP_HAL::millis() - path_follow_last_pop_fail_ms > 10000) {
+        } else if (AP_HAL::millis() - path_follow_last_pop_fail_ms > 10_s) {
             // we failed to pop a point off for 10 seconds.  This is
             // almost certainly a bug.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);

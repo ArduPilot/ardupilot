@@ -1034,7 +1034,7 @@ void ModeGuided::limit_init_time_and_pos()
 bool ModeGuided::limit_check()
 {
     // check if we have passed the timeout
-    if ((guided_limit.timeout_ms > 0) && (millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {
+    if ((guided_limit.timeout_ms > 0_ms) && (millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {
         return true;
     }
 
