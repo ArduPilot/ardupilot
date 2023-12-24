@@ -910,8 +910,6 @@ class ChibiOSHWDef(object):
 #endif
 #define CH_CFG_USE_MAILBOXES 1
 ''')
-        self.env_vars['USE_LWIP'] = 'yes'
-        self.build_flags.append('USE_LWIP=yes')
 
     def write_mcu_config(self, f):
         '''write MCU config defines'''
