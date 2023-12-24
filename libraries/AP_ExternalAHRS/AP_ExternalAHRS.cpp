@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav,2:MicroStrain5,7:MicroStrain7
+    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,7:MicroStrain7
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
