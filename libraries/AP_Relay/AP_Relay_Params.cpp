@@ -5,11 +5,11 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Relay function
     // @Description: The function the relay channel is mapped to.
-    // @Values: 0:None
-    // @Values: 1:Relay
+    // @Values{Copter, Rover, Plane, Blimp,Sub}: 0:None
+    // @Values{Copter, Rover, Plane, Blimp,Sub}: 1:Relay
     // @Values{Plane}: 2:Ignition
     // @Values{Plane, Copter}: 3:Parachute
-    // @Values: 4:Camera
+    // @Values{Copter, Rover, Plane, Blimp,Sub}: 4:Camera
     // @Values{Rover}: 5:Bushed motor reverse 1 throttle or throttle-left or omni motor 1
     // @Values{Rover}: 6:Bushed motor reverse 2 throttle-right or omni motor 2
     // @Values{Rover}: 7:Bushed motor reverse 3 omni motor 3
@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
 
     // @Param: DEFAULT
     // @DisplayName: Relay default state
-    // @Description: Should the relay default to on or off, this only applies to function Relay. All other uses will pick the appropriate default output state.
+    // @Description: Should the relay default to on or off, this only applies to RELAYx_FUNC "Relay" (1). All other uses will pick the appropriate default output state from within the controlling function's parameters.
     // @Values: 0: Off,1:On,2:NoChange
     // @User: Standard
     AP_GROUPINFO("DEFAULT", 3, AP_Relay_Params, default_state, (float)DefaultState::OFF),
