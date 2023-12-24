@@ -646,6 +646,8 @@ class sitl(Board):
             AP_BARO_PROBE_EXTERNAL_I2C_BUSES = 1,
         )
 
+        env.BOARD_CLASS = "SITL"
+
         cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
@@ -897,6 +899,8 @@ class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
     def configure_env(self, cfg, env):
+        env.BOARD_CLASS = "ESP32"
+
         def expand_path(p):
             print("USING EXPRESSIF IDF:"+str(env.idf))
             return cfg.root.find_dir(env.IDF+p).abspath()
@@ -988,6 +992,7 @@ class chibios(Board):
 
         cfg.load('chibios')
         env.BOARD = self.name
+        env.BOARD_CLASS = "ChibiOS"
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
@@ -1228,6 +1233,8 @@ class linux(Board):
         if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
+
+        env.BOARD_CLASS = "LINUX"
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
