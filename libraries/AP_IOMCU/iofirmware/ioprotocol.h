@@ -37,6 +37,7 @@ enum iocode {
     // read types
     CODE_READ = 0,
     CODE_WRITE = 1,
+    CODE_NOOP = 2,
 
     // reply codes
     CODE_SUCCESS = 0,
