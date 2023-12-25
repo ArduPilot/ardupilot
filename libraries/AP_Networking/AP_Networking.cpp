@@ -19,7 +19,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <lwipopts.h>
 #include <errno.h>
-#include <lwip/sockets.h>
 
 
 #include <AP_HAL/utility/Socket.h>
@@ -183,9 +182,10 @@ void AP_Networking::announce_address_changes()
         return;
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: IP      %s", get_ip_active_str());
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Mask    %s", get_netmask_active_str());
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Gateway %s", get_gateway_active_str());
+    char ipstr[16];
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: IP      %s", SocketAPM::inet_addr_to_str(get_ip_active(), ipstr, sizeof(ipstr)));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Mask    %s", SocketAPM::inet_addr_to_str(get_netmask_active(), ipstr, sizeof(ipstr)));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Gateway %s", SocketAPM::inet_addr_to_str(get_gateway_active(), ipstr, sizeof(ipstr)));
 
     announce_ms = as.last_change_ms;
 }
@@ -221,21 +221,6 @@ uint8_t AP_Networking::convert_netmask_ip_to_bitcount(const uint32_t netmask_ip)
         netmask_bitcount++;
     }
     return netmask_bitcount;
-}
-
-uint32_t AP_Networking::convert_str_to_ip(const char* ip_str)
-{
-    uint32_t ip = 0;
-    lwip_inet_pton(AF_INET, ip_str, &ip);
-    return ntohl(ip);
-}
-
-const char* AP_Networking::convert_ip_to_str(uint32_t ip)
-{
-    ip = htonl(ip);
-    static char _str_buffer[20];
-    lwip_inet_ntop(AF_INET, &ip, _str_buffer, sizeof(_str_buffer));
-    return _str_buffer;
 }
 
 /*
