@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_MAX_PRIORITY          20
 #define APM_LINUX_TIMER_PRIORITY        15
 #define APM_LINUX_UART_PRIORITY         14
+#define APM_LINUX_NET_PRIORITY          14
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
@@ -385,6 +386,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
         { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
+        { PRIORITY_NET, APM_LINUX_NET_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
