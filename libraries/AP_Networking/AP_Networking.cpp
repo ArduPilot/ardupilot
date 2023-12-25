@@ -24,10 +24,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <AP_HAL/utility/Socket.h>
 
-#if AP_NETWORKING_BACKEND_SLIP
-#include "AP_Networking_SLIP.h"
-#endif
-
 #if AP_NETWORKING_BACKEND_PPP
 #include "AP_Networking_PPP.h"
 #endif
@@ -137,12 +133,6 @@ void AP_Networking::init()
 #if AP_NETWORKING_BACKEND_PPP
     if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
         backend = new AP_Networking_PPP(*this);
-    }
-#endif
-
-#if AP_NETWORKING_BACKEND_SLIP
-    if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_SLIP, 0)) {
-        backend = new AP_Networking_SLIP(*this);
     }
 #endif
 
