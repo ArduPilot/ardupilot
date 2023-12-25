@@ -14,13 +14,13 @@ extern const AP_HAL::HAL& hal;
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
 #include "AP_Networking_ChibiOS.h"
-#include "AP_Networking_SLIP.h"
-#include "AP_Networking_PPP.h"
 #include <hal_mii.h>
-#include <lwip/sockets.h>
-#else
-#include <arpa/inet.h>
 #endif
+
+#include <lwipopts.h>
+#include <errno.h>
+#include <lwip/sockets.h>
+
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -179,9 +179,6 @@ void AP_Networking::init()
 
     // init network mapped serialmanager ports
     ports_init();
-
-    // register sendfile handler
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Networking::sendfile_check, void));
 }
 
 /*
@@ -239,7 +236,7 @@ uint8_t AP_Networking::convert_netmask_ip_to_bitcount(const uint32_t netmask_ip)
 uint32_t AP_Networking::convert_str_to_ip(const char* ip_str)
 {
     uint32_t ip = 0;
-    inet_pton(AF_INET, ip_str, &ip);
+    lwip_inet_pton(AF_INET, ip_str, &ip);
     return ntohl(ip);
 }
 
@@ -247,7 +244,7 @@ const char* AP_Networking::convert_ip_to_str(uint32_t ip)
 {
     ip = htonl(ip);
     static char _str_buffer[20];
-    inet_ntop(AF_INET, &ip, _str_buffer, sizeof(_str_buffer));
+    lwip_inet_ntop(AF_INET, &ip, _str_buffer, sizeof(_str_buffer));
     return _str_buffer;
 }
 
@@ -326,6 +323,14 @@ bool AP_Networking::sendfile(SocketAPM *sock, int fd)
             return false;
         }
     }
+    if (!sendfile_thread_started) {
+        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::sendfile_check, void),
+                                          "sendfile",
+                                          2048, AP_HAL::Scheduler::PRIORITY_UART, 0)) {
+            return false;
+        }
+        sendfile_thread_started = true;
+    }
     for (auto &s : sendfiles) {
         if (s.sock == nullptr) {
             s.sock = sock->duplicate();
@@ -352,36 +357,36 @@ void AP_Networking::SendFile::close(void)
  */
 void AP_Networking::sendfile_check(void)
 {
-    if (sendfile_buf == nullptr) {
-        return;
-    }
-    WITH_SEMAPHORE(sem);
-    bool none_active = true;
-    for (auto &s : sendfiles) {
-        if (s.sock == nullptr) {
-            continue;
+    while (true) {
+        hal.scheduler->delay(1);
+        WITH_SEMAPHORE(sem);
+        bool none_active = true;
+        for (auto &s : sendfiles) {
+            if (s.sock == nullptr) {
+                continue;
+            }
+            none_active = false;
+            if (!s.sock->pollout(0)) {
+                continue;
+            }
+            const auto nread = AP::FS().read(s.fd, sendfile_buf, AP_NETWORKING_SENDFILE_BUFSIZE);
+            if (nread <= 0) {
+                s.close();
+                continue;
+            }
+            const auto nsent = s.sock->send(sendfile_buf, nread);
+            if (nsent <= 0) {
+                s.close();
+                continue;
+            }
+            if (nsent < nread) {
+                AP::FS().lseek(s.fd, nsent - nread, SEEK_CUR);
+            }
         }
-        none_active = false;
-        if (!s.sock->pollout(0)) {
-            continue;
+        if (none_active) {
+            free(sendfile_buf);
+            sendfile_buf = nullptr;
         }
-        const auto nread = AP::FS().read(s.fd, sendfile_buf, AP_NETWORKING_SENDFILE_BUFSIZE);
-        if (nread <= 0) {
-            s.close();
-            continue;
-        }
-        const auto nsent = s.sock->send(sendfile_buf, nread);
-        if (nsent <= 0) {
-            s.close();
-            continue;
-        }
-        if (nsent < nread) {
-            AP::FS().lseek(s.fd, nsent - nread, SEEK_CUR);
-        }
-    }
-    if (none_active) {
-        free(sendfile_buf);
-        sendfile_buf = nullptr;
     }
 }
 
@@ -400,19 +405,18 @@ AP_Networking &network()
  */
 int ap_networking_printf(const char *fmt, ...)
 {
-#if AP_NETWORKING_LWIP_DEBUG_PORT >= 0
-    static AP_HAL::UARTDriver *uart;
-    if (uart == nullptr) {
-        uart = hal.serial(AP_NETWORKING_LWIP_DEBUG_PORT);
-        if (uart == nullptr) {
+    WITH_SEMAPHORE(AP::network().get_semaphore());
+#ifdef AP_NETWORKING_LWIP_DEBUG_FILE
+    static int fd = -1;
+    if (fd == -1) {
+        fd = AP::FS().open(AP_NETWORKING_LWIP_DEBUG_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd == -1) {
             return -1;
         }
-        uart->begin(AP_NETWORKING_LWIP_DEBUG_BAUD, 1000, 50000);
     }
-    uart->begin(0);
     va_list ap;
     va_start(ap, fmt);
-    uart->vprintf(fmt, ap);
+    vdprintf(fd, fmt, ap);
     va_end(ap);
 #else
     va_list ap;
@@ -422,5 +426,12 @@ int ap_networking_printf(const char *fmt, ...)
 #endif
     return 0;
 }
+
+#ifdef LWIP_PLATFORM_ASSERT
+void ap_networking_platform_assert(const char *msg, int line, const char *file)
+{
+    AP_HAL::panic("LWIP: %s: %s:%u", msg, file, line);
+}
+#endif
 
 #endif // AP_NETWORKING_ENABLED
