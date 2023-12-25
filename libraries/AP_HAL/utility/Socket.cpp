@@ -74,7 +74,12 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
 
 SocketAPM::~SocketAPM()
 {
-    close();
+    if (fd != -1) {
+        CALL_PREFIX(close)(fd);
+    }
+    if (fd_in != -1) {
+        CALL_PREFIX(close)(fd_in);
+    }
 }
 
 void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
@@ -86,7 +91,7 @@ void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockadd
 #endif
     sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(address);
+    sockaddr.sin_addr.s_addr = htonl(inet_str_to_addr(address));
 }
 
 /*
@@ -360,7 +365,7 @@ const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint
 {
     const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
 
-    const char *ret = inet_addr_to_str((void*)&sin.sin_addr, ip_addr_buf, buflen);
+    const char *ret = inet_addr_to_str(ntohl(sin.sin_addr.s_addr), ip_addr_buf, buflen);
     if (ret == nullptr) {
         return nullptr;
     }
@@ -503,9 +508,20 @@ SocketAPM *SocketAPM::duplicate(void)
     return ret;
 }
 
-const char *SocketAPM::inet_addr_to_str(const void *src, char *dst, uint16_t len)
+// access to inet_ntop, takes host order ipv4 as uint32_t
+const char *SocketAPM::inet_addr_to_str(uint32_t addr, char *dst, uint16_t len)
 {
-    return CALL_PREFIX(inet_ntop)(AF_INET, src, dst, len);
+    addr = htonl(addr);
+    return CALL_PREFIX(inet_ntop)(AF_INET, (void*)&addr, dst, len);
+}
+
+// access to inet_pton, returns host order ipv4 as uint32_t
+uint32_t SocketAPM::inet_str_to_addr(const char *ipstr)
+{
+    uint32_t ret = 0;
+    CALL_PREFIX(inet_pton)(AF_INET, ipstr, &ret);
+    return ntohl(ret);
+
 }
 
 #endif // AP_NETWORKING_BACKEND_ANY
