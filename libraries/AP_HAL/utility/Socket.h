@@ -76,8 +76,11 @@ public:
     }
 
     // access to inet_ntop
-    static const char *inet_addr_to_str(const void *src, char *dst, uint16_t len);
+    static const char *inet_addr_to_str(uint32_t addr, char *dst, uint16_t len);
 
+    // access to inet_pton
+    static uint32_t inet_str_to_addr(const char *ipstr);
+    
 private:
     bool datagram;
     // we avoid using struct sockaddr_in here to keep support for
