@@ -45,6 +45,11 @@ public:
         return singleton;
     }
 
+    HAL_Semaphore &get_semaphore(void)
+    {
+        return sem;
+    }
+    
     // Networking interface is enabled and initialized
     bool is_healthy() const
     {
@@ -325,6 +330,7 @@ private:
 
     uint8_t *sendfile_buf;
     void sendfile_check(void);
+    bool sendfile_thread_started;
 
     void ports_init(void);
 };
