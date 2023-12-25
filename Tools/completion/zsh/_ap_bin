@@ -17,7 +17,7 @@ _ap_bin() {
     '(-M --model)'{-M,--model}'[set simulation model]' \
     '--config[set additional simulation config string]:CONFIG' \
     '(-F --fg)'{-F,--fg}'[set Flight Gear view address, defaults to 127.0.0.1]:ADDRESS' \
-    '--disable-fgview[disable Flight Gear view]' \
+    '--enable-fgview[disable Flight Gear view]' \
     '--gimbal[enable simulated MAVLink gimbal]' \
     '--autotest-dir[set directory for additional files]:DIR:' \
     '--defaults[set path to defaults file]:PATH:' \
