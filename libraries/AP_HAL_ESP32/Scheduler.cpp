@@ -164,8 +164,9 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_RCIN, RCIN_PRIO},
         { PRIORITY_IO, IO_PRIO},
         { PRIORITY_UART, UART_PRIO},
+        { PRIORITY_NET, WIFI_PRIO1},
         { PRIORITY_STORAGE, STORAGE_PRIO},
-        { PRIORITY_SCRIPTING, IO_PRIO},
+        { PRIORITY_SCRIPTING, UART_PRIO},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
