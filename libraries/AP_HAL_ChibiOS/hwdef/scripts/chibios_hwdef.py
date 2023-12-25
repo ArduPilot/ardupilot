@@ -903,6 +903,16 @@ class ChibiOSHWDef(object):
         raise ValueError("Unable to map (%s) to a board ID using %s" %
                          (some_id, board_types_filepath))
 
+    def enable_networking(self, f):
+        f.write('''
+#ifndef AP_NETWORKING_ENABLED
+#define AP_NETWORKING_ENABLED 1
+#endif
+#define CH_CFG_USE_MAILBOXES 1
+''')
+        self.env_vars['USE_LWIP'] = 'yes'
+        self.build_flags.append('USE_LWIP=yes')
+
     def write_mcu_config(self, f):
         '''write MCU config defines'''
         f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(args.hwdef[0])))
@@ -965,17 +975,12 @@ class ChibiOSHWDef(object):
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
         if 'ETH1' in self.bytype:
-            self.build_flags.append('USE_LWIP=yes')
+            self.enable_networking(f)
             f.write('''
 
-#ifndef AP_NETWORKING_ENABLED
-// Configure for Ethernet support
-#define AP_NETWORKING_ENABLED               1
-#define CH_CFG_USE_MAILBOXES                TRUE
 #define HAL_USE_MAC                         TRUE
 #define MAC_USE_EVENTS                      TRUE
 #define STM32_ETH_BUFFERS_EXTERN
-#endif
 
 ''')
 
@@ -1028,7 +1033,12 @@ class ChibiOSHWDef(object):
                 # extract numerical defines for processing by other parts of the script
                 result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', d)
                 if result:
-                    self.intdefines[result.group(1)] = int(result.group(2))
+                    define = result.group(1)
+                    value = int(result.group(2))
+                    self.intdefines[define] = value
+                    if define == 'AP_NETWORKING_ENABLED' and value == 1:
+                        self.enable_networking(f)
+
 
         if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
             self.build_flags.append('USE_USB_MSD=yes')
