@@ -6,7 +6,6 @@
 #include "AP_Networking_PPP.h"
 #include <GCS_MAVLink/GCS.h>
 
-#include <lwipthread.h>
 #include <lwip/udp.h>
 #include <lwip/ip_addr.h>
 #include <netif/ppp/ppp_opts.h>
@@ -17,6 +16,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 /*
   uint32_t timestamp in smallest available units
  */
@@ -24,6 +24,15 @@ uint32_t sys_jiffies(void)
 {
     return AP_HAL::micros();
 }
+#endif
+
+#if LWIP_TCPIP_CORE_LOCKING
+#define LWIP_TCPIP_LOCK() sys_lock_tcpip_core()
+#define LWIP_TCPIP_UNLOCK() sys_unlock_tcpip_core()
+#else
+#define LWIP_TCPIP_LOCK()
+#define LWIP_TCPIP_UNLOCK()
+#endif
 
 /*
   output some data to the uart
@@ -39,8 +48,6 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
         if (n > 0) {
             remaining -= n;
             ptr += n;
-        } else {
-            hal.scheduler->delay_microseconds(100);
         }
     }
     return len;
@@ -137,24 +144,26 @@ bool AP_Networking_PPP::init()
     }
 
     // initialise TCP/IP thread
+    LWIP_TCPIP_LOCK();
     tcpip_init(NULL, NULL);
+    LWIP_TCPIP_UNLOCK();
+
     hal.scheduler->delay(100);
     
     // create ppp connection
+    LWIP_TCPIP_LOCK();
+
     ppp = pppos_create(pppif, ppp_output_cb, ppp_status_callback, this);
     if (ppp == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: failed to create link");
         return false;
     }
-
-    // connect and set as default route
-    ppp_connect(ppp, 0);
-    netif_set_default(pppif);
+    LWIP_TCPIP_UNLOCK();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: started");
     hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking_PPP::ppp_loop, void),
                                  "ppp",
-                                 8192, AP_HAL::Scheduler::PRIORITY_UART, 0);
+                                 2048, AP_HAL::Scheduler::PRIORITY_UART, 0);
 
     return true;
 }
@@ -164,6 +173,17 @@ bool AP_Networking_PPP::init()
  */
 void AP_Networking_PPP::ppp_loop(void)
 {
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay_microseconds(1000);
+    }
+    
+    // connect and set as default route
+    LWIP_TCPIP_LOCK();
+    ppp_connect(ppp, 0);
+
+    netif_set_default(pppif);
+    LWIP_TCPIP_UNLOCK();
+
     // ensure this thread owns the uart
     uart->begin(0);
 
@@ -171,9 +191,12 @@ void AP_Networking_PPP::ppp_loop(void)
         uint8_t buf[1024];
         auto n = uart->read(buf, sizeof(buf));
         if (n > 0) {
+            LWIP_TCPIP_LOCK();
             pppos_input(ppp, buf, n);
-        } else {
+            LWIP_TCPIP_UNLOCK();
             hal.scheduler->delay_microseconds(100);
+        } else {
+            hal.scheduler->delay_microseconds(1000);
         }
     }
 }
