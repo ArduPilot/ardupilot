@@ -180,6 +180,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable OS level thread statistics.')
+
+    g.add_option('--enable-ppp',
+        action='store_true',
+        default=False,
+        help='enable PPP networking.')
     
     g.add_option('--bootloader',
         action='store_true',
