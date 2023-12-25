@@ -148,6 +148,9 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
+        if cfg.options.enable_ppp:
+            env.CXXFLAGS += ['-DAP_NETWORKING_BACKEND_PPP=1']
+
         if cfg.options.disable_networking:
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
 
