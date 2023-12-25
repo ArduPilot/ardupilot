@@ -177,8 +177,10 @@ public:
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
         Ainstein_LR_D1 = 42,
 #endif
-#if AP_RANGEFINDER_SIM_ENABLED
+#if AP_RANGEFINDER_RDS02UF_ENABLED
         RDS02UF = 43,
+#endif
+#if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
 #endif
     };
