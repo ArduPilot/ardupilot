@@ -687,7 +687,8 @@ class sitl(Board):
             '-Werror=missing-declarations',
         ]
 
-        if not cfg.options.disable_networking:
+        if not cfg.options.disable_networking and not 'clang' in cfg.env.COMPILER_CC:
+            # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
         
         if cfg.options.ubsan or cfg.options.ubsan_abort:
