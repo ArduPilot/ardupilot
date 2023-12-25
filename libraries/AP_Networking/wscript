@@ -5,26 +5,20 @@ import pathlib
 
 def configure(cfg):
     extra_src = [
-        'modules/ChibiOS/ext/lwip/src/core/*c',
-        'modules/ChibiOS/ext/lwip/src/core/ipv4/*c',
-        'modules/ChibiOS/ext/lwip/src/api/*c',
-        'modules/ChibiOS/ext/lwip/src/netif/*c',
-        'modules/ChibiOS/ext/lwip/src/netif/ppp/*c',
+        'modules/lwip/src/core/*c',
+        'modules/lwip/src/core/ipv4/*c',
+        'modules/lwip/src/api/*c',
+        'modules/lwip/src/netif/*c',
+        'modules/lwip/src/netif/ppp/*c',
     ]
 
     extra_src_inc = [
-        'modules/ChibiOS/ext/lwip/src/include',
+        'modules/lwip/src/include',
     ]
 
-    if cfg.env.BOARD_CLASS == "SITL":
-        extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/*cpp'])
-        extra_src_inc.extend(['libraries/AP_Networking/config',
-                              'libraries/AP_Networking/lwip_hal/include'])
-
-    if cfg.env.BOARD_CLASS == "ChibiOS":
-        extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/*cpp'])
-        extra_src_inc.extend(['libraries/AP_Networking/config',
-                              'libraries/AP_Networking/lwip_hal/include'])
+    extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/*cpp'])
+    extra_src_inc.extend(['libraries/AP_Networking/config',
+                          'libraries/AP_Networking/lwip_hal/include'])
 
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_Networking'] = []
     for pattern in extra_src:
