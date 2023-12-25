@@ -12,19 +12,10 @@
 #include <netif/ppp/pppapi.h>
 #include <netif/ppp/pppos.h>
 #include <lwip/tcpip.h>
+#include <stdio.h>
 
 
 extern const AP_HAL::HAL& hal;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-/*
-  uint32_t timestamp in smallest available units
- */
-uint32_t sys_jiffies(void)
-{
-    return AP_HAL::micros();
-}
-#endif
 
 #if LWIP_TCPIP_CORE_LOCKING
 #define LWIP_TCPIP_LOCK() sys_lock_tcpip_core()
@@ -42,7 +33,7 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     auto &driver = *(AP_Networking_PPP *)ctx;
     LWIP_UNUSED_ARG(pcb);
     uint32_t remaining = len;
-    uint8_t *ptr = const_cast<uint8_t*>((const uint8_t *)data);
+    const uint8_t *ptr = (const uint8_t *)data;
     while (remaining > 0) {
         auto n = driver.uart->write(ptr, remaining);
         if (n > 0) {
@@ -132,12 +123,12 @@ void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, voi
  */
 bool AP_Networking_PPP::init()
 {
-    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_PPP, 0);
+    auto &sm = AP::serialmanager();
+    uart = sm.find_serial(AP_SerialManager::SerialProtocol_PPP, 0);
     if (uart == nullptr) {
         return false;
     }
-    uart->set_unbuffered_writes(true);
-    
+
     pppif = new netif;
     if (pppif == nullptr) {
         return false;
@@ -163,7 +154,7 @@ bool AP_Networking_PPP::init()
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: started");
     hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking_PPP::ppp_loop, void),
                                  "ppp",
-                                 2048, AP_HAL::Scheduler::PRIORITY_UART, 0);
+                                 2048, AP_HAL::Scheduler::PRIORITY_NET, 0);
 
     return true;
 }
@@ -186,6 +177,7 @@ void AP_Networking_PPP::ppp_loop(void)
 
     // ensure this thread owns the uart
     uart->begin(0);
+    uart->set_unbuffered_writes(true);
 
     while (true) {
         uint8_t buf[1024];
@@ -194,9 +186,8 @@ void AP_Networking_PPP::ppp_loop(void)
             LWIP_TCPIP_LOCK();
             pppos_input(ppp, buf, n);
             LWIP_TCPIP_UNLOCK();
-            hal.scheduler->delay_microseconds(100);
         } else {
-            hal.scheduler->delay_microseconds(1000);
+            hal.scheduler->delay_microseconds(200);
         }
     }
 }
