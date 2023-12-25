@@ -540,8 +540,8 @@ def start_SITL(binary,
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
         cmd.append('--serial1=tcp:2')
-        if not enable_fgview_output:
-            cmd.append("--disable-fgview")
+        if enable_fgview_output:
+            cmd.append("--enable-fgview")
 
     if defaults_filepath is not None:
         if isinstance(defaults_filepath, list):
