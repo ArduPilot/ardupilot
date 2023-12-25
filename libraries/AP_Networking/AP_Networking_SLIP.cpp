@@ -6,7 +6,6 @@
 #include "AP_Networking_SLIP.h"
 #include <GCS_MAVLink/GCS.h>
 
-#include <lwipthread.h>
 #include <lwip/udp.h>
 #include <lwip/ip_addr.h>
 #include <lwip/sio.h>
