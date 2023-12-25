@@ -1,5 +1,10 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
+// allow --enable-ppp to enable networking
+#define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
+#endif
+
 #ifndef AP_NETWORKING_ENABLED
 #define AP_NETWORKING_ENABLED 0
 #endif
