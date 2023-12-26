@@ -1,7 +1,11 @@
 #pragma once
 
+#include <AP_HAL/utility/Socket_native.h>
 #include "SerialDevice.h"
-#include <AP_HAL/utility/Socket.h>
+
+#ifndef AP_SOCKET_NATIVE_ENABLED
+#error "need native"
+#endif
 
 class TCPServerDevice: public SerialDevice {
 public:

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RCInput.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include "RCInput_UDP_Protocol.h"
 
 #define RCINPUT_UDP_DEF_PORT 777
