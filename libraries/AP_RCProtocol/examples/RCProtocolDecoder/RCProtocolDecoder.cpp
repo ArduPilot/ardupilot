@@ -34,7 +34,7 @@ void loop();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
