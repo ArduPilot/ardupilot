@@ -20,7 +20,14 @@
 #include <AP_Networking/AP_Networking_Config.h>
 #if AP_NETWORKING_SOCKETS_ENABLED
 
-#include "Socket.h"
+#ifndef SOCKET_CLASS_NAME
+#define SOCKET_CLASS_NAME SocketAPM
+#endif
+
+#ifndef IN_SOCKET_NATIVE_CPP
+#include "Socket.hpp"
+#endif
+
 #if AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP
 #include <lwip/sockets.h>
 #else
@@ -47,19 +54,17 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-static_assert(sizeof(last_in_addr) == sizeof(struct sockaddr_in), "last_in_addr must match sockaddr_in size");
-
 /*
   constructor
  */
-SocketAPM::SocketAPM(bool _datagram) :
-    SocketAPM(_datagram, 
+SOCKET_CLASS_NAME::SOCKET_CLASS_NAME(bool _datagram) :
+    SOCKET_CLASS_NAME(_datagram,
               CALL_PREFIX(socket)(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
 {
-    static_assert(sizeof(SocketAPM::last_in_addr) >= sizeof(struct sockaddr_in), "last_in_addr must be at least sockaddr_in size");
+    static_assert(sizeof(SOCKET_CLASS_NAME::last_in_addr) >= sizeof(struct sockaddr_in), "last_in_addr must be at least sockaddr_in size");
 }
 
-SocketAPM::SocketAPM(bool _datagram, int _fd) :
+SOCKET_CLASS_NAME::SOCKET_CLASS_NAME(bool _datagram, int _fd) :
     datagram(_datagram),
     fd(_fd)
 {
@@ -72,7 +77,7 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
     }
 }
 
-SocketAPM::~SocketAPM()
+SOCKET_CLASS_NAME::~SOCKET_CLASS_NAME()
 {
     if (fd != -1) {
         CALL_PREFIX(close)(fd);
@@ -82,7 +87,7 @@ SocketAPM::~SocketAPM()
     }
 }
 
-void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
+void SOCKET_CLASS_NAME::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
     memset(&sockaddr, 0, sizeof(sockaddr));
 
@@ -97,7 +102,7 @@ void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockadd
 /*
   connect the socket
  */
-bool SocketAPM::connect(const char *address, uint16_t port)
+bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
 {
     if (fd == -1) {
         return false;
@@ -184,7 +189,7 @@ fail_multi:
 /*
   connect the socket with a timeout
  */
-bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms)
+bool SOCKET_CLASS_NAME::connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms)
 {
     if (fd == -1) {
         return false;
@@ -218,7 +223,7 @@ bool SocketAPM::connect_timeout(const char *address, uint16_t port, uint32_t tim
 /*
   bind the socket
  */
-bool SocketAPM::bind(const char *address, uint16_t port)
+bool SOCKET_CLASS_NAME::bind(const char *address, uint16_t port)
 {
     if (fd == -1) {
         return false;
@@ -237,7 +242,7 @@ bool SocketAPM::bind(const char *address, uint16_t port)
 /*
   set SO_REUSEADDR
  */
-bool SocketAPM::reuseaddress(void) const
+bool SOCKET_CLASS_NAME::reuseaddress(void) const
 {
     if (fd == -1) {
         return false;
@@ -249,7 +254,7 @@ bool SocketAPM::reuseaddress(void) const
 /*
   set blocking state
  */
-bool SocketAPM::set_blocking(bool blocking) const
+bool SOCKET_CLASS_NAME::set_blocking(bool blocking) const
 {
     if (fd == -1) {
         return false;
@@ -272,7 +277,7 @@ bool SocketAPM::set_blocking(bool blocking) const
 /*
   set cloexec state
  */
-bool SocketAPM::set_cloexec() const
+bool SOCKET_CLASS_NAME::set_cloexec() const
 {
     if (fd == -1) {
         return false;
@@ -287,7 +292,7 @@ bool SocketAPM::set_cloexec() const
 /*
   send some data
  */
-ssize_t SocketAPM::send(const void *buf, size_t size) const
+ssize_t SOCKET_CLASS_NAME::send(const void *buf, size_t size) const
 {
     if (fd == -1) {
         return -1;
@@ -298,7 +303,7 @@ ssize_t SocketAPM::send(const void *buf, size_t size) const
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SOCKET_CLASS_NAME::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
     if (fd == -1) {
         return -1;
@@ -311,7 +316,7 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
 /*
   receive some data
  */
-ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
+ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
         errno = EWOULDBLOCK;
@@ -351,7 +356,7 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 /*
   return the IP address and port of the last received packet
  */
-void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
+void SOCKET_CLASS_NAME::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
     static char buf[16];
     auto *str = last_recv_address(buf, sizeof(buf), port);
@@ -361,7 +366,7 @@ void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
 /*
   return the IP address and port of the last received packet, using caller supplied buffer
  */
-const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const
+const char *SOCKET_CLASS_NAME::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint16_t &port) const
 {
     const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
 
@@ -373,7 +378,7 @@ const char *SocketAPM::last_recv_address(char *ip_addr_buf, uint8_t buflen, uint
     return ret;
 }
 
-void SocketAPM::set_broadcast(void) const
+void SOCKET_CLASS_NAME::set_broadcast(void) const
 {
     if (fd == -1) {
         return;
@@ -385,7 +390,7 @@ void SocketAPM::set_broadcast(void) const
 /*
   return true if there is pending data for input
  */
-bool SocketAPM::pollin(uint32_t timeout_ms)
+bool SOCKET_CLASS_NAME::pollin(uint32_t timeout_ms)
 {
     fd_set fds;
     struct timeval tv;
@@ -410,7 +415,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
 /*
   return true if there is room for output data
  */
-bool SocketAPM::pollout(uint32_t timeout_ms)
+bool SOCKET_CLASS_NAME::pollout(uint32_t timeout_ms)
 {
     if (fd == -1) {
         return false;
@@ -433,7 +438,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
 /* 
    start listening for new tcp connections
  */
-bool SocketAPM::listen(uint16_t backlog) const
+bool SOCKET_CLASS_NAME::listen(uint16_t backlog) const
 {
     if (fd == -1) {
         return false;
@@ -445,7 +450,7 @@ bool SocketAPM::listen(uint16_t backlog) const
   accept a new connection. Only valid for TCP connections after
   listen has been used. A new socket is returned
 */
-SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
+SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::accept(uint32_t timeout_ms)
 {
     if (fd == -1) {
         return nullptr;
@@ -460,7 +465,7 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    auto *ret = new SocketAPM(false, newfd);
+    auto *ret = new SOCKET_CLASS_NAME(false, newfd);
     if (ret != nullptr) {
         ret->connected = true;
         ret->reuseaddress();
@@ -471,7 +476,7 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
 /*
   return true if an address is in the multicast range
  */
-bool SocketAPM::is_multicast_address(struct sockaddr_in &addr) const
+bool SOCKET_CLASS_NAME::is_multicast_address(struct sockaddr_in &addr) const
 {
     const uint32_t mc_lower = 0xE0000000; // 224.0.0.0
     const uint32_t mc_upper = 0xEFFFFFFF; // 239.255.255.255
@@ -479,7 +484,7 @@ bool SocketAPM::is_multicast_address(struct sockaddr_in &addr) const
     return haddr >= mc_lower && haddr <= mc_upper;
 }
 
-void SocketAPM::close(void)
+void SOCKET_CLASS_NAME::close(void)
 {
     if (fd != -1) {
         CALL_PREFIX(close)(fd);
@@ -495,9 +500,9 @@ void SocketAPM::close(void)
   duplicate a socket, giving a new object with the same contents,
   the fd in the old object is set to -1
  */
-SocketAPM *SocketAPM::duplicate(void)
+SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::duplicate(void)
 {
-    auto *ret = new SocketAPM(datagram, fd);
+    auto *ret = new SOCKET_CLASS_NAME(datagram, fd);
     if (ret == nullptr) {
         return nullptr;
     }
@@ -509,14 +514,14 @@ SocketAPM *SocketAPM::duplicate(void)
 }
 
 // access to inet_ntop, takes host order ipv4 as uint32_t
-const char *SocketAPM::inet_addr_to_str(uint32_t addr, char *dst, uint16_t len)
+const char *SOCKET_CLASS_NAME::inet_addr_to_str(uint32_t addr, char *dst, uint16_t len)
 {
     addr = htonl(addr);
     return CALL_PREFIX(inet_ntop)(AF_INET, (void*)&addr, dst, len);
 }
 
 // access to inet_pton, returns host order ipv4 as uint32_t
-uint32_t SocketAPM::inet_str_to_addr(const char *ipstr)
+uint32_t SOCKET_CLASS_NAME::inet_str_to_addr(const char *ipstr)
 {
     uint32_t ret = 0;
     CALL_PREFIX(inet_pton)(AF_INET, ipstr, &ret);
