@@ -323,6 +323,8 @@ if [ -n "$LBTBIN" ]; then
     SITL_PKGS+=" libtool-bin"
 fi
 
+SITL_PKGS+=" ppp"
+
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
 
