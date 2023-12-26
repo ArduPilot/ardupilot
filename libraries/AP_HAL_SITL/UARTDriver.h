@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "AP_HAL_SITL_Namespace.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_CSVReader/AP_CSVReader.h>
 
