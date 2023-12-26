@@ -44,7 +44,7 @@
 
 #include <SITL/SIM_RichenPower.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include <AP_HAL/AP_HAL_Namespace.h>
 
@@ -93,7 +93,7 @@ private:
     uint32_t _update_count;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SocketAPM _sitl_rc_in{true};
+    SocketAPM_native _sitl_rc_in{true};
 #endif
     SITL::SIM *_sitl;
     uint16_t _rcin_port;
@@ -220,7 +220,7 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // output socket for flightgear viewing
-    SocketAPM fg_socket{true};
+    SocketAPM_native fg_socket{true};
 #endif
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;

@@ -358,6 +358,7 @@ ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
  */
 void SOCKET_CLASS_NAME::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
+    // 16 bytes for aaa.bbb.ccc.ddd with null term
     static char buf[16];
     auto *str = last_recv_address(buf, sizeof(buf), port);
     ip_addr = str;
