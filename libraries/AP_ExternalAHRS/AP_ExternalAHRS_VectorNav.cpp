@@ -208,6 +208,8 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
         return false;
     }
     WITH_SEMAPHORE(state.sem);
+    // ensure we own the uart
+    uart->begin(0);
     uint32_t n = uart->available();
     if (n == 0) {
         return false;

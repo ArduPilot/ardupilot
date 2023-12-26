@@ -156,6 +156,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     if (!setup_complete) {
         return false;
     }
+    // ensure we own the uart
+    uart->begin(0);
     uint32_t n = uart->available();
     if (n == 0) {
         return false;

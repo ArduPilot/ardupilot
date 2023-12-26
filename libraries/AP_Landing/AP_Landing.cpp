@@ -549,33 +549,6 @@ bool AP_Landing::get_target_altitude_location(Location &location)
 }
 
 /*
- * Determine how aligned heading_deg is with the wind. Return result
- * is 1.0 when perfectly aligned heading into wind, -1 when perfectly
- * aligned with-wind, and zero when perfect cross-wind. There is no
- * distinction between a left or right cross-wind. Wind speed is ignored
- */
-float AP_Landing::wind_alignment(const float heading_deg)
-{
-    const Vector3f wind = ahrs.wind_estimate();
-    const float wind_heading_rad = atan2f(-wind.y, -wind.x);
-    return cosf(wind_heading_rad - radians(heading_deg));
-}
-
-/*
- * returns head-wind in m/s, 0 for tail-wind.
- */
-float AP_Landing::head_wind(void)
-{
-    const float alignment = wind_alignment(ahrs.yaw_sensor*0.01f);
-
-    if (alignment <= 0) {
-        return 0;
-    }
-
-    return alignment * ahrs.wind_estimate().length();
-}
-
-/*
  * returns target airspeed in cm/s depending on flight stage
  */
 int32_t AP_Landing::get_target_airspeed_cm(void)
