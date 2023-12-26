@@ -18,7 +18,7 @@ public:
     }
 
 private:
-    SocketAPM sock{true};
+    SocketAPM_native sock{true};
 };
 
 #endif // HAL_NUM_CAN_IFACES
