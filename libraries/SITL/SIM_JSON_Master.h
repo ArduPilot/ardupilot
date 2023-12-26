@@ -27,7 +27,7 @@
 #if HAL_SIM_JSON_MASTER_ENABLED
 
 #include "SITL_Input.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_Math/AP_Math.h>
 
 namespace SITL {
@@ -48,8 +48,8 @@ public:
 private:
 
     struct socket_list {
-        SocketAPM sock_in{true};
-        SocketAPM sock_out{true};
+        SocketAPM_native sock_in{true};
+        SocketAPM_native sock_out{true};
         uint8_t instance;
         bool connected;
         socket_list *next;
