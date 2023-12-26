@@ -26,7 +26,7 @@ extern "C" {
 #include "lwip/tcpip.h"
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <semaphore.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "hal.h"
@@ -61,7 +61,7 @@ struct sys_mbox {
 };
 
 struct sys_sem {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     sem_t sem;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     semaphore_t sem;
@@ -80,7 +80,7 @@ struct thread_wrapper_data {
     void *arg;
 };
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static void *
 thread_wrapper(void *arg)
 {
@@ -107,7 +107,7 @@ sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksi
     thread_data->arg = arg;
     thread_data->function = function;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     pthread_t t;
     if (pthread_create(&t, NULL, thread_wrapper, thread_data) == 0) {
         pthread_setname_np(t, name);
@@ -346,7 +346,7 @@ sys_sem_new_internal(u8_t count)
 {
     auto *ret = new sys_sem;
     if (ret != nullptr) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         sem_init(&ret->sem, 0, count);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         chSemObjectInit(&ret->sem, (cnt_t)count);
@@ -369,7 +369,7 @@ u32_t
 sys_arch_sem_wait(struct sys_sem **s, u32_t timeout_ms)
 {
     struct sys_sem *sem = *s;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     if (timeout_ms == 0) {
         sem_wait(&sem->sem);
         return 0;
@@ -404,7 +404,7 @@ void
 sys_sem_signal(struct sys_sem **s)
 {
     struct sys_sem *sem = *s;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     sem_post(&sem->sem);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     chSemSignal(&sem->sem);
