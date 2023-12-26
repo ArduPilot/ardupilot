@@ -85,7 +85,7 @@ private:
 
     Scheduler *_scheduler;
 
-    SocketAPM _sitl_rc_in{true};
+    SocketAPM_native _sitl_rc_in{true};
     bool _rc_in_started;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
