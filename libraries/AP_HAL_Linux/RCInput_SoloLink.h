@@ -52,7 +52,7 @@ private:
 
     bool _check_hdr(ssize_t len);
 
-    SocketAPM _socket{true};
+    SocketAPM_native _socket{true};
     uint64_t _last_usec = 0;
     uint16_t _last_seq = 0;
     union packet _packet;

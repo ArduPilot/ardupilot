@@ -15,7 +15,7 @@ public:
     virtual ssize_t write(const uint8_t *buf, uint16_t n) override;
     virtual ssize_t read(uint8_t *buf, uint16_t n) override;
 private:
-    SocketAPM socket{true};
+    SocketAPM_native socket{true};
     const char *_ip;
     uint16_t _port;
     bool _bcast;
