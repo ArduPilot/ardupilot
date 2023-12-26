@@ -83,20 +83,20 @@ Vector3f AC_CustomControl_LQR::update(void)
 //       k21 k22 k23 k24 k25 k26;
 //       k31 k32 k33 k34 k35 k36;]
 // [T1 T2 T3] = -k_gain*[v1 v2 v3 p q r]
-    _integralX += 0.01*attitude_error_angle.x*_dt;
-    _integralY += 0.01*attitude_error_angle.y*_dt;
-    _integralZ += 0.01*attitude_error_angle.z*_dt;
+    _integralX += 0.03*attitude_error_angle.x*_dt;
+    _integralY += 0.08*attitude_error_angle.y*_dt;
+    _integralZ += 0.005*attitude_error_angle.z*_dt;
     constrain_float(_integralX, -_kimax_LQR, _kimax_LQR);
     constrain_float(_integralY, -_kimax_LQR, _kimax_LQR);
     constrain_float(_integralZ, -_kimax_LQR, _kimax_LQR);
     
     Vector3f motor_out;
 
-    motor_out.x = -_integralX - 0.45*attitude_error_angle.x - 0.094*gyro_latest.x;
+    motor_out.x = -_integralX - 0.375*attitude_error_angle.x - 0.09*gyro_latest.x;
 
-    motor_out.y = -_integralY - 0.45*attitude_error_angle.y - 0.094*gyro_latest.y;
+    motor_out.y = -_integralY - 0.375*attitude_error_angle.y - 0.125*gyro_latest.y;
    
-    motor_out.z = -_integralZ - 0.45*attitude_error_angle.z - 0.094*gyro_latest.z;
+    motor_out.z = -_integralZ - 0.40*attitude_error_angle.z - 0.09*gyro_latest.z;
 
    return motor_out;
 

@@ -24,7 +24,7 @@ protected:
     float _dt;
 
     float _integralX, _integralY, _integralZ;
-    float _kimax_LQR = 0.08;
+    float _kimax_LQR = 0.1;
 
     AP_Float param1;
     AP_Float param2;
