@@ -237,6 +237,7 @@ class ExtractFeatures(object):
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
+            ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
         ]
 
     def progress(self, msg):
