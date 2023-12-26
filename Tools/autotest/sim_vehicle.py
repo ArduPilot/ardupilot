@@ -416,7 +416,7 @@ def do_build(opts, frame_options):
 
     if opts.enable_ppp:
         cmd_configure.append("--enable-ppp")
-        
+
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 

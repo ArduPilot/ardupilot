@@ -675,6 +675,20 @@ def start_MAVProxy_SITL(atype,
     return ret
 
 
+def start_PPP_daemon(ips, sockaddr):
+    """Start pppd for networking"""
+
+    global close_list
+    cmd = "sudo pppd socket %s debug noauth nodetach %s" % (sockaddr, ips)
+    cmd = cmd.split()
+    print("Running: %s" % cmd_as_shell(cmd))
+
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding=ENCODING, timeout=30)
+    ret.delaybeforesend = 0
+    pexpect_autoclose(ret)
+    return ret
+
+
 def expect_setup_callback(e, callback):
     """Setup a callback that is called once a second while waiting for
        patterns."""
