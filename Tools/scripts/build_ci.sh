@@ -325,6 +325,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-PPP" ]; then
+        echo "Building CubeOrange-PPP"
+        $waf configure --board CubeOrange --enable-ppp
+        $waf clean
+        $waf copter
+        continue
+    fi
+    
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
         $waf configure --board Durandal --enable-dds
