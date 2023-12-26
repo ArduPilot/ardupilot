@@ -1,7 +1,7 @@
 #pragma once
 
+#include <AP_HAL/utility/Socket_native.h>
 #include "SerialDevice.h"
-#include <AP_HAL/utility/Socket.h>
 
 class UDPDevice: public SerialDevice {
 public:

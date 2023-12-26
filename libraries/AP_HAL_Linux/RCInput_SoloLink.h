@@ -18,10 +18,14 @@
 
 #include <unistd.h>
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
 #include "RCInput.h"
+
+#ifndef AP_SOCKET_NATIVE_ENABLED
+#error "need native"
+#endif
 
 namespace Linux {
 
