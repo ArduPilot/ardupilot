@@ -39,6 +39,8 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
         if (n > 0) {
             remaining -= n;
             ptr += n;
+        } else {
+            hal.scheduler->delay_microseconds(100);
         }
     }
     return len;
