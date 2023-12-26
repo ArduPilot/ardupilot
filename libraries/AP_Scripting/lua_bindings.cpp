@@ -4,6 +4,10 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
+#include <AP_Networking/AP_Networking_Config.h>
+#if AP_NETWORKING_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
@@ -15,10 +19,6 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
-#include <AP_Networking/AP_Networking_Config.h>
-#if AP_NETWORKING_ENABLED
-#include <AP_HAL/utility/Socket.h>
-#endif
 #include "lua/src/lauxlib.h"
 
 extern const AP_HAL::HAL& hal;
