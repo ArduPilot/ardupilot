@@ -113,10 +113,10 @@ void AP_Networking::test_TCP_discard(void)
         return;
     }
     // connect to the discard service, which is port 9
-    if (!sock->connect(dest, 9)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_discard: connect failed");
-        return;
+    while (!sock->connect(dest, 9)) {
+        hal.scheduler->delay(10);
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: connected");
     const uint32_t bufsize = 1024;
     uint8_t *buf = (uint8_t*)malloc(bufsize);
     for (uint32_t i=0; i<bufsize; i++) {

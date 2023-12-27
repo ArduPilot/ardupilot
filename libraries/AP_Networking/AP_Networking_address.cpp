@@ -72,7 +72,7 @@ void AP_Networking_IPV4::set_default_uint32(uint32_t v)
 
 const char* AP_Networking_IPV4::get_str()
 {
-    const auto ip = ntohl(get_uint32());
+    const auto ip = get_uint32();
     return SocketAPM::inet_addr_to_str(ip, strbuf, sizeof(strbuf));
 }
 
