@@ -452,6 +452,7 @@ class Board:
             env.AP_LIBRARIES += [
                 'AP_DroneCAN',
                 'modules/DroneCAN/libcanard/*.c',
+                'modules/DroneCAN/libcanard/canard/*.cpp',
                 ]
             if cfg.options.enable_dronecan_tests:
                 env.DEFINES.update(AP_TEST_DRONECAN_DRIVERS = 1)
