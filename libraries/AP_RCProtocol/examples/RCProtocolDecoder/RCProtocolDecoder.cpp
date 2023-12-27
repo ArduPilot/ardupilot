@@ -73,7 +73,7 @@ private:
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
 RC_Channels_RC _rc;
-SocketAPM rc_socket{true};
+SocketAPM_native rc_socket{true};
 
 // change this to the device being tested.
 const char *devicename = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10596TP-if00-port0";
