@@ -179,7 +179,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
 
     // path has been created, return latest point
     Vector2f dest_pos;
-    uint8_t path_length = get_shortest_path_numpoints() > 0 ? (get_shortest_path_numpoints() - 1) : 0;
+    const uint8_t path_length = get_shortest_path_numpoints() > 0 ? (get_shortest_path_numpoints() - 1) : 0;
     if ((_path_idx_returned < path_length) && get_shortest_path_point(_path_idx_returned, dest_pos)) {
 
         // for the first point return origin as current_loc
@@ -199,7 +199,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
 
-        // if present also provide next destination if present to allow smooth cornering
+        // provide next destination to allow smooth cornering
         next_destination_new.zero();
         Vector2f next_dest_pos;
         if ((_path_idx_returned + 1 < path_length) && get_shortest_path_point(_path_idx_returned + 1, next_dest_pos)) {
