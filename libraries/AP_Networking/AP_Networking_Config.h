@@ -5,8 +5,14 @@
 #define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
 #endif
 
+
 #ifndef AP_NETWORKING_ENABLED
-#define AP_NETWORKING_ENABLED (((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL)) && !defined(__APPLE__))
+#if defined(__APPLE__) || defined(__clang__)
+// MacOS can't build lwip, and clang fails on linux
+#define AP_NETWORKING_ENABLED 0
+#else
+#define AP_NETWORKING_ENABLED ((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
+#endif
 #endif
 
 #ifndef AP_NETWORKING_BACKEND_DEFAULT_ENABLED
