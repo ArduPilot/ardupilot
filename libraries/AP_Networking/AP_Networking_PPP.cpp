@@ -35,7 +35,7 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     uint32_t remaining = len;
     const uint8_t *ptr = (const uint8_t *)data;
     while (remaining > 0) {
-        auto n = driver.uart->write(ptr, remaining);
+        const auto n = driver.uart->write(ptr, remaining);
         if (n > 0) {
             remaining -= n;
             ptr += n;

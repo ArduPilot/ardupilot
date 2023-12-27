@@ -4,6 +4,10 @@ import pathlib
 
 
 def configure(cfg):
+
+    if not cfg.env.BOARD_CLASS in ['SITL', 'LINUX', 'ChibiOS']:
+        return
+
     extra_src = [
         'modules/lwip/src/core/*c',
         'modules/lwip/src/core/ipv4/*c',
