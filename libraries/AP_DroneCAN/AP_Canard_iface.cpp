@@ -16,10 +16,14 @@ extern const AP_HAL::HAL& hal;
 #define CANARD_MSG_TYPE_FROM_ID(x)                         ((uint16_t)(((x) >> 8U)  & 0xFFFFU))
 
 DEFINE_HANDLER_LIST_HEADS();
+#ifndef HAL_BUILD_AP_PERIPH
 DEFINE_HANDLER_LIST_SEMAPHORES();
+#endif
 
 DEFINE_TRANSFER_OBJECT_HEADS();
+#ifndef HAL_BUILD_AP_PERIPH
 DEFINE_TRANSFER_OBJECT_SEMAPHORES();
+#endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #define CAN_LOG(...) AP::can().log_text(__VA_ARGS__)
@@ -35,6 +39,7 @@ HAL_Semaphore test_iface_sem;
 #endif
 
 void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
+#ifdef CANARD_MUTEX_ENABLED
     if (allocator->semaphore == nullptr) {
         allocator->semaphore = new HAL_Semaphore;
         if (allocator->semaphore == nullptr) {
@@ -44,15 +49,18 @@ void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
         }
     }
     ((HAL_Semaphore*)allocator->semaphore)->take_blocking();
+#endif
 }
 
 void canard_allocate_sem_give(CanardPoolAllocator *allocator) {
+#ifdef CANARD_MUTEX_ENABLED
     if (allocator->semaphore == nullptr) {
         // it should have been allocated by canard_allocate_sem_take
         CANARD_ASSERT(0);
         return;
     }
     ((HAL_Semaphore*)allocator->semaphore)->give();
+#endif
 }
 
 CanardInterface::CanardInterface(uint8_t iface_index) :
@@ -80,8 +88,9 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
     if (!initialized) {
         return false;
     }
+#ifdef CANARD_MUTEX_ENABLED
     WITH_SEMAPHORE(_sem_tx);
-
+#endif
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.take_blocking();
@@ -112,11 +121,13 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
         test_iface_sem.give();
     }
 #endif
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
     if (ret <= 0) {
         protocol_stats.tx_errors++;
     } else {
         protocol_stats.tx_frames += ret;
     }
+#endif
     return ret > 0;
 }
 
@@ -124,8 +135,9 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
     if (!initialized) {
         return false;
     }
+#ifdef CANARD_MUTEX_ENABLED
     WITH_SEMAPHORE(_sem_tx);
-
+#endif
     tx_transfer = {
         .transfer_type = req_transfer.transfer_type,
         .data_type_signature = req_transfer.data_type_signature,
@@ -144,11 +156,13 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
     };
     // do canard request
     int16_t ret = canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer);
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
     if (ret <= 0) {
         protocol_stats.tx_errors++;
     } else {
         protocol_stats.tx_frames += ret;
     }
+#endif
     return ret > 0;
 }
 
@@ -156,8 +170,9 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
     if (!initialized) {
         return false;
     }
+#ifdef CANARD_MUTEX_ENABLED
     WITH_SEMAPHORE(_sem_tx);
-
+#endif
     tx_transfer = {
         .transfer_type = res_transfer.transfer_type,
         .data_type_signature = res_transfer.data_type_signature,
@@ -176,11 +191,13 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
     };
     // do canard respond
     int16_t ret = canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer);
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
     if (ret <= 0) {
         protocol_stats.tx_errors++;
     } else {
         protocol_stats.tx_frames += ret;
     }
+#endif
     return ret > 0;
 }
 
@@ -214,7 +231,9 @@ void CanardInterface::processTestRx() {
 #endif
 
 void CanardInterface::processTx(bool raw_commands_only = false) {
+#ifdef CANARD_MUTEX_ENABLED
     WITH_SEMAPHORE(_sem_tx);
+#endif
 
     for (uint8_t iface = 0; iface < num_ifaces; iface++) {
         if (ifaces[iface] == NULL) {
@@ -224,6 +243,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         if (txq == nullptr) {
             return;
         }
+#if CANARD_MULTI_IFACE
         const auto *stats = ifaces[iface]->get_statistics();
         bool iface_down = true;
         if (stats == nullptr || (AP_HAL::micros64() - stats->last_transmit_us) < 200000UL) {
@@ -236,9 +256,11 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
             */
             iface_down = false;
         } 
+#endif
         // scan through list of pending transfers
         while (true) {
             auto txf = &txq->frame;
+#if HAL_ENABLE_DRONECAN_DRIVERS
             if (raw_commands_only &&
                 CANARD_MSG_TYPE_FROM_ID(txf->id) != UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID &&
                 CANARD_MSG_TYPE_FROM_ID(txf->id) != COM_HOBBYWING_ESC_RAWCOMMAND_ID) {
@@ -249,6 +271,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
                 }
                 continue;
             }
+#endif
             AP_HAL::CANFrame txmsg {};
             txmsg.dlc = AP_HAL::CANFrame::dataLengthToDlc(txf->data_len);
             memcpy(txmsg.data, txf->data, txf->data_len);
@@ -262,14 +285,21 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
             if (!write) {
                 // if there is no space then we need to start from the
                 // top of the queue, so wait for the next loop
+#if CANARD_MULTI_IFACE
                 if (!iface_down) {
                     break;
                 } else {
                     txf->iface_mask &= ~(1U<<iface);
                 }
-            } else if ((txf->iface_mask & (1U<<iface)) && (AP_HAL::micros64() < txf->deadline_usec)) {
+#endif
+            } else if ((AP_HAL::micros64() < txf->deadline_usec)
+#if CANARD_MULTI_IFACE
+                        && (txf->iface_mask & (1U<<iface))
+#endif
+                        ) {
                 // try sending to interfaces, clearing the mask if we succeed
                 if (ifaces[iface]->send(txmsg, txf->deadline_usec, 0) > 0) {
+#if CANARD_MULTI_IFACE
                     txf->iface_mask &= ~(1U<<iface);
                 } else {
                     // if we fail to send then we try sending on next interface
@@ -278,6 +308,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
                     } else {
                         txf->iface_mask &= ~(1U<<iface);
                     }
+#endif
                 }
             }
             // look at next transfer
@@ -289,7 +320,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
     }
 
 }
-
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
 void CanardInterface::update_rx_protocol_stats(int16_t res)
 {
     switch (res) {
@@ -332,6 +363,7 @@ void CanardInterface::update_rx_protocol_stats(int16_t res)
         break;
     }
 }
+#endif
 
 void CanardInterface::processRx() {
     AP_HAL::CANFrame rxmsg;
@@ -354,7 +386,7 @@ void CanardInterface::processRx() {
             if (ifaces[i]->receive(rxmsg, timestamp, flags) <= 0) {
                 break;
             }
-
+#ifndef HAL_BUILD_AP_PERIPH
             if (!rxmsg.isExtended()) {
                 // 11 bit frame, see if we have a handler
                 if (aux_11bit_driver != nullptr) {
@@ -362,7 +394,7 @@ void CanardInterface::processRx() {
                 }
                 continue;
             }
-
+#endif
             rx_frame.data_len = AP_HAL::CANFrame::dlcToDataLength(rxmsg.dlc);
             memcpy(rx_frame.data, rxmsg.data, rx_frame.data_len);
 #if HAL_CANFD_SUPPORTED
@@ -373,8 +405,9 @@ void CanardInterface::processRx() {
             rx_frame.iface_id = i;
 #endif
             {
+#ifdef CANARD_MUTEX_ENABLED
                 WITH_SEMAPHORE(_sem_rx);
-
+#endif
                 const int16_t res = canardHandleRxFrame(&canard, &rx_frame, timestamp);
                 if (res == -CANARD_ERROR_RX_MISSED_START) {
                     // this might remaining frames from a message that we don't accept, so check
@@ -384,12 +417,16 @@ void CanardInterface::processRx() {
                                         extractDataType(rx_frame.id),
                                         extractTransferType(rx_frame.id),
                                         1)) { // doesn't matter what we pass here
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
                         update_rx_protocol_stats(res);
                     } else {
                         protocol_stats.rx_ignored_not_wanted++;
+#endif
                     }
                 } else {
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
                     update_rx_protocol_stats(res);
+#endif
                 }
             }
         }
@@ -409,8 +446,10 @@ void CanardInterface::process(uint32_t duration_ms) {
         processRx();
         processTx();
         {
+#ifdef CANARD_MUTEX_ENABLED
             WITH_SEMAPHORE(_sem_rx);
             WITH_SEMAPHORE(_sem_tx);
+#endif
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
         }
         const uint64_t now = AP_HAL::micros64();
@@ -458,6 +497,7 @@ uint16_t CanardInterface::pool_peak_percent()
     return peak_percent;
 }
 
+#ifndef HAL_BUILD_AP_PERIPH
 // add an 11 bit auxillary driver
 bool CanardInterface::add_11bit_driver(CANSensor *sensor)
 {
@@ -481,5 +521,6 @@ bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_
     }
     return ret;
 }
+#endif
 
 #endif // HAL_ENABLE_DRONECAN_DRIVERS || defined(HAL_BUILD_AP_PERIPH)
