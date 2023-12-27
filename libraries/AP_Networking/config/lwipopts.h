@@ -90,6 +90,8 @@ extern "C"
 
 #define TCP_WND 12000
 #define TCP_SND_BUF 12000
+#define DEFAULT_ACCEPTMBOX_SIZE         20
+
     
 // #define LWIP_DEBUG
 #ifdef LWIP_DEBUG
@@ -140,7 +142,7 @@ a lot of data that needs to be copied, this should be set high. */
 /* MEMP_NUM_PBUF: the number of memp struct pbufs. If the application
    sends a lot of data out of ROM (or other static memory), this
    should be set high. */
-#define MEMP_NUM_PBUF           100
+#define MEMP_NUM_PBUF           64
 /* MEMP_NUM_RAW_PCB: the number of UDP protocol control blocks. One
    per active RAW "connection". */
 #define MEMP_NUM_RAW_PCB        3
