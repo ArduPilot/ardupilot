@@ -87,30 +87,6 @@ static struct instance_t {
 #endif
 } instances[HAL_NUM_CAN_IFACES];
 
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1) && (HAL_NUM_CAN_IFACES >= 2)
-static ioline_t can_term_lines[] = {
-HAL_GPIO_PIN_TERMCAN1
-
-#if HAL_NUM_CAN_IFACES > 2 
-#ifdef HAL_GPIO_PIN_TERMCAN2
-,HAL_GPIO_PIN_TERMCAN2
-#else
-#error "Only one Can Terminator defined with over two CAN Ifaces"
-#endif
-#endif
-
-#if HAL_NUM_CAN_IFACES > 2 
-#ifdef HAL_GPIO_PIN_TERMCAN3
-,HAL_GPIO_PIN_TERMCAN3
-#else
-#error "Only two Can Terminator defined with three CAN Ifaces"
-#endif
-#endif
-
-};
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
-
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
 #endif
