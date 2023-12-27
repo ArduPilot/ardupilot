@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
 import pathlib
-
+import platform
 
 def configure(cfg):
 
     if not cfg.env.BOARD_CLASS in ['SITL', 'LINUX', 'ChibiOS']:
+        return
+
+    # networking doesn't build on MacOSX or clang
+    if platform.system() == 'Darwin' or 'clang++' in cfg.env.COMPILER_CXX:
         return
 
     extra_src = [
