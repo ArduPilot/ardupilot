@@ -97,6 +97,10 @@
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
 #endif
 
+#ifndef AP_PERIPH_HANDLE_ARMING_STATUS
+#define AP_PERIPH_HANDLE_ARMING_STATUS 1
+#endif
+
 #if defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT) && !defined(HAL_DEBUG_BUILD) && !defined(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG)
 /* this checking for reboot can lose bytes on GPS modules and other
  * serial devices. It is really only relevent on a debug build if you
@@ -519,9 +523,10 @@ public:
     Canard::Publisher<uavcan_equipment_gnss_Auxiliary> gnss_aux_pub{canard_iface};
     Canard::Publisher<ardupilot_gnss_Status> gnss_status_pub{canard_iface};
 
+#if GPS_MOVING_BASELINE
     Canard::Publisher<ardupilot_gnss_MovingBaselineData> moving_baseline_pub{canard_iface};
-
     Canard::Publisher<ardupilot_gnss_RelPosHeading> relposheading_pub{canard_iface};
+#endif
     Canard::Publisher<ardupilot_gnss_Heading> gnss_heading_pub{canard_iface};
 #endif
 
@@ -536,14 +541,21 @@ public:
     Canard::Publisher<ardupilot_indication_Button> button_pub{canard_iface};
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_HWESC) || HAL_WITH_ESC_TELEM
     Canard::Publisher<uavcan_equipment_esc_Status> esc_status_pub{canard_iface};
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_ADSB
     Canard::Publisher<ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_pub{canard_iface};
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     Canard::Publisher<uavcan_equipment_air_data_RawAirData> raw_air_data_pub{canard_iface};
 #endif
+#if defined(HAL_PERIPH_ENABLE_BATTERY) || defined(HAL_PERIPH_ENABLE_BATTERY_BALANCE)
     Canard::Publisher<ardupilot_equipment_power_BatteryInfoAux> battery_info_aux_pub{canard_iface};
     Canard::Publisher<uavcan_equipment_power_BatteryInfo> battery_info_pub{canard_iface};
-
+#endif
 #ifdef HAL_PERIPH_ENABLE_EFI
     Canard::Publisher<uavcan_equipment_ice_reciprocating_Status> reciprocating_engine_status_pub{canard_iface};
 #endif
@@ -590,9 +602,11 @@ public:
     Canard::Subscriber<ardupilot_indication_SafetyState> safety_state_sub{safety_state_callback, 0};
 #endif
 
+#if AP_PERIPH_HANDLE_ARMING_STATUS
     static void handle_arming_status(const CanardRxTransfer& transfer, const uavcan_equipment_safety_ArmingStatus &msg);
     Canard::StaticCallback<uavcan_equipment_safety_ArmingStatus> arming_status_callback{&AP_Periph_DroneCAN::handle_arming_status};
     Canard::Subscriber<uavcan_equipment_safety_ArmingStatus> arming_status_sub{arming_status_callback, 0};
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     static void handle_RTCMStream(const CanardRxTransfer& transfer, const uavcan_equipment_gnss_RTCMStream &req);

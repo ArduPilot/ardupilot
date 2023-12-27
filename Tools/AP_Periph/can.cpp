@@ -413,10 +413,12 @@ void AP_Periph_DroneCAN::handle_safety_state(const CanardRxTransfer& transfer, c
 /*
   handle ArmingStatus
  */
+#if AP_PERIPH_HANDLE_ARMING_STATUS
 void AP_Periph_DroneCAN::handle_arming_status(const CanardRxTransfer& transfer, const uavcan_equipment_safety_ArmingStatus &msg)
 {
     hal.util->set_soft_armed(msg.status == UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_STATUS_FULLY_ARMED);
 }
+#endif
 
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
 void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
@@ -932,12 +934,13 @@ AP_Periph_DroneCAN::AP_Periph_DroneCAN()
 
     gnss_status_pub.set_priority(CANARD_TRANSFER_PRIORITY_MEDIUM);
     gnss_status_pub.set_timeout_ms(50);
-
+#if GPS_MOVING_BASELINE
     moving_baseline_pub.set_priority(CANARD_TRANSFER_PRIORITY_MEDIUM);
     moving_baseline_pub.set_timeout_ms(50);
 
     relposheading_pub.set_priority(CANARD_TRANSFER_PRIORITY_MEDIUM);
     relposheading_pub.set_timeout_ms(50);
+#endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
@@ -961,22 +964,28 @@ AP_Periph_DroneCAN::AP_Periph_DroneCAN()
     button_pub.set_timeout_ms(200);
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_HWESC) || HAL_WITH_ESC_TELEM
     esc_status_pub.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
     esc_status_pub.set_timeout_ms(200);
+#endif
 
+#ifdef HAL_PERIPH_ENABLE_ADSB
     traffic_report_pub.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
     traffic_report_pub.set_timeout_ms(200);
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     raw_air_data_pub.set_priority(CANARD_TRANSFER_PRIORITY_MEDIUM);
     raw_air_data_pub.set_timeout_ms(50);
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_BATTERY) || defined(HAL_PERIPH_ENABLE_BATTERY_BALANCE)
     battery_info_aux_pub.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
     battery_info_aux_pub.set_timeout_ms(200);
 
     battery_info_pub.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
     battery_info_pub.set_timeout_ms(200);
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_EFI
     reciprocating_engine_status_pub.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
