@@ -38,10 +38,6 @@ uint32_t *__eth_tb[STM32_MAC_TRANSMIT_BUFFERS];
 #define PERIODIC_TIMER_ID       1
 #define FRAME_RECEIVED_ID       2
 
-#if CH_CFG_ST_RESOLUTION != 32
-#error "ethernet requires 32 bit timer"
-#endif
-
 /*
   allocate buffers for LWIP
 */
