@@ -144,6 +144,8 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
+        sudo apt-get update || /bin/true
+        sudo apt-get install -y ppp || /bin/true
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
