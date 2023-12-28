@@ -24,8 +24,9 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)
-    // @Description: Parachute release mechanism type (relay or servo)
-    // @Values: 0:First Relay,1:Second Relay,2:Third Relay,3:Fourth Relay,10:Servo
+    // @Description: Parachute release mechanism type (relay number in versions prior to 4.5, or servo). Values 0-3 all are relay. Relay number used for release is set by RELAYx_FUNCTION in 4.5 or later. 
+    // @Values: 0: Relay,10:Servo 
+
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AP_Parachute, _release_type, AP_PARACHUTE_TRIGGER_TYPE_RELAY_0),
 
