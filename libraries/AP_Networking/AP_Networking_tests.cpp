@@ -125,6 +125,10 @@ void AP_Networking::test_TCP_discard(void)
     uint32_t last_report_ms = AP_HAL::millis();
     uint32_t total_sent = 0;
     while (true) {
+        if ((param.tests & TEST_TCP_DISCARD) == 0) {
+            hal.scheduler->delay(1);
+            continue;
+        }
         total_sent += sock->send(buf, bufsize);
         const uint32_t now = AP_HAL::millis();
         if (now - last_report_ms >= 1000) {
