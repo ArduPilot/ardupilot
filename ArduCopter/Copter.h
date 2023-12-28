@@ -220,7 +220,7 @@ public:
     friend class ModeThrow;
     friend class ModeZigZag;
     friend class ModeAutorotate;
-
+    friend class ModeAntiJamming;
     Copter(void);
 
 private:
@@ -919,6 +919,7 @@ private:
 #endif
 #endif
     ModeAltHold mode_althold;
+    ModeAntiJamming mode_antijamming;
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
 #endif
