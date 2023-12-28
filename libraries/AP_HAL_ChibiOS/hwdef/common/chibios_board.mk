@@ -145,9 +145,6 @@ CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
         $(CHIBIOS)/os/hal/src/hal_usb_msd.c
 endif
 
-# evtimer used by networking
-CSRC += $(CHIBIOS)/os/various/evtimer.c
-
 #	   $(TESTSRC) \
 #	   test.c
 ifneq ($(CRASHCATCHER),)
