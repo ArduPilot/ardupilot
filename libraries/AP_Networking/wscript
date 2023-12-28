@@ -25,6 +25,10 @@ def configure(cfg):
     ]
 
     extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/*cpp'])
+
+    if cfg.env.BOARD_CLASS == 'ChibiOS':
+        extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/evtimer.c'])
+
     extra_src_inc.extend(['libraries/AP_Networking/config',
                           'libraries/AP_Networking/lwip_hal/include'])
 
