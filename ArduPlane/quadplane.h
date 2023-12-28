@@ -423,6 +423,38 @@ private:
     // return which vfwd method to use
     ActiveFwdThr get_vfwd_method(void) const;
 
+    // enable the accz i based land detector
+    AP_Int8 q_accz_i_land_detector_enabled;
+    // minimum accz i relative ground altitude for use, m
+    AP_Float q_accz_i_min_altitude_m;
+    // maximum accz i relative ground altitude for use, m
+    AP_Float q_accz_i_max_altitude_m;
+    // window time to calculate the integrator slope, seconds
+    AP_Float q_accz_i_slope_window_s;
+    // factor to find the most negative slope
+    AP_Float q_accz_i_slope_factor;
+    // maximum height to allow disarm in meters above ground level
+    AP_Float q_accz_i_max_disarm_alt_m;
+    // struct to hold the parameters for accz i land detection
+    struct {
+        bool disarm_flag;
+        float integrator;
+        float integrator_last;
+        uint32_t time_ms_last;
+        float slope;
+        float slope_last;
+        float minimum_slope;
+    } accz_i_landing_detect;
+
+    // a landing detector based on change in accz integrator slope
+    void accz_i_land_detector(void);
+    // check the altitude is valid to consider spindown
+    bool accz_i_land_detector_invalid_altitude_for_use(const float relative_ground_alt_m) const;
+    // calculate the accz_i slope over the window
+    void calculate_accz_i_slope(const uint32_t now);
+    // check if the slope has surpassed the threshold
+    bool is_accz_i_slope_greater_than_threshold(void) const;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
