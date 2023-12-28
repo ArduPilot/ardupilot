@@ -48,6 +48,9 @@ public:
         PARSE_TYPE_SERIAL
     };
 
+    // update from mavlink messages
+    virtual void update_radio_rc_channels(const mavlink_radio_rc_channels_t* packet) {}
+
     // get number of frames, ignoring failsafe
     uint32_t get_rc_frame_count(void) const {
         return rc_frame_count;
