@@ -402,19 +402,18 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
         }
     }
 
+    {
+        // Remove from running checksum
+        WITH_SEMAPHORE(crc_sem);
+        running_checksum ^= script->crc;
+    }
+    
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
         luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
-
-    {
-        // Remove from running checksum
-        WITH_SEMAPHORE(crc_sem);
-        running_checksum ^= script->crc;
-    }
-
 }
 
 void lua_scripts::reschedule_script(script_info *script) {
