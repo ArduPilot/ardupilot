@@ -127,7 +127,7 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
         return false;
     }
 
-    if (!_can_iface->set_event_handle(&_event_handle)) {
+    if (!_can_iface->set_event_handle(&sem_handle)) {
         debug_can(AP_CANManager::LOG_ERROR, "Cannot add event handle");
         return false;
     }
