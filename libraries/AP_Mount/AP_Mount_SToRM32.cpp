@@ -18,6 +18,9 @@ void AP_Mount_SToRM32::update()
         return;
     }
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
 

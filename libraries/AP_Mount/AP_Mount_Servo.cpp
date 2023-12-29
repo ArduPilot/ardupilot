@@ -27,6 +27,9 @@ void AP_Mount_Servo::init()
 // update mount position - should be called periodically
 void AP_Mount_Servo::update()
 {
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     auto mount_mode = get_mode();
     switch (mount_mode) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
