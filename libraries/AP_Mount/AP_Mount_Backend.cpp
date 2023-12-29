@@ -594,6 +594,19 @@ void AP_Mount_Backend::set_rctargeting_on_rcinput_change()
         if ((abs(last_rc_input.roll_in - roll_in) > roll_dz) ||
             (abs(last_rc_input.pitch_in - pitch_in) > pitch_dz) ||
             (abs(last_rc_input.yaw_in - yaw_in) > yaw_dz)) {
+            // if we were in ROI targetting, notify GCS, to remove ROI indicators
+            if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                const mavlink_command_ack_t packet{
+                    command: MAV_CMD_DO_SET_ROI_NONE,
+                    result: MAV_RESULT_ACCEPTED,
+                    progress: 0,
+                    result_param2: 0, 
+                    target_system: 0,
+                    target_component: 0 
+                };
+                gcs().send_to_active_channels(MAVLINK_MSG_ID_COMMAND_ACK, (const char *)&packet);
+            }
+            // And finally set RC_TARGETING to allow manual control again
             set_mode(MAV_MOUNT_MODE_RC_TARGETING);
         }
     }
