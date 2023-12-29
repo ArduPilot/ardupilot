@@ -114,7 +114,7 @@ private:
     char _thread_name[16];
     uint8_t _driver_index;
     AP_HAL::CANIface* _can_iface;
-    HAL_EventHandle _event_handle;
+    HAL_BinarySemaphore sem_handle;
 
     AP_PiccoloCAN_Servo _servos[PICCOLO_CAN_MAX_NUM_SERVO];
     AP_PiccoloCAN_ESC _escs[PICCOLO_CAN_MAX_NUM_ESC];
