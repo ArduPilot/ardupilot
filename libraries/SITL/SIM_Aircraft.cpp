@@ -607,7 +607,11 @@ void Aircraft::update_home()
 void Aircraft::update_model(const struct sitl_input &input)
 {
     local_ground_level = 0.0f;
-    update(input);
+    if (sitl != nullptr) {
+        update(input);
+    } else {
+        time_advance();
+    }
 }
 
 /*
