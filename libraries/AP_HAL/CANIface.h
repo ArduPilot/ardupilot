@@ -187,7 +187,7 @@ public:
         return false;
     }
 
-    virtual bool set_event_handle(EventHandle* evt_handle)
+    virtual bool set_event_handle(AP_HAL::BinarySemaphore *sem_handle)
     {
         return true;
     }
