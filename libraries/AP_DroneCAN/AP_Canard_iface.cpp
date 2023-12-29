@@ -406,10 +406,9 @@ void CanardInterface::process(uint32_t duration_ms) {
             WITH_SEMAPHORE(_sem_tx);
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
         }
-        uint64_t now = AP_HAL::micros64();
+        const uint64_t now = AP_HAL::micros64();
         if (now < deadline) {
-            _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
-            hal.scheduler->delay_microseconds(50);
+            IGNORE_RETURN(sem_handle.wait(deadline - now));
         } else {
             break;
         }
@@ -436,7 +435,7 @@ bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
         AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Can't alloc uavcan::iface\n");
         return false;
     }
-    if (!can_iface->set_event_handle(&_event_handle)) {
+    if (!can_iface->set_event_handle(&sem_handle)) {
         AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Setting event handle failed\n");
         return false;
     }
