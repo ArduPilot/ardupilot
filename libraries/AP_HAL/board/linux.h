@@ -398,8 +398,7 @@
 #ifdef __cplusplus
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
-#include <AP_HAL/EventHandle.h>
-#define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_BinarySemaphore Linux::BinarySemaphore
 #endif
 
 #ifndef HAL_HAVE_HARDWARE_DOUBLE
