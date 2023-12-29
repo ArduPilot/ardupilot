@@ -85,6 +85,10 @@ bool CAN_SocketCAN::receive(AP_HAL::CANFrame &frame)
 
     // run constructor to initialise
     new(&frame) AP_HAL::CANFrame(receive_frame.can_id, receive_frame.data, receive_frame.can_dlc, false);
+
+    if (sem_handle != nullptr) {
+        sem_handle->signal();
+    }
     return true;
 }
 
