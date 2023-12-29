@@ -365,7 +365,9 @@ void AP_ADSB::update(void)
 
     // Altitude difference between sea level pressure and current
     // pressure (in metres)
-    loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+    if (loc.baro_is_healthy) {
+        loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+    }
 
     update(loc);
 }
