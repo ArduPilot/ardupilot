@@ -39,7 +39,7 @@ float AC_PI::update(float measurement, float target, float dt)
     const float err = target - measurement;
 
     integrator += kI * err * dt;
-    integrator = constrain_float(integrator, 0, imax);
+    integrator = constrain_float(integrator, -imax, imax);
     output_P = kP * err;
 
     return output_P + integrator;
