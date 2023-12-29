@@ -1,0 +1,13 @@
+# copy this file to .gdbinit in your Firmware tree
+
+# this sets up gdb to use openocd. You must start openocd first
+target extended-remote :3333
+
+set print pretty
+set remote hardware-watchpoint-limit 2
+mon reset halt
+maintenance flush register-cache
+thb app_main
+b AP_HAL::panic
+set confirm off
+c
