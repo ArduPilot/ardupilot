@@ -111,8 +111,8 @@ void AP_NMEA_Output::update()
     struct tm* tm = gmtime(&time_sec);
 
     // format time string
-    char tstring[11];
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    char tstring[10];
+    snprintf(tstring, sizeof(tstring), "%02u%02u%05.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
     Location loc;
     const auto &gps = AP::gps();
