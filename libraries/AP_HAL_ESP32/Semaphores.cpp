@@ -73,3 +73,46 @@ bool Semaphore::check_owner()
 {
     return xSemaphoreGetMutexHolder((QueueHandle_t)handle) == xTaskGetCurrentTaskHandle();
 }
+
+
+/*
+  BinarySemaphore implementation
+ */
+BinarySemaphore::BinarySemaphore(bool initial_state)
+{
+    _sem = xSemaphoreCreateBinary();
+    if (initial_state) {
+        xSemaphoreGive(_sem);
+    }
+}
+
+bool BinarySemaphore::wait(uint32_t timeout_us)
+{
+    TickType_t ticks = pdMS_TO_TICKS(timeout_us / 1000U);
+    return xSemaphoreTake(_sem, ticks) == pdTRUE;
+}
+
+bool BinarySemaphore::wait_blocking()
+{
+    return xSemaphoreTake(_sem, portMAX_DELAY) == pdTRUE;
+}
+
+void BinarySemaphore::signal()
+{
+    xSemaphoreGive(_sem);
+}
+
+void BinarySemaphore::signal_ISR()
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(_sem, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+BinarySemaphore::~BinarySemaphore(void)
+{
+    if (_sem != nullptr) {
+        vSemaphoreDelete(_sem);
+    }
+    _sem = nullptr;
+}
