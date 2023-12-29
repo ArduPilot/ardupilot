@@ -77,7 +77,7 @@ private:
     bool is_aux_11bit_driver;
 
     AP_CANDriver *_can_driver;
-    HAL_EventHandle _event_handle;
+    HAL_BinarySemaphore sem_handle;
     AP_HAL::CANIface* _can_iface;
 
 #ifdef HAL_BUILD_AP_PERIPH
