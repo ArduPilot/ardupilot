@@ -3590,8 +3590,9 @@ void QuadPlane::accz_i_land_detector()
         accz_i_landing_detect.minimum_slope,
         would_disarm);
 
-    // Keep track of the last slope.
+    // Keep track of the last slope and integrator value.
     accz_i_landing_detect.slope_last = accz_i_landing_detect.slope;
+    accz_i_landing_detect.integrator_last = accz_i_landing_detect.integrator;
 
     // Keep track of the minimum slope seen.
     accz_i_landing_detect.minimum_slope = MIN(accz_i_landing_detect.minimum_slope,
