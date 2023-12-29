@@ -72,7 +72,7 @@ private:
     static CanardInterface test_iface;
 #endif
     uint8_t num_ifaces;
-    HAL_EventHandle _event_handle;
+    HAL_BinarySemaphore sem_handle;
     bool initialized;
     HAL_Semaphore _sem_tx;
     HAL_Semaphore _sem_rx;
