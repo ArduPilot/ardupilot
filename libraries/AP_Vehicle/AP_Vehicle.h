@@ -68,6 +68,7 @@
 #include <Filter/LowPassFilter.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
+#include <AP_AngleSensor/AP_AngleSensor.h>
 
 class AP_DDS_Client;
 
@@ -407,6 +408,10 @@ protected:
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
+#endif
+
+#if AP_ANGLESENSOR_ENABLED
+    AP_AngleSensor anglesensor;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
