@@ -1,0 +1,23 @@
+********************
+    xacti-config
+       README
+********************
+
+Install Instructions
+
+- download this program to your Linux/Ubuntu PC
+- sudo apt-get install libusb-1.0-0-dev
+- sudo apt install libuvc-dev
+- make
+
+Execution instructions
+
+- sudo xacti-config option [value]
+- the following options are available
+    --dronecan    enable (value=1) or disable (value=0) dronecan parsing
+    --format      format SD card
+    --help        display usage
+    --irpalette   set IR pallete (0:white hot, 1:black hot, 2:rainbow, 3:rainHC, 4:ironbow, 5:lava, 6:arctic, 7:glowbow, 8:graded fire, 9:hottest)
+    --msc         change to mass storage class mode (for downloading from SD card)
+
+
