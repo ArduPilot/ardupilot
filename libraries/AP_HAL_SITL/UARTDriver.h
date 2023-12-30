@@ -110,6 +110,8 @@ private:
     uint32_t last_read_tick_us;
     uint32_t last_write_tick_us;
 
+    HAL_Semaphore write_mtx;
+
     SITL::SerialDevice *_sim_serial_device;
 
     struct {
