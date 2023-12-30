@@ -787,6 +787,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
 
 void UARTDriver::handle_writing_from_writebuffer_to_device()
 {
+    WITH_SEMAPHORE(write_mtx);
     if (!_connected) {
         _check_reconnect();
         return;
