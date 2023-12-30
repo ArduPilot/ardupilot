@@ -55,12 +55,13 @@ private:
         AP_Int32 flttime;
         AP_Int32 runtime;
         AP_Int32 reset;
+        AP_Int16 intervaltime;
+        AP_Int8  nationalflighttime;
     } params;
 
     void copy_variables_from_parameters();
 
-    uint64_t last_flush_ms; // in terms of system uptime
-    const uint16_t flush_interval_ms = 30000;
+    uint32_t last_flush_ms; // in terms of system uptime
 
     uint64_t _flying_ms;
     uint64_t _last_runtime_ms;
