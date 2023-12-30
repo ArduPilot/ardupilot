@@ -34,13 +34,11 @@ const AP_ROMFS::embedded_file AP_ROMFS::files[] = {};
 /*
   find an embedded file
 */
-const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size, uint32_t &crc)
+const AP_ROMFS::embedded_file *AP_ROMFS::find_file(const char *name)
 {
     for (uint16_t i=0; i<ARRAY_SIZE(files); i++) {
         if (strcmp(name, files[i].filename) == 0) {
-            size = files[i].size;
-            crc = files[i].crc;
-            return files[i].contents;
+            return &files[i];
         }
     }
     return nullptr;
@@ -54,28 +52,22 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size, uint32_t &c
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
-    uint32_t compressed_size = 0;
-    uint32_t crc;
-    const uint8_t *compressed_data = find_file(name, compressed_size, crc);
-    if (!compressed_data) {
+    const struct embedded_file *f = find_file(name);
+    if (!f) {
         return nullptr;
     }
 
 #ifdef HAL_ROMFS_UNCOMPRESSED
-    size = compressed_size;
-    return compressed_data;
+    size = f->compressed_size;
+    return f->contents;
 #else
-    // last 4 bytes of compressed data are length of decompressed data
-    const uint8_t *p = &compressed_data[compressed_size-4];
-    uint32_t decompressed_size = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
-    
-    uint8_t *decompressed_data = (uint8_t *)malloc(decompressed_size + 1);
+    uint8_t *decompressed_data = (uint8_t *)malloc(f->decompressed_size+1);
     if (!decompressed_data) {
         return nullptr;
     }
 
     // explicitly null terimnate the data
-    decompressed_data[decompressed_size] = 0;
+    decompressed_data[f->decompressed_size] = 0;
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
     if (!d) {
@@ -84,10 +76,10 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     }
     uzlib_uncompress_init(d, NULL, 0);
 
-    d->source = compressed_data;
-    d->source_limit = compressed_data + compressed_size - 4;
+    d->source = f->contents;
+    d->source_limit = f->contents + f->compressed_size;
     d->dest = decompressed_data;
-    d->destSize = decompressed_size;
+    d->destSize = f->decompressed_size;
 
     int res = uzlib_uncompress(d);
 
@@ -98,12 +90,12 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
         return nullptr;
     }
 
-    if (crc32_small(0, decompressed_data, decompressed_size) != crc) {
+    if (crc32_small(0, decompressed_data, f->decompressed_size) != f->crc) {
         ::free(decompressed_data);
         return nullptr;
     }
     
-    size = decompressed_size;
+    size = f->decompressed_size;
     return decompressed_data;
 #endif
 }
