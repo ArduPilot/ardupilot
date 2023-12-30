@@ -586,6 +586,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 
     case Type::NONE:
         break;
+
+    default:
+        break;
     }
 
     if (serial_create_fn != nullptr) {
