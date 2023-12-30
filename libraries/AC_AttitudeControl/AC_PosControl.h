@@ -235,6 +235,7 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_z_controller();
 
+    void update_z_controller_edited(float throttle_input);
 
 
     ///
