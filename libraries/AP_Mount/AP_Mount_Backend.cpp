@@ -358,6 +358,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
         return MAV_RESULT_FAILED;
     }
 
+    // backup the current values so we can detect a change
+    mavlink_control_id_t prev_control_id = mavlink_control_id;
+
     // convert negative packet1 and packet2 values
     int16_t new_sysid = packet.param1;
     switch (new_sysid) {
@@ -380,6 +383,11 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
             mavlink_control_id.sysid = packet.param1;
             mavlink_control_id.compid = packet.param2;
             break;
+    }
+
+    // send gimbal_manager_status if control has changed
+    if (prev_control_id != mavlink_control_id) {
+        gcs().send_message(MSG_GIMBAL_MANAGER_STATUS);
     }
 
     return MAV_RESULT_ACCEPTED;

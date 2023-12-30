@@ -321,9 +321,13 @@ protected:
 
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
-    struct {
+    struct mavlink_control_id_t {
         uint8_t sysid;
         uint8_t compid;
+
+        // equality operators
+        bool operator==(const mavlink_control_id_t &rhs) const { return (sysid == rhs.sysid && compid == rhs.compid); }
+        bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
 };
 
