@@ -357,6 +357,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
     if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
         return MAV_RESULT_FAILED;
     }
+    // save the previous values
+    uint8_t prev_control_id_sysid = mavlink_control_id.sysid;
+    uint8_t prev_control_id_compid = mavlink_control_id.compid;
 
     // convert negative packet1 and packet2 values
     int16_t new_sysid = packet.param1;
@@ -382,6 +385,23 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
             break;
     }
 
+    // send gimbal_manager_status if control has changed
+    if (prev_control_id_sysid != mavlink_control_id.sysid || prev_control_id_compid != mavlink_control_id.compid) {
+        uint32_t flags = GIMBAL_MANAGER_FLAGS_ROLL_LOCK | GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+        if (_yaw_lock) {
+            flags |= GIMBAL_MANAGER_FLAGS_YAW_LOCK;
+        }
+        const mavlink_gimbal_manager_status_t manager_status_packet{
+            time_boot_ms: AP_HAL::millis(),
+            flags: flags,
+            gimbal_device_id: uint8_t(_instance + 1), 
+            primary_control_sysid: mavlink_control_id.sysid,
+            primary_control_compid: mavlink_control_id.compid,
+            secondary_control_sysid: 0,
+            secondary_control_compid: 0
+        };
+        gcs().send_to_active_channels(MAVLINK_MSG_ID_GIMBAL_MANAGER_STATUS, (const char *)&manager_status_packet);
+    }
     return MAV_RESULT_ACCEPTED;
 }
 
