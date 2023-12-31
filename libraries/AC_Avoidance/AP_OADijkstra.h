@@ -30,8 +30,16 @@ public:
     };
 
     // calculate a destination to avoid the polygon fence
-    // returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
-    AP_OADijkstra_State update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new);
+    // returns DIJKSTRA_STATE_SUCCESS and populates origin_new, destination_new and next_destination_new if avoidance is required
+    // next_destination_new will be non-zero if there is a next destination
+    // dest_to_next_dest_clear will be set to true if the path from (the input) destination to (input) next_destination is clear
+    AP_OADijkstra_State update(const Location &current_loc,
+                               const Location &destination,
+                               const Location &next_destination,
+                               Location& origin_new,
+                               Location& destination_new,
+                               Location& next_destination_new,
+                               bool& dest_to_next_dest_clear);
 
 private:
 
@@ -124,7 +132,9 @@ private:
     bool _shortest_path_ok;
 
     Location _destination_prev;     // destination of previous iterations (used to determine if path should be re-calculated)
+    Location _next_destination_prev;// next_destination of previous iterations (used to determine if path should be re-calculated)
     uint8_t _path_idx_returned;     // index into _path array which gives location vehicle should be currently moving towards
+    bool _dest_to_next_dest_clear;  // true if path from dest to next_dest is clear (i.e. does not intersects a fence)
 
     // inclusion polygon (with margin) related variables
     float _polyfence_margin = 10;           // margin around polygon defaults to 10m but is overriden with set_fence_margin
@@ -181,8 +191,11 @@ private:
     Vector2f _path_source;                              // source point used in shortest path calculations (offset in cm from EKF origin)
     Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
+    // return number of points on path
+    uint8_t get_shortest_path_numpoints() const { return _path_numpoints; }
+
     // return point from final path as an offset (in cm) from the ekf origin
-    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos);
+    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos) const;
 
     // find the position of a node as an offset (in cm) from the ekf origin
     // returns true if successful and pos is updated
