@@ -166,6 +166,11 @@ def options(opt):
         default=False,
         help='enable OS level asserts.')
 
+    g.add_option('--enable-deadlock-detector',
+        action='store_true',
+        default=False,
+        help='enable HAL level mutex deadlock detector.')
+    
     g.add_option('--save-temps',
         action='store_true',
         default=False,
@@ -467,6 +472,7 @@ def configure(cfg):
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
+    cfg.env.ENABLE_DEADLOCK_DETECTOR = cfg.options.enable_deadlock_detector
 
     cfg.env.HWDEF_EXTRA = cfg.options.extra_hwdef
     if cfg.env.HWDEF_EXTRA:

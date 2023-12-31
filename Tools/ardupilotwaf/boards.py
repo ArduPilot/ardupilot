@@ -153,7 +153,14 @@ class Board:
 
         if cfg.options.enable_networking_tests:
             env.CXXFLAGS += ['-DAP_NETWORKING_TESTS_ENABLED=1']
-            
+
+        if cfg.env.ENABLE_DEADLOCK_DETECTOR:
+            cfg.msg("Enabling deadlock detector", "yes")
+            env.CFLAGS += [ '-DAP_DEADLOCK_DETECTOR_ENABLED=1' ]
+            env.CXXFLAGS += [ '-DAP_DEADLOCK_DETECTOR_ENABLED=1' ]
+        else:
+            cfg.msg("Enabling deadlock detector", "no")
+
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
@@ -1107,7 +1114,6 @@ class chibios(Board):
             env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
-
 
         if cfg.env.SAVE_TEMPS:
             env.CXXFLAGS += [ '-S', '-save-temps=obj' ]

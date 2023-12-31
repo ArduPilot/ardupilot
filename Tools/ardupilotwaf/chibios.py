@@ -513,6 +513,8 @@ def load_env_vars(env):
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
+    if env.ENABLE_DEADLOCK_DETECTOR:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEADLOCK_DETECTOR=yes'
     if env.ENABLE_MALLOC_GUARD:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
     if env.ENABLE_STATS:
