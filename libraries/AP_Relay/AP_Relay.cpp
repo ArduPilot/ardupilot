@@ -198,6 +198,8 @@ AP_Relay::AP_Relay(void)
 void AP_Relay::convert_params()
 {
     // PARAMETER_CONVERSION - Added: Dec-2023
+#ifndef HAL_BUILD_AP_PERIPH
+    // Dont need this conversion on periph as relay support is more recent
 
     // Before converting local params we must find any relays being used by index from external libs
     int8_t relay_index;
@@ -300,6 +302,7 @@ void AP_Relay::convert_params()
             _params[i].default_state.set_and_save(default_state);
         }
     }
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 void AP_Relay::set_defaults() {
@@ -401,10 +404,12 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
 
     if (initial_value != value) {
         set_pin(pin, value);
+#if HAL_LOGGING_ENABLED
         AP::logger().Write("RELY", "TimeUS,Instance,State", "s#-", "F--", "QBB",
                             AP_HAL::micros64(),
                             instance,
                             value);
+#endif
     }
 }
 
