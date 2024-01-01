@@ -643,6 +643,8 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
+
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Current altitude:%.1fm",copter.flightmode->get_alt_above_ground_cm()/100.0f);
 }
 
 void Copter::init_simple_bearing()

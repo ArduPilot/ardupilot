@@ -1,4 +1,53 @@
 {
-    "cSpell.language": "en-GB",
-    "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc"
+    "files.autoSave": "afterDelay",
+    "files.associations": {
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "chrono": "cpp",
+        "atomic": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "istream": "cpp",
+        "list": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp",
+        "xlocbuf": "cpp",
+        "memory": "cpp",
+        "xhash": "cpp",
+        "xlocnum": "cpp",
+        "bitset": "cpp",
+        "random": "cpp",
+        "regex": "cpp",
+        "forward_list": "cpp",
+        "ios": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "iosfwd": "cpp",
+        "ratio": "cpp"
+    },
+    // 切换到当前工作目录
+    "terminal.integrated.env.windows": {
+        "CHERE_INVOKING": "1"
+    },
+    "C_Cpp.formatting": "Default",
+    // 不包含的文件夹
+    "files.exclude": {
+        "AntennaTracker/": true,
+        "ArduCopter/": false,  // 如果使用的是多旋翼固件，则将此文件夹的隐藏设置为"false" 
+        "APMrover2": true,
+        "ArduPlane/": true,
+        "ArduSub/": true,
+        "build/": false,
+        "docs/": true,
+        "logs/": true,
+        "mk/": true,
+        "terrain/": true,
+        "tests/": true
+    },
+    // APM固件代码风格，基于Google规范，但是tab是4个空格
+    "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: Google, IndentWidth: 4 }",
+    // 粘贴时自动格式化
+    "editor.formatOnPaste": false,
+
 }
