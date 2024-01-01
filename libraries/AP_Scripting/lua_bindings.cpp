@@ -913,7 +913,7 @@ int SocketAPM_accept(lua_State *L) {
 
     auto *scripting = AP::scripting();
     if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
-        return luaL_argerror(L, 1, "no sockets available");
+        return 0;
     }
 
     auto *sock = ud->accept(0);
