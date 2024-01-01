@@ -313,6 +313,12 @@ void AP_Relay::set_defaults() {
     }
 }
 
+// Return true is function is valid
+bool AP_Relay::function_valid(AP_Relay_Params::FUNCTION function) const
+{
+    return (function > AP_Relay_Params::FUNCTION::NONE) && (function < AP_Relay_Params::FUNCTION::NUM_FUNCTIONS);
+}
+
 void AP_Relay::init()
 {
     set_defaults();
@@ -328,7 +334,7 @@ void AP_Relay::init()
         }
 
         const AP_Relay_Params::FUNCTION function = _params[instance].function;
-        if (function <= AP_Relay_Params::FUNCTION::NONE || function >= AP_Relay_Params::FUNCTION::NUM_FUNCTIONS) {
+        if (!function_valid(function)) {
             // invalid function, skip it
             continue;
         }
@@ -350,7 +356,7 @@ void AP_Relay::init()
 }
 
 void AP_Relay::set(const AP_Relay_Params::FUNCTION function, const bool value) {
-    if (function <= AP_Relay_Params::FUNCTION::NONE && function >= AP_Relay_Params::FUNCTION::NUM_FUNCTIONS) {
+    if (!function_valid(function)) {
         // invalid function
         return;
     }
@@ -416,8 +422,19 @@ void AP_Relay::toggle(uint8_t instance)
 bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<ARRAY_SIZE(_params); i++) {
-        const int8_t pin = _params[i].pin.get();
-        if (pin != -1 && !hal.gpio->valid_pin(pin)) {
+        if (!function_valid(_params[i].function)) {
+            // Relay disabled
+            continue;
+        }
+
+        const int16_t pin = _params[i].pin.get();
+        if (pin == -1) {
+            // Pin disabled, may want to pre-arm this in the future as function enabled with invalid pin
+            // User should set function to none to disable
+            continue;
+        }
+        if (!hal.gpio->valid_pin(pin)) {
+            // Check GPIO pin is valid
             char param_name_buf[14];
             hal.util->snprintf(param_name_buf, ARRAY_SIZE(param_name_buf), "RELAY%u_PIN", unsigned(i+1));
             uint8_t servo_ch;

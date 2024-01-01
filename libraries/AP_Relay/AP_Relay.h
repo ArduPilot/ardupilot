@@ -71,6 +71,9 @@ private:
 
     AP_Relay_Params _params[AP_RELAY_NUM_RELAYS];
 
+    // Return true is function is valid
+    bool function_valid(AP_Relay_Params::FUNCTION function) const;
+
     void set(uint8_t instance, bool value);
 
     void set_defaults();
