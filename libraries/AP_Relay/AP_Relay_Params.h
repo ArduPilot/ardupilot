@@ -32,6 +32,26 @@ public:
         NUM_FUNCTIONS // must be the last entry
     };
 
+    // Pins that do not go via GPIO
+    enum class VIRTUAL_PINS {
+        DroneCAN_0  = 1000,
+        DroneCAN_1  = 1001,
+        DroneCAN_2  = 1002,
+        DroneCAN_3  = 1003,
+        DroneCAN_4  = 1004,
+        DroneCAN_5  = 1005,
+        DroneCAN_6  = 1006,
+        DroneCAN_7  = 1007,
+        DroneCAN_8  = 1008,
+        DroneCAN_9  = 1009,
+        DroneCAN_10 = 1010,
+        DroneCAN_11 = 1011,
+        DroneCAN_12 = 1012,
+        DroneCAN_13 = 1013,
+        DroneCAN_14 = 1014,
+        DroneCAN_15 = 1015,
+    };
+
     AP_Enum<FUNCTION> function;            // relay function
     AP_Int16 pin;                          // gpio pin number
     AP_Enum<DefaultState> default_state;  // default state
