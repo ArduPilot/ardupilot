@@ -848,6 +848,13 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_notify_state(canard_instance, transfer);
         break;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
+        handle_hardpoint_command(canard_instance, transfer);
+        break;
+#endif
+
     }
 }
 
@@ -955,6 +962,11 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
 #if defined(HAL_PERIPH_ENABLE_NOTIFY)
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
+        return true;
+#endif
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE;
         return true;
 #endif
     default:

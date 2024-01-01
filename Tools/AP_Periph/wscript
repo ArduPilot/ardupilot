@@ -81,6 +81,7 @@ def build(bld):
                      'AP_RobotisServo',
                      'AP_FETtecOneWire',
                      'GCS_MAVLink',
+                     'AP_Relay'
                      ]
 
     bld.ap_stlib(

@@ -41,6 +41,16 @@
 #include <SITL/SITL.h>
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RELAY
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    #error "Relay and PWM_HARDPOINT both use hardpoint message"
+#endif
+#include <AP_Relay/AP_Relay.h>
+#if !AP_RELAY_ENABLED
+    #error "HAL_PERIPH_ENABLE_RELAY requires AP_RELAY_ENABLED"
+#endif
+#endif
+
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
     // Needs SerialManager + (AHRS or GPS)
@@ -383,6 +393,11 @@ public:
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    AP_Relay relay;
+#endif
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 
@@ -482,6 +497,7 @@ public:
     void handle_beep_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
+    void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
 
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);
