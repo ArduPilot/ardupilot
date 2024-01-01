@@ -15,6 +15,22 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Values{Rover}: 7:Bushed motor reverse 3 omni motor 3
     // @Values{Rover}: 8:Bushed motor reverse 4 omni motor 4
     // @Values{Plane}: 9:ICE Starter
+    // @Values{AP_Periph}: 10: DroneCAN Hardpoint ID 0
+    // @Values{AP_Periph}: 11: DroneCAN Hardpoint ID 1
+    // @Values{AP_Periph}: 12: DroneCAN Hardpoint ID 2
+    // @Values{AP_Periph}: 13: DroneCAN Hardpoint ID 3
+    // @Values{AP_Periph}: 14: DroneCAN Hardpoint ID 4
+    // @Values{AP_Periph}: 15: DroneCAN Hardpoint ID 5
+    // @Values{AP_Periph}: 16: DroneCAN Hardpoint ID 6
+    // @Values{AP_Periph}: 17: DroneCAN Hardpoint ID 7
+    // @Values{AP_Periph}: 18: DroneCAN Hardpoint ID 8
+    // @Values{AP_Periph}: 19: DroneCAN Hardpoint ID 9
+    // @Values{AP_Periph}: 20: DroneCAN Hardpoint ID 10
+    // @Values{AP_Periph}: 21: DroneCAN Hardpoint ID 11
+    // @Values{AP_Periph}: 22: DroneCAN Hardpoint ID 12
+    // @Values{AP_Periph}: 23: DroneCAN Hardpoint ID 13
+    // @Values{AP_Periph}: 24: DroneCAN Hardpoint ID 14
+    // @Values{AP_Periph}: 25: DroneCAN Hardpoint ID 15
 
     // @User: Standard
     AP_GROUPINFO_FLAGS("FUNCTION", 1, AP_Relay_Params, function, (float)FUNCTION::NONE, AP_PARAM_FLAG_ENABLE),

@@ -29,6 +29,22 @@ public:
         BRUSHED_REVERSE_3 = 7,
         BRUSHED_REVERSE_4 = 8,
         ICE_STARTER = 9,
+        DroneCAN_HARDPOINT_0  = 10,
+        DroneCAN_HARDPOINT_1  = 11,
+        DroneCAN_HARDPOINT_2  = 12,
+        DroneCAN_HARDPOINT_3  = 13,
+        DroneCAN_HARDPOINT_4  = 14,
+        DroneCAN_HARDPOINT_5  = 15,
+        DroneCAN_HARDPOINT_6  = 16,
+        DroneCAN_HARDPOINT_7  = 17,
+        DroneCAN_HARDPOINT_8  = 18,
+        DroneCAN_HARDPOINT_9  = 19,
+        DroneCAN_HARDPOINT_10 = 20,
+        DroneCAN_HARDPOINT_11 = 21,
+        DroneCAN_HARDPOINT_12 = 22,
+        DroneCAN_HARDPOINT_13 = 23,
+        DroneCAN_HARDPOINT_14 = 24,
+        DroneCAN_HARDPOINT_15 = 25,
         NUM_FUNCTIONS // must be the last entry
     };
 
