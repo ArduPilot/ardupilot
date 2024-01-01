@@ -47,14 +47,10 @@ struct sys_mbox_msg {
 struct sys_mbox {
     int first, last;
     void *msgs[SYS_MBOX_SIZE];
-    struct sys_sem *not_empty;
-    struct sys_sem *not_full;
-    struct sys_sem *mutex;
+    HAL_BinarySemaphore not_empty;
+    HAL_BinarySemaphore not_full;
+    HAL_BinarySemaphore mutex;
     int wait_send;
-};
-
-struct sys_sem {
-    HAL_BinarySemaphore sem;
 };
 
 class ThreadWrapper {
@@ -87,16 +83,12 @@ sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksi
 
 void sys_lock_tcpip_core(void)
 {
-    if (hal.scheduler != nullptr) {
-        tcpip_mutex.take_blocking();
-    }
+    tcpip_mutex.take_blocking();
 }
 
 void sys_unlock_tcpip_core(void)
 {
-    if (hal.scheduler != nullptr) {
-        tcpip_mutex.give();
-    }
+    tcpip_mutex.give();
 }
 
 void sys_mark_tcpip_thread(void)
@@ -122,9 +114,7 @@ sys_mbox_new(struct sys_mbox **mb, int size)
         return ERR_MEM;
     }
     mbox->first = mbox->last = 0;
-    sys_sem_new(&mbox->not_empty, 0);
-    sys_sem_new(&mbox->not_full, 0);
-    sys_sem_new(&mbox->mutex, 1);
+    mbox->mutex.signal();
     mbox->wait_send = 0;
 
     *mb = mbox;
@@ -136,13 +126,7 @@ sys_mbox_free(struct sys_mbox **mb)
 {
     if ((mb != NULL) && (*mb != SYS_MBOX_NULL)) {
         struct sys_mbox *mbox = *mb;
-        sys_arch_sem_wait(&mbox->mutex, 0);
-
-        sys_sem_free(&mbox->not_empty);
-        sys_sem_free(&mbox->not_full);
-        sys_sem_free(&mbox->mutex);
-        mbox->not_empty = mbox->not_full = mbox->mutex = NULL;
-        /*  LWIP_DEBUGF("sys_mbox_free: mbox 0x%lx\n", mbox); */
+        mbox->mutex.wait_blocking();
         delete mbox;
     }
 }
@@ -155,13 +139,13 @@ sys_mbox_trypost(struct sys_mbox **mb, void *msg)
     LWIP_ASSERT("invalid mbox", (mb != NULL) && (*mb != NULL));
     mbox = *mb;
 
-    sys_arch_sem_wait(&mbox->mutex, 0);
+    mbox->mutex.wait_blocking();
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_trypost: mbox %p msg %p\n",
                             (void *)mbox, (void *)msg));
 
     if ((mbox->last + 1) >= (mbox->first + SYS_MBOX_SIZE)) {
-        sys_sem_signal(&mbox->mutex);
+        mbox->mutex.signal();
         return ERR_MEM;
     }
 
@@ -176,10 +160,10 @@ sys_mbox_trypost(struct sys_mbox **mb, void *msg)
     mbox->last++;
 
     if (first) {
-        sys_sem_signal(&mbox->not_empty);
+        mbox->not_empty.signal();
     }
 
-    sys_sem_signal(&mbox->mutex);
+    mbox->mutex.signal();
 
     return ERR_OK;
 }
@@ -192,15 +176,15 @@ sys_mbox_post(struct sys_mbox **mb, void *msg)
     LWIP_ASSERT("invalid mbox", (mb != NULL) && (*mb != NULL));
     mbox = *mb;
 
-    sys_arch_sem_wait(&mbox->mutex, 0);
+    mbox->mutex.wait_blocking();
 
     LWIP_DEBUGF(SYS_DEBUG, ("sys_mbox_post: mbox %p msg %p\n", (void *)mbox, (void *)msg));
 
     while ((mbox->last + 1) >= (mbox->first + SYS_MBOX_SIZE)) {
         mbox->wait_send++;
-        sys_sem_signal(&mbox->mutex);
-        sys_arch_sem_wait(&mbox->not_full, 0);
-        sys_arch_sem_wait(&mbox->mutex, 0);
+        mbox->mutex.signal();
+        mbox->not_full.wait_blocking();
+        mbox->mutex.wait_blocking();
         mbox->wait_send--;
     }
 
@@ -215,10 +199,10 @@ sys_mbox_post(struct sys_mbox **mb, void *msg)
     mbox->last++;
 
     if (first) {
-        sys_sem_signal(&mbox->not_empty);
+        mbox->not_empty.signal();
     }
 
-    sys_sem_signal(&mbox->mutex);
+    mbox->mutex.signal();
 }
 
 u32_t
@@ -226,10 +210,10 @@ sys_arch_mbox_tryfetch(struct sys_mbox **mb, void **msg)
 {
     struct sys_mbox *mbox = *mb;
 
-    sys_arch_sem_wait(&mbox->mutex, 0);
+    mbox->mutex.wait_blocking();
 
     if (mbox->first == mbox->last) {
-        sys_sem_signal(&mbox->mutex);
+        mbox->mutex.signal();
         return SYS_MBOX_EMPTY;
     }
 
@@ -243,41 +227,37 @@ sys_arch_mbox_tryfetch(struct sys_mbox **mb, void **msg)
     mbox->first++;
 
     if (mbox->wait_send) {
-        sys_sem_signal(&mbox->not_full);
+        mbox->not_full.signal();
     }
 
-    sys_sem_signal(&mbox->mutex);
+    mbox->mutex.signal();
 
     return 0;
 }
 
 u32_t
-sys_arch_mbox_fetch(struct sys_mbox **mb, void **msg, u32_t timeout)
+sys_arch_mbox_fetch(struct sys_mbox **mb, void **msg, u32_t timeout_ms)
 {
     struct sys_mbox *mbox;
     LWIP_ASSERT("invalid mbox", (mb != NULL) && (*mb != NULL));
     mbox = *mb;
 
-    /* The mutex lock is quick so we don't bother with the timeout
-       stuff here. */
-    sys_arch_sem_wait(&mbox->mutex, 0);
+    mbox->mutex.wait_blocking();
 
     while (mbox->first == mbox->last) {
-        sys_sem_signal(&mbox->mutex);
+        mbox->mutex.signal();
 
         /* We block while waiting for a mail to arrive in the mailbox. We
            must be prepared to timeout. */
-        if (timeout != 0) {
-            u32_t time_needed = sys_arch_sem_wait(&mbox->not_empty, timeout);
-
-            if (time_needed == SYS_ARCH_TIMEOUT) {
+        if (timeout_ms != 0) {
+            if (!mbox->not_empty.wait(timeout_ms*1000U)) {
                 return SYS_ARCH_TIMEOUT;
             }
         } else {
-            sys_arch_sem_wait(&mbox->not_empty, 0);
+            mbox->not_empty.wait_blocking();
         }
 
-        sys_arch_sem_wait(&mbox->mutex, 0);
+        mbox->mutex.wait_blocking();
     }
 
     if (msg != NULL) {
@@ -290,19 +270,18 @@ sys_arch_mbox_fetch(struct sys_mbox **mb, void **msg, u32_t timeout)
     mbox->first++;
 
     if (mbox->wait_send) {
-        sys_sem_signal(&mbox->not_full);
+        mbox->not_full.signal();
     }
 
-    sys_sem_signal(&mbox->mutex);
+    mbox->mutex.signal();
 
     return 0;
 }
 
 err_t
-sys_sem_new(struct sys_sem **sem, u8_t count)
+sys_sem_new(sys_sem_t *sem, u8_t count)
 {
-    auto *s = new HAL_BinarySemaphore(count);
-    *sem = (struct sys_sem *)s;
+    *sem = (sys_sem_t)new HAL_BinarySemaphore(count);
     if (*sem == NULL) {
         return ERR_MEM;
     }
@@ -310,26 +289,26 @@ sys_sem_new(struct sys_sem **sem, u8_t count)
 }
 
 u32_t
-sys_arch_sem_wait(struct sys_sem **s, u32_t timeout_ms)
+sys_arch_sem_wait(sys_sem_t *s, u32_t timeout_ms)
 {
-    struct sys_sem *sem = *s;
+    HAL_BinarySemaphore *sem = (HAL_BinarySemaphore *)*s;
     if (timeout_ms == 0) {
-        return sem->sem.wait_blocking()?0:SYS_ARCH_TIMEOUT;
+        return sem->wait_blocking()?0:SYS_ARCH_TIMEOUT;
     }
-    return sem->sem.wait(timeout_ms*1000U)?0:SYS_ARCH_TIMEOUT;
+    return sem->wait(timeout_ms*1000U)?0:SYS_ARCH_TIMEOUT;
 }
 
 void
-sys_sem_signal(struct sys_sem **s)
+sys_sem_signal(sys_sem_t *s)
 {
-    struct sys_sem *sem = *s;
-    sem->sem.signal();
+    HAL_BinarySemaphore *sem = (HAL_BinarySemaphore *)*s;
+    sem->signal();
 }
 
 void
-sys_sem_free(struct sys_sem **sem)
+sys_sem_free(sys_sem_t *sem)
 {
-    delete *sem;
+    delete ((HAL_BinarySemaphore *)*sem);
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -338,45 +317,37 @@ sys_sem_free(struct sys_sem **sem)
  * @param mutex pointer to the mutex to create
  * @return a new mutex */
 err_t
-sys_mutex_new(struct sys_mutex **mutex)
+sys_mutex_new(sys_mutex_t *mutex)
 {
-    auto *sem = new HAL_Semaphore;
-    if (sem == nullptr) {
+    *mutex = (sys_mutex_t)new HAL_Semaphore;
+    if (*mutex == nullptr) {
         return ERR_MEM;
     }
-    *mutex = (struct sys_mutex *)sem;
     return ERR_OK;
 }
 
 /** Lock a mutex
  * @param mutex the mutex to lock */
 void
-sys_mutex_lock(struct sys_mutex **mutex)
+sys_mutex_lock(sys_mutex_t *mutex)
 {
-    auto *sem = (HAL_Semaphore *)*mutex;
-    if (hal.scheduler != nullptr) {
-        sem->take_blocking();
-    }
+    ((HAL_Semaphore*)*mutex)->take_blocking();
 }
 
 /** Unlock a mutex
  * @param mutex the mutex to unlock */
 void
-sys_mutex_unlock(struct sys_mutex **mutex)
+sys_mutex_unlock(sys_mutex_t *mutex)
 {
-    auto *sem = (HAL_Semaphore *)*mutex;
-    if (hal.scheduler != nullptr) {
-        sem->give();
-    }
+    ((HAL_Semaphore*)*mutex)->give();
 }
 
 /** Delete a mutex
  * @param mutex the mutex to delete */
 void
-sys_mutex_free(struct sys_mutex **mutex)
+sys_mutex_free(sys_mutex_t *mutex)
 {
-    auto *sem = (HAL_Semaphore *)*mutex;
-    delete sem;
+    delete (HAL_Semaphore*)*mutex;
 }
 
 u32_t
