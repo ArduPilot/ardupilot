@@ -340,6 +340,10 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         CMDLINE_SERIAL9,
     };
 
+    // set explicit line buffering for e.g. logging via systemd
+    setvbuf(stdout, (char *)0, _IOLBF, 0);
+    setvbuf(stderr, (char *)0, _IOLBF, 0);
+
     int opt;
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
