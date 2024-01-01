@@ -285,6 +285,10 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    relay.init();
+#endif
+
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
