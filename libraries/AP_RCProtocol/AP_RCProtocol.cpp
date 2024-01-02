@@ -301,15 +301,11 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
+#if AP_RCPROTOCOL_CRSF_ENABLED || AP_RCPROTOCOL_GHST_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
     { 2000000, 0,   1, false },
-#endif
-#if AP_RCPROTOCOL_GHST_ENABLED
-    // Ghost:
-    { 420000,  0,   1, false },
 #endif
 };
 

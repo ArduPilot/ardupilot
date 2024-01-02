@@ -21,6 +21,8 @@
 
 #if AP_RCPROTOCOL_GHST_ENABLED
 
+#define CRSF_BAUDRATE      416666U
+
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_GHST.h"
 #include <AP_HAL/AP_HAL.h>
@@ -413,10 +415,27 @@ bool AP_RCProtocol_GHST::is_telemetry_supported() const
 void AP_RCProtocol_GHST::process_byte(uint8_t byte, uint32_t baudrate)
 {
     // reject RC data if we have been configured for standalone mode
-    if (baudrate != GHST_BAUDRATE) {
+    if (baudrate != CRSF_BAUDRATE && baudrate != GHST_BAUDRATE) {
         return;
     }
     _process_byte(AP_HAL::micros(), byte);
+}
+
+// change the bootstrap baud rate to ELRS standard if configured
+void AP_RCProtocol_GHST::process_handshake(uint32_t baudrate)
+{
+    AP_HAL::UARTDriver *uart = get_current_UART();
+
+    // only change the baudrate if we are bootstrapping CRSF
+    if (uart == nullptr
+        || baudrate != CRSF_BAUDRATE
+        || baudrate == GHST_BAUDRATE
+        || uart->get_baud_rate() == GHST_BAUDRATE
+        || (get_rc_protocols_mask() & ((1U<<(uint8_t(AP_RCProtocol::GHST)+1))+1)) == 0) {
+        return;
+    }
+
+    uart->begin(GHST_BAUDRATE);
 }
 
 //returns uplink link quality on 0-255 scale
