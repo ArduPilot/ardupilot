@@ -735,7 +735,7 @@ class ChibiOSHWDef(object):
             f.write('#define CAN1_BASE CAN_BASE\n')
         self.env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
-        if self.mcu_series.startswith("STM32H7") and not args.bootloader:
+        if self.mcu_series.startswith("STM32H7") and not self.is_bootloader_fw():
             # set maximum supported canfd bit rate in MBits/sec
             canfd_supported = int(self.get_config('CANFD_SUPPORTED', 0, default=4, required=False))
             f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
@@ -756,7 +756,7 @@ class ChibiOSHWDef(object):
         '''get RAM_MAP. May be different for bootloader'''
         if 'APP_RAM_START' not in self.env_vars:
             self.env_vars['APP_RAM_START'] = None
-        if args.bootloader:
+        if self.is_bootloader_fw():
             ram_map = self.get_mcu_config('RAM_MAP_BOOTLOADER', False)
             if ram_map is not None:
                 app_ram_map = self.get_mcu_config('RAM_MAP', False)
@@ -854,7 +854,7 @@ class ChibiOSHWDef(object):
         storage_flash_page = self.get_config('STORAGE_FLASH_PAGE', default=None, type=int, required=False)
         if storage_flash_page is not None:
             return storage_flash_page
-        if args.bootloader and args.hwdef[0].find("-bl") != -1:
+        if self.is_bootloader_fw() and args.hwdef[0].find("-bl") != -1:
             hwdefdat = args.hwdef[0].replace("-bl", "")
             if os.path.exists(hwdefdat):
                 ret = None
@@ -1044,7 +1044,7 @@ class ChibiOSHWDef(object):
         f.write('\n// location of loaded firmware\n')
         f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
         # can be no persistent parameters if no space allocated for them
-        if not args.bootloader and flash_reserve_start == 0:
+        if not self.is_bootloader_fw() and flash_reserve_start == 0:
             f.write('#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0\n')
 
         f.write('#define EXT_FLASH_SIZE_MB %u\n' % self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int))
@@ -1053,7 +1053,7 @@ class ChibiOSHWDef(object):
 
         self.env_vars['EXT_FLASH_SIZE_MB'] = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
         self.env_vars['INT_FLASH_PRIMARY'] = self.get_config('INT_FLASH_PRIMARY', default=False, type=bool)
-        if self.env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader and not self.env_vars['INT_FLASH_PRIMARY']:
+        if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.is_bootloader_fw() and not self.env_vars['INT_FLASH_PRIMARY']:
             f.write('#define CRT0_AREAS_NUMBER 4\n')
             f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
             f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
@@ -1071,7 +1071,7 @@ class ChibiOSHWDef(object):
         storage_flash_page = self.get_storage_flash_page()
         flash_reserve_end = self.get_config('FLASH_RESERVE_END_KB', default=0, type=int)
         if storage_flash_page is not None:
-            if not args.bootloader:
+            if not self.is_bootloader_fw():
                 f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
                 self.validate_flash_storage_size()
             elif self.get_config('FLASH_RESERVE_END_KB', type=int, required=False) is None:
@@ -1082,14 +1082,14 @@ class ChibiOSHWDef(object):
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
 
-        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not args.bootloader)))
+        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not self.is_bootloader_fw())))  # noqa
         # lets pick a flash sector for Crash log
         f.write('#ifndef AP_CRASHDUMP_ENABLED\n')
         f.write('#define AP_CRASHDUMP_ENABLED %u\n' % crashdump_enabled)
         f.write('#endif\n')
         self.env_vars['ENABLE_CRASHDUMP'] = crashdump_enabled
 
-        if args.bootloader:
+        if self.is_bootloader_fw():
             if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
                 f.write('\n// location of loaded firmware in external flash\n')
                 f.write('#define APP_START_ADDRESS 0x%08x\n' % (0x90000000 + self.get_config(
@@ -1188,13 +1188,13 @@ class ChibiOSHWDef(object):
 
         self.env_vars['CORTEX'] = cortex
 
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             if cortex == 'cortex-m4':
                 self.env_vars['CPU_FLAGS'].append('-DARM_MATH_CM4')
             elif cortex == 'cortex-m7':
                 self.env_vars['CPU_FLAGS'].append('-DARM_MATH_CM7')
 
-        if not self.mcu_series.startswith("STM32F1") and not args.bootloader:
+        if not self.mcu_series.startswith("STM32F1") and not self.is_bootloader_fw():
             self.env_vars['CPU_FLAGS'].append('-u_printf_float')
             build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
 
@@ -1203,7 +1203,7 @@ class ChibiOSHWDef(object):
             self.build_flags.append('%s=%s' % (v, build_info[v]))
 
         # setup for bootloader build
-        if args.bootloader:
+        if self.is_bootloader_fw():
             if self.get_config('FULL_CHIBIOS_BOOTLOADER', required=False, default=False):
                 # we got enough space to fit everything so we enable almost everything
                 f.write('''
@@ -1283,10 +1283,10 @@ class ChibiOSHWDef(object):
         if self.env_vars.get('ROMFS_UNCOMPRESSED', False):
             f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
 
-        if args.bootloader:
+        if self.is_bootloader_fw():
             # do not enable flash protection in bootloader, even if hwdef
             # requests it:
             f.write('''
@@ -1364,7 +1364,7 @@ class ChibiOSHWDef(object):
         ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
         int_flash_primary = self.get_config('INT_FLASH_PRIMARY', default=False, type=int)
 
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
             ext_flash_length = ext_flash_size * 1024 - (ext_flash_reserve_start + ext_flash_reserve_end)
         else:
@@ -1386,7 +1386,7 @@ class ChibiOSHWDef(object):
             ram_reserve_start = self.get_ram_reserve_start()
             ram0_start += ram_reserve_start
             ram0_len -= ram_reserve_start
-        if ext_flash_length == 0 or args.bootloader:
+        if ext_flash_length == 0 or self.is_bootloader_fw():
             self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 0
             f.write('''/* generated ldscript.ld */
 MEMORY
@@ -1429,7 +1429,7 @@ INCLUDE common.ld
     def copy_common_linkerscript(self, outdir):
         dirpath = os.path.dirname(os.path.realpath(__file__))
 
-        if args.bootloader:
+        if self.is_bootloader_fw():
             linker = 'common.ld'
         else:
             linker = self.get_mcu_config('LINKER_CONFIG')
@@ -1467,10 +1467,10 @@ INCLUDE common.ld
         f.write('#define HAL_USB_STRING_MANUFACTURER %s\n' %
                 self.get_config("USB_STRING_MANUFACTURER", default="\"ArduPilot\""))
         default_product = "%BOARD%"
-        if args.bootloader:
+        if self.is_bootloader_fw():
             default_product += "-BL"
         product_string = self.get_config("USB_STRING_PRODUCT", default="\"%s\"" % default_product)
-        if args.bootloader and args.signed_fw:
+        if self.is_bootloader_fw() and args.signed_fw:
             product_string = product_string.replace("-BL", "-Secure-BL-v10")
         f.write('#define HAL_USB_STRING_PRODUCT %s\n' % product_string)
 
@@ -1580,7 +1580,7 @@ INCLUDE common.ld
         # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
         # bootstrap into external flash
         for t in list(self.bytype.keys()) + list(self.alttype.keys()):
-            if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not args.bootloader:
+            if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not self.is_bootloader_fw():
                 f.write('#define HAL_XIP_ENABLED TRUE\n')
 
         if len(self.wspidev) == 0:
@@ -1945,7 +1945,7 @@ INCLUDE common.ld
 ''' % (OTG2_index, OTG2_index))
 
         f.write('#define HAL_SERIAL_DEVICE_LIST %s\n\n' % ','.join(devlist))
-        if not need_uart_driver and not args.bootloader:
+        if not need_uart_driver and not self.is_bootloader_fw():
             f.write('''
 #ifndef HAL_USE_SERIAL
 #define HAL_USE_SERIAL HAL_USE_SERIAL_USB
@@ -2433,7 +2433,7 @@ INCLUDE common.ld
             self.error('''Bootloader (%s) does not exist and AP_BOOTLOADER_FLASHING_ENABLED
 Please run: Tools/scripts/build_bootloaders.py %s
 ''' %
-                       (bp,os.path.basename(os.path.dirname(args.hwdef[0]))))
+                       (bp, os.path.basename(os.path.dirname(args.hwdef[0]))))
 
         bp = os.path.realpath(bp)
 
@@ -2595,7 +2595,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 dma_noshare=self.dma_noshare
             )
 
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             self.write_PWM_config(f, ordered_timers)
             self.write_I2C_config(f)
             self.write_UART_config(f)
@@ -2854,7 +2854,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         '''add a filesystem directory to ROMFS'''
         for dirname in subdirs:
             romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
-            if not args.bootloader and os.path.exists(romfs_dir):
+            if not self.is_bootloader_fw() and os.path.exists(romfs_dir):
                 for root, d, files in os.walk(romfs_dir):
                     for f in files:
                         if fnmatch.fnmatch(f, '*~'):
@@ -3069,7 +3069,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_firmware_defaults_from_file(f, "defaults_periph.h", "AP_Periph")
 
     def is_bootloader_fw(self):
-        return args.bootloader
+        return self.bootloader
 
     def add_bootloader_defaults(self, f):
         '''add default defines for peripherals'''
@@ -3159,7 +3159,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
 
-        if not args.bootloader:
+        if not self.is_bootloader_fw():
             self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
