@@ -251,7 +251,9 @@ static OpticalFlow_Onboard opticalFlow;
 static Empty::OpticalFlow opticalFlow;
 #endif
 
+#if HAL_WITH_DSP
 static Empty::DSP dspDriver;
+#endif
 static Empty::Flash flashDriver;
 static Empty::WSPIDeviceManager wspi_mgr_instance;
 
@@ -284,7 +286,9 @@ HAL_Linux::HAL_Linux() :
         &utilInstance,
         &opticalFlow,
         &flashDriver,
+#if HAL_WITH_DSP
         &dspDriver,
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
