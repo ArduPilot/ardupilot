@@ -251,6 +251,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../Filter/AP_Filter.cpp
     AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
 #endif
+
+#if AP_ANGLESENSOR_ENABLED
+    // @Group: AENC
+    // @Path: ../AP_AngleSensor/AP_AngleSensor.cpp
+    AP_SUBGROUPINFO(anglesensor, "ANG", 27, AP_Vehicle, AP_AngleSensor),
+#endif
     AP_GROUPEND
 };
 
@@ -433,6 +439,10 @@ void AP_Vehicle::setup()
     filters.init();
 #endif
 
+#if AP_ANGLESENSOR_ENABLED
+    anglesensor.init();
+#endif
+
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     for (uint8_t i = 0; i<ESC_TELEM_MAX_ESCS; i++) {
         esc_noise[i].set_cutoff_frequency(2);
@@ -575,6 +585,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
+#if AP_ANGLESENSOR_ENABLED
+    SCHED_TASK_CLASS(AP_AngleSensor,  &vehicle.anglesensor, update,          20,  100,  254),
+#endif
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)

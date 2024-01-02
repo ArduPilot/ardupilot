@@ -45,6 +45,7 @@ class AP_WindVane
     friend class AP_WindVane_Airspeed;
     friend class AP_WindVane_RPM;
     friend class AP_WindVane_NMEA;
+    friend class AP_WindVane_AngleSensor;
 
 public:
     AP_WindVane();
@@ -176,9 +177,12 @@ private:
 #if AP_WINDVANE_NMEA_ENABLED
         WINDVANE_NMEA           = 4,
 #endif
-#if AP_WINDVANE_SIM_ENABLED
-        WINDVANE_SITL_TRUE      = 10,
-        WINDVANE_SITL_APPARENT  = 11,
+#if AP_WINDVANE_ANGLESENSOR_ENABLED
+        WINDVANE_ANGLESENSOR = 5,
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        WINDVANE_SITL_TRUE       = 10,
+        WINDVANE_SITL_APPARENT   = 11,
 #endif
     };
 
