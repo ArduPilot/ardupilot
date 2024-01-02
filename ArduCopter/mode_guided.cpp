@@ -685,6 +685,9 @@ void ModeGuided::takeoff_run()
     auto_takeoff.run();
     if (auto_takeoff.complete && !takeoff_complete) {
         takeoff_complete = true;
+#if AP_FENCE_ENABLED
+        copter.fence.auto_enable_fence_after_takeoff();
+#endif
 #if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
