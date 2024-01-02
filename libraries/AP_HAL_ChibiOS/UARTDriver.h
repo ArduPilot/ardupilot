@@ -224,6 +224,7 @@ private:
     event_listener_t hd_listener;
     eventflags_t hd_tx_active;
     void half_duplex_setup_tx(void);
+    void half_duplex_setup_rx(void);
 #endif
 
     // set to true for unbuffered writes (low latency writes)
@@ -237,9 +238,10 @@ private:
 
 #ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
+    static void half_duplex_irq_cb(void* sd);
 #endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
-    static void tx_complete(void* self, uint32_t flags);
+    static void tx_or_hdrx_complete(void* self, uint32_t flags);
 
 #ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
