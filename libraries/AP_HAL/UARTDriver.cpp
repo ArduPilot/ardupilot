@@ -152,3 +152,14 @@ bool AP_HAL::UARTDriver::discard_input()
     }
     return _discard_input();
 }
+
+/*
+  default implementation of receive_time_constraint_us() will be used
+  for subclasses that don't implement the call (eg. network
+  sockets). Best we can do is to use the current timestamp as we don't
+  know the transport delay
+ */
+uint64_t AP_HAL::UARTDriver::receive_time_constraint_us(uint16_t nbytes)
+{
+    return AP_HAL::micros64();
+}
