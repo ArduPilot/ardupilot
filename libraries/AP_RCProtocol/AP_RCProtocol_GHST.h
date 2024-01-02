@@ -36,6 +36,7 @@ public:
     AP_RCProtocol_GHST(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_GHST();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_handshake(uint32_t baudrate) override;
     void update(void) override;
 
     // is the receiver active, used to detect power loss and baudrate changes
