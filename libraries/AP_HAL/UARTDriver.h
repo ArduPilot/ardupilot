@@ -137,10 +137,8 @@ public:
       This takes account of the baudrate of the link. For transports
       that have no baudrate (such as USB) the time estimate may be
       less accurate.
-
-      A return value of zero means the HAL does not support this API
      */
-    virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
+    virtual uint64_t receive_time_constraint_us(uint16_t nbytes);
 
     virtual uint32_t bw_in_bytes_per_second() const {
         return 5760;
