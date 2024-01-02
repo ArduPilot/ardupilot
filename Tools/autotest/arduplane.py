@@ -4381,8 +4381,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         seq = 0
         items = []
         tests = [
-            (self.home_relative_loc_ne(50, -50), 100),
-            (self.home_relative_loc_ne(100, 50), 1005),
+            (self.home_relative_loc_ne(50, -50), 100, 0.3),
+            (self.home_relative_loc_ne(100, 50), 1005, 3),
         ]
         # add a home position:
         items.append(self.mav.mav.mission_item_int_encode(
@@ -4423,7 +4423,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         seq += 1
 
         # add circles
-        for (loc, radius) in tests:
+        for (loc, radius, turn) in tests:
             items.append(self.mav.mav.mission_item_int_encode(
                 target_system,
                 target_component,
@@ -4432,7 +4432,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
                 0, # current
                 0, # autocontinue
-                3, # p1
+                turn, # p1
                 0, # p2
                 radius, # p3
                 0, # p4
@@ -4465,7 +4465,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         ofs = 2
         self.progress("Checking downloaded mission is as expected")
-        for (loc, radius) in tests:
+        for (loc, radius, turn) in tests:
             downloaded = downloaded_items[ofs]
             if radius > 255:
                 # ArduPilot only stores % 10
@@ -4474,6 +4474,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Did not get expected radius for item %u; want=%f got=%f" %
                     (ofs, radius, downloaded.param3))
+            if turn > 0 and turn < 1:
+                # ArduPilot stores fractions in 8 bits (*256) and unpacks it (/256)
+                turn = int(turn*256) / 256.0
+            if downloaded.param1 != turn:
+                raise NotAchievedException(
+                    "Did not get expected turn for item %u; want=%f got=%f" %
+                    (ofs, turn, downloaded.param1))
             ofs += 1
 
         self.change_mode('AUTO')
@@ -4483,7 +4490,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(2)
 
-        for (loc, expected_radius) in tests:
+        for (loc, expected_radius, _) in tests:
             self.wait_circling_point_with_radius(
                 loc,
                 expected_radius,
