@@ -49,7 +49,9 @@ static Empty::UARTDriver serial7Driver;
 static Empty::UARTDriver serial8Driver;
 static Empty::UARTDriver serial9Driver;
 
+#if HAL_WITH_DSP
 static Empty::DSP dspDriver;
+#endif
 
 static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
@@ -94,7 +96,9 @@ HAL_ESP32::HAL_ESP32() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+#if HAL_WITH_DSP
         &dspDriver,
+#endif
         nullptr
     )
 {}
