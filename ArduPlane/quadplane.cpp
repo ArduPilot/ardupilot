@@ -2355,17 +2355,12 @@ bool QuadPlane::precland_active(void)
         land_repo_active = true;
     }
 
-    if (((plane.control_mode == &plane.mode_qland) || (plane.control_mode == &plane.mode_auto) || (plane.control_mode == &plane.mode_qrtl)) && (!land_repo_active)) {
+    if (!land_repo_active) 
+    {
         return plane.precland.target_acquired();
     } 
-    else if (plane.control_mode == &plane.mode_qloiter && _precision_loiter_enabled) 
-    {
-        if (manual_control_active) {
-            // user is trying to reposition the vehicle
-            return false;
-        }
-        return plane.precland.target_acquired();
-    }
+   
+
 #endif
     return false;
 }
@@ -2744,13 +2739,18 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
 
-        //  if (precland_active()) {
-        //     run_precland_horizontal_controller();
-        // } 
-        
-        Vector2f zero;
-        Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
-        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
+         if (precland_active()) {
+            run_precland_horizontal_controller();
+        } 
+
+        else
+        {     
+            Vector2f zero;
+            Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
+            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
+
+        }
+       
         
         
 
@@ -2813,14 +2813,21 @@ void QuadPlane::vtol_position_controller(void)
 
         
         
-        // // run controller
-        if (!pos_control->is_active_xy()) {
-            pos_control->init_xy_controller();
+        // // run appropriate controller
+
+        if(precland_active())
+        {
+            if (!pos_control->is_active_xy()) {
+                pos_control->init_xy_controller();
+            }
+
+            pos_control->update_xy_controller();
+
         }
 
-        pos_control->update_xy_controller();
+        else
+            run_xy_controller();
 
-        // run_xy_controller();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
