@@ -121,7 +121,6 @@ public:
 
 #if AP_NETWORKING_ENABLED
     // SocketAPM storage
-    uint8_t num_net_sockets;
     SocketAPM *_net_sockets[SCRIPTING_MAX_NUM_NET_SOCKET];
 #endif
 
