@@ -18,6 +18,11 @@
  *  ArduPilot
  *
  */
+
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
@@ -3544,3 +3549,5 @@ AP_AHRS &ahrs()
 }
 
 }
+
+#endif  // AP_AHRS_ENABLED
