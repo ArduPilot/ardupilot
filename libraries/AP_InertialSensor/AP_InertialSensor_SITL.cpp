@@ -409,7 +409,7 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
 {
     if (gyro_fd == -1) {
         char namebuf[32];
-        snprintf(namebuf, 32, "/tmp/gyro%d.dat", gyro_instance);
+        snprintf(namebuf, sizeof(namebuf), "/tmp/gyro%d.dat", gyro_instance);
         gyro_fd = AP::FS().open(namebuf, O_RDONLY);
         if (gyro_fd == -1) {
             AP_HAL::panic("gyro data file %s not found", namebuf);
@@ -462,7 +462,7 @@ void AP_InertialSensor_SITL::write_gyro_to_file(const Vector3f& gyro)
 {
     if (gyro_fd == -1) {
         char namebuf[32];
-        snprintf(namebuf, 32, "/tmp/gyro%d.dat", gyro_instance);
+        snprintf(namebuf, sizeof(namebuf), "/tmp/gyro%d.dat", gyro_instance);
         gyro_fd = open(namebuf, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRGRP|S_IROTH);
     }
 
@@ -477,7 +477,7 @@ void AP_InertialSensor_SITL::read_accel_from_file()
 {
     if (accel_fd == -1) {
         char namebuf[32];
-        snprintf(namebuf, 32, "/tmp/accel%d.dat", accel_instance);
+        snprintf(namebuf, sizeof(namebuf), "/tmp/accel%d.dat", accel_instance);
         accel_fd = open(namebuf, O_RDONLY|O_CLOEXEC);
         if (accel_fd == -1) {
             AP_HAL::panic("accel data file %s not found", namebuf);
@@ -534,7 +534,7 @@ void AP_InertialSensor_SITL::write_accel_to_file(const Vector3f& accel)
 
     if (accel_fd == -1) {
         char namebuf[32];
-        snprintf(namebuf, 32, "/tmp/accel%d.dat", accel_instance);
+        snprintf(namebuf, sizeof(namebuf), "/tmp/accel%d.dat", accel_instance);
         accel_fd = open(namebuf, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRGRP|S_IROTH);
     }
 
