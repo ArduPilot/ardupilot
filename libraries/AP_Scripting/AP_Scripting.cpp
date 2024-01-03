@@ -328,7 +328,6 @@ void AP_Scripting::thread(void) {
                 _net_sockets[i] = nullptr;
             }
         }
-        num_net_sockets = 0;
 #endif // AP_NETWORKING_ENABLED
         
         // Clear blocked commands
