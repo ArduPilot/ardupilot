@@ -265,9 +265,9 @@ void AP_OpticalFlow::stop_calibration()
 void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
 {
     _state = state;
-    _last_update_ms = AP_HAL::millis();
 
 #if AP_AHRS_ENABLED
+    _last_update_ms = AP_HAL::millis();
     // write to log and send to EKF if new data has arrived
     AP::ahrs().writeOptFlowMeas(quality(),
                                 _state.flowRate,
