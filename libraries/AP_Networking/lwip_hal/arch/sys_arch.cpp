@@ -4,6 +4,9 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Networking/AP_Networking_Config.h>
+
+#if AP_NETWORKING_NEED_LWIP
 #include <AP_HAL/Semaphores.h>
 #include <AP_Math/AP_Math.h>
 
@@ -384,4 +387,6 @@ sys_arch_unprotect(sys_prot_t pval)
         lwprot_mutex.give();
     }
 }
+
+#endif // AP_NETWORKING_NEED_LWIP
 

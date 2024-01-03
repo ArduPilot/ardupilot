@@ -50,6 +50,8 @@
 #define AP_NETWORKING_SOCKETS_ENABLED AP_NETWORKING_ENABLED
 #endif
 
+#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
+
 // ---------------------------
 // IP Features
 // ---------------------------
