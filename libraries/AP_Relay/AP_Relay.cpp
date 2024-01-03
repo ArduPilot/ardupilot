@@ -81,25 +81,95 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[0], "1_", 7, AP_Relay, AP_Relay_Params),
 
+#if AP_RELAY_NUM_RELAYS > 1
     // @Group: 2_
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 8, AP_Relay, AP_Relay_Params),
+#endif
 
+#if AP_RELAY_NUM_RELAYS > 2
     // @Group: 3_
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[2], "3_", 9, AP_Relay, AP_Relay_Params),
+#endif
 
+#if AP_RELAY_NUM_RELAYS > 3
     // @Group: 4_
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[3], "4_", 10, AP_Relay, AP_Relay_Params),
+#endif
 
+#if AP_RELAY_NUM_RELAYS > 4
     // @Group: 5_
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[4], "5_", 11, AP_Relay, AP_Relay_Params),
+#endif
 
+#if AP_RELAY_NUM_RELAYS > 5
     // @Group: 6_
     // @Path: AP_Relay_Params.cpp
     AP_SUBGROUPINFO(_params[5], "6_", 12, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 6
+    // @Group: 7_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[6], "7_", 13, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 7
+    // @Group: 8_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[7], "8_", 14, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 8
+    // @Group: 9_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[8], "9_", 15, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 9
+    // @Group: 10_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[9], "10_", 16, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 10
+    // @Group: 11_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[10], "11_", 17, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 11
+    // @Group: 12_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[11], "12_", 18, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 12
+    // @Group: 13_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[12], "13_", 19, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 13
+    // @Group: 14_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[13], "14_", 20, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 14
+    // @Group: 15_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[14], "15_", 21, AP_Relay, AP_Relay_Params),
+#endif
+
+#if AP_RELAY_NUM_RELAYS > 15
+    // @Group: 16_
+    // @Path: AP_Relay_Params.cpp
+    AP_SUBGROUPINFO(_params[15], "16_", 22, AP_Relay, AP_Relay_Params),
+#endif
 
     AP_GROUPEND
 };
@@ -402,6 +472,8 @@ bool AP_Relay::enabled(AP_Relay_Params::FUNCTION function) const
 // supplied link for the message.
 bool AP_Relay::send_relay_status(const GCS_MAVLINK &link) const
 {
+    static_assert(AP_RELAY_NUM_RELAYS <= 16, "Too many relays for MAVLink status reporting to work.");
+
     if (!HAVE_PAYLOAD_SPACE(link.get_chan(), RELAY_STATUS)) {
         return false;
     }
