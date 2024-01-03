@@ -104,6 +104,8 @@ brand_map = {
     "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
     "SkystarsH7HD" : ("Skystars", "H743 HD"),
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
+    "AQUILA-2": ("AQUILA-2", "ARGOSDYNE"),
+    "AQUILA-3F": ("AQUILA-3F", "ARGOSDYNE"),
 }
 
 class Firmware():
@@ -256,7 +258,9 @@ class ManifestGenerator():
             'VRBrain-v52': ['0x27AC/0x1152'],
             'VRBrain-v54': ['0x27AC/0x1154'],
             'VRCore-v10': ['0x27AC/0x1910'],
-            'VRUBrain-v51': ['0x27AC/0x1351']
+            'VRUBrain-v51': ['0x27AC/0x1351'],
+            'AQUILA-2': ['0x2DAE/0x1016'],
+            'AQUILA-3F': ['0x2DAE/0x1016'],
         }
         if 'USBID' in apj_json:
             # newer APJ files have USBID in the json data
