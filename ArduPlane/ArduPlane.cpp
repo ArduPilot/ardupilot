@@ -135,7 +135,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(landing_gear_update, 5, 50, 159),
 #endif
 #if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland, 50, 50, 160),
+    SCHED_TASK(update_precland, 400, 50, 160),
 #endif
 };
 
