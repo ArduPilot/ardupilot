@@ -6646,7 +6646,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''web server'''
         applet_script = "net_webserver.lua"
 
-        self.install_applet_script(applet_script)
+        self.context_push()
+        self.install_applet_script_context(applet_script)
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -6672,14 +6673,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.TestWebServer("http://127.0.0.1:8081")
 
         self.context_pop()
-        self.remove_installed_script(applet_script)
+        self.context_pop()
         self.reboot_sitl()
 
     def NetworkingWebServerPPP(self):
         '''web server over PPP'''
         applet_script = "net_webserver.lua"
 
-        self.install_applet_script(applet_script)
+        self.context_push()
+        self.install_applet_script_context(applet_script)
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -6718,7 +6720,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.TestWebServer("http://192.168.14.13:8081")
 
         self.context_pop()
-        self.remove_installed_script(applet_script)
+        self.context_pop()
 
         # restore rover without ppp enabled for next test
         os.unlink('build/sitl/bin/ardurover')
