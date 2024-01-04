@@ -108,6 +108,7 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
 AP_PiccoloCAN::AP_PiccoloCAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::load_object_from_eeprom(this, var_info);
 
     debug_can(AP_CANManager::LOG_INFO, "PiccoloCAN: constructed\n\r");
 }
