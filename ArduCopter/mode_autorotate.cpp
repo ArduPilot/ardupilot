@@ -40,6 +40,9 @@ bool ModeAutorotate::init(bool ignore_checks)
     // zero thrust collective is set in library.  Must be set before init_hs_controller is called.
     g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
 
+    // init autorotation controllers object
+    g2.arot.init(motors);
+
     // Initialise controllers
     // This must be done before RPM value is fetched
     g2.arot.init_hs_controller();
