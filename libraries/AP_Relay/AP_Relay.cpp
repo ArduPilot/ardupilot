@@ -472,6 +472,18 @@ bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
             }
             return false;
         }
+
+        // Each pin can only be used by a single relay
+        for (uint8_t j=i+1; j<ARRAY_SIZE(_params); j++) {
+            if (!function_valid((AP_Relay_Params::FUNCTION)_params[j].function.get())) {
+                // Relay disabled
+                continue;
+            }
+            if (pin == _params[j].pin.get()) {
+                hal.util->snprintf(buffer, buflen, "pin conflict RELAY%u_PIN = RELAY%u_PIN", int(i+1), int(j+1));
+                return false;
+            }
+        }
     }
     return true;
 }
