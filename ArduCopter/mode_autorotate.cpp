@@ -37,9 +37,6 @@ bool ModeAutorotate::init(bool ignore_checks)
         return false;
     }
 
-    // zero thrust collective is set in library.  Must be set before init_hs_controller is called.
-    g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
-
     // init autorotation controllers object
     g2.arot.init(motors);
 
@@ -68,14 +65,6 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.bail_out_initial = true;
     _msg_flags.bad_rpm = true;
     initial_energy_check = true;
-    g2.arot._using_rfnd = false;
-    g2.arot.init_avg_acc_z();
-    g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
-    g2.arot.set_collective_hover(motors->get_coll_hover());
-    g2.arot.set_collective_max(motors->get_coll_max_pitch());
-    g2.arot.set_collective_min(motors->get_coll_min_pitch());
-    g2.arot.get_gov_rpm(motors->get_rpm_setpoint());
-    g2.arot.initial_flare_estimate();
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -206,7 +195,6 @@ void ModeAutorotate::run()
         } else {
             _pitch_target = 0.0f;
             g2.arot.update_hover_autorotation_controller(); //run head speed/ collective controller
-            g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
             g2.arot.set_entry_sink_rate(curr_vel_z);
             g2.arot.set_entry_alt(g2.arot.get_ground_distance());
         }
