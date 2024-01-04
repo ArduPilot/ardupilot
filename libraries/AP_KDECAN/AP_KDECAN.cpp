@@ -58,6 +58,7 @@ const uint16_t AP_KDECAN::SET_PWM_MIN_INTERVAL_US;
 AP_KDECAN::AP_KDECAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::load_object_from_eeprom(this, var_info);
 
     debug_can(AP_CANManager::LOG_INFO, "constructed");
 }
