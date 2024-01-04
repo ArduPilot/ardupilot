@@ -198,12 +198,8 @@ void AC_Autorotation::init(AP_MotorsHeli* motors) {
     memset(_curr_acc_z, 0, sizeof(_curr_acc_z));
 
     initial_flare_estimate();
-}
 
-
-// Initialisation of head speed controller
-void AC_Autorotation::init_hs_controller()
-{
+    // Initialisation of head speed controller
     // Set initial collective position to be the collective position on initialisation
     _collective_out = _motors_heli->get_coll_mid();
 
@@ -218,8 +214,21 @@ void AC_Autorotation::init_hs_controller()
     _healthy_rpm_counter = 0;
 
     // Protect against divide by zero
-    _param_head_speed_set_point.set(MAX(_param_head_speed_set_point, 500));
+    _param_head_speed_set_point.set(MAX(_param_head_speed_set_point, 500.0));
 
+    // Initialise forward speed controller
+    // Reset I term and acceleration target
+    _accel_target = 0.0;
+
+    // Ensure parameter acceleration doesn't exceed hard-coded limit
+    _accel_max = MIN(_param_accel_max, 500.0);
+
+    // Reset cmd vel and last accel to sensible values
+    _cmd_vel = calc_speed_forward(); //(cm/s)
+    _accel_out_last = _cmd_vel * _param_fwd_k_ff;
+
+    // initialize radar altitude estimator
+    init_est_radar_alt();
 }
 
 
@@ -449,21 +458,6 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
                                 (_est_alt*0.01f));
 }
 #endif  // HAL_LOGGING_ENABLED
-
-
-// Initialise forward speed controller
-void AC_Autorotation::init_fwd_spd_controller(void)
-{
-    // Reset I term and acceleration target
-    _accel_target = 0.0f;
-
-    // Ensure parameter acceleration doesn't exceed hard-coded limit
-    _accel_max = MIN(_param_accel_max, 500.0f);
-
-    // Reset cmd vel and last accel to sensible values
-    _cmd_vel = calc_speed_forward(); //(cm/s)
-    _accel_out_last = _cmd_vel * _param_fwd_k_ff;
-}
 
 
 // Sets time delta in seconds for all controllers

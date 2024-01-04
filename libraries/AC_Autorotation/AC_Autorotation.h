@@ -21,13 +21,7 @@ public:
      // object initialisation
     void init(AP_MotorsHeli* motors);
 
-    // Initialise head speed controller
-    void init_hs_controller(void);
-
     void initial_flare_estimate(void);
-
-    // Initialise forward speed controller
-    void init_fwd_spd_controller(void);
 
     // Update head speed controller
     bool update_hs_glide_controller(void);
