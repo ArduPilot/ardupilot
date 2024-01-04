@@ -40,14 +40,6 @@ bool ModeAutorotate::init(bool ignore_checks)
     // init autorotation controllers object
     g2.arot.init(motors);
 
-    // Initialise controllers
-    // This must be done before RPM value is fetched
-    g2.arot.init_hs_controller();
-    g2.arot.init_fwd_spd_controller();
-
-    // initialize radar altitude estimator
-    g2.arot.init_est_radar_alt();
-
     // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
 
