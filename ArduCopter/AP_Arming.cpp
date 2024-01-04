@@ -398,10 +398,10 @@ bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
     return filt_status.flags.attitude;
 }
 
+#if HAL_PROXIMITY_ENABLED
 // check nothing is too close to vehicle
 bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 {
-#if HAL_PROXIMITY_ENABLED
 
     if (!AP_Arming::proximity_checks(display_failure)) {
         return false;
@@ -425,9 +425,9 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
     }
 #endif
 
-#endif
     return true;
 }
+#endif  // HAL_PROXIMITY_ENABLED
 
 // performs mandatory gps checks.  returns true if passed
 bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
