@@ -5,6 +5,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Motors/AP_MotorsHeli_RSC.h>
+#include <AP_Motors/AP_MotorsHeli.h>
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter.h>
 #include <AC_PID/AC_P.h>
@@ -17,7 +18,7 @@ public:
     //Constructor
     AC_Autorotation(AP_InertialNav& inav, AP_AHRS& ahrs);
 
-    //--------Functions--------
+    void init(AP_MotorsHeli* motors); // object initialisation
     void init_hs_controller(void);  // Initialise head speed controller
     void initial_flare_estimate(void);
     void init_fwd_spd_controller(void);  // Initialise forward speed controller
@@ -47,11 +48,6 @@ public:
 	float get_ground_distance() const { return _radar_alt; }
 	float get_time_to_ground() const { return _time_to_ground; }
 	void time_to_ground();
-	void set_collective_minimum_drag(float col_mid )  { _col_mid = col_mid; }
-	void set_collective_hover(float col_hover) {_col_hover = col_hover; }
-	void set_collective_max(float col_max) {_col_max = col_max; }
-	void set_collective_min(float col_min) {_col_min = col_min; }
-	void get_gov_rpm(float gov_rpm) {_governed_rpm = gov_rpm; }
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
 	void set_ground_clearance(float ground_clearance) { _ground_clearance = ground_clearance; }
@@ -59,7 +55,6 @@ public:
     void update_est_radar_alt();
     float get_est_alt() const {return _est_alt;}
     void update_hover_autorotation_controller();
-    void init_avg_acc_z();
     void calc_avg_acc_z();
     float get_flare_alt() const {return _flare_alt_calc;}
     void update_flare_alt();
@@ -111,7 +106,6 @@ private:
     float _desired_speed;
     float _time_to_ground;
     float _desired_sink_rate;
-    float _col_mid;
     float _ground_clearance;
     float _est_alt;
     float _descent_rate_filtered;
@@ -121,13 +115,9 @@ private:
     float _acc_z_sum;
     int16_t _index;
     float _curr_acc_z[10]{};
-    float _col_hover;
-    float _col_max;
-    float _col_min;
     float _flare_alt_calc;
     float _lift_hover;
     float _c;
-    float _governed_rpm;
     float _cushion_alt;
     float _disc_area;
     float _last_vertical_speed;
@@ -175,4 +165,6 @@ private:
 	//--------References to Other Libraries--------
     AP_InertialNav&    _inav;
     AP_AHRS&           _ahrs;
+
+    AP_MotorsHeli*       _motors_heli;
 };

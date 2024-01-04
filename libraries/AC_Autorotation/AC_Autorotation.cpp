@@ -180,11 +180,30 @@ AC_Autorotation::AC_Autorotation(AP_InertialNav& inav, AP_AHRS& ahrs) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+
+void AC_Autorotation::init(AP_MotorsHeli* motors) {
+
+    _motors_heli = motors;
+    if (_motors_heli == nullptr) {
+        AP_HAL::panic("AROT: _motors_heli is nullptr");
+    }
+
+    _using_rfnd = false;
+
+    // reset z acceleration average variables
+    _avg_acc_z = 0.0f;
+    _acc_z_sum = 0.0f;
+    _index = 0;
+    memset(_curr_acc_z, 0, sizeof(_curr_acc_z));
+
+    initial_flare_estimate();
+}
+
 // Initialisation of head speed controller
 void AC_Autorotation::init_hs_controller()
 {
     // Set initial collective position to be the collective position on initialisation
-    _collective_out = _col_mid;
+    _collective_out = _motors_heli->get_coll_mid();
 
     // Reset feed forward filter
     col_trim_lpf.reset(_collective_out);
@@ -251,7 +270,7 @@ void AC_Autorotation::update_hover_autorotation_controller()
     col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
 
     // use zero thrust collective to minimize rotor speed loss
-    _ff_term_hs = col_trim_lpf.apply(_col_mid, _dt);
+    _ff_term_hs = col_trim_lpf.apply(_motors_heli->get_coll_mid(), _dt);
 
     // Calculate collective position to be set
     _collective_out = constrain_value(_ff_term_hs, 0.0f, 1.0f) ;
@@ -263,11 +282,8 @@ void AC_Autorotation::update_hover_autorotation_controller()
 // Function to set collective and collective filter in motor library
 void AC_Autorotation::set_collective(float collective_filter_cutoff) const
 {
-    AP_Motors *motors = AP::motors();
-    if (motors) {
-        motors->set_throttle_filter_cutoff(collective_filter_cutoff);
-        motors->set_throttle(_collective_out);
-    }
+    _motors_heli->set_throttle_filter_cutoff(collective_filter_cutoff);
+    _motors_heli->set_throttle(_collective_out);
 }
 
 //function that gets rpm and does rpm signal checking to ensure signal is reliable
@@ -324,11 +340,11 @@ float AC_Autorotation::get_rpm(bool update_counter)
 void AC_Autorotation::initial_flare_estimate()
 {
     //estimate hover thrust
-    float _col_hover_rad = radians(_col_min + (_col_max - _col_min)*_col_hover);
+    float _col_hover_rad = radians(_motors_heli->get_hover_coll_ang());
     float b = _param_solidity*6.28f;
     _disc_area=3.14*sq(_param_diameter*0.5f);
     float lambda = (-(b/8.0f) + safe_sqrt((sq(b))/64.0f +((b/3.0f)*_col_hover_rad)))*0.5f;
-    float freq=_governed_rpm/60.0f;
+    float freq = _motors_heli->get_rpm_setpoint()/60.0f;
     float tip_speed= freq*6.28f*_param_diameter*0.5f;
     _lift_hover = ((1.225f*sq(tip_speed)*(_param_solidity*_disc_area))*((_col_hover_rad/3.0f) - (lambda/2.0f))*5.8f)*0.5f;
 
@@ -695,14 +711,6 @@ void AC_Autorotation::update_est_radar_alt()
     }
 }
 
-void AC_Autorotation::init_avg_acc_z()
-{
-    _avg_acc_z = 0.0f;
-    _acc_z_sum = 0.0f;
-    _index = 0;
-    memset(_curr_acc_z, 0, sizeof(_curr_acc_z));
-
-}
 
 void AC_Autorotation::calc_avg_acc_z()
 {
