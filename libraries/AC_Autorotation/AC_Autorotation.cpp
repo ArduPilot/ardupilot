@@ -417,36 +417,36 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
     // @Vehicles: Copter
     // @Description: Helicopter AutoRotation information
     // @Field: TimeUS: Time since system startup
-    // @Field: P: P-term for headspeed controller response
-    // @Field: hs_e: head speed error; difference between current and desired head speed
-    // @Field: C_Out: Collective Out
-    // @Field: FFCol: FF-term for headspeed controller response
-    // @Field: SpdF: current forward speed
-    // @Field: DH: desired forward speed
-    // @Field: p: p-term of velocity response
-    // @Field: ff: ff-term of velocity response
-    // @Field: AccZ: average z acceleration
-    // @Field: DesV: Desired Sink Rate
-    // @Field: Rfnd: rangefinder altitude
-    // @Field: Hest: estimated altitude
+    // @Field: hsp: P-term for headspeed controller response
+    // @Field: hse: head speed error; difference between current and desired head speed
+    // @Field: co: Collective Out
+    // @Field: cff: FF-term for headspeed controller response
+    // @Field: sf: current forward speed
+    // @Field: dsf: desired forward speed
+    // @Field: vp: p-term of velocity response
+    // @Field: vff: ff-term of velocity response
+    // @Field: az: average z acceleration
+    // @Field: dvz: Desired Sink Rate
+    // @Field: rfnd: rangefinder altitude
+    // @Field: h: estimated altitude
 
     //Write to data flash log
     AP::logger().WriteStreaming("AROT",
-                                "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccZ,DesV,Rfnd,Hest",
+                                "TimeUS,hsp,hse,co,cff,sf,dsf,vp,vff,az,dvz,rfnd,h",
                                 "Qffffffffffff",
                                 AP_HAL::micros64(),
-                                (double)_p_term_hs,
-                                (double)_head_speed_error,
-                                (double)_collective_out,
-                                (double)_ff_term_hs,
-                                (double)(_speed_forward*0.01f),
-                                (double)(_cmd_vel*0.01f),
-                                (double)_vel_p,
-                                (double)_vel_ff,
-                                (double)_avg_acc_z,
-                                (double)_desired_sink_rate,
-                                (double)(_radar_alt*0.01f),
-                                (double)(_est_alt*0.01f)) ;
+                                _p_term_hs,
+                                _head_speed_error,
+                                _collective_out,
+                                _ff_term_hs,
+                                (_speed_forward*0.01f),
+                                (_cmd_vel*0.01f),
+                                _vel_p,
+                                _vel_ff,
+                                _avg_acc_z,
+                                _desired_sink_rate,
+                                (_radar_alt*0.01f),
+                                (_est_alt*0.01f));
 }
 #endif  // HAL_LOGGING_ENABLED
 
