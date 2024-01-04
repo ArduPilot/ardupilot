@@ -204,30 +204,21 @@ void Copter::heli_update_autorotation()
                 // set autonomous autorotation flight mode
                 set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
             }
-            // set flag to facilitate both auto and manual autorotations
+            // set flag to facilitate auto autorotation
             heli_flags.in_autorotation = true;
             motors->set_in_autorotation(heli_flags.in_autorotation);
             motors->set_enable_bailout(true);
+
+            // get height above ground. If using a healthy LiDaR below will return 
+            // an interpolated distance based on inertial measurement.
             int32_t gnd_dist = flightmode->get_alt_above_ground_cm();
 
-            // use rangefinder if available
-            switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
-            case RangeFinder::Status::NotConnected:
-            case RangeFinder::Status::NoData:
-            case RangeFinder::Status::OutOfRangeHigh:
-                // use altitude above home for non-functioning rangefinder
-                break;
-
-            case RangeFinder::Status::OutOfRangeLow:
-                // altitude is close to zero (gear should deploy)
+            // handle the out of range case, assume we are on the ground by that point
+            if (rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
                 gnd_dist = 0;
-                break;
-
-            case RangeFinder::Status::Good:
-                // use last good reading
-                gnd_dist = rangefinder_state.alt_cm;
-                break;
             }
+
+            // set the height in the autorotation controller
             g2.arot.set_ground_distance(gnd_dist);
         }
 #endif
