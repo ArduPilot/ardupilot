@@ -90,7 +90,7 @@ void AP_Generator_IE_2400::assign_measurements(const uint32_t now)
         // If received 20 valid packets for a single protocol version then lock on
         if (_last_version_packet_count > 20) {
             _version = new_version;
-            gcs().send_text(MAV_SEVERITY_INFO, "Generator: IE using %s protocol", (_version == ProtocolVersion::V2) ? "V2" : "legacy" );
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Generator: IE using %s protocol", (_version == ProtocolVersion::V2) ? "V2" : "legacy" );
 
         } else {
             // Don't record any data during version detection
