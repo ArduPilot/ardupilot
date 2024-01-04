@@ -237,7 +237,7 @@ void ModeAutorotate::run()
         // Update head speed/ collective controller
         _flags.bad_rpm = g2.arot.update_hs_glide_controller();
         // Attitude controller is updated in navigation switch-case statements
-        g2.arot.calc_avg_acc_z();
+        g2.arot.update_avg_acc_z();
 
         break;
     }
@@ -269,7 +269,7 @@ void ModeAutorotate::run()
         _pitch_target = g2.arot.get_pitch();
 
         //calc average acceleration on z axis for estimating flare effectiveness
-        g2.arot.calc_avg_acc_z();
+        g2.arot.update_avg_acc_z();
 
         break;
     }
