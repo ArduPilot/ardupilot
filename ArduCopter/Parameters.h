@@ -504,6 +504,11 @@ public:
     AP_Button *button_ptr;
 #endif
 
+#if HAL_POWER_BUTTON_ENABLE == ENABLED
+    // power on button checking
+    AP_Power_Button power_button;
+#endif
+
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;

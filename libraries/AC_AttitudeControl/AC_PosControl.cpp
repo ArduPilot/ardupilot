@@ -318,6 +318,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
 
+    // @Param: _PLNDA_MAX
+    // @DisplayName: Position Control Angle Max in Precison Land mode
+    // @Description: Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value
+    // @Units: deg
+    // @Range: 0 45
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_PLNDA_MAX", 12, AC_PosControl, _lean_prlnd_angle_max, 15.0f),
+
     AP_GROUPEND
 };
 
@@ -345,6 +354,10 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if true   // argosdyne
+    _is_prlnd_landmode = false;
+#endif    
 }
 
 
@@ -785,6 +798,10 @@ void AC_PosControl::init_z_controller()
     // with zero position error _vel_target = _vel_desired
     _vel_target.z = curr_vel_z;
 
+#if true   // argosdyne
+    _is_prlnd_landmode = false;
+#endif    
+
     // Reset I term of velocity PID
     _pid_vel_z.reset_filter();
     _pid_vel_z.set_integrator(0.0f);
@@ -1025,6 +1042,7 @@ void AC_PosControl::update_z_controller()
 ///
 
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
+#if false   // argosdyne
 float AC_PosControl::get_lean_angle_max_cd() const
 {
     if (is_positive(_angle_max_override_cd)) {
@@ -1035,6 +1053,26 @@ float AC_PosControl::get_lean_angle_max_cd() const
     }
     return _lean_angle_max * 100.0f;
 }
+#else
+float AC_PosControl::get_lean_angle_max_cd() const
+{
+    if (_is_prlnd_landmode == false) {
+        if (is_positive(_angle_max_override_cd)) {
+            return _angle_max_override_cd;
+        }
+        if (!is_positive(_lean_angle_max)) {
+            return _attitude_control.lean_angle_max_cd();
+        }
+        return (_lean_angle_max * 100.0f);
+    }
+    else {
+        if (!is_positive(_lean_angle_max)) {
+            return _attitude_control.lean_angle_max_cd();
+        }
+        return (_lean_prlnd_angle_max * 100.0f);
+    }
+}
+#endif
 
 /// set position, velocity and acceleration targets
 void AC_PosControl::set_pos_vel_accel(const Vector3p& pos, const Vector3f& vel, const Vector3f& accel)

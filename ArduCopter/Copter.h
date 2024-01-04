@@ -137,6 +137,10 @@
  # include <AP_Button/AP_Button.h>
 #endif
 
+#if HAL_POWER_BUTTON_ENABLE == ENABLED
+ # include <AP_Power_Button/AP_Power_Button.h>
+#endif
+
 #if OSD_ENABLED || OSD_PARAM_ENABLED
  #include <AP_OSD/AP_OSD.h>
 #endif
@@ -176,6 +180,11 @@
 #if USER_PARAMS_ENABLED
 #include "UserParameters.h"
 #endif
+
+#if HAL_CODEV_ESC_ENABLE == ENABLED
+#include <AP_CodevEsc/AP_CodevEsc.h>
+#endif
+
 #include "mode.h"
 
 class Copter : public AP_Vehicle {
@@ -510,6 +519,10 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if HAL_MOUNT_ENABLED
     AP_Mount camera_mount;
+#endif
+
+#if HAL_CODEV_ESC_ENABLE == ENABLED
+    AP_CodevEsc codev_esc;
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
