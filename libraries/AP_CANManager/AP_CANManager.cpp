@@ -210,7 +210,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[drv_num], AP_UAVCAN::var_info);
         } else if (drv_type[drv_num] == Driver_Type_KDECAN) {
 #if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
             // To be replaced with macro saying if KDECAN library is included
@@ -221,7 +220,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_KDECAN*)_drivers[drv_num], AP_KDECAN::var_info);
 #endif
         } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
 #if HAL_PICCOLO_CAN_ENABLE
@@ -232,7 +230,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
 #endif
         } else if (drv_type[drv_num] == Driver_Type_CANTester) {
 #if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER
@@ -242,7 +239,6 @@ void AP_CANManager::init()
                 AP_BoardConfig::allocation_error("CANTester %d", drv_num + 1);
                 continue;
             }
-            AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);
 #endif
         } else {
             continue;
