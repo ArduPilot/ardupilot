@@ -613,3 +613,9 @@ AP_MotorsHeli_RSC::RotorControlState AP_MotorsHeli::get_rotor_control_state() co
     // Should be unreachable, but needed to keep the compiler happy
     return AP_MotorsHeli_RSC::RotorControlState::STOP;
 }
+
+// Return collective hover position as an angle in deg
+float AP_MotorsHeli::get_hover_coll_ang(void)
+{
+    return _collective_min_deg.get() + (_collective_max_deg.get() - _collective_min_deg.get()) * _collective_hover.get();
+}

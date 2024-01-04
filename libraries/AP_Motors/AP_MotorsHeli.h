@@ -155,6 +155,9 @@ public:
 
     float get_coll_min_pitch() const { return _collective_min_deg;}
 
+    // Return collective hover position as an angle in deg
+    float get_hover_coll_ang(void);
+
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
