@@ -108,7 +108,7 @@ public:
 
     void update_hover_autorotation_controller();
 
-    void calc_avg_acc_z(void);
+    void update_avg_acc_z(void);
 
     float get_flare_alt(void) const { return _flare_alt_calc; }
 

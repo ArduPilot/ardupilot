@@ -725,15 +725,17 @@ void AC_Autorotation::update_est_radar_alt(void)
 }
 
 
-void AC_Autorotation::calc_avg_acc_z(void)
+void AC_Autorotation::update_avg_acc_z(void)
 {
-    if (_index < 10) {
-        _acc_z_sum -= _curr_acc_z[_index];
-        _curr_acc_z[_index] = _ahrs.get_accel_ef().z;
-        _acc_z_sum += _curr_acc_z[_index];
-        _index = _index + 1;
-    } else {
+    // Wrap index
+    if (_index >= 10) {
         _index = 0;
     }
-    _avg_acc_z = _acc_z_sum / 10.0f;
+
+    _acc_z_sum -= _curr_acc_z[_index];
+    _curr_acc_z[_index] = _ahrs.get_accel_ef().z;
+    _acc_z_sum += _curr_acc_z[_index];
+    _index = _index + 1;
+
+    _avg_acc_z = _acc_z_sum / 10.0;
 }
