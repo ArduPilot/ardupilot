@@ -413,7 +413,7 @@ void Frame::load_frame_params(const char *model_json)
                 // use default value
                 continue;
             }
-            if (vars[i].t == VarType::FLOAT) {
+            if (per_motor_vars[i].t == VarType::FLOAT) {
                 parse_float(v, label_name, *(((float *)per_motor_vars[i].ptr) + j));
 
             } else if (per_motor_vars[i].t == VarType::VECTOR3F) {
