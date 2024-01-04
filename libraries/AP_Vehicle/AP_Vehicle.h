@@ -344,8 +344,10 @@ protected:
     // false disables external leds)
     AP_Notify notify;
 
+#if AP_AHRS_ENABLED
     // Inertial Navigation EKF
     AP_AHRS ahrs;
+#endif
 
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
