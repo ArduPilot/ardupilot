@@ -38,14 +38,16 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PROTOCOL
-    // @DisplayName: protocol
-    // @Description: protocol
+    // @DisplayName: Protocol
+    // @Description: Networked serial port protocol
     // @User: Advanced
+    // @RebootRequired: True
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     AP_GROUPINFO("PROTOCOL", 2,  AP_Networking::Port, state.protocol, 0),
 
     // @Group: IP
     // @Path: AP_Networking_address.cpp
+    // @RebootRequired : True
     AP_SUBGROUPINFO(ip, "IP", 3,  AP_Networking::Port, AP_Networking_IPV4),
 
     // @Param: PORT
