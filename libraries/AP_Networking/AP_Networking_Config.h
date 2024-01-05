@@ -19,15 +19,6 @@
 #define AP_NETWORKING_BACKEND_DEFAULT_ENABLED AP_NETWORKING_ENABLED
 #endif
 
-#ifndef AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
-// AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED should only be true if we have the ability to
-// change the IP address. If not then the IP, GW, NetMask, MAC and DHCP params are hidden. 
-// This does not mean that the system/OS does not have the ability to set the IP, just that
-// we have no control from this scope. For example, Linux systems (including SITL) have
-// their own DHCP client running but we have no control over it.
-#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS)
-#endif
-
 // ---------------------------
 // Backends
 // ---------------------------
@@ -48,6 +39,15 @@
 
 #ifndef AP_NETWORKING_SOCKETS_ENABLED
 #define AP_NETWORKING_SOCKETS_ENABLED AP_NETWORKING_ENABLED
+#endif
+
+#ifndef AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+// AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED should only be true if we have the ability to
+// change the IP address. If not then the IP, GW, NetMask, MAC and DHCP params are hidden. 
+// This does not mean that the system/OS does not have the ability to set the IP, just that
+// we have no control from this scope. For example, Linux systems (including SITL) have
+// their own DHCP client running but we have no control over it.
+#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED AP_NETWORKING_BACKEND_CHIBIOS
 #endif
 
 #define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
