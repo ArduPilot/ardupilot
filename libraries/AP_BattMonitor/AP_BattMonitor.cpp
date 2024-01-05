@@ -1056,6 +1056,15 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
     return drivers[instance]->get_mavlink_fault_bitmask();
 }
 
+// return true if state of health (as a percentage) can be provided and fills in soh_pct argument
+bool AP_BattMonitor::get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->get_state_of_health_pct(soh_pct);
+}
+
 // Enable/Disable (Turn on/off) MPPT power to all backends who are MPPTs
 void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
 {

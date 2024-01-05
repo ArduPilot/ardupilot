@@ -16,6 +16,9 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         temperature_cd = temperature * 100.0;
     }
 
+    uint8_t soh_pct = 0;
+    IGNORE_RETURN(get_state_of_health_pct(soh_pct));
+
     const struct log_BAT pkt{
         LOG_PACKET_HEADER_INIT(LOG_BAT_MSG),
         time_us             : time_us,
@@ -28,7 +31,8 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         temperature         : temperature_cd,
         resistance          : _state.resistance,
         rem_percent         : percent,
-        health              : _state.healthy
+        health              : _state.healthy,
+        state_of_health_pct : soh_pct
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

@@ -107,6 +107,16 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
     _state.voltage_resting_estimate = _state.voltage + _state.current_amps * _state.resistance;
 }
 
+// return true if state of health can be provided and fills in soh_pct argument
+bool AP_BattMonitor_Backend::get_state_of_health_pct(uint8_t &soh_pct) const
+{
+    if (!_state.has_state_of_health_pct) {
+        return false;
+    }
+    soh_pct = _state.state_of_health_pct;
+    return true;
+}
+
 float AP_BattMonitor_Backend::voltage_resting_estimate() const
 {
     // resting voltage should always be greater than or equal to the raw voltage
