@@ -293,7 +293,15 @@ bool AP_Networking::sendfile(SocketAPM *sock, int fd)
 {
     WITH_SEMAPHORE(sem);
     if (sendfile_buf == nullptr) {
-        sendfile_buf = (uint8_t *)malloc(AP_NETWORKING_SENDFILE_BUFSIZE);
+        uint32_t bufsize = AP_NETWORKING_SENDFILE_BUFSIZE;
+        do {
+            sendfile_buf = (uint8_t *)hal.util->malloc_type(bufsize, AP_HAL::Util::MEM_FILESYSTEM);
+            if (sendfile_buf != nullptr) {
+                sendfile_bufsize = bufsize;
+                break;
+            }
+            bufsize /= 2;
+        } while (bufsize >= 4096);
         if (sendfile_buf == nullptr) {
             return false;
         }
@@ -344,7 +352,7 @@ void AP_Networking::sendfile_check(void)
             if (!s.sock->pollout(0)) {
                 continue;
             }
-            const auto nread = AP::FS().read(s.fd, sendfile_buf, AP_NETWORKING_SENDFILE_BUFSIZE);
+            const auto nread = AP::FS().read(s.fd, sendfile_buf, sendfile_bufsize);
             if (nread <= 0) {
                 s.close();
                 continue;

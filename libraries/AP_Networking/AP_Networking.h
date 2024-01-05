@@ -278,6 +278,7 @@ private:
     } sendfiles[AP_NETWORKING_NUM_SENDFILES];
 
     uint8_t *sendfile_buf;
+    uint32_t sendfile_bufsize;
     void sendfile_check(void);
     bool sendfile_thread_started;
 
