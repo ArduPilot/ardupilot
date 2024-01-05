@@ -5,6 +5,7 @@
 #include <hal.h>
 
 #if CH_CFG_USE_EVENTS
-#include "../../modules/ChibiOS/os/various/evtimer.c"
+// this include relies on -I for modules/ChibiOS/os/various/cpp_wrappers
+#include <../evtimer.c>
 #endif
 
