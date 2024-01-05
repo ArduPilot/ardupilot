@@ -1799,6 +1799,14 @@ function mission:get_index_of_jump_tag(tag) end
 function mission:get_last_jump_tag() end
 
 
+-- Jump the mission to the start of the closest landing sequence. Returns true if one was found
+---@return boolean
+function mission:jump_to_landing_sequence() end
+
+-- Jump to the landing abort sequence
+-- @return boolean
+function mission:jump_to_abort_landing_sequence() end
+
 -- desc
 ---@class param
 param = {}
