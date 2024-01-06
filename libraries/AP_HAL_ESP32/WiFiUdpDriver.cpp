@@ -32,6 +32,8 @@
 #include "lwip/sys.h"
 #include "lwip/netdb.h"
 
+#include "soc/rtc_wdt.h"
+
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -52,10 +54,15 @@ void WiFiUdpDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             return;
         }
 
-	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,0) != pdPASS) {
-            hal.console->printf("FAILED to create task _wifi_thread2\n");
+    // keep main tasks that need speed on CPU 0
+    // pin potentially slow stuff to CPU 1, as we have disabled the WDT on that core.
+    #define FASTCPU 0
+    #define SLOWCPU 1
+
+	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,FASTCPU) != pdPASS) {
+            hal.console->printf("FAILED to create task _wifi_thread2 on FASTCPU\n");
         } else {
-	    hal.console->printf("OK created task _wifi_thread2\n");
+	    hal.console->printf("OK created task _wifi_thread2 on FASTCPU\n");
     	}
 		
         _readbuf.set_size(RX_BUF_SIZE);
@@ -219,9 +226,10 @@ void WiFiUdpDriver::_wifi_thread2(void *arg)
             .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unecessarily, slowing APM_WIFI1 response
         };
         fd_set rfds;
+        rtc_wdt_feed();
         FD_ZERO(&rfds);
         FD_SET(self->accept_socket, &rfds);
-
+        rtc_wdt_feed();
         int s = select(self->accept_socket + 1, &rfds, NULL, NULL, &tv);
         if (s > 0 && FD_ISSET(self->accept_socket, &rfds)) {
             self->read_all();
