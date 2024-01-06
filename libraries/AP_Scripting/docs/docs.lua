@@ -817,150 +817,6 @@ function Vector3f_ud:normalize() end
 ---@return number
 function Vector3f_ud:length() end
 
-
--- desc
----@class BattMonitorScript_State_ud
-local BattMonitorScript_State_ud = {}
-
----@return BattMonitorScript_State_ud
-function BattMonitorScript_State() end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:resting_voltage() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:resting_voltage(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:resistance() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:resistance(value) end
-
--- get field
----@return uint32_t_ud
-function BattMonitorScript_State_ud:mavlink_faults() end
-
--- set field
----@param value uint32_t_ud
-function BattMonitorScript_State_ud:mavlink_faults(value) end
-
--- get field
----@return integer
----| '0' # None
----| '1' # Low
----| '2' # Critical
-function BattMonitorScript_State_ud:failsafe() end
-
--- set field
----@param value integer
----| '0' # None
----| '1' # Low
----| '2' # Critical
-function BattMonitorScript_State_ud:failsafe(value) end
-
--- get field
----@return uint32_t_ud
-function BattMonitorScript_State_ud:time_remaining() end
-
--- set field
----@param value uint32_t_ud
-function BattMonitorScript_State_ud:time_remaining(value) end
-
--- get field
----@return integer
-function BattMonitorScript_State_ud:cycle_count() end
-
--- set field
----@param value integer
-function BattMonitorScript_State_ud:cycle_count(value) end
-
--- get field
----@return integer
-function BattMonitorScript_State_ud:capacity_remaining_pct() end
-
--- set field
----@param value integer
-function BattMonitorScript_State_ud:capacity_remaining_pct(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:temperature() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:temperature(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:consumed_wh() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:consumed_wh(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:consumed_mah() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:consumed_mah(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:current_amps() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:current_amps(value) end
-
--- get array field
----@param index integer
----@return integer
-function BattMonitorScript_State_ud:cell_voltages(index) end
-
--- set array field
----@param index integer
----@param value integer
-function BattMonitorScript_State_ud:cell_voltages(index, value) end
-
--- get field
----@return integer
-function BattMonitorScript_State_ud:cell_count() end
-
--- set field
----@param value integer
-function BattMonitorScript_State_ud:cell_count(value) end
-
--- get field
----@return number
-function BattMonitorScript_State_ud:voltage() end
-
--- set field
----@param value number
-function BattMonitorScript_State_ud:voltage(value) end
-
--- get field
----@return boolean
-function BattMonitorScript_State_ud:healthy() end
-
--- set field
----@param value boolean
-function BattMonitorScript_State_ud:healthy(value) end
-
--- get field
----@return uint32_t_ud
-function BattMonitorScript_State_ud:last_update_us() end
-
--- set field
----@param value uint32_t_ud
-function BattMonitorScript_State_ud:last_update_us(value) end
-
 -- Computes angle between this vector and vector v2
 ---@param v2 Vector3f_ud 
 ---@return number
@@ -1324,15 +1180,6 @@ function RC_Channel_ud:norm_input() end
 -- desc return input on a channel from -1 to 1, centered on the trim. Returns zero when within deadzone of the trim
 ---@return number
 function RC_Channel_ud:norm_input_dz() end
-
--- desc
----@class AP_BattMonitor_Backend_ud
-local AP_BattMonitor_Backend_ud = {}
-
--- desc
----@param battmon_state BattMonitorScript_State_ud
----@return boolean
-function AP_BattMonitor_Backend_ud:handle_scripting(battmon_state) end
 
 -- desc
 ---@class winch
@@ -3015,15 +2862,63 @@ function gps:primary_sensor() end
 ---@return integer
 function gps:num_sensors() end
 
+-- desc
+---@class BattMonitorScript_State_ud
+local BattMonitorScript_State_ud = {}
+
+---@return BattMonitorScript_State_ud
+function BattMonitorScript_State() end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:temperature(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:consumed_wh(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:consumed_mah(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:current_amps(value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:cycle_count(value) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function BattMonitorScript_State_ud:cell_voltages(index, value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:capacity_remaining_pct(value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:cell_count(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:voltage(value) end
+
+-- set field
+---@param value boolean
+function BattMonitorScript_State_ud:healthy(value) end
 
 -- desc
 ---@class battery
 battery = {}
 
 -- desc
----@param index integer
----@return AP_BattMonitor_Backend_ud
-function battery:get_backend(index) end
+---@param idx integer
+---@param state BattMonitorScript_State_ud
+---@return boolean
+function battery:handle_scripting(idx, state) end
 
 -- desc
 ---@param instance integer
