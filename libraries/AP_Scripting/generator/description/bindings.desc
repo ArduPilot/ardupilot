@@ -76,6 +76,19 @@ singleton AP_Arming method set_aux_auth_failed void uint8_t'skip_check string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
+include AP_BattMonitor/AP_BattMonitor_Scripting.h
+userdata BattMonitorScript_State depends AP_BATTERY_SCRIPTING_ENABLED == 1
+userdata BattMonitorScript_State field healthy boolean write
+userdata BattMonitorScript_State field voltage float'skip_check write
+userdata BattMonitorScript_State field cell_count uint8_t'skip_check write
+userdata BattMonitorScript_State field capacity_remaining_pct uint8_t'skip_check write
+userdata BattMonitorScript_State field cell_voltages'array int(ARRAY_SIZE(ud->cell_voltages)) uint16_t'skip_check write
+userdata BattMonitorScript_State field cycle_count uint16_t'skip_check write
+userdata BattMonitorScript_State field current_amps float'skip_check write
+userdata BattMonitorScript_State field consumed_mah float'skip_check write
+userdata BattMonitorScript_State field consumed_wh float'skip_check write
+userdata BattMonitorScript_State field temperature float'skip_check write
+
 singleton AP_BattMonitor rename battery
 singleton AP_BattMonitor depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY))
 singleton AP_BattMonitor method num_instances uint8_t
@@ -93,6 +106,7 @@ singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud-
 singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
 singleton AP_BattMonitor method reset_remaining boolean uint8_t 0 ud->num_instances() float 0 100
 singleton AP_BattMonitor method get_cell_voltage boolean uint8_t'skip_check uint8_t'skip_check float'Null
+singleton AP_BattMonitor method handle_scripting boolean uint8_t'skip_check BattMonitorScript_State
 
 include AP_GPS/AP_GPS.h
 
