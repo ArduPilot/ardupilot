@@ -45,6 +45,7 @@ class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
 class AP_BattMonitor_EFI;
+class AP_BattMonitor_Scripting;
 
 
 class AP_BattMonitor
@@ -70,6 +71,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
     friend class AP_BattMonitor_Synthetic_Current;
+    friend class AP_BattMonitor_Scripting;
 
 public:
 
@@ -109,6 +111,7 @@ public:
         INA239_SPI                     = 26,
         EFI                            = 27,
         AD7091R5                       = 28,
+        Scripting                      = 29,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -272,6 +275,10 @@ public:
     uint32_t get_mavlink_fault_bitmask(const uint8_t instance) const;
 
     static const struct AP_Param::GroupInfo var_info[];
+
+#if AP_BATTERY_SCRIPTING_ENABLED
+    bool handle_scripting(uint8_t idx, const struct BattMonitorScript_State &state);
+#endif
 
 protected:
 
