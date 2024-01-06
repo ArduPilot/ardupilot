@@ -50,10 +50,15 @@ void WiFiDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (_state == NOT_INITIALIZED) {
         initialize_wifi();
 
-	if (xTaskCreatePinnedToCore(_wifi_thread, "APM_WIFI1", Scheduler::WIFI_SS1, this, Scheduler::WIFI_PRIO1, &_wifi_task_handle,0) != pdPASS) {
-           hal.console->printf("FAILED to create task _wifi_thread\n");
+    // keep main tasks that need speed on CPU 0
+    // pin potentially slow stuff to CPU 1, as we have disabled the WDT on that core.
+    #define FASTCPU 0
+    #define SLOWCPU 1
+
+	if (xTaskCreatePinnedToCore(_wifi_thread, "APM_WIFI1", Scheduler::WIFI_SS1, this, Scheduler::WIFI_PRIO1, &_wifi_task_handle,FASTCPU) != pdPASS) {
+           hal.console->printf("FAILED to create task _wifi_thread on FASTCPU\n");
         } else {
-           hal.console->printf("OK created task _wifi_thread\n");
+           hal.console->printf("OK created task _wifi_thread on FASTCPU\n");
         }
 
         _readbuf.set_size(RX_BUF_SIZE);
