@@ -132,6 +132,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
+    case MAV_CMD_DO_UPDATE_LOCATION:
+        do_update_location(cmd);
+        break;
+
     case MAV_CMD_DO_INVERTED_FLIGHT:
         if (cmd.p1 == 0 || cmd.p1 == 1) {
             auto_state.inverted_flight = (bool)cmd.p1;
@@ -317,6 +321,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_UPDATE_LOCATION:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -348,7 +353,6 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
-    plane.altitude_error_cm = calc_altitude_error_cm();
 
     if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
@@ -996,6 +1000,19 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
         if (!AP::ahrs().set_home(cmd.content.location)) {
             // silently ignore failure
         }
+    }
+}
+
+void Plane::do_update_location(const AP_Mission::Mission_Command& cmd)
+{
+    Location ekf_origin;
+    if (!AP::ahrs().get_origin(ekf_origin)) {
+        return;
+    }
+    ekf_origin.lat = cmd.content.location.lat;
+    ekf_origin.lng = cmd.content.location.lng;
+    if (!AP::ahrs().set_origin(ekf_origin)) {
+        // silently ignore failure
     }
 }
 

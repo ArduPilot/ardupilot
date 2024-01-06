@@ -24,7 +24,6 @@
 #include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
-#include <AP_Winch/AP_Winch_config.h>
 
 #include "ap_message.h"
 
@@ -386,9 +385,7 @@ public:
     void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
     void send_generator_status() const;
-#if AP_WINCH_ENABLED
     virtual void send_winch_status() const {};
-#endif
     void send_water_depth() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
@@ -521,6 +518,7 @@ protected:
     void handle_command_int(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_update_location(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
 
@@ -581,13 +579,11 @@ protected:
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-#if AP_MAVLINK_FAILURE_CREATION_ENABLED
     struct {
         HAL_Semaphore sem;
         bool taken;
     } _deadlock_sem;
     void deadlock_sem(void);
-#endif
 
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_int_t &packet);
@@ -603,7 +599,7 @@ protected:
     void handle_send_autopilot_version(const mavlink_message_t &msg);
 #endif
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
-    MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
 #endif
 
     virtual void send_banner();
@@ -643,11 +639,9 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
-#if AP_MISSION_ENABLED
-    virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_do_jump_tag(const mavlink_command_int_t &packet);
-#endif
-    MAV_RESULT handle_command_battery_reset(const mavlink_command_int_t &packet);
+    virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet);
+
+    MAV_RESULT handle_command_battery_reset(const mavlink_command_long_t &packet);
     void handle_command_long(const mavlink_message_t &msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet);
 
@@ -658,11 +652,14 @@ protected:
     MAV_RESULT handle_command_mag_cal(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_fixed_mag_cal_yaw(const mavlink_command_int_t &packet);
 
+    virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
+    MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
-    MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_gripper(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_sprayer(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_int_t &packet);
@@ -729,18 +726,15 @@ protected:
      */
     uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
 
-#if AP_MAVLINK_COMMAND_LONG_ENABLED
     // converts a COMMAND_LONG packet to a COMMAND_INT packet, where
     // the command-long packet is assumed to be in the supplied frame.
     // If location is not present in the command then just omit frame.
     // this method ensures the passed-in structure is entirely
     // initialised.
     virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
-    virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
-    MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-#endif
 
-    // methods to extract a Location object from a command_int
+    // methods to extract a Location object from a command_long or command_int
+    bool location_from_command_t(const mavlink_command_long_t &in, MAV_FRAME in_frame, Location &out);
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
@@ -819,9 +813,7 @@ private:
     } deferred_message[3] = {
         { MSG_HEARTBEAT, },
         { MSG_NEXT_PARAM, },
-#if HAL_HIGH_LATENCY2_ENABLED
         { MSG_HIGH_LATENCY2, },
-#endif
     };
     // returns index of id in deferred_message[] or -1 if not present
     int8_t get_deferred_message_index(const ap_message id) const;

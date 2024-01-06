@@ -76,6 +76,10 @@ private:
     static const uint8_t video_cols = 30;
     static const uint8_t char_spacing = 0;
 
+    static const uint8_t cam_fov = 155;
+
+
+
     // scaling factor to make it easier to read
     static const uint8_t char_scale = 2;
 

@@ -85,7 +85,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
-#include "AP_ExternalControl_Plane.h"
+#include <AP_ExternalControl/AP_ExternalControl.h>
 #endif
 
 #include "GCS_Mavlink.h"
@@ -166,10 +166,6 @@ public:
     friend class ModeTakeoff;
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
-
-#if AP_EXTERNAL_CONTROL_ENABLED
-    friend class AP_ExternalControl_Plane;
-#endif
 
     Plane(void);
 
@@ -590,12 +586,10 @@ private:
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 
-#if AP_BATTERY_WATT_MAX_ENABLED
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
     uint32_t throttle_watt_limit_timer_ms;
-#endif
 
     AP_FixedWing::FlightStage flight_stage = AP_FixedWing::FlightStage::NORMAL;
 
@@ -780,9 +774,9 @@ private:
 
     AP_Param param_loader {var_info};
 
-    // external control library
+    // dummy implementation of external control
 #if AP_EXTERNAL_CONTROL_ENABLED
-    AP_ExternalControl_Plane external_control;
+    AP_ExternalControl external_control;
 #endif
 
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -943,6 +937,7 @@ private:
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     bool do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_update_location(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
@@ -1095,7 +1090,7 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
-    void set_throttle(void);
+    void set_servos_controlled(void);
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
@@ -1107,6 +1102,7 @@ private:
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void force_flare();
+    void throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const;
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
     bool suppress_throttle(void);
@@ -1244,10 +1240,8 @@ public:
     void failsafe_check(void);
     bool is_landing() const override;
     bool is_taking_off() const override;
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
-    bool set_target_location(const Location& target_loc) override;
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
+    bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_velocity_match(const Vector2f &velocity) override;
