@@ -235,7 +235,7 @@ void Scheduler::delay_microseconds(uint16_t us)
         ets_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
-        rtc_wdt_feed();
+
         vTaskDelay((us+tick-1)/tick);
     }
 }
