@@ -334,6 +334,12 @@ for t in $CI_BUILD_TARGET; do
         $waf copter
         continue
     fi
+
+    if [ "$t" == "CubeOrange-SOHW" ]; then
+        echo "Building CubeOrange-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        continue
+    fi
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
