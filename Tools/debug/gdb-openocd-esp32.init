@@ -7,7 +7,4 @@ set print pretty
 set remote hardware-watchpoint-limit 2
 mon reset halt
 maintenance flush register-cache
-thb app_main
-b AP_HAL::panic
 set confirm off
-c
