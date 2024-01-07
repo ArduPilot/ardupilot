@@ -44,7 +44,7 @@
 #define HAL_USE_ADC 0
 
 // 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
-#define HAL_ESP32_WIFI 1
+#define HAL_ESP32_WIFI 2
 
 // see boards.py
 #ifndef ENABLE_HEAP
@@ -86,4 +86,10 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
 
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
+
+#define AP_RCPROTOCOL_ENABLED 0
+
+#define AP_FILESYSTEM_ESP32_ENABLED 0
+#define AP_SCRIPTING_ENABLED 0
+#define HAL_USE_EMPTY_STORAGE 1
 
