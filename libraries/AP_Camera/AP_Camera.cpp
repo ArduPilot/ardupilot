@@ -781,11 +781,13 @@ bool AP_Camera::get_legacy_relay_index(int8_t &index) const
     // Copter, Plane, Sub and Rover all have both relay and camera and all init relay first
     // This will only be a issue if the relay and camera conversion were done at once, if the user skipped 4.4
     for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+#if AP_CAMERA_RELAY_ENABLED
         if ((CameraType)_params[i].type.get() == CameraType::RELAY) {
             // Camera was hard coded to relay 0
             index = 0;
             return true;
         }
+#endif
     }
     return false;
 }

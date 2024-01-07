@@ -18,7 +18,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "Semaphores.h"
 #include <hal.h>
+#include <chsem.h>
 #include "AP_HAL_ChibiOS.h"
+#include <AP_Math/AP_Math.h>
 
 #if CH_CFG_USE_MUTEXES == TRUE
 
@@ -77,5 +79,58 @@ void Semaphore::assert_owner(void)
 {
     osalDbgAssert(check_owner(), "owner");
 }
+
+#if CH_CFG_USE_SEMAPHORES == TRUE
+BinarySemaphore::BinarySemaphore(bool initial_state) :
+    AP_HAL::BinarySemaphore(initial_state)
+{
+    static_assert(sizeof(_lock) >= sizeof(semaphore_t), "invalid semaphore_t size");
+    auto *sem = (binary_semaphore_t *)_lock;
+    /*
+      the initial_state in ChibiOS binary semaphores is 'taken', so we
+      need to negate it for the ArduPilot semantics
+     */
+    chBSemObjectInit(sem, !initial_state);
+}
+
+bool BinarySemaphore::wait(uint32_t timeout_us)
+{
+    auto *sem = (binary_semaphore_t *)_lock;
+    if (timeout_us == 0) {
+        return chBSemWaitTimeout(sem, TIME_IMMEDIATE) == MSG_OK;
+    }
+    // loop waiting for 60ms at a time. This ensures we can wait for
+    // any amount of time even on systems with a 16 bit timer
+    while (timeout_us > 0) {
+        const uint32_t us = MIN(timeout_us, 60000U);
+        if (chBSemWaitTimeout(sem, TIME_US2I(us)) == MSG_OK) {
+            return true;
+        }
+        timeout_us -= us;
+    }
+    return false;
+}
+
+bool BinarySemaphore::wait_blocking(void)
+{
+    auto *sem = (binary_semaphore_t *)_lock;
+    return chBSemWait(sem) == MSG_OK;
+}
+
+void BinarySemaphore::signal(void)
+{
+    auto *sem = (binary_semaphore_t *)_lock;
+    chBSemSignal(sem);
+}
+
+void BinarySemaphore::signal_ISR(void)
+{
+    auto *sem = (binary_semaphore_t *)_lock;
+    chSysLockFromISR();
+    chBSemSignalI(sem);
+    chSysUnlockFromISR();
+}
+
+#endif // CH_CFG_USE_SEMAPHORES == TRUE
 
 #endif // CH_CFG_USE_MUTEXES

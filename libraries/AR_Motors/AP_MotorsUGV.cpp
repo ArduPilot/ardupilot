@@ -142,7 +142,7 @@ void AP_MotorsUGV::init(uint8_t frtype)
     setup_safety_output();
 
     // setup for omni vehicles
-    if (is_omni()) {
+    if (_frame_type != FRAME_TYPE_UNDEFINED) {
         setup_omni();
     }
 }

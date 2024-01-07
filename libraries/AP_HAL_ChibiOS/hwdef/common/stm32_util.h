@@ -43,6 +43,7 @@ void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
 void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
     void *address;

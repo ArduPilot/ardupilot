@@ -26,7 +26,7 @@
 
 #if HAL_SIM_XPLANE_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include "SIM_Aircraft.h"
@@ -70,8 +70,8 @@ private:
     uint16_t xplane_port = 49000;
     uint16_t bind_port = 49001;
     // udp socket, input and output
-    SocketAPM socket_in{true};
-    SocketAPM socket_out{true};
+    SocketAPM_native socket_in{true};
+    SocketAPM_native socket_out{true};
 
     uint64_t time_base_us;
     uint32_t last_data_time_ms;

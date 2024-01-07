@@ -29,7 +29,7 @@ status EFI_STATUS
 #pragma once
 
 #include <SITL/SITL.h>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include "SIM_SerialDevice.h"
 
 namespace SITL {

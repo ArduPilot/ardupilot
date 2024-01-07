@@ -414,6 +414,9 @@ def do_build(opts, frame_options):
     if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
+    if opts.enable_ppp:
+        cmd_configure.append("--enable-ppp")
+
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 
@@ -1333,6 +1336,8 @@ group_sim.add_option("--enable-dds", action='store_true',
                      help="Enable the dds client to connect with ROS2/DDS")
 group_sim.add_option("--disable-networking", action='store_true',
                      help="Disable networking APIs")
+group_sim.add_option("--enable-ppp", action='store_true',
+                     help="Enable PPP networking")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
 

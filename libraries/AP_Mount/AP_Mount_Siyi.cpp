@@ -479,6 +479,8 @@ void AP_Mount_Siyi::process_packet()
                     sev = MAV_SEVERITY_WARNING;
                     break;
             }
+            (void)msg;  // in case GCS_SEND_TEXT not available
+            (void)sev;  // in case GCS_SEND_TEXT not available
             GCS_SEND_TEXT(sev, "Siyi: recording %s", msg);
         }
 

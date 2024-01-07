@@ -148,6 +148,9 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
+        if cfg.options.enable_ppp:
+            env.CXXFLAGS += ['-DAP_NETWORKING_BACKEND_PPP=1']
+
         if cfg.options.disable_networking:
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
 
@@ -646,6 +649,8 @@ class sitl(Board):
             AP_BARO_PROBE_EXTERNAL_I2C_BUSES = 1,
         )
 
+        env.BOARD_CLASS = "SITL"
+
         cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
@@ -682,7 +687,8 @@ class sitl(Board):
             '-Werror=missing-declarations',
         ]
 
-        if not cfg.options.disable_networking:
+        if not cfg.options.disable_networking and not 'clang' in cfg.env.COMPILER_CC:
+            # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
         
         if cfg.options.ubsan or cfg.options.ubsan_abort:
@@ -897,6 +903,8 @@ class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
     def configure_env(self, cfg, env):
+        env.BOARD_CLASS = "ESP32"
+
         def expand_path(p):
             print("USING EXPRESSIF IDF:"+str(env.idf))
             return cfg.root.find_dir(env.IDF+p).abspath()
@@ -928,6 +936,7 @@ class esp32(Board):
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
+            '-fsingle-precision-constant',
         ]
         env.CFLAGS.remove('-Werror=undef')
 
@@ -943,6 +952,7 @@ class esp32(Board):
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
                          '-mlongcalls',
+                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
                          '-fno-threadsafe-statics',
                          '-DCYGWIN_BUILD']
         env.CXXFLAGS.remove('-Werror=undef')
@@ -988,6 +998,7 @@ class chibios(Board):
 
         cfg.load('chibios')
         env.BOARD = self.name
+        env.BOARD_CLASS = "ChibiOS"
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
@@ -1153,7 +1164,7 @@ class chibios(Board):
 
         env.INCLUDES += [
             cfg.srcnode.find_dir('libraries/AP_GyroFFT/CMSIS_5/include').abspath(),
-            cfg.srcnode.find_dir('modules/ChibiOS/ext/lwip/src/include/compat/posix').abspath()
+            cfg.srcnode.find_dir('modules/lwip/src/include/compat/posix').abspath()
         ]
 
         # whitelist of compilers which we should build with -Werror
@@ -1228,6 +1239,8 @@ class linux(Board):
         if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
+
+        env.BOARD_CLASS = "LINUX"
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',

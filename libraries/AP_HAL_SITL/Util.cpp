@@ -2,6 +2,9 @@
 #include <sys/time.h>
 #include <AP_Param/AP_Param.h>
 #include "RCOutput.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 extern const AP_HAL::HAL& hal;
 

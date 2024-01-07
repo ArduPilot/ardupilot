@@ -36,6 +36,7 @@
 #include <sys/select.h>
 #include <termios.h>
 #include <sys/time.h>
+#include <arpa/inet.h>
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
@@ -157,6 +158,16 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             }
             ::printf("FILE connection %s\n", args1);
             _fd = AP::FS().open(args1, O_RDONLY);
+            if (_fd == -1) {
+                AP_HAL::panic("Failed to open (%s): %m", args1);
+            }
+            _connected = true;
+        } else if (strcmp(devtype, "outfile") == 0) {
+            if (_connected) {
+                AP::FS().close(_fd);
+            }
+            ::printf("FILE output connection %s\n", args1);
+            _fd = AP::FS().open(args1, O_WRONLY|O_CREAT|O_TRUNC, 0644);
             if (_fd == -1) {
                 AP_HAL::panic("Failed to open (%s): %m", args1);
             }
@@ -290,6 +301,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
     int ret;
+    struct sockaddr_in _listen_sockaddr {};
 
     if (_connected) {
         return;
@@ -787,6 +799,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
 
 void UARTDriver::handle_writing_from_writebuffer_to_device()
 {
+    WITH_SEMAPHORE(write_mtx);
     if (!_connected) {
         _check_reconnect();
         return;

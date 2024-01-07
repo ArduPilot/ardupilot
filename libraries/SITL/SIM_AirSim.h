@@ -26,7 +26,7 @@
 
 #if HAL_SIM_AIRSIM_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -78,7 +78,7 @@ private:
 	// connection_info_.sitl_ip_port
 	uint16_t airsim_control_port = 9002;
 
-	SocketAPM sock;
+    SocketAPM_native sock;
 
     double average_frame_time;
     uint64_t frame_counter;

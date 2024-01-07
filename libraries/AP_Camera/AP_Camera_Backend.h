@@ -37,8 +37,7 @@ public:
     CLASS_NO_COPY(AP_Camera_Backend);
 
     enum CAMOPTIONS {
-        NONE = 0,
-        REC_ARM_DISARM = 1, // Recording start/stop on Arm/Disarm
+        REC_ARM_DISARM = 0, // Recording start/stop on Arm/Disarm
     };
 
     // init - performs any required initialisation

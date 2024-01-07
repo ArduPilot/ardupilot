@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <cstring>
+#include <cstdint>
 #include "Scheduler.h"
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/ExpandingString.h>
@@ -50,8 +51,6 @@ using namespace HALSITL;
 #else
 #define Debug(fmt, args...)
 #endif
-
-CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
 uint8_t CANIface::_num_interfaces;
 
@@ -232,6 +231,9 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         transport = nullptr;
         return false;
     }
+    if (sem_handle != nullptr) {
+        transport->set_event_handle(sem_handle);
+    }
     return true;
 }
 
@@ -255,8 +257,9 @@ bool CANIface::select(bool &read_select, bool &write_select,
         _pollfd.fd = transport->get_read_fd();
         _pollfd.events |= POLLIN;
     }
-    if (_evt_handle != nullptr && blocking_deadline > AP_HAL::micros64()) {
-        _evt_handle->wait(blocking_deadline - AP_HAL::micros64());
+    const uint64_t now_us = AP_HAL::micros64();
+    if (sem_handle != nullptr && blocking_deadline > now_us) {
+        IGNORE_RETURN(sem_handle->wait(blocking_deadline - now_us));
     }
 
     // Writing the output masks
@@ -266,69 +269,15 @@ bool CANIface::select(bool &read_select, bool &write_select,
     return true;
 }
 
-bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
+bool CANIface::set_event_handle(AP_HAL::BinarySemaphore *handle)
 {
-    _evt_handle = handle;
-    evt_can_socket[_self_index]._ifaces[_self_index] = this;
-    _evt_handle->set_source(&evt_can_socket[_self_index]);
+    sem_handle = handle;
+    if (transport != nullptr) {
+        transport->set_event_handle(handle);
+    }
     return true;
 }
 
-
-bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle)
-{
-    if (evt_handle == nullptr) {
-        return false;
-    }
-    pollfd pollfds[HAL_NUM_CAN_IFACES] {};
-    uint8_t pollfd_iface_map[HAL_NUM_CAN_IFACES] {};
-    unsigned long int num_pollfds = 0;
-    
-    // Poll FD set setup
-    for (unsigned i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-        if (_ifaces[i] == nullptr) {
-            continue;
-        }
-        pollfds[num_pollfds] = _ifaces[i]->_pollfd;
-        pollfd_iface_map[num_pollfds] = i;
-        num_pollfds++;
-    }
-
-    if (num_pollfds == 0) {
-        return true;
-    }
-
-    const uint32_t start_us = AP_HAL::micros();
-    do {
-        uint16_t wait_us = MIN(100, duration_us);
-
-        // check FD for input
-        const int res = poll(pollfds, num_pollfds, wait_us/1000U);
-
-        if (res < 0) {
-            return false;
-        }
-        if (res > 0) {
-            break;
-        }
-        
-        // ensure simulator runs
-        hal.scheduler->delay_microseconds(wait_us);
-    } while (AP_HAL::micros() - start_us < duration_us);
-
-
-    // Handling poll output
-    for (unsigned i = 0; i < num_pollfds; i++) {
-        if (_ifaces[pollfd_iface_map[i]] == nullptr) {
-            continue;
-        }
-
-        const bool poll_read  = pollfds[i].revents & POLLIN;
-        const bool poll_write = pollfds[i].revents & POLLOUT;
-        _ifaces[pollfd_iface_map[i]]->_poll(poll_read, poll_write);
-    }
-    return true;
-}
 
 void CANIface::get_stats(ExpandingString &str)
 {

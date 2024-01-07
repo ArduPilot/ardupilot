@@ -540,8 +540,8 @@ def start_SITL(binary,
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
         cmd.append('--serial1=tcp:2')
-        if not enable_fgview_output:
-            cmd.append("--disable-fgview")
+        if enable_fgview_output:
+            cmd.append("--enable-fgview")
 
     if defaults_filepath is not None:
         if isinstance(defaults_filepath, list):
@@ -670,6 +670,20 @@ def start_MAVProxy_SITL(atype,
     print("Running: %s" % cmd_as_shell(cmd))
 
     ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding=ENCODING, timeout=pexpect_timeout, env=env)
+    ret.delaybeforesend = 0
+    pexpect_autoclose(ret)
+    return ret
+
+
+def start_PPP_daemon(ips, sockaddr):
+    """Start pppd for networking"""
+
+    global close_list
+    cmd = "sudo pppd socket %s debug noauth nodetach %s" % (sockaddr, ips)
+    cmd = cmd.split()
+    print("Running: %s" % cmd_as_shell(cmd))
+
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding=ENCODING, timeout=30)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret

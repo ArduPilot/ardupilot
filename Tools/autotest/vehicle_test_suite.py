@@ -4273,6 +4273,7 @@ class TestSuite(ABC):
         self.context_push()
         self.set_parameters({
             "NET_ENABLED": 1,
+            "LOG_DISARMED": 1,
             "LOG_DARM_RATEMAX": 2, # make small logs
             # UDP client
             "NET_P1_TYPE": 1,

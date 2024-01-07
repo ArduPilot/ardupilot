@@ -111,7 +111,7 @@ public:
     void reset_params();
 
     // Overriden methods
-    bool set_event_handle(AP_HAL::EventHandle* evt_handle) override;
+    bool set_event_handle(AP_HAL::BinarySemaphore *sem_handle) override;
     uint16_t getNumFilters() const override;
     uint32_t getErrorCount() const override;
     void get_stats(ExpandingString &) override;

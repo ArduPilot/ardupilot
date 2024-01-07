@@ -46,7 +46,9 @@ static uint32_t sysclk = 0;
 static EKF_Maths ekf;
 
 HAL_Semaphore sem;
+#if HAL_WITH_ESC_TELEM
 AP_ESC_Telem telem;
+#endif
 
 void setup() {
 #ifdef DISABLE_CACHES

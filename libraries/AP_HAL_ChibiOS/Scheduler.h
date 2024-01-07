@@ -28,6 +28,7 @@
 #define APM_RCOUT_PRIORITY      181
 #define APM_LED_PRIORITY         60
 #define APM_UART_PRIORITY        60
+#define APM_NET_PRIORITY         60
 #define APM_UART_UNBUFFERED_PRIORITY 181
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58

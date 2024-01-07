@@ -430,6 +430,18 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sercfg.cr2 = _cr2_options;
             sercfg.cr3 = _cr3_options;
 
+#if defined(STM32H7)
+            /*
+              H7 defaults to 16x oversampling. To get the highest
+              possible baudrates we need to drop back to 8x
+              oversampling. The H7 UART clock is 100MHz. This allows
+              for up to 12.5MBps on H7 UARTs
+             */
+            if (_baudrate > 100000000UL / 16U) {
+                sercfg.cr1 |= USART_CR1_OVER8;
+            }
+#endif
+
 #ifndef HAL_UART_NODMA
             if (rx_dma_enabled) {
                 sercfg.cr1 |= USART_CR1_IDLEIE;

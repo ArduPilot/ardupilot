@@ -18,6 +18,11 @@
  *  ArduPilot
  *
  */
+
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
@@ -34,6 +39,9 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -1974,6 +1982,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         
         // Handle loss of global position when we still have a GPS fix
         if (hal.util->get_soft_armed() &&
+            (_gps_use != GPSUse::Disable) &&
             should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
             (!filt_state.flags.using_gps || !filt_state.flags.horiz_pos_abs)) {
@@ -3543,3 +3552,5 @@ AP_AHRS &ahrs()
 }
 
 }
+
+#endif  // AP_AHRS_ENABLED

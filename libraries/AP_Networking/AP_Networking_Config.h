@@ -1,11 +1,44 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
+// allow --enable-ppp to enable networking
+#define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
+#endif
+
+
 #ifndef AP_NETWORKING_ENABLED
+#if defined(__APPLE__) || defined(__clang__)
+// MacOS can't build lwip, and clang fails on linux
 #define AP_NETWORKING_ENABLED 0
+#else
+#define AP_NETWORKING_ENABLED ((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
+#endif
 #endif
 
 #ifndef AP_NETWORKING_BACKEND_DEFAULT_ENABLED
 #define AP_NETWORKING_BACKEND_DEFAULT_ENABLED AP_NETWORKING_ENABLED
+#endif
+
+// ---------------------------
+// Backends
+// ---------------------------
+#ifndef AP_NETWORKING_BACKEND_CHIBIOS
+#ifndef HAL_USE_MAC
+#define HAL_USE_MAC 0
+#endif
+#define AP_NETWORKING_BACKEND_CHIBIOS (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) && HAL_USE_MAC)
+#endif
+
+#ifndef AP_NETWORKING_BACKEND_PPP
+#define AP_NETWORKING_BACKEND_PPP 0
+#endif
+
+#ifndef AP_NETWORKING_BACKEND_SITL
+#define AP_NETWORKING_BACKEND_SITL (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
+#endif
+
+#ifndef AP_NETWORKING_SOCKETS_ENABLED
+#define AP_NETWORKING_SOCKETS_ENABLED AP_NETWORKING_ENABLED
 #endif
 
 #ifndef AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
@@ -14,21 +47,10 @@
 // This does not mean that the system/OS does not have the ability to set the IP, just that
 // we have no control from this scope. For example, Linux systems (including SITL) have
 // their own DHCP client running but we have no control over it.
-#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS)
+#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED AP_NETWORKING_BACKEND_CHIBIOS
 #endif
 
-// ---------------------------
-// Backends
-// ---------------------------
-#ifndef AP_NETWORKING_BACKEND_CHIBIOS
-#define AP_NETWORKING_BACKEND_CHIBIOS (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS))
-#endif
-
-#ifndef AP_NETWORKING_BACKEND_SITL
-#define AP_NETWORKING_BACKEND_SITL (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
-#endif
-
-#define AP_NETWORKING_SOCKETS_ENABLED (HAL_OS_SOCKETS || AP_NETWORKING_BACKEND_CHIBIOS)
+#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
 
 // ---------------------------
 // IP Features
@@ -95,5 +117,5 @@
 #endif
 
 #ifndef AP_NETWORKING_SENDFILE_BUFSIZE
-#define AP_NETWORKING_SENDFILE_BUFSIZE 10000
+#define AP_NETWORKING_SENDFILE_BUFSIZE (64*512)
 #endif

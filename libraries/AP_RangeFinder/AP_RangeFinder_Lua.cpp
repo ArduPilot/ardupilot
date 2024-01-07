@@ -24,31 +24,49 @@
 AP_RangeFinder_Lua::AP_RangeFinder_Lua(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
     AP_RangeFinder_Backend(_state, _params)
 {
-    set_status(RangeFinder::Status::NoData);
 }
 
 
-// Set the distance based on a Lua Script
-bool AP_RangeFinder_Lua::handle_script_msg(float dist_m)
+// Process range finder data from a lua driver. The state structure needs to be completely
+// filled in by the lua script. The data passed to this method is copied to a pending_state
+// structure. The update() method periodically copies data from pending_state to state. The get_state()
+// method returns data from state.
+bool AP_RangeFinder_Lua::handle_script_msg(const RangeFinder::RangeFinder_State &state_arg)
 {
-    state.last_reading_ms = AP_HAL::millis();
-    _distance_m = dist_m;
+    WITH_SEMAPHORE(_sem);
+    _state_pending = state_arg;
     return true;
 }
 
+// Process range finder data from a lua driver - legacy interface. This method takes
+// a distance measurement and fills in the pending state structure. In this legacy mode
+// the lua script only passes in a distance measurement and does not manage the rest
+// of the fields in the state structure.
+bool AP_RangeFinder_Lua::handle_script_msg(float dist_m) {
 
-// update the state of the sensor
+    const uint32_t now = AP_HAL::millis();
+
+    WITH_SEMAPHORE(_sem);
+
+    // Time out on incoming data; if we don't get new data in 500ms, dump it
+    if (now - _state_pending.last_reading_ms > AP_RANGEFINDER_LUA_TIMEOUT_MS) {
+        set_status(_state_pending, RangeFinder::Status::NoData);
+    } else {
+        _state_pending.last_reading_ms = now;
+        _state_pending.distance_m = dist_m;
+        _state_pending.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
+        _state_pending.voltage_mv = 0;
+        update_status(_state_pending);
+    }
+
+    return true;
+}
+
+// Update the state of the sensor
 void AP_RangeFinder_Lua::update(void)
 {
-    //Time out on incoming data; if we don't get new
-    //data in 500ms, dump it
-    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_LUA_TIMEOUT_MS) {
-        set_status(RangeFinder::Status::NoData);
-        state.distance_m = 0.0f;
-    } else {
-        state.distance_m = _distance_m;
-        update_status();
-    }
+    WITH_SEMAPHORE(_sem);
+    state = _state_pending;
 }
 
 #endif  // AP_RANGEFINDER_LUA_ENABLED

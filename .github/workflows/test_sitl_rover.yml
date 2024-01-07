@@ -192,6 +192,8 @@ jobs:
       - name: build rover ${{ matrix.toolchain }}
         shell: bash
         run: |
+          sudo apt-get update || true
+          sudo apt-get -y install ppp || true
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang

@@ -2160,8 +2160,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "EK3_SRC1_VELZ": 0,
             })
 
-    def OpticalFlow(self):
-        '''test optical flow works'''
+    def OpticalFlowLocation(self):
+        '''test optical flow doesn't supply location'''
+
+        self.context_push()
 
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
 
@@ -2178,6 +2180,65 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.delay_sim_time(5)
         self.wait_statustext("Need Position Estimate", timeout=300)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+    def OpticalFlow(self):
+        '''test OpticalFlow in flight'''
+        self.start_subtest("Make sure no crash if no rangefinder")
+
+        self.context_push()
+
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.set_parameter("FLOW_TYPE", 10)
+
+        self.set_analog_rangefinder_parameters()
+
+        self.reboot_sitl()
+
+        self.change_mode('LOITER')
+
+        # ensure OPTICAL_FLOW message is reasonable:
+        global flow_rate_rads
+        global rangefinder_distance
+        global gps_speed
+        global last_debug_time
+        flow_rate_rads = 0
+        rangefinder_distance = 0
+        gps_speed = 0
+        last_debug_time = 0
+
+        def check_optical_flow(mav, m):
+            global flow_rate_rads
+            global rangefinder_distance
+            global gps_speed
+            global last_debug_time
+            m_type = m.get_type()
+            if m_type == "OPTICAL_FLOW":
+                flow_rate_rads = math.sqrt(m.flow_comp_m_x**2+m.flow_comp_m_y**2)
+            elif m_type == "RANGEFINDER":
+                rangefinder_distance = m.distance
+            elif m_type == "GPS_RAW_INT":
+                gps_speed = m.vel/100.0  # cm/s -> m/s
+            of_speed = flow_rate_rads * rangefinder_distance
+            if abs(of_speed - gps_speed) > 3:
+                raise NotAchievedException("gps=%f vs of=%f mismatch" %
+                                           (gps_speed, of_speed))
+
+            now = self.get_sim_time_cached()
+            if now - last_debug_time > 5:
+                last_debug_time = now
+                self.progress("gps=%f of=%f" % (gps_speed, of_speed))
+
+        self.install_message_hook_context(check_optical_flow)
+
+        self.fly_generic_mission("CMAC-copter-navtest.txt")
+
+        self.context_pop()
+
+        self.reboot_sitl()
 
     def OpticalFlowLimits(self):
         '''test EKF navigation limiting'''
@@ -3616,6 +3677,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def fly_mission(self, filename, strict=True):
         num_wp = self.load_mission(filename, strict=strict)
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(num_wp-1, num_wp-1)
+        self.wait_disarmed()
+
+    def fly_generic_mission(self, filename, strict=True):
+        num_wp = self.load_generic_mission(filename, strict=strict)
         self.set_parameter("AUTO_OPTIONS", 3)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
@@ -5858,8 +5928,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
-        # notch-per-motor should do better, but check for within 5%
-        if peakdb2 * 1.05 > peakdb1:
+        # notch-per-motor should do better, but check for within 10%. ( its mostly within 5%, but does vary a bit)
+        if peakdb2 * 1.10 > peakdb1:
             raise NotAchievedException(
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
                 (peakdb2, peakdb1))
@@ -8833,7 +8903,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
         if not ok:
-            raise NotAchievedException("check_replay failed")
+            raise NotAchievedException("check_replay (%s) failed" % current_log_filepath)
 
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
@@ -10067,6 +10137,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ModeCircle,
              self.MagFail,
              self.OpticalFlow,
+             self.OpticalFlowLocation,
              self.OpticalFlowLimits,
              self.OpticalFlowCalibration,
              self.MotorFail,

@@ -45,6 +45,11 @@ public:
         return singleton;
     }
 
+    HAL_Semaphore &get_semaphore(void)
+    {
+        return sem;
+    }
+    
     // Networking interface is enabled and initialized
     bool is_healthy() const
     {
@@ -86,15 +91,6 @@ public:
 #endif
     }
 
-    /*
-      returns a null terminated string of the active IP address. Example: "192.168.12.13"
-      Note that the returned
-    */
-    const char *get_ip_active_str() const
-    {
-        return convert_ip_to_str(get_ip_active());
-    }
-
     // sets the user-parameter static IP address from a 32bit value
     void set_ip_param(const uint32_t ip)
     {
@@ -117,29 +113,6 @@ public:
 #endif
     }
 
-    // returns a null terminated string of the active Netmask address. Example: "192.168.12.13"
-    const char *get_netmask_active_str()
-    {
-        return convert_ip_to_str(get_netmask_active());
-    }
-
-    const char *get_netmask_param_str()
-    {
-        return convert_ip_to_str(get_netmask_param());
-    }
-
-    void set_netmask_param_str(const char* nm_str)
-    {
-        set_netmask_param(convert_str_to_ip((char*)nm_str));
-    }
-
-    void set_netmask_param(const uint32_t nm)
-    {
-#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
-        param.netmask.set(convert_netmask_ip_to_bitcount(nm));
-#endif
-    }
-
     uint32_t get_gateway_active() const;
 
     uint32_t get_gateway_param() const
@@ -152,21 +125,6 @@ public:
 #endif
     }
 
-    const char *get_gateway_active_str()
-    {
-        return convert_ip_to_str(get_gateway_active());
-    }
-
-    const char *get_gateway_param_str()
-    {
-        return convert_ip_to_str(get_gateway_param());
-    }
-
-    void set_gateway_param_str(const char* gw_str)
-    {
-        set_gateway_param(convert_str_to_ip((char*)gw_str));
-    }
-
     void set_gateway_param(const uint32_t gw)
     {
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
@@ -176,10 +134,6 @@ public:
 
     // wait in a thread for network startup
     void startup_wait(void) const;
-
-    // helper functions to convert between 32bit IP addresses and null terminated strings and back
-    static uint32_t convert_str_to_ip(const char* ip_str);
-    static const char* convert_ip_to_str(uint32_t ip);
 
     // convert string to ethernet mac address
     static bool convert_str_to_macaddr(const char *mac_str, uint8_t addr[6]);
@@ -324,7 +278,9 @@ private:
     } sendfiles[AP_NETWORKING_NUM_SENDFILES];
 
     uint8_t *sendfile_buf;
+    uint32_t sendfile_bufsize;
     void sendfile_check(void);
+    bool sendfile_thread_started;
 
     void ports_init(void);
 };

@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Plane}: AUTOENABLE
     // @DisplayName: Fence Auto-Enable
-    // @Description: Auto-enable of fence
+    // @Description: Auto-enable of fences. AutoEnableOnTakeoff enables all configured fences after autotakeoffs reach altitude. During autolandings the fences will be disabled.  AutoEnableDisableFloorOnLanding enables all configured fences after autotakeoffs reach altitude. During autolandings only the Minimum Altitude fence will be disabled. AutoEnableOnlyWhenArmed enables all configured fences, but no fences are disabled during autolandings. However, fence breaches are ignored while executing prior breach recovery actions which may include autolandings.
     // @Values: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
     // @Range: 0 3
     // @Increment: 1

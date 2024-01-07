@@ -6625,6 +6625,108 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "poll": True,
             })
 
+    def TestWebServer(self, url):
+        '''test active web server'''
+        self.progress("Accessing webserver main page")
+        import urllib.request
+
+        main_page = urllib.request.urlopen(url).read().decode('utf-8')
+        if main_page.find('ArduPilot Web Server') == -1:
+            raise NotAchievedException("Expected banner on main page")
+
+        board_status = urllib.request.urlopen(url + '/@DYNAMIC/board_status.shtml').read().decode('utf-8')
+        if board_status.find('0 hours') == -1:
+            raise NotAchievedException("Expected uptime in board status")
+        if board_status.find('40.713') == -1:
+            raise NotAchievedException("Expected lattitude in board status")
+
+        self.progress("WebServer tests OK")
+
+    def NetworkingWebServer(self):
+        '''web server'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLED": 1,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://127.0.0.1:8081")
+
+        self.context_pop()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NetworkingWebServerPPP(self):
+        '''web server over PPP'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLED": 1,
+            "SERIAL5_PROTOCOL": 48,
+        })
+
+        self.progress('rebuilding rover with ppp enabled')
+        import shutil
+        shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        util.build_SITL('bin/ardurover', clean=False, configure=True, extra_configure_args=['--enable-ppp', '--debug'])
+
+        self.reboot_sitl()
+
+        self.progress("Starting PPP daemon")
+        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        pppd.expect("remote IP address 192.168.14.13")
+
+        self.progress("PPP daemon started")
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://192.168.14.13:8081")
+
+        self.context_pop()
+        self.context_pop()
+
+        # restore rover without ppp enabled for next test
+        os.unlink('build/sitl/bin/ardurover')
+        shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6709,6 +6811,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
             self.MAV_CMD_BATTERY_RESET,
+            self.NetworkingWebServer,
+            self.NetworkingWebServerPPP,
         ])
         return ret
 

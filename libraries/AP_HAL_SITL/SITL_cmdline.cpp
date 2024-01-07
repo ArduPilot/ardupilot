@@ -88,7 +88,7 @@ void SITL_State::_usage(void)
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
-           "\t--disable-fgview         disable Flight Gear view\n"
+           "\t--enable-fgview          enable Flight Gear view\n"
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
@@ -213,7 +213,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const char *home_str = nullptr;
     const char *model_str = nullptr;
     const char *vehicle_str = SKETCH;
-    _use_fg_view = true;
+    _use_fg_view = false;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
     const char* config = "";
@@ -302,7 +302,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"config",          true,   0, 'c'},
         {"fg",              true,   0, 'F'},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
-        {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
+        {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"uartA",           true,   0, CMDLINE_UARTA},
@@ -441,7 +441,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             enable_gimbal = true;
             break;
         case CMDLINE_FGVIEW:
-            _use_fg_view = false;
+            _use_fg_view = true;
             break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);

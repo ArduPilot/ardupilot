@@ -478,6 +478,8 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     enum class log_PID_Flags : uint8_t {
         LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
         PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
+        RESET = 1U<<2, // true if the controller was reset
+        I_TERM_SET = 1U<<3, // true if the I term has been set externally including reseting to 0
     };
 
     uint8_t flags = 0;
@@ -486,6 +488,12 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     }
     if (info.PD_limit) {
         flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
+    }
+    if (info.reset) {
+        flags |= (uint8_t)log_PID_Flags::RESET;
+    }
+    if (info.I_term_set) {
+        flags |= (uint8_t)log_PID_Flags::I_TERM_SET;
     }
 
     const struct log_PID pkt{
