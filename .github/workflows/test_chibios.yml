@@ -157,6 +157,7 @@ jobs:
             build-options-defaults-test,
             signing,
             CubeOrange-PPP,
+            CubeOrange-SOHW,
         ]
         toolchain: [
             chibios,
