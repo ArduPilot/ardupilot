@@ -917,7 +917,6 @@ class esp32(Board):
         cfg.load('esp32')
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            AP_SIM_ENABLED = 0,
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
@@ -928,6 +927,15 @@ class esp32(Board):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
             HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
+
+        if self.name.endswith("empty"):
+            # for empty targets build as SIM-on-HW
+            env.DEFINES.update(AP_SIM_ENABLED = 1)
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
+        else:
+            env.DEFINES.update(AP_SIM_ENABLED = 0)
 
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
