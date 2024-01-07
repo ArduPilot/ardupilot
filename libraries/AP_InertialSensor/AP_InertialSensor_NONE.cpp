@@ -7,7 +7,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 
-float rand_float(void)
+static float sim_rand_float(void)
 {
     return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
 }
@@ -56,7 +56,7 @@ void AP_InertialSensor_NONE::accumulate()
 
 // calculate a noisy noise component
 static float calculate_noise(float noise, float noise_variation) {
-    return noise * (1.0f + noise_variation * rand_float());
+    return noise * (1.0f + noise_variation * sim_rand_float());
 }
 
 /*
@@ -81,9 +81,9 @@ void AP_InertialSensor_NONE::generate_accel()
         // this smears the individual motor peaks somewhat emulating physical motors
         //float freq_variation = 0.12f;
         // add in sensor noise
-        xAccel += accel_noise * rand_float();
-        yAccel += accel_noise * rand_float();
-        zAccel += accel_noise * rand_float();
+        xAccel += accel_noise * sim_rand_float();
+        yAccel += accel_noise * sim_rand_float();
+        zAccel += accel_noise * sim_rand_float();
 
         bool motors_on = 1; 
 
@@ -99,9 +99,9 @@ void AP_InertialSensor_NONE::generate_accel()
 
         if (vibe_freq.is_zero()) {
             // no rpm noise, so add in background noise if any
-            xAccel += accel_noise * rand_float();
-            yAccel += accel_noise * rand_float();
-            zAccel += accel_noise * rand_float();
+            xAccel += accel_noise * sim_rand_float();
+            yAccel += accel_noise * sim_rand_float();
+            zAccel += accel_noise * sim_rand_float();
         }
 
         if (!vibe_freq.is_zero() && motors_on) {
@@ -189,9 +189,9 @@ void AP_InertialSensor_NONE::generate_gyro()
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
         // add in sensor noise
-        p += gyro_noise * rand_float();
-        q += gyro_noise * rand_float();
-        r += gyro_noise * rand_float();
+        p += gyro_noise * sim_rand_float();
+        q += gyro_noise * sim_rand_float();
+        r += gyro_noise * sim_rand_float();
 
         bool motors_on = 1;
         // on a real 180mm copter gyro noise varies between 0.2-0.4 rad/s for throttle 0.2-0.8
@@ -206,9 +206,9 @@ void AP_InertialSensor_NONE::generate_gyro()
 
         if ( vibe_freq.is_zero() ) {
             // no rpm noise, so add in background noise if any
-            p += gyro_noise * rand_float();
-            q += gyro_noise * rand_float();
-            r += gyro_noise * rand_float();
+            p += gyro_noise * sim_rand_float();
+            q += gyro_noise * sim_rand_float();
+            r += gyro_noise * sim_rand_float();
         }
 
         if (!vibe_freq.is_zero() && motors_on) {
