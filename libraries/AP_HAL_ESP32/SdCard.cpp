@@ -165,9 +165,7 @@ void mount_sdcard_mmc()
     // Please check its source code and implement error recovery when developing
     // production applications.
     sdmmc_card_t* card;
-    rtc_wdt_feed();
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
-    rtc_wdt_feed();
 
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);
@@ -237,9 +235,7 @@ void mount_sdcard_spi()
 
     //host.flags = SDMMC_HOST_FLAG_1BIT | SDMMC_HOST_FLAG_DDR;
     host.max_freq_khz = SDMMC_FREQ_PROBING;
-    rtc_wdt_feed();
     ret = esp_vfs_fat_sdspi_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
-    rtc_wdt_feed();
 
     if (ret == ESP_OK) {
         // Card has been initialized, print its properties

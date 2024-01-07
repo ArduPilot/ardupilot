@@ -351,10 +351,8 @@ void WiFiUdpDriver::_wifi_thread2(void *arg)
             .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unecessarily, slowing APM_WIFI1 response
         };
         fd_set rfds;
-        rtc_wdt_feed();
         FD_ZERO(&rfds);
         FD_SET(self->accept_socket, &rfds);
-        rtc_wdt_feed();
         int s = select(self->accept_socket + 1, &rfds, NULL, NULL, &tv);
         if (s > 0 && FD_ISSET(self->accept_socket, &rfds)) {
             self->read_all();
