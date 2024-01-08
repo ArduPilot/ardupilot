@@ -87,8 +87,8 @@ public:
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
     float get_wp_acceleration() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss : WPNAV_ACCELERATION; }
 
-    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
-    float get_corner_acceleration() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss : get_wp_acceleration(); }
+    /// get_corner_acceleration - returns maximum acceleration in cm/s/s used during cornering in missions
+    float get_corner_acceleration() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss : 2.0 * get_wp_acceleration(); }
 
     /// get_wp_destination waypoint using position vector
     /// x,y are distance from ekf origin in cm
