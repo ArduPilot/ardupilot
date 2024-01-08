@@ -92,6 +92,10 @@ struct sitl_fdm {
 
     // earthframe wind, from backends that know it
     Vector3f wind_ef;
+
+    // AGL altitude, usually derived from the terrain database in simulation:
+    float height_agl;
+
 };
 
 // number of rc output channels
@@ -152,9 +156,6 @@ public:
     // throttle when motors are active
     float throttle;
 
-    // height above ground
-    float height_agl;
-    
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
