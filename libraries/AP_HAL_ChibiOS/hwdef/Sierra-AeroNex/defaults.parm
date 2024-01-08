@@ -1,0 +1,8 @@
+# setup for CAN LEDs
+NTF_LED_TYPES 231
+
+# Serial3 default to GPS
+SERIAL3_PROTOCOL 5
+
+# Enable CAN1
+CAN_P1_DRIVER 1
