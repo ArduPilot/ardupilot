@@ -74,7 +74,6 @@ extern "C"
 #define LWIP_ICMP                  LWIP_IPV4
 
 #define LWIP_SNMP                  LWIP_UDP
-#define MIB2_STATS                 LWIP_SNMP
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_SNMP_V3               (LWIP_SNMP)
 #endif
@@ -255,6 +254,7 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_ARP                1
 #define ARP_TABLE_SIZE          10
 #define ARP_QUEUEING            1
+#define ARP_PROXYARP_SUPPORT    1
 
 
 /* ---------- IP options ---------- */
@@ -262,6 +262,12 @@ a lot of data that needs to be copied, this should be set high. */
    IP packets across network interfaces. If you are going to run lwIP
    on a device with only one network interface, define this to 0. */
 #define IP_FORWARD              1
+
+/*
+  extra header space when forwarding for adding the ethernet header
+*/
+#define PBUF_LINK_HLEN          16
+
 
 /* IP reassembly and segmentation.These are orthogonal even
  * if they both deal with IP fragments */
@@ -302,22 +308,8 @@ a lot of data that needs to be copied, this should be set high. */
 
 /* ---------- Statistics options ---------- */
 
-#define LWIP_STATS              1
-#define LWIP_STATS_DISPLAY      1
-
-#if LWIP_STATS
-#define LINK_STATS              1
-#define IP_STATS                1
-#define ICMP_STATS              1
-#define IGMP_STATS              1
-#define IPFRAG_STATS            1
-#define UDP_STATS               1
-#define TCP_STATS               1
-#define MEM_STATS               1
-#define MEMP_STATS              1
-#define PBUF_STATS              1
-#define SYS_STATS               1
-#endif /* LWIP_STATS */
+#define LWIP_STATS              0
+#define LWIP_STATS_DISPLAY      0
 
 /* ---------- NETBIOS options ---------- */
 #define LWIP_NETBIOS_RESPOND_NAME_QUERY 1
@@ -343,7 +335,10 @@ a lot of data that needs to be copied, this should be set high. */
 #define MSCHAP_SUPPORT          0      /* Set > 0 for MSCHAP */
 #define CBCP_SUPPORT            0      /* Set > 0 for CBCP (NOT FUNCTIONAL!) */
 #define CCP_SUPPORT             0      /* Set > 0 for CCP */
-#define VJ_SUPPORT              1      /* Set > 0 for VJ header compression. */
+/*
+  VJ support disabled due to bugs with IP forwarding
+ */
+#define VJ_SUPPORT              0      /* Set > 0 for VJ header compression. */
 #define MD5_SUPPORT             0      /* Set > 0 for MD5 (see also CHAP) */
 
 #endif /* PPP_SUPPORT */
