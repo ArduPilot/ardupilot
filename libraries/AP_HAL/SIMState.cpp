@@ -384,7 +384,7 @@ void SIMState::set_height_agl(void)
         AP_Terrain *_terrain = AP_Terrain::get_singleton();
         if (_terrain != nullptr &&
             _terrain->height_amsl(location, terrain_height_amsl)) {
-            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }
     }
@@ -392,7 +392,7 @@ void SIMState::set_height_agl(void)
 
     if (_sitl != nullptr) {
         // fall back to flat earth model
-        _sitl->height_agl = _sitl->state.altitude - home_alt;
+        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
     }
 }
 
