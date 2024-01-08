@@ -641,9 +641,11 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 #endif
 
+#if AP_RSSI_ENABLED
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
+#endif
     
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
