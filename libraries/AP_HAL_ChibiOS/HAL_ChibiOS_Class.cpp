@@ -227,7 +227,7 @@ static void main_loop()
 
     hal.serial(0)->begin(SERIAL0_BAUD);
 
-#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+#if (HAL_USE_SPI == TRUE) && defined(HAL_SPI_CHECK_CLOCK_FREQ)
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
