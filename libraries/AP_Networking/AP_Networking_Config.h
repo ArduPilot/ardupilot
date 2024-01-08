@@ -119,3 +119,17 @@
 #ifndef AP_NETWORKING_SENDFILE_BUFSIZE
 #define AP_NETWORKING_SENDFILE_BUFSIZE (64*512)
 #endif
+
+#ifndef AP_NETWORKING_PPP_GATEWAY_ENABLED
+#define AP_NETWORKING_PPP_GATEWAY_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_BACKEND_PPP)
+#endif
+
+/*
+  the IP address given to the remote end of the PPP link when running
+  as a PPP<->ethernet gateway. If this is on the same subnet as the
+  ethernet interface IP then proxyarp will be used
+ */
+#ifndef AP_NETWORKING_REMOTE_PPP_IP
+#define AP_NETWORKING_REMOTE_PPP_IP "0.0.0.0"
+#endif
+

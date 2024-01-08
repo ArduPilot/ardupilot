@@ -26,6 +26,7 @@ class AP_Networking
 public:
     friend class AP_Networking_Backend;
     friend class AP_Networking_ChibiOS;
+    friend class AP_Networking_PPP;
     friend class AP_Vehicle;
     friend class Networking_Periph;
 
@@ -149,6 +150,13 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    enum class OPTION {
+        PPP_ETHERNET_GATEWAY=(1U<<0),
+    };
+    bool option_is_set(OPTION option) const {
+        return (param.options.get() & int32_t(option)) != 0;
+    }
+
 private:
     static AP_Networking *singleton;
 
@@ -172,9 +180,17 @@ private:
         AP_Int32 tests;
         AP_Networking_IPV4 test_ipaddr{AP_NETWORKING_TEST_IP};
 #endif
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+        AP_Networking_IPV4 remote_ppp_ip{AP_NETWORKING_REMOTE_PPP_IP};
+#endif
     } param;
 
     AP_Networking_Backend *backend;
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    AP_Networking_Backend *backend_PPP;
+#endif
 
     HAL_Semaphore sem;
 
