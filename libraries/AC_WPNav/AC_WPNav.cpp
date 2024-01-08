@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL_C
     // @DisplayName: Waypoint Cornering Acceleration
-    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions, zero uses max lean angle.
+    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions.  If zero uses 2x accel value.
     // @Units: cm/s/s
     // @Range: 0 500
     // @Increment: 10
