@@ -149,6 +149,7 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart1[] {
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
  { ConfigKey::CFG_UART1OUTPROT_RTCM3X, 1},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
+ { ConfigKey::CFG_UART1_BAUDRATE, 460800},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 0},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
  { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, RTK_MB_RTCM_RATE},
