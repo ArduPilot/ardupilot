@@ -303,9 +303,9 @@ bool AP_Arming::barometer_checks(bool report)
     return true;
 }
 
+#if AP_AIRSPEED_ENABLED
 bool AP_Arming::airspeed_checks(bool report)
 {
-#if AP_AIRSPEED_ENABLED
     if (check_enabled(ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
         if (airspeed == nullptr) {
@@ -319,10 +319,10 @@ bool AP_Arming::airspeed_checks(bool report)
             }
         }
     }
-#endif
 
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 #if HAL_LOGGING_ENABLED
 bool AP_Arming::logging_checks(bool report)
@@ -1198,8 +1198,6 @@ bool AP_Arming::proximity_checks(bool report) const
         check_failed(report, "%s", buffer);
         return false;
     }
-    return true;
-
     return true;
 }
 #endif  // HAL_PROXIMITY_ENABLED

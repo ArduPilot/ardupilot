@@ -236,8 +236,6 @@ protected:
 
     bool fettec_checks(bool display_failure) const;
 
-    bool kdecan_checks(bool display_failure) const;
-
 #if HAL_PROXIMITY_ENABLED
     virtual bool proximity_checks(bool report) const;
 #endif
