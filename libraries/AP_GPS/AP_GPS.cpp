@@ -1458,13 +1458,11 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
     for (int i = 0; i < GPS_MAX_RECEIVERS; i++) {
-            if (drivers[i] == nullptr){
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "driver null");
-            }
-            if (_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) { 
-                instance = i;
-                return true;
-            }
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS Type %d", _type[i]);
+        if (_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) { 
+            instance = i;
+            return true;
+        }
     }
     return false;
 }
