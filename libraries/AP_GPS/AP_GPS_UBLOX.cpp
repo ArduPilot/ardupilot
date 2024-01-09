@@ -198,6 +198,7 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
 
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
  { ConfigKey::CFG_UART2_ENABLED, 1},//
+ { ConfigKey::CFG_UART2_BAUDRATE, 460800},//
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
  { ConfigKey::CFG_UART1INPROT_RTCM3X, 0},//
  { ConfigKey::CFG_UART2INPROT_RTCM3X, 1},//
@@ -219,7 +220,6 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
  { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART2, 0},
 };
 #endif // GPS_MOVING_BASELINE
-
 
 void
 AP_GPS_UBLOX::_request_next_config(void)
