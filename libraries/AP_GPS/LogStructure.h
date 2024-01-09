@@ -179,6 +179,7 @@ struct PACKED log_GPS_RAWH {
 // @Field: doMes: Doppler measurement
 // @Field: gnss: GNSS identifier
 // @Field: sv: Satellite identifier
+// @Field: sig: Signal identifier
 // @Field: freq: GLONASS frequency slot
 // @Field: lock: carrier phase locktime counter
 // @Field: cno: carrier-to-noise density ratio
@@ -194,6 +195,7 @@ struct PACKED log_GPS_RAWS {
     float doMes;
     uint8_t gnssId;
     uint8_t svId;
+    uint8_t sigId;
     uint8_t freqId;
     uint16_t locktime;
     uint8_t cno;
@@ -217,5 +219,5 @@ struct PACKED log_GPS_RAWS {
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
-      "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
+      "GRXS", "QddfBBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,sig,freq,lock,cno,prD,cpD,doD,trk", "s-------------", "F-------------" , true }, \
     LOG_STRUCTURE_FROM_GPS_SBP

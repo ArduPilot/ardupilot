@@ -925,6 +925,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
             doMes      : raw.svinfo[i].doMes,
             gnssId     : raw.svinfo[i].gnssId,
             svId       : raw.svinfo[i].svId,
+            sigId      : raw.svinfo[i].sigId,
             freqId     : raw.svinfo[i].freqId,
             locktime   : raw.svinfo[i].locktime,
             cno        : raw.svinfo[i].cno,
