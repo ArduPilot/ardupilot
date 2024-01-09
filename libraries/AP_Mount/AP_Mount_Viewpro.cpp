@@ -76,6 +76,9 @@ void AP_Mount_Viewpro::update()
     // send vehicle attitude and position
     send_m_ahrs();
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // if tracking is active we do not send new targets to the gimbal
     if (_last_tracking_status == TrackingStatus::SEARCHING || _last_tracking_status == TrackingStatus::TRACKING) {
         return;
