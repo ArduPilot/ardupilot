@@ -8,9 +8,9 @@ def configure(cfg):
     if not cfg.env.BOARD_CLASS in ['SITL', 'LINUX', 'ChibiOS']:
         return
 
-    # networking doesn't build on MacOSX or clang
-    if platform.system() == 'Darwin' or 'clang++' in cfg.env.COMPILER_CXX:
-        return
+    # networking doesn't build with clang unless using macOS
+    if platform.system() != 'Darwin' and 'clang++' in cfg.env.COMPILER_CXX:
+       return
 
     extra_src = [
         'modules/lwip/src/core/*c',
