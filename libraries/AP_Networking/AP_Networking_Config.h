@@ -7,8 +7,8 @@
 
 
 #ifndef AP_NETWORKING_ENABLED
-#if defined(__APPLE__) || defined(__clang__)
-// MacOS can't build lwip, and clang fails on linux
+#if !defined(__APPLE__) && defined(__clang__)
+// clang fails on linux
 #define AP_NETWORKING_ENABLED 0
 #else
 #define AP_NETWORKING_ENABLED ((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
