@@ -4274,7 +4274,7 @@ class TestSuite(ABC):
         self.set_parameters({
             "NET_ENABLED": 1,
             "LOG_DISARMED": 1,
-            "LOG_DARM_RATEMAX": 2, # make small logs
+            "LOG_DARM_RATEMAX": 1, # make small logs
             # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
@@ -4317,11 +4317,14 @@ class TestSuite(ABC):
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
 
-            mavproxy = self.start_mavproxy(master=e)
+            mavproxy = self.start_mavproxy(master=e, options=['--source-system=123'])
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
             mavproxy.expect("numLogs")
+            # ensure the full list of logs has come out
+            for i in range(5):
+                self.wait_heartbeat()
             mavproxy.send("log download latest %s\n" % filename)
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
@@ -4331,7 +4334,7 @@ class TestSuite(ABC):
             # multicast UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 14550,
+            "NET_P1_PORT": 16005,
             "NET_P1_IP0": 239,
             "NET_P1_IP1": 255,
             "NET_P1_IP2": 145,
@@ -4339,24 +4342,30 @@ class TestSuite(ABC):
             # Broadcast UDP client
             "NET_P2_TYPE": 1,
             "NET_P2_PROTOCOL": 2,
-            "NET_P2_PORT": 16005,
+            "NET_P2_PORT": 16006,
             "NET_P2_IP0": 255,
             "NET_P2_IP1": 255,
             "NET_P2_IP2": 255,
             "NET_P2_IP3": 255,
+            "NET_P3_TYPE": -1,
+            "NET_P4_TYPE": -1,
+            "LOG_DISARMED": 0,
             })
         self.reboot_sitl()
-        endpoints = [('UDPMulticast', 'mcast:') ,
-                     ('UDPBroadcast', ':16005')]
+        endpoints = [('UDPMulticast', 'mcast:16005') ,
+                     ('UDPBroadcast', ':16006')]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
 
-            mavproxy = self.start_mavproxy(master=e)
+            mavproxy = self.start_mavproxy(master=e, options=['--source-system=123'])
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
             mavproxy.expect("numLogs")
+            # ensure the full list of logs has come out
+            for i in range(5):
+                self.wait_heartbeat()
             mavproxy.send("log download latest %s\n" % filename)
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
@@ -4387,8 +4396,9 @@ class TestSuite(ABC):
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
         mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
+        # ensure the full list of logs has come out
+        for i in range(5):
+            self.wait_heartbeat()
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
@@ -8435,7 +8445,7 @@ Also, ignores heartbeats not from our target system'''
     def defaults_filepath(self):
         return None
 
-    def start_mavproxy(self, sitl_rcin_port=None, master=None):
+    def start_mavproxy(self, sitl_rcin_port=None, master=None, options=None):
         self.start_mavproxy_count += 1
         if self.mavproxy is not None:
             return self.mavproxy
@@ -8453,11 +8463,18 @@ Also, ignores heartbeats not from our target system'''
         if master is None:
             master = 'tcp:127.0.0.1:%u' % self.adjust_ardupilot_port(5762)
 
+        if options is None:
+            options = self.mavproxy_options()
+        else:
+            op = self.mavproxy_options().copy()
+            op.extend(options)
+            options = op
+
         mavproxy = util.start_MAVProxy_SITL(
             self.vehicleinfo_key(),
             master=master,
             logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options(),
+            options=options,
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
         )
