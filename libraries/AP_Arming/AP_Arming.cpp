@@ -579,6 +579,7 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
 
+#if AP_AHRS_ENABLED
         // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
         Location ahrs_loc;
         AP_AHRS &ahrs = AP::ahrs();
@@ -597,6 +598,7 @@ bool AP_Arming::compass_checks(bool report)
                 return false;
             }           
         }
+#endif  // AP_AHRS_ENABLED
     }
 
     return true;
