@@ -554,6 +554,7 @@ void GCS_MAVLINK::send_proximity()
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2()
 {
+#if AP_AHRS_ENABLED
     const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     Location loc {};
@@ -568,6 +569,7 @@ void GCS_MAVLINK::send_ahrs2()
                                loc.lat,
                                loc.lng);
     }
+#endif
 }
 
 MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const
@@ -2191,6 +2193,7 @@ void GCS_MAVLINK::send_scaled_pressure3()
 
 void GCS_MAVLINK::send_ahrs()
 {
+#if AP_AHRS_ENABLED
     const AP_AHRS &ahrs = AP::ahrs();
     const Vector3f &omega_I = ahrs.get_gyro_drift();
     mavlink_msg_ahrs_send(
@@ -2202,6 +2205,7 @@ void GCS_MAVLINK::send_ahrs()
         0,
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
+#endif
 }
 
 /*
@@ -2752,6 +2756,7 @@ void GCS_MAVLINK::send_autopilot_version() const
  */
 void GCS_MAVLINK::send_local_position() const
 {
+#if AP_AHRS_ENABLED
     const AP_AHRS &ahrs = AP::ahrs();
 
     Vector3f local_position, velocity;
@@ -2770,6 +2775,7 @@ void GCS_MAVLINK::send_local_position() const
         velocity.x,
         velocity.y,
         velocity.z);
+#endif
 }
 
 /*
@@ -3134,11 +3140,13 @@ float GCS_MAVLINK::vfr_hud_airspeed() const
 
 float GCS_MAVLINK::vfr_hud_climbrate() const
 {
+#if AP_AHRS_ENABLED
     Vector3f velned;
     if (AP::ahrs().get_velocity_NED(velned) || 
         AP::ahrs().get_vert_pos_rate_D(velned.z)) {
         return -velned.z;
     }
+#endif
     return 0;
 }
 
@@ -3149,6 +3157,7 @@ float GCS_MAVLINK::vfr_hud_alt() const
 
 void GCS_MAVLINK::send_vfr_hud()
 {
+#if AP_AHRS_ENABLED
     AP_AHRS &ahrs = AP::ahrs();
 
     // return values ignored; we send stale data
@@ -3162,6 +3171,7 @@ void GCS_MAVLINK::send_vfr_hud()
         abs(vfr_hud_throttle()),
         vfr_hud_alt(),
         vfr_hud_climbrate());
+#endif
 }
 
 /*
@@ -3514,6 +3524,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packe
 #endif
 
 
+#if AP_AHRS_ENABLED
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
 void GCS_MAVLINK::set_ekf_origin(const Location& loc)
@@ -3561,6 +3572,7 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
     ekf_origin.alt = packet.altitude / 10;
     set_ekf_origin(ekf_origin);
 }
+#endif  // AP_AHRS_ENABLED
 
 /*
   handle a DATA96 message
@@ -3931,9 +3943,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_common_param_message(msg);
         break;
 
+#if AP_AHRS_ENABLED
     case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
         handle_set_gps_global_origin(msg);
         break;
+#endif
 
 #if AP_MAVLINK_MSG_DEVICE_OP_ENABLED
     case MAVLINK_MSG_ID_DEVICE_OP_READ:
@@ -4448,9 +4462,11 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if AP_INERTIALSENSOR_ENABLED
+#if AP_AHRS_ENABLED
     if (packet.x == 2) {
         return AP::ins().calibrate_trim();
     }
+#endif
 
     if (packet.x == 4) {
         // simple accel calibration
@@ -4623,6 +4639,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_int_t &p
     return MAV_RESULT_UNSUPPORTED;
 }
 
+#if AP_AHRS_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_int_t &packet)
 {
     // source set must be between 1 and 3
@@ -4634,6 +4651,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_
     }
     return MAV_RESULT_DENIED;
 }
+#endif
 
 #if AP_GRIPPER_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &packet)
@@ -5242,8 +5260,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         }
 #endif // AP_SCRIPTING_ENABLED
 
+#if AP_AHRS_ENABLED
     case MAV_CMD_SET_EKF_SOURCE_SET:
         return handle_command_set_ekf_source_set(packet);
+#endif
 
     case MAV_CMD_START_RX_PAIR:
         return handle_START_RX_PAIR(packet);
@@ -5438,6 +5458,7 @@ void GCS_MAVLINK::send_extended_sys_state() const
 
 void GCS_MAVLINK::send_attitude() const
 {
+#if AP_AHRS_ENABLED
     const AP_AHRS &ahrs = AP::ahrs();
     const Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
@@ -5449,10 +5470,12 @@ void GCS_MAVLINK::send_attitude() const
         omega.x,
         omega.y,
         omega.z);
+#endif
 }
 
 void GCS_MAVLINK::send_attitude_quaternion() const
 {
+#if AP_AHRS_ENABLED
     const AP_AHRS &ahrs = AP::ahrs();
     Quaternion quat;
     if (!ahrs.get_quaternion(quat)) {
@@ -5472,19 +5495,26 @@ void GCS_MAVLINK::send_attitude_quaternion() const
         omega.z, // yawspeed
         repr_offseq_q
         );
+#endif
 }
 
 int32_t GCS_MAVLINK::global_position_int_alt() const {
     return global_position_current_loc.alt * 10UL;
 }
 int32_t GCS_MAVLINK::global_position_int_relative_alt() const {
+#if AP_AHRS_ENABLED
     float posD;
     AP::ahrs().get_relative_position_D_home(posD);
     posD *= -1000.0f; // change from down to up and metres to millimeters
     return posD;
+#else
+    return 0;
+#endif
 }
+
 void GCS_MAVLINK::send_global_position_int()
 {
+#if AP_AHRS_ENABLED
     AP_AHRS &ahrs = AP::ahrs();
 
     UNUSED_RESULT(ahrs.get_location(global_position_current_loc)); // return value ignored; we send stale data
@@ -5505,6 +5535,7 @@ void GCS_MAVLINK::send_global_position_int()
         vel.y * 100,                     // Y speed cm/s (+ve East)
         vel.z * 100,                     // Z speed cm/s (+ve Down)
         ahrs.yaw_sensor);                // compass heading in 1/100 degree
+#endif  // AP_AHRS_ENABLED
 }
 
 #if HAL_MOUNT_ENABLED
@@ -5802,10 +5833,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
 #endif // AP_BATTERY_ENABLED
 
+#if AP_AHRS_ENABLED
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         AP::ahrs().send_ekf_status_report(*this);
         break;
+#endif
 
     case MSG_MEMINFO:
         CHECK_PAYLOAD_SIZE(MEMINFO);
@@ -6721,6 +6754,7 @@ GCS &gcs()
 #if HAL_HIGH_LATENCY2_ENABLED
 void GCS_MAVLINK::send_high_latency2() const
 {
+#if AP_AHRS_ENABLED
     AP_AHRS &ahrs = AP::ahrs();
     Location global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
@@ -6799,6 +6833,7 @@ void GCS_MAVLINK::send_high_latency2() const
         base_mode(), // Field for custom payload. base mode (arming status) in ArduPilot's case
         0, // Field for custom payload.
         0); // Field for custom payload.
+#endif
 }
 
 int8_t GCS_MAVLINK::high_latency_air_temperature() const
