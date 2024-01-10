@@ -23,6 +23,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
+#include <AP_Math/AP_Math.h>
+
 //#define ESC_TELEM_DEBUG
 
 #define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
