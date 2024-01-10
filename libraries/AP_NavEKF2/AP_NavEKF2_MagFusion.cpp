@@ -336,7 +336,7 @@ void NavEKF2_core::FuseMagnetometer()
     Vector3F &MagPred = mag_state.MagPred;
     ftype &R_MAG = mag_state.R_MAG;
     ftype *SH_MAG = &mag_state.SH_MAG[0];
-    Vector24 H_MAG;
+    Vector24 H_MAG = {};
     Vector6 SK_MX;
     Vector6 SK_MY;
     Vector6 SK_MZ;

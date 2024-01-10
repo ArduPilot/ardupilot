@@ -173,11 +173,19 @@ void AP_MotorsMatrix::output_to_motors()
             }
             break;
     }
+#if HAL_CODEV_ESC_ENABLE
+    AP_CodevEsc *esc = AP_CodevEsc::get_singleton();
+#endif
 
     // convert output to PWM and send to each motor
-    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) 
+    {
+        if (motor_enabled[i]) 
+        {
             rc_write(i, output_to_pwm(_actuator[i]));
+#if HAL_CODEV_ESC_ENABLE
+            esc->set_output_pwm(i, output_to_pwm(_actuator[i]));
+#endif
         }
     }
 }

@@ -249,10 +249,10 @@ public:
     /// Position
 
     /// set_pos_target_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
-#if false   // argosdyne
+#if true   // argosdyne
     void set_pos_target_xy_cm(float pos_x, float pos_y) { _pos_target.x = pos_x; _pos_target.y = pos_y; }
 #else
-    void set_pos_target_xy_cm(float pos_x, float pos_y, , bool is_preland_mode) { _pos_target.x = pos_x; _pos_target.y = pos_y; _is_prlnd_landmode = is_preland_mode;}
+    void set_pos_target_xy_cm(float pos_x, float pos_y, bool is_preland_mode) { _pos_target.x = pos_x; _pos_target.y = pos_y; _is_prlnd_landmode = is_preland_mode;}
 #endif
 
     /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin

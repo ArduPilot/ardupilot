@@ -123,7 +123,7 @@ void Copter::arm_motors_check()
 
         // disarm the motors
         if (arming_counter == DISARM_DELAY && motors->armed()) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::RUDDER);
         }
 
     // Yaw is centered so reset arming counter

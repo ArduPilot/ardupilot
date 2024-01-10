@@ -78,7 +78,7 @@ bool RC_Channels::read_input(void)
         return false;
     }
 
-    has_new_overrides = false;
+    //has_new_overrides = false;
 
     last_update_ms = AP_HAL::millis();
 
@@ -132,6 +132,7 @@ void RC_Channels::set_override(const uint8_t chan, const int16_t value, const ui
     if (chan < NUM_RC_CHANNELS) {
         _rc.channel(chan)->set_override(value, timestamp_ms);
     }
+    hal.rcin->set_num_channels(NUM_RC_CHANNELS);
 }
 
 bool RC_Channels::has_active_overrides()

@@ -257,13 +257,13 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Button,            &copter.button,              update,           5, 100, 168),
 #endif
 #if HAL_POWER_BUTTON_ENABLE == ENABLED
-    SCHED_TASK_CLASS(AP_Power_Button,            &copter.g2.power_button,           update,           5, 100),
+    SCHED_TASK_CLASS(AP_Power_Button,            &copter.g2.power_button,           update,           5, 100, 169),
 #endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
 #if HAL_CODEV_ESC_ENABLE == ENABLED
-    SCHED_TASK_CLASS(AP_CodevEsc,         &copter.codev_esc,        receive_esc_status,         400,  50),
+    SCHED_TASK_CLASS(AP_CodevEsc,         &copter.codev_esc,        receive_esc_status,         400,  50, 22),
 #endif
 };
 

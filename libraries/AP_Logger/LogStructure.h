@@ -675,6 +675,16 @@ struct PACKED log_VER {
     uint8_t build_type;
 };
 
+struct PACKED log_Motor_Status {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t state;
+    uint8_t temperature;
+    int32_t rpm;
+    uint16_t current;
+    uint16_t esc_set;
+};
+
 
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
@@ -1378,6 +1388,15 @@ enum LogMessages : uint8_t {
     // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_MODE_MSG,
 
+    LOG_MOT1_MSG,
+    LOG_MOT2_MSG,
+    LOG_MOT3_MSG,
+    LOG_MOT4_MSG,
+    LOG_MOT5_MSG,
+    LOG_MOT6_MSG,
+    LOG_MOT7_MSG,
+    LOG_MOT8_MSG,
+
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_IDS_FROM_DAL,
@@ -1412,6 +1431,7 @@ enum LogMessages : uint8_t {
     LOG_RCOUT2_MSG,
     LOG_RCOUT3_MSG,
     LOG_IDS_FROM_FENCE,
+
 
     _LOG_LAST_MSG_
 };

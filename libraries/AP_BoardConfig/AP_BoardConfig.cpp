@@ -28,6 +28,11 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 #include <stdio.h>
 
 #ifndef BOARD_TYPE_DEFAULT
@@ -379,6 +384,11 @@ void AP_BoardConfig::init()
     vehicleSerialNumber.convert_parameter_width(AP_PARAM_INT16);
 
     board_setup();
+#if HAL_WITH_IO_MCU
+    if (!iomcu.healthy() && AP_BoardConfig::io_enabled()) {
+        iomcu.init();
+    }
+#endif
 
 #if AP_RTC_ENABLED
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);

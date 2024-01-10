@@ -18,6 +18,9 @@
 #include "AP_Logger_File.h"
 #include "AP_Logger_MAVLink.h"
 #include "LoggerMessageWriter.h"
+#if HAL_CODEV_ESC_ENABLE
+#include <AP_CodevEsc/AP_CodevEsc.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -396,6 +399,53 @@ void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write an raw motors data packet
+void AP_Logger::Write_MOTORS()
+{
+#if HAL_CODEV_ESC_ENABLE
+    const AP_CodevEsc *motor_esc = AP::codevesc();
+    if (motor_esc == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i < HAL_ESC_NUM; i++) {
+        uint8_t id = motor_esc->_esc_status[i].id;
+        uint8_t state = motor_esc->_esc_status[i].state;
+        uint16_t current = motor_esc->_esc_status[i].current;
+        int16_t rpm = motor_esc->_esc_status[i].rpm;
+        uint16_t esc_set = motor_esc->_esc_status[i].esc_set;
+        uint8_t temperature = motor_esc->_esc_status[i].temperature;
+
+        Write_Motor_Status(id, state, temperature, current, rpm, esc_set);
+    }
+#endif
+}
+
+// Write Motor status messages
+//   id starts from 0
+//   rpm is RPM/s (rpm)
+//   current is in centi-amps
+//   temperature is in degrees Celsius
+//   esc_set is in pwm set value
+void AP_Logger::Write_Motor_Status(uint8_t id, uint8_t state, uint8_t temperature, uint16_t current, int16_t rpm, uint16_t esc_set)
+{
+    // sanity check id
+    if (id >= 8) {
+        return;
+    }
+    const struct log_Motor_Status pkt{
+        LOG_PACKET_HEADER_INIT(uint8_t(LOG_MOT1_MSG + id)),
+        time_us     : AP_HAL::micros64(),
+        state       : state,
+        temperature : temperature,
+        rpm         : rpm,
+        current     : current,
+        esc_set     : esc_set
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 
 void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance)
 {

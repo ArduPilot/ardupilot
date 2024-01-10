@@ -245,6 +245,7 @@ public:
     void Write_RCOUT(void);
     void Write_RSSI();
     void Write_Rally();
+    void Write_MOTORS();
 #if HAL_LOGGER_FENCE_ENABLED
     void Write_Fence();
 #endif
@@ -257,6 +258,7 @@ public:
                            float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
+    void Write_Motor_Status(uint8_t id, uint8_t state,  uint8_t temperature, uint16_t current,int16_t rpm, uint16_t esc_set);
 
     void Write_EntireMission();
     void Write_Command(const mavlink_command_int_t &packet,

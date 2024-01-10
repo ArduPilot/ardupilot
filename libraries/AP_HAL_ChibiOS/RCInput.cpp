@@ -103,6 +103,11 @@ uint8_t RCInput::num_channels()
     }
     return _num_channels;
 }
+void RCInput::set_num_channels(uint8_t num)
+{
+    _num_channels = num;
+}
+
 
 uint16_t RCInput::read(uint8_t channel)
 {

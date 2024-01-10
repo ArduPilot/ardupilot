@@ -265,7 +265,7 @@ private:
 
     static AP_Arming *_singleton;
 
-#if false
+#if true
     bool _pre_arm_passed = false;
 #endif    
 

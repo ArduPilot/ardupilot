@@ -486,8 +486,18 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
         return;
     }
 
-    last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();
+    last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();    
+#if false    
     override_value = v;
+#else
+    // fix the problem the channel can't been reversed
+    uint16_t r_in = v;
+    if (reversed && rc().gcs_overrides_enabled()) {
+        r_in = radio_max.get() - (r_in - radio_min.get());
+    }
+    override_value = r_in;
+#endif    
+
     rc().new_override_received();
 }
 
