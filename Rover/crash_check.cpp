@@ -45,8 +45,8 @@ void Rover::crash_check()
     }
 
     if (crashed) {
-        AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK,
-                                 LogErrorCode::CRASH_CHECK_CRASH);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK,
+                           LogErrorCode::CRASH_CHECK_CRASH);
 
         if (is_balancebot()) {
             // send message to gcs
