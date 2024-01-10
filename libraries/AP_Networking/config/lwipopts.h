@@ -36,6 +36,23 @@ extern "C"
 {
 #endif
 
+/* macOS specific */
+#if defined(__APPLE__)
+/* lwip/contrib/ports/unix/port/netif/sio.c */
+#include <util.h>
+
+/* lwip/src/apps/http/makefsdata/makefsdata.c  */
+#define GETCWD(path, len)             getcwd(path, len)
+#define GETCWD_SUCCEEDED(ret)         (ret != NULL)
+#define CHDIR(path)                   chdir(path)
+#define CHDIR_SUCCEEDED(ret)          (ret == 0)
+
+/* lwip/src/netif/ppp/fsm.c */
+/* lwip/src/netif/ppp/pppos.c */
+/* lwip/src/netif/ppp/vj.c */
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 #ifdef LWIP_OPTTEST_FILE
 #include "lwipopts_test.h"
 #else /* LWIP_OPTTEST_FILE */
