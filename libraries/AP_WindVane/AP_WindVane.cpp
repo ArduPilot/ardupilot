@@ -372,6 +372,7 @@ void AP_WindVane::update()
         _direction_true = _direction_true_raw;
     }
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: WIND
 // @Description: Windvane readings
 // @Field: TimeUS: Time since system startup
@@ -390,6 +391,7 @@ void AP_WindVane::update()
                         _speed_apparent_raw,
                         _speed_apparent,
                         _speed_true);
+#endif
 
 }
 
