@@ -79,7 +79,9 @@ private:
 
     uint32_t start_time_ms = 0;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     /**
        antenna control channels
