@@ -37,7 +37,7 @@ void Sub::mainloop_failsafe_check()
         failsafe_last_timestamp = tnow;
         if (in_failsafe) {
             in_failsafe = false;
-            AP::logger().Write_Error(LogErrorSubsystem::CPU,LogErrorCode::FAILSAFE_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU,LogErrorCode::FAILSAFE_RESOLVED);
         }
         return;
     }
@@ -51,7 +51,7 @@ void Sub::mainloop_failsafe_check()
         if (motors.armed()) {
             motors.output_min();
         }
-        AP::logger().Write_Error(LogErrorSubsystem::CPU,LogErrorCode::FAILSAFE_OCCURRED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU,LogErrorCode::FAILSAFE_OCCURRED);
     }
 
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
@@ -73,7 +73,7 @@ void Sub::failsafe_sensors_check()
     // We need a depth sensor to do any sort of auto z control
     if (sensor_health.depth) {
         if (failsafe.sensor_health) {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::ERROR_RESOLVED);
             failsafe.sensor_health = false;
         }
         return;
@@ -86,7 +86,7 @@ void Sub::failsafe_sensors_check()
 
     failsafe.sensor_health = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Depth sensor error!");
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::BAD_DEPTH);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::BAD_DEPTH);
 
     if (control_mode == Mode::Number::ALT_HOLD || control_mode == Mode::Number::SURFACE || sub.flightmode->requires_GPS()) {
         // This should always succeed
@@ -137,7 +137,7 @@ void Sub::failsafe_ekf_check()
     failsafe.ekf = true;
     AP_Notify::flags.ekf_bad = true;
 
-    AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
 
     if (AP_HAL::millis() > failsafe.last_ekf_warn_ms + 20000) {
         failsafe.last_ekf_warn_ms = AP_HAL::millis();
@@ -152,7 +152,7 @@ void Sub::failsafe_ekf_check()
 // Battery failsafe handler
 void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
 
     switch((Failsafe_Action)action) {
         case Failsafe_Action_Surface:
@@ -187,7 +187,7 @@ void Sub::failsafe_pilot_input_check()
 
     failsafe.pilot_input = true;
 
-    AP::logger().Write_Error(LogErrorSubsystem::PILOT_INPUT, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::PILOT_INPUT, LogErrorCode::FAILSAFE_OCCURRED);
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
     set_neutral_controls();
@@ -270,7 +270,7 @@ void Sub::failsafe_leak_check()
     // Do nothing if we are dry, or if leak failsafe action is disabled
     if (status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
         if (failsafe.leak) {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_LEAK, LogErrorCode::FAILSAFE_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_LEAK, LogErrorCode::FAILSAFE_RESOLVED);
         }
         AP_Notify::flags.leak_detected = false;
         failsafe.leak = false;
@@ -295,7 +295,7 @@ void Sub::failsafe_leak_check()
 
     failsafe.leak = true;
 
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_LEAK, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_LEAK, LogErrorCode::FAILSAFE_OCCURRED);
 
     // Handle failsafe action
     if (failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
@@ -324,7 +324,7 @@ void Sub::failsafe_gcs_check()
     if (tnow - gcs_last_seen_ms < FS_GCS_TIMEOUT_MS) {
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
         }
         failsafe.gcs = false;
         return;
@@ -346,7 +346,7 @@ void Sub::failsafe_gcs_check()
     }
 
     failsafe.gcs = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
 
     // handle failsafe action
     if (g.failsafe_gcs == FS_GCS_DISARM) {
@@ -412,7 +412,7 @@ void Sub::failsafe_crash_check()
     }
 
     failsafe.crash = true;
-    AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
 
     // disarm motors
     if (g.fs_crash_check == FS_CRASH_DISARM) {
@@ -435,7 +435,7 @@ void Sub::failsafe_terrain_check()
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe terrain triggered");
             failsafe_terrain_on_event();
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
             failsafe.terrain = false;
         }
     }
@@ -467,7 +467,7 @@ void Sub::failsafe_terrain_set_status(bool data_ok)
 void Sub::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     // If rangefinder is enabled, we can recover from this failsafe
     if (!rangefinder_state.enabled || !sub.mode_auto.auto_terrain_recover_start()) {

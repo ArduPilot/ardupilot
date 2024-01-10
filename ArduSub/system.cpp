@@ -62,7 +62,7 @@ void Sub::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     log_init();
 #endif
 
@@ -161,7 +161,7 @@ void Sub::init_ardupilot()
     mission.init();
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
@@ -264,18 +264,16 @@ bool Sub::optflow_position_ok()
     return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Sub::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>
