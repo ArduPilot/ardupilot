@@ -136,6 +136,19 @@ void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &pa
 }
 
 
+// Precise landing target handling
+void GCS_MAVLINK_Plane::handle_land_sensor_status(const mavlink_land_sensor_status_t &packet)
+{
+
+    if(packet.sensor_status == 1)
+        gcs().send_text(MAV_SEVERITY_INFO, "IPLS Test: Sensor is connected");
+
+    else if(packet.sensor_status == 2)  
+        gcs().send_text(MAV_SEVERITY_INFO, "IPLS Test: Sensor is not connected");
+
+}
+
+
 void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();

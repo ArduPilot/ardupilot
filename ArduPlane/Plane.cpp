@@ -34,7 +34,7 @@ Plane::Plane(void)
 void Plane::update_precland()
 {
   // alt will be unused if we pass false through as the second parameter:
-  return precland.update(0,true);
+  return precland.update(0,false);
 
 }
 #endif

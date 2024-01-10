@@ -585,6 +585,13 @@ private:
     // TARGET_ID 
     AP_Int32 landing_target_id;
 
+    // Allow Precision Landing in LAND first
+    AP_Int8 allow_precland_start;
+
+    // Allow Precision Landing to check if we should descend or not
+    AP_Int8 allow_decent_check;
+
+
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min;
     uint32_t takeoff_last_run_ms;

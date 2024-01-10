@@ -479,7 +479,19 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Description: Landing Target ID
     // @Range: 0 500
     // @User: Advanced
-    AP_GROUPINFO("TARGET_ID", 34, QuadPlane, landing_target_id, 5),
+    AP_GROUPINFO("TARGET_ID", 34, QuadPlane, landing_target_id, 31),
+    // @Param: INL_FINAL
+    // @DisplayName: INL_FINAL
+    // @Description: Allow Precision Landing in QPOS_LAND_DECENT
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("INL_FINAL", 35, QuadPlane, allow_precland_start, 0),
+    // @Param: ALLOW_DCS_CK
+    // @DisplayName: ALLOW_DCS_CK
+    // @Description: Allow Precision Landing to check if we should descend or not
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("DCS_CK", 36, QuadPlane, allow_decent_check, 0),
 
     AP_GROUPEND
 };
@@ -1220,7 +1232,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 
 #if PRECISION_LANDING == ENABLED
 
-        if (precland_active()) {
+        if ((allow_decent_check ==1) && precland_active()) {
         // prec landing is active
         Vector2f target_pos;
         float target_error_cm = 0.0f;
@@ -2337,6 +2349,7 @@ void QuadPlane::run_precland_horizontal_controller()
         Vector2p landing_pos = target_pos.topostype();
         // target vel will remain zero if landing target is stationary
         pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+        
     } else {
         // should never happen since the caller of this funtion should already check if precland is active
         Vector2f zero;
@@ -2739,8 +2752,9 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
 
-         if (precland_active()) {
+         if ((allow_precland_start == 1) && precland_active()) {
             run_precland_horizontal_controller();
+            
         } 
 
         else
@@ -2788,8 +2802,10 @@ void QuadPlane::vtol_position_controller(void)
         } else if (precland_active()) {
             // precland active
             run_precland_horizontal_controller(); 
+            // printf("active\n");
         
         }
+
 
         else {
             Vector2f zero;

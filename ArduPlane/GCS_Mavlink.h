@@ -27,6 +27,9 @@ protected:
 
     void send_position_target_global_int() override;
     void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
+    void handle_land_sensor_status(const mavlink_land_sensor_status_t &packet) override;
+
+
     void send_aoa_ssa();
     void send_attitude() const override;
     void send_wind() const;

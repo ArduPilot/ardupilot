@@ -3865,6 +3865,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_landing_target(msg);
         break;
 
+    
+    case MAVLINK_MSG_ID_LAND_SENSOR_STATUS:
+        handle_land_sensor_status(msg);
+        break;
+
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
         break;
@@ -4834,6 +4839,15 @@ void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
     // correct offboard timestamp
     const uint32_t corrected_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, LANDING_TARGET));
     handle_landing_target(m, corrected_ms);
+}
+
+
+void GCS_MAVLINK::handle_land_sensor_status(const mavlink_message_t &msg)
+{
+
+    mavlink_land_sensor_status_t m;
+    mavlink_msg_land_sensor_status_decode(&msg, &m);
+    handle_land_sensor_status(m);
 }
 
 
