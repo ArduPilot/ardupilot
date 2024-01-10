@@ -576,9 +576,11 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
 
+#if HAL_LOGGING_ENABLED
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
     GOBJECT(logger,           "LOG",  AP_Logger),
+#endif
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_

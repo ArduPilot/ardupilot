@@ -32,7 +32,7 @@ void Tracker::init_ardupilot()
     // try to initialise stream rates in the main loop.
     gcs().update_send();
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     log_init();
 #endif
 
@@ -56,8 +56,10 @@ void Tracker::init_ardupilot()
 
     barometer.calibrate();
 
+#if HAL_LOGGING_ENABLED
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+#endif
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -152,13 +154,17 @@ bool Tracker::set_home(const Location &temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+#if HAL_LOGGING_ENABLED
     logger.set_vehicle_armed(true);
+#endif
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
+#if HAL_LOGGING_ENABLED
     logger.set_vehicle_armed(false);
+#endif
 }
 
 /*
@@ -189,8 +195,10 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
         disarm_servos();
     }
 
+#if HAL_LOGGING_ENABLED
 	// log mode change
 	logger.Write_Mode((uint8_t)mode->number(), reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     nav_status.bearing = ahrs.yaw_sensor * 0.01f;
@@ -228,6 +236,7 @@ bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
@@ -238,7 +247,7 @@ bool Tracker::should_log(uint32_t mask)
     }
     return true;
 }
-
+#endif
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>
