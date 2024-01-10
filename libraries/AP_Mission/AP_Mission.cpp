@@ -1998,6 +1998,13 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
 
         } else {
+
+            // check the active do command
+            if (verify_command(_do_cmd)) {
+                // mark _do_cmd as complete
+                _flags.do_cmd_loaded = false;
+            }
+
             // set current do command and start it (if not already set)
             if (!_flags.do_cmd_loaded) {
                 _do_cmd = cmd;
