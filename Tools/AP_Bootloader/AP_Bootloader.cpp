@@ -109,6 +109,7 @@ int main(void)
         try_boot = false;
         timeout = 0;
     }
+#if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
     if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware CRC, don't try and boot
@@ -116,6 +117,7 @@ int main(void)
         try_boot = false;
         led_set(LED_BAD_FW);
     }
+#endif  // AP_CHECK_FIRMWARE_ENABLED
 #ifndef BOOTLOADER_DEV_LIST
     else if (timeout != 0) {
         // fast boot for good firmware
