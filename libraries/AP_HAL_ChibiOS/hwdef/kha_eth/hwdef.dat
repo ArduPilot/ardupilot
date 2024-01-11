@@ -140,7 +140,6 @@ define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS
 
 define PERIPH_FW TRUE
 #define NO_DATAFLASH TRUE
-define HAL_LOGGING_ENABLED FALSE
 
 #################################
 # AP_Periph - configurations specific to this App
