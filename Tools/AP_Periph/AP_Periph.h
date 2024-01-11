@@ -43,6 +43,7 @@
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
+#include <AP_AHRS/AP_AHRS.h>
 
 #ifdef HAL_PERIPH_ENABLE_RELAY
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
