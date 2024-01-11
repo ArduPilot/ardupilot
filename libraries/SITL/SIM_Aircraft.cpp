@@ -456,6 +456,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         last_speedup = sitl->speedup;
     }
 
+#if HAL_LOGGING_ENABLED
     // for EKF comparison log relhome pos and velocity at loop rate
     static uint16_t last_ticks;
     uint16_t ticks = AP::scheduler().ticks();
@@ -482,6 +483,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
                                     airspeed_pitot,
                                     achieved_rate_hz/rate_hz);
     }
+#endif
 }
 
 // returns perpendicular height to surface downward-facing rangefinder
