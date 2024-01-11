@@ -358,7 +358,7 @@ bool AP_RCProtocol_GHST::process_telemetry(bool check_constraint)
     }
 
     if (!telem_available) {
-#if AP_GHST_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if AP_GHST_TELEM_ENABLED
         if (AP_GHST_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {
