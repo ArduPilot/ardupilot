@@ -35,6 +35,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS MultiCopter
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_CLASS Helicopter
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_CLASS Tracker
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_CLASS Plane
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -49,6 +51,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "+"
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_STRING "heli"
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_STRING "tracker"
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_STRING "plane"
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
