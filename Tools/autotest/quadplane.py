@@ -2614,6 +2614,37 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.mav.motors_disarmed_wait()
         self.reset_SITL_commandline()
 
+    def CruiseClimb(self):
+        '''reproduce reported bug with CRUISE mode'''
+
+        '''VTOL in Cruise, full pitch to climb with throttle at the center and
+        VTOL goes up while maintaining 21 m/s speed.  Keeping the pitch in I
+        increase the throttle to full and the cruise speed increases to about
+        31 m/s.  I put the throttle at idle and the cruise speed goes to about
+        15 m/s.  From that point any throttle stick change is ignored as
+        cruise speed, I bring the pitch back to center stick and by moving the
+        throttle I can interact with speed again.
+
+        '''
+        self.takeoff(20, mode='QSTABILIZE')
+        self.change_mode('CRUISE')
+        self.set_rc(2, 2000)  # full-pitch to climb
+        self.set_rc(3, 1500)  # centre-throttle
+        self.wait_airspeed(19, 23, minimum_duration=5)  # goes up while maintaining 21 m/s
+        self.set_rc(3, 2000)  # increase the throttle to full
+        self.wait_airspeed(28, 33, minimum_duration=5)  # cruise speed increases to about 31 m/s
+
+        #  From that point any throttle stick change is ignored as cruise speed
+        self.set_rc(3, 1500)  # centre-throttle
+        self.wait_airspeed(19, 23, minimum_duration=5)
+
+        self.set_rc(3, 2000)  # increase the throttle to full
+        self.wait_airspeed(28, 33, minimum_duration=5)  # cruise speed increases to about 31 m/s
+
+        self.set_rc(2, 1500)
+        self.set_rc(3, 1500)
+        self.fly_home_land_and_disarm(timeout=300)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2671,5 +2702,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QLoiterRecovery,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
+            self.CruiseClimb,
         ])
         return ret
