@@ -267,6 +267,12 @@ class SizeCompareBranches(object):
                 print(output)
             self.progress("Process failed (%s)" %
                           str(returncode))
+            try:
+                path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
+                path.write_text(output)
+                self.progress("Wrote process failure file (%s)" % path)
+            except Exception:
+                self.progress("Writing process failure file failed")
             raise subprocess.CalledProcessError(
                 returncode, cmd_list)
         return output
