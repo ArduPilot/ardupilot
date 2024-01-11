@@ -39,6 +39,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS Plane
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_CLASS SimRover
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_CLASS Blimp
 #endif
 #endif
 
@@ -51,6 +53,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "plane"
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_STRING "rover"
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_STRING "blimp"
 #endif
 #endif
 
