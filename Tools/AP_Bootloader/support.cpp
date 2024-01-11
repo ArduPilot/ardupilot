@@ -22,6 +22,10 @@
 // optional uprintf() code for debug
 // #define BOOTLOADER_DEBUG SD1
 
+#ifndef AP_BOOTLOADER_ALWAYS_ERASE
+#define AP_BOOTLOADER_ALWAYS_ERASE 0
+#endif
+
 #if defined(BOOTLOADER_DEV_LIST)
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
 #if HAL_USE_SERIAL == TRUE
@@ -32,10 +36,6 @@ static uint8_t last_uart;
 
 #ifndef BOOTLOADER_BAUDRATE
 #define BOOTLOADER_BAUDRATE 115200
-#endif
-
-#ifndef AP_BOOTLOADER_ALWAYS_ERASE
-#define AP_BOOTLOADER_ALWAYS_ERASE 0
 #endif
 
 // #pragma GCC optimize("O0")
