@@ -99,6 +99,7 @@ void JSON_Master::receive(struct sitl_input &input)
             }
         }
 
+#if HAL_LOGGING_ENABLED
         const bool use_servos = list->instance == master_instance;
 
 // @LoggerMessage: SLV1
@@ -158,6 +159,7 @@ void JSON_Master::receive(struct sitl_input &input)
                        buffer.pwm[11],
                        buffer.pwm[12],
                        buffer.pwm[13]);
+#endif
 
         if (list->instance == master_instance) {
             // Use the servo outs from this instance
