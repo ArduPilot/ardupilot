@@ -284,6 +284,17 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
 
+#IDs 5301-5399 reserved for Sierra Aerospace
+AP_HW_Sierra-TrueNavPro-G4           5301
+AP_HW_Sierra-TrueNavIC               5302
+AP_HW_Sierra-TrueNorth-G4            5303
+AP_HW_Sierra-TrueSpeed-G4            5304
+AP_HW_Sierra-PrecisionPoint-G4       5305
+AP_HW_Sierra-AeroNex                 5306
+AP_HW_Sierra-TrueFlow                5307
+AP_HW_Sierra-TrueNavIC-Pro           5308
+AP_HW_Sierra-F1-Pro                  5309
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
