@@ -39,7 +39,7 @@ enum class check_fw_result_t : uint8_t {
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(APJ_BOARD_ID)
-// this allows for sitl_periph_gps to build
+// this allows for sitl_periph to build
 #define APJ_BOARD_ID 0
 #endif
 
