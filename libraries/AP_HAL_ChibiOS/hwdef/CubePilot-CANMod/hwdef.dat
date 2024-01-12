@@ -85,10 +85,12 @@ define HAL_DISABLE_LOOP_DELAY
 #################################
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-define AP_RC_CHANNEL_ENABLED 1
 define AP_INERTIALSENSOR_ENABLED 0
 
 define AP_NETWORKING_MAX_INSTANCES 4
+
+define AP_SCRIPTING_ENABLED 1
+define AP_FILESYSTEM_ROMFS_ENABLED 1
 
 # listen for reboot command from uploader.py script
 # undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
