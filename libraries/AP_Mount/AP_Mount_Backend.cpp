@@ -413,7 +413,7 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
     // return immediately if no yaw estimate
-    float ahrs_yaw = AP::ahrs().yaw;
+    float ahrs_yaw = AP::ahrs().get_yaw();
     if (isnan(ahrs_yaw)) {
         return;
     }
@@ -734,7 +734,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(yaw - AP::ahrs().yaw);
+        return wrap_PI(yaw - AP::ahrs().get_yaw());
     }
 
     // target is already body-frame
@@ -750,7 +750,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     }
 
     // convert to earth-frame
-    return wrap_PI(yaw + AP::ahrs().yaw);
+    return wrap_PI(yaw + AP::ahrs().get_yaw());
 }
 
 // sets roll, pitch, yaw and yaw_is_ef
