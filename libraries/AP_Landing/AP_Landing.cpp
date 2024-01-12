@@ -163,6 +163,15 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WIND_COMP", 18, AP_Landing, wind_comp, 50),
 
+    // @Param: RNGFND_HLD
+    // @DisplayName: Rangefinder hold-off
+    // @Description: Rangefinder hold-off distance from land point. Hold off using the rangefinder's altitude correction until you're this close horizontally to the NAV_LAND point. Requires RNGFND_LANDING = 1. This is useful to avoid the rangefinder reacting to objects/trees, or pits, before the level-ish runway starts. Set to zero to disable the hold-off (don't inhibit the rangefinder). Using this feature will cause the rangefinder to correct the baro offset later in the landing which will lead to a larger slope correction. It is suggested to use LAND_ABORT_DEG with this feature so that unacheivable slopes will cause automatic go-arounds while retaining the rangefinder correction in the baro for a smoother landing on the next attempt.
+    // @Range: 0 1000
+    // @Units: m
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RNGFND_HLD", 19, AP_Landing, rangefinder_holdoff_before_land_point, 0),
+
     // @Param: TYPE
     // @DisplayName: Auto-landing type
     // @Description: Specifies the auto-landing type to use
