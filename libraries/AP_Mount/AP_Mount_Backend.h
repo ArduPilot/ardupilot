@@ -79,6 +79,10 @@ public:
     // set mount's mode
     bool set_mode(enum MAV_MOUNT_MODE mode);
 
+    // set_mode_3pos - sets the mount's retract or default mode from an aux switch
+    //  ch_flag 0 = LOW enters default mode, 1 = MIDDLE return to previous mode, 2 = HIGH enter retract mode
+    void set_mode_3pos(uint8_t ch_flag);
+
     // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
@@ -329,6 +333,9 @@ protected:
         bool operator==(const mavlink_control_id_t &rhs) const { return (sysid == rhs.sysid && compid == rhs.compid); }
         bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
+
+    // aux switch handling
+    MAV_MOUNT_MODE  _mode_last;     // previous mode, used in set_mode_3pos()
 };
 
 #endif // HAL_MOUNT_ENABLED
