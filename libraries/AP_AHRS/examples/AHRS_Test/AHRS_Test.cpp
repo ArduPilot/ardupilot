@@ -84,9 +84,9 @@ void loop(void)
         hal.console->printf(
                 "r:%4.1f  p:%4.1f y:%4.1f "
                     "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
-                (double)ToDeg(ahrs.roll),
-                (double)ToDeg(ahrs.pitch),
-                (double)ToDeg(ahrs.yaw),
+                (double)ToDeg(ahrs.get_roll()),
+                (double)ToDeg(ahrs.get_pitch()),
+                (double)ToDeg(ahrs.get_yaw()),
                 (double)ToDeg(drift.x),
                 (double)ToDeg(drift.y),
                 (double)ToDeg(drift.z),

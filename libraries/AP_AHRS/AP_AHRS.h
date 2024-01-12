@@ -548,10 +548,6 @@ public:
      */
 
     // roll/pitch/yaw euler angles, all in radians
-    float roll;
-    float pitch;
-    float yaw;
-
     float get_roll() const { return roll; }
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
@@ -680,6 +676,11 @@ public:
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
 private:
+
+    // roll/pitch/yaw euler angles, all in radians
+    float roll;
+    float pitch;
+    float yaw;
 
     // optional view class
     AP_AHRS_View *_view;
