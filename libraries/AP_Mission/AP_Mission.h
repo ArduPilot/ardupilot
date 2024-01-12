@@ -415,6 +415,19 @@ public:
         // comparison operator (relies on all bytes in the structure even if they may not be used)
         bool operator ==(const Mission_Command &b) const { return (memcmp(this, &b, sizeof(Mission_Command)) == 0); }
         bool operator !=(const Mission_Command &b) const { return !operator==(b); }
+
+        /*
+          return the number of turns for a LOITER_TURNS command
+          this has special handling for loiter turns from cmd.p1 and type_specific_bits
+         */
+        float get_loiter_turns(void) const {
+            float turns = LOWBYTE(p1);
+            if (type_specific_bits & (1U<<1)) {
+                // special storage handling allows for fractional turns
+                turns *= (1.0/256.0);
+            }
+            return turns;
+        }
     };
 
 
