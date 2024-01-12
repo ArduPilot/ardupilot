@@ -1932,35 +1932,38 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 
 #if AP_AHRS_DCM_ENABLED
     // Handle fallback for fixed wing planes (including VTOL's) and ground vehicles.
-    if (ret != EKFType::DCM &&
-        (_vehicle_class == VehicleClass::FIXED_WING ||
-         _vehicle_class == VehicleClass::GROUND)) {
-
+    if (_vehicle_class == VehicleClass::FIXED_WING ||
+        _vehicle_class == VehicleClass::GROUND) {
         bool should_use_gps = true;
-        nav_filter_status filt_state;
+        nav_filter_status filt_state {};
+        switch (ret) {
+        case EKFType::DCM:
+            // already using DCM
+            break;
 #if HAL_NAVEKF2_AVAILABLE
-        if (ret == EKFType::TWO) {
+        case EKFType::TWO:
             EKF2.getFilterStatus(filt_state);
             should_use_gps = EKF2.configuredToUseGPSForPosXY();
-        }
+            break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-        if (ret == EKFType::THREE) {
+        case EKFType::THREE:
             EKF3.getFilterStatus(filt_state);
             should_use_gps = EKF3.configuredToUseGPSForPosXY();
-        }
+            break;
 #endif
 #if AP_AHRS_SIM_ENABLED
-        if (ret == EKFType::SIM) {
+        case EKFType::SIM:
             get_filter_status(filt_state);
-        }
+            break;
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
-        if (ret == EKFType::EXTERNAL) {
+        case EKFType::EXTERNAL:
             get_filter_status(filt_state);
             should_use_gps = true;
-        }
+            break;
 #endif
+        }
 
         // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
         const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
