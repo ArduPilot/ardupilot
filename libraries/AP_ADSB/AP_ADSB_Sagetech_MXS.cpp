@@ -641,7 +641,7 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
     }
 
     int32_t height;
-    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height)) {
+    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
         gps.height = height * 0.01;
     } else {
         gps.height = 0.0;
