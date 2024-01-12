@@ -476,8 +476,9 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    const float turns = cmd.get_loiter_turns();
 
-    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
+    loiter.total_cd = (uint32_t)(turns * 36000UL);
     condition_value = 1; // used to signify primary turns goal not yet met
 }
 
