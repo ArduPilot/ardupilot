@@ -286,7 +286,7 @@ __bin_names = {
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
-    "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
+    "SITLPeriphUniversal": "sitl_periph_universal.AP_Periph",
     "CAN": "arducopter",
 }
 
@@ -362,8 +362,8 @@ tester_class_map = {
 }
 
 supplementary_test_binary_map = {
-    "test.CAN": ["sitl_periph_gps:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
-                 "sitl_periph_gps:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
+    "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+                 "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
 }
 
 
@@ -441,8 +441,8 @@ def run_step(step):
     if step == 'build.Sub':
         vehicle_binary = 'bin/ardusub'
 
-    if step == 'build.SITLPeriphGPS':
-        vehicle_binary = 'sitl_periph_gps.bin/AP_Periph'
+    if step == 'build.SITLPeriphUniversal':
+        vehicle_binary = 'sitl_periph_universal.bin/AP_Periph'
 
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
@@ -1085,7 +1085,7 @@ if __name__ == "__main__":
         'build.Blimp',
         'test.Blimp',
 
-        'build.SITLPeriphGPS',
+        'build.SITLPeriphUniversal',
         'test.CAN',
 
         # convertgps disabled as it takes 5 hours

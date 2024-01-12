@@ -34,6 +34,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL_SITL/CANSocketIface.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
 #endif
 
 #define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES))-1U)
