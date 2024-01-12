@@ -879,8 +879,8 @@ void AP_Vehicle::publish_osd_info()
 
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
-    roll = ahrs.roll;
-    pitch = ahrs.pitch;
+    roll = ahrs.get_roll();
+    pitch = ahrs.get_pitch();
 }
 
 #if HAL_INS_ACCELCAL_ENABLED
