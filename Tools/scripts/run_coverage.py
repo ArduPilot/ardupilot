@@ -238,8 +238,8 @@ class CoverageRunner(object):
                                     root_dir + "/build/linux/modules/*",
                                     root_dir + "/build/sitl/libraries/*",
                                     root_dir + "/build/sitl/modules/*",
-                                    root_dir + "/build/sitl_periph_gps/libraries/*",
-                                    root_dir + "/build/sitl_periph_gps/modules/*",
+                                    root_dir + "/build/sitl_periph_universal/libraries/*",
+                                    root_dir + "/build/sitl_periph_universal/modules/*",
                                     root_dir + "/libraries/*/examples/*",
                                     root_dir + "/libraries/*/tests/*",
                                     "-o", self.INFO_FILE
