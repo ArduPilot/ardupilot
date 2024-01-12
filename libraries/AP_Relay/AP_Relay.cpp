@@ -29,6 +29,10 @@
 #include <AP_CANManager/AP_CANManager.h>
 #endif
 
+#if AP_SIM_ENABLED
+#include <SITL/SITL.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define RELAY1_PIN_DEFAULT 13
 
