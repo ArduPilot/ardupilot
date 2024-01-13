@@ -202,29 +202,30 @@ void AP_Relay::convert_params()
     // Dont need this conversion on periph as relay support is more recent
 
     // Before converting local params we must find any relays being used by index from external libs
-    int8_t relay_index;
-
     int8_t ice_relay = -1;
 #if AP_ICENGINE_ENABLED
     AP_ICEngine *ice = AP::ice();
-    if (ice != nullptr && ice->get_legacy_ignition_relay_index(relay_index)) {
-        ice_relay = relay_index;
+    int8_t ice_relay_index;
+    if (ice != nullptr && ice->get_legacy_ignition_relay_index(ice_relay_index)) {
+        ice_relay = ice_relay_index;
     }
 #endif
 
     int8_t chute_relay = -1;
 #if HAL_PARACHUTE_ENABLED
     AP_Parachute *parachute = AP::parachute();
-    if (parachute != nullptr && parachute->get_legacy_relay_index(relay_index)) {
-        chute_relay = relay_index;
+    int8_t parachute_relay_index;
+    if (parachute != nullptr && parachute->get_legacy_relay_index(parachute_relay_index)) {
+        chute_relay = parachute_relay_index;
     }
 #endif
 
     int8_t cam_relay = -1;
 #if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
-    if ((camera != nullptr) && (camera->get_legacy_relay_index(relay_index))) {
-        cam_relay = relay_index;
+    int8_t camera_relay_index;
+    if ((camera != nullptr) && (camera->get_legacy_relay_index(camera_relay_index))) {
+        cam_relay = camera_relay_index;
     }
 #endif
 
