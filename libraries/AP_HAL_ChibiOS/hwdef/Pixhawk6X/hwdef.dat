@@ -85,7 +85,6 @@ IOMCU_UART USART6
 # uart6, RX only, RC input, if no IOMCU
 # PC7 USART6_RX USART6
 
-# ethernet (not implemented yet)
 PC1 ETH_MDC              ETH1
 PA2 ETH_MDIO             ETH1
 PC4 ETH_RMII_RXD0        ETH1
