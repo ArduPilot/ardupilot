@@ -19,6 +19,8 @@ def build(bld):
         'AP_Math',
         'AP_CheckFirmware',
         'AP_HAL',
+        'AP_Networking',
+        'AP_ROMFS',
         ])
 
     # build external libcanard library
