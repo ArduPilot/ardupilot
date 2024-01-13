@@ -1233,7 +1233,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
-        cmd.p1 = packet.param1;                         // action 0=disable, 1=enable
+        cmd.p1 = packet.param1;                         // action 0=disable, 1=enable, 2=disable floor
+        // packet.param2;                               // bitmask see FENCE_TYPE enum
         break;
 
     case MAV_CMD_DO_AUX_FUNCTION:
@@ -1746,7 +1747,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
-        packet.param1 = cmd.p1;                         // action 0=disable, 1=enable
+        packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=disable floor, 3=enable except floor
         break;
 
     case MAV_CMD_DO_PARACHUTE:                          // MAV ID: 208
