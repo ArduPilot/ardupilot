@@ -13,6 +13,7 @@
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
 #endif
+#include <lwip/etharp.h>
 #include <hal.h>
 #include "../../modules/ChibiOS/os/various/evtimer.h"
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -62,11 +63,14 @@ bool AP_Networking_ChibiOS::allocate_buffers()
     if (mem == nullptr) {
         return false;
     }
+
+#ifndef HAL_BOOTLOADER_BUILD
     // ensure our memory is aligned
     // ref. Cortex-M7 peripherals PM0253, section 4.6.4 MPU region base address register
     if (((uint32_t)mem) % size) {
         AP_HAL::panic("Bad alignment of ETH memory");
     }
+#endif
 
     // for total_size == 9240, size should be 16384 and (rasr-1) should be 13 (MPU_RASR_SIZE_16K)
     const uint32_t rasr_size = MPU_RASR_SIZE(rasr-1);
@@ -139,8 +143,8 @@ bool AP_Networking_ChibiOS::init()
 
 void AP_Networking_ChibiOS::link_up_cb(void *p)
 {
-    auto *driver = (AP_Networking_ChibiOS *)p;
 #if LWIP_DHCP
+    auto *driver = (AP_Networking_ChibiOS *)p;
     if (driver->frontend.get_dhcp_enabled()) {
         dhcp_start(driver->thisif);
     }
@@ -149,8 +153,8 @@ void AP_Networking_ChibiOS::link_up_cb(void *p)
 
 void AP_Networking_ChibiOS::link_down_cb(void *p)
 {
-    auto *driver = (AP_Networking_ChibiOS *)p;
 #if LWIP_DHCP
+    auto *driver = (AP_Networking_ChibiOS *)p;
     if (driver->frontend.get_dhcp_enabled()) {
         dhcp_stop(driver->thisif);
     }

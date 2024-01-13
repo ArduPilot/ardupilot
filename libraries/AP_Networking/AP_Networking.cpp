@@ -214,10 +214,12 @@ void AP_Networking::announce_address_changes()
         return;
     }
 
+#if AP_HAVE_GCS_SEND_TEXT
     char ipstr[16];
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: IP      %s", SocketAPM::inet_addr_to_str(get_ip_active(), ipstr, sizeof(ipstr)));
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Mask    %s", SocketAPM::inet_addr_to_str(get_netmask_active(), ipstr, sizeof(ipstr)));
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: Gateway %s", SocketAPM::inet_addr_to_str(get_gateway_active(), ipstr, sizeof(ipstr)));
+#endif
 
     announce_ms = as.last_change_ms;
 }
