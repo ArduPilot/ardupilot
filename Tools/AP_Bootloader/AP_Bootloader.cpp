@@ -37,6 +37,7 @@
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include "network.h"
 
 extern "C" {
     int main(void);
@@ -61,10 +62,20 @@ struct boardinfo board_info = {
 AP_FlashIface_JEDEC ext_flash;
 #endif
 
+#if AP_BOOTLOADER_NETWORK_ENABLED
+static BL_Network network;
+#endif
+
 int main(void)
 {
     custom_startup();
 
+    flash_init();
+
+#ifdef STM32H7
+    check_ecc_errors();
+#endif
+    
 #ifdef STM32F427xx
     if (BOARD_FLASH_SIZE > 1024 && check_limit_flash_1M()) {
         board_info.fw_size = (1024 - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
@@ -183,8 +194,10 @@ int main(void)
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     can_start();
 #endif
-    flash_init();
 
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    network.init();
+#endif
 
 #if AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
     if (flash_from_sd()) {
@@ -198,7 +211,7 @@ int main(void)
         jump_to_app();
     }
 #else
-    // CAN only
+    // CAN and network only
     while (true) {
         uint32_t t0 = AP_HAL::millis();
         while (timeout == 0 || AP_HAL::millis() - t0 <= timeout) {
