@@ -340,6 +340,14 @@ for t in $CI_BUILD_TARGET; do
         Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
         continue
     fi
+
+    if [ "$t" == "Pixhawk6X-PPPGW" ]; then
+        echo "Building Pixhawk6X-PPPGW"
+        $waf configure --board Pixhawk6X-PPPGW
+        $waf clean
+        $waf AP_Periph
+        continue
+    fi
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
