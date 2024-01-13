@@ -442,6 +442,13 @@ int ap_networking_printf(const char *fmt, ...)
     return 0;
 }
 
+// address to string using a static return buffer
+const char *AP_Networking::address_to_str(uint32_t addr)
+{
+    static char buf[16]; // 16 for aaa.bbb.ccc.ddd
+    return SocketAPM::inet_addr_to_str(addr, buf, sizeof(buf));
+}
+
 #ifdef LWIP_PLATFORM_ASSERT
 void ap_networking_platform_assert(const char *msg, int line, const char *file)
 {

@@ -139,6 +139,9 @@ public:
     // convert string to ethernet mac address
     static bool convert_str_to_macaddr(const char *mac_str, uint8_t addr[6]);
 
+    // address to string using a static return buffer for scripting
+    static const char *address_to_str(uint32_t addr);
+    
     // helper functions to convert between 32bit Netmask and counting consecutive bits and back
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
