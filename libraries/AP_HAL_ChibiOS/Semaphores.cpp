@@ -53,6 +53,9 @@ bool Semaphore::take(uint32_t timeout_ms)
     if (take_nonblocking()) {
         return true;
     }
+#ifdef HAL_BOOTLOADER_BUILD
+    return false;
+#else
     uint64_t start = AP_HAL::micros64();
     do {
         hal.scheduler->delay_microseconds(200);
@@ -61,6 +64,7 @@ bool Semaphore::take(uint32_t timeout_ms)
         }
     } while ((AP_HAL::micros64() - start) < timeout_ms*1000);
     return false;
+#endif
 }
 
 bool Semaphore::take_nonblocking()
