@@ -111,8 +111,13 @@ bool AP_GHST_Telem::process_rf_mode_changes()
     if (ghost != nullptr) {
         uart = ghost->get_UART();
     }
+
     if (uart == nullptr) {
         return true;
+    }
+
+    if (!ghost->is_detected()) {
+        return false;
     }
     // not ready yet
     if (!uart->is_initialized()) {

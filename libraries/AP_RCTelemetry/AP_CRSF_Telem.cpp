@@ -185,8 +185,13 @@ bool AP_CRSF_Telem::process_rf_mode_changes()
     if (crsf != nullptr) {
         uart = crsf->get_UART();
     }
+
     if (uart == nullptr) {
         return true;
+    }
+
+    if (!crsf->is_detected()) {
+        return false;
     }
     // not ready yet
     if (!uart->is_initialized()) {
@@ -402,11 +407,11 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     case GENERAL_COMMAND:
         return _baud_rate_request.pending;
     case VERSION_PING:
-        return _crsf_version.pending;
+        return _crsf_version.pending && AP::crsf()->is_detected(); // only send pings if protocol has been detected
     case HEARTBEAT:
         return true; // always send heartbeat if enabled
     case DEVICE_PING:
-        return !_crsf_version.pending; // only send pings if version has been negotiated
+        return !_crsf_version.pending;  // only send pings if version has been negotiated
     default:
         return _enable_telemetry;
     }
