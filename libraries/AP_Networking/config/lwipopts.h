@@ -31,7 +31,10 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "hwdef.h"
+#endif
 
 #ifdef   __cplusplus
 extern "C"
@@ -72,7 +75,9 @@ extern "C"
 #define LWIP_NETCONN               (NO_SYS==0)
 #define LWIP_NETIF_API             (NO_SYS==0)
 
+#ifndef LWIP_IGMP
 #define LWIP_IGMP                  LWIP_IPV4
+#endif
 #define LWIP_ICMP                  LWIP_IPV4
 
 #define LWIP_SNMP                  LWIP_UDP
@@ -216,7 +221,9 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_TCP                1
 #define TCP_TTL                 255
 
+#ifndef LWIP_ALTCP
 #define LWIP_ALTCP              (LWIP_TCP)
+#endif
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_ALTCP_TLS          (LWIP_TCP)
 #define LWIP_ALTCP_TLS_MBEDTLS  (LWIP_TCP)
