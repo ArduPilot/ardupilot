@@ -747,6 +747,26 @@ void Plane::rangefinder_height_update(void)
         }
         
     }
+    // log to AP_Logger
+    // @LoggerMessage: RNGV
+    // @Vehicles: Plane
+    // @Description: Information about the rangefinder state from AP_Vehicle
+    // @URL: https://ardupilot.org/copter/docs/common-rangefinder-setup.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: inrng: sensor is in range or not
+    // @Field: inuse: sensor is in use or not
+    // @Field: initialrange: initial range used by sensor
+    // @Field: corr: correction value used by sensor
+    // @Field: inrangecount: number of measurements in range. Must be at least 10 to consider the sensor in range
+    // @Field: height: height estimate from the sensor
+    AP::logger().Write("RNGV", "TimeUS,inrng,inuse,initialrange,corr,inrangecount,height", "QBBffBf",
+                        AP_HAL::micros64(),
+                        rangefinder_state.in_range,
+                        rangefinder_state.in_use,
+                        rangefinder_state.initial_range,
+                        rangefinder_state.correction,
+                        rangefinder_state.in_range_count,
+                        rangefinder_state.height_estimate);
 }
 
 /*
