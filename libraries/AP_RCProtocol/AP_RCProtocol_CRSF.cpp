@@ -302,7 +302,7 @@ void AP_RCProtocol_CRSF::update(void)
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
     uint32_t now = AP_HAL::micros();
-    if (_last_frame_time_us > 0 && (!get_rc_frame_count() || !is_tx_active())
+    if (_last_frame_time_us > 0 && (!get_rc_input_count() || !is_tx_active())
         && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
         process_telemetry(false);
         _last_frame_time_us = now;
