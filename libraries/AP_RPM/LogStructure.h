@@ -17,12 +17,8 @@ struct PACKED log_RPM {
     float rpm2;
     float rpm3;
     float rpm4;
-    float rpm5;
-    float rpm6;
-    float rpm7;
-    float rpm8;
 };
 
 #define LOG_STRUCTURE_FROM_RPM        \
     { LOG_RPM_MSG, sizeof(log_RPM), \
-      "RPM",  "Qffffffff", "TimeUS,rpm1,rpm2,rpm3,rpm4,rpm5,rpm6,rpm7,rpm8", "sqqqqqqqq", "F00000000" , true },
+      "RPM",  "Qffff", "TimeUS,rpm1,rpm2,rpm3,rpm4", "sqqqq", "F0000" , true },
