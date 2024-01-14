@@ -468,7 +468,10 @@ public:
                               uint16_t data_type_id,
                               CanardTransferType transfer_type,
                               uint8_t source_node_id);
-    
+
+    // reboot the peripheral, optionally holding in bootloader
+    void reboot(bool hold_in_bootloader);
+
 #if AP_UART_MONITOR_ENABLED
     void handle_tunnel_Targetted(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void send_serial_monitor_data();
