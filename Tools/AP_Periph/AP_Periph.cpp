@@ -594,6 +594,14 @@ void AP_Periph_FW::prepare_reboot()
         hal.scheduler->delay(40);
 }
 
+/*
+  reboot, optionally holding in bootloader. For scripting
+ */
+void AP_Periph_FW::reboot(bool hold_in_bootloader)
+{
+    hal.scheduler->reboot(hold_in_bootloader);
+}
+
 AP_Periph_FW *AP_Periph_FW::_singleton;
 
 AP_Periph_FW& AP::periph()
