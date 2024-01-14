@@ -1484,6 +1484,10 @@ function periph:get_yaw_earth() end
 function periph:can_printf(text) end
 
 -- desc
+---@param hold_in_bootloader boolean
+function periph:reboot(hold_in_bootloader) end
+
+-- desc
 ---@class ins
 ins = {}
 
