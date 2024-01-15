@@ -7,7 +7,7 @@ Andrew Tridgell
 May 2017
 '''
 
-import os, sys, tempfile, gzip
+import os, sys, zlib
 
 def write_encode(out, s):
     out.write(s.encode())
@@ -28,28 +28,24 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
             contents += bytes([0xff]*pad)
             print("Padded %u bytes for %s to %u" % (pad, embedded_name, len(contents)))
 
-    crc = crc32(bytearray(contents))
+    crc = crc32(contents)
     write_encode(out, '__EXTFLASHFUNC__ static const uint8_t ap_romfs_%u[] = {' % idx)
 
-    compressed = tempfile.NamedTemporaryFile()
     if uncompressed:
         # ensure nul termination
         if contents[-1] != 0:
             contents += bytes([0])
-        compressed.write(contents)
+        b = contents
     else:
-        # compress it
-        f = open(compressed.name, "wb")
-        with gzip.GzipFile(fileobj=f, mode='wb', filename='', compresslevel=9, mtime=0) as g:
-            g.write(contents)
-        f.close()
+        # compress it (max level, max window size, raw stream, max mem usage)
+        z = zlib.compressobj(level=9, method=zlib.DEFLATED, wbits=-15, memLevel=9)
+        b = z.compress(contents)
+        b += z.flush()
+        # append uncompressed length as little-endian bytes
+        l = len(contents)
+        b += bytes([l & 0xFF, (l >> 8) & 0xFF, (l >> 16) & 0xFF, (l >> 24) & 0xFF])
 
-    compressed.seek(0)
-    b = bytearray(compressed.read())
-    compressed.close()
-    
-    for c in b:
-        write_encode(out, '%u,' % c)
+    write_encode(out, ",".join(str(c) for c in b))
     write_encode(out, '};\n\n');
     return crc
 

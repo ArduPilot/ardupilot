@@ -65,7 +65,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     size = compressed_size;
     return compressed_data;
 #else
-    // last 4 bytes of gzip file are length of decompressed data
+    // last 4 bytes of compressed data are length of decompressed data
     const uint8_t *p = &compressed_data[compressed_size-4];
     uint32_t decompressed_size = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
     
@@ -86,21 +86,10 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 
     d->source = compressed_data;
     d->source_limit = compressed_data + compressed_size - 4;
-
-    // assume gzip format
-    int res = uzlib_gzip_parse_header(d);
-    if (res != TINF_OK) {
-        ::free(decompressed_data);
-        ::free(d);
-        return nullptr;
-    }
-
     d->dest = decompressed_data;
     d->destSize = decompressed_size;
 
-    // we don't check CRC, as it just wastes flash space for constant
-    // ROMFS data
-    res = uzlib_uncompress(d);
+    int res = uzlib_uncompress(d);
 
     ::free(d);
     
