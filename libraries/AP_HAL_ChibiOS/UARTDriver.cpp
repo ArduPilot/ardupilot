@@ -452,9 +452,9 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 sercfg.cr3 |= USART_CR3_DMAT;
             }
             if (half_duplex) {
-                sercfg.irq_cb = rx_irq_cb;
-            } else {
                 sercfg.irq_cb = half_duplex_irq_cb;
+            } else {
+                sercfg.irq_cb = rx_irq_cb;
             }
 #endif // HAL_UART_NODMA
             if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
@@ -803,7 +803,7 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
     }
 
     if (uart_drv->half_duplex && !uart_drv->hd_tx_active) {
-        uint16_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->txdma);
+        uint16_t len = TX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->txdma);
 
         dmaStreamDisable(uart_drv->txdma);
     
@@ -1374,7 +1374,9 @@ void UARTDriver::_tx_timer_tick(void)
     if (hd_tx_active) {
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
         if (!hd_tx_active) {
-            dma_handle->lock();
+            if (tx_dma_enabled) {
+                dma_handle->lock();
+            }
             /*
               half-duplex transmit has finished. We now re-enable the
               HDSEL bit for receive
