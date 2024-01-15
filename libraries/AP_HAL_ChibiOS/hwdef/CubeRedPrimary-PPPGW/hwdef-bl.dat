@@ -1,4 +1,20 @@
-include ../CubePilot-CANMod/hwdef-bl.dat
+include ../CubeRedPrimary/hwdef-bl.dat
+
+# setup build for a peripheral bootloader
+env AP_PERIPH 1
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_CUBERED_PERIPH
+
+# CAN config
+PE10 GPIOCAN1_TERM OUTPUT HIGH
+PG4 GPIOCAN2_TERM OUTPUT HIGH
+
+PB8    CAN1_RX    CAN1
+PB9    CAN1_TX    CAN1
+
+PB5    CAN2_RX    CAN2
+PB6    CAN2_TX    CAN2
 
 # Ethernet
 PC1  ETH_MDC            ETH1
@@ -14,19 +30,21 @@ PA1  ETH_RMII_REF_CLK   ETH1
 define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
 
+# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
+# Note, lower 3 bytes (ADDR3,4,5) will be replaced with the platform UUID
+define AP_NETWORKING_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
+
 define CH_CFG_USE_EVENTS 1
 undef CH_CFG_USE_SEMAPHORES
 define CH_CFG_USE_SEMAPHORES 1
-undef CH_CFG_USE_MUTEXES
-define CH_CFG_USE_MUTEXES 1
-undef CH_CFG_USE_HEAP
+define AP_NETWORKING_ENABLED 1
+
 define CH_CFG_USE_MEMCORE 1
 define CH_CFG_USE_HEAP 1
-define CH_CFG_USE_REGISTRY 1
+define CH_CFG_USE_MUTEXES 1
 define CH_CFG_USE_DYNAMIC 1
 define CH_CFG_USE_WAITEXIT 1
-
-define AP_NETWORKING_ENABLED 1
+define CH_CFG_USE_REGISTRY 1
 
 undef SERIAL_ORDER
 SERIAL_ORDER
