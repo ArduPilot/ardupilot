@@ -9,7 +9,7 @@
 <<<<<<< HEAD
 #define THISFIRMWARE "MA V X 4.3.0.1_DEV"
 =======
-#define THISFIRMWARE "MA V4.3.0.2"
+#define THISFIRMWARE "MA V4.3.0.2_DEV"
 >>>>>>> 1130f839bd... [NHW] Version to 4.3.0.2
 
 // the following line is parsed by the autotest scripts
