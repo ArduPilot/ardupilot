@@ -207,7 +207,7 @@ void Copter::init_ardupilot()
 
     motors->output_min();  // output lowest possible value to motors
 
-    // attempt to set the intial_mode, else set to STABILIZE
+    // attempt to set the initial_mode, else set to STABILIZE
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
         // set mode to STABILIZE will trigger mode change notification to pilot
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
