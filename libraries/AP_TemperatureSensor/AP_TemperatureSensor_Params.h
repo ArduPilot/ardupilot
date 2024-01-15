@@ -33,6 +33,7 @@ public:
         MAX31865                    = 3,
         TSYS03                      = 4,
         ANALOG                      = 5,
+        DRONECAN                    = 6,
     };
 
     // option to map to another system component
