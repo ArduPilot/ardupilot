@@ -379,29 +379,53 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         return;
     }
     
-    // do not adjust climb_rate if level or descending
-    if (climb_rate_cms <= 0.0f) {
+    // do not adjust climb_rate if level
+    if (is_zero(climb_rate_cms)) {
         return;
     }
 
+    const AP_AHRS &_ahrs = AP::ahrs();
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+
+    // if descending, adjust for minimum altitude as necessary
+    if (climb_rate_cms < 0.0f) {
+#if AP_FENCE_ENABLED
+        // calculate distance below fence
+        AC_Fence *fence = AP::fence();
+        if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence
+             && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN) > 0) {
+            // calculate distance from vehicle to safe altitude
+            float veh_alt;
+            _ahrs.get_relative_position_D_home(veh_alt);
+            // fence.get_safe_alt_min() is UP, veh_alt is DOWN:
+            const float alt_min = -(fence->get_safe_alt_min() + veh_alt);
+
+            if (alt_min <= 0.0f) {
+                climb_rate_cms = MAX(climb_rate_cms, 0.0f);
+                // also calculate backup speed that will get us back to safe altitude
+                backup_speed = get_max_speed(kP, accel_cmss_limited, -alt_min*100.0f, dt);
+            }
+        }
+#endif
+        return;
+    }
 
     bool limit_alt = false;
     float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
 
-    const AP_AHRS &_ahrs = AP::ahrs();
-
 #if AP_FENCE_ENABLED
     // calculate distance below fence
     AC_Fence *fence = AP::fence();
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence) {
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
-        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
-        limit_alt = true;
+        if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+            // fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+            alt_diff = fence->get_safe_alt_max() + veh_alt;
+            limit_alt = true;
+        }
     }
 #endif
 
