@@ -651,7 +651,7 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
     }
 }
 
-// read - For all active instances read voltage & current; log BAT, BCL, POWR
+// read - For all active instances read voltage & current; log BAT, BCL, POWR, MCU
 void AP_BattMonitor::read()
 {
 #if HAL_LOGGING_ENABLED
