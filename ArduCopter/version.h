@@ -6,11 +6,7 @@
 
 #include "ap_version.h"
 
-<<<<<<< HEAD
-#define THISFIRMWARE "MA V X 4.3.0.1_DEV"
-=======
 #define THISFIRMWARE "MA V4.3.0.2_DEV"
->>>>>>> 1130f839bd... [NHW] Version to 4.3.0.2
 
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 4,3,0,FIRMWARE_VERSION_TYPE_OFFICIAL
