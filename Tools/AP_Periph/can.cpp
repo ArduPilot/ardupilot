@@ -368,8 +368,10 @@ void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance,
 {
 #if HAL_RAM_RESERVE_START >= 256
     // setup information on firmware request at start of ram
-    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
-    memset(comms, 0, sizeof(struct app_bootloader_comms));
+    auto *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    if (comms->magic != APP_BOOTLOADER_COMMS_MAGIC) {
+        memset(comms, 0, sizeof(*comms));
+    }
     comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
 
     uavcan_protocol_file_BeginFirmwareUpdateRequest req;
