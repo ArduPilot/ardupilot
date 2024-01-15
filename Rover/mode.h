@@ -277,6 +277,10 @@ public:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
 
+    //kkouer add
+    bool Verify_Serial4_Data(uint8_t[], uint8_t size );
+    bool ParseParm2To4(uint16_t param2, uint16_t param3, uint16_t param4);
+
     AP_Mission mission{
         FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
@@ -356,6 +360,11 @@ private:
     uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
     bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
+    // kkouer add
+    bool loiter_with_cmd;
+    float p2;
+    float p3;
+    float p4;
 
     // Guided-within-Auto variables
     struct {

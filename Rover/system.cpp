@@ -14,6 +14,9 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
+
+#ifdef USERHOOK_INIT
+#endif
 #if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
@@ -121,6 +124,8 @@ void Rover::init_ardupilot()
     // initialise precision landing
     init_precland();
 #endif
+
+
 
     /*
       setup the 'main loop is dead' check. Note that this relies on

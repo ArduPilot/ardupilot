@@ -193,6 +193,7 @@ AP_Beacon_Nooploop::MsgType AP_Beacon_Nooploop::parse_byte(uint8_t b)
     return MsgType::INVALID;
 }
 
+bool getNodeData = true;
 void AP_Beacon_Nooploop::parse_node_frame2()
 {
     // a message has been received
@@ -219,6 +220,12 @@ void AP_Beacon_Nooploop::parse_node_frame2()
         uint16_t offset = NOOPLOOP_NODE_FRAME2_NODE_BLOCK + i * 13;
         uint8_t id = _msgbuf[offset+1]; //nooploop id starts from 0, increments clockwise, 0 -> 1 define Y axis.
         const int32_t dist = ((int32_t)_msgbuf[offset+2+2] << 24 | (int32_t)_msgbuf[offset+2+1] << 16 | (int32_t)_msgbuf[offset+2] << 8) >> 8;
+        if(getNodeData && i < valid_nodes)
+        {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update beacon id %d ", id );
+            if(i==valid_nodes-1)
+                getNodeData = false;
+        }
         set_beacon_distance(id, dist * 0.001f);
     }
 }

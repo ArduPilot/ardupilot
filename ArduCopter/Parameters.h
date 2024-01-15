@@ -384,9 +384,14 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        //kkouer add
+        k_param_data16_port_num = 280,
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
+
+    //kkouer add
+    AP_Int8         data16_port_num;
 
     AP_Int16        format_version;
 

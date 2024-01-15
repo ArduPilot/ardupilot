@@ -871,6 +871,7 @@ void NavEKF3_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
+uint16_t indexxx = 0;
 // check for new range beacon data and push to data buffer if available
 void NavEKF3_core::readRngBcnData()
 {
@@ -884,6 +885,12 @@ void NavEKF3_core::readRngBcnData()
     if (beacon == nullptr) {
         return;
     }
+    if(indexxx>1000)
+    {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon In Use %d ", beacon->count());
+        indexxx = 0;
+    }
+    indexxx++;
 
     // get the number of beacons in use
     N_beacons = MIN(beacon->count(), ARRAY_SIZE(lastTimeRngBcn_ms));

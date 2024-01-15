@@ -136,6 +136,22 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+#ifdef USERHOOK_FASTLOOP
+    SCHED_TASK(userhook_FastLoop,    100,     75, 153),
+#endif
+#ifdef USERHOOK_50HZLOOP
+    SCHED_TASK(userhook_50Hz,         50,     75, 156),
+#endif
+#ifdef USERHOOK_MEDIUMLOOP
+    SCHED_TASK(userhook_MediumLoop,   10,     75, 159),
+#endif
+#ifdef USERHOOK_SLOWLOOP
+    SCHED_TASK(userhook_SlowLoop,      3.3,   75, 162),
+#endif
+#ifdef USERHOOK_SUPERSLOWLOOP
+    SCHED_TASK(userhook_SuperSlowLoop, 1,     75, 165),
+#endif
+
 };
 
 
@@ -156,6 +172,7 @@ Rover::Rover(void) :
     logger{g.log_bitmask},
     modes(&g.mode1),
     control_mode(&mode_initializing)
+    #define USERHOOK_INIT userhook_init(); 
 {
 }
 

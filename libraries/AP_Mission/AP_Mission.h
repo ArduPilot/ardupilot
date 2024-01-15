@@ -24,7 +24,8 @@
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
-#define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
+//kkouer mod 15 + p2 p3 p4  15 + 6 = 21
+#define AP_MISSION_EEPROM_COMMAND_SIZE      21      // size in bytes of all mission commands
 
 #ifndef AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS
 #if HAL_MEM_CLASS >= HAL_MEM_CLASS_500
@@ -401,6 +402,10 @@ public:
         uint16_t index;             // this commands position in the command list
         uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
+        //kkouer add 
+        uint16_t p2;
+        uint16_t p3;
+        uint16_t p4;
         Content content;
 
         // for items which store in location, we offer a few more bits

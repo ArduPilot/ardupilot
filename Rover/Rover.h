@@ -110,6 +110,13 @@ private:
     // variables
     AP_Param param_loader;
 
+    int16_t runcount = 0;
+
+    //kkouer added check for rover move and stop
+    bool standingBy = false;
+    int16_t sendDataCount = 0;
+
+
     // all settable parameters
     Parameters g;
     ParametersG2 g2;
@@ -251,6 +258,14 @@ private:
     cruise_learn_t cruise_learn;
 
 private:
+
+    // UserCode.cpp
+    void userhook_init();
+    void userhook_FastLoop();
+    void userhook_50Hz();
+    void userhook_MediumLoop();
+    void userhook_SlowLoop();
+    void userhook_SuperSlowLoop();
 
     // Rover.cpp
 #if AP_SCRIPTING_ENABLED

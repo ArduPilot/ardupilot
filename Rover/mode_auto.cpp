@@ -2,6 +2,9 @@
 
 #define AUTO_GUIDED_SEND_TARGET_MS 1000
 
+#define DXL_LOBYTE(w)       ((uint8_t)(((uint64_t)(w)) & 0xff))
+#define DXL_HIBYTE(w)       ((uint8_t)((((uint64_t)(w)) >> 8) & 0xff))
+
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
@@ -839,12 +842,93 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+    //kkouer added if p1 == 1 go into the cmd check processing
+    if(loiter_duration == 1 && !rover.standingBy){
+       return ParseParm2To4(p2, p3, p4);
+    }
     // Check if we have loitered long enough
-    if (loiter_duration == 0) {
+    else if (loiter_duration == 0) {
         return true;
     } else {
         return (((millis() - loiter_start_time) / 1000) >= loiter_duration);
     }
+}
+
+//kkouer added
+//parse serial data to payload data
+bool ModeAuto::ParseParm2To4(uint16_t param2, uint16_t param3, uint16_t param4)
+{
+
+        //gcs().send_text(MAV_SEVERITY_INFO, "p2 %d, p3 %d, p4 %d",param2,param3,param4);
+        //first send the data to serialPort 4
+        if(rover.sendDataCount<1){
+            gcs().send_text(MAV_SEVERITY_INFO, "check standingBy status!");
+
+            uint8_t SendingData[18] = {0xfb, 0xfb, 0xfe, 0, (uint8_t)param2, (uint8_t)param3, (uint8_t)param4,0,0,0,0,0,0,0,0,0};
+
+            // add CRC16
+            uint16_t crc = crc_crc16_ibm(0, SendingData, 18 - 2);    // 2: CRC16
+            SendingData[16] = DXL_LOBYTE(crc);
+            SendingData[17] = DXL_HIBYTE(crc);
+
+
+            hal.serial(2)->write((uint8_t*)SendingData , sizeof(SendingData));
+            rover.sendDataCount++;
+        }
+        //second check serial port 4 if receive special data return true for continue mission
+        
+        int16_t numc = hal.serial(2)->available();
+        uint8_t byteData;
+        uint8_t incoming[19];
+
+        //printf("check serial numc %d \n", numc);
+        if(numc == 19){
+
+            gcs().send_text(MAV_SEVERITY_INFO, "get serial2 data!");
+            for(int16_t i = 0; i < numc; i++)
+            {
+                byteData = hal.serial(2)->read();
+                if(i < numc){
+                    incoming[i] = byteData;
+                }
+            }
+
+            if(Verify_Serial4_Data(incoming, sizeof(incoming)))
+            {
+                rover.sendDataCount = 0;
+                return true;
+            }
+        }
+        
+
+        return false;
+}
+
+//kkouer added 
+//check incoming data is verified
+bool ModeAuto::Verify_Serial4_Data(uint8_t array[], uint8_t size )
+{
+    if(size <= 0)
+        return false;
+    //send data to GCS via data32
+
+        mavlink_data32_t p1;
+        memset(&p1, 0, sizeof(p1));
+        p1.type = 1;
+        p1.len = 19;
+        for(int16_t i = 0; i < 19; i ++)
+        {
+            p1.data[i] = array[i];
+        }
+        mavlink_msg_data32_send(MAVLINK_COMM_0, p1.type, p1.len, p1.data);
+        mavlink_msg_data32_send(MAVLINK_COMM_1, p1.type, p1.len, p1.data);
+
+     
+        
+
+    if(array[4] == 10)
+        return true;
+    return false;
 }
 
 // verify_nav_delay - check if we have waited long enough
