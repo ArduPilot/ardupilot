@@ -66,7 +66,7 @@ def find_vehicle_parameter_filepath(vehicle_name):
         "Sub": "ArduSub",
     }
 
-    # first try ArduCopter/Parmameters.cpp
+    # first try ArduCopter/Parameters.cpp
     for top_dir in apm_path, apm_tools_path:
         path = os.path.join(top_dir, vehicle_name, "Parameters.cpp")
         if os.path.exists(path):
