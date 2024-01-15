@@ -2868,10 +2868,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
             if fnmatch.fnmatch(f, pattern):
                 self.romfs[f] = os.path.join(pattern_dir, f)
 
-    def romfs_add_dir(self, subdirs):
+    def romfs_add_dir(self, subdirs, relative_to_base=False):
         '''add a filesystem directory to ROMFS'''
         for dirname in subdirs:
-            romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
+            if relative_to_base:
+                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
+            else:
+                romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
             if not self.is_bootloader_fw() and os.path.exists(romfs_dir):
                 for root, d, files in os.walk(romfs_dir):
                     for f in files:
@@ -2880,6 +2883,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                             continue
                         fullpath = os.path.join(root, f)
                         relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                        if relative_to_base:
+                            relpath = relpath[len(dirname)+1:]
                         self.romfs[relpath] = fullpath
 
     def valid_type(self, ptype, label):
@@ -3010,6 +3015,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.romfs_add(a[1], a[2])
         elif a[0] == 'ROMFS_WILDCARD':
             self.romfs_wildcard(a[1])
+        elif a[0] == 'ROMFS_DIRECTORY':
+            self.romfs_add_dir([a[1]], relative_to_base=True)
         elif a[0] == 'undef':
             for u in a[1:]:
                 self.progress("Removing %s" % u)
