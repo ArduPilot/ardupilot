@@ -330,8 +330,9 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         rx_dma_enabled = false;
     } else {
         rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
-        tx_dma_enabled = tx_bounce_buf != nullptr;
     }
+    tx_dma_enabled = tx_bounce_buf != nullptr;
+
     if (contention_counter > 1000 && _baudrate <= CONTENTION_BAUD_THRESHOLD) {
         // we've previously disabled TX DMA due to contention, don't
         // re-enable on a new begin() unless high baudrate
@@ -444,16 +445,16 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 #endif
 
 #ifndef HAL_UART_NODMA
-            if (rx_dma_enabled) {
-                sercfg.cr1 |= USART_CR1_IDLEIE;
-                sercfg.cr3 |= USART_CR3_DMAR;
-            }
-            if (tx_dma_enabled) {
-                sercfg.cr3 |= USART_CR3_DMAT;
-            }
             if (half_duplex) {
                 sercfg.irq_cb = half_duplex_irq_cb;
             } else {
+                if (rx_dma_enabled) {
+                    sercfg.cr1 |= USART_CR1_IDLEIE;
+                    sercfg.cr3 |= USART_CR3_DMAR;
+                }
+                if (tx_dma_enabled) {
+                    sercfg.cr3 |= USART_CR3_DMAT;
+                }
                 sercfg.irq_cb = rx_irq_cb;
             }
 #endif // HAL_UART_NODMA
@@ -1131,8 +1132,10 @@ void UARTDriver::half_duplex_setup_tx(void)
         sdStop(sd);
 #ifndef HAL_UART_NODMA
         if (tx_dma_enabled) {
+            // disable RX DMA and enable TX DMA
             sercfg.cr1 &= ~USART_CR1_IDLEIE;
             sercfg.cr3 &= ~USART_CR3_DMAR;
+            sercfg.cr3 |= USART_CR3_DMAT;
         }
 #endif
         sercfg.cr3 &= ~USART_CR3_HDSEL;
@@ -1146,7 +1149,9 @@ void UARTDriver::half_duplex_setup_rx(void)
     sdStop(sd);
 #ifndef HAL_UART_NODMA
     if (tx_dma_enabled) {
+        // disable TX DMA and enable RX DMA
         sercfg.cr1 |= USART_CR1_IDLEIE;
+        sercfg.cr3 &= ~USART_CR3_DMAT;
         sercfg.cr3 |= USART_CR3_DMAR;
     }
 #endif
