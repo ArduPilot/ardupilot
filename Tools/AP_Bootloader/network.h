@@ -13,6 +13,8 @@ class SocketAPM;
 class BL_Network {
 public:
     void init(void);
+    void save_comms_ip(void);
+
 private:
     struct netif *thisif;
     thread_t *net_thread_ctx;
@@ -37,6 +39,10 @@ private:
         const char *name;
         const char *value;
     } variables[];
+
+    struct {
+        uint32_t ip, gateway, netmask;
+    } addr;
 };
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED

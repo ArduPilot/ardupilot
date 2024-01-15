@@ -24,9 +24,22 @@
 #include "support.h"
 #include "bl_protocol.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include "app_comms.h"
 
-#ifndef AP_NETWORKING_DEFAULT_MAC_ADDR
-#define AP_NETWORKING_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
+#ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
+#define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
+#endif
+
+#ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_IP
+#define AP_NETWORKING_BOOTLOADER_DEFAULT_IP "192.168.1.100"
+#endif
+
+#ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_GATEWAY
+#define AP_NETWORKING_BOOTLOADER_DEFAULT_GATEWAY "192.168.1.1"
+#endif
+
+#ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_NETMASK
+#define AP_NETWORKING_BOOTLOADER_DEFAULT_NETMASK "255.255.255.0"
 #endif
 
 #ifndef AP_BOOTLOADER_NETWORK_USE_DHCP
@@ -186,21 +199,27 @@ void BL_Network::net_thread()
 
     thread_sleep_ms(100);
 
-    AP_Networking::convert_str_to_macaddr(AP_NETWORKING_DEFAULT_MAC_ADDR, thisif->hwaddr);
+    AP_Networking::convert_str_to_macaddr(AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR, thisif->hwaddr);
 
-    struct {
-        ip4_addr_t ip, gateway, netmask;
-    } addr {};
-
-    addr.ip.addr = htonl(SocketAPM::inet_str_to_addr("192.168.2.201"));
-    addr.gateway.addr = htonl(SocketAPM::inet_str_to_addr("192.168.2.10"));
-    addr.netmask.addr = htonl(SocketAPM::inet_str_to_addr("255.255.255.0"));
+    ip4_addr_t ip, gateway, netmask;
+    if (addr.ip == 0) {
+        // no IP from AP_Periph, use defaults
+        ip.addr = htonl(SocketAPM::inet_str_to_addr(AP_NETWORKING_BOOTLOADER_DEFAULT_IP));
+        gateway.addr = htonl(SocketAPM::inet_str_to_addr(AP_NETWORKING_BOOTLOADER_DEFAULT_GATEWAY));
+        netmask.addr = htonl(SocketAPM::inet_str_to_addr(AP_NETWORKING_BOOTLOADER_DEFAULT_NETMASK));
+    } else {
+        // use addresses from AP_Periph
+        ip.addr = htonl(addr.ip);
+        netmask.addr = htonl(addr.netmask);
+        gateway.addr = htonl(addr.gateway);
+    }
 
     const MACConfig mac_config = {thisif->hwaddr};
     macStart(&ETHD1, &mac_config);
 
     /* Add interface. */
-    auto result = netifapi_netif_add(thisif, &addr.ip, &addr.netmask, &addr.gateway, NULL, ethernetif_init, tcpip_input);
+
+    auto result = netifapi_netif_add(thisif, &ip, &netmask, &gateway, NULL, ethernetif_init, tcpip_input);
     if (result != ERR_OK) {
         AP_HAL::panic("Failed to initialise netif");
     }
@@ -503,6 +522,19 @@ void BL_Network::init()
                         60,
                         web_server_trampoline,
                         this);
+}
+
+/*
+  save IP address from AP_Periph
+ */
+void BL_Network::save_comms_ip(void)
+{
+    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC && comms->ip != 0) {
+        addr.ip = comms->ip;
+        addr.netmask = comms->netmask;
+        addr.gateway = comms->gateway;
+    }
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
