@@ -97,6 +97,10 @@ int main(void)
     stm32_flash_unprotect_flash();
 #endif
 
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    network.save_comms_ip();
+#endif
+
 #if AP_FASTBOOT_ENABLED
     enum rtc_boot_magic m = check_fast_reboot();
     bool was_watchdog = stm32_was_watchdog_reset();
