@@ -131,6 +131,11 @@ public:
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
+    bool set_location(const Location &loc);
+
+    // returns true if DCM is ready to accept location, false otherwise
+    bool ready_to_accept_location() const;
+
 private:
 
     // dead-reckoning support

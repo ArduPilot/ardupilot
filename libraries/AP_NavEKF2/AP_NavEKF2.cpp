@@ -1080,6 +1080,36 @@ bool NavEKF2::getLLH(Location &loc) const
     return core[primary].getLLH(loc);
 }
 
+// Sets the location if GPS is not available
+bool NavEKF2::setLLH(const Location &location) {
+    // Z coordinate is not processed in the functions below
+    if (!core) {
+        return false;
+    }
+    uint8_t succeed_count = 0;
+    for (uint8_t i=0; i<num_cores; i++) {
+         if (core[i].setLLH(location)) {
+             succeed_count++;
+         }
+    }
+    return succeed_count == num_cores;
+}
+
+// Checks if ready to accept new location
+bool NavEKF2::readyToAcceptLLH() const
+{
+    if (!core) {
+        return false;
+    }
+    uint8_t succeed_count = 0;
+    for (uint8_t i=0; i<num_cores; i++) {
+         if (core[i].readyToAcceptLLH()) {
+             succeed_count++;
+         }
+    }
+    return succeed_count == num_cores;
+}
+
 // Return the latitude and longitude and height used to set the NED origin for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location

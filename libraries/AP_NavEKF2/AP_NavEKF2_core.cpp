@@ -877,6 +877,25 @@ void NavEKF2_core::calcOutputStates()
     }
 }
 
+bool NavEKF2_core::setLLH(const Location &location) {
+    // Z coordinate is not processed, to be implemented
+    if (gpsNotAvailable) {
+        Location origin;
+        if (getOriginLLH(origin)) {
+            auto ned = origin.get_distance_NED(location);
+            ResetPositionNE(ned.x, ned.y);
+            return true;
+        }
+        return false; // Origin not set, so we can not calculate offset from it 
+    }
+    return false;
+}
+
+bool NavEKF2_core::readyToAcceptLLH() const
+{
+    return gpsNotAvailable && validOrigin;
+}
+
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:

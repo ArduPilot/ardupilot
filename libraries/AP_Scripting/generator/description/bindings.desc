@@ -33,6 +33,7 @@ singleton AP_AHRS method get_pitch float
 singleton AP_AHRS method get_yaw float
 singleton AP_AHRS method get_location boolean Location'Null
 singleton AP_AHRS method get_location alias get_position
+singleton AP_AHRS method set_location boolean Location
 singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
 singleton AP_AHRS method get_accel Vector3f

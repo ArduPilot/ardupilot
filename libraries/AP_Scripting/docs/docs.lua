@@ -3172,6 +3172,11 @@ function ahrs:get_home() end
 ---@return Location_ud|nil
 function ahrs:get_location() end
 
+-- desc
+---@param value Location_ud
+---@return boolean
+function ahrs:set_location(value) end
+
 -- same as `get_location` will be removed
 ---@return Location_ud|nil
 function ahrs:get_position() end

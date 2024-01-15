@@ -1020,6 +1020,25 @@ void NavEKF3_core::calcOutputStates()
     }
 }
 
+bool NavEKF3_core::setLLH(const Location &location) {
+    // Z coordinate is not processed, to be implemented
+    if (!gpsIsInUse) {
+        if (validOrigin) {
+            Location origin{EKF_origin};
+            auto ned = origin.get_distance_NED(location);
+            ResetPositionNE(ned.x, ned.y);
+            return true;
+        }
+        return false; // Origin not set, so we can not calculate offset from it 
+    }
+    return false;
+}
+
+bool NavEKF3_core::readyToAcceptLLH() const
+{
+    return !gpsIsInUse && validOrigin;
+}
+
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
  * See AP_NavEKF3/derivation/main.py for derivation

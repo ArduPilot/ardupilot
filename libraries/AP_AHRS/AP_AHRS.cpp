@@ -770,6 +770,39 @@ bool AP_AHRS::_get_location(Location &loc) const
     return false;
 }
 
+bool AP_AHRS::set_location(const Location &loc)
+{
+    bool readyToAccept {dcm.ready_to_accept_location()};
+#if HAL_NAVEKF2_AVAILABLE
+    const bool ek2Available {EKF2.get_enable() && initialised(EKFType::TWO)};
+    readyToAccept &= !ek2Available || EKF2.readyToAcceptLLH();
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    const bool ek3Available {EKF3.get_enable() && initialised(EKFType::THREE)};
+    readyToAccept &= !ek3Available || EKF3.readyToAcceptLLH();
+#endif
+
+    // Z coordinate is not processed in the functions below
+    if (readyToAccept && loc.check_latlng()) {
+        bool dcmSucceed{dcm.set_location(loc)};
+        bool ek2Succeed{true};
+        bool ek3Succeed{true};
+#if HAL_NAVEKF2_AVAILABLE
+        if (ek2Available) {
+            ek2Succeed = EKF2.setLLH(loc);
+        }
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+        if (ek3Available) {
+            ek3Succeed = EKF3.setLLH(loc);
+        }
+#endif
+         
+        return dcmSucceed && ek2Succeed && ek3Succeed;
+    }
+    return false;
+}
+
 // status reporting of estimated errors
 float AP_AHRS::get_error_rp(void) const
 {
@@ -2251,6 +2284,12 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
 // true if the AHRS has completed initialisation
 bool AP_AHRS::initialised(void) const
+{
+    return initialised(ekf_type());
+}
+
+// true if the given AHRS type has completed initialisation
+bool AP_AHRS::initialised(EKFType type) const
 {
     switch (ekf_type()) {
 #if AP_AHRS_DCM_ENABLED

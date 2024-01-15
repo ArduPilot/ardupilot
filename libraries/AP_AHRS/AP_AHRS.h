@@ -91,6 +91,8 @@ public:
     // get current location estimate
     bool get_location(Location &loc) const;
 
+    bool set_location(struct Location const &loc);
+
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
 
@@ -741,6 +743,12 @@ private:
 
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
+
+    // return origin for a specified EKF type
+    bool get_origin(EKFType type, Location &ret) const;
+
+    // true if the given AHRS type has completed initialisation
+    bool initialised(EKFType type) const;
 
     // helper trig variables
     float _cos_roll{1.0f};

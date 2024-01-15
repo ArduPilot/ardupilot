@@ -1057,6 +1057,28 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     return _have_position;
 }
 
+bool AP_AHRS_DCM::set_location(const Location &loc) {
+    // Z coordinate is not processed in the functions below
+    if (!ready_to_accept_location()) {
+        return false;
+    }
+
+    _last_lat = loc.lat;
+    _last_lng = loc.lng;
+    _last_pos_ms = AP_HAL::millis();
+    _position_offset_north = 0;
+    _position_offset_east = 0;
+
+    // once we have a single GPS lock, we can update using
+    // dead-reckoning from then on
+    _have_position = true;
+    return true;
+}
+
+bool AP_AHRS_DCM::ready_to_accept_location() const {
+    return !have_gps();
+}
+
 bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED

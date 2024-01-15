@@ -166,6 +166,14 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(Location &loc) const;
 
+    // Sets the location if GPS is not available
+    // returns true if succeeded, false if GPS measurements are available or location is invalid
+    bool setLLH(const Location &location);
+
+    // Checks if ready to accept new location
+    // Returns true if GPS is not available and origin is valid for all cores, false otherwise
+    bool readyToAcceptLLH() const;
+
     // return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
