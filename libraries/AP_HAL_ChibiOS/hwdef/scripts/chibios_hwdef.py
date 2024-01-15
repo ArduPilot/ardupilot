@@ -33,6 +33,10 @@ class ChibiOSHWDef(object):
         self.default_params_filepath = default_params_filepath
         self.quiet = quiet
 
+        # if true then parameters will be appended in special apj-tool
+        # section at end of binary:
+        self.force_apj_default_parameters = False
+
         self.default_gpio = ['INPUT', 'FLOATING']
 
         self.vtypes = []
@@ -2520,6 +2524,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
 
+    def write_define(self, f, name, value):
+        f.write(f"#define {name} {value}\n")
+
     def write_hwdef_header(self, outfilename):
         '''write hwdef header file'''
         self.progress("Writing hwdef setup in %s" % outfilename)
@@ -2581,6 +2588,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.write_check_firmware(f)
 
         self.write_peripheral_enable(f)
+
+        if os.path.exists(self.processed_defaults_filepath()):
+            self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 1)
+        else:
+            self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 0)
 
         if self.mcu_series.startswith("STM32H7"):
             # add in ADC3 on H7 to get MCU temperature and reference voltage
@@ -2827,14 +2839,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         if defaults_abspath is None:
             self.progress("No default parameter file found")
-            return
+            return False
 
         content = self.get_processed_defaults_file(defaults_abspath)
 
         with open(filepath, "w") as processed_defaults_fh:
             processed_defaults_fh.write(content)
 
-        self.env_vars['DEFAULT_PARAMETERS'] = filepath
+        return True
 
     def write_env_py(self, filename):
         '''write out env.py for environment variables to control the build process'''
@@ -3046,7 +3058,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             if result:
                 self.intdefines[result.group(1)] = int(result.group(2))
 
-
     def progress(self, message):
         if self.quiet:
             return
@@ -3141,6 +3152,31 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
 
+    def processed_defaults_filepath(self):
+        return os.path.join(self.outdir, "processed_defaults.parm")
+
+    def write_default_parameters(self):
+        '''handle default parameters'''
+
+        if self.is_bootloader_fw():
+            return
+
+        if self.is_io_fw():
+            return
+
+        filepath = self.processed_defaults_filepath()
+        if not self.write_processed_defaults_file(filepath):
+            return
+
+        if self.get_config('FORCE_APJ_DEFAULT_PARAMETERS', default=False):
+            # set env variable so that post-processing in waf uses
+            # apj-tool to append parameters to image:
+            if os.path.exists(filepath):
+                self.env_vars['DEFAULT_PARAMETERS'] = filepath
+            return
+
+        self.romfs_add('defaults.parm', filepath)
+
     def run(self):
 
         # process input file
@@ -3155,6 +3191,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
+
+        # write out a default parameters file, decide how to use it:
+        self.write_default_parameters()
 
         # write out hw.dat for ROMFS
         self.write_all_lines(os.path.join(self.outdir, "hw.dat"))
@@ -3173,9 +3212,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
-
-        if not self.is_bootloader_fw():
-            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
