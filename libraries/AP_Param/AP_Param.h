@@ -29,6 +29,8 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 
+#include "AP_Param_config.h"
+
 #include "float.h"
 
 #define AP_MAX_NAME_SIZE 16
@@ -46,11 +48,15 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if BOARD_FLASH_SIZE <= 1024
-# define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-#else
-# define AP_PARAM_MAX_EMBEDDED_PARAM 8192
-#endif
+  #if FORCE_APJ_DEFAULT_PARAMETERS
+    #if BOARD_FLASH_SIZE <= 1024
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+    #else
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+    #endif
+  #else
+    #define AP_PARAM_MAX_EMBEDDED_PARAM 0
+  #endif
 #endif
 
 // allow for dynamically added tables when scripting enabled
