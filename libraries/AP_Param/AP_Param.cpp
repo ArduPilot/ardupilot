@@ -39,6 +39,8 @@
     #include <SITL/SITL.h>
 #endif
 
+#include "AP_Param_config.h"
+
 extern const AP_HAL::HAL &hal;
 
 uint16_t AP_Param::sentinal_offset;
@@ -1543,14 +1545,7 @@ bool AP_Param::load_all()
  */
 void AP_Param::reload_defaults_file(bool last_pass)
 {
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    if (param_defaults_data.length != 0) {
-        load_embedded_param_defaults(last_pass);
-        return;
-    }
-#endif
-
-#if AP_FILESYSTEM_POSIX_ENABLED
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
     /*
       if the HAL specifies a defaults parameter file then override
       defaults using that file
@@ -1558,12 +1553,25 @@ void AP_Param::reload_defaults_file(bool last_pass)
     const char *default_file = hal.util->get_custom_defaults_file();
     if (default_file) {
         if (load_defaults_file(default_file, last_pass)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             printf("Loaded defaults from %s\n", default_file);
+#endif
         } else {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("Failed to load defaults from %s\n", default_file);
+#else
+            printf("Failed to load defaults from %s\n", default_file);
+#endif
         }
     }
+#endif  // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    if (param_defaults_data.length != 0) {
+        load_embedded_param_defaults(last_pass);
+    }
 #endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
     hal.util->set_cmdline_parameters();
 #endif
@@ -2136,8 +2144,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 }
 
 
-// FIXME: make this AP_FILESYSTEM_FILE_READING_ENABLED
-#if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
@@ -2283,8 +2290,8 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
     return true;
 }
+#endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#endif // AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0
 /*
