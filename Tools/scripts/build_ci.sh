@@ -346,6 +346,9 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Pixhawk6X-PPPGW
         $waf clean
         $waf AP_Periph
+        $waf configure --board Pixhawk6X-PPPGW --bootloader
+        $waf clean
+        $waf bootloader
         continue
     fi
     
