@@ -1108,6 +1108,17 @@ class ChibiOSHWDef(object):
         f.write('\n')
 
         ram_map = self.get_ram_map()
+
+        ram0_index = self.env_vars['APP_RAM_START']
+        if ram0_index is None:
+            ram0_index = 0
+        ram0_start_address = ram_map[ram0_index][0]
+        f.write('#define HAL_RAM0_START 0x%08x\n' % ram0_start_address)
+
+        ram_reserve_start = self.get_ram_reserve_start()
+        if ram_reserve_start > 0:
+            f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
+
         f.write('// memory regions\n')
         regions = []
         cc_regions = []
@@ -1115,8 +1126,7 @@ class ChibiOSHWDef(object):
         for (address, size, flags) in ram_map:
             size *= 1024
             cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size))
-            if self.env_vars['APP_RAM_START'] is not None and address == ram_map[self.env_vars['APP_RAM_START']][0]:
-                ram_reserve_start = self.get_ram_reserve_start()
+            if address == ram0_start_address:
                 address += ram_reserve_start
                 size -= ram_reserve_start
             regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size, flags))
@@ -1124,14 +1134,6 @@ class ChibiOSHWDef(object):
         f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
         f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
         f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % (total_memory/1024))
-
-        if self.env_vars['APP_RAM_START'] is not None:
-            f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[self.env_vars['APP_RAM_START']][0])
-        else:
-            f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
-        ram_reserve_start = self.get_ram_reserve_start()
-        if ram_reserve_start > 0:
-            f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
         f.write('\n// CPU serial number (12 bytes)\n')
         udid_start = self.get_mcu_config('UDID_START')
@@ -3058,8 +3060,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             value = ' '.join(a[2:])
             if name == 'AP_PERIPH' and value != "1":
                 raise ValueError("AP_PERIPH may only have value 1")
-            if name == 'APP_RAM_START':
-                value = int(value, 0)
             self.env_vars[name] = value
         elif a[0] == 'define':
             # extract numerical defines for processing by other parts of the script
