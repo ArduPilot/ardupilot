@@ -170,8 +170,6 @@ define HAL_BATT_CURR_SCALE 66.7
 define BOARD_RSSI_ANA_PIN 8
 define HAL_DEFAULT_AIRSPEED_PIN 10
 
-# -------reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
