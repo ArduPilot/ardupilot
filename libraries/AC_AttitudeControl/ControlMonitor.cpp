@@ -38,7 +38,7 @@ void AC_AttitudeControl::control_monitor_update(void)
 }
 
 /*
-  log a CRTL message
+  log a CTRL message
  */
 void AC_AttitudeControl::control_monitor_log(void) const
 {
