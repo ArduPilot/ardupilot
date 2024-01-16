@@ -1356,7 +1356,7 @@ void AP_Periph_FW::node_status_send(void)
         uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
         node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-        node_status.vendor_specific_status_code = hal.util->available_memory();
+        node_status.vendor_specific_status_code = MIN(hal.util->available_memory(), UINT16_MAX);
 
         uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !canfdout());
 
