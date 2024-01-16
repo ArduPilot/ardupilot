@@ -24,6 +24,7 @@ private:
 
     void net_thread(void);
     void web_server(void);
+    static void net_request_trampoline(void *);
     void handle_request(SocketAPM *);
     void handle_post(SocketAPM *, uint32_t content_length);
     char *read_headers(SocketAPM *);
@@ -45,6 +46,11 @@ private:
     } addr;
 
     bool need_reboot;
+    bool need_launch;
+    HAL_Semaphore status_mtx;
+    char bl_status[256];
+
+    void status_printf(const char *fmt, ...);
 };
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
