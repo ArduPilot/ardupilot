@@ -22,7 +22,6 @@ from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
-from xmlemit_mp import XmlEmitMP
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -36,7 +35,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
                     help="what output format to use")
 
 args = parser.parse_args()
@@ -631,7 +630,6 @@ all_emitters = {
     'rst': RSTEmit,
     'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
-    'xml_mp': XmlEmitMP,
 }
 
 try:
