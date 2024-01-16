@@ -25,6 +25,7 @@
 #include "bl_protocol.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "app_comms.h"
+#include "can.h"
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -57,10 +58,12 @@
 
 void BL_Network::link_up_cb(void *p)
 {
+    auto *driver = (BL_Network *)p;
 #if AP_BOOTLOADER_NETWORK_USE_DHCP
-    auto *driver = (AP_Networking_ChibiOS *)p;
     dhcp_start(driver->thisif);
 #endif
+    char ipstr[IP4_STR_LEN];
+    can_printf("IP %s", SocketAPM::inet_addr_to_str(ntohl(driver->thisif->ip_addr.addr), ipstr, sizeof(ipstr)));
 }
 
 void BL_Network::link_down_cb(void *p)
