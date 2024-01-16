@@ -75,6 +75,10 @@ static void processTx(void);
 #define FW_UPDATE_PIPELINE_LEN 4
 #endif
 
+#if CH_CFG_USE_MUTEXES == TRUE
+static HAL_Semaphore can_mutex;
+#endif
+
 static struct {
     uint32_t rtt_ms;
     uint32_t ofs;
@@ -626,6 +630,29 @@ static void processRx(void)
 #endif //#if HAL_USE_CAN
 
 /*
+  wrapper around broadcast
+ */
+static void canard_broadcast(uint64_t data_type_signature,
+                             uint16_t data_type_id,
+                             uint8_t &transfer_id,
+                             uint8_t priority,
+                             const void* payload,
+                             uint16_t payload_len)
+{
+#if CH_CFG_USE_MUTEXES == TRUE
+    WITH_SEMAPHORE(can_mutex);
+#endif
+    canardBroadcast(&canard,
+                    data_type_signature,
+                    data_type_id,
+                    &transfer_id,
+                    priority,
+                    payload,
+                    payload_len);
+}
+
+
+/*
   handle waiting for a node ID
  */
 static void can_handle_DNA(void)
@@ -663,13 +690,12 @@ static void can_handle_DNA(void)
     memmove(&allocation_request[1], &my_unique_id[node_id_allocation_unique_id_offset], uid_size);
 
     // Broadcasting the request
-    canardBroadcast(&canard,
-                    UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
-                    UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
-                    &node_id_allocation_transfer_id,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &allocation_request[0],
-                    (uint16_t) (uid_size + 1));
+    canard_broadcast(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
+                     UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
+                     node_id_allocation_transfer_id,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     &allocation_request[0],
+                     (uint16_t) (uid_size + 1));
 
     // Preparing for timeout; if response is received, this value will be updated from the callback.
     node_id_allocation_unique_id_offset = 0;
@@ -684,13 +710,12 @@ static void send_node_status(void)
 
     static uint8_t transfer_id;  // Note that the transfer ID variable MUST BE STATIC (or heap-allocated)!
 
-    canardBroadcast(&canard,
-                    UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                    UAVCAN_PROTOCOL_NODESTATUS_ID,
-                    &transfer_id,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    buffer,
-                    len);
+    canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+                     UAVCAN_PROTOCOL_NODESTATUS_ID,
+                     transfer_id,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     buffer,
+                     len);
 }
 
 
@@ -831,5 +856,31 @@ void can_update()
 #endif
     } while (fw_update.node_id != 0);
 }
+
+// printf to CAN LogMessage for debugging
+void can_printf(const char *fmt, ...)
+{
+    // only on H7 for now, where we have plenty of flash
+#if defined(STM32H7)
+    uavcan_protocol_debug_LogMessage pkt {};
+    uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE] {};
+    va_list ap;
+    va_start(ap, fmt);
+    uint32_t n = vsnprintf((char*)pkt.text.data, sizeof(pkt.text.data), fmt, ap);
+    va_end(ap);
+    pkt.text.len = MIN(n, sizeof(pkt.text.data));
+
+    uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer, true);
+    static uint8_t logmsg_transfer_id;
+
+    canard_broadcast(UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_SIGNATURE,
+                     UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_ID,
+                     logmsg_transfer_id,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     buffer,
+                     len);
+#endif // defined(STM32H7)
+}
+
 
 #endif // HAL_USE_CAN
