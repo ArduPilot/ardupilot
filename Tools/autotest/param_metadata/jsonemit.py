@@ -56,7 +56,7 @@ class JSONEmit(Emit):
                 name = name.split(':')[1]
 
             # Remove various unwanted keys
-            for key in 'real_path', 'SortValues':
+            for key in 'real_path', 'SortValues', '__field_text':
                 try:
                     param.__dict__.pop(key)
                 except KeyError:
