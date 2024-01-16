@@ -20,6 +20,7 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
         if (channel->get_radio_min() > RC_Channel::RC_CALIB_MIN_LIMIT_PWM) {
+            
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             return false;
         }
