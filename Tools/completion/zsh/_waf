@@ -89,7 +89,9 @@ _waf_cmds() {
     'build:executes the build' \
     'configure:configures the project' \
     'clean:cleans the project' \
-    'distclean:removes build folders and data'
+    'distclean:removes build folders and data' \
+    'submodule_force_clean:removes all submodules, then checkouts all current submodules and synchronizes them' \
+    'submodulesync:checkouts all current submodules and synchronizes them'
   )
   _describe -t commands 'command' commands "$@" && ret=0
 }
