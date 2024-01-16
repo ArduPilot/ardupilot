@@ -689,11 +689,13 @@ class ChibiOSHWDef(object):
         return lib.mcu[name]
 
     def get_ram_reserve_start(self):
-        '''get amount of memory to reserve for bootloader comms'''
+        '''get amount of memory to reserve for bootloader comms and the address if non-zero'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
         if ram_reserve_start == 0 and self.is_periph_fw():
             ram_reserve_start = 256
-        return ram_reserve_start
+        ram_map_bootloader = self.get_ram_map(use_bootloader=True)
+        ram0_start_address = ram_map_bootloader[0][0]
+        return ram_reserve_start, ram0_start_address
 
     def make_line(self, label):
         '''return a line for a label'''
@@ -757,19 +759,11 @@ class ChibiOSHWDef(object):
                 return True
         return False
 
-    def get_ram_map(self):
+    def get_ram_map(self, use_bootloader=False):
         '''get RAM_MAP. May be different for bootloader'''
-        if 'APP_RAM_START' not in self.env_vars:
-            self.env_vars['APP_RAM_START'] = None
-        if self.is_bootloader_fw():
+        if self.is_bootloader_fw() or use_bootloader:
             ram_map = self.get_mcu_config('RAM_MAP_BOOTLOADER', False)
             if ram_map is not None:
-                app_ram_map = self.get_mcu_config('RAM_MAP', False)
-                if app_ram_map is not None and app_ram_map[0][0] != ram_map[0][0]:
-                    # we need to find the location of app_ram_map[0] in ram_map
-                    for i in range(len(ram_map)):
-                        if app_ram_map[0][0] == ram_map[i][0] and self.env_vars['APP_RAM_START'] is None:
-                            self.env_vars['APP_RAM_START'] = i
                 return ram_map
         elif self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
             ram_map = self.get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
@@ -1107,17 +1101,12 @@ class ChibiOSHWDef(object):
             f.write('#define APP_START_OFFSET_KB %u\n' % self.get_config('APP_START_OFFSET_KB', default=0, type=int))
         f.write('\n')
 
-        ram_map = self.get_ram_map()
-
-        ram0_index = self.env_vars['APP_RAM_START']
-        if ram0_index is None:
-            ram0_index = 0
-        ram0_start_address = ram_map[ram0_index][0]
+        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
         f.write('#define HAL_RAM0_START 0x%08x\n' % ram0_start_address)
-
-        ram_reserve_start = self.get_ram_reserve_start()
         if ram_reserve_start > 0:
             f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
+
+        ram_map = self.get_ram_map()
 
         f.write('// memory regions\n')
         regions = []
@@ -1391,10 +1380,8 @@ class ChibiOSHWDef(object):
         if ext_flash_size > 32:
             self.error("We only support 24bit addressing over external flash")
 
-        if self.env_vars['APP_RAM_START'] is None:
-            # default to start of ram for shared ram
-            # possibly reserve some memory for app/bootloader comms
-            ram_reserve_start = self.get_ram_reserve_start()
+        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        if ram_reserve_start > 0 and ram0_start_address == ram0_start:
             ram0_start += ram_reserve_start
             ram0_len -= ram_reserve_start
         if ext_flash_length == 0 or self.is_bootloader_fw():
