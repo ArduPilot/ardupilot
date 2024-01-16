@@ -43,6 +43,8 @@ private:
     struct {
         uint32_t ip, gateway, netmask;
     } addr;
+
+    bool need_reboot;
 };
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED

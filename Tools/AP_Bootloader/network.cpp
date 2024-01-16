@@ -467,6 +467,10 @@ void BL_Network::handle_request(SocketAPM *sock)
         }
     }
 
+    if (strncmp(headers, "GET /REBOOT", 11) == 0) {
+        need_reboot = true;
+    }
+    
     uint32_t size = 0;
     /*
       we only need one URL in the bootloader
@@ -477,9 +481,14 @@ void BL_Network::handle_request(SocketAPM *sock)
         "\r\n";
     const auto *msg = AP_ROMFS::find_decompress("index.html", size);
     sock->send(header, strlen(header));
-    char *msg2 = substitute_vars((const char *)msg, size);
-    sock->send(msg2, strlen(msg2));
-    delete msg2;
+    if (need_reboot) {
+        const char *str = "<html><head><meta http-equiv=\"refresh\" content=\"2; url=/\"></head></html>";
+        sock->send(str, strlen(str));
+    } else {
+        char *msg2 = substitute_vars((const char *)msg, size);
+        sock->send(msg2, strlen(msg2));
+        delete msg2;
+    }
     delete headers;
     AP_ROMFS::free(msg);
 }
@@ -495,6 +504,10 @@ void BL_Network::web_server(void)
 
     while (true) {
         auto *sock = listen_socket->accept(20);
+        if (need_reboot) {
+            need_reboot = false;
+            NVIC_SystemReset();
+        }
         if (sock == nullptr) {
             continue;
         }
