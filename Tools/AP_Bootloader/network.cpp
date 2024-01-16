@@ -26,6 +26,8 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "app_comms.h"
 #include "can.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -403,9 +405,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     /*
       erase all of flash
      */
+    status_printf("Erasing ...");
     flash_set_keep_unlocked(true);
     uint32_t sec=0;
     while (flash_func_erase_sector(sec)) {
+        thread_sleep_ms(10);
         sec++;
     }
     /*
@@ -433,6 +437,8 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         }
         flash_write_buffer(ofs, buf, n/4);
         ofs += n;
+        uint8_t pct = ofs*100/max_ofs;
+        status_printf("Flashing %u%%", unsigned(pct));
     }
     if (ofs % 32 != 0) {
         // pad to 32 bytes
@@ -443,7 +449,12 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     flash_set_keep_unlocked(false);
     const auto ok = check_good_firmware();
     if (ok == check_fw_result_t::CHECK_FW_OK) {
-        jump_to_app();
+        need_launch = true;
+        status_printf("Flash done: OK");
+        const char *str = "<html><head><meta http-equiv=\"refresh\" content=\"4; url=/\"></head><body>Flash OK, booting</body></html>";
+        sock->send(str, strlen(str));
+    } else {
+        status_printf("Flash done: ERR:%u", unsigned(ok));
     }
 }
 
@@ -457,6 +468,12 @@ void BL_Network::handle_request(SocketAPM *sock)
      */
     char *headers = read_headers(sock);
 
+    const char *header = "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+    sock->send(header, strlen(header));
+
     if (strncmp(headers, "POST / ", 7) == 0) {
         const char *clen = "\r\nContent-Length:";
         const char *p = strstr(headers, clen);
@@ -464,23 +481,33 @@ void BL_Network::handle_request(SocketAPM *sock)
             p += strlen(clen);
             const uint32_t content_length = atoi(p);
             handle_post(sock, content_length);
+            delete headers;
+            delete sock;
+            return;
         }
     }
 
-    if (strncmp(headers, "GET /REBOOT", 11) == 0) {
+    /*
+      check for async status
+     */
+    const char *get_status = "GET /bootloader_status.html";
+    if (strncmp(headers, get_status, strlen(get_status)) == 0) {
+        {
+            WITH_SEMAPHORE(status_mtx);
+            sock->send(bl_status, strlen(bl_status));
+        }
+        delete headers;
+        delete sock;
+        return;
+    }
+
+    const char *get_reboot = "GET /REBOOT";
+    if (strncmp(headers, get_reboot, strlen(get_reboot)) == 0) {
         need_reboot = true;
     }
     
     uint32_t size = 0;
-    /*
-      we only need one URL in the bootloader
-    */
-    const char *header = "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Connection: close\r\n"
-        "\r\n";
     const auto *msg = AP_ROMFS::find_decompress("index.html", size);
-    sock->send(header, strlen(header));
     if (need_reboot) {
         const char *str = "<html><head><meta http-equiv=\"refresh\" content=\"2; url=/\"></head></html>";
         sock->send(str, strlen(str));
@@ -490,7 +517,20 @@ void BL_Network::handle_request(SocketAPM *sock)
         delete msg2;
     }
     delete headers;
+    delete sock;
     AP_ROMFS::free(msg);
+}
+
+struct req_context {
+    BL_Network *driver;
+    SocketAPM *sock;
+};
+
+void BL_Network::net_request_trampoline(void *ctx)
+{
+    auto *req = (req_context *)ctx;
+    req->driver->handle_request(req->sock);
+    delete req;
 }
 
 /*
@@ -508,11 +548,23 @@ void BL_Network::web_server(void)
             need_reboot = false;
             NVIC_SystemReset();
         }
+        if (need_launch) {
+            need_launch = false;
+            thread_sleep_ms(1000);
+            jump_to_app();
+        }
         if (sock == nullptr) {
             continue;
         }
-        handle_request(sock);
-        delete sock;
+        // a neq thread for each connection to allow for AJAX
+        auto *req = new req_context;
+        req->driver = this;
+        req->sock = sock;
+        thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
+                            "net_request",
+                            60,
+                            net_request_trampoline,
+                            req);
     }
 }
 
@@ -551,6 +603,18 @@ void BL_Network::save_comms_ip(void)
         addr.netmask = comms->netmask;
         addr.gateway = comms->gateway;
     }
+}
+
+/*
+  update status message
+ */
+void BL_Network::status_printf(const char *fmt, ...)
+{
+    WITH_SEMAPHORE(status_mtx);
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(bl_status, sizeof(bl_status), fmt, ap);
+    va_end(ap);
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
