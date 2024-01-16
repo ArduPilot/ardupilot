@@ -86,6 +86,29 @@ def _set_build_context_variant(board):
             continue
         c.variant = board
 
+# Remove all submodules and then sync
+@conf
+def submodule_force_clean(ctx):
+    whitelist = {
+                            'COLCON_IGNORE',
+                            'esp_idf',
+                          }
+
+    # Get all items in the modules folder
+    module_list = os.scandir('modules')
+
+    # Delete all directories except those in the whitelist
+    for module in module_list:
+        if (module.is_dir()) and (module.name not in whitelist):
+            shutil.rmtree(module)
+
+    submodulesync(ctx)
+
+# run Tools/gittools/submodule-sync.sh to sync submodules
+@conf
+def submodulesync(ctx):
+    subprocess.call(['Tools/gittools/submodule-sync.sh'])
+
 def init(ctx):
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
