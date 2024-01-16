@@ -107,6 +107,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
+    // @SortValues: AlphabeticalZeroAtTop
     // @Values{Copter, Rover, Plane, Blimp}: 0:Do Nothing
     // @Values{Copter}: 2:FLIP Mode
     // @Values{Copter}: 3:Simple Mode
