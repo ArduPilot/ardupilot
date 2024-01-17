@@ -178,6 +178,13 @@ public:
     }
 #endif
 
+    /*
+      return true if the port is currently locked for writing
+     */
+    bool is_write_locked(void) const {
+        return lock_write_key != 0;
+    }
+
 protected:
     // key for a locked port
     uint32_t lock_write_key;
