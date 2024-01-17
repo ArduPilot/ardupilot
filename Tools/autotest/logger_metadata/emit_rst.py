@@ -76,7 +76,8 @@ This is a list of log messages which may be present in logs produced and stored 
                 # Add the new row
                 rows.append([f, ftypeunit, fdesc])
 
-            print(self.tablify(rows), file=self.fh)
+            if rows:
+                print(self.tablify(rows), file=self.fh)
 
             print("", file=self.fh)
         self.stop()
