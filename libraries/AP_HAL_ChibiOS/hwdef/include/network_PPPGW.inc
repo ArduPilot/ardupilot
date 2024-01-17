@@ -19,3 +19,6 @@ define AP_FILESYSTEM_ROMFS_ENABLED 1
 define AP_PARAM_DYNAMIC_ENABLED 1
 
 ROMFS_DIRECTORY Tools/AP_Periph/Web
+
+# we don't want to use external flash with network bootloader
+EXT_FLASH_SIZE_MB 0
