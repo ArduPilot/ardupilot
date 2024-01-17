@@ -15,7 +15,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Relay/AP_Relay_Params.h>
-#include <AP_Common/Bitmask.h>
 
 #ifndef AP_RELAY_NUM_RELAYS
   #define AP_RELAY_NUM_RELAYS 6
