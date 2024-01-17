@@ -15,5 +15,8 @@ define AP_NETWORKING_ENABLED 1
 ROMFS_WILDCARD Tools/AP_Bootloader/Web/*.html
 env ROMFS_UNCOMPRESSED True
 
+# we don't want to use external flash with network bootloader
+EXT_FLASH_SIZE_MB 0
+
 # don't combine sdcard bl and network bl
 undef AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
