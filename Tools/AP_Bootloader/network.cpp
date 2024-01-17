@@ -28,6 +28,7 @@
 #include "can.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <AP_HAL_ChibiOS/hwdef/common/flash.h>
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -411,6 +412,9 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     while (flash_func_erase_sector(sec)) {
         thread_sleep_ms(10);
         sec++;
+        if (stm32_flash_getpageaddr(sec) - stm32_flash_getpageaddr(0) >= content_length) {
+            break;
+        }
     }
     /*
       receive file and write to flash
