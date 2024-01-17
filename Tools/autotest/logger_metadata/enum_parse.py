@@ -35,7 +35,7 @@ class EnumDocco(object):
         # attempts to extract name, value and comment from line.
 
         # Match:  "            FRED,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?:// *(.*) *)?$", line)
+        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?://[/>]* *(.*) *)?$", line)
         if m is not None:
             return (m.group(1), None, m.group(2))
 
@@ -45,7 +45,7 @@ class EnumDocco(object):
             return (m.group(1), None, m.group(2))
 
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//\s*(.*) *)?$",
+        m = re.match("\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//[/<]*\s*(.*) *)?$",
                      line)
         if m is not None:
             return (m.group(1), m.group(2), m.group(3))
