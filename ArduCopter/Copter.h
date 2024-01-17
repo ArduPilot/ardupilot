@@ -670,6 +670,8 @@ private:
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED == ENABLED
     bool start_takeoff(float alt) override;
+    bool get_target_location(Location& target_loc) override;
+    bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
     bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
