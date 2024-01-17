@@ -53,7 +53,7 @@ void Rover::ekf_check()
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
 
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK,
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK,
                                          LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
@@ -71,7 +71,7 @@ void Rover::ekf_check()
             // if variance is flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK,
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK,
                                          LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
@@ -156,7 +156,7 @@ void Rover::failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV,
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV,
                              LogErrorCode::FAILSAFE_OCCURRED);
 
     // does this mode require position?
@@ -189,7 +189,7 @@ void Rover::failsafe_ekf_off_event(void)
     }
 
     failsafe.ekf = false;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV,
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV,
                              LogErrorCode::FAILSAFE_RESOLVED);
     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe cleared");
 }

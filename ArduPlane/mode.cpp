@@ -258,3 +258,35 @@ void Mode::output_rudder_and_steering(float val)
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, val);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, val);
 }
+
+// true if throttle min/max limits should be applied
+bool Mode::use_throttle_limits() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        return false;
+    }
+#endif
+
+    if (this == &plane.mode_stabilize ||
+        this == &plane.mode_training ||
+        this == &plane.mode_acro ||
+        this == &plane.mode_fbwa ||
+        this == &plane.mode_autotune) {
+        // a manual throttle mode
+        return !plane.g.throttle_passthru_stabilize;
+    }
+
+    if (is_guided_mode() && plane.guided_throttle_passthru) {
+        // manual pass through of throttle while in GUIDED
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        return quadplane.allow_forward_throttle_in_vtol_mode();
+    }
+#endif
+
+    return true;
+}

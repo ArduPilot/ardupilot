@@ -4,6 +4,8 @@
 
 #if AP_GENERATOR_IE_2400_ENABLED
 
+#include <AP_Logger/AP_Logger_config.h>
+
 class AP_Generator_IE_2400 : public AP_Generator_IE_FuelCell
 {
     // Inherit constructor

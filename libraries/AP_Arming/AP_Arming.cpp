@@ -303,9 +303,9 @@ bool AP_Arming::barometer_checks(bool report)
     return true;
 }
 
+#if AP_AIRSPEED_ENABLED
 bool AP_Arming::airspeed_checks(bool report)
 {
-#if AP_AIRSPEED_ENABLED
     if (check_enabled(ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
         if (airspeed == nullptr) {
@@ -319,10 +319,10 @@ bool AP_Arming::airspeed_checks(bool report)
             }
         }
     }
-#endif
 
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 #if HAL_LOGGING_ENABLED
 bool AP_Arming::logging_checks(bool report)
@@ -579,6 +579,7 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
 
+#if AP_AHRS_ENABLED
         // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
         Location ahrs_loc;
         AP_AHRS &ahrs = AP::ahrs();
@@ -597,6 +598,7 @@ bool AP_Arming::compass_checks(bool report)
                 return false;
             }           
         }
+#endif  // AP_AHRS_ENABLED
     }
 
     return true;
@@ -1199,8 +1201,6 @@ bool AP_Arming::proximity_checks(bool report) const
         return false;
     }
     return true;
-
-    return true;
 }
 #endif  // HAL_PROXIMITY_ENABLED
 
@@ -1666,6 +1666,7 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger->logging_present()) {
         // If we're configured to log, prep it
@@ -1676,6 +1677,8 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
+#endif  // HAL_LOGGING_ENABLED
+
     return true;
 }
 

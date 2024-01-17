@@ -54,7 +54,7 @@ void Rover::init_ardupilot()
     osd.init();
 #endif
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     log_init();
 #endif
 
@@ -179,7 +179,7 @@ void Rover::startup_ground(void)
     mode_auto.mission.init();
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
@@ -259,8 +259,8 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE,
-                                 LogErrorCode(new_mode.mode_number()));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE,
+                           LogErrorCode(new_mode.mode_number()));
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
@@ -281,7 +281,9 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     old_mode.exit();
 
     control_mode_reason = reason;
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode((uint8_t)control_mode->mode_number(), control_mode_reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     notify_mode(control_mode);
@@ -340,6 +342,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
     return hal.gpio->read(pin);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
@@ -347,6 +350,7 @@ bool Rover::should_log(uint32_t mask)
 {
     return logger.should_log(mask);
 }
+#endif
 
 // returns true if vehicle is a boat
 // this affects whether the vehicle tries to maintain position after reaching waypoints

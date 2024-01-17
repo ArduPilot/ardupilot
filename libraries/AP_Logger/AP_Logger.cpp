@@ -1573,6 +1573,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
+        "@ROMFS/defaults.parm",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);

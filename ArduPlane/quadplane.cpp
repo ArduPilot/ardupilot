@@ -1053,7 +1053,7 @@ void QuadPlane::check_yaw_reset(void)
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
-        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
 }
 
@@ -1866,6 +1866,7 @@ void QuadPlane::update(void)
 
     tiltrotor.update();
 
+#if HAL_LOGGING_ENABLED
     // motors logging
     if (motors->armed()) {
         const bool motors_active = in_vtol_mode() || assisted_flight;
@@ -1886,7 +1887,9 @@ void QuadPlane::update(void)
             Log_Write_QControl_Tuning();
         }
     }
-
+#else
+    (void)now;
+#endif  // HAL_LOGGING_ENABLED
 }
 
 /*
@@ -2296,6 +2299,7 @@ void QuadPlane::poscontrol_init_approach(void)
     poscontrol.slow_descent = false;
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   log the QPOS message
  */
@@ -2309,6 +2313,7 @@ void QuadPlane::log_QPOS(void)
                                 poscontrol.target_accel,
                                 poscontrol.overshoot);
 }
+#endif
 
 /*
   change position control state
@@ -2346,9 +2351,13 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             qp.landing_detect.lower_limit_start_ms = 0;
         }
         // double log to capture the state change
+#if HAL_LOGGING_ENABLED
         qp.log_QPOS();
+#endif
         state = s;
+#if HAL_LOGGING_ENABLED
         qp.log_QPOS();
+#endif
         last_log_ms = now;
         overshoot = false;
     }
@@ -2636,7 +2645,7 @@ void QuadPlane::vtol_position_controller(void)
             target_speed_xy_cms = diff_wp_norm * target_speed * 100;
             target_accel_cms = diff_wp_norm * (-target_accel*100);
             target_yaw_deg = degrees(diff_wp_norm.angle());
-            const float yaw_err_deg = wrap_180(target_yaw_deg - degrees(plane.ahrs.yaw));
+            const float yaw_err_deg = wrap_180(target_yaw_deg - degrees(plane.ahrs.get_yaw()));
             bool overshoot = (closing_groundspeed < 0 || fabsf(yaw_err_deg) > 60);
             if (overshoot && !poscontrol.overshoot) {
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL Overshoot d=%.1f cs=%.1f yerr=%.1f",
@@ -2926,11 +2935,13 @@ void QuadPlane::vtol_position_controller(void)
         run_z_controller();
     }
 
+#if HAL_LOGGING_ENABLED
     if (now_ms - poscontrol.last_log_ms >= 40) {
         // log poscontrol at 25Hz
         poscontrol.last_log_ms = now_ms;
         log_QPOS();
     }
+#endif
 }
 
 /*
@@ -3025,6 +3036,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     // acceleration capability.
     const float nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
 
+#if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
     AP::logger().WriteStreaming("FWDT",
                                 "TimeUS,fts,qfplcd,npllcd,npcd,qft",  // labels
@@ -3035,6 +3047,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
                                 (double)nav_pitch_lower_limit_cd,
                                 (double)plane.nav_pitch_cd,
                                 (double)q_fwd_throttle);
+#endif
 
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
 }
@@ -3046,7 +3059,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
 */
 float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 {
-    const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.yaw) - target_bearing_deg));
+    const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.get_yaw()) - target_bearing_deg));
     const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
     if (yaw_difference > 20) {
         // this gives a factor of 2x reduction in max speed when
@@ -3640,6 +3653,7 @@ bool QuadPlane::verify_vtol_land(void)
     return false;
 }
 
+#if HAL_LOGGING_ENABLED
 // Write a control tuning packet
 void QuadPlane::Log_Write_QControl_Tuning()
 {
@@ -3671,6 +3685,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
     // write multicopter position control message
     pos_control->write_log();
 }
+#endif
 
 
 /*
@@ -4740,6 +4755,12 @@ float QuadPlane::get_throttle_input() const
         ret = -ret;
     }
     return ret;
+}
+
+// return true if forward throttle from forward_throttle_pct() should be used
+bool QuadPlane::allow_forward_throttle_in_vtol_mode() const
+{
+    return in_vtol_mode() && motors->armed() && (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN);
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

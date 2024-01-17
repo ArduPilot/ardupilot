@@ -74,7 +74,7 @@ void Plane::ekf_check()
                 // limit count from climbing too high
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
@@ -91,7 +91,7 @@ void Plane::ekf_check()
             // if compass is flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -155,7 +155,7 @@ void Plane::failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     ekf_check_state.failsafe_on = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // if not in a VTOL mode requiring position, then nothing needs to be done
 #if HAL_QUADPLANE_ENABLED
@@ -182,5 +182,5 @@ void Plane::failsafe_ekf_off_event(void)
     }
 
     ekf_check_state.failsafe_on = false;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }

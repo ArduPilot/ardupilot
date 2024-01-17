@@ -10,6 +10,14 @@
 #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2
 #endif
 
+#ifndef AP_PERIPH_NET_PPP_PORT_DEFAULT
+#define AP_PERIPH_NET_PPP_PORT_DEFAULT -1
+#endif
+
+#ifndef AP_PERIPH_NET_PPP_BAUD_DEFAULT
+#define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
+#endif
+
 class Networking_Periph {
 public:
     Networking_Periph() {
@@ -54,7 +62,11 @@ private:
 #endif // HAL_PERIPH_NETWORK_NUM_PASSTHRU
 
     AP_Networking networking_lib;
+
+#if AP_NETWORKING_BACKEND_PPP
+    AP_Int8 ppp_port;
+    AP_Int32 ppp_baud;
+#endif
 };
 
-#endif // HAL_PERIPH_ENABLE_BATTERY_BALANCE
-
+#endif // HAL_PERIPH_ENABLE_NETWORKING

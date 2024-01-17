@@ -17,12 +17,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <GCS_MAVLink/GCS_config.h>
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED && HAL_GCS_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h> // for LOG_ENTRY
-
-#if HAL_GCS_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -327,4 +329,4 @@ bool AP_Logger::handle_log_send_data()
     return true;
 }
 
-#endif
+#endif  // HAL_LOGGING_ENABLED && HAL_GCS_ENABLED

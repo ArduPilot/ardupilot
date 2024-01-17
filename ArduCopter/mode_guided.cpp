@@ -332,7 +332,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     // reject destination if outside the fence
     const Location dest_loc(destination, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -351,8 +351,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         // no need to check return status because terrain data is not used
         wp_nav->set_wp_destination(destination, terrain_alt);
 
+#if HAL_LOGGING_ENABLED
         // log target
         copter.Log_Write_Guided_Position_Target(guided_mode, destination, terrain_alt, Vector3f(), Vector3f());
+#endif
         send_notification = true;
         return true;
     }
@@ -391,8 +393,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     guided_accel_target_cmss.zero();
     update_time_ms = millis();
 
+#if HAL_LOGGING_ENABLED
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+#endif
 
     send_notification = true;
 
@@ -424,7 +428,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -438,7 +442,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
         if (!wp_nav->set_wp_destination_loc(dest_loc)) {
             // failure to set destination can only be because of missing terrain data
-            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
             // failure is propagated to GCS with NAK
             return false;
         }
@@ -446,8 +450,11 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // set yaw state
         set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
+#if HAL_LOGGING_ENABLED
         // log target
         copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+#endif
+
         send_notification = true;
         return true;
     }
@@ -493,7 +500,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     update_time_ms = millis();
 
     // log target
+#if HAL_LOGGING_ENABLED
     copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+#endif
 
     send_notification = true;
 
@@ -518,10 +527,12 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     guided_accel_target_cmss = acceleration;
     update_time_ms = millis();
 
+#if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
         copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
     }
+#endif
 }
 
 // set_velocity - sets guided mode's target velocity
@@ -548,10 +559,12 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     guided_accel_target_cmss = acceleration;
     update_time_ms = millis();
 
+#if HAL_LOGGING_ENABLED
     // log target
     if (log_request) {
         copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
     }
+#endif
 }
 
 // set_destination_posvel - set guided mode position and velocity target
@@ -567,7 +580,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -587,8 +600,10 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     guided_vel_target_cms = velocity;
     guided_accel_target_cmss = acceleration;
 
+#if HAL_LOGGING_ENABLED
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+#endif
     return true;
 }
 
@@ -648,8 +663,10 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
     float roll_rad, pitch_rad, yaw_rad;
     attitude_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
 
+#if HAL_LOGGING_ENABLED
     // log target
     copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel, guided_angle_state.thrust, guided_angle_state.climb_rate_cms * 0.01);
+#endif
 }
 
 // takeoff_run - takeoff in guided mode

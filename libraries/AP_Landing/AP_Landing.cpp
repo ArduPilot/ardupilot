@@ -625,6 +625,7 @@ bool AP_Landing::is_complete(void) const
 
 void AP_Landing::Log(void) const
 {
+#if HAL_LOGGING_ENABLED
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_log();
@@ -637,6 +638,7 @@ void AP_Landing::Log(void) const
     default:
         break;
     }
+#endif
 }
 
 /*

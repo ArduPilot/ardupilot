@@ -407,6 +407,7 @@ bool AP_Landing::type_slope_is_complete(void) const
     return (type_slope_stage == SlopeStage::FINAL);
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Landing::type_slope_log(void) const
 {
 // @LoggerMessage: LAND
@@ -429,6 +430,7 @@ void AP_Landing::type_slope_log(void) const
                                             (double)alt_offset,
                                             (double)height_flare_log);
 }
+#endif
 
 bool AP_Landing::type_slope_is_throttle_suppressed(void) const
 {

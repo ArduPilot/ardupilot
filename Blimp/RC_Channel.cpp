@@ -132,7 +132,7 @@ void Blimp::save_trim()
     float roll_trim = ToRad((float)channel_right->get_control_in()/100.0f);
     float pitch_trim = ToRad((float)channel_front->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
-    AP::logger().Write_Event(LogEvent::SAVE_TRIM);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 

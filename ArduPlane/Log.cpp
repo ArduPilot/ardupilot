@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
@@ -500,18 +500,4 @@ void Plane::log_init(void)
     logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
-#else // LOGGING_ENABLED
-
-void Plane::Log_Write_Attitude(void) {}
-void Plane::Log_Write_Fast(void) {}
-void Plane::Log_Write_Control_Tuning() {}
-void Plane::Log_Write_OFG_Guided() {}
-void Plane::Log_Write_Nav_Tuning() {}
-void Plane::Log_Write_Status() {}
-void Plane::Log_Write_Guided(void) {}
-void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Vehicle_Startup_Messages() {}
-
-void Plane::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

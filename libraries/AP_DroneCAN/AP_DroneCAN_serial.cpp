@@ -74,26 +74,29 @@ void AP_DroneCAN_Serial::update(void)
         if (p.writebuffer == nullptr || p.node <= 0 || p.idx < 0) {
             continue;
         }
-        WITH_SEMAPHORE(p.sem);
-        uint32_t avail;
-        const bool send_keepalive = now_ms - p.last_send_ms > 500;
-        const auto *ptr = p.writebuffer->readptr(avail);
-        if (!send_keepalive && (ptr == nullptr || avail <= 0)) {
-            continue;
-        }
         uavcan_tunnel_Targetted pkt {};
-        auto n = MIN(avail, sizeof(pkt.buffer.data));
-        pkt.target_node = p.node;
-        pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
-        pkt.buffer.len = n;
-        pkt.baudrate = p.baudrate;
-        pkt.serial_id = p.idx;
-        pkt.options = UAVCAN_TUNNEL_TARGETTED_OPTION_LOCK_PORT;
-        if (ptr != nullptr) {
-            memcpy(pkt.buffer.data, ptr, n);
+        uint32_t n = 0;
+        {
+            WITH_SEMAPHORE(p.sem);
+            uint32_t avail;
+            const bool send_keepalive = now_ms - p.last_send_ms > 500;
+            const auto *ptr = p.writebuffer->readptr(avail);
+            if (!send_keepalive && (ptr == nullptr || avail <= 0)) {
+                continue;
+            }
+            n = MIN(avail, sizeof(pkt.buffer.data));
+            pkt.target_node = p.node;
+            pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
+            pkt.buffer.len = n;
+            pkt.baudrate = p.baudrate;
+            pkt.serial_id = p.idx;
+            pkt.options = UAVCAN_TUNNEL_TARGETTED_OPTION_LOCK_PORT;
+            if (ptr != nullptr) {
+                memcpy(pkt.buffer.data, ptr, n);
+            }
         }
-
         if (targetted->broadcast(pkt)) {
+            WITH_SEMAPHORE(p.sem);
             p.writebuffer->advance(n);
             p.last_send_ms = now_ms;
         }

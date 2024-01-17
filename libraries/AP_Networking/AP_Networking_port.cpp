@@ -319,10 +319,14 @@ bool AP_Networking::Port::send_receive(void)
 {
 
     bool active = false;
-    WITH_SEMAPHORE(sem);
+    uint32_t space;
+
 
     // handle incoming packets
-    const auto space = readbuffer->space();
+    {
+        WITH_SEMAPHORE(sem);
+        space = readbuffer->space();
+    }
     if (space > 0) {
         const uint32_t n = MIN(300U, space);
         uint8_t buf[n];
@@ -334,6 +338,7 @@ bool AP_Networking::Port::send_receive(void)
             return false;
         }
         if (ret > 0) {
+            WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
             active = true;
             have_received = true;
@@ -342,22 +347,33 @@ bool AP_Networking::Port::send_receive(void)
 
     if (connected) {
         // handle outgoing packets
-        uint32_t available = writebuffer->available();
-        available = MIN(300U, available);
+        uint32_t available;
+
+        {
+            WITH_SEMAPHORE(sem);
+            available = writebuffer->available();
+            available = MIN(300U, available);
 #if HAL_GCS_ENABLED
-        if (packetise) {
-            available = mavlink_packetise(*writebuffer, available);
-        }
+            if (packetise) {
+                available = mavlink_packetise(*writebuffer, available);
+            }
 #endif
-        if (available > 0) {
-            uint8_t buf[available];
-            auto n = writebuffer->peekbytes(buf, available);
-            if (n > 0) {
-                const auto ret = sock->send(buf, n);
-                if (ret > 0) {
-                    writebuffer->advance(ret);
-                    active = true;
-                }
+            if (available == 0) {
+                return active;
+            }
+        }
+        uint8_t buf[available];
+        uint32_t n;
+        {
+            WITH_SEMAPHORE(sem);
+            n = writebuffer->peekbytes(buf, available);
+        }
+        if (n > 0) {
+            const auto ret = sock->send(buf, n);
+            if (ret > 0) {
+                WITH_SEMAPHORE(sem);
+                writebuffer->advance(ret);
+                active = true;
             }
         }
     } else {

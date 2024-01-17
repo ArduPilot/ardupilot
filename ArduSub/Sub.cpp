@@ -24,7 +24,10 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Sub class
  */
 Sub::Sub()
-    : logger(g.log_bitmask),
+    :
+#if HAL_LOGGING_ENABLED
+          logger(g.log_bitmask),
+#endif
           control_mode(Mode::Number::MANUAL),
           motors(MAIN_LOOP_RATE),
           auto_mode(Auto_WP),

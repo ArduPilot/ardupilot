@@ -504,6 +504,7 @@ void AP_IOMCU::write_log()
     uint32_t now = AP_HAL::millis();
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
+#if HAL_LOGGING_ENABLED
         if (AP_Logger::get_singleton()) {
 // @LoggerMessage: IOMC
 // @Description: IOMCU diagnostic information
@@ -525,6 +526,7 @@ void AP_IOMCU::write_log()
                                reg_status.num_errors,
                                num_delayed);
         }
+#endif  // HAL_LOGGING_ENABLED
 #if IOMCU_DEBUG_ENABLE
         static uint32_t last_io_print;
         if (now - last_io_print >= 5000) {
@@ -547,6 +549,7 @@ void AP_IOMCU::write_log()
 #endif // IOMCU_DEBUG_ENABLE
     }
 }
+
 
 /*
   read servo output values

@@ -2254,6 +2254,7 @@ bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // Logging support:
 // Write an GPS packet
 void AP_GPS::Write_GPS(uint8_t i)
@@ -2310,6 +2311,7 @@ void AP_GPS::Write_GPS(uint8_t i)
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif
 
 /*
   get GPS based yaw

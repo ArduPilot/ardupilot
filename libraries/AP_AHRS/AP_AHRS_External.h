@@ -21,9 +21,11 @@
  *
  */
 
-#include "AP_AHRS_Backend.h"
+#include "AP_AHRS_config.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
+
+#include "AP_AHRS_Backend.h"
 
 class AP_AHRS_External : public AP_AHRS_Backend {
 public:

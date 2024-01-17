@@ -164,6 +164,3 @@ define HAL_MSP_ENABLED 1
 # need to probe external baros even 'though we're minimised:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
-
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024

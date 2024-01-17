@@ -1,6 +1,6 @@
 #include "AP_AHRS_External.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
 
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>

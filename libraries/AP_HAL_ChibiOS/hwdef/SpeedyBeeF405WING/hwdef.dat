@@ -169,8 +169,6 @@ PC13 PINIO1 OUTPUT GPIO(81) LOW
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_WITH_DSP FALSE
 
 # save some flash

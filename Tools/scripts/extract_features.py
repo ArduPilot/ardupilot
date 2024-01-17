@@ -110,6 +110,7 @@ class ExtractFeatures(object):
             ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::init',),
 
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
+            ('AP_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
             ('HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED', 'AP_CRSF_Telem::calc_text_selection',),
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
@@ -238,6 +239,7 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
+            ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
         ]
 
     def progress(self, msg):

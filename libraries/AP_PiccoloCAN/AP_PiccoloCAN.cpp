@@ -361,6 +361,7 @@ void AP_PiccoloCAN::update()
     }
 #endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
 
     // Push received telemetry data into the logging system
@@ -397,6 +398,9 @@ void AP_PiccoloCAN::update()
             }
         }
     }
+#else
+    (void)timestamp;
+#endif  // HAL_LOGGING_ENABLED
 }
 
 #if HAL_GCS_ENABLED

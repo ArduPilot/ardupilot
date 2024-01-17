@@ -15,6 +15,9 @@ extern const AP_HAL::HAL& hal;
 // update mount position - should be called periodically
 void AP_Mount_Scripting::update()
 {
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // update based on mount mode
     switch (get_mode()) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?

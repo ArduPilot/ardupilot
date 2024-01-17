@@ -53,8 +53,8 @@ void AP_OpticalFlow_HereFlow::handle_measurement(AP_DroneCAN *ap_dronecan, const
     if (_ap_dronecan == ap_dronecan && _node_id == transfer.source_node_id) {
         WITH_SEMAPHORE(_driver->_sem);
         _driver->new_data = true;
-        _driver->flowRate = Vector2f(msg.flow_integral[0], msg.flow_integral[1]);
-        _driver->bodyRate = Vector2f(msg.rate_gyro_integral[0], msg.rate_gyro_integral[1]);
+        _driver->flow_integral = Vector2f(msg.flow_integral[0], msg.flow_integral[1]);
+        _driver->rate_gyro_integral = Vector2f(msg.rate_gyro_integral[0], msg.rate_gyro_integral[1]);
         _driver->integral_time = msg.integration_interval;
         _driver->surface_quality = msg.quality;
     }
@@ -79,9 +79,11 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
     float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
     float integralToRate = 1.0f / integral_time;
     //Convert to Raw Flow measurement to Flow Rate measurement
-    state.flowRate = Vector2f(flowRate.x * flowScaleFactorX,
-                                flowRate.y * flowScaleFactorY) * integralToRate;
-    state.bodyRate = bodyRate * integralToRate;
+    state.flowRate = Vector2f{
+        flow_integral.x * flowScaleFactorX,
+        flow_integral.y * flowScaleFactorY
+    } * integralToRate;
+    state.bodyRate = rate_gyro_integral * integralToRate;
     state.surface_quality = surface_quality;
     _applyYaw(state.flowRate);
     _applyYaw(state.bodyRate);

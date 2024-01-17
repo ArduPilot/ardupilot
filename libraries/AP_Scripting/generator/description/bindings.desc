@@ -387,7 +387,6 @@ singleton RC_Channels method get_aux_cached boolean RC_Channel::AUX_FUNC'enum 0 
 
 include AP_SerialManager/AP_SerialManager.h
 
-ap_object AP_HAL::UARTDriver depends HAL_GCS_ENABLED
 ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
 ap_object AP_HAL::UARTDriver method read int16_t
 ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1
@@ -888,3 +887,12 @@ singleton AP_RTC depends AP_RTC_ENABLED
 singleton AP_RTC rename rtc
 singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
 singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+
+include AP_Networking/AP_Networking.h depends AP_NETWORKING_ENABLED
+include AP_Networking/AP_Networking_Config.h
+singleton AP_Networking depends AP_NETWORKING_ENABLED
+singleton AP_Networking rename networking
+singleton AP_Networking method get_ip_active uint32_t
+singleton AP_Networking method get_netmask_active uint32_t
+singleton AP_Networking method get_gateway_active uint32_t
+singleton AP_Networking method address_to_str string uint32_t'skip_check

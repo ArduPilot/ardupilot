@@ -32,7 +32,7 @@ void AP_WindVane_Home::update_direction()
         }
     }
 
-    _frontend._direction_apparent_raw = wrap_PI(direction_apparent_ef - AP::ahrs().yaw);
+    _frontend._direction_apparent_raw = wrap_PI(direction_apparent_ef - AP::ahrs().get_yaw());
 }
 
 #endif  // AP_WINDVANE_HOME_ENABLED

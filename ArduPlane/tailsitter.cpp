@@ -783,6 +783,7 @@ void Tailsitter::speed_scaling(void)
 
 }
 
+#if HAL_LOGGING_ENABLED
 // Write tailsitter specific log
 void Tailsitter::write_log()
 {
@@ -799,6 +800,7 @@ void Tailsitter::write_log()
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // return true if pitch control should be relaxed
 // on vectored belly sitters the pitch control is not relaxed in order to keep motors pointing and avoid risk of props hitting the ground

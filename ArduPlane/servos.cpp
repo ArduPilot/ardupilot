@@ -495,11 +495,11 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
     }
 }
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED
-    
+
 /*
-  setup output channels all non-manual modes
+  Apply min/max limits to throttle
  */
-void Plane::set_throttle(void)
+float Plane::apply_throttle_limits(float throttle_in)
 {
     // convert 0 to 100% (or -100 to +100) into PWM
     int8_t min_throttle = aparm.throttle_min.get();
@@ -531,13 +531,21 @@ void Plane::set_throttle(void)
     }
 
     // compensate for battery voltage drop
-    g2.fwd_batt_cmp.update();
     g2.fwd_batt_cmp.apply_min_max(min_throttle, max_throttle);
 
 #if AP_BATTERY_WATT_MAX_ENABLED
     // apply watt limiter
     throttle_watt_limiter(min_throttle, max_throttle);
 #endif
+
+    return constrain_float(throttle_in, min_throttle, max_throttle);
+}
+
+/*
+  setup output channels all non-manual modes
+ */
+void Plane::set_throttle(void)
+{
 
     if (!arming.is_armed_and_safety_off()) {
         // Always set 0 scaled even if overriding to zero pwm.
@@ -551,7 +559,10 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         }
-    } else if (suppress_throttle()) {
+        return;
+    }
+
+    if (suppress_throttle()) {
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
@@ -565,11 +576,18 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
 
         }
+        return;
+    }
+
+    // Update voltage scaling
+    g2.fwd_batt_cmp.update();
+
 #if AP_SCRIPTING_ENABLED
-    } else if (nav_scripting_active()) {
+    if (nav_scripting_active()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
+    } else
 #endif
-    } else if (control_mode == &mode_stabilize ||
+           if (control_mode == &mode_stabilize ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_fbwa ||
@@ -581,8 +599,7 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         } else {
             // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
-                                            constrain_int16(get_adjusted_throttle_input(true), min_throttle, max_throttle));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_adjusted_throttle_input(true));
         }
     } else if (control_mode->is_guided_mode() &&
                guided_throttle_passthru) {
@@ -591,21 +608,24 @@ void Plane::set_throttle(void)
 #if HAL_QUADPLANE_ENABLED
     } else if (quadplane.in_vtol_mode()) {
         float fwd_thr = 0;
-        // if armed and not spooled down ask quadplane code for forward throttle
-        if (quadplane.motors->armed() &&
-            quadplane.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN) {
-
-            fwd_thr = constrain_float(quadplane.forward_throttle_pct(), min_throttle, max_throttle);
+        // if enabled ask quadplane code for forward throttle
+        if (quadplane.allow_forward_throttle_in_vtol_mode()) {
+            fwd_thr = quadplane.forward_throttle_pct();
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);
 #endif  // HAL_QUADPLANE_ENABLED
 
     } else {
-        // Apply min/max limits and voltage compensation to throttle output from flight mode
+        // Apply voltage compensation to throttle output from flight mode
         const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_float(throttle, min_throttle, max_throttle));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
     }
 
+    if (control_mode->use_throttle_limits()) {
+        // Apply min/max throttle limits
+        const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
+    }
 }
 
 /*

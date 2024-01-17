@@ -788,6 +788,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         // Sum the components.
         _throttle_dem = _throttle_dem + _integTHR_state;
 
+#if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
             AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
                                         "Qffffffffffff",
@@ -805,6 +806,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)SPE_err_min,
                                         (double)SPE_err_max);
         }
+#endif
     }
 
     // Constrain throttle demand and record clipping
@@ -856,7 +858,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     // so that the throttle mapping adjusts for the effect of pitch control errors
     _pitch_demand_lpf.apply(_pitch_dem, _DT);
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
-    _pitch_measured_lpf.apply(_ahrs.pitch, _DT);
+    _pitch_measured_lpf.apply(_ahrs.get_pitch(), _DT);
     const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(0.01f * (float)aparm.pitch_trim_cd);
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
@@ -1057,6 +1059,7 @@ void AP_TECS::_update_pitch(void)
 
     _last_pitch_dem = _pitch_dem;
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TEC2
@@ -1094,6 +1097,7 @@ void AP_TECS::_update_pitch(void)
                                     (double)_PITCHminf,
                                     (double)_PITCHmaxf);
     }
+#endif
 }
 
 void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
@@ -1107,7 +1111,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _integSEBdot          = 0.0f;
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
-        _last_pitch_dem       = _ahrs.pitch;
+        _last_pitch_dem       = _ahrs.get_pitch();
         _hgt_afe              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
@@ -1138,8 +1142,8 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         const float fc = 1.0f / (M_2PI * _timeConst);
         _pitch_demand_lpf.set_cutoff_frequency(fc);
         _pitch_measured_lpf.set_cutoff_frequency(fc);
-        _pitch_demand_lpf.reset(_ahrs.pitch);
-        _pitch_measured_lpf.reset(_ahrs.pitch);
+        _pitch_demand_lpf.reset(_ahrs.get_pitch());
+        _pitch_measured_lpf.reset(_ahrs.get_pitch());
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         _PITCHminf            = 0.000174533f * ptchMinCO_cd;
@@ -1159,8 +1163,8 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
 
-        _pitch_demand_lpf.reset(_ahrs.pitch);
-        _pitch_measured_lpf.reset(_ahrs.pitch);
+        _pitch_demand_lpf.reset(_ahrs.get_pitch());
+        _pitch_measured_lpf.reset(_ahrs.get_pitch());
     }
 
     if (_flight_stage != AP_FixedWing::FlightStage::TAKEOFF && _flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
@@ -1372,6 +1376,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _flags.badDescent = false;
     }
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TECS
@@ -1414,4 +1419,5 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     (double)_TAS_rate_dem,
                                     _flags_byte);
     }
+#endif
 }

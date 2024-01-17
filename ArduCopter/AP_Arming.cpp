@@ -694,8 +694,10 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         return false;
     }
 
+#if HAL_LOGGING_ENABLED
     // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
+#endif
 
     // disable cpu failsafe because initialising everything takes a while
     copter.failsafe_disable();
@@ -722,7 +724,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
-        AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
+        LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
         copter.arming_altitude_m = 0;
@@ -755,8 +757,10 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
+#if HAL_LOGGING_ENABLED
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode((uint8_t)copter.flightmode->mode_number(), copter.control_mode_reason);
+#endif
 
     // re-enable failsafe
     copter.failsafe_enable();
@@ -837,7 +841,9 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     copter.mode_auto.mission.reset();
 #endif
 
+#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(false);
+#endif
 
     hal.util->set_soft_armed(false);
 

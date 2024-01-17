@@ -129,9 +129,9 @@ void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    float r = ahrs.roll;
-    float p = ahrs.pitch;
-    float y = ahrs.yaw;
+    float r = ahrs.get_roll();
+    float p = ahrs.get_pitch();
+    float y = ahrs.get_yaw();
 
     if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH_CD))) {
         p -= radians(plane.g.pitch_trim_cd * 0.01f);
@@ -1230,7 +1230,11 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
     {
+#if HAL_LOGGING_ENABLED
         handle_radio_status(msg, plane.should_log(MASK_LOG_PM));
+#else
+        handle_radio_status(msg, false);
+#endif
         break;
     }
 

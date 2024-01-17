@@ -66,8 +66,10 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     // call parent class checks
     bool ret = AP_Arming::pre_arm_checks(display_failure);
 
+#if AP_AIRSPEED_ENABLED
     // Check airspeed sensor
     ret &= AP_Arming::airspeed_checks(display_failure);
+#endif
 
     if (plane.g.fs_timeout_long < plane.g.fs_timeout_short && plane.g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
         check_failed(display_failure, "FS_LONG_TIMEOUT < FS_SHORT_TIMEOUT");
@@ -395,7 +397,9 @@ void AP_Arming_Plane::update_soft_armed()
 #endif
 
     hal.util->set_soft_armed(_armed);
+#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+#endif
 
     // update delay_arming oneshot
     if (delay_arming &&

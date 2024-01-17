@@ -104,11 +104,15 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera, &plane.camera, update,      50, 100, 108),
 #endif // CAMERA == ENABLED
+#if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
+#endif
     SCHED_TASK(compass_save,          0.1,    200, 114),
+#if HAL_LOGGING_ENABLED
     SCHED_TASK(Log_Write_FullRate,        400,    300, 117),
     SCHED_TASK(update_logging10,        10,    300, 120),
     SCHED_TASK(update_logging25,        25,    300, 123),
+#endif
 #if HAL_SOARING_ENABLED
     SCHED_TASK(update_soaring,         50,    400, 126),
 #endif
@@ -117,7 +121,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Terrain, &plane.terrain, update, 10, 200, 132),
 #endif // AP_TERRAIN_AVAILABLE
     SCHED_TASK(update_is_flying_5Hz,    5,    100, 135),
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Logger,         &plane.logger, periodic_tasks, 50, 400, 138),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins,    periodic,       50,  50, 141),
@@ -161,9 +165,11 @@ void Plane::ahrs_update()
 
     ahrs.update();
 
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_IMU)) {
         AP::ins().Write_IMU();
     }
+#endif
 
     // calculate a scaled roll limit based on current pitch
     roll_limit_cd = aparm.roll_limit_cd;
@@ -194,9 +200,11 @@ void Plane::ahrs_update()
     quadplane.inertial_nav.update();
 #endif
 
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
         ahrs.write_video_stabilisation();
     }
+#endif
 }
 
 /*
@@ -234,6 +242,7 @@ void Plane::update_compass(void)
     compass.read();
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   do 10Hz logging
  */
@@ -286,7 +295,7 @@ void Plane::update_logging25(void)
     if (should_log(MASK_LOG_IMU))
         AP::ins().Write_Vibration();
 }
-
+#endif  // HAL_LOGGING_ENABLED
 
 /*
   check for AFS failsafe check
@@ -333,7 +342,7 @@ void Plane::one_second_loop()
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO;
 
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data();
     }
@@ -528,7 +537,9 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
     }
 
     flight_stage = fs;
+#if HAL_LOGGING_ENABLED
     Log_Write_Status();
+#endif
 }
 
 void Plane::update_alt()
@@ -916,8 +927,8 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
         return;
     }
 #endif
-    pitch = ahrs.pitch;
-    roll = ahrs.roll;
+    pitch = ahrs.get_pitch();
+    roll = ahrs.get_roll();
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH_CD))) {  // correct for TRIM_PITCH_CD
         pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
     }

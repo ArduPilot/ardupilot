@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AC_Avoid.h"
 #include "AP_OADijkstra.h"
 #include "AP_OABendyRuler.h"
@@ -76,3 +80,5 @@ void AC_Avoid::Write_SimpleAvoidance(const uint8_t state, const Vector3f& desire
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+
+#endif  // HAL_LOGGING_ENABLED
