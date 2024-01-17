@@ -63,6 +63,10 @@ static ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
 #endif
 
+#ifdef EXT_FLASH_SIZE_MB
+static_assert(EXT_FLASH_SIZE_MB == 0, "DroneCAN bootloader cannot support external flash");
+#endif
+
 static uint8_t node_id_allocation_transfer_id;
 static uavcan_protocol_NodeStatus node_status;
 static uint32_t send_next_node_id_allocation_request_at_ms;
