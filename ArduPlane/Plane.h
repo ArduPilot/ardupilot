@@ -1090,6 +1090,7 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
+    bool check_takeoff_timeout(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
