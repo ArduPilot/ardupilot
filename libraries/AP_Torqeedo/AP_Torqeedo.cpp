@@ -750,7 +750,7 @@ void AP_Torqeedo::parse_message()
                     // @Field: TimeUS: Time since system startup
                     // @Field: State: Motor status flags
                     // @Field: Err: Motor error flags
-                    AP::logger().Write("TRMS", "TimeUS,State,Err", "QBHH",
+                    AP::logger().Write("TRMS", "TimeUS,State,Err", "QBH",
                                        AP_HAL::micros64(),
                                        _motor_status.status_flags_value,
                                        _motor_status.error_flags_value);
