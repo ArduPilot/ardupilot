@@ -409,7 +409,8 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     status_printf("Erasing ...");
     flash_set_keep_unlocked(true);
     uint32_t sec=0;
-    while (flash_func_erase_sector(sec)) {
+    while (flash_func_sector_size(sec) != 0 &&
+           flash_func_erase_sector(sec)) {
         thread_sleep_ms(10);
         sec++;
         if (stm32_flash_getpageaddr(sec) - stm32_flash_getpageaddr(0) >= content_length) {

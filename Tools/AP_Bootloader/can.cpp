@@ -750,8 +750,9 @@ bool can_check_update(void)
             fw_update.reads[i].offset = i*sizeof(uavcan_protocol_file_ReadResponse::data.data);
         }
         memcpy(fw_update.path, comms->path, sizeof(uavcan_protocol_file_Path::path.data)+1);
-        memset(comms, 0, sizeof(*comms));
         ret = true;
+        // clear comms region
+        memset(comms, 0, sizeof(struct app_bootloader_comms));
     }
 #endif
 #if defined(CAN1_BASE) && defined(RCC_APB1ENR_CAN1EN)
