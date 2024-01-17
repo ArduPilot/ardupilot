@@ -829,7 +829,7 @@ bool Plane::set_target_location(const Location &target_loc)
 #endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
 #if AP_SCRIPTING_ENABLED
-// set target location (for use by scripting)
+// get target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {
     switch (control_mode->mode_number()) {
