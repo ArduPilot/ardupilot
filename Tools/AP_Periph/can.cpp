@@ -148,6 +148,10 @@ HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 SLCAN::CANIface AP_Periph_FW::slcan_interface;
 #endif
 
+#ifdef EXT_FLASH_SIZE_MB
+static_assert(EXT_FLASH_SIZE_MB == 0, "DroneCAN bootloader cannot support external flash");
+#endif
+
 /*
  * Node status variables
  */
