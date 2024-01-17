@@ -3982,6 +3982,21 @@ class TestSuite(ABC):
 
         return got == value
 
+    def mhfv_check_enum_value(self, enum_name, enum, value):
+        '''check value makes sense according to enum'''
+        # can't do this at the moment as we don't know if the
+        # enumeration is a bitmask or not; pymavlink bindings need
+        # extra information
+        return True
+        if value not in enum:
+            raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
+
+    def mhfv_value_string(self, enum, value):
+        try:
+            return enum[value].name
+        except KeyError:
+            return "??"
+
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
             got = getattr(m, fieldname)
@@ -3991,12 +4006,10 @@ class TestSuite(ABC):
             enum_name = m.fieldenums_by_name.get(fieldname, None)
             if enum_name is not None:
                 enum = mavutil.mavlink.enums[enum_name]
-                if value not in enum:
-                    raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
-                if got not in enum:
-                    raise ValueError("Received value %s not in enum %s" % (value, enum_name))
-                value_string = "%s (%s)" % (value, enum[value].name)
-                got_string = "%s (%s)" % (got, enum[got].name)
+                self.mhfv_check_enum_value(enum_name, enum, value)
+                self.mhfv_check_enum_value(enum_name, enum, got)
+                value_string = "%s (%s)" % (value, self.mhfv_value_string(enum, value))
+                got_string = "%s (%s)" % (got, self.mhfv_value_string(enum, got))
 
             if not self.message_has_field_values_field_values_equal(
                     fieldname, value, got, epsilon=epsilon
