@@ -83,6 +83,7 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Follow/AP_Follow.h>
+#include <AP_LandingDetector/AP_LandingDetector.h>
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"

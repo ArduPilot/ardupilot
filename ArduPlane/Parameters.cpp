@@ -1250,6 +1250,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AUTOTUNE_AXES", 34, ParametersG2, axis_bitmask, 7),
 
+    // @Group: LDZI_
+    // @Path: ../libraries/AP_LandingDetector/AP_LandingDetector.cpp
+    AP_SUBGROUPINFO(landing_detector, "LDZI_", 35, ParametersG2, AP_LandingDetector),
+
 
     
     AP_GROUPEND

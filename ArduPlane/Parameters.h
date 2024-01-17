@@ -535,6 +535,8 @@ public:
     AP_LandingGear landing_gear;
 #endif
 
+    AP_LandingDetector landing_detector;
+
     // crow flaps weighting
     AP_Int8 crow_flap_weight_outer;
     AP_Int8 crow_flap_weight_inner;
