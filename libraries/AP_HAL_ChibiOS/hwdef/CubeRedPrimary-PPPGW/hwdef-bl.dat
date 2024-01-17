@@ -32,22 +32,9 @@ define BOARD_PHY_RMII
 
 # Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
 # Note, lower 3 bytes (ADDR3,4,5) will be replaced with the platform UUID
-define AP_NETWORKING_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
+define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
 
-define CH_CFG_USE_EVENTS 1
-undef CH_CFG_USE_SEMAPHORES
-define CH_CFG_USE_SEMAPHORES 1
-define AP_NETWORKING_ENABLED 1
+# allow load from USB too
+SERIAL_ORDER OTG1
 
-define CH_CFG_USE_MEMCORE 1
-define CH_CFG_USE_HEAP 1
-define CH_CFG_USE_MUTEXES 1
-define CH_CFG_USE_DYNAMIC 1
-define CH_CFG_USE_WAITEXIT 1
-define CH_CFG_USE_REGISTRY 1
-
-undef SERIAL_ORDER
-SERIAL_ORDER
-
-ROMFS_WILDCARD Tools/AP_Bootloader/Web/*.html
-env ROMFS_UNCOMPRESSED True
+include ../include/network_bootloader.inc
