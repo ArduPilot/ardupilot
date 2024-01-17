@@ -150,9 +150,6 @@ bool flash_func_is_erased(uint32_t sector)
 
 bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
-    if (sector >= num_pages) {
-        return false;
-    }
 #if AP_BOOTLOADER_ALWAYS_ERASE
     return stm32_flash_erasepage(flash_base_page+sector);
 #else

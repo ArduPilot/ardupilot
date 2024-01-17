@@ -68,7 +68,9 @@ static BL_Network network;
 
 int main(void)
 {
+#ifdef AP_BOOTLOADER_CUSTOM_HERE4
     custom_startup();
+#endif
 
     flash_init();
 
