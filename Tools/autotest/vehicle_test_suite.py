@@ -3984,18 +3984,49 @@ class TestSuite(ABC):
 
     def mhfv_check_enum_value(self, enum_name, enum, value):
         '''check value makes sense according to enum'''
-        # can't do this at the moment as we don't know if the
-        # enumeration is a bitmask or not; pymavlink bindings need
-        # extra information
-        return True
+        try:
+            is_bitmask = enum.is_bitmask()
+        except AttributeError:
+            # can't tell if this is a bitmask or not, so can't say
+            # whether this is a good value; old pymavlink bindings
+            return
+
+        if is_bitmask:
+            shift_count = 0
+            shifted_value = value
+            while shifted_value:
+                if shifted_value & 0x1:
+                    x = 1 << shift_count
+                    if x not in enum:
+                        raise ValueError("bit %s from value %s not in enum %s" %
+                                         (shift_count, value, enum_name))
+                shifted_value >>= 1
+            return
+
         if value not in enum:
             raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
 
     def mhfv_value_string(self, enum, value):
         try:
-            return enum[value].name
-        except KeyError:
+            is_bitmask = enum.is_bitmask()
+        except AttributeError:
+            # can't tell if this is a bitmask or not, so can't provide
+            # a good string:
             return "??"
+
+        if not is_bitmask:
+            return enum[value].name
+
+        set_bit_names = []
+        shift_count = 0
+        shifted_value = value
+        while shifted_value:
+            if shifted_value & 0x1:
+                x = 1 << shift_count
+                set_bit_names.append(enum[x].name)
+            shifted_value >>= 1
+
+        return "|".join(set_bit_names)
 
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
