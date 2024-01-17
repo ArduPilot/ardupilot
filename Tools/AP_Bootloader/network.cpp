@@ -422,6 +422,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     content_length &= ~3;
 
     const uint32_t max_ofs = MIN(BOARD_FLASH_SIZE*1024, content_length);
+    uint8_t last_pct = 0;
     while (ofs < max_ofs) {
         const uint32_t needed = MIN(sizeof(buf), max_ofs-ofs);
         auto n = sock->recv((void*)buf, needed, 10000);
@@ -438,7 +439,10 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         flash_write_buffer(ofs, buf, n/4);
         ofs += n;
         uint8_t pct = ofs*100/max_ofs;
-        status_printf("Flashing %u%%", unsigned(pct));
+        if (pct % 10 == 0 && last_pct != pct) {
+            last_pct = pct;
+            status_printf("Flashing %u%%", unsigned(pct));
+        }
     }
     if (ofs % 32 != 0) {
         // pad to 32 bytes
@@ -615,6 +619,7 @@ void BL_Network::status_printf(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(bl_status, sizeof(bl_status), fmt, ap);
     va_end(ap);
+    can_printf("%s", bl_status);
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
