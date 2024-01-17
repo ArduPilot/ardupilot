@@ -529,6 +529,51 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: LDZI_ENABLE
+    // @DisplayName: Enable the accz i based land detector
+    // @Description: Enable the accz i based land detector
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_ENABLE", 38, QuadPlane, q_accz_i_land_detector_enabled, 0),
+
+    // @Param: LDZI_MIN_ALT_M
+    // @DisplayName: Minium altitude to allow for accz i based spindown detection
+    // @Description: Minimum altitude to allow for accz i based spindown detection, m. This protects against the ragefinder outofrangelow case that returns 0.
+    // @Units: m
+    // @Range: 0 5
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_MIN_ALT_M", 39, QuadPlane, q_accz_i_min_altitude_m, 0.15),
+
+    // @Param: LDZI_MAX_ALT_M
+    // @DisplayName: Maximum altitude to allow for accz i based spindown detection
+    // @Description: Maximum altitude to allow for accz i based spindown detection, m. Above this altude the flag is reset and the minimum slope during the descent phase is logged.
+    // @Units: m
+    // @Range: 0 5
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_MAX_ALT_M", 40, QuadPlane, q_accz_i_max_altitude_m, 1.0),
+
+    // @Param: LDZI_WINDOW_S
+    // @DisplayName: Window time, seconds
+    // @Description: Window time to calculate the integrator slope, seconds.
+    // @Units: s
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_WINDOW_S", 41, QuadPlane, q_accz_i_slope_window_s, 0.25),
+
+    // @Param: LDZI_FACTOR
+    // @DisplayName: Multiplying factor
+    // @Description: Multiplying factor to find the most negative slope.
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_FACTOR", 42, QuadPlane, q_accz_i_slope_factor, 4.0),
+
+    // @Param: LDZI_RFND_MAX
+    // @DisplayName: Maximum height to allow disarm
+    // @Description: Maximum height to allow disarm in meters above ground level.
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("LDZI_RFND_MAX", 43, QuadPlane, q_accz_i_max_disarm_alt_m, 0.2),
+
     AP_GROUPEND
 };
 
@@ -3473,10 +3518,111 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 }
 
 /*
+  calculate the accz_i slope over the window
+ */
+void QuadPlane::calculate_accz_i_slope(const uint32_t now)
+{
+        const float delta_accz_i_int = (accz_i_landing_detect.integrator -
+                                       accz_i_landing_detect.integrator_last);
+        const float delta_time_ms = now - accz_i_landing_detect.time_ms_last;
+        accz_i_landing_detect.slope = delta_accz_i_int / delta_time_ms;
+
+        accz_i_landing_detect.time_ms_last = now;
+}
+
+/*
+  check the altitude is valid to consider spindown
+ */
+bool QuadPlane::accz_i_land_detector_invalid_altitude_for_use(const float relative_ground_alt_m) const
+{
+    const bool is_alt_invalid = ((relative_ground_alt_m > q_accz_i_max_altitude_m) ||
+                               (relative_ground_alt_m <= q_accz_i_min_altitude_m));
+    return is_alt_invalid;
+}
+
+/*
+  check if the slope has surpassed the threshold
+ */
+bool QuadPlane::is_accz_i_slope_greater_than_threshold() const
+{
+    // protect against turbulence, make sure this is the lowest (most negative) slope we've seen
+    // make sure the slope is more negative than the previous slope * factor
+    // make sure the slope is negative
+    // the preceding slope must also be strictly negative to avoid a false detection with zero
+    return accz_i_landing_detect.slope < accz_i_landing_detect.minimum_slope &&
+           accz_i_landing_detect.slope < accz_i_landing_detect.slope_last * q_accz_i_slope_factor &&
+           accz_i_landing_detect.slope < 0 &&
+           accz_i_landing_detect.slope_last < 0;
+}
+
+/*
+  a landing detector based on change in accz integrator slope
+ */
+void QuadPlane::accz_i_land_detector()
+{
+    const uint32_t now = AP_HAL::millis();
+
+    accz_i_landing_detect.integrator = pos_control->get_accel_z_pid().get_i();
+
+    // Initialize the values to find the slope of the integrator value.
+    if (accz_i_landing_detect.time_ms_last == 0) {
+        accz_i_landing_detect.time_ms_last = now;
+        accz_i_landing_detect.integrator_last = accz_i_landing_detect.integrator;
+    }
+
+    // If the window has expired calculate the slope.
+    if (now - accz_i_landing_detect.time_ms_last > q_accz_i_slope_window_s*1000.0f) {
+        calculate_accz_i_slope(now);
+        if (!accz_i_landing_detect.disarm_flag && is_accz_i_slope_greater_than_threshold()) {
+            accz_i_landing_detect.disarm_flag = true;
+        }
+    }
+
+    // Only allow the flag to be set if the altitude is valid for spindown.
+    const float relative_ground_alt_m = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    if (accz_i_landing_detect.disarm_flag &&
+        accz_i_land_detector_invalid_altitude_for_use(relative_ground_alt_m)) {
+        accz_i_landing_detect.disarm_flag = false;
+    }
+
+    // Disarm if we are ready for disarm and under the rangefinder height maximum height to consider disarm
+    bool would_disarm = false;
+    if (accz_i_landing_detect.disarm_flag && relative_ground_alt_m <= q_accz_i_max_disarm_alt_m) {
+        would_disarm = true;
+    }
+
+    AP::logger().Write(
+        "LDZI",
+        "TimeUS,Ready,Alt,Slope,SlopeL,MinimumSlope,WouldDisarm",
+        "QBffffB",
+        AP_HAL::micros64(),
+        accz_i_landing_detect.disarm_flag,
+        relative_ground_alt_m,
+        accz_i_landing_detect.slope,
+        accz_i_landing_detect.slope_last,
+        accz_i_landing_detect.minimum_slope,
+        would_disarm);
+
+    // Keep track of the last slope and integrator value.
+    accz_i_landing_detect.slope_last = accz_i_landing_detect.slope;
+    accz_i_landing_detect.integrator_last = accz_i_landing_detect.integrator;
+
+    // Keep track of the minimum slope seen.
+    accz_i_landing_detect.minimum_slope = MIN(accz_i_landing_detect.minimum_slope,
+                                              accz_i_landing_detect.slope);
+
+}
+
+/*
   a landing detector based on change in altitude over a timeout
  */
 bool QuadPlane::land_detector(uint32_t timeout_ms)
 {
+    // only allow the accz integrator based landing detector in land final
+    if (q_accz_i_land_detector_enabled && poscontrol.get_state() == QPOS_LAND_FINAL) {
+        accz_i_land_detector();
+    }
+    
     bool might_be_landed = should_relax() && !poscontrol.pilot_correction_active;
     if (!might_be_landed) {
         landing_detect.land_start_ms = 0;
