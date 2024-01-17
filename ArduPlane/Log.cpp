@@ -393,8 +393,14 @@ const struct LogStructure Plane::log_structure[] = {
       "QTUN", "QffffffeccfBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Trn,Ast", "s----mmmnn---", "F----00000---" , true },
 #endif
 
-// @LoggerMessage: PIQR,PIQP,PIQY,PIQA
-// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
+// @LoggerMessage: PIQR
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll rate
+// @LoggerMessage: PIQP
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Pitch rate
+// @LoggerMessage: PIQY
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Yaw rate
+// @LoggerMessage: PIQA
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for vertical acceleration
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
