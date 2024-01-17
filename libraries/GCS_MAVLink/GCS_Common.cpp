@@ -641,7 +641,7 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
         // exactly that sequence number in it, even if ArduPilot never
         // actually holds that as a sequence number (e.g. packet.seq==0).
         if (HAVE_PAYLOAD_SPACE(chan, MISSION_CURRENT)) {
-            mavlink_msg_mission_current_send(chan, packet.seq);
+            mavlink_msg_mission_current_send(chan, packet.seq, 0, 0, 0);
         } else {
             // schedule it for later:
             send_message(MSG_CURRENT_WAYPOINT);
@@ -5221,7 +5221,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         AP_Mission *mission = AP::mission();
         if (mission != nullptr) {
-            mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+            mavlink_msg_mission_current_send(chan, mission->get_current_nav_index(), 0, 0, 0);
         }
         break;
     }

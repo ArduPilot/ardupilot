@@ -231,7 +231,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             gyro.z,
             NULL, NULL,
             0,
-            MAV_ESTIMATOR_TYPE_VIO);
+            MAV_ESTIMATOR_TYPE_VIO,
+            0);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
