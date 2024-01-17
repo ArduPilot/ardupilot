@@ -2591,6 +2591,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         if os.path.exists(self.processed_defaults_filepath()):
             self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 1)
+            self.write_define(f, 'AP_FILESYSTEM_ROMFS_ENABLED', 1)
         else:
             self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 0)
 
