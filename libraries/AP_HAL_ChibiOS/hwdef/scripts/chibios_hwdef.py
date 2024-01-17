@@ -2383,12 +2383,13 @@ INCLUDE common.ld
         gpios = sorted(gpios)
         for (gpio, pwm, port, pin, p, enabled) in gpios:
             f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s,%uU)\n' % (gpio, port, pin))
-        f.write('#define HAL_GPIO_PINS { \\\n')
-        for (gpio, pwm, port, pin, p, enabled) in gpios:
-            f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
-                    (gpio, enabled, pwm, port, pin, p))
-        # and write #defines for use by config code
-        f.write('}\n\n')
+        if len(gpios) > 0:
+            f.write('#define HAL_GPIO_PINS { \\\n')
+            for (gpio, pwm, port, pin, p, enabled) in gpios:
+                f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
+                        (gpio, enabled, pwm, port, pin, p))
+            # and write #defines for use by config code
+            f.write('}\n\n')
         f.write('// full pin define list\n')
         last_label = None
         for label in sorted(list(set(self.bylabel.keys()))):
