@@ -403,7 +403,7 @@ void AP_TECS::_update_speed(float DT)
         // at the maximum speed
         const float velRateMin = 0.5f * _STEdot_min / MAX(_TAS_state, aparm.airspeed_min * EAS2TAS);
         _TASmax += _DT * velRateMin;
-        _TASmax = MAX(_TASmax, 0.01f * (float)aparm.airspeed_cruise_cm * EAS2TAS);
+        _TASmax = MAX(_TASmax, aparm.airspeed_cruise * EAS2TAS);
     } else {
         // wind airspeed upper limit back to parameter defined value
         const float velRateMax = 0.5f * _STEdot_max / MAX(_TAS_state, aparm.airspeed_min * EAS2TAS);
@@ -426,7 +426,7 @@ void AP_TECS::_update_speed(float DT)
     // airspeed sensor data cannot be used
     if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
         // If no airspeed available use average of min and max
-        _EAS = constrain_float(0.01f * (float)aparm.airspeed_cruise_cm.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
+        _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
     // limit the airspeed to a minimum of 3 m/s
@@ -471,7 +471,7 @@ void AP_TECS::_update_speed_demand(void)
     _TAS_dem = constrain_float(_TAS_dem, _TASmin, _TASmax);
 
     // Determine the true cruising airspeed (m/s)
-    const float TAScruise = 0.01f * (float)aparm.airspeed_cruise_cm * _ahrs.get_EAS2TAS();
+    const float TAScruise = aparm.airspeed_cruise * _ahrs.get_EAS2TAS();
 
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
