@@ -21,7 +21,7 @@ void Variometer::update(const float thermal_bank)
 
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
-            aspd = _aparm.airspeed_cruise_cm * 0.01f;
+        aspd = _aparm.airspeed_cruise;
     }
 
     float aspd_filt = _sp_filter.apply(aspd);
