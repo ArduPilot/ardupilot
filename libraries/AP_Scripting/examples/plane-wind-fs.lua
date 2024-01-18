@@ -36,11 +36,11 @@ if value then
 else
   error('LUA: get AIRSPEED_CRUISE failed')
 end
-value = param:get('ARSPD_FBW_MIN')
+value = param:get('AIRSPEED_MIN')
 if value then
   min_air_speed = value
 else
-  error('LUA: get ARSPD_FBW_MIN failed')
+  error('LUA: get AIRSPEED_MIN failed')
 end
 value = param:get('MIN_GNDSPD_CM')
 if value then
