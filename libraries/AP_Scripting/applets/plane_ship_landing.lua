@@ -67,7 +67,7 @@ SHIP_AUTO_OFS   = bind_add_param('AUTO_OFS', 3, 0)
 RCMAP_THROTTLE  = bind_param("RCMAP_THROTTLE")
 ALT_HOLD_RTL    = bind_param("ALT_HOLD_RTL")
 Q_RTL_ALT       = bind_param("Q_RTL_ALT")
-TRIM_ARSPD_CM   = bind_param("TRIM_ARSPD_CM")
+AIRSPEED_CRUISE = bind_param("AIRSPEED_CRUISE")
 TECS_LAND_ARSPD = bind_param("TECS_LAND_ARSPD")
 Q_TRANS_DECEL   = bind_param("Q_TRANS_DECEL")
 WP_LOITER_RAD   = bind_param("WP_LOITER_RAD")
@@ -159,7 +159,7 @@ end
 -- get landing airspeed
 function get_land_airspeed()
    if TECS_LAND_ARSPD:get() < 0 then
-      return TRIM_ARSPD_CM:get() * 0.01
+      return AIRSPEED_CRUISE:get()
    end
    return TECS_LAND_ARSPD:get()
 end

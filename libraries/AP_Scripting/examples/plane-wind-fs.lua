@@ -30,11 +30,11 @@ local SITL_wind = false
 
 
 -- Read in required params
-local value = param:get('TRIM_ARSPD_CM')
+local value = param:get('AIRSPEED_CRUISE')
 if value then
-  air_speed = value / 100
+  air_speed = value
 else
-  error('LUA: get TRIM_ARSPD_CM failed')
+  error('LUA: get AIRSPEED_CRUISE failed')
 end
 value = param:get('ARSPD_FBW_MIN')
 if value then

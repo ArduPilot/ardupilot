@@ -385,7 +385,7 @@ local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
 
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local AIRSPEED_CRUISE = Parameter("AIRSPEED_CRUISE")
 
 local last_id = 0
 local current_task = nil
@@ -2010,7 +2010,7 @@ end
    velocity at the start of the maneuver
 --]]
 function target_groundspeed()
-   return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
+   return math.max(ahrs:get_EAS2TAS()*AIRSPEED_CRUISE:get(), ahrs:get_velocity_NED():length())
 end
 
 --[[
