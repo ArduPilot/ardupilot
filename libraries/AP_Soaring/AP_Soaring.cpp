@@ -144,14 +144,14 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
 
     // @Param: THML_ARSPD
     // @DisplayName: Specific setting for airspeed when soaring in THERMAL mode.
-    // @Description: If non-zero this airspeed will be used when thermalling. A value of 0 will use TRIM_ARSPD_CM.
+    // @Description: If non-zero this airspeed will be used when thermalling. A value of 0 will use AIRSPEED_CRUISE.
     // @Range: 0 50
     // @User: Advanced
     AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
 
     // @Param: CRSE_ARSPD
     // @DisplayName: Specific setting for airspeed when soaring in AUTO mode.
-    // @Description: If non-zero this airspeed will be used when cruising between thermals in AUTO. If set to -1, airspeed will be selected based on speed-to-fly theory. If set to 0, then TRIM_ARSPD_CM will be used while cruising between thermals.
+    // @Description: If non-zero this airspeed will be used when cruising between thermals in AUTO. If set to -1, airspeed will be selected based on speed-to-fly theory. If set to 0, then AIRSPEED_CRUISE will be used while cruising between thermals.
     // @Range: -1 50
     // @User: Advanced
     AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
