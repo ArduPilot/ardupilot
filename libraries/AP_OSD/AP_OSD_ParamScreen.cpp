@@ -168,7 +168,7 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
         { 3, { 4, 0, 1094 }, OSD_PARAM_NONE },              // SERVO_AUTO_TRIM
         { 4, { 120, 0, 0 }, OSD_PARAM_NONE},                // AIRSPEED_MIN
         { 5, { 121, 0, 0 }, OSD_PARAM_NONE },               // AIRSPEED_MAX
-        { 6, { 156, 0, 0 }, OSD_PARAM_NONE },               // ALT_HOLD_RTL
+        { 6, { 156, 0, 0 }, OSD_PARAM_NONE },               // RTL_ALTITUDE
         { 7, { 140, 2, 8 }, OSD_PARAM_NONE },               // AHRS_TRIM_Y
         { 8, { 182, 0, 0 }, OSD_PARAM_NONE },               // THR_MAX
         { 9, { 189, 0, 0 }, OSD_PARAM_NONE }                // THR_SLEWRATE
