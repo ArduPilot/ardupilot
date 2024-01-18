@@ -4655,7 +4655,7 @@ bool QuadPlane::landing_with_fixed_wing_spiral_approach(void) const
   setup scaling of roll and pitch angle P gains to match fixed wing gains
 
   we setup the angle P gain to match fixed wing at high speed (above
-  ARSPD_FBW_MIN) where fixed wing surfaces are presumed to
+  AIRSPEED_MIN) where fixed wing surfaces are presumed to
   dominate. At lower speeds we use the multicopter angle P gains.
 */
 void QuadPlane::setup_rp_fw_angle_gains(void)

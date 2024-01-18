@@ -92,7 +92,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.aparm.airspeed_min < MIN_AIRSPEED_MIN) {
-        check_failed(display_failure, "ARSPD_FBW_MIN too low (%i < %i)", plane.aparm.airspeed_min.get(), MIN_AIRSPEED_MIN);
+        check_failed(display_failure, "AIRSPEED_MIN too low (%i < %i)", plane.aparm.airspeed_min.get(), MIN_AIRSPEED_MIN);
         ret = false;
     }
 
