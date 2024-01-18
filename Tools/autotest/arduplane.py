@@ -2922,8 +2922,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         trim_airspeed = m.airspeed
         self.progress("Using trim_airspeed=%f" % (trim_airspeed,))
 
-        min_airspeed = self.get_parameter("ARSPD_FBW_MIN")
-        max_airspeed = self.get_parameter("ARSPD_FBW_MAX")
+        min_airspeed = self.get_parameter("AIRSPEED_MIN")
+        max_airspeed = self.get_parameter("AIRSPEED_MAX")
 
         if trim_airspeed > max_airspeed:
             raise NotAchievedException("trim airspeed > max_airspeed (%f>%f)" %

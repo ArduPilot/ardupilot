@@ -7,8 +7,8 @@
 # the rear two elevons are setup for roll only (ailerons)
 
 # setup airspeed range
-ARSPD_FBW_MAX    35
-ARSPD_FBW_MIN    22
+AIRSPEED_MAX    35
+AIRSPEED_MIN    22
 AIRSPEED_CRUISE 27.00
 
 # fixed wing limits

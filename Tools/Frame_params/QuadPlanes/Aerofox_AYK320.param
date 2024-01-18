@@ -1,8 +1,8 @@
 # parameters for Foxtech AYK320
 
 # airspeed
-ARSPD_FBW_MAX    35
-ARSPD_FBW_MIN    18
+AIRSPEED_MAX    35
+AIRSPEED_MIN    18
 AIRSPEED_CRUISE 23.00
 TRIM_THROTTLE    60
 
