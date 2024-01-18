@@ -133,7 +133,7 @@ RC_OPTIONS 32
 TECS_LAND_ARSPD 8
 
 # 16 m/s target airspeed in auto modes
-TRIM_ARSPD_CM 1600
+AIRSPEED_CRUISE 16.00
 TRIM_THROTTLE 29
 
 # 2nd lane tends to be better
