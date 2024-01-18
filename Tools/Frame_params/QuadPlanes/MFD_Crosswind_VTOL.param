@@ -3,8 +3,8 @@
 # http://myflydream.com/products/c-0/369.html
 
 # airspeed
-ARSPD_FBW_MAX    29
-ARSPD_FBW_MIN    16
+AIRSPEED_MAX    29
+AIRSPEED_MIN    16
 AIRSPEED_CRUISE 20.00
 TRIM_THROTTLE    52
 
