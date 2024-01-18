@@ -3,7 +3,7 @@
 # airspeed
 ARSPD_FBW_MAX    35
 ARSPD_FBW_MIN    18
-TRIM_ARSPD_CM    2300
+AIRSPEED_CRUISE 23.00
 TRIM_THROTTLE    60
 
 # notch filter

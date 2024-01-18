@@ -9,7 +9,7 @@
 # setup airspeed range
 ARSPD_FBW_MAX    35
 ARSPD_FBW_MIN    22
-TRIM_ARSPD_CM    2700
+AIRSPEED_CRUISE 27.00
 
 # fixed wing limits
 LIM_PITCH_MAX    1500
