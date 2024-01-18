@@ -26,6 +26,7 @@ public:
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
+        TEST_MODE    = 13, //增加test_mode作测试用
         GUIDED       = 15,
         INITIALISING = 16,
     };
