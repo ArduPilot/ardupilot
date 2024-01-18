@@ -732,7 +732,16 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
+    static bool count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count);
     static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx);
+
+    // load a defaults.parm using AP_FileSystem:
+    static void load_defaults_file_from_filesystem(const char *filename, bool lastpass);
+    // load an @ROMFS defaults.parm using ROMFS API:
+    static void load_defaults_file_from_romfs(const char *filename, bool lastpass);
+
+    // load defaults from supplied string:
+    static void load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass);
 
     /*
       load defaults from embedded parameters
