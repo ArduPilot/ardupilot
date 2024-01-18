@@ -133,7 +133,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             // speed drops below 3.0 m/s as otherwise we will change
             // target speeds too early.
             aparm.airspeed_cruise.load();
-            aparm.min_gndspeed_cm.load();
+            aparm.min_groundspeed.load();
             aparm.throttle_cruise.load();
         }
     } else if (type_slope_stage == SlopeStage::APPROACH && pre_flare_airspeed > 0) {
