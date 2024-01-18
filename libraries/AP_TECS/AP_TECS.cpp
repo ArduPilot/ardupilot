@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: CLMB_MAX
     // @DisplayName: Maximum Climb Rate (metres/sec)
-    // @Description: Maximum demanded climb rate. Do not set higher than the climb speed at THR_MAX at TRIM_ARSPD_CM when the battery is at low voltage. Reduce value if airspeed cannot be maintained on ascent. Increase value if throttle does not increase significantly to ascend.
+    // @Description: Maximum demanded climb rate. Do not set higher than the climb speed at THR_MAX at AIRSPEED_CRUISE when the battery is at low voltage. Reduce value if airspeed cannot be maintained on ascent. Increase value if throttle does not increase significantly to ascend.
     // @Increment: 0.1
     // @Range: 0.1 20.0
     // @User: Standard
@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SINK_MIN
     // @DisplayName: Minimum Sink Rate (metres/sec)
-    // @Description: Minimum sink rate when at THR_MIN and TRIM_ARSPD_CM.
+    // @Description: Minimum sink rate when at THR_MIN and AIRSPEED_CRUISE.
     // @Increment: 0.1
     // @Range: 0.1 10.0
     // @User: Standard
@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PITCH_MAX
     // @DisplayName: Maximum pitch in auto flight
-    // @Description: Overrides LIM_PITCH_MAX in automatic throttle modes to reduce climb rates. Uses LIM_PITCH_MAX if set to 0. For proper TECS tuning, set to the angle that the aircraft can climb at TRIM_ARSPD_CM and THR_MAX.
+    // @Description: Overrides LIM_PITCH_MAX in automatic throttle modes to reduce climb rates. Uses LIM_PITCH_MAX if set to 0. For proper TECS tuning, set to the angle that the aircraft can climb at AIRSPEED_CRUISE and THR_MAX.
     // @Range: 0 45
     // @Increment: 1
     // @User: Advanced
