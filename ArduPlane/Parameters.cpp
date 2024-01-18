@@ -637,12 +637,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
 
-    // @Param: MIN_GNDSPD_CM
+    // @Param: MIN_GROUNDSPEED
     // @DisplayName: Minimum ground speed
     // @Description: Minimum ground speed in cm/s when under airspeed control
-    // @Units: cm/s
+    // @Units: m/s
     // @User: Advanced
-    ASCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
+    ASCALAR(min_groundspeed,      "MIN_GROUNDSPEED",  MIN_GROUNDSPEED),
 
     // @Param: TRIM_PITCH_DEG
     // @DisplayName: Pitch angle offset
@@ -1549,6 +1549,7 @@ void Plane::load_parameters(void)
     // Convert _CM (centimeter) parameters to meters and _CD (centidegrees) parameters to meters
     g.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
     aparm.airspeed_cruise.convert_centi_parameter(AP_PARAM_INT32);
+    aparm.min_groundspeed.convert_centi_parameter(AP_PARAM_INT32);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

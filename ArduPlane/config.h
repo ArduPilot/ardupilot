@@ -118,12 +118,11 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// MIN_GNDSPEED
+// MIN_GROUNDSPEED
 //
-#ifndef MIN_GNDSPEED
- # define MIN_GNDSPEED                   0 // m/s (0 disables)
+#ifndef MIN_GROUNDSPEED
+ # define MIN_GROUNDSPEED                   0 // m/s (0 disables)
 #endif
-#define MIN_GNDSPEED_CM MIN_GNDSPEED*100
 
 
 //////////////////////////////////////////////////////////////////////////////
