@@ -164,7 +164,7 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
     },
     {
         { 1, { 185, 0, 0 }, OSD_PARAM_NONE },               // TRIM_THROTTLE
-        { 2, { 155, 0, 0 }, OSD_PARAM_NONE },               // TRIM_ARSPD_CM
+        { 2, { 155, 0, 0 }, OSD_PARAM_NONE },               // AIRSPEED_CRUISE
         { 3, { 4, 0, 1094 }, OSD_PARAM_NONE },              // SERVO_AUTO_TRIM
         { 4, { 120, 0, 0 }, OSD_PARAM_NONE},                // ARSPD_FBW_MIN
         { 5, { 121, 0, 0 }, OSD_PARAM_NONE },               // ARSPD_FBW_MAX
