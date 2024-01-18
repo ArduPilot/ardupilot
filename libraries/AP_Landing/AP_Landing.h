@@ -61,7 +61,7 @@ public:
     // we support upto 32 boolean bits for users wanting to change landing behaviour.
     enum OptionsMask {
         ON_LANDING_FLARE_USE_THR_MIN                   = (1<<0),   // If set then set trottle to thr_min instead of zero on final flare
-        ON_LANDING_USE_ARSPD_MAX                       = (1<<1),   // If set then allow landing throttle constraint to be increased from trim airspeed to max airspeed (ARSPD_FBW_MAX)
+        ON_LANDING_USE_ARSPD_MAX                       = (1<<1),   // If set then allow landing throttle constraint to be increased from trim airspeed to max airspeed (AIRSPEED_MAX)
     };
 
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
