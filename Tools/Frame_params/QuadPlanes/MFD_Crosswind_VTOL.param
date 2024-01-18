@@ -5,7 +5,7 @@
 # airspeed
 ARSPD_FBW_MAX    29
 ARSPD_FBW_MIN    16
-TRIM_ARSPD_CM    2000
+AIRSPEED_CRUISE 20.00
 TRIM_THROTTLE    52
 
 # fixed wing limits

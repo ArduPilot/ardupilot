@@ -844,7 +844,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
         self.context_push()
         self.set_parameters({
-            "TRIM_ARSPD_CM": self.get_parameter("TRIM_ARSPD_CM"),
+            "AIRSPEED_CRUISE": self.get_parameter("AIRSPEED_CRUISE"),
             "MIN_GNDSPD_CM": self.get_parameter("MIN_GNDSPD_CM"),
             "TRIM_THROTTLE": self.get_parameter("TRIM_THROTTLE"),
         })
@@ -886,7 +886,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
 
         checks = [
-            (1, self.get_parameter("TRIM_ARSPD_CM") * 0.01),
+            (1, self.get_parameter("AIRSPEED_CRUISE")),
             (3, 10),
             (5, 20),
             (7, 15),
