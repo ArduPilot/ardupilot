@@ -286,8 +286,8 @@ void Plane::calc_gndspeed_undershoot()
         if (!yawVect.is_zero()) {
             yawVect.normalize();
             float gndSpdFwd = yawVect * velNED.xy();
-            groundspeed_undershoot_is_valid = aparm.min_gndspeed_cm > 0;
-            groundspeed_undershoot = groundspeed_undershoot_is_valid ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+            groundspeed_undershoot_is_valid = aparm.min_groundspeed > 0;
+            groundspeed_undershoot = groundspeed_undershoot_is_valid ? (aparm.min_groundspeed*100 - gndSpdFwd*100) : 0;
         }
     } else {
         groundspeed_undershoot_is_valid = false;

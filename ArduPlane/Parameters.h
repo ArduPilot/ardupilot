@@ -219,7 +219,7 @@ public:
         k_param_airspeed_cruise,
         k_param_RTL_altitude_cm,
         k_param_inverted_flight_ch_unused, // unused
-        k_param_min_gndspeed_cm,
+        k_param_min_groundspeed,
         k_param_crosstrack_use_wind, // unused
 
 

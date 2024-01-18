@@ -977,7 +977,7 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
-        aparm.min_gndspeed_cm.set(speed_target_ms * 100);
+        aparm.min_groundspeed.set(speed_target_ms);
         return true;
     }
 
