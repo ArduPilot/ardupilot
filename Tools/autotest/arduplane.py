@@ -2274,7 +2274,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.set_parameters({
             "FLIGHT_OPTIONS": 0,
-            "ALT_HOLD_RTL": 8000,
+            "RTL_ALTITUDE": 80,
             "RTL_AUTOLAND": 1,
         })
         takeoff_alt = 10
@@ -2282,7 +2282,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("CRUISE")
         self.wait_distance_to_home(500, 1000, timeout=60)
         self.change_mode("RTL")
-        expected_alt = self.get_parameter("ALT_HOLD_RTL") / 100.0
+        expected_alt = self.get_parameter("RTL_ALTITUDE")
 
         home = self.home_position_as_mav_location()
         distance = self.get_distance(home, self.mav.location())
@@ -2306,7 +2306,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.set_parameters({
             "FLIGHT_OPTIONS": 16,
-            "ALT_HOLD_RTL": 10000,
+            "RTL_ALTITUDE": 100,
         })
         self.takeoff(alt=takeoff_alt)
         self.change_mode("CRUISE")
@@ -2339,7 +2339,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_distance_to_home(1000, 1500, timeout=60)
         post_cruise_alt = self.get_altitude(relative=True)
         self.change_mode('RTL')
-        expected_alt = self.get_parameter("ALT_HOLD_RTL")/100.0
+        expected_alt = self.get_parameter("RTL_ALTITUDE")
         if expected_alt == -1:
             expected_alt = self.get_altitude(relative=True)
 
