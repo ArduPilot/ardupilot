@@ -276,7 +276,7 @@ end
 
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
-ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
+AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 SYSID_THISMAV = Parameter("SYSID_THISMAV")
 
@@ -2465,7 +2465,7 @@ function do_path()
    end
 
    -- airspeed, assume we don't go below min
-   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs_airspeed)
+   local airspeed_constrained = math.max(AIRSPEED_MIN:get(), ahrs_airspeed)
 
    --[[
       calculate positions and angles at previous, current and next time steps
