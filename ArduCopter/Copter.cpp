@@ -449,19 +449,7 @@ bool Copter::has_ekf_failsafed() const
 // get target location (for use by scripting)
 bool Copter::get_target_location(Location& target_loc)
 {
-    switch (flightmode->mode_number()) {
-    case Mode::Number::RTL:
-    case Mode::Number::SMART_RTL:
-    case Mode::Number::AVOID_ADSB:
-    case Mode::Number::GUIDED:
-    case Mode::Number::AUTO:
-    case Mode::Number::FOLLOW:
-        return flightmode->get_wp(target_loc);
-        break;
-    default:
-        break;
-    }
-    return false;
+    return flightmode->get_wp(target_loc);
 }
 
 /*
