@@ -114,7 +114,7 @@
 #ifndef AIRSPEED_CRUISE
  # define AIRSPEED_CRUISE                12 // 12 m/s
 #endif
-#define AIRSPEED_CRUISE_CM AIRSPEED_CRUISE*100
+
 
 
 //////////////////////////////////////////////////////////////////////////////
