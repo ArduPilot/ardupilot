@@ -216,7 +216,7 @@ public:
         k_param_roll_limit_cd,
         k_param_pitch_limit_max_cd,
         k_param_pitch_limit_min_cd,
-        k_param_airspeed_cruise_cm,
+        k_param_airspeed_cruise,
         k_param_RTL_altitude_cm,
         k_param_inverted_flight_ch_unused, // unused
         k_param_min_gndspeed_cm,
