@@ -141,7 +141,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Landing options bitmask
     // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to ARSPD_FBW_MAX
+    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to AIRSPEED_MAX
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
 
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
     // @Param: WIND_COMP
     // @DisplayName: Headwind Compensation when Landing
-    // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to ARSPD_FBW_MAX.
+    // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to AIRSPEED_MAX.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
