@@ -135,10 +135,9 @@
  # define AIRSPEED_FBW_MAX               22
 #endif
 
-#ifndef ALT_HOLD_FBW
- # define ALT_HOLD_FBW 0
+#ifndef ALT_CRUISE_MIN
+ # define ALT_CRUISE_MIN 0
 #endif
-#define ALT_HOLD_FBW_CM ALT_HOLD_FBW*100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -202,7 +201,6 @@
 #ifndef ALT_HOLD_HOME
  # define ALT_HOLD_HOME 100
 #endif
-#define ALT_HOLD_HOME_CM ALT_HOLD_HOME*100
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
