@@ -2,7 +2,7 @@
 
 # https://www.muginuav.com/product/mugin-ev350-carbon-fiber-full-electric-vtol-uav-platform/
 
-ALT_HOLD_RTL    8000
+RTL_ALTITUDE 80.00
 LIM_PITCH_MAX   2000
 LIM_PITCH_MIN   -2000
 LIM_ROLL_CD     4000
