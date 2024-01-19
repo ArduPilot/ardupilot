@@ -658,7 +658,7 @@ bool AP_Relay::send_relay_status(const GCS_MAVLINK &link) const
     uint16_t present_mask = 0;
     uint16_t on_mask = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(_params); i++) {
-        if (!enabled(i)) {
+        if (!function_valid(_params[i].function)) {
             continue;
         }
         const uint16_t relay_bit_mask = 1U << i;
