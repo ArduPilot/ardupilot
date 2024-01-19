@@ -917,7 +917,7 @@ bool Plane::is_taking_off() const
     return control_mode->is_taking_off();
 }
 
-// correct AHRS pitch for TRIM_PITCH_DEG in non-VTOL modes, and return VTOL view in VTOL
+// correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
 #if HAL_QUADPLANE_ENABLED
@@ -929,7 +929,7 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 #endif
     pitch = ahrs.get_pitch();
     roll = ahrs.get_roll();
-    if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for TRIM_PITCH_DEG
+    if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
         pitch -= g.pitch_trim * DEG_TO_RAD;
     }
 }
