@@ -27,6 +27,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    bool enabled() const { return _enable; }
+
 private:
 
     AP_Int8 _enable;
