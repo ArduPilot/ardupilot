@@ -111,6 +111,8 @@ singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 ud->num_sensors(
 singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors()
 singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
+singleton AP_GPS method force_disable void boolean
+singleton AP_GPS method is_force_disable boolean
 
 include AP_Math/AP_Math.h
 
@@ -279,8 +281,6 @@ singleton AP_Vehicle method set_velocity_match boolean Vector2f
 singleton AP_Vehicle method set_land_descent_rate boolean float'skip_check
 singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
-singleton AP_Vehicle method is_landing boolean
-singleton AP_Vehicle method is_taking_off boolean
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED

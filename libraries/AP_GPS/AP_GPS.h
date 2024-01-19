@@ -535,6 +535,11 @@ public:
         _force_disable_gps = disable;
     }
 
+    // used to disable GPS for GPS failure testing in flight
+    bool is_force_disable() {
+        return _force_disable_gps;
+    }
+
     // used to disable GPS yaw for GPS failure testing in flight
     void set_force_disable_yaw(bool disable) {
         _force_disable_gps_yaw = disable;
