@@ -202,7 +202,7 @@ float Plane::stabilize_pitch_get_pitch_out()
         return pitch_out;
     }
 #endif
-    // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
+    // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_DEG if flight option FORCE_FLARE_ATTITUDE is set
 #if HAL_QUADPLANE_ENABLED
     const bool quadplane_in_transition = quadplane.in_transition();
 #else
