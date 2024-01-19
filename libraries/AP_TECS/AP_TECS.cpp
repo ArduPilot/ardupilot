@@ -1249,15 +1249,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
     // larger than LIM_PITCH_{MAX,MIN}
     if (_pitch_max == 0) {
-        _PITCHmaxf = aparm.pitch_limit_max_cd * 0.01f;
+        _PITCHmaxf = aparm.pitch_limit_max;
     } else {
-        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
+        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max);
     }
 
     if (_pitch_min >= 0) {
-        _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
+        _PITCHminf = aparm.pitch_limit_min;
     } else {
-        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
+        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min);
     }
 
     // apply temporary pitch limit and clear
@@ -1297,7 +1297,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // and allow zero throttle
         _THRminf = 0;
     } else if (_landing.is_on_approach()) {
-        _PITCHminf = MAX(_PITCHminf, 0.01f * aparm.pitch_limit_min_cd);
+        _PITCHminf = MAX(_PITCHminf, aparm.pitch_limit_min);
         _pitch_min_at_flare_entry = _PITCHminf;
         _flare_initialised = false;
     } else {
