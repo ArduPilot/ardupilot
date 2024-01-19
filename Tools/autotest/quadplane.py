@@ -817,7 +817,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("STALL_PREVENTION", 0)
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
-        lim_roll_deg = self.get_parameter("LIM_ROLL_DEG")
+        lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,

@@ -845,7 +845,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_push()
         self.set_parameters({
             "AIRSPEED_CRUISE": self.get_parameter("AIRSPEED_CRUISE"),
-            "MIN_GNDSPD_CM": self.get_parameter("MIN_GNDSPD_CM"),
+            "MIN_GROUNDSPEED": self.get_parameter("MIN_GROUNDSPEED"),
             "TRIM_THROTTLE": self.get_parameter("TRIM_THROTTLE"),
         })
 
