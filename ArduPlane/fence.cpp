@@ -50,7 +50,7 @@ void Plane::fence_check()
     }
 
     if (new_breaches) {
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+        fence.print_fence_message("breached", new_breaches);
 
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
