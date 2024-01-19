@@ -120,14 +120,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // YAW_RATE_MAX index 25
 
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
+    // @Param: LAND_FINAL_SPD
+    // @DisplayName: Land final speed
+    // @Description: The descent speed for the final stage of landing in m/s
+    // @Units: m/s
+    // @Range: 0.3 2
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("LAND_SPEED", 26, QuadPlane, land_speed_cms, 50),
+    AP_GROUPINFO("LAND_FINAL_SPD", 26, QuadPlane, land_final_speed, 0.5),
 
     // @Param: LAND_FINAL_ALT
     // @DisplayName: Land final altitude
@@ -823,6 +823,9 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
+    // added January 2024
+    land_final_speed.convert_centi_parameter(AP_PARAM_INT16);
+
     tailsitter.setup();
 
     tiltrotor.setup();
@@ -1246,7 +1249,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
         height_above_ground = MIN(height_above_ground, land_final_alt);
     }
     const float max_climb_speed = wp_nav->get_default_speed_up();
-    float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
+    float ret = linear_interpolate(land_final_speed*100, wp_nav->get_default_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
 

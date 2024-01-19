@@ -349,8 +349,8 @@ private:
     uint32_t alt_error_start_ms;
     bool in_alt_assist;
 
-    // landing speed in cm/s
-    AP_Int16 land_speed_cms;
+    // landing speed in m/s
+    AP_Float land_final_speed;
 
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;
