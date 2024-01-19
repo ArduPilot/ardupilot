@@ -253,7 +253,7 @@ function update()
     local dist_interp_m = interpolate(0, dist_increment_m, 0, prev_test_loc:alt() * 0.01 - prev_terrain_amsl_m, test_loc:alt() * 0.01 - terrain_amsl_m)
     local poi_loc = prev_test_loc:copy()
     poi_loc:offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m)
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+    gcs:send_text(6, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01)) -- MAV_SEVERITY_INFO
 
     -- send feedback to GCS so it can display icon on map
     success_count = success_count + 1
