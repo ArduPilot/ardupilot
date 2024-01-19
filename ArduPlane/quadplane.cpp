@@ -43,23 +43,23 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     AP_SUBGROUPPTR(pos_control, "P", 17, QuadPlane, AC_PosControl),
 
-    // @Param: VELZ_MAX
+    // @Param: PILOT_SPD_UP
     // @DisplayName: Pilot maximum vertical speed up
-    // @Description: The maximum ascending vertical velocity the pilot may request in cm/s
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
+    // @Description: The maximum ascending vertical velocity the pilot may request in m/s
+    // @Units: m/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("VELZ_MAX", 18, QuadPlane, pilot_velocity_z_max_up, 250),
+    AP_GROUPINFO("PILOT_SPD_UP", 18, QuadPlane, pilot_speed_z_max_up, 2.50),
    
-   // @Param: VELZ_MAX_DN
+    // @Param: PILOT_SPD_DN
     // @DisplayName: Pilot maximum vertical speed down
-    // @Description: The maximum vertical velocity the pilot may request in cm/s going down. If 0, uses Q_VELZ_MAX value.
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
+    // @Description: The maximum vertical velocity the pilot may request in m/s going down. If 0, uses Q_PILOT_SPD_UP value.
+    // @Units: m/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("VELZ_MAX_DN", 60, QuadPlane, pilot_velocity_z_max_dn, 0),
+    AP_GROUPINFO("PILOT_SPD_DN", 60, QuadPlane, pilot_speed_z_max_dn, 0),
 
      // @Param: ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -823,8 +823,11 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
-    // added January 2024
+    // centi-conversions added January 2024
     land_final_speed.convert_centi_parameter(AP_PARAM_INT16);
+    pilot_speed_z_max_up.convert_centi_parameter(AP_PARAM_INT16);
+    pilot_speed_z_max_dn.convert_centi_parameter(AP_PARAM_INT16);
+
 
     tailsitter.setup();
 
@@ -1021,7 +1024,7 @@ void QuadPlane::run_z_controller(void)
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_z()) {
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+        pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
 
         // initialise the vertical position controller
         if (!tailsitter.enabled()) {
@@ -1074,7 +1077,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
 
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
@@ -1360,7 +1363,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) *0.01f;
-    return throttle_request * (throttle_request > 0.0f ? pilot_velocity_z_max_up : get_pilot_velocity_z_max_dn());
+    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up*100 : get_pilot_velocity_z_max_dn());
 }
 
 
@@ -3096,8 +3099,8 @@ void QuadPlane::setup_target_position(void)
     poscontrol.target_cm.z = plane.next_WP_loc.alt - origin.alt;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
+    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
 }
 
 /*
@@ -3346,8 +3349,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
+    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z);
 
     // initialise the vertical position controller
     pos_control->init_z_controller();
@@ -3365,7 +3368,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     // t = max(t_{accel}, 0) + max(t_{constant}, 0)
     const float d_total = (plane.next_WP_loc.alt - plane.current_loc.alt) * 0.01f;
     const float accel_m_s_s = MAX(10, pilot_accel_z) * 0.01f;
-    const float vel_max = MAX(10, pilot_velocity_z_max_up) * 0.01f;
+    const float vel_max = MAX(0.1, pilot_speed_z_max_up);
     const float vel_z = inertial_nav.get_velocity_z_up_cms() * 0.01f;
     const float t_accel = (vel_max - vel_z) / accel_m_s_s;
     const float d_accel = vel_z * t_accel + 0.5f * accel_m_s_s * sq(t_accel);
@@ -4214,13 +4217,16 @@ bool SLT_Transition::show_vtol_view() const
     return quadplane.in_vtol_mode();
 }
 
-// return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
+/*
+  return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
+  return is in cm/s
+*/
 uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
 {
-    if (pilot_velocity_z_max_dn == 0) {
-        return abs(pilot_velocity_z_max_up);
+    if (is_zero(pilot_speed_z_max_dn)) {
+        return abs(pilot_speed_z_max_up*100);
    }
-    return abs(pilot_velocity_z_max_dn);
+    return abs(pilot_speed_z_max_dn*100);
 }
 
 /*
