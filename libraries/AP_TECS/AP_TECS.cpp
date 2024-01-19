@@ -1285,7 +1285,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         }
         const float pitch_limit_deg = (1.0f - p) * _pitch_min_at_flare_entry + p * 0.01f * _landing.get_pitch_cd();
 
-        // in flare use min pitch from LAND_PITCH_CD
+        // in flare use min pitch from LAND_PITCH_DEG
         _PITCHminf = MAX(_PITCHminf, pitch_limit_deg);
 
         // and use max pitch from TECS_LAND_PMAX
