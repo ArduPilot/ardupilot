@@ -337,7 +337,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 }
 
 /*
-  check for FBWB_min_altitude and fence min/max altitude
+  check for cruise_alt_floor and fence min/max altitude
  */
 void Plane::check_fbwb_altitude(void)
 {
@@ -359,9 +359,9 @@ void Plane::check_fbwb_altitude(void)
     }
 #endif
 
-    if (g.FBWB_min_altitude > 0) {
+    if (g.cruise_alt_floor > 0) {
         // FBWB min altitude exists
-        min_alt_cm = MAX(min_alt_cm, plane.g.FBWB_min_altitude*100.0);
+        min_alt_cm = MAX(min_alt_cm, plane.g.cruise_alt_floor*100.0);
         should_check_min = true;
     }
 

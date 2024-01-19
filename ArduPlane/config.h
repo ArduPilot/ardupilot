@@ -135,8 +135,8 @@
  # define AIRSPEED_FBW_MAX               22
 #endif
 
-#ifndef ALT_CRUISE_MIN
- # define ALT_CRUISE_MIN 0
+#ifndef CRUISE_ALT_FLOOR
+ # define CRUISE_ALT_FLOOR 0
 #endif
 
 

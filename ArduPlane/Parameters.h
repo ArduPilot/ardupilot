@@ -174,7 +174,7 @@ public:
         //
         k_param_airspeed_min = 120,
         k_param_airspeed_max,
-        k_param_FBWB_min_altitude,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+        k_param_cruise_alt_floor,
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm, // unused
         k_param_flybywire_climb_rate,
@@ -438,7 +438,7 @@ public:
     AP_Int32 log_bitmask;
     AP_Float RTL_altitude;
     AP_Float pitch_trim;
-    AP_Float FBWB_min_altitude;
+    AP_Float cruise_alt_floor;
 
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;

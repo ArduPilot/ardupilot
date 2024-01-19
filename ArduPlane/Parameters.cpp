@@ -659,12 +659,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(RTL_altitude,        "RTL_ALTITUDE",   ALT_HOLD_HOME),
 
-    // @Param: ALT_CRUISE_MIN
+    // @Param: CRUISE_ALT_FLOOR
     // @DisplayName: Minimum altitude for FBWB and CRUISE mode
     // @Description: This is the minimum altitude in meters (above home) that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. It will also force a climb to this altitude if below in these modes. A value of zero means no limit.
     // @Units: m
     // @User: Standard
-    GSCALAR(FBWB_min_altitude,   "ALT_CRUISE_MIN", ALT_CRUISE_MIN),
+    GSCALAR(cruise_alt_floor,   "CRUISE_ALT_FLOOR", CRUISE_ALT_FLOOR),
 
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
@@ -1551,7 +1551,7 @@ void Plane::load_parameters(void)
     aparm.airspeed_cruise.convert_centi_parameter(AP_PARAM_INT32);
     aparm.min_groundspeed.convert_centi_parameter(AP_PARAM_INT32);
     g.RTL_altitude.convert_centi_parameter(AP_PARAM_INT32);
-    g.FBWB_min_altitude.convert_centi_parameter(AP_PARAM_INT16);
+    g.cruise_alt_floor.convert_centi_parameter(AP_PARAM_INT16);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
