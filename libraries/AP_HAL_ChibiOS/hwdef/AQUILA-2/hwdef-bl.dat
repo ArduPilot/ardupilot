@@ -1,8 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
-# for F765 bootloader
+# for H743 bootloader
 
 # MCU class and specific type
-MCU STM32F7xx STM32F767xx
+MCU STM32H7xx STM32H743xx
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -19,7 +19,7 @@ FLASH_RESERVE_START_KB 0
 # the H743 has 128k sectors
 PB0 LED_BOOTLOADER OUTPUT HIGH
 PE9 LED_ACTIVITY OUTPUT HIGH
-FLASH_BOOTLOADER_LOAD_KB 32
+FLASH_BOOTLOADER_LOAD_KB 128
 
 define HAL_LED_ON 0
 define HAL_BOOTLOADER_TIMEOUT 500
