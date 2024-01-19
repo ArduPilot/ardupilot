@@ -212,7 +212,6 @@ void NavEKF3_core::SelectTasFusion()
     readAirSpdData();
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
-
     if (tasDataToFuse && statesInitialised && !inhibitWindStates) {
         FuseAirspeed();
         tasDataToFuse = false;
