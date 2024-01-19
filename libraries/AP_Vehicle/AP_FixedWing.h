@@ -17,8 +17,8 @@ struct AP_FixedWing {
     AP_Float min_groundspeed;
     AP_Int8  crash_detection_enable;
     AP_Int16 roll_limit_cd;
-    AP_Int16 pitch_limit_max_cd;
-    AP_Int16 pitch_limit_min_cd;
+    AP_Float pitch_limit_max;
+    AP_Float pitch_limit_min;
     AP_Int8  autotune_level;
     AP_Int32 autotune_options;
     AP_Int8  stall_prevention;
