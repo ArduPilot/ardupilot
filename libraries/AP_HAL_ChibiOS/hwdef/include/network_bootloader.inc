@@ -20,3 +20,5 @@ EXT_FLASH_SIZE_MB 0
 
 # don't combine sdcard bl and network bl
 undef AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
+
+define CH_CFG_THREAD_EXTRA_FIELDS struct ch_thread *delete_next;
