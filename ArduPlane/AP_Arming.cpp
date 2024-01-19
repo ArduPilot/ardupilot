@@ -76,8 +76,8 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.aparm.roll_limit_cd < 300) {
-        check_failed(display_failure, "LIM_ROLL_CD too small (%u)", (unsigned)plane.aparm.roll_limit_cd);
+    if (plane.aparm.roll_limit < 3) {
+        check_failed(display_failure, "LIM_ROLL_DEG too small (%.1f)", plane.aparm.roll_limit.get());
         ret = false;
     }
 

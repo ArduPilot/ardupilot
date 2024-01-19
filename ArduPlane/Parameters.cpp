@@ -512,14 +512,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
-    // @Param: LIM_ROLL_CD
+    // @Param: ROLL_LIMIT_DEG
     // @DisplayName: Maximum Bank Angle
     // @Description: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
-    // @Units: cdeg
-    // @Range: 0 9000
-    // @Increment: 10
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 0.1
     // @User: Standard
-    ASCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
+    ASCALAR(roll_limit,          "ROLL_LIMIT_DEG",    ROLL_LIMIT_DEG),
 
     // @Param: PTCH_LIM_MAX_DEG
     // @DisplayName: Maximum Pitch Angle
@@ -1554,6 +1554,7 @@ void Plane::load_parameters(void)
     g.cruise_alt_floor.convert_centi_parameter(AP_PARAM_INT16);
     aparm.pitch_limit_max.convert_centi_parameter(AP_PARAM_INT16);
     aparm.pitch_limit_min.convert_centi_parameter(AP_PARAM_INT16);
+    aparm.roll_limit.convert_centi_parameter(AP_PARAM_INT16);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

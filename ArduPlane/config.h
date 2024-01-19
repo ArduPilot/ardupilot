@@ -156,8 +156,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits
 //
-#ifndef HEAD_MAX
- # define HEAD_MAX                               45
+#ifndef ROLL_LIMIT_DEG
+ # define ROLL_LIMIT_DEG                         45
 #endif
 #ifndef PITCH_MAX
  # define PITCH_MAX                              20
@@ -165,7 +165,6 @@
 #ifndef PITCH_MIN
  # define PITCH_MIN                              -25
 #endif
-#define HEAD_MAX_CENTIDEGREE HEAD_MAX * 100
 
 #ifndef RUDDER_MIX
  # define RUDDER_MIX           0.5f

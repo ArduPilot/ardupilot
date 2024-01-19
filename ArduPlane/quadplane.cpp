@@ -1517,7 +1517,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
      */
 
     const uint16_t allowed_envelope_error_cd = 500U;
-    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit_cd+allowed_envelope_error_cd &&
+    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit*100 + allowed_envelope_error_cd &&
         ahrs.pitch_sensor < plane.aparm.pitch_limit_max*100+allowed_envelope_error_cd &&
         ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min*100)) {
         // we are inside allowed attitude envelope
