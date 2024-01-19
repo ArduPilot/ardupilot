@@ -1985,7 +1985,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 // convert old vehicle parameters to new object parameters
 void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags)
 {
-    convert_old_parameters_scaled(conversion_table, table_size, 1.0f,flags);
+    convert_old_parameters_scaled(conversion_table, table_size, 1.0f, flags);
 }
 
 // convert old vehicle parameters to new object parameters with scaling - assumes all parameters will have the same scaling factor
