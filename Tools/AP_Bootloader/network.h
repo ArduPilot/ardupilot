@@ -19,6 +19,9 @@ private:
     struct netif *thisif;
     thread_t *net_thread_ctx;
 
+    HAL_Semaphore web_delete_mtx;
+    thread_t *web_delete_list;
+
     static void net_thread_trampoline(void*);
     static void web_server_trampoline(void*);
 

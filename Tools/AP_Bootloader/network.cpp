@@ -539,7 +539,14 @@ void BL_Network::net_request_trampoline(void *ctx)
 {
     auto *req = (req_context *)ctx;
     req->driver->handle_request(req->sock);
+
+    auto *driver = req->driver;
+    auto *thd = chThdGetSelfX();
     delete req;
+
+    WITH_SEMAPHORE(driver->web_delete_mtx);
+    thd->delete_next = driver->web_delete_list;
+    driver->web_delete_list = thd;
 }
 
 /*
@@ -574,6 +581,14 @@ void BL_Network::web_server(void)
                             60,
                             net_request_trampoline,
                             req);
+
+        // cleanup any finished threads
+        WITH_SEMAPHORE(web_delete_mtx);
+        while (web_delete_list != nullptr) {
+            auto *thd = web_delete_list;
+            web_delete_list = thd->delete_next;
+            chThdRelease(thd);
+        }
     }
 }
 
