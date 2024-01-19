@@ -199,7 +199,7 @@ private:
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
-    int32_t pitch_limit_min_cd;
+    float pitch_limit_min;
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;

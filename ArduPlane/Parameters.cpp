@@ -521,23 +521,23 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
-    // @Param: LIM_PITCH_MAX
+    // @Param: PTCH_LIM_MAX_DEG
     // @DisplayName: Maximum Pitch Angle
     // @Description: Maximum pitch up angle commanded in modes with stabilized limits.
-    // @Units: cdeg
-    // @Range: 0 9000
+    // @Units: deg
+    // @Range: 0 90
     // @Increment: 10
     // @User: Standard
-    ASCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
+    ASCALAR(pitch_limit_max,     "PTCH_LIM_MAX_DEG",  PITCH_MAX),
 
-    // @Param: LIM_PITCH_MIN
+    // @Param: PTCH_LIM_MIN_DEG
     // @DisplayName: Minimum Pitch Angle
     // @Description: Maximum pitch down angle commanded in modes with stabilized limits
     // @Units: cdeg
-    // @Range: -9000 0
+    // @Range: -90 0
     // @Increment: 10
     // @User: Standard
-    ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
+    ASCALAR(pitch_limit_min,     "PTCH_LIM_MIN_DEG",  PITCH_MIN),
 
     // @Param: ACRO_ROLL_RATE
     // @DisplayName: ACRO mode roll rate
@@ -1552,6 +1552,8 @@ void Plane::load_parameters(void)
     aparm.min_groundspeed.convert_centi_parameter(AP_PARAM_INT32);
     g.RTL_altitude.convert_centi_parameter(AP_PARAM_INT32);
     g.cruise_alt_floor.convert_centi_parameter(AP_PARAM_INT16);
+    aparm.pitch_limit_max.convert_centi_parameter(AP_PARAM_INT16);
+    aparm.pitch_limit_min.convert_centi_parameter(AP_PARAM_INT16);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

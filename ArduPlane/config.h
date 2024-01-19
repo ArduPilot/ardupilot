@@ -166,8 +166,6 @@
  # define PITCH_MIN                              -25
 #endif
 #define HEAD_MAX_CENTIDEGREE HEAD_MAX * 100
-#define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
-#define PITCH_MIN_CENTIDEGREE PITCH_MIN * 100
 
 #ifndef RUDDER_MIX
  # define RUDDER_MIX           0.5f
