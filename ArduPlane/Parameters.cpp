@@ -1313,7 +1313,6 @@ static const AP_Param::ConversionInfo conversion_table[] = {
 
     { Parameters::k_param_land_slope_recalc_shallow_threshold,0,AP_PARAM_FLOAT, "LAND_SLOPE_RCALC" },
     { Parameters::k_param_land_slope_recalc_steep_threshold_to_abort,0,AP_PARAM_FLOAT, "LAND_ABORT_DEG" },
-    { Parameters::k_param_land_pitch_cd,      0,      AP_PARAM_INT16, "LAND_PITCH_CD" },
     { Parameters::k_param_land_flare_alt,     0,      AP_PARAM_FLOAT, "LAND_FLARE_ALT" },
     { Parameters::k_param_land_flare_sec,     0,      AP_PARAM_FLOAT, "LAND_FLARE_SEC" },
     { Parameters::k_param_land_pre_flare_sec, 0,      AP_PARAM_FLOAT, "LAND_PF_SEC" },
@@ -1555,6 +1554,8 @@ void Plane::load_parameters(void)
     aparm.pitch_limit_max.convert_centi_parameter(AP_PARAM_INT16);
     aparm.pitch_limit_min.convert_centi_parameter(AP_PARAM_INT16);
     aparm.roll_limit.convert_centi_parameter(AP_PARAM_INT16);
+
+    landing.convert_parameters();
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
