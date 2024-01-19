@@ -4171,6 +4171,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP::opendroneid().handle_msg(chan, msg);
         break;
 #endif
+    case MAVLINK_MSG_ID_UAV_FOUND:
+        AP::vehicle()->odidscanner.handle_msg(msg);
+        break;
+
 
 #if AP_SIGNED_FIRMWARE
     case MAVLINK_MSG_ID_SECURE_COMMAND:

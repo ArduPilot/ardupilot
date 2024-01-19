@@ -22,14 +22,17 @@ public:
     void init();
     void update();
     void update_recv();
-    mavlink_channel_t _chan; // mavlink channel that communicates with the remote id transceiver
+    void handle_msg(mavlink_message_t);
+    // mavlink_channel_t _chan; // mavlink channel that communicates with the remote id transceiver
     uint8_t _mav_port;
     mavlink_uav_found_t found_msg;
+    mavlink_channel_t _chan;
     AP_HAL::UARTDriver* _port;
     bool _initialised;
     uint32_t last_send_ms;
     uint32_t last_dev_hb_ms;
     uint32_t last_dev_hb_msg_ms;
+    uint32_t last_hb_send_ms;
 
     mavlink_message_t _channel_buffer;
     mavlink_status_t _channel_status;
