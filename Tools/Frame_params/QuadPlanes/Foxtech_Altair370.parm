@@ -12,8 +12,8 @@ AIRSPEED_MIN    22
 AIRSPEED_CRUISE 27.00
 
 # fixed wing limits
-PITCH_LIM_MAX_DEG 15.00
-PITCH_LIM_MIN_DEG -15.00
+PTCH_LIM_MAX_DEG 15.00
+PTCH_LIM_MIN_DEG -15.00
 ROLL_LIMIT_DEG 25.00
 
 # setup elevons as 75% elevator and 25% aileron
