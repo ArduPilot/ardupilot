@@ -565,12 +565,12 @@ void BL_Network::web_server(void)
         if (sock == nullptr) {
             continue;
         }
-        // a neq thread for each connection to allow for AJAX
+        // a new thread for each connection to allow for AJAX
         auto *req = new req_context;
         req->driver = this;
         req->sock = sock;
         thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
-                            "net_request",
+                            "web_request",
                             60,
                             net_request_trampoline,
                             req);
