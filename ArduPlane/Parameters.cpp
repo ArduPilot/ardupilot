@@ -1094,8 +1094,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 5: Enable yaw damper in acro mode
     // @Bitmask: 6: Supress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
     // @Bitmask: 7: EnableDefaultAirspeed for takeoff
-    // @Bitmask: 8: Remove the TRIM_PITCH on the GCS horizon
-    // @Bitmask: 9: Remove the TRIM_PITCH on the OSD horizon
+    // @Bitmask: 8: Remove the PTCH_TRIM_DEG on the GCS horizon
+    // @Bitmask: 9: Remove the PTCH_TRIM_DEG on the OSD horizon
     // @Bitmask: 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
     // @Bitmask: 11: Disable suppression of fixed wing rate gains in ground mode
     // @Bitmask: 12: Enable FBWB style loiter altitude control
