@@ -644,13 +644,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     ASCALAR(min_groundspeed,      "MIN_GROUNDSPEED",  MIN_GROUNDSPEED),
 
-    // @Param: TRIM_PITCH_DEG
+    // @Param: PTCH_TRIM_DEG
     // @DisplayName: Pitch angle offset
     // @Description: Offset in degrees used for in-flight pitch trimming for level flight. Correct ground leveling is an alternative to changing this parameter.
     // @Units: deg
     // @Range: -45 45
     // @User: Standard
-    GSCALAR(pitch_trim,             "TRIM_PITCH_DEG",  0.0f),
+    GSCALAR(pitch_trim,             "PTCH_TRIM_DEG",  0.0f),
 
     // @Param: RTL_ALTITUDE
     // @DisplayName: RTL altitude
