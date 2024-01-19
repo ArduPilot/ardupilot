@@ -48,11 +48,9 @@ if value then
 else
   error('LUA: get MIN_GNDSPD_CM failed')
 end
-value = param:get('LIM_ROLL_CD')
-if value then
-  max_bank_angle = value / 100
-else
-  error('LUA: get LIM_ROLL_CD failed')
+max_bank_angle = param:get('LIM_ROLL_DEG')
+if not max_bank_angle then
+  error('LUA: get LIM_ROLL_DEG failed')
 end
 
 -- https://en.wikipedia.org/wiki/Standard_rate_turn#Radius_of_turn_formula
