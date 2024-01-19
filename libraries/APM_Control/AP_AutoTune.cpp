@@ -211,7 +211,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
         att_limit_deg = aparm.roll_limit_cd * 0.01;
         break;
     case AUTOTUNE_PITCH:
-        att_limit_deg = MIN(abs(aparm.pitch_limit_max_cd),abs(aparm.pitch_limit_min_cd))*0.01;
+        att_limit_deg = MIN(abs(aparm.pitch_limit_max*100),abs(aparm.pitch_limit_min*100))*0.01;
         break;
     case AUTOTUNE_YAW:
         // arbitrary value for yaw angle
