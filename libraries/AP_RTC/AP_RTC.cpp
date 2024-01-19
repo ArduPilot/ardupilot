@@ -243,7 +243,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += ms - curr_ms;
     }
     if (largest_element == 1 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += 1000);
+        return static_cast<uint32_t>(total_delay_ms + 1000);
     }
 
     // calculate sec to target
@@ -251,7 +251,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (sec - curr_sec)*1000;
     }
     if (largest_element == 2 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (60*1000));
     }
 
     // calculate min to target
@@ -259,7 +259,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (min - curr_min)*60*1000;
     }
     if (largest_element == 3 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (60*60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (60*60*1000));
     }
 
     // calculate hours to target
@@ -267,7 +267,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (hour - curr_hour)*60*60*1000;
     }
     if (largest_element == 4 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (24*60*60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (24*60*60*1000));
     }
 
     // total delay in milliseconds
