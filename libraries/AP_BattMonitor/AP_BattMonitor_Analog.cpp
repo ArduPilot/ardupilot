@@ -147,7 +147,11 @@ AP_BattMonitor_Analog::read()
 /// return true if battery provides current info
 bool AP_BattMonitor_Analog::has_current() const
 {
+#if HAL_CODEV_ESC_ENABLE
+    return true;
+#else
     return ((AP_BattMonitor::Type)_params._type.get() == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT);
+#endif    
 }
 
 #endif  // AP_BATTERY_ANALOG_ENABLED
