@@ -43,18 +43,18 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ABORT_DEG", 2, AP_Landing, slope_recalc_steep_threshold_to_abort, 0),
 
-    // @Param: PITCH_CD
+    // @Param: PITCH_DEG
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
-    // @Units: cdeg
-    // @Range: -2000 2000
+    // @Units: deg
+    // @Range: -20 20
     // @Increment: 10
     // @User: Advanced
-    AP_GROUPINFO("PITCH_CD", 3, AP_Landing, pitch_cd, 0),
+    AP_GROUPINFO("PITCH_DEG", 3, AP_Landing, pitch_deg, 0),
 
     // @Param: FLARE_ALT
     // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
+    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_DEG pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
     // @Units: m
     // @Range: 0 30
     // @Increment: 0.1
@@ -708,4 +708,13 @@ bool AP_Landing::terminate(void) {
     default:
         return false;
     }
+}
+
+/*
+  run parameter conversions
+ */
+void AP_Landing::convert_parameters(void)
+{
+    // added January 2024
+    pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
 }
