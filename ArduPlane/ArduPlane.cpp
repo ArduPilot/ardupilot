@@ -173,7 +173,7 @@ void Plane::ahrs_update()
 
     // calculate a scaled roll limit based on current pitch
     roll_limit_cd = aparm.roll_limit_cd;
-    pitch_limit_min_cd = aparm.pitch_limit_min_cd;
+    pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
 #if HAL_QUADPLANE_ENABLED
@@ -183,7 +183,7 @@ void Plane::ahrs_update()
 #endif
     if (rotate_limits) {
         roll_limit_cd *= ahrs.cos_pitch();
-        pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
+        pitch_limit_min *= fabsf(ahrs.cos_roll());
     }
 
     // updated the summed gyro used for ground steering and
@@ -418,8 +418,8 @@ void Plane::airspeed_ratio_update(void)
         return;
     }
     if (labs(ahrs.roll_sensor) > roll_limit_cd ||
-        ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
-        ahrs.pitch_sensor < pitch_limit_min_cd) {
+        ahrs.pitch_sensor > aparm.pitch_limit_max*100 ||
+        ahrs.pitch_sensor < pitch_limit_min*100) {
         // don't calibrate when going beyond normal flight envelope
         return;
     }

@@ -214,8 +214,8 @@ public:
         k_param_crosstrack_gain = 150, // unused
         k_param_crosstrack_entry_angle, // unused
         k_param_roll_limit_cd,
-        k_param_pitch_limit_max_cd,
-        k_param_pitch_limit_min_cd,
+        k_param_pitch_limit_max,
+        k_param_pitch_limit_min,
         k_param_airspeed_cruise,
         k_param_RTL_altitude,
         k_param_inverted_flight_ch_unused, // unused

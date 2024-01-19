@@ -81,13 +81,13 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.aparm.pitch_limit_max_cd < 300) {
-        check_failed(display_failure, "LIM_PITCH_MAX too small (%u)", (unsigned)plane.aparm.pitch_limit_max_cd);
+    if (plane.aparm.pitch_limit_max < 3) {
+        check_failed(display_failure, "PTCH_LIM_MAX_DEG too small (%.1f)", plane.aparm.pitch_limit_max.get());
         ret = false;
     }
 
-    if (plane.aparm.pitch_limit_min_cd > -300) {
-        check_failed(display_failure, "LIM_PITCH_MIN too large (%u)", (unsigned)plane.aparm.pitch_limit_min_cd);
+    if (plane.aparm.pitch_limit_min > -3) {
+        check_failed(display_failure, "PTCH_LIM_MIN_DEG too large (%.1f)", plane.aparm.pitch_limit_min.get());
         ret = false;
     }
 

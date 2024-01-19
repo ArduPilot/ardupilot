@@ -310,11 +310,11 @@ void Plane::stabilize_stick_mixing_fbw()
         pitch_input = -pitch_input;
     }
     if (pitch_input > 0) {
-        nav_pitch_cd += pitch_input * aparm.pitch_limit_max_cd;
+        nav_pitch_cd += pitch_input * aparm.pitch_limit_max*100;
     } else {
-        nav_pitch_cd += -(pitch_input * pitch_limit_min_cd);
+        nav_pitch_cd += -(pitch_input * pitch_limit_min*100);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
 }
 
 
@@ -585,7 +585,7 @@ int16_t Plane::calc_nav_yaw_ground(void)
 void Plane::calc_nav_pitch()
 {
     int32_t commanded_pitch = TECS_controller.get_pitch_demand();
-    nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
 }
 
 
