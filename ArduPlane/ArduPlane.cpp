@@ -172,7 +172,7 @@ void Plane::ahrs_update()
 #endif
 
     // calculate a scaled roll limit based on current pitch
-    roll_limit_cd = aparm.roll_limit_cd;
+    roll_limit_cd = aparm.roll_limit*100;
     pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
