@@ -76,6 +76,10 @@ private:
     // create polygons inside the existing inclusion polygons
     // returns true on success.  returns false on failure and err_id is updated
     bool create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id);
+    // create polygons inside the existing inclusion polygons
+    // returns true on success.  returns false on failure and err_id is updated.  This function is wrapped so we can remember the error ID.
+    bool _create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id);
+    AP_OADijkstra_Error last_create_inclusion_polygon_with_margin_error_id;
 
     //
     // exclusion polygon methods

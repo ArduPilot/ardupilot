@@ -313,7 +313,7 @@ bool AP_OADijkstra::check_inclusion_polygon_updated() const
 
 // create polygons inside the existing inclusion polygons
 // returns true on success.  returns false on failure and err_id is updated
-bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
+bool AP_OADijkstra::_create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
 
@@ -324,6 +324,8 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
 
     // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
     if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
+        // return the error code we returned last time we were called with this fence set:
+        err_id = last_create_inclusion_polygon_with_margin_error_id;
         return false;
     }
 
@@ -398,6 +400,12 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         _inclusion_polygon_numpoints += new_points;
     }
     return true;
+}
+bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
+{
+    const bool ret = _create_inclusion_polygon_with_margin(margin_cm, err_id);
+    last_create_inclusion_polygon_with_margin_error_id = err_id;
+    return ret;
 }
 
 // check if exclusion polygons have been updated since create_exclusion_polygon_with_margin was run
