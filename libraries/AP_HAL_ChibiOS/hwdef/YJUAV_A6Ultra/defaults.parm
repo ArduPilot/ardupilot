@@ -1,0 +1,4 @@
+# setup the heater temperature to 45 degree
+BRD_HEAT_TARG 45
+
+CAN_P1_DRIVER 1
