@@ -42,7 +42,7 @@ RTL_ALTITUDE 30.00
 AIRSPEED_MAX  25
 AIRSPEED_MIN  8
 ARSPD_RATIO    1.9
-LIM_ROLL_CD    4000
+ROLL_LIMIT_DEG 40.00
 
 # the HWing can become unstable at high speeds. Limit pitch angle
 # to prevent overspeed
