@@ -42,15 +42,13 @@ if value then
 else
   error('LUA: get AIRSPEED_MIN failed')
 end
-value = param:get('MIN_GNDSPD_CM')
-if value then
-  min_ground_speed = value / 100
-else
-  error('LUA: get MIN_GNDSPD_CM failed')
+min_ground_speed = param:get('MIN_GROUNDSPEED')
+if not min_groundspeed then
+  error('LUA: get MIN_GROUNDSPEED failed')
 end
-max_bank_angle = param:get('LIM_ROLL_DEG')
+max_bank_angle = param:get('ROLL_LIMIT_DEG')
 if not max_bank_angle then
-  error('LUA: get LIM_ROLL_DEG failed')
+  error('LUA: get ROLL_LIMIT_DEG failed')
 end
 
 -- https://en.wikipedia.org/wiki/Standard_rate_turn#Radius_of_turn_formula
