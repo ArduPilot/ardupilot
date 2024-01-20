@@ -1379,9 +1379,11 @@ void UARTDriver::_tx_timer_tick(void)
     if (hd_tx_active) {
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
         if (!hd_tx_active) {
+#ifndef HAL_UART_NODMA
             if (tx_dma_enabled) {
                 dma_handle->lock();
             }
+#endif
             /*
               half-duplex transmit has finished. We now re-enable the
               HDSEL bit for receive
