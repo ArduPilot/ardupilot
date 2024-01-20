@@ -149,36 +149,36 @@ private:
     float _vel_p;                    // Forward velocity P term.
     float _vel_ff;                   // Forward velocity Feed Forward term.
     float _accel_out;                // Acceleration value used to calculate pitch target.
-    float _entry_sink_rate;
-    float _entry_alt;
-    float _radar_alt;
-    float _flare_entry_speed;
-    float _desired_speed;
-    float _time_to_ground;
-    float _desired_sink_rate;
-    float _ground_clearance;
-    float _est_alt;
-    float _descent_rate_filtered;
-    float _radar_alt_prev;
-    float _radar_alt_calc;
-    float _avg_acc_z;
-    float _acc_z_sum;
-    int16_t _index;
-    float _curr_acc_z[10]{};
-    float _flare_alt_calc;
-    float _lift_hover;
-    float _c;
-    float _cushion_alt;
-    float _disc_area;
-    float _last_vertical_speed;
-    float _sink_deriv;
-    float _est_rod;
-    float _avg_sink_deriv;
-    float _avg_sink_deriv_sum;
-    int16_t _index_sink_rate;
-    float _curr_sink_deriv[20]{};
-    bool  _flare_complete;
-    bool  _flare_update_check;
+    float _entry_sink_rate;          // Descent rate at beginning of touvhdown collective pull
+    float _entry_alt;                // Altitude at beginning of touchdown coll pull
+    float _radar_alt;                // Altitude above ground (RF)
+    float _flare_entry_speed;        // Traslational velocity at beginning of flare maneuver
+    float _desired_speed;            // Desired traslational velocity during flare
+    float _time_to_ground;           // Time to ground
+    float _desired_sink_rate;        // Desired vertical velocity during touchdown
+    float _ground_clearance;         // Sensor offset distance
+    float _est_alt;                  // Estimated altitude above ground
+    float _descent_rate_filtered;    // Filtered vertical speed
+    float _radar_alt_prev;           // Last cycle calculated altitude
+    float _radar_alt_calc;           // Inertial calculated altitude
+    float _avg_acc_z;                // Averaged vertical acceleration
+    float _acc_z_sum;                // Sum of vertical acceleration samples
+    int16_t _index;                  // Index for vertical acceleration rolling average
+    float _curr_acc_z[10]{};         // Array for storing vertical acceleration samples
+    float _flare_alt_calc;           // Calculated flare altitude
+    float _lift_hover;               // Main rotor thrust in hover condition
+    float _c;                        // Main rotor drag coefficient
+    float _cushion_alt;              // Altitude for touchdown collective pull
+    float _disc_area;                // Main rotor disc area
+    float _last_vertical_speed;      // Last cycle measured vertical speed
+    float _sink_deriv;               // Derivative of sink rate
+    float _est_rod;                  // Estimated rate of descent (vertical autorotation)
+    float _avg_sink_deriv;           // Averaged derivative of rate of descent
+    float _avg_sink_deriv_sum;       // Sum of averaged sink rate derivative
+    int16_t _index_sink_rate;        // Index for sink rate derivative rolling average
+    float _curr_sink_deriv[20]{};    // Array for storing sink rate derivatives
+    bool  _flare_complete;           // Flare completed
+    bool  _flare_update_check;       // Check for flare altitude updating
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
 

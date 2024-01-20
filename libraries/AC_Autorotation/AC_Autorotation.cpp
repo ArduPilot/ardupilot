@@ -355,21 +355,21 @@ void AC_Autorotation::initial_flare_estimate(void)
 {
     // Estimate hover thrust
     float _col_hover_rad = radians(_motors_heli->get_hover_coll_ang());
-    float b = _param_solidity * 6.28f;
-    _disc_area = 3.14 * sq(_param_diameter * 0.5f);
+    float b = _param_solidity * M_2PI;
+    _disc_area = M_PI * sq(_param_diameter * 0.5f);
     float lambda = (-(b / 8.0f) + safe_sqrt((sq(b)) / 64.0f +((b / 3.0f) * _col_hover_rad))) * 0.5f;
     float freq = _motors_heli->get_rpm_setpoint() / 60.0f;
-    float tip_speed= freq * 6.28f * _param_diameter * 0.5f;
-    _lift_hover = ((1.225f * sq(tip_speed) * (_param_solidity * _disc_area)) * ((_col_hover_rad / 3.0f) - (lambda / 2.0f)) * 5.8f) * 0.5f;
+    float tip_speed= freq * M_2PI * _param_diameter * 0.5f;
+    _lift_hover = ((SSL_AIR_DENSITY * sq(tip_speed) * (_param_solidity * _disc_area)) * ((_col_hover_rad / 3.0f) - (lambda / 2.0f)) * 5.8f) * 0.5f;
 
     // Estimate rate of descent
-    float omega_auto = (_param_head_speed_set_point / 60.0f) * 6.28f;
+    float omega_auto = (_param_head_speed_set_point / 60.0f) * M_2PI;
     float tip_speed_auto = omega_auto * _param_diameter * 0.5f;
     float c_t = _lift_hover / (0.6125f * _disc_area * sq(tip_speed));
     _est_rod = ((0.25f * (_param_solidity * 0.011f / c_t) * tip_speed_auto) + ((sq(c_t) / (_param_solidity * 0.011f)) * tip_speed_auto));
 
     // Estimate rotor C_d
-    _c = (_lift_hover / (sq(_est_rod) * 0.5f * 1.225f * _disc_area)) * 1.15f;
+    _c = (_lift_hover / (sq(_est_rod) * 0.5f * SSL_AIR_DENSITY * _disc_area)) * 1.15f;
     _c = constrain_float(_c, 0.7f, 1.4f);
 
     // Calc flare altitude
@@ -384,7 +384,7 @@ void AC_Autorotation::initial_flare_estimate(void)
     _index_sink_rate = 0;
     memset(_curr_sink_deriv, 0, sizeof(_curr_sink_deriv));
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/9.8065f, _flare_alt_calc*0.01f, _c);
+    gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/GRAVITY_MSS, _flare_alt_calc*0.01f, _c);
 }
 
 
@@ -392,7 +392,7 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
 {
     // Compute speed module and glide path angle during descent
     float speed_module = norm(sink_rate, fwd_speed);
-    float glide_angle = safe_asin(3.14 / 2 - (fwd_speed / speed_module));
+    float glide_angle = safe_asin(M_PI / 2 - (fwd_speed / speed_module));
 
     // Estimate inflow velocity at beginning of flare
     float inflow = - speed_module * sinf(glide_angle + radians(AP_ALPHA_TPP));
@@ -400,14 +400,14 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
     // Estimate flare duration
     float k_1 = fabsf((-sink_rate + 0.001f - safe_sqrt(_lift_hover / _c))/(-sink_rate + 0.001f + safe_sqrt(_lift_hover / _c)));
     float k_2 = fabsf((inflow - safe_sqrt(_lift_hover / _c)) / (inflow + safe_sqrt(_lift_hover / _c)));
-    float delta_t_flare = (0.5f * (_lift_hover / (9.8065 * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) - (0.5f * (_lift_hover / (9.8065 * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_2));
+    float delta_t_flare = (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) - (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_2));
 
     // Estimate flare delta altitude
-    float a = (2 * safe_sqrt(_c * 9.8065 / (_lift_hover / 9.8065))) * delta_t_flare + (2 * safe_sqrt(_c * 9.8065 / (_lift_hover / 9.8065))) * (0.5f * (_lift_hover / (9.8065 * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1));
+    float a = (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * delta_t_flare + (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1));
     float x = 1 - expf(a);
-    float s = 1 - expf((2 * safe_sqrt(_c * 9.8065 / (_lift_hover / 9.8065))) * (0.5f * (_lift_hover/(9.8065 * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)));
+    float s = 1 - expf((2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover/(GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)));
     float d = safe_sqrt(_lift_hover / _c);
-    float flare_distance = ((2 * d / (2 * safe_sqrt(_c * 9.8065 / (_lift_hover / 9.8065)))) * (a - logf(fabsf(x)) - (2 * safe_sqrt(_c * 9.8065 / (_lift_hover / 9.8065))) * (0.5f * (_lift_hover / (9.8065 * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) + logf(fabsf(s)))) - d * delta_t_flare;
+    float flare_distance = ((2 * d / (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS)))) * (a - logf(fabsf(x)) - (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) + logf(fabsf(s)))) - d * delta_t_flare;
     float delta_h = -flare_distance * cosf(radians(AP_ALPHA_TPP));
 
     // Estimate altitude to begin collective pull
@@ -558,7 +558,7 @@ void AC_Autorotation::update_flare_alt(void)
         if ((_speed_forward >= 0.8f * _param_target_speed) && (delta_v_z <= 1) && (fabsf(_avg_sink_deriv)<=0.005)) {
             float vel_z = _inav.get_velocity_z_up_cms() * 0.01f;
             float spd_fwd = _speed_forward * 0.01f;
-            _c = (_lift_hover / (sq(vel_z) * 0.5f * 1.225f * _disc_area)) * 1.15f;
+            _c = (_lift_hover / (sq(vel_z) * 0.5f * SSL_AIR_DENSITY * _disc_area)) * 1.15f;
             _c = constrain_float(_c, 0.7f, 1.4f);
             calc_flare_alt(vel_z,spd_fwd);
             _flare_update_check = true;
