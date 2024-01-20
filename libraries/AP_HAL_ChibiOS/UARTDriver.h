@@ -132,6 +132,9 @@ public:
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
 private:
+    // whether TX DMA is fully set up
+    bool is_tx_dma_active() const { return tx_dma_enabled && dma_handle != nullptr; }
+
     const SerialDef &sdef;
     bool rx_dma_enabled;
     bool tx_dma_enabled;
