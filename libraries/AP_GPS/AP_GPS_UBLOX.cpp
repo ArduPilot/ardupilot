@@ -50,6 +50,9 @@
 // use this to enable debugging of moving baseline configs
 #define UBLOX_MB_DEBUGGING 0
 
+// debug VALGET/VALSET configuration
+#define UBLOX_CFG_DEBUGGING 0
+
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
@@ -76,6 +79,19 @@ extern const AP_HAL::HAL& hal;
 #endif
 #else
  # define MB_Debug(fmt, args ...)
+#endif
+
+#if UBLOX_CFG_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define CFG_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
+ # define CFG_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define CFG_Debug(fmt, args ...)
 #endif
 
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
@@ -1031,13 +1047,13 @@ AP_GPS_UBLOX::_parse_gps(void)
                           likely this device does not support fetching multiple keys at once, go one at a time
                         */
                         if (active_config.fetch_index == -1) {
-                            Debug("NACK starting %u", unsigned(active_config.count));
+                            CFG_Debug("NACK starting %u", unsigned(active_config.count));
                             active_config.fetch_index = 0;
                         } else {
                             // the device does not support the config key we asked for,
                             // consider the bit as done
                             active_config.done_mask |= (1U<<active_config.fetch_index);
-                            Debug("NACK %d 0x%x done=0x%x",
+                            CFG_Debug("NACK %d 0x%x done=0x%x",
                                      int(active_config.fetch_index),
                                      unsigned(active_config.list[active_config.fetch_index].key),
                                      unsigned(active_config.done_mask));
@@ -1279,9 +1295,10 @@ AP_GPS_UBLOX::_parse_gps(void)
                         _cfg_needs_save = true;
                     } else {
                         active_config.done_mask |= (1U << cfg_idx);
-                        Debug("done %u mask=0x%x",
-                              unsigned(cfg_idx),
-                              unsigned(active_config.done_mask));
+                        CFG_Debug("done %u mask=0x%x all_mask=0x%x",
+                                  unsigned(cfg_idx),
+                                  unsigned(active_config.done_mask),
+                                  (1U<<active_config.count)-1);
                         if (active_config.done_mask == (1U<<active_config.count)-1) {
                             // all done!
                             _unconfigured_messages &= ~active_config.unconfig_bit;
@@ -1293,7 +1310,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                         active_config.fetch_index++;
                         if (active_config.fetch_index < active_config.count) {
                             _configure_valget(active_config.list[active_config.fetch_index].key);
-                            Debug("valget %d 0x%x", int(active_config.fetch_index),
+                            CFG_Debug("valget %d 0x%x", int(active_config.fetch_index),
                                   unsigned(active_config.list[active_config.fetch_index].key));
                         }
                     }
@@ -1352,10 +1369,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
             // check for M10
             if (strncmp(_version.hwVersion, "000A0000", 8) == 0) {
-                if (strncmp(_version.swVersion, "ROM SPG 5", 9) == 0) {
-                    _hardware_generation = UBLOX_M10;
-                    _unconfigured_messages |= CONFIG_M10;
-                }
+                _hardware_generation = UBLOX_M10;
+                _unconfigured_messages |= CONFIG_M10;
+                // M10 does not support CONFIG_GNSS
+                _unconfigured_messages &= ~CONFIG_GNSS;
                 check_L1L5 = true;
             }
             if (check_L1L5) {
