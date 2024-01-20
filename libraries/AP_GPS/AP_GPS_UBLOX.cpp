@@ -1323,7 +1323,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 log_mon_hw2();  
             }
             break;
-        case MSG_MON_VER:
+        case MSG_MON_VER: {
+            bool check_L1L5 = false;
             _have_version = true;
             strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
@@ -1343,16 +1344,11 @@ AP_GPS_UBLOX::_parse_gps(void)
                     }
                     _hardware_generation = UBLOX_F9;
                 }
-                // check if L1L5 in extension
-                if (memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "L1L5", 4) != nullptr) {
-                    supports_l5 = true;
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox supports L5 Band");
-                    _unconfigured_messages |= CONFIG_L5;
-                }
                 if (strncmp(_version.swVersion, "EXT CORE 4", 10) == 0) {
                     // a M9
                     _hardware_generation = UBLOX_M9;
                 }
+                check_L1L5 = true;
             }
             // check for M10
             if (strncmp(_version.hwVersion, "000A0000", 8) == 0) {
@@ -1360,8 +1356,18 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _hardware_generation = UBLOX_M10;
                     _unconfigured_messages |= CONFIG_M10;
                 }
+                check_L1L5 = true;
+            }
+            if (check_L1L5) {
+                // check if L1L5 in extension
+                if (memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "L1L5", 4) != nullptr) {
+                    supports_l5 = true;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox supports L5 Band");
+                    _unconfigured_messages |= CONFIG_L5;
+                }
             }
             break;
+        }
         default:
             unexpected_message();
         }
