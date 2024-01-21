@@ -496,6 +496,8 @@ private:
 #endif
 };
 
+    bool _add_backend(DriverType driver_type, AP_Compass_Backend *backend);
+
     bool _driver_enabled(enum DriverType driver_type);
     
     // backend objects
