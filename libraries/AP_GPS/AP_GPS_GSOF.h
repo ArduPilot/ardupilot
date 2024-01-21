@@ -58,7 +58,8 @@ private:
 
     bool parse(const uint8_t temp) WARN_IF_UNUSED;
     bool process_message() WARN_IF_UNUSED;
-
+    bool _has_been_armed;
+    
     // Send a request to the GPS to set the baud rate on the specified port.
     // Note - these request functions currently ignore the ACK from the device.
     // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
@@ -67,6 +68,9 @@ private:
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
 
+    void requestLogging(const HW_Port portIndex);
+    void stopLogging(const HW_Port portIndex);
+
     double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
@@ -74,6 +78,8 @@ private:
 
     bool validate_baud(const uint8_t baud) const WARN_IF_UNUSED;
     bool validate_com_port(const uint8_t com_port) const WARN_IF_UNUSED;
+    bool validate_raw_data(const uint8_t raw_data) const WARN_IF_UNUSED;
+
 
     struct Msg_Parser
     {
