@@ -66,30 +66,9 @@ void ModeFollow::run()
         // convert dist_vec_offs to cm in NEU
         const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
 
-        // calculate desired velocity vector in cm/s in NEU
+        // calculate desired relative velocity vector in cm/s in NEU
         const float kp = g2.follow.get_pos_p().kP();
-        desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_offs_neu.x * kp);
-        desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f) + (dist_vec_offs_neu.y * kp);
-        desired_velocity_neu_cms.z = (-vel_of_target.z * 100.0f) + (dist_vec_offs_neu.z * kp);
-
-        // scale desired velocity to stay within horizontal speed limit
-        float desired_speed_xy = safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y));
-        if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_max_speed_xy_cms())) {
-            const float scalar_xy = pos_control->get_max_speed_xy_cms() / desired_speed_xy;
-            desired_velocity_neu_cms.x *= scalar_xy;
-            desired_velocity_neu_cms.y *= scalar_xy;
-            desired_speed_xy = pos_control->get_max_speed_xy_cms();
-        }
-
-        // limit desired velocity to be between maximum climb and descent rates
-        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_max_speed_down_cms()), pos_control->get_max_speed_up_cms());
-
-        // unit vector towards target position (i.e. vector to lead vehicle + offset)
-        Vector3f dir_to_target_neu = dist_vec_offs_neu;
-        const float dir_to_target_neu_len = dir_to_target_neu.length();
-        if (!is_zero(dir_to_target_neu_len)) {
-            dir_to_target_neu /= dir_to_target_neu_len;
-        }
+        desired_velocity_neu_cms = dist_vec_offs_neu * kp;
 
         // create horizontal desired velocity vector (required for slow down calculations)
         Vector2f desired_velocity_xy_cms(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y);
@@ -104,12 +83,21 @@ void ModeFollow::run()
         const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
         copter.avoid.limit_velocity_2D(pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
         // copy horizontal velocity limits back to 3d vector
-        desired_velocity_neu_cms.x = desired_velocity_xy_cms.x;
-        desired_velocity_neu_cms.y = desired_velocity_xy_cms.y;
+        desired_velocity_neu_cms.xy() = desired_velocity_xy_cms;
 
         // limit vertical desired_velocity_neu_cms to slow as we approach target (we use 1/2 of maximum deceleration for gentle slow down)
         const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
+
+        // Add the target velocity baseline.
+        desired_velocity_neu_cms.xy() += vel_of_target.xy() * 100.0f;
+        desired_velocity_neu_cms.z += -vel_of_target.z * 100.0f;
+
+        // scale desired velocity to stay within horizontal speed limit
+        desired_velocity_neu_cms.xy().limit_length(pos_control->get_max_speed_xy_cms());
+
+        // limit desired velocity to be between maximum climb and descent rates
+        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_max_speed_down_cms()), pos_control->get_max_speed_up_cms());
 
         // limit the velocity for obstacle/fence avoidance
         copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss(), G_Dt);
