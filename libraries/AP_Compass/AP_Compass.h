@@ -422,7 +422,7 @@ private:
     bool _cal_requires_reboot;
     bool _cal_has_run;
 
-    // enum of drivers for COMPASS_TYPEMASK
+    // enum of drivers for COMPASS_DISBLMSK
     enum DriverType {
 #if AP_COMPASS_HMC5843_ENABLED
         DRIVER_HMC5843  =0,
