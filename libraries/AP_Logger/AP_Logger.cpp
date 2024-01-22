@@ -289,7 +289,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for (uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<_num_units; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -300,7 +300,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for (uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<_num_multipliers; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
