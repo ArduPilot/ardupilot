@@ -51,6 +51,8 @@ const AP_Param::GroupInfo RichenPower::var_info[] = {
 
 RichenPower::RichenPower() : SerialDevice::SerialDevice()
 {
+    ASSERT_STORAGE_SIZE(RichenPacket, 70);
+
     AP_Param::setup_object_defaults(this, var_info);
 
     u.packet.magic1 = 0xAA;
