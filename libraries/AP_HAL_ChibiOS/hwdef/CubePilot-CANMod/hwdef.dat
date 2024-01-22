@@ -19,9 +19,9 @@ env AP_PERIPH 1
 FLASH_SIZE_KB 2048
 
 # the location where the bootloader will put the firmware
-# the H757 has 128k sectors, assign 2 sectors for BL
-FLASH_BOOTLOADER_LOAD_KB 256
-FLASH_RESERVE_START_KB 256
+# the H757 has 128k sectors, assign 1 sectors for BL
+FLASH_BOOTLOADER_LOAD_KB 128
+FLASH_RESERVE_START_KB 128
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
