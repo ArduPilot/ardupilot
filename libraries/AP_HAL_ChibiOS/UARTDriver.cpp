@@ -535,9 +535,9 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 
     if (half_duplex && !hd_tx_active) {
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
-        dmaStreamSetPeripheral(rxdma, &sd->usart->RDR);
+        dmaStreamSetPeripheral(txdma, &sd->usart->RDR);
 #else
-        dmaStreamSetPeripheral(rxdma, &sd->usart->DR);
+        dmaStreamSetPeripheral(txdma, &sd->usart->DR);
 #endif // STM32F7
     } else {
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
@@ -812,10 +812,6 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     chSysLockFromISR();
-    if (uart_drv->half_duplex) {
-        TOGGLE_PIN_DEBUG(52);
-        TOGGLE_PIN_DEBUG(52);
-    }
 
     // check nothing bad happened
     if ((flags & STM32_DMA_ISR_TEIF) != 0) {
@@ -835,6 +831,8 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
             uart_drv->_rx_stats_bytes += len;
             uart_drv->receive_timestamp_update();
         }
+        TOGGLE_PIN_DEBUG(52);
+        TOGGLE_PIN_DEBUG(52);
         chEvtSignalI(uart_drv->uart_thread_ctx, EVT_TRANSMIT_RX_DMA_COMPLETE);
 
         if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
@@ -856,10 +854,12 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
 void UARTDriver::half_duplex_irq_cb(void* self)
 {
 #if HAL_USE_SERIAL == TRUE
-    TOGGLE_PIN_DEBUG(51);
-    TOGGLE_PIN_DEBUG(51);
     UARTDriver* uart_drv = (UARTDriver*)self;
-    if (!uart_drv->is_tx_dma_active() || uart_drv->hd_tx_active) {
+    if (!uart_drv->is_tx_dma_active()) {
+        return;
+    }
+
+    if (uart_drv->hd_tx_active) {
         return;
     }
 #if defined(STM32F7) || defined(STM32H7)
@@ -1158,9 +1158,6 @@ void UARTDriver::half_duplex_setup_tx(void)
     sdStop(sd);
 #ifndef HAL_UART_NODMA
     if (is_tx_dma_active()) {
-        TOGGLE_PIN_DEBUG(52);
-        TOGGLE_PIN_DEBUG(52);
-
         // disable RX DMA and enable TX DMA
         sercfg.cr1 &= ~USART_CR1_IDLEIE;
         sercfg.cr3 &= ~USART_CR3_DMAR;
@@ -1186,8 +1183,6 @@ void UARTDriver::half_duplex_setup_rx(void)
         sercfg.cr1 |= USART_CR1_IDLEIE;
         sercfg.cr3 &= ~USART_CR3_DMAT;
         sercfg.cr3 |= USART_CR3_DMAR;
-        TOGGLE_PIN_DEBUG(53);
-        TOGGLE_PIN_DEBUG(53);
     }
 #endif
     sercfg.cr3 |= USART_CR3_HDSEL;
@@ -1415,18 +1410,9 @@ void UARTDriver::_tx_timer_tick(void)
 
     _in_tx_timer = true;
 
+    // hd_tx_active is only set if there is actually data to send
     if (hd_tx_active) {
-        TOGGLE_PIN_DEBUG(54);
-        TOGGLE_PIN_DEBUG(54);
-
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
-        if (!hd_tx_active) {
-            /*
-              half-duplex transmit has finished. We now re-enable the
-              HDSEL bit for receive
-            */
-            half_duplex_setup_rx();
-        }
     }
 
     // don't try IO on a disconnected USB port
@@ -1443,8 +1429,13 @@ void UARTDriver::_tx_timer_tick(void)
     // half duplex we do reads in the write thread
     if (half_duplex && !hd_tx_active) {
         _in_rx_timer = true;
+        /*
+            half-duplex transmit has finished. We now re-enable the
+            HDSEL bit for receive
+        */
+        half_duplex_setup_rx();
 #ifndef HAL_UART_NODMA
-        if (!is_tx_dma_active() || !(sercfg.cr3 & USART_CR3_DMAR))
+        if (!is_tx_dma_active())
 #endif
         {
             read_bytes_NODMA();
@@ -1457,6 +1448,8 @@ void UARTDriver::_tx_timer_tick(void)
         }
 #endif
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
+        TOGGLE_PIN_DEBUG(52);
+        TOGGLE_PIN_DEBUG(52);
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
         }
         _in_rx_timer = false;
@@ -1825,7 +1818,8 @@ bool UARTDriver::set_options(uint16_t options)
 #endif
         // force DMA off when using half-duplex as the timing may affect other devices
         // sharing the DMA channel
-        rx_dma_enabled = tx_dma_enabled = false;
+        rx_dma_enabled = false;
+        tx_dma_enabled = tx_bounce_buf != nullptr;
     } else {
         cr3 &= ~USART_CR3_HDSEL;
         _cr3_options &= ~USART_CR3_HDSEL;
