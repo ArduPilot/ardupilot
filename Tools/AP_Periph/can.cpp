@@ -1292,7 +1292,7 @@ void AP_Periph_FW::processRx(void)
                 if (other_instance.mirror_queue == nullptr) { // we aren't mirroring here, or failed on memory
                     continue;
                 }
-                if (other_instance.index == ins.index) { // don't self add
+                if (other_instance.index == instance.index) { // don't self add
                     continue;
                 }
                 other_instance.mirror_queue->push(rxmsg);
