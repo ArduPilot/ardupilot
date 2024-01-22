@@ -241,6 +241,7 @@ class ExtractFeatures(object):
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
+            ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
         ]
 
     def progress(self, msg):
