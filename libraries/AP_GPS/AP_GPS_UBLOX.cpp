@@ -36,7 +36,6 @@
     #define UBLOX_SPEED_CHANGE 0
 #endif
 
-
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
 #ifndef CONFIGURE_PPS_PIN
@@ -170,7 +169,6 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
  { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
 };
 
-
 /*
   config for F9 GPS in moving baseline rover role
   See ZED-F9P integration manual section 3.1.5.6.1.
@@ -178,9 +176,11 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
   data from a GPS previously configured as a base
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
+ { ConfigKey::CFG_UART2_ENABLED, 1},
+ { ConfigKey::CFG_UART2_BAUDRATE, 460800},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART2INPROT_RTCM3X, 0},
+ { ConfigKey::CFG_UART1INPROT_RTCM3X, 0},
+ { ConfigKey::CFG_UART2INPROT_RTCM3X, 1},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 1},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
  { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, 0},
@@ -223,7 +223,6 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
  { ConfigKey::MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
 };
 #endif // GPS_MOVING_BASELINE
-
 
 void
 AP_GPS_UBLOX::_request_next_config(void)
