@@ -89,10 +89,10 @@
 #define STM32_LSI_ENABLED                   FALSE
 #define STM32_LSE_ENABLED                   FALSE
 #define STM32_SW                            STM32_SW_PLLRCLK
-#define STM32_PLLN_VALUE                    42
+#define STM32_PLLN_VALUE                    40
 #define STM32_PLLPDIV_VALUE                 0
 #define STM32_PLLP_VALUE                    7
-#define STM32_PLLQ_VALUE                    8
+#define STM32_PLLQ_VALUE                    4
 #define STM32_PLLR_VALUE                    2
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE1                         STM32_PPRE1_DIV1
@@ -117,11 +117,7 @@
 #define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
 #define STM32_SAI1SEL                       STM32_SAI1SEL_SYSCLK
 #define STM32_I2S23SEL                      STM32_I2S23SEL_SYSCLK
-#if STM32_HSECLK == 0U
 #define STM32_FDCANSEL                      STM32_FDCANSEL_PLLQCLK
-#else
-#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE
-#endif
 #define STM32_CLK48SEL                      STM32_CLK48SEL_HSI48
 #define STM32_ADC12SEL                      STM32_ADC12SEL_PLLPCLK
 #define STM32_ADC345SEL                     STM32_ADC345SEL_PLLPCLK
