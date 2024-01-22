@@ -236,6 +236,43 @@ public:
     void handle_tack_request() override;
 };
 
+// class TEST_MODE : public Mode
+// {
+// public:
+
+//     Number mode_number() const override { return Number::TEST_MODE; }
+//     const char *name4() const override { return "TEST"; }
+
+//     // methods that affect movement of the vehicle in this mode
+//     void update() override;
+
+//     bool _enter() override;
+
+//     void _exit() override;
+
+
+//     // return if in non-manual mode : AUTO, GUIDED, RTL
+//     virtual bool is_autopilot_mode() const { return false; }
+
+//     // returns true if steering is directly controlled by RC
+//     virtual bool manual_steering() const { return false; }
+
+//     // returns true if the throttle is controlled automatically
+//     virtual bool auto_throttle() { return is_autopilot_mode(); }
+
+
+
+//     // // attributes for mavlink system status reporting
+//     // bool has_manual_input() const override { return true; }
+
+//     // // acro mode requires a velocity estimate for non skid-steer rovers
+//     // bool requires_position() const override { return false; }
+//     // bool requires_velocity() const override;
+
+//     // // sailboats in acro mode support user manually initiating tacking from transmitter
+//     // void handle_tack_request() override;
+// };
+
 
 class ModeAuto : public Mode
 {

@@ -845,7 +845,7 @@ void Rover::load_parameters(void)
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
 
-    if (is_balancebot()) {
+    if (is_balance()) {
         g2.crash_angle.set_default(30);
     }
 

@@ -10,8 +10,8 @@ void ModeAcro::update()
         get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
 
         // if vehicle is balance bot, calculate actual throttle required for balancing
-        if (rover.is_balancebot()) {
-            rover.balancebot_pitch_control(desired_throttle);
+        if (rover.is_balance()) {
+            rover.balance_pitch_control(desired_throttle);
         }
 
         // no valid speed, just use the provided throttle
