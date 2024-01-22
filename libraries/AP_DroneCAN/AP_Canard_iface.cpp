@@ -202,6 +202,9 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
 }
 
 void CanardInterface::onTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
+#ifdef HAL_GPIO_PIN_LED_CAN1
+    palToggleLine(HAL_GPIO_PIN_LED_CAN1);
+#endif
     CanardInterface* iface = (CanardInterface*) ins->user_reference;
     iface->handle_message(*transfer);
 }
