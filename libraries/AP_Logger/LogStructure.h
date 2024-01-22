@@ -892,8 +892,8 @@ struct PACKED log_VER {
 // @Field: Qual: Estimated sensor data quality
 // @Field: flowX: Sensor flow rate, X-axis
 // @Field: flowY: Sensor flow rate,Y-axis
-// @Field: bodyX: derived velocity, X-axis
-// @Field: bodyY: derived velocity, Y-axis
+// @Field: bodyX: derived rotational velocity, X-axis
+// @Field: bodyY: derived rotational velocity, Y-axis
 
 // @LoggerMessage: PARM
 // @Description: parameter value
