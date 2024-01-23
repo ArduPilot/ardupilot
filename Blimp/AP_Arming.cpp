@@ -29,8 +29,10 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
-    return fence_checks(display_failure)
-           & parameter_checks(display_failure)
+    return parameter_checks(display_failure)
+#if AP_FENCE_ENABLED
+           & fence_checks(display_failure)
+#endif
            & motor_checks(display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)

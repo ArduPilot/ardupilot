@@ -7,8 +7,8 @@
 
 
 #ifndef AP_NETWORKING_ENABLED
-#if defined(__APPLE__) || defined(__clang__)
-// MacOS can't build lwip, and clang fails on linux
+#if !defined(__APPLE__) && defined(__clang__)
+// clang fails on linux
 #define AP_NETWORKING_ENABLED 0
 #else
 #define AP_NETWORKING_ENABLED ((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
@@ -119,3 +119,17 @@
 #ifndef AP_NETWORKING_SENDFILE_BUFSIZE
 #define AP_NETWORKING_SENDFILE_BUFSIZE (64*512)
 #endif
+
+#ifndef AP_NETWORKING_PPP_GATEWAY_ENABLED
+#define AP_NETWORKING_PPP_GATEWAY_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_BACKEND_PPP)
+#endif
+
+/*
+  the IP address given to the remote end of the PPP link when running
+  as a PPP<->ethernet gateway. If this is on the same subnet as the
+  ethernet interface IP then proxyarp will be used
+ */
+#ifndef AP_NETWORKING_REMOTE_PPP_IP
+#define AP_NETWORKING_REMOTE_PPP_IP "0.0.0.0"
+#endif
+

@@ -293,8 +293,8 @@ private:
     void update_current_mode(void);
 
     // balance_bot.cpp
-    void balancebot_pitch_control(float &throttle);
-    bool is_balancebot() const;
+    void balance_pitch_control(float &throttle);
+    bool is_balance() const;
 
     // commands.cpp
     bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;

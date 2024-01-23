@@ -25,9 +25,17 @@
   #error There must be at least one relay instance if using AP_Relay
 #endif
 
+#if AP_RELAY_DRONECAN_ENABLED
+#include <AP_DroneCAN/AP_DroneCAN.h>
+#endif
+
 /// @class	AP_Relay
 /// @brief	Class to manage the ArduPilot relay
 class AP_Relay {
+#if AP_RELAY_DRONECAN_ENABLED
+    // Allow DroneCAN to directly access private DroneCAN state
+    friend class AP_DroneCAN;
+#endif
 public:
     AP_Relay();
 
@@ -71,12 +79,59 @@ private:
 
     AP_Relay_Params _params[AP_RELAY_NUM_RELAYS];
 
+    // Return true is function is valid
+    bool function_valid(AP_Relay_Params::FUNCTION function) const;
+
     void set(uint8_t instance, bool value);
 
     void set_defaults();
     void convert_params();
 
     void set_pin_by_instance(uint8_t instance, bool value);
+
+    // Set relay state from pin number
+    void set_pin(const int16_t pin, const bool value);
+
+    // Get relay state from pin number
+    bool get_pin(const int16_t pin) const;
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+    // Virtual DroneCAN pins
+    class DroneCAN {
+    public:
+        // Return true if pin number is a virtual DroneCAN pin
+        bool valid_pin(int16_t pin) const;
+
+        // Enable streaming of pin number
+        void enable_pin(int16_t pin);
+
+        // Populate message and update index with the sent command
+        bool populate_next_command(uint8_t &index, uavcan_equipment_hardpoint_Command &msg) const;
+
+        // Set DroneCAN relay state from pin number
+        void set_pin(const int16_t pin, const bool value);
+
+        // Get relay state from pin number
+        bool get_pin(const int16_t pin) const;
+
+    private:
+
+        // Get the hardpoint index of given pin number
+        uint8_t hardpoint_index(const int16_t pin) const;
+
+        // Send DroneCAN hardpoint message for given index on all interfaces
+        void send_index(const uint8_t index);
+
+        static constexpr uint8_t num_pins = (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_15 - (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_0;
+
+        struct {
+            bool value;
+            bool enabled;
+        } state[num_pins];
+
+    } dronecan;
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
+
 };
 
 namespace AP {

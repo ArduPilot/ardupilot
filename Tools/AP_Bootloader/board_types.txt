@@ -272,6 +272,9 @@ AP_HW_VIMDRONES_MOSAIC_X5            1405
 AP_HW_VIMDRONES_MOSAIC_H             1406
 AP_HW_VIMDRONES_PERIPH               1407
 
+AP_HW_PIXHAWK6X_PERIPH               1408
+
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
@@ -280,6 +283,17 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 # IDs 5210-5219 reserved for Aocoda-RC
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
+
+#IDs 5301-5399 reserved for Sierra Aerospace
+AP_HW_Sierra-TrueNavPro-G4           5301
+AP_HW_Sierra-TrueNavIC               5302
+AP_HW_Sierra-TrueNorth-G4            5303
+AP_HW_Sierra-TrueSpeed-G4            5304
+AP_HW_Sierra-PrecisionPoint-G4       5305
+AP_HW_Sierra-AeroNex                 5306
+AP_HW_Sierra-TrueFlow                5307
+AP_HW_Sierra-TrueNavIC-Pro           5308
+AP_HW_Sierra-F1-Pro                  5309
 
 # IDs 6000-6099 reserved for SpektreWorks
 

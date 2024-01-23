@@ -158,6 +158,7 @@ jobs:
             signing,
             CubeOrange-PPP,
             CubeOrange-SOHW,
+            Pixhawk6X-PPPGW,
         ]
         toolchain: [
             chibios,

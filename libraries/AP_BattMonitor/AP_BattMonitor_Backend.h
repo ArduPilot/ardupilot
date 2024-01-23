@@ -58,6 +58,9 @@ public:
     // return true if cycle count can be provided and fills in cycles argument
     virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
 
+    // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
+    bool get_state_of_health_pct(uint8_t &soh_pct) const;
+
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
     float voltage_resting_estimate() const;

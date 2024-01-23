@@ -19,7 +19,7 @@ void Rover::Log_Write_Attitude()
     logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid_info());
 
     // log pitch control for balance bots
-    if (is_balancebot()) {
+    if (is_balance()) {
         logger.Write_PID(LOG_PIDP_MSG, g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info());
     }
 

@@ -55,6 +55,10 @@
 #include "AP_DroneCAN_serial.h"
 #endif
 
+#if AP_RELAY_DRONECAN_ENABLED
+#include <AP_Relay/AP_Relay.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
@@ -152,6 +156,16 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_RV", 9, AP_DroneCAN, _esc_rv, 0),
+
+#if AP_RELAY_DRONECAN_ENABLED
+    // @Param: RLY_RT
+    // @DisplayName: DroneCAN relay output rate
+    // @Description: Maximum transmit rate for relay outputs, note that this rate is per message each message does 1 relay, so if with more relays will take longer to update at the same rate, a extra message will be sent when a relay changes state
+    // @Range: 0 200
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("RLY_RT", 23, AP_DroneCAN, _relay.rate_hz, 0),
+#endif
 
 #if AP_DRONECAN_SERIAL_ENABLED
     /*
@@ -251,6 +265,8 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     AP_GROUPINFO("S3_PRO", 22,  AP_DroneCAN, serial.ports[2].state.protocol, -1),
 #endif
 #endif // AP_DRONECAN_SERIAL_ENABLED
+
+    // RLY_RT is index 23 but has to be above SER_EN so its not hidden
 
     AP_GROUPEND
 };
@@ -434,6 +450,11 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     xacti_gnss_status.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 #endif
 
+#if AP_RELAY_DRONECAN_ENABLED
+    relay_hardpoint.set_timeout_ms(20);
+    relay_hardpoint.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
+#endif
+
     param_save_client.set_timeout_ms(20);
     param_save_client.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
@@ -449,9 +470,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     can_stats.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
     can_stats.set_timeout_ms(3000);
 
-    rgb_led.set_timeout_ms(20);
-    rgb_led.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
-    
     node_info_server.set_timeout_ms(20);
 
     // setup node status
@@ -531,6 +549,10 @@ void AP_DroneCAN::loop(void)
 
 #if AP_DRONECAN_SERIAL_ENABLED
         serial.update();
+#endif
+
+#if AP_RELAY_DRONECAN_ENABLED
+        relay_hardpoint_send();
 #endif
     }
 }
@@ -1211,6 +1233,33 @@ void AP_DroneCAN::safety_state_send()
         arming_status.broadcast(arming_msg);
     }
 }
+
+// Send relay outputs with hardpoint msg
+#if AP_RELAY_DRONECAN_ENABLED
+void AP_DroneCAN::relay_hardpoint_send()
+{
+    const uint32_t now = AP_HAL::millis();
+    if ((_relay.rate_hz == 0) || ((now - _relay.last_send_ms) < uint32_t(1000 / _relay.rate_hz))) {
+        // Rate limit per user config
+        return;
+    }
+    _relay.last_send_ms = now;
+
+    AP_Relay *relay = AP::relay();
+    if (relay == nullptr) {
+        return;
+    }
+
+    uavcan_equipment_hardpoint_Command msg {};
+
+    // Relay will populate the next command to send and update the last index
+    // This will cycle through each relay in turn
+    if (relay->dronecan.populate_next_command(_relay.last_index, msg)) {
+        relay_hardpoint.broadcast(msg);
+    }
+
+}
+#endif // AP_RELAY_DRONECAN_ENABLED
 
 /*
   handle Button message

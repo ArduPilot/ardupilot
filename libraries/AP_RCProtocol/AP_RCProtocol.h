@@ -70,6 +70,9 @@ public:
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         DRONECAN   = 13,
 #endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+        GHST       = 14,
+#endif
         NONE    //last enum always is None
     };
 
@@ -129,6 +132,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_CRSF_ENABLED
         case CRSF:
+#endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+        case GHST:
 #endif
             return true;
 #if AP_RCPROTOCOL_IBUS_ENABLED

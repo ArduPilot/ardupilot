@@ -14,20 +14,20 @@ void Rover::crash_check()
     bool crashed = false; //stores crash state
 
     // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode(if it is not a balance bot)
-    if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || ((!control_mode->is_autopilot_mode()) && (!is_balancebot()))) {
+    if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || ((!control_mode->is_autopilot_mode()) && (!is_balance()))) {
         crash_counter = 0;
         return;
     }
 
     // Crashed if pitch/roll > crash_angle
-    if ((g2.crash_angle != 0) && ((fabsf(ahrs.pitch) > radians(g2.crash_angle)) || (fabsf(ahrs.roll) > radians(g2.crash_angle)))) {
+    if ((g2.crash_angle != 0) && ((fabsf(ahrs.get_pitch()) > radians(g2.crash_angle)) || (fabsf(ahrs.get_roll()) > radians(g2.crash_angle)))) {
         crashed = true;
     }
 
     // TODO : Check if min vel can be calculated
     // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-    if (!is_balancebot()) {
+    if (!is_balance()) {
         if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
             (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
             (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
@@ -48,7 +48,7 @@ void Rover::crash_check()
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK,
                                  LogErrorCode::CRASH_CHECK_CRASH);
 
-        if (is_balancebot()) {
+        if (is_balance()) {
             // send message to gcs
             gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Disarming");
             arming.disarm(AP_Arming::Method::CRASH);

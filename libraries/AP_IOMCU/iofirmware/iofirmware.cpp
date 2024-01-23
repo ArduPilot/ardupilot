@@ -341,8 +341,8 @@ void AP_IOMCU_FW::init()
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
-    extern uint32_t __main_stack_base__[];
-    extern uint32_t __main_stack_end__[];
+    extern stkalign_t __main_stack_base__[];
+    extern stkalign_t __main_stack_end__[];
     uint32_t stklimit = (uint32_t)__main_stack_end__;
     uint32_t stkbase  = (uint32_t)__main_stack_base__;
     uint32_t *crawl   = (uint32_t *)stkbase;
@@ -354,8 +354,8 @@ static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
     chDbgAssert(free > 0, "mstack exhausted");
     mstack = (uint16_t)free;
 
-    extern uint32_t __main_thread_stack_base__[];
-    extern uint32_t __main_thread_stack_end__[];
+    extern stkalign_t __main_thread_stack_base__[];
+    extern stkalign_t __main_thread_stack_end__[];
     stklimit = (uint32_t)__main_thread_stack_end__;
     stkbase  = (uint32_t)__main_thread_stack_base__;
     crawl   = (uint32_t *)stkbase;

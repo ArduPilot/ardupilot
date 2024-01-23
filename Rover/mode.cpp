@@ -290,7 +290,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw(), target_speed, rover.G_Dt);
         if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
             // we are a sailboat trying to avoid fence, try a tack
             if (rover.control_mode != &rover.mode_acro) {
@@ -313,7 +313,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
         rover.g2.motors.set_mast_rotation(mast_rotation_out);
     } else {
         // call speed or stop controller
-        if (is_zero(target_speed) && !rover.is_balancebot()) {
+        if (is_zero(target_speed) && !rover.is_balance()) {
             bool stopped;
             throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
         } else {
@@ -323,8 +323,8 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
         }
 
         // if vehicle is balance bot, calculate actual throttle required for balancing
-        if (rover.is_balancebot()) {
-            rover.balancebot_pitch_control(throttle_out);
+        if (rover.is_balance()) {
+            rover.balance_pitch_control(throttle_out);
         }
     }
 
@@ -340,9 +340,9 @@ bool Mode::stop_vehicle()
     float throttle_out;
 
     // if vehicle is balance bot, calculate throttle required for balancing
-    if (rover.is_balancebot()) {
+    if (rover.is_balance()) {
         throttle_out = 100.0f * attitude_control.get_throttle_out_speed(0, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
-        rover.balancebot_pitch_control(throttle_out);
+        rover.balance_pitch_control(throttle_out);
     } else {
         throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     }

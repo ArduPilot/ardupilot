@@ -142,6 +142,8 @@ class MicroRosAgentLaunch:
             transport,
             "--middleware",
             middleware,
+            "--verbose",
+            verbose,
         ]
 
         if transport in ["udp4", "udp6", "tcp4", "tcp6"]:

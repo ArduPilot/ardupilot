@@ -86,6 +86,20 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     AP_SUBGROUPINFO(param.test_ipaddr, "TEST_IP", 8,  AP_Networking, AP_Networking_IPV4),
 #endif
 
+    // @Param: OPTIONS
+    // @DisplayName: Networking options
+    // @Description: Networking options
+    // @Bitmask: 0:EnablePPP Ethernet gateway
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    // @Group: REMPPP_IP
+    // @Path: AP_Networking_address.cpp
+    AP_SUBGROUPINFO(param.remote_ppp_ip, "REMPPP_IP", 10,  AP_Networking, AP_Networking_IPV4),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -129,8 +143,19 @@ void AP_Networking::init()
     }
 #endif
 
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    if (option_is_set(OPTION::PPP_ETHERNET_GATEWAY)) {
+        /*
+          when we are a PPP/Ethernet gateway we bring up the ethernet first
+         */
+        backend = new AP_Networking_ChibiOS(*this);
+        backend_PPP = new AP_Networking_PPP(*this);
+    }
+#endif
+
+
 #if AP_NETWORKING_BACKEND_PPP
-    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
+    if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
         backend = new AP_Networking_PPP(*this);
     }
 #endif
@@ -157,6 +182,13 @@ void AP_Networking::init()
         backend = nullptr;
         return;
     }
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+    if (backend_PPP != nullptr && !backend_PPP->init()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend_PPP init failed");
+        backend_PPP = nullptr;
+    }
+#endif
 
     announce_address_changes();
 
@@ -408,6 +440,13 @@ int ap_networking_printf(const char *fmt, ...)
     va_end(ap);
 #endif
     return 0;
+}
+
+// address to string using a static return buffer
+const char *AP_Networking::address_to_str(uint32_t addr)
+{
+    static char buf[16]; // 16 for aaa.bbb.ccc.ddd
+    return SocketAPM::inet_addr_to_str(addr, buf, sizeof(buf));
 }
 
 #ifdef LWIP_PLATFORM_ASSERT

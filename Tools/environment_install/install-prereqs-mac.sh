@@ -78,6 +78,7 @@ function install_arm_none_eabi_toolchain() {
         )
     fi
     echo "Registering STM32 Toolchain for ccache"
+    sudo mkdir -p /usr/local/opt/ccache/libexec
     sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-g++
     sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-gcc
     echo "Done!"

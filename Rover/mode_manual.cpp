@@ -16,8 +16,8 @@ void ModeManual::update()
     desired_steering = 4500.0 * input_expo(desired_steering / 4500, g2.manual_steering_expo);
 
     // if vehicle is balance bot, calculate actual throttle required for balancing
-    if (rover.is_balancebot()) {
-        rover.balancebot_pitch_control(desired_throttle);
+    if (rover.is_balance()) {
+        rover.balance_pitch_control(desired_throttle);
     }
 
     // walking robots support roll, pitch and walking_height

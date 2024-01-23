@@ -137,12 +137,32 @@ const AP_Param::GroupInfo Networking_Periph::var_info[] {
     AP_SUBGROUPINFO(passthru[8], "PASS9_", 19, Networking_Periph, Passthru),
 #endif
 
+#if AP_NETWORKING_BACKEND_PPP
+    // @Param: PPP_PORT
+    // @DisplayName: PPP serial port
+    // @Description: PPP serial port
+    // @Range: -1 10
+    AP_GROUPINFO("PPP_PORT", 20, Networking_Periph, ppp_port, AP_PERIPH_NET_PPP_PORT_DEFAULT),
+
+    // @Param: PPP_BAUD
+    // @DisplayName: PPP serial baudrate
+    // @Description: PPP serial baudrate
+    // @CopyFieldsFrom: SERIAL1_BAUD
+    AP_GROUPINFO("PPP_BAUD", 21, Networking_Periph, ppp_baud, AP_PERIPH_NET_PPP_BAUD_DEFAULT),
+#endif
+
     AP_GROUPEND
 };
 
 
 void Networking_Periph::init(void)
 {
+#if AP_NETWORKING_BACKEND_PPP
+    if (ppp_port >= 0) {
+        AP::serialmanager().set_protocol_and_baud(ppp_port, AP_SerialManager::SerialProtocol_PPP, ppp_baud.get());
+    }
+#endif
+
     networking_lib.init();
 
 #if HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0

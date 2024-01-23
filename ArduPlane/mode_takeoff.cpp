@@ -81,7 +81,7 @@ void ModeTakeoff::update()
     const float dist = target_dist;
     if (!takeoff_started) {
         const uint16_t altitude = plane.relative_ground_altitude(false,true);
-        const float direction = degrees(ahrs.yaw);
+        const float direction = degrees(ahrs.get_yaw());
         // see if we will skip takeoff as already flying
         if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
             if (altitude >= alt) {
