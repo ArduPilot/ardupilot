@@ -822,6 +822,9 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
         uint16_t len = TX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->txdma);
 
         dmaStreamDisable(uart_drv->txdma);
+
+        //TOGGLE_PIN_DEBUG(52);
+        //TOGGLE_PIN_DEBUG(52);
     
         if (len > 0) {
             /*
@@ -831,8 +834,6 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
             uart_drv->_rx_stats_bytes += len;
             uart_drv->receive_timestamp_update();
         }
-        TOGGLE_PIN_DEBUG(52);
-        TOGGLE_PIN_DEBUG(52);
         chEvtSignalI(uart_drv->uart_thread_ctx, EVT_TRANSMIT_RX_DMA_COMPLETE);
 
         if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
@@ -849,12 +850,17 @@ __RAMFUNC__ void UARTDriver::tx_or_hdrx_complete(void* self, uint32_t flags)
 
 #ifndef HAL_UART_NODMA
 /*
-  handle IDLE interrupts and turn them into DMA completion interrupts
+  handle IDLE interrupts and turn them into DMA completion interrupts.
+  The IDLE interrupt will not be signalled again until RXNE has been set -
+  i.e. data has been received. Thus it is important not to simply finish the
+  DMA transaction on the first IDLE interrupt as this will almost always be
+  at the wrong time in an existing IDLE condition.
  */
 void UARTDriver::half_duplex_irq_cb(void* self)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
+    SerialDriver* sd = (SerialDriver*)(uart_drv->sdef.serial);
     if (!uart_drv->is_tx_dma_active()) {
         return;
     }
@@ -862,9 +868,30 @@ void UARTDriver::half_duplex_irq_cb(void* self)
     if (uart_drv->hd_tx_active) {
         return;
     }
+
+    // Nothing has been transferred so don't signal end of DMA transaction
+    if (dmaStreamGetTransactionSize(uart_drv->txdma) == TX_BOUNCE_BUFSIZE) {
+        // clear IDLE interrupt for next time
 #if defined(STM32F7) || defined(STM32H7)
-    TOGGLE_PIN_DEBUG(51);
-    TOGGLE_PIN_DEBUG(51);
+        sd->usart->ICR |= USART_ICR_IDLECF;
+        volatile uint32_t isr = sd->usart->ISR;
+        if (isr & USART_ISR_RXNE_RXFNE) {
+            TOGGLE_PIN_DEBUG(51);
+            TOGGLE_PIN_DEBUG(51);
+        }
+#else
+        (void)sd->usart->SR;
+        (void)sd->usart->DR;
+#endif
+        TOGGLE_PIN_DEBUG(52);
+        TOGGLE_PIN_DEBUG(52);
+        return;
+    }
+
+    //TOGGLE_PIN_DEBUG(51);
+    //TOGGLE_PIN_DEBUG(51);
+
+#if defined(STM32F7) || defined(STM32H7)
     // disable dma, triggering DMA transfer complete interrupt
     uart_drv->txdma->stream->CR &= ~STM32_DMA_CR_EN;
 #elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
@@ -872,9 +899,9 @@ void UARTDriver::half_duplex_irq_cb(void* self)
     dmaStreamDisable(uart_drv->txdma);
     uart_drv->txdma->channel->CCR &= ~STM32_DMA_CR_EN;
 #else
-    volatile uint16_t sr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->SR;
+    volatile uint16_t sr = sd->usart->SR;
     if(sr & USART_SR_IDLE) {
-        volatile uint16_t dr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->DR;
+        volatile uint16_t dr = sd->usart->DR;
         (void)dr;
         // disable dma, triggering DMA transfer complete interrupt
         uart_drv->txdma->stream->CR &= ~STM32_DMA_CR_EN;
@@ -1181,7 +1208,8 @@ void UARTDriver::half_duplex_setup_rx(void)
         dma_handle->lock();
         // disable TX DMA and enable RX DMA
         sercfg.cr1 |= USART_CR1_IDLEIE;
-        sercfg.cr3 &= ~USART_CR3_DMAT;
+        sercfg.cr3 &= ~(USART_CR3_DMAT | USART_CR3_SCEN | USART_CR3_IREN);
+        sercfg.cr2 &= ~(USART_CR3_LINEN | USART_CR3_CLKEN);
         sercfg.cr3 |= USART_CR3_DMAR;
     }
 #endif
@@ -1199,7 +1227,10 @@ void UARTDriver::half_duplex_setup_rx(void)
     // Configure serial driver to skip handling RX packets
     // because we will handle them via DMA
     sd->usart->CR1 &= ~USART_CR1_RXNEIE;
-
+#if defined(USART_CR1_FIFOEN)
+    // clear the FIFO buffer
+    sd->usart->RQR |= USART_RQR_RXFRQ;
+#endif
     // Start DMA
     dmaStreamDisable(txdma);
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
@@ -1213,6 +1244,8 @@ void UARTDriver::half_duplex_setup_rx(void)
     dmaStreamSetTransactionSize(txdma, TX_BOUNCE_BUFSIZE);
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_P2M |
                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+    TOGGLE_PIN_DEBUG(53);
+    TOGGLE_PIN_DEBUG(53);
     dmaStreamEnable(txdma);
 #endif // HAL_UART_NODMA
 }
@@ -1442,14 +1475,16 @@ void UARTDriver::_tx_timer_tick(void)
         }
 #ifndef HAL_UART_NODMA
         else {
-            // wait for the completion to signal that we are done
-            eventmask_t mask = chEvtWaitAny(EVT_TRANSMIT_RX_DMA_COMPLETE);
+            // wait for the completion to signal that we are done, or timeout after 1ms
+            eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_RX_DMA_COMPLETE, chTimeMS2I(1000));
+            if (!mask) {
+                // timeout so end DMA transfer
+                dmaStreamDisable(txdma);
+            }
             dma_handle->unlock(mask & EVT_TRANSMIT_RX_DMA_COMPLETE);
         }
 #endif
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
-        TOGGLE_PIN_DEBUG(52);
-        TOGGLE_PIN_DEBUG(52);
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
         }
         _in_rx_timer = false;
