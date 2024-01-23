@@ -464,7 +464,7 @@ bool GCS_MAVLINK_Tracker::set_home(const Location& loc, bool _lock) {
     return tracker.set_home(loc);
 }
 
-void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Tracker::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -610,7 +610,7 @@ mission_failed:
     }
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     } // end switch
 } // end handle mavlink
