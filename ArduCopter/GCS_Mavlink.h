@@ -66,7 +66,7 @@ private:
 
     MISSION_STATE mission_state(const class AP_Mission &mission) const override;
 
-    void handleMessage(const mavlink_message_t &msg) override;
+    void handle_message(const mavlink_message_t &msg) override;
     void handle_command_ack(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
