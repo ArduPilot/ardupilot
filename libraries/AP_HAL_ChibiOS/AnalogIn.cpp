@@ -150,16 +150,16 @@ float AnalogSource::_pin_scaler(void)
     }
 #ifdef HAL_ANALOG2_PINS
     for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
-        if (AnalogIn::pin_config[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
-            scaling = AnalogIn::pin_config[i].scaling;
+        if (AnalogIn::pin_config_2[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
+            scaling = AnalogIn::pin_config_2[i].scaling;
             break;
         }
     }
 #endif
 #ifdef HAL_ANALOG3_PINS
     for (uint8_t i=0; i<ADC3_GRP1_NUM_CHANNELS; i++) {
-        if (AnalogIn::pin_config[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
-            scaling = AnalogIn::pin_config[i].scaling;
+        if (AnalogIn::pin_config_3[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
+            scaling = AnalogIn::pin_config_3[i].scaling;
             break;
         }
     }
