@@ -2,6 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include "defines.h"
 
 #ifndef AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 #define AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED 1
@@ -56,6 +57,10 @@ protected:
     virtual MAV_LANDED_STATE landed_state() const override;
 
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
 
 private:
 
