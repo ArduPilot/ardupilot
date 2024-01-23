@@ -988,6 +988,8 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
 {
+    cmd = {};
+
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
