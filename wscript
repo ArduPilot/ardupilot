@@ -86,6 +86,29 @@ def _set_build_context_variant(board):
             continue
         c.variant = board
 
+# Remove all submodules and then sync
+@conf
+def submodule_force_clean(ctx):
+    whitelist = {
+                            'COLCON_IGNORE',
+                            'esp_idf',
+                          }
+
+    # Get all items in the modules folder
+    module_list = os.scandir('modules')
+
+    # Delete all directories except those in the whitelist
+    for module in module_list:
+        if (module.is_dir()) and (module.name not in whitelist):
+            shutil.rmtree(module)
+
+    submodulesync(ctx)
+
+# run Tools/gittools/submodule-sync.sh to sync submodules
+@conf
+def submodulesync(ctx):
+    subprocess.call(['Tools/gittools/submodule-sync.sh'])
+
 def init(ctx):
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
@@ -180,6 +203,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable OS level thread statistics.')
+
+    g.add_option('--enable-ppp',
+        action='store_true',
+        default=False,
+        help='enable PPP networking.')
     
     g.add_option('--bootloader',
         action='store_true',
@@ -360,10 +388,10 @@ configuration in order to save typing.
         default=False,
         help='Use flash storage emulation.')
 
-    g.add_option('--disable-ekf2',
+    g.add_option('--enable-ekf2',
         action='store_true',
         default=False,
-        help='Configure without EKF2.')
+        help='Configure with EKF2.')
 
     g.add_option('--disable-ekf3',
         action='store_true',
@@ -547,6 +575,8 @@ def configure(cfg):
     cfg.recurse('libraries/AP_GPS')
     cfg.recurse('libraries/AP_HAL_SITL')
     cfg.recurse('libraries/SITL')
+
+    cfg.recurse('libraries/AP_Networking')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:

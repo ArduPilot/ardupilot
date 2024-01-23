@@ -84,7 +84,7 @@
 #endif
 
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
@@ -522,12 +522,11 @@ void CANIface::handleTxInterrupt(const uint64_t utc_usec)
         handleTxMailboxInterrupt(2, txok, utc_usec);
     }
 
-#if CH_CFG_USE_EVENTS == TRUE
-    if (event_handle_ != nullptr) {
+    if (sem_handle != nullptr) {
         PERF_STATS(stats.num_events);
-        evt_src_.signalI(1 << self_index_);
+        sem_handle->signal_ISR();
     }
-#endif
+
     pollErrorFlagsFromISR();
 }
 
@@ -590,12 +589,11 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
 
     had_activity_ = true;
 
-#if CH_CFG_USE_EVENTS == TRUE
-    if (event_handle_ != nullptr) {
+    if (sem_handle != nullptr) {
         PERF_STATS(stats.num_events);
-        evt_src_.signalI(1 << self_index_);
+        sem_handle->signal_ISR();
     }
-#endif
+
     pollErrorFlagsFromISR();
 }
 
@@ -702,17 +700,12 @@ uint32_t CANIface::getErrorCount() const
 
 #endif // #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
 
-#if CH_CFG_USE_EVENTS == TRUE
-ChibiOS::EventSource CANIface::evt_src_;
-bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
+bool CANIface::set_event_handle(AP_HAL::BinarySemaphore *handle)
 {
-    CriticalSectionLocker lock;
-    event_handle_ = handle;
-    event_handle_->set_source(&evt_src_);
-    return event_handle_->register_event(1 << self_index_);
+    sem_handle = handle;
+    return true;
 }
 
-#endif // #if CH_CFG_USE_EVENTS == TRUE
 
 void CANIface::checkAvailable(bool& read, bool& write, const AP_HAL::CANFrame* pending_tx) const
 {
@@ -745,13 +738,13 @@ bool CANIface::select(bool &read, bool &write,
         return true;
     }
 
-#if CH_CFG_USE_EVENTS == TRUE
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     // we don't support blocking select in AP_Periph and bootloader
     while (time < blocking_deadline) {
-        if (event_handle_ == nullptr) {
+        if (sem_handle == nullptr) {
             break;
         }
-        event_handle_->wait(blocking_deadline - time); // Block until timeout expires or any iface updates
+        IGNORE_RETURN(sem_handle->wait(blocking_deadline - time)); // Block until timeout expires or any iface updates
         checkAvailable(read, write, pending_tx);  // Check what we got
         if ((read && in_read) || (write && in_write)) {
             return true;
@@ -846,7 +839,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     if (can_ifaces[self_index_] == nullptr) {
         can_ifaces[self_index_] = this;
 #if !defined(HAL_BOOTLOADER_BUILD)
-        hal.can[self_index_] = this;
+        AP_HAL::get_HAL_mutable().can[self_index_] = this;
 #endif
     }
 

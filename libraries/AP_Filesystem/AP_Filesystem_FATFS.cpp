@@ -14,6 +14,7 @@
 #include <ff.h>
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 
 #if 0
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -416,7 +417,10 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
     UINT total = 0;
     do {
         UINT size = 0;
-        UINT n = MIN(bytes, MAX_IO_SIZE);
+        UINT n = bytes;
+        if (!mem_is_dma_safe(buf, count, true)) {
+            n = MIN(bytes, MAX_IO_SIZE);
+        }
         res = f_read(fh, (void *)buf, n, &size);
         if (res != FR_OK) {
             errno = fatfs_to_errno((FRESULT)res);
@@ -460,7 +464,10 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 
     UINT total = 0;
     do {
-        UINT n = MIN(bytes, MAX_IO_SIZE);
+        UINT n = bytes;
+        if (!mem_is_dma_safe(buf, count, true)) {
+            n = MIN(bytes, MAX_IO_SIZE);
+        }
         UINT size = 0;
         res = f_write(fh, buf, n, &size);
         if (res == FR_DISK_ERR && RETRY_ALLOWED()) {

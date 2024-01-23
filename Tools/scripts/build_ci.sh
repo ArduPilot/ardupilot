@@ -132,7 +132,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
-        run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
@@ -144,6 +144,8 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
+        sudo apt-get update || /bin/true
+        sudo apt-get install -y ppp || /bin/true
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
@@ -325,6 +327,31 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-PPP" ]; then
+        echo "Building CubeOrange-PPP"
+        $waf configure --board CubeOrange --enable-ppp
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeOrange-SOHW" ]; then
+        echo "Building CubeOrange-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        continue
+    fi
+
+    if [ "$t" == "Pixhawk6X-PPPGW" ]; then
+        echo "Building Pixhawk6X-PPPGW"
+        $waf configure --board Pixhawk6X-PPPGW
+        $waf clean
+        $waf AP_Periph
+        $waf configure --board Pixhawk6X-PPPGW --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+    
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
         $waf configure --board Durandal --enable-dds

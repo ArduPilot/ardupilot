@@ -6,10 +6,6 @@
 
 include ../CubeBlack/hwdef.dat
 
-# pull Solo's default parameters from /Tools/Frame_params
-# these are parameters the Solo requires for proper operation that are different from the 4 standard defaults.
-env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-4_GreenCube.param'
-
 undef AP_NOTIFY_OREOLED_ENABLED
 define AP_NOTIFY_OREOLED_ENABLED 1
 

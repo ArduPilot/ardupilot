@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Vehicle_config.h"
+
+#if AP_VEHICLE_ENABLED
+
 /*
   this header holds a parameter structure for each vehicle type for
   parameters needed by multiple libraries
@@ -30,6 +34,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
@@ -151,12 +156,15 @@ public:
     // returns true if the vehicle has crashed
     virtual bool is_crashed() const;
 
+#if AP_EXTERNAL_CONTROL_ENABLED
+    // Method to control vehicle position for use by external control
+    virtual bool set_target_location(const Location& target_loc) { return false; }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
       methods to control vehicle for use by scripting
     */
     virtual bool start_takeoff(float alt) { return false; }
-    virtual bool set_target_location(const Location& target_loc) { return false; }
     virtual bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) { return false; }
     virtual bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) { return false; }
     virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
@@ -260,7 +268,7 @@ public:
      */
     virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
 
-   // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing TRIM_PITCH_CD
+    // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
     virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
 
     /*
@@ -301,7 +309,10 @@ protected:
 #endif
     RangeFinder rangefinder;
 
+#if AP_RSSI_ENABLED
     AP_RSSI rssi;
+#endif
+
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
 #endif
@@ -487,3 +498,5 @@ extern const AP_HAL::HAL& hal;
 extern const AP_Param::Info vehicle_var_info[];
 
 #include "AP_Vehicle_Type.h"
+
+#endif  // AP_VEHICLE_ENABLED

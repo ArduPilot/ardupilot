@@ -44,8 +44,8 @@ public:
         k_param_format_version = 0,
         k_param_software_type,      // deprecated
 
-        k_param_gcs0 = 100,         // stream rates for uartA
-        k_param_gcs1,               // stream rates for uartC
+        k_param_gcs0 = 100,         // stream rates for SERIAL0
+        k_param_gcs1,               // stream rates for SERIAL1
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial0_baud,       // deprecated
@@ -60,7 +60,7 @@ public:
         k_param_sitl,
         k_param_pidPitch_old,   // deprecated
         k_param_pidYaw_old,     // deprecated
-        k_param_gcs2,               // stream rates for uartD
+        k_param_gcs2,               // stream rates for SERIAL2
         k_param_serial2_baud,       // deprecated
 
         k_param_yaw_slew_time,

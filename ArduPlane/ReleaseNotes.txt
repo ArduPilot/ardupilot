@@ -1,3 +1,19 @@
+Release 4.4.4 19th December 2023
+--------------------------------
+
+Changes from 4.4.3:
+
+- CubeOrange Sim-on-hardware compilation fix
+- RADIX2HD supports external I2C compasses
+- SpeedyBeeF405v4 support
+- DroneCAN battery monitor with cell monitor SoC reporting fix
+- ProfiLED output fixed in both Notify and Scripting
+- NTF_LED_TYPES parameter description fixed (was missing IS31FL3195)
+- Scripting bug that could cause crash if parameters were added in flight
+- STAT_BOOTCNT param fix (was not updating in some cases)
+- don't query hobbywing DroneCAN ESC IDs while armed
+- clamp empy version to prevent build errors
+
 Release 4.4.3 14th November 2023
 --------------------------------
 
@@ -4537,10 +4553,10 @@ enabled.
 
 When in stabilised manual throttle modes this option has the effect of
 limiting how much bank angle you can demand when close to the
-configured minimum airspeed (from ARSPD_FBW_MIN). That means when in
-FBWA mode if you try to turn hard while close to ARSPD_FBW_MIN it will
+configured minimum airspeed (from AIRSPEED_MIN). That means when in
+FBWA mode if you try to turn hard while close to AIRSPEED_MIN it will
 limit the bank angle to an amount that will keep the speed above
-ARSPD_FBW_MIN times the aerodynamic load factor. It will always allow
+AIRSPEED_MIN times the aerodynamic load factor. It will always allow
 you at bank at least 25 degrees however, to ensure you keep some
 maneuverability if the airspeed estimate is incorrect.
 
@@ -4553,7 +4569,7 @@ handle the demanded turn. After the turn is complete the minimum
 airspeed will drop back to the normal level.
 
 This change won't completely eliminate stalls of course, but it should
-make them less likely if you properly configure ARSPD_FBW_MIN for your
+make them less likely if you properly configure AIRSPEED_MIN for your
 aircraft.
 
 PX4IO based RC override code

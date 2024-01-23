@@ -74,7 +74,7 @@
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
-local REPLY_TIMEOUT_MS = 1000           -- timeout waiting for reply after 1 sec
+local REPLY_TIMEOUT_MS = 100            -- timeout waiting for reply after 0.1 sec
 local REQUEST_ATTITUDE_INTERVAL_MS = 100-- request attitude at 10hz
 local SET_ATTITUDE_INTERVAL_MS = 100    -- set attitude at 10hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
@@ -118,6 +118,9 @@ local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
 -- message definitions
 local HEADER = 0xAA
 local RETURN_CODE = {SUCCESS=0x00, PARSE_ERROR=0x01, EXECUTION_FAILED=0x02, UNDEFINED=0xFF}
+local ATTITUDE_PACKET_LEN = {LEGACY=24, LATEST=26}      -- attitude packet expected length.  Legacy must be less than latest
+local POSITION_CONTROL_PACKET_LEN = {LEGACY=17, LATEST=19}  -- position control packet expected length.  Legacy must be less than latest
+local SPEED_CONTROL_PACKET_LEN = {LEGACY=17, LATEST=19} -- speed control packet expected length.  Legacy must be less than latest
 
 -- parsing state definitions
 local PARSE_STATE_WAITING_FOR_HEADER        = 0
@@ -653,12 +656,27 @@ function parse_byte(b)
           end
 
           -- parse attitude reply message
-          if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= 20) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= ATTITUDE_PACKET_LEN.LEGACY) then
+            -- default to legacy format but also handle latest format
+            local ret_code_field = 13
+            local yaw_field = 15
+            local pitch_field = 17
+            local roll_field = 19
+            if (parse_length >= ATTITUDE_PACKET_LEN.LATEST) then
+              ret_code_field = 15
+              yaw_field = 17
+              pitch_field = 21
+              roll_field = 19
+            end
+            local ret_code = parse_buff[ret_code_field]
             if ret_code == RETURN_CODE.SUCCESS then
-              local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
-              local pitch_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
-              local roll_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
+              local yaw_deg = int16_value(parse_buff[yaw_field+1],parse_buff[yaw_field]) * 0.1
+              local pitch_deg = int16_value(parse_buff[pitch_field+1],parse_buff[pitch_field]) * 0.1
+              local roll_deg = int16_value(parse_buff[roll_field+1],parse_buff[roll_field]) * 0.1
+              -- if upsidedown, subtract 180deg from yaw to undo addition of target
+              if DJIR_UPSIDEDOWN:get() > 0 then
+                yaw_deg = wrap_180(yaw_deg - 180)
+              end
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then
                 gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
@@ -669,16 +687,26 @@ function parse_byte(b)
           end
 
           -- parse position control reply message
-          if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= 13) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= POSITION_CONTROL_PACKET_LEN.LEGACY) then
+            -- default to legacy format but also handle latest format
+            local ret_code_field = 13
+            if (parse_length >= POSITION_CONTROL_PACKET_LEN.LATEST) then
+              ret_code_field = 15
+            end
+            local ret_code = parse_buff[ret_code_field]
             if ret_code ~= RETURN_CODE.SUCCESS then
               execute_fails = execute_fails + 1
             end
           end
 
           -- parse speed control reply message
-          if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= 13) then
-            local ret_code = parse_buff[13]
+          if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= SPEED_CONTROL_PACKET_LEN.LEGACY) then
+            -- default to legacy format but also handle latest format
+            local ret_code_field = 13
+            if (parse_length >= SPEED_CONTROL_PACKET_LEN.LATEST) then
+              ret_code_field = 15
+            end
+            local ret_code = parse_buff[ret_code_field]
             if ret_code ~= RETURN_CODE.SUCCESS then
               execute_fails = execute_fails + 1
             end

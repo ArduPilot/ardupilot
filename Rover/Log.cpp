@@ -2,7 +2,7 @@
 
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
 void Rover::Log_Write_Attitude()

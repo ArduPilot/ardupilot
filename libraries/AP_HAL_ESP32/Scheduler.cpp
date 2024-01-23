@@ -38,6 +38,8 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 
 bool Scheduler::_initialized = true;
+TaskHandle_t idle_0 = NULL;
+TaskHandle_t idle_1 = NULL;
 
 Scheduler::Scheduler()
 {
@@ -46,7 +48,7 @@ Scheduler::Scheduler()
 
 void disableCore0WDT()
 {
-    TaskHandle_t idle_0 = xTaskGetIdleTaskHandleForCPU(0);
+     idle_0 = xTaskGetIdleTaskHandleForCPU(0);
     if (idle_0 == NULL || esp_task_wdt_delete(idle_0) != ESP_OK) {
         //print("Failed to remove Core 0 IDLE task from WDT");
     }
@@ -54,9 +56,21 @@ void disableCore0WDT()
 
 void disableCore1WDT()
 {
-    TaskHandle_t idle_1 = xTaskGetIdleTaskHandleForCPU(1);
+     idle_1 = xTaskGetIdleTaskHandleForCPU(1);
     if (idle_1 == NULL || esp_task_wdt_delete(idle_1) != ESP_OK) {
         //print("Failed to remove Core 1 IDLE task from WDT");
+    }
+}
+void enableCore0WDT()
+{
+    if (idle_0 != NULL && esp_task_wdt_add(idle_0) != ESP_OK) {
+        //print("Failed to add Core 0 IDLE task to WDT");
+    }
+}
+void enableCore1WDT()
+{
+    if (idle_1 != NULL && esp_task_wdt_add(idle_1) != ESP_OK) {
+        //print("Failed to add Core 1 IDLE task to WDT");
     }
 }
 
@@ -67,57 +81,69 @@ void Scheduler::init()
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
+    // disable wd while booting, as things like mounting the sd-card in the io thread can take a while, especially if there isn't hardware attached.
+    disableCore0WDT(); //FASTCPU
+    disableCore1WDT(); //SLOWCPU
+
+
     hal.console->printf("%s:%d running with CONFIG_FREERTOS_HZ=%d\n", __PRETTY_FUNCTION__, __LINE__,CONFIG_FREERTOS_HZ);
 
+    // keep main tasks that need speed on CPU 0
+    // pin potentially slow stuff to CPU 1, as we have disabled the WDT on that core.
+    #define FASTCPU 0
+    #define SLOWCPU 1
+
     // pin main thread to Core 0, and we'll also pin other heavy-tasks to core 1, like wifi-related.
-    if (xTaskCreatePinnedToCore(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle,1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle,FASTCPU) != pdPASS) {
     //if (xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle) != pdPASS) {
-        hal.console->printf("FAILED to create task _main_thread\n");
+        hal.console->printf("FAILED to create task _main_thread on FASTCPU\n");
     } else {
-    	hal.console->printf("OK created task _main_thread\n");
+    	hal.console->printf("OK created task _main_thread on FASTCPU\n");
     }
 
-    if (xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle) != pdPASS) {
-        hal.console->printf("FAILED to create task _timer_thread\n");
+    if (xTaskCreatePinnedToCore(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle,FASTCPU) != pdPASS) {
+        hal.console->printf("FAILED to create task _timer_thread on FASTCPU\n");
     } else {
-    	hal.console->printf("OK created task _timer_thread\n");
+    	hal.console->printf("OK created task _timer_thread on FASTCPU\n");
     }	
 
-    if (xTaskCreatePinnedToCore(_rcout_thread, "APM_RCOUT", RCOUT_SS, this, RCOUT_PRIO, &_rcout_task_handle,0) != pdPASS) {
-       hal.console->printf("FAILED to create task _rcout_thread\n");
+    if (xTaskCreatePinnedToCore(_rcout_thread, "APM_RCOUT", RCOUT_SS, this, RCOUT_PRIO, &_rcout_task_handle,SLOWCPU) != pdPASS) {
+       hal.console->printf("FAILED to create task _rcout_thread on SLOWCPU\n");
     } else {
-       hal.console->printf("OK created task _rcout_thread\n");
+       hal.console->printf("OK created task _rcout_thread on SLOWCPU\n");
     }
 
-    if (xTaskCreatePinnedToCore(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle,0) != pdPASS) {
-       hal.console->printf("FAILED to create task _rcin_thread\n");
+    if (xTaskCreatePinnedToCore(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle,SLOWCPU) != pdPASS) {
+       hal.console->printf("FAILED to create task _rcin_thread on SLOWCPU\n");
     } else {
-       hal.console->printf("OK created task _rcin_thread\n");
+       hal.console->printf("OK created task _rcin_thread on SLOWCPU\n");
     }
 
-    // pin this thread to Core 1
-    if (xTaskCreatePinnedToCore(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle,0) != pdPASS) {
-        hal.console->printf("FAILED to create task _uart_thread\n");
+    // pin this thread to Core 1 as it keeps all teh uart/s feed data, and we need that quick.
+    if (xTaskCreatePinnedToCore(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle,FASTCPU) != pdPASS) {
+        hal.console->printf("FAILED to create task _uart_thread on FASTCPU\n");
     } else {
-    	hal.console->printf("OK created task _uart_thread\n");
+    	hal.console->printf("OK created task _uart_thread on FASTCPU\n");
     }	  
 
-    if (xTaskCreate(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle) != pdPASS) {
-        hal.console->printf("FAILED to create task _io_thread\n");
+    // we put thos on the SLOW core as it mounts the sd card, and that often isn't conencted.
+    if (xTaskCreatePinnedToCore(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle,SLOWCPU) != pdPASS) {
+        hal.console->printf("FAILED to create task _io_thread on SLOWCPU\n");
     } else {
-        hal.console->printf("OK created task _io_thread\n");
+        hal.console->printf("OK created task _io_thread on SLOWCPU\n");
     }	 
 
-    if (xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle) != pdPASS) { //no actual flash writes without this, storage kinda appears to work, but does an erase on every boot and params don't persist over reset etc.
+    if (xTaskCreatePinnedToCore(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle,SLOWCPU) != pdPASS) { //no actual flash writes without this, storage kinda appears to work, but does an erase on every boot and params don't persist over reset etc.
         hal.console->printf("FAILED to create task _storage_thread\n");
     } else {
     	hal.console->printf("OK created task _storage_thread\n");
     }
 
-    //   xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
+    //   xTaskCreatePinnedToCore(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr,SLOWCPU);
 
-    //disableCore0WDT();
-    //disableCore1WDT();
+    hal.console->printf("OK Sched Init, enabling WD\n");
+    enableCore0WDT();   //FASTCPU
+    //enableCore1WDT();   //we don't enable WD on SLOWCPU right now.
 
 }
 
@@ -164,8 +190,9 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_RCIN, RCIN_PRIO},
         { PRIORITY_IO, IO_PRIO},
         { PRIORITY_UART, UART_PRIO},
+        { PRIORITY_NET, WIFI_PRIO1},
         { PRIORITY_STORAGE, STORAGE_PRIO},
-        { PRIORITY_SCRIPTING, IO_PRIO},
+        { PRIORITY_SCRIPTING, UART_PRIO},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
@@ -208,6 +235,7 @@ void Scheduler::delay_microseconds(uint16_t us)
         ets_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
+
         vTaskDelay((us+tick-1)/tick);
     }
 }
@@ -440,7 +468,7 @@ void Scheduler::_storage_thread(void* arg)
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
-    while (!_initialized) {
+    while (!sched->_initialized) {
         sched->delay_microseconds(10000);
     }
 #ifdef SCHEDDEBUG
@@ -474,7 +502,7 @@ void Scheduler::_uart_thread(void *arg)
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
-    while (!_initialized) {
+    while (!sched->_initialized) {
         sched->delay_microseconds(2000);
     }
 #ifdef SCHEDDEBUG

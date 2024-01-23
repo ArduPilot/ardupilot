@@ -88,20 +88,20 @@ void SITL_State::_usage(void)
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
-           "\t--disable-fgview         disable Flight Gear view\n"
+           "\t--enable-fgview          enable Flight Gear view\n"
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
-           "\t--uartA device           set device string for UARTA\n"
-           "\t--uartB device           set device string for UARTB\n"
-           "\t--uartC device           set device string for UARTC\n"
-           "\t--uartD device           set device string for UARTD\n"
-           "\t--uartE device           set device string for UARTE\n"
-           "\t--uartF device           set device string for UARTF\n"
-           "\t--uartG device           set device string for UARTG\n"
-           "\t--uartH device           set device string for UARTH\n"
-           "\t--uartI device           set device string for UARTI\n"
-           "\t--uartJ device           set device string for UARTJ\n"
+           "\t--uartA device           (deprecated) set device string for SERIAL0\n"
+           "\t--uartC device           (deprecated) set device string for SERIAL1\n" // ordering captures the historical use of uartB as SERIAL3
+           "\t--uartD device           (deprecated) set device string for SERIAL2\n"
+           "\t--uartB device           (deprecated) set device string for SERIAL3\n"
+           "\t--uartE device           (deprecated) set device string for SERIAL4\n"
+           "\t--uartF device           (deprecated) set device string for SERIAL5\n"
+           "\t--uartG device           (deprecated) set device string for SERIAL6\n"
+           "\t--uartH device           (deprecated) set device string for SERIAL7\n"
+           "\t--uartI device           (deprecated) set device string for SERIAL8\n"
+           "\t--uartJ device           (deprecated) set device string for SERIAL9\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -213,7 +213,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const char *home_str = nullptr;
     const char *model_str = nullptr;
     const char *vehicle_str = SKETCH;
-    _use_fg_view = true;
+    _use_fg_view = false;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
     const char* config = "";
@@ -246,7 +246,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_FGVIEW,
         CMDLINE_AUTOTESTDIR,
         CMDLINE_DEFAULTS,
-        CMDLINE_UARTA,
+        CMDLINE_UARTA,  // must be in A-J order and numbered consecutively
         CMDLINE_UARTB,
         CMDLINE_UARTC,
         CMDLINE_UARTD,
@@ -256,7 +256,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTH,
         CMDLINE_UARTI,
         CMDLINE_UARTJ,
-        CMDLINE_SERIAL0,
+        CMDLINE_SERIAL0, // must be in 0-9 order and numbered consecutively
         CMDLINE_SERIAL1,
         CMDLINE_SERIAL2,
         CMDLINE_SERIAL3,
@@ -302,7 +302,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"config",          true,   0, 'c'},
         {"fg",              true,   0, 'F'},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
-        {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
+        {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"uartA",           true,   0, CMDLINE_UARTA},
@@ -441,7 +441,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             enable_gimbal = true;
             break;
         case CMDLINE_FGVIEW:
-            _use_fg_view = false;
+            _use_fg_view = true;
             break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
@@ -458,9 +458,18 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTG:
         case CMDLINE_UARTH:
         case CMDLINE_UARTI:
-        case CMDLINE_UARTJ:
-            _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
+        case CMDLINE_UARTJ: {
+            int uart_idx = opt - CMDLINE_UARTA;
+            // ordering captures the historical use of uartB as SERIAL3
+            static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
+            int serial_idx = mapping[uart_idx];
+            char uart_letter = (char)(uart_idx)+'A';
+            printf("WARNING: deprecated option --uart%c will be removed in a "
+                "future release. Use --serial%d instead.\n",
+                uart_letter, serial_idx);
+            _serial_path[serial_idx] = gopt.optarg;
             break;
+        }
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:
         case CMDLINE_SERIAL2:
@@ -470,11 +479,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
-        case CMDLINE_SERIAL9: {
-            static const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
-            _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
+        case CMDLINE_SERIAL9:
+            _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
-        }
         case CMDLINE_RTSCTS:
             _use_rtscts = true;
             break;

@@ -155,7 +155,10 @@ jobs:
             CubeRedPrimary-bootloader,
             configure-all,
             build-options-defaults-test,
-            signing
+            signing,
+            CubeOrange-PPP,
+            CubeOrange-SOHW,
+            Pixhawk6X-PPPGW,
         ]
         toolchain: [
             chibios,

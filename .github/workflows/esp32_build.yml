@@ -151,6 +151,7 @@ jobs:
       matrix:
         config: [
             esp32buzz,
+            esp32s3empty,
         ]
         gcc: [10]
 
@@ -158,22 +159,50 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
+      - name: Register gcc problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+
+      - name: Register python problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/python.json"
+
+      - name: Register autotest warn matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+
+      - name: Register autotest fail matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
       - name: Install Prerequisites
         shell: bash
         run: |
-          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-setuptools python3-serial python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
           sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+          update-alternatives --query python
+          python --version
+          pip3 install gevent
+
+          # we actualy want 3.11 .. but the above only gave us 3.10, not ok with esp32 builds.
+          sudo add-apt-repository ppa:deadsnakes/ppa
+          sudo apt-get update
+          sudo apt-get install python3.11 python3.11-venv python3.11-distutils  -y
+          sudo apt-get install python3 python3-pip python3-venv python3-setuptools python3-serial python3-cryptography python3-future python3-pyparsing python3-pyelftools
+          update-alternatives --query python
+          pip3 install gevent
+          python --version
+          python3.11 --version
+          which python3.11
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.11 11
+          update-alternatives --query python
 
           rm -rf /usr/local/bin/cmake
-
-          sudo apt remove --purge --auto-remove cmake
-          sudo apt update && \
-          sudo apt install -y software-properties-common lsb-release && \
-          sudo apt clean all
+          sudo apt-get remove --purge --auto-remove cmake
+          sudo apt-get update && \
+          sudo apt-get install -y software-properties-common lsb-release && \
+          sudo apt-get clean all
           wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
           sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
-          sudo apt update
-          sudo apt install cmake
+          sudo apt-get update
+          sudo apt-get install cmake
 
 
           git submodule update --init --recursive --depth=1
@@ -183,7 +212,7 @@ jobs:
 
           cd modules/esp_idf
           echo "Installing ESP-IDF tools...."
-          ./install.sh 2>&1 > /dev/null
+          ./install.sh esp32,esp32s3 
           cd ../..
           
           
@@ -195,32 +224,48 @@ jobs:
           source ~/.bash_profile
           PATH="/github/home/.local/bin:$PATH"
           echo $PATH
-          
+          echo "### Configure ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
           cd modules/esp_idf
           ./install.sh
           source ./export.sh
           cd ../..
-          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan
+          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan
           which cmake
-          ./waf configure --board ${{matrix.config}}
-          ./waf plane
-          cp build/esp32buzz/esp-idf_build/ardupilot.bin ./ArduPlane.bin
-          cp build/esp32buzz/esp-idf_build/ardupilot.elf ./ArduPlane.elf
-          ./waf copter
-          cp build/esp32buzz/esp-idf_build/ardupilot.bin ./ArduCopter.bin
-          cp build/esp32buzz/esp-idf_build/ardupilot.elf ./ArduCopter.elf
+          ./waf configure --board ${{matrix.config}} 
+          echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
+          echo "### Build Plane ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo './waf plane' >> $GITHUB_STEP_SUMMARY  
+          ./waf plane | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary.log)  
+          cat summary.log >> $GITHUB_STEP_SUMMARY 
+
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduPlane.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduPlane.${{matrix.config}}.elf
+          echo "### Build Copter ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo './waf copter' >> $GITHUB_STEP_SUMMARY  
+          ./waf copter | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary2.log)  
+
+          cat summary2.log >> $GITHUB_STEP_SUMMARY  
+
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduCopter.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduCopter.${{matrix.config}}.elf
+
+          cp build/${{matrix.config}}/esp-idf_build/bootloader/bootloader.bin ./bootloader.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/partition_table/partition-table.bin ./partition-table.${{matrix.config}}.bin
+
+          echo "### Assets avail in artifact:" >> $GITHUB_STEP_SUMMARY
+          ls bootloader* partition* Ardu*.elf Ardu*.bin >> $GITHUB_STEP_SUMMARY
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v3
         with:
            name: esp32-binaries -${{matrix.config}}
            path: |
-              /home/runner/work/ardupilot/ardupilot/ArduPlane.bin
-              /home/runner/work/ardupilot/ardupilot/ArduPlane.elf
-              /home/runner/work/ardupilot/ardupilot/ArduCopter.bin
-              /home/runner/work/ardupilot/ardupilot/ArduCopter.elf
-              /home/runner/work/ardupilot/ardupilot/build/esp32buzz/esp-idf_build/bootloader/bootloader.bin
-              /home/runner/work/ardupilot/ardupilot/build/esp32buzz/esp-idf_build/partition_table/partition-table.bin
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.${{matrix.config}}.elf
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.${{matrix.config}}.elf
+              /home/runner/work/ardupilot/ardupilot/bootloader.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/partition-table.${{matrix.config}}.bin
 
 
            retention-days: 14

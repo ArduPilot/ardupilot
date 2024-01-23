@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AR_WPNav_OA.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -38,17 +39,28 @@ void AR_WPNav_OA::update(float dt)
     // run path planning around obstacles
     bool stop_vehicle = false;
 
-    // backup _origin and _destination when not doing oa
+    // backup _origin, _destination and _next_destination when not doing oa
     if (!_oa_active) {
         _origin_oabak = _origin;
         _destination_oabak = _destination;
+        _next_destination_oabak = _next_destination;
     }
 
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
-        Location oa_origin_new, oa_destination_new;
+        Location oa_origin_new, oa_destination_new, oa_next_destination_new;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin_oabak, _destination_oabak, oa_origin_new, oa_destination_new, path_planner_used);
+        bool dest_to_next_dest_clear;
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc,
+                                                                                _origin_oabak,
+                                                                                _destination_oabak,
+                                                                                _next_destination_oabak,
+                                                                                oa_origin_new,
+                                                                                oa_destination_new,
+                                                                                oa_next_destination_new,
+                                                                                dest_to_next_dest_clear,
+                                                                                path_planner_used);
+
         switch (oa_retstate) {
 
         case AP_OAPathPlanner::OA_NOT_REQUIRED:

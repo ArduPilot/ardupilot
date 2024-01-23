@@ -137,10 +137,8 @@ public:
       This takes account of the baudrate of the link. For transports
       that have no baudrate (such as USB) the time estimate may be
       less accurate.
-
-      A return value of zero means the HAL does not support this API
      */
-    virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
+    virtual uint64_t receive_time_constraint_us(uint16_t nbytes);
 
     virtual uint32_t bw_in_bytes_per_second() const {
         return 5760;
@@ -179,6 +177,13 @@ public:
         return true;
     }
 #endif
+
+    /*
+      return true if the port is currently locked for writing
+     */
+    bool is_write_locked(void) const {
+        return lock_write_key != 0;
+    }
 
 protected:
     // key for a locked port

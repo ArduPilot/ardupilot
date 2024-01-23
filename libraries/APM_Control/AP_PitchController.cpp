@@ -273,7 +273,7 @@ float AP_PitchController::get_rate_out(float desired_rate, float scaler)
 float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inverted) const
 {
     float rate_offset;
-    float bank_angle = AP::ahrs().roll;
+    float bank_angle = AP::ahrs().get_roll();
 
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < radians(90))	{
@@ -296,7 +296,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.get_pitch())*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
     if (inverted) {
         rate_offset = -rate_offset;
@@ -361,7 +361,7 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;
     }
-    const float roll_limit_margin = MIN(aparm.roll_limit_cd + 500.0, 8500.0);
+    const float roll_limit_margin = MIN(aparm.roll_limit*100 + 500.0, 8500.0);
     if (roll_wrapped > roll_limit_margin && labs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
         desired_rate *= (1 - roll_prop);

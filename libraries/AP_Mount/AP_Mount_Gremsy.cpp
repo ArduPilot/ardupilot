@@ -20,6 +20,9 @@ void AP_Mount_Gremsy::update()
         return;
     }
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // update based on mount mode
     switch (get_mode()) {
 

@@ -137,9 +137,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
-include ../include/save_some_flash.inc
-
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc
+include ../include/minimize_fpv_osd.inc
 
 define DEFAULT_NTF_LED_TYPES 257

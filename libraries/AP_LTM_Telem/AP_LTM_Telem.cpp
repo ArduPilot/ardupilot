@@ -70,6 +70,7 @@ void AP_LTM_Telem::send_Gframe(void)
     int32_t lon = 0;                        // longtitude
     uint8_t gndspeed = 0;                   // gps ground speed (m/s)
     int32_t alt = 0;
+#if AP_AHRS_ENABLED
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -83,6 +84,7 @@ void AP_LTM_Telem::send_Gframe(void)
             gndspeed = (uint8_t) roundf(gps.ground_speed());
         }
     }
+#endif
 
     uint8_t lt_buff[LTM_GFRAME_SIZE];
     // protocol: START(2 bytes)FRAMEID(1byte)LAT(cm,4 bytes)LON(cm,4bytes)SPEED(m/s,1bytes)ALT(cm,4bytes)SATS(6bits)FIX(2bits)CRC(xor,1byte)
@@ -168,6 +170,7 @@ void AP_LTM_Telem::send_Aframe(void)
     int16_t pitch;
     int16_t roll;
     int16_t heading;
+#if AP_AHRS_ENABLED
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -175,6 +178,11 @@ void AP_LTM_Telem::send_Aframe(void)
         roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
         heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
     }
+#else
+    pitch = 0;
+    roll = 0;
+    heading = 0;
+#endif
 
     uint8_t lt_buff[LTM_AFRAME_SIZE];
     // A Frame: $T(2 bytes)A(1byte)PITCH(2 bytes)ROLL(2bytes)HEADING(2bytes)CRC(xor,1byte)

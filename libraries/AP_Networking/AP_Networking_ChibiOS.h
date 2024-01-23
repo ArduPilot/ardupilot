@@ -8,6 +8,7 @@
 class AP_Networking_ChibiOS : public AP_Networking_Backend
 {
 public:
+    friend class BL_Network;
     using AP_Networking_Backend::AP_Networking_Backend;
 
     /* Do not allow copies */
@@ -17,11 +18,18 @@ public:
     void update() override;
 
 private:
-    bool allocate_buffers(void);
+    static bool allocate_buffers(void);
+    void thread(void);
+    static void link_up_cb(void*);
+    static void link_down_cb(void*);
+    static int8_t ethernetif_init(struct netif *netif);
+    static int8_t low_level_output(struct netif *netif, struct pbuf *p);
+    static bool low_level_input(struct netif *netif, struct pbuf **pbuf);
 
-private:
     struct lwipthread_opts *lwip_options;
     uint8_t macaddr[6];
+
+    struct netif *thisif;
 };
 
 #endif // AP_NETWORKING_BACKEND_CHIBIOS

@@ -82,6 +82,20 @@ public:
     int fsync(int fd);
     int32_t lseek(int fd, int32_t offset, int whence);
     int stat(const char *pathname, struct stat *stbuf);
+
+    // stat variant for scripting
+    typedef struct {
+        uint32_t size;
+        int32_t mode;
+        uint32_t mtime;
+        uint32_t atime;
+        uint32_t ctime;
+        bool is_directory(void) const {
+            return (mode & S_IFMT) == S_IFDIR;
+        }
+    } stat_t;
+    bool stat(const char *pathname, stat_t &stbuf);
+
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
     int rename(const char *oldpath, const char *newpath);
@@ -108,6 +122,9 @@ public:
     // returns null-terminated string; cr or lf terminates line
     bool fgets(char *buf, uint8_t buflen, int fd);
 
+    // run crc32 over file with given name, returns true if successful
+    bool crc32(const char *fname, uint32_t& checksum) WARN_IF_UNUSED;
+
     // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
 
@@ -118,7 +135,10 @@ public:
       load a full file. Use delete to free the data
      */
     FileData *load_file(const char *filename);
-    
+
+    // get_singleton for scripting
+    static AP_Filesystem *get_singleton(void);
+
 private:
     struct Backend {
         const char *prefix;

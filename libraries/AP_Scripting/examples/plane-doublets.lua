@@ -7,7 +7,6 @@
 -- It is suggested to allow the aircraft to trim for straight, level, unaccelerated flight (SLUF) in FBWB mode before
 -- starting a doublet
 -- Charlie Johnson, Oklahoma State University 2020
--- luacheck: only 0
 
 local DOUBLET_ACTION_CHANNEL = 6 -- RCIN channel to start a doublet when high (>1700)
 local DOUBLET_CHOICE_CHANNEL = 7 -- RCIN channel to choose elevator (low) or rudder (high)
@@ -19,8 +18,6 @@ local DOUBLET_TIME = 500 -- period of doublet signal in ms
 -- flight mode numbers for plane https://mavlink.io/en/messages/ardupilotmega.html
 local MODE_MANUAL = 0
 local MODE_FBWA = 5
-local MODE_FBWB = 6
-local MODE_RTL = 11
 local K_AILERON = 4
 local K_ELEVATOR = 19
 local K_THROTTLE = 70
@@ -30,7 +27,6 @@ local K_RUDDER = 21
 local start_time = -1
 local end_time = -1
 local now = -1
-local desired_mode = -1
 
 -- store information about the doublet channel
 local doublet_srv_chan = SRV_Channels:find_channel(DOUBLET_FUCNTION)
@@ -65,7 +61,7 @@ function doublet()
             pre_doublet_mode = vehicle:get_mode()
             -- are we doing a doublet on elevator or rudder? set the other controls to trim
             local doublet_choice_pwm = rc:get_pwm(DOUBLET_CHOICE_CHANNEL)
-            local trim_funcs = {}
+            local trim_funcs
             local pre_doublet_elevator = SRV_Channels:get_output_pwm(K_ELEVATOR)
             if doublet_choice_pwm < 1500 then
                 -- doublet on elevator

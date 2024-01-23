@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "AP_HAL_SITL_Namespace.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_CSVReader/AP_CSVReader.h>
 
@@ -76,7 +76,6 @@ private:
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
-    struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
     ByteBuffer _readbuffer{16384};
@@ -88,9 +87,6 @@ private:
 
     const char *_uart_path;
     uint32_t _uart_baudrate;
-
-    // IPv4 address of target for uartC
-    const char *_tcp_client_addr;
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
     void _uart_start_connection(void);
@@ -112,6 +108,8 @@ private:
     // for baud-rate limiting:
     uint32_t last_read_tick_us;
     uint32_t last_write_tick_us;
+
+    HAL_Semaphore write_mtx;
 
     SITL::SerialDevice *_sim_serial_device;
 

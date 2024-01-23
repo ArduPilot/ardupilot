@@ -164,7 +164,7 @@ void ADSB::send_report(const class Aircraft &aircraft)
 {
     if (AP_HAL::millis() < 10000) {
         // simulated aircraft don't appear until 10s after startup. This avoids a windows
-        // threading issue with non-blocking sockets and the initial wait on uartA
+        // threading issue with non-blocking sockets and the initial wait on SERIAL0
         return;
     }
 

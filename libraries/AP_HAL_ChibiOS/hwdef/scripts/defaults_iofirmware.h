@@ -35,9 +35,25 @@
 // no crossfire telemetry from iomcu!
 #define HAL_CRSF_TELEM_ENABLED 0
 
+// no ghost telemtry from IOMCU:
+#define AP_GHST_TELEM_ENABLED 0
+
 // allow the IOMCU to have its allowed protocols to be set:
 #define AP_RCPROTOCOL_ENABLE_SET_RC_PROTOCOLS 1
 
 #ifndef AP_INTERNALERROR_ENABLED
 #define AP_INTERNALERROR_ENABLED 0
+#endif
+
+#ifndef HAL_TIM2_UP_SHARED
+#define HAL_TIM2_UP_SHARED 0
+#endif
+#ifndef HAL_TIM3_UP_SHARED
+#define HAL_TIM3_UP_SHARED 0
+#endif
+#ifndef HAL_TIM4_UP_SHARED
+#define HAL_TIM4_UP_SHARED 0
+#endif
+#ifndef HAL_TIM_UP_SHARED
+#define HAL_TIM_UP_SHARED (HAL_TIM2_UP_SHARED || HAL_TIM3_UP_SHARED || HAL_TIM4_UP_SHARED)
 #endif

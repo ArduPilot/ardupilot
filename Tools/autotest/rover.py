@@ -568,6 +568,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test ServoRelayEvents'''
         for method in self.run_cmd, self.run_cmd_int:
             self.context_push()
+
+            self.set_parameters({
+                "RELAY1_FUNCTION": 1, # Enable relay 1 as a standard relay pin
+                "RELAY2_FUNCTION": 1, # Enable relay 2 as a standard relay pin
+            })
+            self.reboot_sitl() # Needed for relay functions to take effect
+
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
             off = self.get_parameter("SIM_PIN_MASK")
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
@@ -602,8 +609,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "on": 0,
             })
 
-            # add another servo:
-            self.set_parameter("RELAY_PIN6", 14)
+            # add another relay and ensure that it changes the "present field"
+            self.set_parameters({
+                "RELAY6_FUNCTION": 1, # Enable relay 6 as a standard relay pin
+                "RELAY6_PIN": 14, # Set pin number
+            })
+            self.reboot_sitl() # Needed for relay function to take effect
+            self.set_message_rate_hz("RELAY_STATUS", 10) # Need to re-request the message since reboot
+
             self.assert_received_message_field_values('RELAY_STATUS', {
                 "present": 35,
                 "on": 0,
@@ -5269,21 +5282,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_push()
 
-        test_scripts = ["scripting_test.lua", "math.lua", "strings.lua", "mavlink_test.lua"]
-        success_text = ["Internal tests passed", "Math tests passed", "String tests passed", "Received heartbeat from"]
-        named_value_float_types = ["test"]
-
-        messages = []
-        named_value_float = []
-
-        def my_message_hook(mav, message):
-            if message.get_type() == 'STATUSTEXT':
-                messages.append(message)
-            # also sniff for named value float messages
-            if message.get_type() == 'NAMED_VALUE_FLOAT':
-                named_value_float.append(message)
-
-        self.install_message_hook_context(my_message_hook)
         self.set_parameters({
             "SCR_ENABLE": 1,
             "SCR_HEAP_SIZE": 1024000,
@@ -5291,38 +5289,36 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.install_test_modules_context()
         self.install_mavlink_module_context()
-        for script in test_scripts:
+        for script in [
+                "scripting_test.lua",
+                "math.lua",
+                "strings.lua",
+                "mavlink_test.lua",
+        ]:
             self.install_test_script_context(script)
+
+        self.context_collect('STATUSTEXT')
+        self.context_collect('NAMED_VALUE_FLOAT')
+
         self.reboot_sitl()
 
-        self.delay_sim_time(10)
+        for success_text in [
+                "Internal tests passed",
+                "Math tests passed",
+                "String tests passed",
+                "Received heartbeat from"
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+
+        for success_nvf in [
+                "test",
+        ]:
+            self.assert_received_message_field_values("NAMED_VALUE_FLOAT", {
+                "name": success_nvf,
+            }, check_context=True)
 
         self.context_pop()
         self.reboot_sitl()
-
-        # check all messages to see if we got our message
-        success = True
-        for text in success_text:
-            script_success = False
-            for m in messages:
-                if text in m.text:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive STATUS_TEXT")
-        else:
-            self.progress("Success STATUS_TEXT")
-
-        for type in named_value_float_types:
-            script_success = False
-            for m in named_value_float:
-                if type == m.name:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive NAMED_VALUE_FLOAT")
-        else:
-            self.progress("Success NAMED_VALUE_FLOAT")
 
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
@@ -5369,7 +5365,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_collect("STATUSTEXT")
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "RELAY_PIN": 1,
+            "RELAY1_FUNCTION": 1,
+            "RELAY1_PIN": 1
         })
         self.install_example_script_context("RCIN_test.lua")
         self.reboot_sitl()
@@ -6131,14 +6128,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test mulitple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
-            "--uartH=sim:nmea", # NMEA Rangefinder
+            "--serial7=sim:nmea", # NMEA Rangefinder
         ])
 
         # RANGEFINDER_INSTANCES = [0, 2, 5]
         self.set_parameters({
             "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
             "RNGFND1_ORIENT" : 25,   # Set to downward facing
-            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on serial7
             "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
 
             "RNGFND3_TYPE" : 2,      # MaxbotixI2C
@@ -6628,6 +6625,108 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "poll": True,
             })
 
+    def TestWebServer(self, url):
+        '''test active web server'''
+        self.progress("Accessing webserver main page")
+        import urllib.request
+
+        main_page = urllib.request.urlopen(url).read().decode('utf-8')
+        if main_page.find('ArduPilot Web Server') == -1:
+            raise NotAchievedException("Expected banner on main page")
+
+        board_status = urllib.request.urlopen(url + '/@DYNAMIC/board_status.shtml').read().decode('utf-8')
+        if board_status.find('0 hours') == -1:
+            raise NotAchievedException("Expected uptime in board status")
+        if board_status.find('40.713') == -1:
+            raise NotAchievedException("Expected lattitude in board status")
+
+        self.progress("WebServer tests OK")
+
+    def NetworkingWebServer(self):
+        '''web server'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLED": 1,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://127.0.0.1:8081")
+
+        self.context_pop()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NetworkingWebServerPPP(self):
+        '''web server over PPP'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLED": 1,
+            "SERIAL5_PROTOCOL": 48,
+        })
+
+        self.progress('rebuilding rover with ppp enabled')
+        import shutil
+        shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        util.build_SITL('bin/ardurover', clean=False, configure=True, extra_configure_args=['--enable-ppp', '--debug'])
+
+        self.reboot_sitl()
+
+        self.progress("Starting PPP daemon")
+        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        pppd.expect("remote IP address 192.168.14.13")
+
+        self.progress("PPP daemon started")
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://192.168.14.13:8081")
+
+        self.context_pop()
+        self.context_pop()
+
+        # restore rover without ppp enabled for next test
+        os.unlink('build/sitl/bin/ardurover')
+        shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6712,6 +6811,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
             self.MAV_CMD_BATTERY_RESET,
+            self.NetworkingWebServer,
+            self.NetworkingWebServerPPP,
         ])
         return ret
 

@@ -14,6 +14,9 @@ local file_name
 while true do
   file_name = string.format('Particle %i.csv',index)
   local file = io.open(file_name)
+  if file == nil then
+    break
+  end
   local first_line = file:read(1) -- try and read the first character
   io.close(file)
   if first_line == nil then

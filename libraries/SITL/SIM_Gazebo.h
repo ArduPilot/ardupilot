@@ -27,7 +27,7 @@
 #if HAL_SIM_GAZEBO_ENABLED
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 namespace SITL {
 
@@ -76,7 +76,7 @@ private:
 
     double last_timestamp;
 
-    SocketAPM socket_sitl;
+    SocketAPM_native socket_sitl;
     const char *_gazebo_address = "127.0.0.1";
     int _gazebo_port = 9002;
     static const uint64_t GAZEBO_TIMEOUT_US = 5000000;

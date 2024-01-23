@@ -114,7 +114,9 @@ private:
     RC_Channel *channel_up;
     RC_Channel *channel_yaw;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -352,6 +354,7 @@ private:
     // landing_gear.cpp
     void landinggear_update();
 
+#if HAL_LOGGING_ENABLED
     // Log.cpp
     void Log_Write_Performance();
     void Log_Write_Attitude();
@@ -370,6 +373,7 @@ private:
     void log_init(void);
     void Write_FINI(float right, float front, float down, float yaw);
     void Write_FINO(float *amp, float *off);
+#endif
 
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);

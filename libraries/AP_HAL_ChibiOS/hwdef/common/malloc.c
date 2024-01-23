@@ -616,3 +616,48 @@ void ff_memfree(void* mblock)
     free(mblock);
 }
 #endif // USE_POSIX
+
+/*
+  return true if a memory region is safe for a DMA operation
+ */
+bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op)
+{
+    (void)filesystem_op;
+#if defined(STM32F1)
+    // F1 is always OK
+    (void)addr;
+    (void)size;
+    return true;
+#else
+    uint32_t flags = MEM_REGION_FLAG_DMA_OK;
+#if defined(STM32H7)
+    if (!filesystem_op) {
+        // use bouncebuffer for all non FS ops on H7
+        return false;
+    }
+    if (((uint32_t)addr) & 0x1F) {
+        return false;
+    }
+    if (filesystem_op) {
+        flags = MEM_REGION_FLAG_AXI_BUS;
+    }
+#elif defined(STM32F4)
+    if (((uint32_t)addr) & 0x01) {
+        return false;
+    }
+#else
+    if (((uint32_t)addr) & 0x07) {
+        return false;
+    }
+#endif
+    for (uint8_t i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (memory_regions[i].flags & flags) {
+            if ((uint32_t)addr >= (uint32_t)memory_regions[i].address &&
+                ((uint32_t)addr + size) <= ((uint32_t)memory_regions[i].address + memory_regions[i].size)) {
+                return true;
+            }
+        }
+    }
+    return false;
+#endif // STM32F1
+}

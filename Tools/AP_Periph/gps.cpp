@@ -163,10 +163,10 @@ void AP_Periph_FW::can_gps_update(void)
         uint16_t total_size = uavcan_equipment_gnss_Fix2_encode(&pkt, buffer, !canfdout());
 
         canard_broadcast(UAVCAN_EQUIPMENT_GNSS_FIX2_SIGNATURE,
-                        UAVCAN_EQUIPMENT_GNSS_FIX2_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        &buffer[0],
-                        total_size);
+                         UAVCAN_EQUIPMENT_GNSS_FIX2_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
     }
     
     /*
@@ -258,34 +258,18 @@ void AP_Periph_FW::send_moving_baseline_msg()
     uint8_t buffer[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE] {};
     const uint16_t total_size = ardupilot_gnss_MovingBaselineData_encode(&mbldata, buffer, !canfdout());
 
-#if HAL_NUM_CAN_IFACES >= 2
+    uint8_t iface_mask = 0;
+#if HAL_NUM_CAN_IFACES >= 2 && CANARD_MULTI_IFACE
     if (gps_mb_can_port != -1 && (gps_mb_can_port < HAL_NUM_CAN_IFACES)) {
-        uint8_t *tid_ptr = get_tid_ptr(MAKE_TRANSFER_DESCRIPTOR(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE, ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID, 0, CANARD_BROADCAST_NODE_ID));
-        canardBroadcast(&dronecan.canard,
-                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
-                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                        tid_ptr,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        &buffer[0],
-                        total_size
-#if CANARD_MULTI_IFACE
-                        ,(1U<<gps_mb_can_port)
-#endif
-#if HAL_CANFD_SUPPORTED
-                       ,canfdout()
-#endif
-                        );
-    } else 
-#endif
-    {
-        // we use MEDIUM priority on this data as we need to get all
-        // the data through for RTK moving baseline yaw to work
-        canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
-                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                        CANARD_TRANSFER_PRIORITY_MEDIUM,
-                        &buffer[0],
-                        total_size);
+        iface_mask = 1U<<gps_mb_can_port;
     }
+#endif
+    canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
+                     ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     &buffer[0],
+                     total_size,
+                     iface_mask);
     gps.clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE
 }

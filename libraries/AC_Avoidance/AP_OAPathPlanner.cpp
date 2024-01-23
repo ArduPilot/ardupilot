@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @DisplayName: Options while recovering from Object Avoidance
     // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
     // @Bitmask{Rover}: 0: Reset the origin of the waypoint to the present location, 1: log Dijkstra points
-    // @Bitmask{Copter}: 1: log Dijkstra points
+    // @Bitmask{Copter}: 1:log Dijkstra points, 2:Allow fast waypoints (Dijkastras only)
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
 
@@ -186,12 +186,17 @@ AP_OAPathPlanner::OAPathPlannerUsed AP_OAPathPlanner::map_bendytype_to_pathplann
 }
 
 // provides an alternative target location if path planning around obstacles is required
-// returns true and updates result_loc with an intermediate location
+// returns true and updates result_origin, result_destination, result_next_destination with an intermediate path
+// result_dest_to_next_dest_clear is set to true if the path from result_destination to result_next_destination is clear (only supported by Dijkstras)
+// path_planner_used updated with which path planner produced the result
 AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location &current_loc,
                                          const Location &origin,
                                          const Location &destination,
+                                         const Location &next_destination,
                                          Location &result_origin,
                                          Location &result_destination,
+                                         Location &result_next_destination,
+                                         bool &result_dest_to_next_dest_clear,
                                          OAPathPlannerUsed &path_planner_used)
 {
     // exit immediately if disabled or thread is not running from a failed init
@@ -199,27 +204,38 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
         return OA_NOT_REQUIRED;
     }
 
+    // check if just activated to avoid initial timeout error
     const uint32_t now = AP_HAL::millis();
+    if (now - _last_update_ms > 200) {
+        _activated_ms = now;
+    }
+    _last_update_ms = now;
+
     WITH_SEMAPHORE(_rsem);
 
     // place new request for the thread to work on
     avoidance_request.current_loc = current_loc;
     avoidance_request.origin = origin;
     avoidance_request.destination = destination;
+    avoidance_request.next_destination = next_destination;
     avoidance_request.ground_speed_vec = AP::ahrs().groundspeed_vector();
     avoidance_request.request_time_ms = now;
 
-    // check result's destination matches our request
-    const bool destination_matches = (destination.lat == avoidance_result.destination.lat) && (destination.lng == avoidance_result.destination.lng);
+    // check result's destination and next_destination matches our request
+    // e.g. check this result was using our current inputs and not from an old request
+    const bool destination_matches = destination.same_latlon_as(avoidance_result.destination);
+    const bool next_destination_matches = next_destination.same_latlon_as(avoidance_result.next_destination);
 
     // check results have not timed out
-    const bool timed_out = now - avoidance_result.result_time_ms > OA_TIMEOUT_MS;
+    const bool timed_out = (now - avoidance_result.result_time_ms > OA_TIMEOUT_MS) && (now - _activated_ms > OA_TIMEOUT_MS);
 
     // return results from background thread's latest checks
-    if (destination_matches && !timed_out) {
+    if (destination_matches && next_destination_matches && !timed_out) {
         // we have a result from the thread
         result_origin = avoidance_result.origin_new;
         result_destination = avoidance_result.destination_new;
+        result_next_destination = avoidance_result.next_destination_new;
+        result_dest_to_next_dest_clear = avoidance_result.dest_to_next_dest_clear;
         path_planner_used = avoidance_result.path_planner_used;
         return avoidance_result.ret_state;
     }
@@ -264,8 +280,11 @@ void AP_OAPathPlanner::avoidance_thread()
 
         _oadatabase.update();
 
+        // values returned by path planners
         Location origin_new;
         Location destination_new;
+        Location next_destination_new;
+        bool dest_to_next_dest_clear = false;
         {
             WITH_SEMAPHORE(_rsem);
             if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
@@ -276,9 +295,10 @@ void AP_OAPathPlanner::avoidance_thread()
             // copy request to avoid conflict with main thread
             avoidance_request2 = avoidance_request;
 
-            // store passed in origin and destination so we can return it if object avoidance is not required
+            // store passed in origin, destination and next_destination so we can return it if object avoidance is not required
             origin_new = avoidance_request.origin;
             destination_new = avoidance_request.destination;
+            next_destination_new = avoidance_request.next_destination;
         }
 
         // run background task looking for best alternative destination
@@ -307,7 +327,13 @@ void AP_OAPathPlanner::avoidance_thread()
                 continue;
             }
             _oadijkstra->set_fence_margin(_margin_max);
-            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
+            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
+                                                                                          avoidance_request2.destination,
+                                                                                          avoidance_request2.next_destination,
+                                                                                          origin_new,
+                                                                                          destination_new,
+                                                                                          next_destination_new,
+                                                                                          dest_to_next_dest_clear);
             switch (dijkstra_state) {
             case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
                 res = OA_NOT_REQUIRED;
@@ -348,7 +374,13 @@ void AP_OAPathPlanner::avoidance_thread()
             }
 #if AP_FENCE_ENABLED
             _oadijkstra->set_fence_margin(_margin_max);
-            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
+            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
+                                                                                          avoidance_request2.destination,
+                                                                                          avoidance_request2.next_destination,
+                                                                                          origin_new,
+                                                                                          destination_new,
+                                                                                          next_destination_new,
+                                                                                          dest_to_next_dest_clear);
             switch (dijkstra_state) {
             case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
                 res = OA_NOT_REQUIRED;
@@ -370,9 +402,18 @@ void AP_OAPathPlanner::avoidance_thread()
         {
             // give the main thread the avoidance result
             WITH_SEMAPHORE(_rsem);
+
+            // place the destination and next destination used into the result (used by the caller to verify the result matches their request)
             avoidance_result.destination = avoidance_request2.destination;
+            avoidance_result.next_destination = avoidance_request2.next_destination;
+            avoidance_result.dest_to_next_dest_clear = dest_to_next_dest_clear;
+
+            // fill the result structure with the intermediate path
             avoidance_result.origin_new = (res == OA_SUCCESS) ? origin_new : avoidance_result.origin_new;
             avoidance_result.destination_new = (res == OA_SUCCESS) ? destination_new : avoidance_result.destination;
+            avoidance_result.next_destination_new = (res == OA_SUCCESS) ? next_destination_new : avoidance_result.next_destination;
+
+            // create new avoidance result.dest_to_next_dest_clear field.  fill in with results from dijkstras or leave as unknown
             avoidance_result.result_time_ms = AP_HAL::millis();
             avoidance_result.path_planner_used = path_planner_used;
             avoidance_result.ret_state = res;

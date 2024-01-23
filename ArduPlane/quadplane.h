@@ -156,7 +156,6 @@ public:
         int16_t  target_climb_rate;
         int16_t  climb_rate;
         float    throttle_mix;
-        float    speed_scaler;
         uint8_t  transition_state;
         uint8_t  assist;
     };
@@ -190,6 +189,9 @@ public:
      */
     bool should_disable_TECS() const;
 
+    // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
+    float get_throttle_input() const;
+
 private:
     AP_AHRS &ahrs;
 
@@ -211,11 +213,11 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Int16 pilot_velocity_z_max_up;
-    AP_Int16 pilot_velocity_z_max_dn;
+    AP_Float pilot_speed_z_max_up;
+    AP_Float pilot_speed_z_max_dn;
 
     // vertical acceleration the pilot may request
-    AP_Int16 pilot_accel_z;
+    AP_Float pilot_accel_z;
 
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
@@ -347,8 +349,8 @@ private:
     uint32_t alt_error_start_ms;
     bool in_alt_assist;
 
-    // landing speed in cm/s
-    AP_Int16 land_speed_cms;
+    // landing speed in m/s
+    AP_Float land_final_speed;
 
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;
@@ -726,6 +728,11 @@ private:
       setup scaling of roll and pitch angle P gains to match fixed wing gains
      */
     void setup_rp_fw_angle_gains(void);
+
+    /*
+      return true if forward throttle from forward_throttle_pct() should be used
+     */
+    bool allow_forward_throttle_in_vtol_mode() const;
 
 public:
     void motor_test_output();

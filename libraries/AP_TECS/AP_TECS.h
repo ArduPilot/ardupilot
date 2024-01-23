@@ -349,9 +349,10 @@ private:
     // pitch demand before limiting
     float _pitch_dem_unc;
 
-    // Maximum and minimum specific total energy rate limits
-    float _STEdot_max;
-    float _STEdot_min;
+    // Specific total energy rate limits
+    float _STEdot_max;     // Specific total energy rate gain at cruise airspeed & THR_MAX (m/s/s)
+    float _STEdot_min;     // Specific total energy rate loss at cruise airspeed & THR_MIN (m/s/s)
+    float _STEdot_neg_max; // Specific total energy rate loss at max airspeed & THR_MIN (m/s/s)
 
     // Maximum and minimum floating point throttle limits
     float _THRmaxf;

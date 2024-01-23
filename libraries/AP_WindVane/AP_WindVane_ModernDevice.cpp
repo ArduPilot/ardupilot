@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_MODERNDEVICE_ENABLED
+
 #include "AP_WindVane_ModernDevice.h"
 // read wind speed from Modern Device rev p wind sensor
 // https://moderndevice.com/news/calibrating-rev-p-wind-sensor-new-regression/
@@ -66,7 +70,9 @@ void AP_WindVane_ModernDevice::update_speed()
 
 void AP_WindVane_ModernDevice::calibrate()
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "WindVane: rev P. zero wind voltage offset set to %.1f",double(_current_analog_voltage));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: rev P. zero wind voltage offset set to %.1f",double(_current_analog_voltage));
     _frontend._speed_sensor_voltage_offset.set_and_save(_current_analog_voltage);
     _frontend._calibration.set_and_save(0);
 }
+
+#endif  // AP_WINDVANE_MODERNDEVICE_ENABLED

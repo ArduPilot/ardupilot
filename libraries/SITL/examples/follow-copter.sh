@@ -75,7 +75,7 @@ AUTO_OPTIONS 7
 EOF
 
 pushd copter1
-$COPTER --model quad --home=$HOMELAT,$HOMELONG,$HOMEALT,0 --uartA udpclient:$GCS_IP --uartC mcast:$MCAST_IP_PORT --defaults $BASE_DEFAULTS,leader.parm &
+$COPTER --model quad --home=$HOMELAT,$HOMELONG,$HOMEALT,0 --serial0 udpclient:$GCS_IP --serial1 mcast:$MCAST_IP_PORT --defaults $BASE_DEFAULTS,leader.parm &
 popd
 
 # now start other copters to follow the first, using
@@ -103,7 +103,7 @@ EOF
     pushd copter$i
     LAT=$(echo "$HOMELAT + 0.0005*$i" | bc -l)
     LONG=$(echo "$HOMELONG + 0.0005*$i" | bc -l)
-    $COPTER --model quad --home=$LAT,$LONG,$HOMEALT,0 --uartA tcp:0 --uartC mcast:$MCAST_IP_PORT --instance $i --defaults $BASE_DEFAULTS,follow.parm &
+    $COPTER --model quad --home=$LAT,$LONG,$HOMEALT,0 --serial0 tcp:0 --serial1 mcast:$MCAST_IP_PORT --instance $i --defaults $BASE_DEFAULTS,follow.parm &
     popd
 done
 wait

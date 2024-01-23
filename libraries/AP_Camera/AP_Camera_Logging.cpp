@@ -1,7 +1,8 @@
 #include "AP_Camera_Backend.h"
 #include <AP_Mount/AP_Mount.h>
+#include <AP_Logger/AP_Logger_config.h>
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_ENABLED && HAL_LOGGING_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
@@ -85,4 +86,4 @@ void AP_Camera_Backend::Write_Trigger()
     Write_CameraInfo(LOG_TRIGGER_MSG, 0);
 }
 
-#endif
+#endif  // AP_CAMERA_ENABLED && HAL_LOGGING_ENABLED

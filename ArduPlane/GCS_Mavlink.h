@@ -48,7 +48,7 @@ protected:
 
 private:
 
-    void send_pid_info(const AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
+    void send_pid_info(const struct AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
 
     void handleMessage(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;

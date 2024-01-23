@@ -114,14 +114,20 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
 
 void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg)
 {
-    update_interim_state(msg.voltage, msg.current, msg.temperature, msg.state_of_charge_pct); 
+    update_interim_state(msg.voltage, msg.current, msg.temperature, msg.state_of_charge_pct, msg.state_of_health_pct); 
 
     WITH_SEMAPHORE(_sem_battmon);
     _remaining_capacity_wh = msg.remaining_capacity_wh;
     _full_charge_capacity_wh = msg.full_charge_capacity_wh;
+
+    // consume state of health
+    if (msg.state_of_health_pct != UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN) {
+        _interim_state.state_of_health_pct = msg.state_of_health_pct;
+        _interim_state.has_state_of_health_pct = true;
+    }
 }
 
-void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc)
+void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc, uint8_t soh_pct)
 {
     WITH_SEMAPHORE(_sem_battmon);
 
@@ -137,11 +143,18 @@ void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const fl
 
     const uint32_t tnow = AP_HAL::micros();
 
-    if (!_has_battery_info_aux || _mppt.is_detected) {
+    if (!_has_battery_info_aux ||
+        !use_CAN_SoC()) {
         const uint32_t dt_us = tnow - _interim_state.last_time_micros;
 
         // update total current drawn since startup
         update_consumed(_interim_state, dt_us);
+    }
+
+    // state of health
+    if (soh_pct != UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN) {
+        _interim_state.state_of_health_pct = soh_pct;
+        _interim_state.has_state_of_health_pct = true;
     }
 
     // record time
@@ -184,7 +197,7 @@ void AP_BattMonitor_DroneCAN::handle_mppt_stream(const mppt_Stream &msg)
     // convert C to Kelvin
     const float temperature_K = isnan(msg.temperature) ? 0 : C_TO_KELVIN(msg.temperature);
 
-    update_interim_state(voltage, current, temperature_K, soc); 
+    update_interim_state(voltage, current, temperature_K, soc, UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN); 
 
     if (!_mppt.is_detected) {
         // this is the first time the mppt message has been received
@@ -282,6 +295,8 @@ void AP_BattMonitor_DroneCAN::read()
     _state.time_remaining = _interim_state.time_remaining;
     _state.has_time_remaining = _interim_state.has_time_remaining;
     _state.is_powering_off = _interim_state.is_powering_off;
+    _state.state_of_health_pct = _interim_state.state_of_health_pct;
+    _state.has_state_of_health_pct = _interim_state.has_state_of_health_pct;
     memcpy(_state.cell_voltages.cells, _interim_state.cell_voltages.cells, sizeof(_state.cell_voltages));
 
     _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;

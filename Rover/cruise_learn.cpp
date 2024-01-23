@@ -15,7 +15,9 @@ void Rover::cruise_learn_start()
     cruise_learn.throttle_filt.reset(g2.motors.get_throttle());
     cruise_learn.learn_start_ms = AP_HAL::millis();
     cruise_learn.log_count = 0;
+#if HAL_LOGGING_ENABLED
     log_write_cruise_learn();
+#endif
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
 }
 
@@ -29,10 +31,12 @@ void Rover::cruise_learn_update()
         cruise_learn.speed_filt.apply(speed, 0.02f);
         cruise_learn.throttle_filt.apply(g2.motors.get_throttle(), 0.02f);
         // 10Hz logging
+#if HAL_LOGGING_ENABLED
         if (cruise_learn.log_count % 5 == 0) {
             log_write_cruise_learn();
         }
         cruise_learn.log_count += 1;
+#endif
         // check how long it took to learn
         if (AP_HAL::millis() - cruise_learn.learn_start_ms >= 2000) {
             cruise_learn_complete();
@@ -56,10 +60,13 @@ void Rover::cruise_learn_complete()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
         }
         cruise_learn.learn_start_ms = 0;
+#if HAL_LOGGING_ENABLED
         log_write_cruise_learn();
+#endif
     }
 }
 
+#if HAL_LOGGING_ENABLED
 // logging for cruise learn
 void Rover::log_write_cruise_learn() const
 {
@@ -77,3 +84,4 @@ void Rover::log_write_cruise_learn() const
                        cruise_learn.speed_filt.get(),
                        cruise_learn.throttle_filt.get());
 }
+#endif

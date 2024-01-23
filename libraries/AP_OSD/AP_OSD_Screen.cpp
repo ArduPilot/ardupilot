@@ -1410,6 +1410,7 @@ void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
     draw_bat_volt(0,VoltageType::RESTING_VOLTAGE,x,y);
 }
 
+#if AP_RSSI_ENABLED
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
@@ -1431,6 +1432,7 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
         }
     }
 }
+#endif  // AP_RSSI_ENABLED
 
 void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
@@ -1569,7 +1571,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.yaw;
+        angle = atan2f(v.y, v.x) - ahrs.get_yaw();
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1820,7 +1822,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.yaw;
+        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw();
     } 
     draw_speed(x + 1, y, angle, length);
 

@@ -6,6 +6,49 @@
 
 #include <AP_ExternalControl/AP_ExternalControl.h>
 
+// These are the Goal Interface constants. Because microxrceddsgen does not expose
+// them in the generated code, they are manually maintained
+// Position ignore flags
+static constexpr uint16_t TYPE_MASK_IGNORE_LATITUDE = 1;
+static constexpr uint16_t TYPE_MASK_IGNORE_LONGITUDE = 2;
+static constexpr uint16_t TYPE_MASK_IGNORE_ALTITUDE = 4;
+
+bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    if (strcmp(cmd_pos.header.frame_id, MAP_FRAME) == 0) {
+        // Narrow the altitude
+        const int32_t alt_cm  = static_cast<int32_t>(cmd_pos.altitude * 100);
+
+        Location::AltFrame alt_frame;
+        if (!convert_alt_frame(cmd_pos.coordinate_frame, alt_frame)) {
+            return false;
+        }
+
+        constexpr uint32_t MASK_POS_IGNORE =
+            TYPE_MASK_IGNORE_LATITUDE |
+            TYPE_MASK_IGNORE_LONGITUDE |
+            TYPE_MASK_IGNORE_ALTITUDE;
+
+        if (!(cmd_pos.type_mask & MASK_POS_IGNORE)) {
+            Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);
+            if (!external_control->set_global_position(loc)) {
+                return false; // Don't try sending other commands if this fails
+            }
+        }
+
+        // TODO add velocity and accel handling
+
+        return true;
+    }
+
+    return false;
+}
+
 bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel)
 {
     auto *external_control = AP::externalcontrol();
@@ -38,6 +81,26 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     }
 
     return false;
+}
+
+bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
+{
+
+    // Specified in ROS REP-147; only some are supported.
+    switch (frame_in) {
+    case 5: // FRAME_GLOBAL_INT
+        frame_out = Location::AltFrame::ABSOLUTE;
+        break;
+    case 6: // FRAME_GLOBAL_REL_ALT
+        frame_out = Location::AltFrame::ABOVE_HOME;
+        break;
+    case 11: // FRAME_GLOBAL_TERRAIN_ALT
+        frame_out = Location::AltFrame::ABOVE_TERRAIN;
+        break;
+    default:
+        return false;
+    }
+    return true;
 }
 
 

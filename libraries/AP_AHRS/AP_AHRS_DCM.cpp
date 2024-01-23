@@ -101,6 +101,22 @@ AP_AHRS_DCM::update()
 
     // remember the last origin for fallback support
     IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
+
+#if HAL_LOGGING_ENABLED
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_log_ms >= 100) {
+        // log DCM at 10Hz
+        last_log_ms = now_ms;
+        AP::logger().WriteStreaming("DCM", "TimeUS,Roll,Pitch,Yaw",
+                                    "sddd",
+                                    "F000",
+                                    "Qfff",
+                                    AP_HAL::micros64(),
+                                    degrees(roll),
+                                    degrees(pitch),
+                                    wrap_360(degrees(yaw)));
+    }
+#endif // HAL_LOGGING_ENABLED
 }
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
@@ -1205,11 +1221,14 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
 {
     Vector3f velned;
-    if (!get_velocity_NED(velned)) {
-        return false;
+    if (get_velocity_NED(velned)) {
+        velocity = velned.z;
+        return true;
+    } else if (AP::baro().healthy()) {
+        velocity = -AP::baro().get_climb_rate();
+        return true;
     }
-    velocity = velned.z;
-    return true;
+    return false;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message

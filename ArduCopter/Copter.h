@@ -78,12 +78,6 @@
 #include "config.h"
 
 #if FRAME_CONFIG == HELI_FRAME
-    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
-#else
-    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
-#endif
-
-#if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
@@ -258,7 +252,9 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -485,7 +481,8 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl_t *attitude_control;
+    AC_AttitudeControl *attitude_control;
+    const struct AP_Param::GroupInfo *attitude_control_var_info;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
@@ -841,6 +838,7 @@ private:
     // standby.cpp
     void standby_update();
 
+#if HAL_LOGGING_ENABLED
     // Log.cpp
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
@@ -862,6 +860,7 @@ private:
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
+#endif  // HAL_LOGGING_ENABLED
 
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);

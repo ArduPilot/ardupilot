@@ -51,6 +51,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 */
 #define IOMCU_ENABLE_RESET_TEST 0
 
+//#define IOMCU_LOOP_TIMING_DEBUG
 // enable timing GPIO pings
 #ifdef IOMCU_LOOP_TIMING_DEBUG
 #undef TOGGLE_PIN_DEBUG
@@ -103,9 +104,6 @@ static void dma_rx_end_cb(hal_uart_driver *uart)
     chSysLockFromISR();
     uart->usart->CR3 &= ~USART_CR3_DMAR;
 
-    (void)uart->usart->SR;  // sequence to clear IDLE status
-    (void)uart->usart->DR;
-    (void)uart->usart->DR;
     dmaStreamDisable(uart->dmarx);
 
     iomcu.process_io_packet();
@@ -135,10 +133,15 @@ static void dma_tx_end_cb(hal_uart_driver *uart)
     (void)uart->usart->DR;
     (void)uart->usart->DR;
 
+#ifdef HAL_GPIO_LINE_GPIO108
     TOGGLE_PIN_DEBUG(108);
     TOGGLE_PIN_DEBUG(108);
-
+#endif
+#if AP_HAL_SHARED_DMA_ENABLED
+    chSysLockFromISR();
     chEvtSignalI(iomcu.thread_ctx, IOEVENT_TX_END);
+    chSysUnlockFromISR();
+#endif
 }
 
 /* replacement for ChibiOS uart_lld_serve_interrupt() */
@@ -152,41 +155,44 @@ static void idle_rx_handler(hal_uart_driver *uart)
               USART_SR_NE |		/* noise error - we have lost a byte due to noise */
               USART_SR_FE |
               USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
+
+        (void)uart->usart->DR;  /* SR reset step 2 - clear ORE | FE.*/
+
         /* send a line break - this will abort transmission/reception on the other end */
         chSysLockFromISR();
-
         uart->usart->SR = ~USART_SR_LBD;
         uart->usart->CR1 = cr1 | USART_CR1_SBK;
+
         iomcu.reg_status.num_errors++;
         iomcu.reg_status.err_uart++;
 
+        /* disable RX DMA */
         uart->usart->CR3 &= ~USART_CR3_DMAR;
 
-        (void)uart->usart->SR;  // clears ORE | FE
-        (void)uart->usart->DR;
-        (void)uart->usart->DR;
         setup_rx_dma(uart);
 
         chSysUnlockFromISR();
-        return;
     }
 
     if ((sr & USART_SR_TC) && (cr1 & USART_CR1_TCIE)) {
-        chSysLockFromISR();
-
         /* TC interrupt cleared and disabled.*/
         uart->usart->SR &= ~USART_SR_TC;
         uart->usart->CR1 = cr1 & ~USART_CR1_TCIE;
-
+#ifdef HAL_GPIO_LINE_GPIO105
+        TOGGLE_PIN_DEBUG(105);
+        TOGGLE_PIN_DEBUG(105);
+#endif
         /* End of transmission, a callback is generated.*/
-        _uart_tx2_isr_code(uart);
-
-        chSysUnlockFromISR();
+        dma_tx_end_cb(uart);
     }
 
-    if (sr & USART_SR_IDLE) {
+    if ((sr & USART_SR_IDLE) && (cr1 & USART_CR1_IDLEIE)) {
+        (void)uart->usart->DR;  /* SR reset step 2 - clear IDLE.*/
+
         /* the DMA size is the maximum packet size, but smaller packets are perfectly possible leading to 
            an IDLE ISR. The data still must be processed. */
+
+        /* End of receive, a callback is generated.*/
         dma_rx_end_cb(uart);
     }
 }
@@ -246,9 +252,9 @@ static UARTConfig uart_cfg = {
     dma_tx_end_cb,
     dma_rx_end_cb,
     nullptr,
-    nullptr,
-    idle_rx_handler,
-    nullptr,
+    nullptr,            // error
+    idle_rx_handler,    // global irq
+    nullptr,            // idle
     1500000,      //1.5MBit
     USART_CR1_IDLEIE,
     0,
@@ -335,8 +341,8 @@ void AP_IOMCU_FW::init()
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
-    extern uint32_t __main_stack_base__[];
-    extern uint32_t __main_stack_end__[];
+    extern stkalign_t __main_stack_base__[];
+    extern stkalign_t __main_stack_end__[];
     uint32_t stklimit = (uint32_t)__main_stack_end__;
     uint32_t stkbase  = (uint32_t)__main_stack_base__;
     uint32_t *crawl   = (uint32_t *)stkbase;
@@ -348,8 +354,8 @@ static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
     chDbgAssert(free > 0, "mstack exhausted");
     mstack = (uint16_t)free;
 
-    extern uint32_t __main_thread_stack_base__[];
-    extern uint32_t __main_thread_stack_end__[];
+    extern stkalign_t __main_thread_stack_base__[];
+    extern stkalign_t __main_thread_stack_end__[];
     stklimit = (uint32_t)__main_thread_stack_end__;
     stkbase  = (uint32_t)__main_thread_stack_base__;
     crawl   = (uint32_t *)stkbase;
@@ -409,15 +415,10 @@ static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
 */
 void AP_IOMCU_FW::update()
 {
-#if CH_CFG_ST_FREQUENCY == 1000000
     eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END | IOEVENT_TX_BEGIN, TIME_US2I(1000));
-#else
-    // we are not running any other threads, so we can use an
-    // immediate timeout here for lowest latency
-    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END, TIME_IMMEDIATE);
-#endif
-
+#ifdef HAL_GPIO_LINE_GPIO107
     TOGGLE_PIN_DEBUG(107);
+#endif
 
     iomcu.reg_status.total_ticks++;
     if (mask) {
@@ -465,7 +466,7 @@ void AP_IOMCU_FW::update()
         now - sbus_last_ms >= sbus_interval_ms) {
         // output a new SBUS frame
         sbus_last_ms = now;
-        sbus_out_write(reg_servo.pwm, IOMCU_MAX_CHANNELS);
+        sbus_out_write(reg_servo.pwm, IOMCU_MAX_RC_CHANNELS);
     }
     // handle FMU failsafe
     if (now - fmu_data_received_time > 200) {
@@ -482,12 +483,20 @@ void AP_IOMCU_FW::update()
         // turn amber off
         AMBER_SET(0);
     }
+
     // update status page at 20Hz
     if (now - last_status_ms > 50) {
         last_status_ms = now;
         page_status_update();
     }
-
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // EDT updates are semt at ~1Hz per ESC, but we want to make sure
+    // that we don't delay updates unduly so sample at 5Hz
+    if (now - last_telem_ms > 200) {
+        last_telem_ms = now;
+        telem_update();
+    }
+#endif
     // run fast loop functions at 1Khz
     if (now_us - last_fast_loop_us >= 1000)
     {
@@ -495,6 +504,9 @@ void AP_IOMCU_FW::update()
         heater_update();
         rcin_update();
         rcin_serial_update();
+#ifdef HAL_WITH_BIDIR_DSHOT
+        erpm_update();
+#endif
     }
 
     // run remaining functions at 100Hz
@@ -521,7 +533,9 @@ void AP_IOMCU_FW::update()
         tx_dma_handle->unlock();
     }
 #endif
+#ifdef HAL_GPIO_LINE_GPIO107
     TOGGLE_PIN_DEBUG(107);
+#endif
 }
 
 void AP_IOMCU_FW::pwm_out_update()
@@ -567,7 +581,7 @@ void AP_IOMCU_FW::rcin_update()
         const auto &rc = AP::RC();
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
-        hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
+        hal.rcin->read(rc_input.pwm, IOMCU_MAX_RC_CHANNELS);
         rc_last_input_ms = last_ms;
         rc_input.rc_protocol = (uint16_t)rc.protocol_detected();
         rc_input.rssi = rc.get_RSSI();
@@ -590,7 +604,7 @@ void AP_IOMCU_FW::rcin_update()
     if (mixing.enabled &&
         mixing.rc_chan_override > 0 &&
         rc_input.flags_rc_ok &&
-        mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
+        mixing.rc_chan_override <= IOMCU_MAX_RC_CHANNELS) {
         override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
     } else {
         override_active = false;
@@ -603,9 +617,58 @@ void AP_IOMCU_FW::rcin_update()
     }
 }
 
+#ifdef HAL_WITH_BIDIR_DSHOT
+void AP_IOMCU_FW::erpm_update()
+{
+    uint32_t now_us = AP_HAL::micros();
+
+    if (hal.rcout->new_erpm()) {
+        dshot_erpm.update_mask |= hal.rcout->read_erpm(dshot_erpm.erpm, IOMCU_MAX_TELEM_CHANNELS);
+        last_erpm_us = now_us;
+    } else if (now_us - last_erpm_us > ESC_RPM_DATA_TIMEOUT_US) {
+        dshot_erpm.update_mask = 0;
+    }
+}
+
+void AP_IOMCU_FW::telem_update()
+{
+    uint32_t now_ms = AP_HAL::millis();
+
+    for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
+        for (uint8_t j = 0; j < 4; j++) {
+            const uint8_t esc_id = (i * 4 + j);
+            if (esc_id >= IOMCU_MAX_TELEM_CHANNELS) {
+                continue;
+            }
+            dshot_telem[i].error_rate[j] = uint16_t(roundf(hal.rcout->get_erpm_error_rate(esc_id) * 100.0));
+#if HAL_WITH_ESC_TELEM
+            const volatile AP_ESC_Telem_Backend::TelemetryData& telem = esc_telem.get_telem_data(esc_id);
+            // if data is stale then set to zero to avoid phantom data appearing in mavlink
+            if (now_ms - telem.last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS) {
+                dshot_telem[i].voltage_cvolts[j] = 0;
+                dshot_telem[i].current_camps[j] = 0;
+                dshot_telem[i].temperature_cdeg[j] = 0;
+                continue;
+            }
+            dshot_telem[i].voltage_cvolts[j] = uint16_t(roundf(telem.voltage * 100));
+            dshot_telem[i].current_camps[j] = uint16_t(roundf(telem.current * 100));
+            dshot_telem[i].temperature_cdeg[j] = telem.temperature_cdeg;
+            dshot_telem[i].types[j] = telem.types;
+#endif
+        }
+    }
+}
+#endif
+
 void AP_IOMCU_FW::process_io_packet()
 {
     iomcu.reg_status.total_pkts++;
+
+    if (rx_io_packet.code == CODE_NOOP) {
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_bad_opcode++;
+        return;
+    }
 
     uint8_t rx_crc = rx_io_packet.crc;
     uint8_t calc_crc;
@@ -661,9 +724,18 @@ void AP_IOMCU_FW::process_io_packet()
     default: {
         iomcu.reg_status.num_errors++;
         iomcu.reg_status.err_bad_opcode++;
+        rx_io_packet.code = CODE_NOOP;
+        rx_io_packet.count = 0;
+        return;
     }
     break;
     }
+
+    // prevent a spurious DMA callback from doing anything bad
+    rx_io_packet.code = CODE_NOOP;
+    rx_io_packet.count = 0;
+
+    return;
 }
 
 /*
@@ -671,13 +743,15 @@ void AP_IOMCU_FW::process_io_packet()
  */
 void AP_IOMCU_FW::page_status_update(void)
 {
+    adc_sample_channels();
+
     if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) == 0) {
         // we can only get VRSSI when sbus is disabled
-        reg_status.vrssi = adc_sample_vrssi();
+        reg_status.vrssi = adc_vrssi();
     } else {
         reg_status.vrssi = 0;
     }
-    reg_status.vservo = adc_sample_vservo();
+    reg_status.vservo = adc_vservo();
 }
 
 bool AP_IOMCU_FW::handle_code_read()
@@ -699,6 +773,19 @@ bool AP_IOMCU_FW::handle_code_read()
     case PAGE_RAW_RCIN:
         COPY_PAGE(rc_input);
         break;
+#ifdef HAL_WITH_BIDIR_DSHOT
+    case PAGE_RAW_DSHOT_ERPM:
+        COPY_PAGE(dshot_erpm);
+        break;
+    case PAGE_RAW_DSHOT_TELEM_1_4:
+        COPY_PAGE(dshot_telem[0]);
+        break;
+#if IOMCU_MAX_TELEM_CHANNELS > 4
+    case PAGE_RAW_DSHOT_TELEM_5_8:
+        COPY_PAGE(dshot_telem[1]);
+        break;
+#endif
+#endif
     case PAGE_STATUS:
         COPY_PAGE(reg_status);
         break;
@@ -725,6 +812,16 @@ bool AP_IOMCU_FW::handle_code_read()
     memcpy(tx_io_packet.regs, values, sizeof(uint16_t)*tx_io_packet.count);
     tx_io_packet.crc = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+
+#ifdef HAL_WITH_BIDIR_DSHOT
+    switch (rx_io_packet.page) {
+    case PAGE_RAW_DSHOT_ERPM:
+        memset(&dshot_erpm, 0, sizeof(dshot_erpm));
+        break;
+    default:
+        break;
+    }
+#endif
     return true;
 }
 
@@ -798,8 +895,10 @@ bool AP_IOMCU_FW::handle_code_write()
                 // or disable SBUS out
                 AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
 
+                adc_disable_vrssi();
                 palClearLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             } else {
+                adc_enable_vrssi();
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             }
             if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
@@ -810,6 +909,8 @@ bool AP_IOMCU_FW::handle_code_write()
         case PAGE_REG_SETUP_OUTPUT_MODE:
             mode_out.mask = rx_io_packet.regs[0];
             mode_out.mode = rx_io_packet.regs[1];
+            mode_out.bdmask = rx_io_packet.regs[2];
+            mode_out.esc_type = rx_io_packet.regs[3];
             break;
 
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
@@ -860,18 +961,17 @@ bool AP_IOMCU_FW::handle_code_write()
             // no input when override is active
             break;
         }
-        /* copy channel data */
-        uint16_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(reg_direct_pwm.pwm)/2) {
+        if (rx_io_packet.count > sizeof(reg_direct_pwm.pwm)/2) {
             return false;
         }
-        while ((offset < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
+        /* copy channel data */
+        uint16_t i = 0, num_values = rx_io_packet.count;
+        while ((i < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
             /* XXX range-check value? */
             if (rx_io_packet.regs[i] != PWM_IGNORE_THIS_CHANNEL) {
-                reg_direct_pwm.pwm[offset] = rx_io_packet.regs[i];
+                reg_direct_pwm.pwm[i] = rx_io_packet.regs[i];
             }
 
-            offset++;
             num_values--;
             i++;
         }
@@ -880,7 +980,7 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
-    case PAGE_MIXING: {
+    case PAGE_MIXING: { // multi-packet message
         uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         if (offset + num_values > sizeof(mixing)/2) {
             return false;
@@ -890,11 +990,10 @@ bool AP_IOMCU_FW::handle_code_write()
     }
 
     case PAGE_FAILSAFE_PWM: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(reg_failsafe_pwm.pwm)/2) {
+        if (rx_io_packet.count != sizeof(reg_failsafe_pwm.pwm)/2) {
             return false;
         }
-        memcpy((&reg_failsafe_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
+        memcpy((&reg_failsafe_pwm.pwm[0]), &rx_io_packet.regs[0], rx_io_packet.count*2);
         break;
     }
 
@@ -906,11 +1005,10 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
 
     case PAGE_DSHOT: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(dshot)/2) {
+        if (rx_io_packet.count != sizeof(dshot)/2) {
             return false;
         }
-        memcpy(((uint16_t *)&dshot)+offset, &rx_io_packet.regs[0], num_values*2);
+        memcpy(((uint16_t *)&dshot)+rx_io_packet.offset, &rx_io_packet.regs[0], rx_io_packet.count*2);
         if(dshot.telem_mask) {
             hal.rcout->set_telem_request_mask(dshot.telem_mask);
         }
@@ -1059,10 +1157,16 @@ void AP_IOMCU_FW::rcout_config_update(void)
             }
         }
         last_channel_mask = reg_setup.channel_mask;
+        // channel enablement will affect the reported output mode
+        uint32_t output_mask = 0;
+        reg_status.rcout_mode = hal.rcout->get_output_mode(output_mask);
+        reg_status.rcout_mask = uint8_t(0xFF & output_mask);
     }
 
     // see if there is anything to do, we only support setting the mode for a particular channel once
-    if ((last_output_mode_mask & ~mode_out.mask) == mode_out.mask) {
+    if ((last_output_mode_mask & mode_out.mask) == mode_out.mask
+        && (last_output_bdmask & mode_out.bdmask) == mode_out.bdmask
+        && last_output_esc_type == mode_out.esc_type) {
         return;
     }
 
@@ -1072,10 +1176,16 @@ void AP_IOMCU_FW::rcout_config_update(void)
 #if defined(STM32F103xB) || defined(STM32F103x8)
     case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
 #endif
+#ifdef HAL_WITH_BIDIR_DSHOT
+        hal.rcout->set_bidir_dshot_mask(mode_out.bdmask);
+        hal.rcout->set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType(mode_out.esc_type));
+#endif
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
         // enabling dshot changes the memory allocation
         reg_status.freemem = hal.util->available_memory();
         last_output_mode_mask |= mode_out.mask;
+        last_output_bdmask |= mode_out.bdmask;
+        last_output_esc_type = mode_out.esc_type;
         break;
     case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
     case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:

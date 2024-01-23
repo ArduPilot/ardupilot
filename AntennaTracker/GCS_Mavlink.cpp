@@ -313,6 +313,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_PROGRESS,
 #endif
     MSG_EKF_STATUS_REPORT,
+    MSG_BATTERY_STATUS,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM

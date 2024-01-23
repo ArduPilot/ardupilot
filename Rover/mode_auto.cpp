@@ -82,21 +82,15 @@ void ModeAuto::update()
     switch (_submode) {
         case SubMode::WP:
         {
-            // check if we've reached the destination
-            if (!g2.wp_nav.reached_destination() || g2.wp_nav.is_fast_waypoint()) {
-                // update navigation controller
+            // boats loiter once the waypoint is reached
+            bool keep_navigating = true;
+            if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
+                keep_navigating = !start_loiter();
+            }
+
+            // update navigation controller
+            if (keep_navigating) {
                 navigate_to_waypoint();
-            } else {
-                // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        start_stop();
-                    }
-                } else {
-                    start_stop();
-                }
-                // update distance to destination
-                _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
             }
             break;
         }
@@ -518,10 +512,12 @@ void ModeAuto::send_guided_position_target()
 /********************************************************************************/
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
     // log when new commands start
     if (rover.should_log(MASK_LOG_CMD)) {
         rover.logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
@@ -949,8 +945,9 @@ bool ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 
 bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
+    const float turns = cmd.get_loiter_turns();
     // check if we have completed circling
-    return ((g2.mode_circle.get_angle_total_rad() / M_2PI) >= LOWBYTE(cmd.p1));
+    return ((g2.mode_circle.get_angle_total_rad() / M_2PI) >= turns);
 }
 
 /********************************************************************************/

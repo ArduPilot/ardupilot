@@ -1479,15 +1479,15 @@ class Result(object):
     def __str__(self):
         ret = "  %s (%s)" % (self.test.name, self.test.description)
         if self.passed:
-            return ret + " OK"
+            return f"{ret} OK"
         if self.reason is not None:
-            ret += " (" + self.reason + ")"
+            ret += f" ({self.reason} )"
         if self.exception is not None:
-            ret += " (" + str(self.exception) + ")"
+            ret += f" ({str(self.exception)})"
         if self.debug_filename is not None:
-            ret += " (see " + self.debug_filename + ")"
+            ret += f" (see {self.debug_filename})"
         if self.time_elapsed is not None:
-            ret += " (duration " + self.time_elapsed + "s)"
+            ret += f" (duration {self.time_elapsed} s)"
         return ret
 
 
@@ -2942,7 +2942,7 @@ class TestSuite(ABC):
                                    wipe=False,
                                    set_streamrate_callback=None,
                                    binary=None):
-        '''customisations could be "--uartF=sim:nmea" '''
+        '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
         self.stop_SITL()
@@ -3972,15 +3972,19 @@ class TestSuite(ABC):
         if not temp_ok:
             raise NotAchievedException("target temperature")
 
+    def message_has_field_values_field_values_equal(self, fieldname, value, got, epsilon=None):
+        if isinstance(value, float):
+            if math.isnan(value) or math.isnan(got):
+                return math.isnan(value) and math.isnan(got)
+
+        if type(value) is not str and epsilon is not None:
+            return abs(got - value) <= epsilon
+
+        return got == value
+
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
             got = getattr(m, fieldname)
-            if math.isnan(value) or math.isnan(got):
-                equal = math.isnan(value) and math.isnan(got)
-            elif epsilon is not None:
-                equal = abs(got - value) <= epsilon
-            else:
-                equal = got == value
 
             value_string = value
             got_string = got
@@ -3994,7 +3998,9 @@ class TestSuite(ABC):
                 value_string = "%s (%s)" % (value, enum[value].name)
                 got_string = "%s (%s)" % (got, enum[got].name)
 
-            if not equal:
+            if not self.message_has_field_values_field_values_equal(
+                    fieldname, value, got, epsilon=epsilon
+            ):
                 # see if this is an enumerated field:
                 self.progress(self.dump_message_verbose(m))
                 self.progress("Expected %s.%s to be %s, got %s" %
@@ -4267,28 +4273,104 @@ class TestSuite(ABC):
         self.context_push()
         self.set_parameters({
             "NET_ENABLED": 1,
-            "NET_DHCP": 0,
+            "LOG_DISARMED": 1,
+            "LOG_DARM_RATEMAX": 1, # make small logs
+            # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 15004,
+            "NET_P1_PORT": 16001,
             "NET_P1_IP0": 127,
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
-            "NET_P1_IP3": 1
+            "NET_P1_IP3": 1,
+            # UDP server
+            "NET_P2_TYPE": 2,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16002,
+            "NET_P2_IP0": 0,
+            "NET_P2_IP1": 0,
+            "NET_P2_IP2": 0,
+            "NET_P2_IP3": 0,
+            # TCP client
+            "NET_P3_TYPE": 3,
+            "NET_P3_PROTOCOL": 2,
+            "NET_P3_PORT": 16003,
+            "NET_P3_IP0": 127,
+            "NET_P3_IP1": 0,
+            "NET_P3_IP2": 0,
+            "NET_P3_IP3": 1,
+            # TCP server
+            "NET_P4_TYPE": 4,
+            "NET_P4_PROTOCOL": 2,
+            "NET_P4_PORT": 16004,
+            "NET_P4_IP0": 0,
+            "NET_P4_IP1": 0,
+            "NET_P4_IP2": 0,
+            "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
-        filename = "MAVProxy-downloaded-net-log.BIN"
-        mavproxy = self.start_mavproxy(master=':15004')
-        self.mavproxy_load_module(mavproxy, 'log')
-        mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
-        mavproxy.send("set shownoise 0\n")
-        mavproxy.send("log download latest %s\n" % filename)
-        mavproxy.expect("Finished downloading", timeout=120)
-        self.mavproxy_unload_module(mavproxy, 'log')
-        self.stop_mavproxy(mavproxy)
+        endpoints = [('UDPClient', ':16001') ,
+                     ('UDPServer', 'udpout:127.0.0.1:16002'),
+                     ('TCPClient', 'tcpin:0.0.0.0:16003'),
+                     ('TCPServer', 'tcp:127.0.0.1:16004')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e, options=['--source-system=123'])
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            # ensure the full list of logs has come out
+            for i in range(5):
+                self.wait_heartbeat()
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
+        self.set_parameters({
+            # multicast UDP client
+            "NET_P1_TYPE": 1,
+            "NET_P1_PROTOCOL": 2,
+            "NET_P1_PORT": 16005,
+            "NET_P1_IP0": 239,
+            "NET_P1_IP1": 255,
+            "NET_P1_IP2": 145,
+            "NET_P1_IP3": 50,
+            # Broadcast UDP client
+            "NET_P2_TYPE": 1,
+            "NET_P2_PROTOCOL": 2,
+            "NET_P2_PORT": 16006,
+            "NET_P2_IP0": 255,
+            "NET_P2_IP1": 255,
+            "NET_P2_IP2": 255,
+            "NET_P2_IP3": 255,
+            "NET_P3_TYPE": -1,
+            "NET_P4_TYPE": -1,
+            "LOG_DISARMED": 0,
+            })
+        self.reboot_sitl()
+        endpoints = [('UDPMulticast', 'mcast:16005') ,
+                     ('UDPBroadcast', ':16006')]
+        for name, e in endpoints:
+            self.progress("Downloading log with %s %s" % (name, e))
+            filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
+
+            mavproxy = self.start_mavproxy(master=e, options=['--source-system=123'])
+            self.mavproxy_load_module(mavproxy, 'log')
+            self.wait_heartbeat()
+            mavproxy.send("log list\n")
+            mavproxy.expect("numLogs")
+            # ensure the full list of logs has come out
+            for i in range(5):
+                self.wait_heartbeat()
+            mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.expect("Finished downloading", timeout=120)
+            self.mavproxy_unload_module(mavproxy, 'log')
+            self.stop_mavproxy(mavproxy)
+
         self.context_pop()
 
     def TestLogDownloadMAVProxyCAN(self, upload_logs=False):
@@ -4314,8 +4396,9 @@ class TestSuite(ABC):
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
         mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
+        # ensure the full list of logs has come out
+        for i in range(5):
+            self.wait_heartbeat()
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
@@ -8362,7 +8445,7 @@ Also, ignores heartbeats not from our target system'''
     def defaults_filepath(self):
         return None
 
-    def start_mavproxy(self, sitl_rcin_port=None, master=None):
+    def start_mavproxy(self, sitl_rcin_port=None, master=None, options=None):
         self.start_mavproxy_count += 1
         if self.mavproxy is not None:
             return self.mavproxy
@@ -8380,11 +8463,18 @@ Also, ignores heartbeats not from our target system'''
         if master is None:
             master = 'tcp:127.0.0.1:%u' % self.adjust_ardupilot_port(5762)
 
+        if options is None:
+            options = self.mavproxy_options()
+        else:
+            op = self.mavproxy_options().copy()
+            op.extend(options)
+            options = op
+
         mavproxy = util.start_MAVProxy_SITL(
             self.vehicleinfo_key(),
             master=master,
             logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options(),
+            options=options,
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
         )
@@ -11867,8 +11957,8 @@ switch value'''
         self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartE=tcp:%u" % port, # GPS2 is NMEA....
-            "--uartF=tcpclient:127.0.0.1:%u" % port, # serial5 spews to localhost port
+            "--serial4=tcp:%u" % port, # GPS2 is NMEA....
+            "--serial5=tcpclient:127.0.0.1:%u" % port, # serial5 spews to localhost port
         ])
         self.do_timesync_roundtrip()
         self.wait_gps_fix_type_gte(3)
@@ -12484,7 +12574,7 @@ switch value'''
         })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port),
                                  get_time=self.get_sim_time_cached)
@@ -12575,7 +12665,7 @@ switch value'''
         })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port),
                                  get_time=self.get_sim_time_cached)
@@ -12730,7 +12820,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", port))
         frsky.connect()
@@ -13005,7 +13095,7 @@ switch value'''
         self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkySPort(("127.0.0.1", port), verbose=True)
         self.wait_ready_to_arm()
@@ -13078,7 +13168,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 3) # serial5 is FRSky output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         frsky = FRSkyD(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13197,7 +13287,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 25) # serial5 is LTM output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port  # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port  # serial5 spews to localhost port
         ])
         ltm = LTM(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13240,7 +13330,7 @@ switch value'''
         self.set_parameter("SERIAL5_PROTOCOL", 17) # serial5 is DEVO output
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port  # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port  # serial5 spews to localhost port
         ])
         devo = DEVO(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13313,7 +13403,7 @@ switch value'''
         self.set_parameter("MSP_OPTIONS", 1) # telemetry (unpolled) mode
         port = self.spare_network_port()
         self.customise_SITL_commandline([
-            "--uartF=tcp:%u" % port # serial5 spews to localhost port
+            "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
         msp = MSP_DJI(("127.0.0.1", port))
         self.wait_ready_to_arm()
@@ -13341,7 +13431,7 @@ switch value'''
             self.set_parameter("SERIAL5_PROTOCOL", 23) # serial5 is RCIN input
             port = self.spare_network_port()
             self.customise_SITL_commandline([
-                "--uartF=tcp:%u" % port # serial5 reads from to localhost port
+                "--serial5=tcp:%u" % port # serial5 reads from to localhost port
             ])
             crsf = CRSF(("127.0.0.1", port))
             crsf.connect()

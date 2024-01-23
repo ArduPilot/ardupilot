@@ -324,38 +324,13 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
     mxs_state.op.altHostAvlbl = false;
     mxs_state.op.altRes25 = !mxs_state.inst.altRes100;               // Host Altitude Resolution from install
 
-    int32_t height;
-    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
-        mxs_state.op.altitude = height * SAGETECH_SCALE_CM_TO_FEET;         // Height above sealevel in feet
-    } else {
-        mxs_state.op.altitude = 0;
-    }
-
     mxs_state.op.identOn = false;
 
     const auto &my_loc = _frontend._my_loc;
-    float vertRateD;
-    if (my_loc.get_vert_pos_rate_D(vertRateD)) {
-        // convert from down to up, and scale appropriately:
-        mxs_state.op.climbRate = -1 * vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
-        mxs_state.op.climbValid = true;
-    } else {
-        mxs_state.op.climbValid = false;
-        mxs_state.op.climbRate = -CLIMB_RATE_LIMIT;
-    }
 
-    const Vector2f speed = my_loc.groundspeed_vector();
-    if (!speed.is_nan() && !speed.is_zero()) {
-        mxs_state.op.headingValid = true;
-        mxs_state.op.airspdValid = true;
-    } else {
-        mxs_state.op.headingValid = false;
-        mxs_state.op.airspdValid = false;
-    }
-    const uint16_t speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
-    double heading = wrap_360(degrees(speed.angle()));
-    mxs_state.op.airspd = speed_knots;
-    mxs_state.op.heading = heading;
+    populate_op_altitude(my_loc);
+    populate_op_climbrate(my_loc);
+    populate_op_airspeed_and_heading(my_loc);
 
     last.msg.type = SG_MSG_TYPE_HOST_OPMSG;
 
@@ -587,35 +562,9 @@ void AP_ADSB_Sagetech_MXS::send_operating_msg()
 
     const auto &my_loc = _frontend._my_loc;
 
-    int32_t height;
-    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
-        mxs_state.op.altitude = height * SAGETECH_SCALE_CM_TO_FEET;         // Height above sealevel in feet
-    } else {
-        mxs_state.op.altitude = 0;
-    }
-
-    float vertRateD;
-    if (my_loc.get_vert_pos_rate_D(vertRateD)) {
-        mxs_state.op.climbRate = -1 * vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
-        mxs_state.op.climbValid = true;
-    } else {
-        mxs_state.op.climbValid = false;
-        mxs_state.op.climbRate = -CLIMB_RATE_LIMIT;
-    }
-
-    const Vector2f speed = my_loc.groundspeed_vector();
-    if (!speed.is_nan() && !speed.is_zero()) {
-        mxs_state.op.headingValid = true;
-        mxs_state.op.airspdValid = true;
-    } else {
-        mxs_state.op.headingValid = false;
-        mxs_state.op.airspdValid = false;
-    }
-    const uint16_t speed_knots = (speed.length() * M_PER_SEC_TO_KNOTS);
-    const double heading = wrap_360(degrees(speed.angle()));
-
-    mxs_state.op.airspd = speed_knots;
-    mxs_state.op.heading = heading;
+    populate_op_altitude(my_loc);
+    populate_op_climbrate(my_loc);
+    populate_op_airspeed_and_heading(my_loc);
 
     mxs_state.op.identOn = _frontend.out_state.ctrl.identActive;
     _frontend.out_state.ctrl.identActive = false;                           // only send identButtonActive once per request
@@ -692,7 +641,7 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
     }
 
     int32_t height;
-    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height)) {
+    if (_frontend._my_loc.initialised() && _frontend._my_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
         gps.height = height * 0.01;
     } else {
         gps.height = 0.0;
@@ -783,6 +732,45 @@ sg_airspeed_t AP_ADSB_Sagetech_MXS::convert_airspeed_knots_to_sg(const float max
     } else { //if (airspeed >= 1200)
         return sg_airspeed_t::speedGreater;
     }
+}
+
+void AP_ADSB_Sagetech_MXS::populate_op_altitude(const AP_ADSB::Loc &loc)
+{
+    int32_t height;
+    if (loc.initialised() && loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height)) {
+        mxs_state.op.altitude = height * SAGETECH_SCALE_CM_TO_FEET;         // Height above sealevel in feet
+    } else {
+        mxs_state.op.altitude = 0;
+    }
+}
+
+void AP_ADSB_Sagetech_MXS::populate_op_climbrate(const AP_ADSB::Loc &my_loc)
+{
+    float vertRateD;
+    if (my_loc.get_vert_pos_rate_D(vertRateD)) {
+        // convert from down to up, and scale appropriately:
+        mxs_state.op.climbRate = -1 * vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
+        mxs_state.op.climbValid = true;
+    } else {
+        mxs_state.op.climbValid = false;
+        mxs_state.op.climbRate = -CLIMB_RATE_LIMIT;
+    }
+}
+
+void AP_ADSB_Sagetech_MXS::populate_op_airspeed_and_heading(const AP_ADSB::Loc &my_loc)
+{
+    const Vector2f speed = my_loc.groundspeed_vector();
+    if (!speed.is_nan() && !speed.is_zero()) {
+        mxs_state.op.headingValid = true;
+        mxs_state.op.airspdValid = true;
+    } else {
+        mxs_state.op.headingValid = false;
+        mxs_state.op.airspdValid = false;
+    }
+    const uint16_t speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
+    double heading = wrap_360(degrees(speed.angle()));
+    mxs_state.op.airspd = speed_knots;
+    mxs_state.op.heading = heading;
 }
 
 #endif // HAL_ADSB_SAGETECH_MXS_ENABLED

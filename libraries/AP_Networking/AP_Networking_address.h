@@ -18,12 +18,15 @@ public:
     void set_uint32(uint32_t addr);
 
     // return address as a null-terminated string
-    const char* get_str() const;
+    const char* get_str();
 
     // set default address from a uint32
     void set_default_uint32(uint32_t addr);
 
     static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    char strbuf[16];
 };
 
 /*

@@ -35,10 +35,16 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS MultiCopter
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_CLASS Helicopter
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_CLASS Tracker
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_CLASS Plane
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_CLASS SimRover
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_CLASS Blimp
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_SIM_FRAME_CLASS Submarine
 #endif
 #endif
 
@@ -47,10 +53,16 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "+"
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_STRING "heli"
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_STRING "tracker"
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_STRING "plane"
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_STRING "rover"
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_STRING "blimp"
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_SIM_FRAME_STRING "sub"
 #endif
 #endif
 
@@ -230,6 +242,9 @@ void SIMState::fdm_input_local(void)
     if (microstrain5 != nullptr) {
         microstrain5->update();
     }
+    if (inertiallabs != nullptr) {
+        inertiallabs->update();
+    }
 
 #if HAL_SIM_AIS_ENABLED
     if (ais != nullptr) {
@@ -381,7 +396,7 @@ void SIMState::set_height_agl(void)
         AP_Terrain *_terrain = AP_Terrain::get_singleton();
         if (_terrain != nullptr &&
             _terrain->height_amsl(location, terrain_height_amsl)) {
-            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }
     }
@@ -389,7 +404,7 @@ void SIMState::set_height_agl(void)
 
     if (_sitl != nullptr) {
         // fall back to flat earth model
-        _sitl->height_agl = _sitl->state.altitude - home_alt;
+        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
     }
 }
 

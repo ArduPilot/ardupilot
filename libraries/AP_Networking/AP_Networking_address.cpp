@@ -6,7 +6,9 @@
 
 #if AP_NETWORKING_ENABLED
 
+#include <arpa/inet.h>
 #include "AP_Networking.h"
+#include <AP_HAL/utility/Socket.h>
 
 const AP_Param::GroupInfo AP_Networking_IPV4::var_info[] = {
     // @Param: 0
@@ -47,7 +49,7 @@ const AP_Param::GroupInfo AP_Networking_IPV4::var_info[] = {
 AP_Networking_IPV4::AP_Networking_IPV4(const char *default_addr)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    set_default_uint32(AP_Networking::convert_str_to_ip(default_addr));
+    set_default_uint32(SocketAPM::inet_str_to_addr(default_addr));
 }
 
 uint32_t AP_Networking_IPV4::get_uint32(void) const
@@ -68,9 +70,10 @@ void AP_Networking_IPV4::set_default_uint32(uint32_t v)
     }
 }
 
-const char* AP_Networking_IPV4::get_str() const
+const char* AP_Networking_IPV4::get_str()
 {
-    return AP_Networking::convert_ip_to_str(get_uint32());
+    const auto ip = get_uint32();
+    return SocketAPM::inet_addr_to_str(ip, strbuf, sizeof(strbuf));
 }
 
 #endif // AP_NETWORKING_ENABLED

@@ -85,7 +85,7 @@
 #error "Unsupported MCU for FDCAN"
 #endif
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 #define STR(x) #x
 #define XSTR(x) STR(x)
@@ -568,7 +568,7 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
     if (can_ifaces[self_index_] == nullptr) {
         can_ifaces[self_index_] = this;
 #if !defined(HAL_BOOTLOADER_BUILD)
-        hal.can[self_index_] = this;
+        AP_HAL::get_HAL_mutable().can[self_index_] = this;
 #endif
     }
 
@@ -812,11 +812,9 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
                 rx_item.flags = AP_HAL::CANIface::Loopback;
                 add_to_rx_queue(rx_item);
             }
-            if (event_handle_ != nullptr) {
-                stats.num_events++;
-#if CH_CFG_USE_EVENTS == TRUE
-                evt_src_.signalI(1 << self_index_);
-#endif
+            stats.num_events++;
+            if (sem_handle != nullptr) {
+                sem_handle->signal_ISR();
             }
         }
     }
@@ -925,11 +923,9 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index)
     while (readRxFIFO(fifo_index)) {
         had_activity_ = true;
     }
-    if (event_handle_ != nullptr) {
-        stats.num_events++;
-#if CH_CFG_USE_EVENTS == TRUE
-        evt_src_.signalI(1 << self_index_);
-#endif
+    stats.num_events++;
+    if (sem_handle != nullptr) {
+        sem_handle->signal_ISR();
     }
 }
 
@@ -995,16 +991,11 @@ uint32_t CANIface::getErrorCount() const
            stats.tx_timedout;
 }
 
-#if CH_CFG_USE_EVENTS == TRUE
-ChibiOS::EventSource CANIface::evt_src_;
-bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
+bool CANIface::set_event_handle(AP_HAL::BinarySemaphore *handle)
 {
-    CriticalSectionLocker lock;
-    event_handle_ = handle;
-    event_handle_->set_source(&evt_src_);
-    return event_handle_->register_event(1 << self_index_);
+    sem_handle = handle;
+    return true;
 }
-#endif
 
 bool CANIface::isRxBufferEmpty() const
 {
@@ -1075,10 +1066,10 @@ bool CANIface::select(bool &read, bool &write,
         return true;
     }
     while (time < blocking_deadline) {
-        if (event_handle_ == nullptr) {
+        if (sem_handle == nullptr) {
             break;
         }
-        event_handle_->wait(blocking_deadline - time); // Block until timeout expires or any iface updates
+        IGNORE_RETURN(sem_handle->wait(blocking_deadline - time)); // Block until timeout expires or any iface updates
         checkAvailable(read, write, pending_tx);  // Check what we got
         if ((read && in_read) || (write && in_write)) {
             return true;

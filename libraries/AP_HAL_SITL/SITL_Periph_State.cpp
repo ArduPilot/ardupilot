@@ -17,7 +17,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <SITL/SITL.h>
 
@@ -83,11 +83,9 @@ void SITL_State::init(int argc, char * const argv[]) {
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
-        case CMDLINE_SERIAL9: {
-            static const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
-            _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
+        case CMDLINE_SERIAL9:
+            _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
-        }
         case CMDLINE_DEFAULTS:
             defaults_path = strdup(gopt.optarg);
             break;
@@ -138,59 +136,11 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
  */
 void SimMCast::multicast_open(void)
 {
-    struct sockaddr_in sockaddr {};
-    int ret;
-
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(SITL_MCAST_PORT);
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
-
-    mc_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (mc_fd == -1) {
-        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+    if (!sock.connect(SITL_MCAST_IP, SITL_MCAST_PORT)) {
+        fprintf(stderr, "multicast socket failed - %s\n", strerror(errno));
         exit(1);
     }
-    ret = fcntl(mc_fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1) {
-        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
-        exit(1);
-    }
-    int one = 1;
-    if (setsockopt(mc_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
-        fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
-        exit(1);
-    }
-
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
-    /*
-      on cygwin you need to bind to INADDR_ANY then use the multicast
-      IP_ADD_MEMBERSHIP to get on the right address
-     */
-    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
-    
-    ret = bind(mc_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        fprintf(stderr, "multicast bind failed on port %u - %s\n",
-                (unsigned)ntohs(sockaddr.sin_port),
-                strerror(errno));
-        exit(1);
-    }
-
-    struct ip_mreq mreq {};
-    mreq.imr_multiaddr.s_addr = inet_addr(SITL_MCAST_IP);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-
-    ret = setsockopt(mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
-    if (ret == -1) {
-        fprintf(stderr, "multicast membership add failed on port %u - %s\n",
-                (unsigned)ntohs(sockaddr.sin_port),
-                strerror(errno));
-        exit(1);
-    }
+    servo_sock.set_blocking(false);
     ::printf("multicast receiver initialised\n");
 }
 
@@ -199,29 +149,17 @@ void SimMCast::multicast_open(void)
  */
 void SimMCast::servo_fd_open(void)
 {
-    servo_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (servo_fd == -1) {
-        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+    const char *in_addr = nullptr;
+    uint16_t port;
+    sock.last_recv_address(in_addr, port);
+    if (in_addr == nullptr) {
+        return;
+    }
+    if (!servo_sock.connect(in_addr, SITL_SERVO_PORT)) {
+        fprintf(stderr, "servo socket failed - %s\n", strerror(errno));
         exit(1);
     }
-    int ret = fcntl(servo_fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1) {
-        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
-        exit(1);
-    }
-    int one = 1;
-    if (setsockopt(servo_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
-        fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
-        exit(1);
-    }
-
-    in_addr.sin_port = htons(SITL_SERVO_PORT);
-
-    ret = connect(servo_fd, (struct sockaddr *)&in_addr, sizeof(in_addr));
-    if (ret == -1) {
-        fprintf(stderr, "multicast servo connect failed\n");
-        exit(1);
-    }
+    servo_sock.set_blocking(false);
 }
 
 /*
@@ -241,7 +179,7 @@ void SimMCast::servo_send(void)
     for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
         out_float[i] = (mask & (1U<<i)) ? out[i] : nanf("");
     }
-    send(servo_fd, (void*)out_float, sizeof(out_float), 0);
+    servo_sock.send((void*)out_float, sizeof(out_float));
 }
 
 /*
@@ -257,8 +195,7 @@ void SimMCast::multicast_read(void)
         printf("Waiting for multicast state\n");
     }
     struct SITL::sitl_fdm state;
-    socklen_t len = sizeof(in_addr);
-    while (recvfrom(mc_fd, (void*)&state, sizeof(state), MSG_WAITALL, (sockaddr *)&in_addr, &len) != sizeof(state)) {
+    while (sock.recv((void*)&state, sizeof(state), 0) != sizeof(state)) {
         // nop
     }
     if (_sitl->state.timestamp_us == 0) {
@@ -278,7 +215,7 @@ void SimMCast::multicast_read(void)
     }
     hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
     HALSITL::Scheduler::timer_event();
-    if (servo_fd == -1) {
+    if (!servo_sock.is_connected()) {
         servo_fd_open();
     } else {
         servo_send();
