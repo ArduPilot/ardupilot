@@ -591,6 +591,9 @@ private:
     // Allow Precision Landing to check if we should descend or not
     AP_Int8 allow_decent_check;
 
+    // Landing AMSL used in mission computer
+    AP_Int32 land_amsl_mission_computer;
+
 
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min;

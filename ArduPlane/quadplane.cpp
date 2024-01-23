@@ -492,6 +492,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("DCS_CK", 36, QuadPlane, allow_decent_check, 0),
+    // @Param: LAND_AMSL
+    // @DisplayName: LAND_AMSL
+    // @Description: Landing AMSL used in mission computer
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("LANDING_AMSL", 37, QuadPlane, land_amsl_mission_computer, 0),
 
     AP_GROUPEND
 };
