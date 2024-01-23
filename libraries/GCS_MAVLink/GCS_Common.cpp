@@ -1763,7 +1763,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;
     }
-    handleMessage(msg);
+    handle_message(msg);
 }
 
 void
@@ -3936,7 +3936,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 /*
   handle messages which don't require vehicle specific data
  */
-void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
