@@ -94,9 +94,9 @@ public:
 
     void set_ground_clearance(float ground_clearance) { _ground_clearance = ground_clearance; }
 
-    void init_est_radar_alt(void);
+    void init_est_rangefinder_alt(void);
 
-    void update_est_radar_alt(void);
+    void update_est_rangefinder_alt(void);
 
     float get_est_alt(void) const { return _est_alt; }
 

@@ -228,7 +228,7 @@ void AC_Autorotation::init(AP_MotorsHeli* motors) {
     _accel_out_last = _cmd_vel * _param_fwd_k_ff;
 
     // initialize radar altitude estimator
-    init_est_radar_alt();
+    init_est_rangefinder_alt();
 }
 
 
@@ -671,7 +671,7 @@ void AC_Autorotation::time_to_ground(void)
 }
 
 
-void AC_Autorotation::init_est_radar_alt(void)
+void AC_Autorotation::init_est_rangefinder_alt(void)
 {
     // Set descent rate filter cutoff frequency
     descent_rate_lpf.set_cutoff_frequency(40.0f);
@@ -686,7 +686,7 @@ void AC_Autorotation::init_est_radar_alt(void)
 }
 
 
-void AC_Autorotation::update_est_radar_alt(void)
+void AC_Autorotation::update_est_rangefinder_alt(void)
 {
     if (_using_rfnd) {
         // Continue calculating radar altitude based on the most recent update and descent rate
