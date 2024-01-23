@@ -4,6 +4,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include "quadplane.h"
+#include "defines.h"
 
 class GCS_MAVLINK_Plane : public GCS_MAVLINK
 {
@@ -17,6 +18,10 @@ public:
 protected:
 
     uint32_t telem_delay() const override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg) override;
