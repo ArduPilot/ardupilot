@@ -568,7 +568,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_i
         return MAV_RESULT_ACCEPTED;
 }
 
-void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -817,7 +817,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         break;
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     }     // end switch
 } // end handle mavlink
