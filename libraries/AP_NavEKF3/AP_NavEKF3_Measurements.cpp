@@ -872,6 +872,7 @@ void NavEKF3_core::readAirSpdData()
 ********************************************************/
 
 uint16_t indexxx = 0;
+bool isGetBeaconCount = false;
 // check for new range beacon data and push to data buffer if available
 void NavEKF3_core::readRngBcnData()
 {
@@ -885,9 +886,16 @@ void NavEKF3_core::readRngBcnData()
     if (beacon == nullptr) {
         return;
     }
-    if(indexxx>1000)
+    //kkouer added check the init beacon count, if non-zero just tip
+    if(indexxx>1000 )
     {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon In Use %d ", beacon->count());
+        if(beacon->count() == 0)
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon In Use %d ", beacon->count());
+        if(beacon->count() > 0 && !isGetBeaconCount)
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon In Use %d ", beacon->count());
+            isGetBeaconCount = true;
+        }
         indexxx = 0;
     }
     indexxx++;

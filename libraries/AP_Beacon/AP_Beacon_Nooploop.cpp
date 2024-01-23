@@ -67,12 +67,13 @@ void AP_Beacon_Nooploop::update(void)
         if (b >= 0 ) {
             MsgType type = parse_byte((uint8_t)b);
             if (type == MsgType::NODE_FRAME2) {
-                if (_anchor_pos_avail) {
+                //kkouer mod, just pares the frame directly
+                //if (_anchor_pos_avail) {
                     parse_node_frame2();
-                } else if (AP_HAL::millis() - _last_request_setting_ms > 2000) {
-                    _last_request_setting_ms = AP_HAL::millis();
-                    request_setting();
-                }
+                // } else if (AP_HAL::millis() - _last_request_setting_ms > 2000) {
+                //     _last_request_setting_ms = AP_HAL::millis();
+                //     request_setting();
+                // }
             } else if (type == MsgType::SETTING_FRAME0) {
                 parse_setting_frame0();
             } 
@@ -82,6 +83,7 @@ void AP_Beacon_Nooploop::update(void)
 
 void AP_Beacon_Nooploop::request_setting()
 {
+     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "request_setting                      beacon");
     //send setting_frame0 to tag, tag will fill anchor position and ack
     uart->write((uint8_t)0x54);
     uart->write((uint8_t)0);
@@ -230,6 +232,7 @@ void AP_Beacon_Nooploop::parse_node_frame2()
     }
 }
 
+int settingCount = 0;
 void AP_Beacon_Nooploop::parse_setting_frame0()
 {
     for (uint8_t i = 0; i < 4; i++) {
@@ -256,6 +259,8 @@ void AP_Beacon_Nooploop::parse_setting_frame0()
         
         set_beacon_position(i, pos_m);
     }
+    settingCount ++;
+    if(settingCount > 10)
     _anchor_pos_avail = true;
 }
 
