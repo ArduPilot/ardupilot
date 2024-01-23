@@ -1305,28 +1305,8 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
-    {
-        // decode packet
-        mavlink_set_position_target_local_ned_t packet;
-        mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
-
-        // exit if vehicle is not in Guided mode
-        if (plane.control_mode != &plane.mode_guided) {
-            break;
-        }
-
-        // only local moves for now
-        if (packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED) {
-            break;
-        }
-
-        // just do altitude for now
-        plane.next_WP_loc.alt += -packet.z*100.0;
-        gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
-                        (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
-        
+        handle_set_position_target_local_ned(msg);
         break;
-    }
 
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
         handle_set_position_target_global_int(msg);
@@ -1337,6 +1317,28 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
         break;
     } // end switch
 } // end handle mavlink
+
+void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_message_t &msg)
+    {
+        // decode packet
+        mavlink_set_position_target_local_ned_t packet;
+        mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
+
+        // exit if vehicle is not in Guided mode
+        if (plane.control_mode != &plane.mode_guided) {
+            return;
+        }
+
+        // only local moves for now
+        if (packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED) {
+            return;
+        }
+
+        // just do altitude for now
+        plane.next_WP_loc.alt += -packet.z*100.0;
+        gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
+                        (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
+    }
 
 void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_message_t &msg)
     {
