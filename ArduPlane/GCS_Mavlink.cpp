@@ -1223,7 +1223,7 @@ void GCS_MAVLINK_Plane::handle_manual_control_axes(const mavlink_manual_control_
     manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
 }
 
-void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -1394,7 +1394,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     }
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     } // end switch
 } // end handle mavlink
