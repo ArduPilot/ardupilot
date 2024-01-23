@@ -138,6 +138,9 @@ public:
     // true if throttle min/max limits should be applied
     bool use_throttle_limits() const;
 
+    // true if voltage correction should be applied to throttle
+    bool use_battery_compensation() const;
+
 protected:
 
     // subclasses override this to perform checks before entering the mode

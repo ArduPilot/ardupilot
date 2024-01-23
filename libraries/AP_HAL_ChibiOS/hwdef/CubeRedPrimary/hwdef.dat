@@ -46,10 +46,6 @@ CANFD_SUPPORTED 8
 
 STM32_ST_USE_TIMER 12
 
-# disable core m4 use to silence the asserts
-# checking allocation of peripherals
-define STM32_HAS_M4 0
-
 define CH_CFG_ST_RESOLUTION 16
 
 # use last 2 pages for flash storage

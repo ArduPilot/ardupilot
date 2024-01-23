@@ -198,6 +198,7 @@ local DYNAMIC_PAGES = {
   <div id="main">
     <ul>
       <li><a href="mnt/">Filesystem Access</a></li>
+      <li><a href="?FWUPDATE">Reboot for Firmware Update</a></li>
     </ul>
     </div>
 <h2>Controller Status</h2>
@@ -217,6 +218,15 @@ local DYNAMIC_PAGES = {
          <tr><td>Gateway</td><td><?lstr networking:address_to_str(networking:get_gateway_active()) ?></td></tr>
          </table>
 ]]
+}
+
+reboot_counter = 0
+
+local ACTION_PAGES = {
+   ["/?FWUPDATE"] = function()
+      periph:can_printf("Rebooting for firmware update")
+      reboot_counter = 50
+   end
 }
 
 --[[
@@ -835,6 +845,21 @@ local function Client(_sock, _idx)
          end
       end
 
+      if ACTION_PAGES[path] ~= nil then
+         DEBUG(string.format("Running ACTION %s", path))
+         local fn = ACTION_PAGES[path]
+         self.send_header(200, "OK", {["Content-Type"]=CONTENT_TEXT_HTML})
+         self.sendstring([[
+<html>
+<head>
+<meta http-equiv="refresh" content="2; url=/">
+</head>
+</html>
+]])
+         fn()
+         return
+      end
+
       if DYNAMIC_PAGES[path] ~= nil then
          self.file_download(path)
          return
@@ -956,6 +981,13 @@ end
 local function update()
    check_new_clients()
    check_clients()
+   if reboot_counter then
+      reboot_counter = reboot_counter - 1
+      if reboot_counter == 0 then
+         periph:can_printf("Rebooting")
+         periph:reboot(true)
+      end
+   end
    return update,5
 end
 

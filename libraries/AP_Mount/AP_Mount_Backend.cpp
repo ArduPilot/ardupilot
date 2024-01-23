@@ -409,6 +409,7 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // write mount log packet
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
@@ -456,6 +457,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location

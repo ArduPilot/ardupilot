@@ -663,7 +663,7 @@ void SITL_State::multicast_state_open(void)
     }
 
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sockaddr.sin_port = htons(SITL_SERVO_PORT);
+    sockaddr.sin_port = htons(SITL_SERVO_PORT + _instance);
 
     ret = bind(servo_in_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {

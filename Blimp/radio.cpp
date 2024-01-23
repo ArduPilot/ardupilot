@@ -93,7 +93,7 @@ void Blimp::read_radio()
     }
 
     // Nobody ever talks to us.  Log an error and enter failsafe.
-    AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
 }
 

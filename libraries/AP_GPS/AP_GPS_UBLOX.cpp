@@ -50,6 +50,9 @@
 // use this to enable debugging of moving baseline configs
 #define UBLOX_MB_DEBUGGING 0
 
+// debug VALGET/VALSET configuration
+#define UBLOX_CFG_DEBUGGING 0
+
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
@@ -76,6 +79,19 @@ extern const AP_HAL::HAL& hal;
 #endif
 #else
  # define MB_Debug(fmt, args ...)
+#endif
+
+#if UBLOX_CFG_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define CFG_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
+ # define CFG_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define CFG_Debug(fmt, args ...)
 #endif
 
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
@@ -240,6 +256,18 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
  { ConfigKey::CFG_NAVSPG_DYNMODEL, 8}, // Air < 4g
 };
 
+
+/*
+  config changes for L5 modules
+*/
+const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_ena[] {
+    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 1},
+    {ConfigKey::CFG_SIGNAL_GPS_L5_ENA, 1},
+};
+
+const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_dis[] {
+    {ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD, 0},
+};
 
 void
 AP_GPS_UBLOX::_request_next_config(void)
@@ -436,7 +464,24 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     }
-        
+
+    case STEP_L5: {
+        if (supports_l5 && option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+            const config_list *list = config_L5_ovrd_ena;
+            const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_ena);
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
+                _next_message--;
+            }
+        } else if (supports_l5 && !option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+            const config_list *list = config_L5_ovrd_dis;
+            const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_dis);
+            if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
+                _next_message--;
+            }
+        }
+        break;
+    }
+
     default:
         // this case should never be reached, do a full reset if it is hit
         _next_message = STEP_PVT;
@@ -1002,13 +1047,13 @@ AP_GPS_UBLOX::_parse_gps(void)
                           likely this device does not support fetching multiple keys at once, go one at a time
                         */
                         if (active_config.fetch_index == -1) {
-                            Debug("NACK starting %u", unsigned(active_config.count));
+                            CFG_Debug("NACK starting %u", unsigned(active_config.count));
                             active_config.fetch_index = 0;
                         } else {
                             // the device does not support the config key we asked for,
                             // consider the bit as done
                             active_config.done_mask |= (1U<<active_config.fetch_index);
-                            Debug("NACK %d 0x%x done=0x%x",
+                            CFG_Debug("NACK %d 0x%x done=0x%x",
                                      int(active_config.fetch_index),
                                      unsigned(active_config.list[active_config.fetch_index].key),
                                      unsigned(active_config.done_mask));
@@ -1250,9 +1295,10 @@ AP_GPS_UBLOX::_parse_gps(void)
                         _cfg_needs_save = true;
                     } else {
                         active_config.done_mask |= (1U << cfg_idx);
-                        Debug("done %u mask=0x%x",
-                              unsigned(cfg_idx),
-                              unsigned(active_config.done_mask));
+                        CFG_Debug("done %u mask=0x%x all_mask=0x%x",
+                                  unsigned(cfg_idx),
+                                  unsigned(active_config.done_mask),
+                                  (1U<<active_config.count)-1);
                         if (active_config.done_mask == (1U<<active_config.count)-1) {
                             // all done!
                             _unconfigured_messages &= ~active_config.unconfig_bit;
@@ -1264,7 +1310,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                         active_config.fetch_index++;
                         if (active_config.fetch_index < active_config.count) {
                             _configure_valget(active_config.list[active_config.fetch_index].key);
-                            Debug("valget %d 0x%x", int(active_config.fetch_index),
+                            CFG_Debug("valget %d 0x%x", int(active_config.fetch_index),
                                   unsigned(active_config.list[active_config.fetch_index].key));
                         }
                     }
@@ -1294,7 +1340,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 log_mon_hw2();  
             }
             break;
-        case MSG_MON_VER:
+        case MSG_MON_VER: {
+            bool check_L1L5 = false;
             _have_version = true;
             strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
@@ -1318,15 +1365,26 @@ AP_GPS_UBLOX::_parse_gps(void)
                     // a M9
                     _hardware_generation = UBLOX_M9;
                 }
+                check_L1L5 = true;
             }
             // check for M10
             if (strncmp(_version.hwVersion, "000A0000", 8) == 0) {
-                if (strncmp(_version.swVersion, "ROM SPG 5", 9) == 0) {
-                    _hardware_generation = UBLOX_M10;
-                    _unconfigured_messages |= CONFIG_M10;
+                _hardware_generation = UBLOX_M10;
+                _unconfigured_messages |= CONFIG_M10;
+                // M10 does not support CONFIG_GNSS
+                _unconfigured_messages &= ~CONFIG_GNSS;
+                check_L1L5 = true;
+            }
+            if (check_L1L5) {
+                // check if L1L5 in extension
+                if (memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "L1L5", 4) != nullptr) {
+                    supports_l5 = true;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "u-blox supports L5 Band");
+                    _unconfigured_messages |= CONFIG_L5;
                 }
             }
             break;
+        }
         default:
             unexpected_message();
         }
@@ -1995,7 +2053,8 @@ static const char *reasons[] = {"navigation rate",
                                 "Time mode settings",
                                 "RTK MB",
                                 "TIM TM2",
-                                "M10"};
+                                "M10",
+                                "L5 Enable Disable"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 

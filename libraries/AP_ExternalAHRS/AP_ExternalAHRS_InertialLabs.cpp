@@ -489,6 +489,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 #endif // AP_AIRSPEED_EXTERNAL_ENABLED
     buffer_ofs = 0;
 
+#if HAL_LOGGING_ENABLED
     if (GOT_MSG(POSITION) &&
         GOT_MSG(ORIENTATION_ANGLES) &&
         GOT_MSG(VELOCITIES)) {
@@ -564,7 +565,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     state2.true_airspeed,
                                     state2.wind_speed.x, state2.wind_speed.y, state2.wind_speed.z);
     }
-        
+#endif  // HAL_LOGGING_ENABLED
+
     return true;
 }
 

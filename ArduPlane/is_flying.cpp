@@ -18,7 +18,7 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool = false;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (aparm.min_gndspeed_cm > 0) ? ((uint32_t)(aparm.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
+    uint32_t ground_speed_thresh_cm = (aparm.min_groundspeed > 0) ? ((uint32_t)(aparm.min_groundspeed*(100*0.9))) : GPS_IS_FLYING_SPEED_CMS;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
@@ -170,7 +170,9 @@ void Plane::update_is_flying_5Hz(void)
 
     crash_detection_update();
 
+#if HAL_LOGGING_ENABLED
     Log_Write_Status();
+#endif
 
     // tell AHRS flying state
     set_likely_flying(new_is_flying);

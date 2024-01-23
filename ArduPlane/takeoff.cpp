@@ -158,7 +158,7 @@ void Plane::takeoff_calc_roll(void)
         takeoff_roll_limit_cd = g.level_roll_limit * 100;
     } else {
         // lim1 - below altitude TKOFF_LVL_ALT, restrict roll to LEVEL_ROLL_LIMIT
-        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of LIM_ROLL_CD
+        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of ROLL_LIMIT_DEG
         // In between lim1 and lim2 use a scaled roll limit.
         // The *3 scheme should scale reasonably with both small and large aircraft
         const float lim1 = MAX(mode_takeoff.level_alt, 0);
@@ -194,7 +194,7 @@ void Plane::takeoff_calc_pitch(void)
     } else {
         if (g.takeoff_rotate_speed > 0) {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
-            nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
             nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
         } else {
             // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss

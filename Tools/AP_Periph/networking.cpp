@@ -181,6 +181,20 @@ void Networking_Periph::update(void)
         p.update();
     }
 #endif
+
+#if HAL_RAM_RESERVE_START >= 256
+    if (!got_addresses && networking_lib.get_ip_active() != 0) {
+        got_addresses = true;
+        auto *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+        if (comms->magic != APP_BOOTLOADER_COMMS_MAGIC) {
+            memset(comms, 0, sizeof(*comms));
+        }
+        comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
+        comms->ip = networking_lib.get_ip_active();
+        comms->netmask = networking_lib.get_netmask_active();
+        comms->gateway = networking_lib.get_gateway_active();
+    }
+#endif // HAL_RAM_RESERVE_START
 }
 
 #endif  // HAL_PERIPH_ENABLE_NETWORKING

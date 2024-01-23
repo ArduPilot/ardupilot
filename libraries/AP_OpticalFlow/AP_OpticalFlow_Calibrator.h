@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 #define AP_OPTICALFLOW_CAL_MAX_SAMPLES 50  // number of samples required before calibration begins
 
@@ -53,8 +54,10 @@ private:
     // calculate mean squared residual for all samples of a single axis (0 or 1) given a scalar parameter
     float calc_mean_squared_residuals(uint8_t axis, float scalar) const;
 
+#if HAL_LOGGING_ENABLED
     // log a sample
     void log_sample(uint8_t axis, uint8_t sample_num, float flow_rate, float body_rate, float los_pred);
+#endif
 
     // calibration states
     enum class CalState {

@@ -239,7 +239,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED ENABLED
+# define MODE_SYSTEMID_ENABLED HAL_LOGGING_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -529,9 +529,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Logging control
 //
-#ifndef LOGGING_ENABLED
- # define LOGGING_ENABLED                ENABLED
-#endif
 
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK

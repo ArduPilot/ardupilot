@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: CLMB_MAX
     // @DisplayName: Maximum Climb Rate (metres/sec)
-    // @Description: Maximum demanded climb rate. Do not set higher than the climb speed at THR_MAX at TRIM_ARSPD_CM when the battery is at low voltage. Reduce value if airspeed cannot be maintained on ascent. Increase value if throttle does not increase significantly to ascend.
+    // @Description: Maximum demanded climb rate. Do not set higher than the climb speed at THR_MAX at AIRSPEED_CRUISE when the battery is at low voltage. Reduce value if airspeed cannot be maintained on ascent. Increase value if throttle does not increase significantly to ascend.
     // @Increment: 0.1
     // @Range: 0.1 20.0
     // @User: Standard
@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SINK_MIN
     // @DisplayName: Minimum Sink Rate (metres/sec)
-    // @Description: Minimum sink rate when at THR_MIN and TRIM_ARSPD_CM.
+    // @Description: Minimum sink rate when at THR_MIN and AIRSPEED_CRUISE.
     // @Increment: 0.1
     // @Range: 0.1 10.0
     // @User: Standard
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SINK_MAX
     // @DisplayName: Maximum Descent Rate (metres/sec)
-    // @Description: Maximum demanded descent rate. Do not set higher than the vertical speed the aircraft can maintain at THR_MIN, TECS_PITCH_MIN, and ARSPD_FBW_MAX.
+    // @Description: Maximum demanded descent rate. Do not set higher than the vertical speed the aircraft can maintain at THR_MIN, TECS_PITCH_MIN, and AIRSPEED_MAX.
     // @Increment: 0.1
     // @Range: 0.0 20.0
     // @User: Standard
@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: LAND_ARSPD
     // @DisplayName: Airspeed during landing approach (m/s)
-    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Max airspeed allowed is Trim Airspeed or ARSPD_FBW_MAX as defined by LAND_OPTIONS bitmask.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is halfway between ARSPD_FBW_MIN and TRIM_CRUISE_CM speed for fixed wing autolandings.
+    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Max airspeed allowed is Trim Airspeed or AIRSPEED_MAX as defined by LAND_OPTIONS bitmask.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is halfway between AIRSPEED_MIN and TRIM_CRUISE_CM speed for fixed wing autolandings.
     // @Range: -1 127
     // @Increment: 1
     // @User: Standard
@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PITCH_MAX
     // @DisplayName: Maximum pitch in auto flight
-    // @Description: Overrides LIM_PITCH_MAX in automatic throttle modes to reduce climb rates. Uses LIM_PITCH_MAX if set to 0. For proper TECS tuning, set to the angle that the aircraft can climb at TRIM_ARSPD_CM and THR_MAX.
+    // @Description: Overrides PTCH_LIM_MAX_DEG in automatic throttle modes to reduce climb rates. Uses PTCH_LIM_MAX_DEG if set to 0. For proper TECS tuning, set to the angle that the aircraft can climb at AIRSPEED_CRUISE and THR_MAX.
     // @Range: 0 45
     // @Increment: 1
     // @User: Advanced
@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PITCH_MIN
     // @DisplayName: Minimum pitch in auto flight
-    // @Description: Overrides LIM_PITCH_MIN in automatic throttle modes to reduce descent rates. Uses LIM_PITCH_MIN if set to 0. For proper TECS tuning, set to the angle that the aircraft can descend at without overspeeding.
+    // @Description: Overrides PTCH_LIM_MIN_DEG in automatic throttle modes to reduce descent rates. Uses PTCH_LIM_MIN_DEG if set to 0. For proper TECS tuning, set to the angle that the aircraft can descend at without overspeeding.
     // @Range: -45 0
     // @Increment: 1
     // @User: Advanced
@@ -403,7 +403,7 @@ void AP_TECS::_update_speed(float DT)
         // at the maximum speed
         const float velRateMin = 0.5f * _STEdot_min / MAX(_TAS_state, aparm.airspeed_min * EAS2TAS);
         _TASmax += _DT * velRateMin;
-        _TASmax = MAX(_TASmax, 0.01f * (float)aparm.airspeed_cruise_cm * EAS2TAS);
+        _TASmax = MAX(_TASmax, aparm.airspeed_cruise * EAS2TAS);
     } else {
         // wind airspeed upper limit back to parameter defined value
         const float velRateMax = 0.5f * _STEdot_max / MAX(_TAS_state, aparm.airspeed_min * EAS2TAS);
@@ -426,7 +426,7 @@ void AP_TECS::_update_speed(float DT)
     // airspeed sensor data cannot be used
     if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
         // If no airspeed available use average of min and max
-        _EAS = constrain_float(0.01f * (float)aparm.airspeed_cruise_cm.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
+        _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
     // limit the airspeed to a minimum of 3 m/s
@@ -471,7 +471,7 @@ void AP_TECS::_update_speed_demand(void)
     _TAS_dem = constrain_float(_TAS_dem, _TASmin, _TASmax);
 
     // Determine the true cruising airspeed (m/s)
-    const float TAScruise = 0.01f * (float)aparm.airspeed_cruise_cm * _ahrs.get_EAS2TAS();
+    const float TAScruise = aparm.airspeed_cruise * _ahrs.get_EAS2TAS();
 
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
@@ -788,6 +788,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         // Sum the components.
         _throttle_dem = _throttle_dem + _integTHR_state;
 
+#if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
             AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
                                         "Qffffffffffff",
@@ -805,6 +806,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)SPE_err_min,
                                         (double)SPE_err_max);
         }
+#endif
     }
 
     // Constrain throttle demand and record clipping
@@ -857,7 +859,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     _pitch_demand_lpf.apply(_pitch_dem, _DT);
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
     _pitch_measured_lpf.apply(_ahrs.get_pitch(), _DT);
-    const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(0.01f * (float)aparm.pitch_trim_cd);
+    const float pitch_corrected_lpf = _pitch_measured_lpf.get();
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
     if (pitch_blended > 0.0f && _PITCHmaxf > 0.0f)
@@ -1057,6 +1059,7 @@ void AP_TECS::_update_pitch(void)
 
     _last_pitch_dem = _pitch_dem;
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TEC2
@@ -1094,6 +1097,7 @@ void AP_TECS::_update_pitch(void)
                                     (double)_PITCHminf,
                                     (double)_PITCHmaxf);
     }
+#endif
 }
 
 void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
@@ -1245,15 +1249,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
     // larger than LIM_PITCH_{MAX,MIN}
     if (_pitch_max == 0) {
-        _PITCHmaxf = aparm.pitch_limit_max_cd * 0.01f;
+        _PITCHmaxf = aparm.pitch_limit_max;
     } else {
-        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
+        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max);
     }
 
     if (_pitch_min >= 0) {
-        _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
+        _PITCHminf = aparm.pitch_limit_min;
     } else {
-        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
+        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min);
     }
 
     // apply temporary pitch limit and clear
@@ -1281,7 +1285,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         }
         const float pitch_limit_deg = (1.0f - p) * _pitch_min_at_flare_entry + p * 0.01f * _landing.get_pitch_cd();
 
-        // in flare use min pitch from LAND_PITCH_CD
+        // in flare use min pitch from LAND_PITCH_DEG
         _PITCHminf = MAX(_PITCHminf, pitch_limit_deg);
 
         // and use max pitch from TECS_LAND_PMAX
@@ -1293,7 +1297,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // and allow zero throttle
         _THRminf = 0;
     } else if (_landing.is_on_approach()) {
-        _PITCHminf = MAX(_PITCHminf, 0.01f * aparm.pitch_limit_min_cd);
+        _PITCHminf = MAX(_PITCHminf, aparm.pitch_limit_min);
         _pitch_min_at_flare_entry = _PITCHminf;
         _flare_initialised = false;
     } else {
@@ -1372,6 +1376,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _flags.badDescent = false;
     }
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TECS
@@ -1414,4 +1419,5 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     (double)_TAS_rate_dem,
                                     _flags_byte);
     }
+#endif
 }

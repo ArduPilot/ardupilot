@@ -239,6 +239,9 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
             ('AP_SERIALMANAGER_IMUOUT_ENABLED', 'AP_InertialSensor::send_uart_data'),
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
+            ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
+            ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
+            ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
         ]
 
     def progress(self, msg):

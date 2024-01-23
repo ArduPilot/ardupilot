@@ -352,12 +352,14 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
         return;
     }
 
+#if HAL_LOGGING_ENABLED
     uint8_t log_count = AP::logger().get_log_start_count();
     if (log_count != last_logging_count) {
         last_logging_count = log_count;
         logged.clearall();
     }
-    
+#endif
+
     //Check if we got acknowledgement from previous request
     //except for requests using our own node_id
     if (curr_verifying_node == self_node_id) {
@@ -438,6 +440,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     /*
       if we haven't logged this node then log it now
      */
+#if HAL_LOGGING_ENABLED
     if (!logged.get(transfer.source_node_id) && AP::logger().logging_started()) {
         logged.set(transfer.source_node_id);
         uint64_t uid[2];
@@ -462,6 +465,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
                            rsp.software_version.minor,
                            rsp.software_version.vcs_commit);
     }
+#endif
 
     if (isNodeIDOccupied(transfer.source_node_id)) {
         //if node_id already registered, just verify if Unique ID matches as well

@@ -869,6 +869,7 @@ void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
 }
 
+#if HAL_LOGGING_ENABLED
 // logging
 void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point) const
 {
@@ -876,6 +877,7 @@ void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point) const
         AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
     }
 }
+#endif
 
 // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
 bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &loop2) const

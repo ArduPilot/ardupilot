@@ -55,7 +55,7 @@ void Copter::init_ardupilot()
     osd.init();
 #endif
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     log_init();
 #endif
 
@@ -183,8 +183,10 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
+#if HAL_LOGGING_ENABLED
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+#endif
 
     startup_INS_ground();
 
@@ -207,7 +209,7 @@ void Copter::init_ardupilot()
 
     motors->output_min();  // output lowest possible value to motors
 
-    // attempt to set the intial_mode, else set to STABILIZE
+    // attempt to set the initial_mode, else set to STABILIZE
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
         // set mode to STABILIZE will trigger mode change notification to pilot
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
@@ -352,18 +354,16 @@ void Copter::update_auto_armed()
     }
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Copter::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 /*
   allocate the motors class

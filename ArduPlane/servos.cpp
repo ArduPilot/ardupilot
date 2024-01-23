@@ -614,8 +614,9 @@ void Plane::set_throttle(void)
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);
 #endif  // HAL_QUADPLANE_ENABLED
+    }
 
-    } else {
+    if (control_mode->use_battery_compensation()) {
         // Apply voltage compensation to throttle output from flight mode
         const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);

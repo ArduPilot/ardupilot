@@ -10,6 +10,10 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Math/AP_Math.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#endif
+
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -63,8 +67,12 @@ public:
         arg(_arg)
         {}
     bool create(const char *name, int stacksize, int prio) {
+#ifdef HAL_BOOTLOADER_BUILD
+        return thread_create_alloc(MAX(stacksize,2048), name, 60, function, arg);
+#else
         return hal.scheduler->thread_create(
             FUNCTOR_BIND_MEMBER(&ThreadWrapper::run, void), name, MAX(stacksize,2048), AP_HAL::Scheduler::PRIORITY_NET, prio);
+#endif
     }
 private:
     void run(void) {
@@ -373,9 +381,7 @@ sys_init(void)
 sys_prot_t
 sys_arch_protect(void)
 {
-    if (hal.scheduler != nullptr) {
-        lwprot_mutex.take_blocking();
-    }
+    lwprot_mutex.take_blocking();
     return 0;
 }
 
@@ -383,9 +389,7 @@ void
 sys_arch_unprotect(sys_prot_t pval)
 {
     LWIP_UNUSED_ARG(pval);
-    if (hal.scheduler != nullptr) {
-        lwprot_mutex.give();
-    }
+    lwprot_mutex.give();
 }
 
 #endif // AP_NETWORKING_NEED_LWIP

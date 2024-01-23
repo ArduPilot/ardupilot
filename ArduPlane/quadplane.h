@@ -213,11 +213,11 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Int16 pilot_velocity_z_max_up;
-    AP_Int16 pilot_velocity_z_max_dn;
+    AP_Float pilot_speed_z_max_up;
+    AP_Float pilot_speed_z_max_dn;
 
     // vertical acceleration the pilot may request
-    AP_Int16 pilot_accel_z;
+    AP_Float pilot_accel_z;
 
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
@@ -349,8 +349,8 @@ private:
     uint32_t alt_error_start_ms;
     bool in_alt_assist;
 
-    // landing speed in cm/s
-    AP_Int16 land_speed_cms;
+    // landing speed in m/s
+    AP_Float land_final_speed;
 
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;

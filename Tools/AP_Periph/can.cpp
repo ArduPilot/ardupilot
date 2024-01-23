@@ -148,6 +148,10 @@ HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 SLCAN::CANIface AP_Periph_FW::slcan_interface;
 #endif
 
+#ifdef EXT_FLASH_SIZE_MB
+static_assert(EXT_FLASH_SIZE_MB == 0, "DroneCAN bootloader cannot support external flash");
+#endif
+
 /*
  * Node status variables
  */
@@ -368,8 +372,10 @@ void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance,
 {
 #if HAL_RAM_RESERVE_START >= 256
     // setup information on firmware request at start of ram
-    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
-    memset(comms, 0, sizeof(struct app_bootloader_comms));
+    auto *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    if (comms->magic != APP_BOOTLOADER_COMMS_MAGIC) {
+        memset(comms, 0, sizeof(*comms));
+    }
     comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
 
     uavcan_protocol_file_BeginFirmwareUpdateRequest req;
@@ -1354,7 +1360,7 @@ void AP_Periph_FW::node_status_send(void)
         uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
         node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-        node_status.vendor_specific_status_code = hal.util->available_memory();
+        node_status.vendor_specific_status_code = MIN(hal.util->available_memory(), unsigned(UINT16_MAX));
 
         uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !canfdout());
 

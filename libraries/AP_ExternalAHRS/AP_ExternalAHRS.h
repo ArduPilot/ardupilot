@@ -60,6 +60,7 @@ public:
 #endif
         // 8 reserved for SBG
         // 9 reserved for EulerNav
+        // 10 reserved for Aeron
     };
 
     static AP_ExternalAHRS *get_singleton(void) {

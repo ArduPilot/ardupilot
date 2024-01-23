@@ -25,6 +25,7 @@
 
 #include <AP_HAL/Semaphores.h>
 
+#include "AP_AHRS_Backend.h"
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
@@ -443,7 +444,7 @@ public:
 #if AP_AHRS_SIM_ENABLED
         SIM = 10,
 #endif
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
         EXTERNAL = 11,
 #endif
     };
@@ -800,7 +801,7 @@ private:
     void update_SITL(void);
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
     void update_external(void);
 #endif    
 
@@ -1002,7 +1003,7 @@ private:
     struct AP_AHRS_Backend::Estimates sim_estimates;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
     AP_AHRS_External external;
     struct AP_AHRS_Backend::Estimates external_estimates;
 #endif

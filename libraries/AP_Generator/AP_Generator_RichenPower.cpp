@@ -30,6 +30,8 @@ extern const AP_HAL::HAL& hal;
 // init method; configure communications with the generator
 void AP_Generator_RichenPower::init()
 {
+    ASSERT_STORAGE_SIZE(RichenPacket, 70);
+
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);

@@ -56,7 +56,7 @@ public:
         //
         k_param_auto_trim      = 10, // unused
         k_param_log_bitmask_old,  // unused
-        k_param_pitch_trim_cd,
+        k_param_pitch_trim,
         k_param_mix_mode,
         k_param_reverse_elevons, // unused
         k_param_reverse_ch1_elevon, // unused
@@ -174,7 +174,7 @@ public:
         //
         k_param_airspeed_min = 120,
         k_param_airspeed_max,
-        k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+        k_param_cruise_alt_floor,
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm, // unused
         k_param_flybywire_climb_rate,
@@ -213,13 +213,13 @@ public:
         //
         k_param_crosstrack_gain = 150, // unused
         k_param_crosstrack_entry_angle, // unused
-        k_param_roll_limit_cd,
-        k_param_pitch_limit_max_cd,
-        k_param_pitch_limit_min_cd,
-        k_param_airspeed_cruise_cm,
-        k_param_RTL_altitude_cm,
+        k_param_roll_limit,
+        k_param_pitch_limit_max,
+        k_param_pitch_limit_min,
+        k_param_airspeed_cruise,
+        k_param_RTL_altitude,
         k_param_inverted_flight_ch_unused, // unused
-        k_param_min_gndspeed_cm,
+        k_param_min_groundspeed,
         k_param_crosstrack_use_wind, // unused
 
 
@@ -436,9 +436,9 @@ public:
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
     AP_Int32 log_bitmask;
-    AP_Int32 RTL_altitude_cm;
-    AP_Int16 pitch_trim_cd;
-    AP_Int16 FBWB_min_altitude_cm;
+    AP_Float RTL_altitude;
+    AP_Float pitch_trim;
+    AP_Float cruise_alt_floor;
 
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;

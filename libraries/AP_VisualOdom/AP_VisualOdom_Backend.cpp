@@ -66,11 +66,13 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
                                   _frontend.get_pos_offset());
 #endif
 
+#if HAL_LOGGING_ENABLED
     // log sensor data
     Write_VisualOdom(time_delta_sec,
                                   angle_delta,
                                   position_delta,
                                   packet.confidence);
+#endif
 }
 #endif  // HAL_GCS_ENABLED
 

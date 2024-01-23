@@ -378,6 +378,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     return get_throttle_hover() + ((1.0 - get_throttle_hover()) * _throttle_limit);
 }
 
+#if HAL_LOGGING_ENABLED
 // 10hz logging of voltage scaling and max trust
 void AP_MotorsMulticopter::Log_Write()
 {
@@ -393,6 +394,7 @@ void AP_MotorsMulticopter::Log_Write()
     };
     AP::logger().WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
+#endif
 
 // convert actuator output (0~1) range to pwm range
 int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)

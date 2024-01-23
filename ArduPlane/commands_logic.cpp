@@ -12,10 +12,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+#if HAL_LOGGING_ENABLED
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
@@ -359,7 +361,9 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     setup_glide_slope();
     setup_turn_angle();
 
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+#endif
 }
 
 Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, float rtl_home_alt_amsl_cm) const
@@ -472,8 +476,9 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    const float turns = cmd.get_loiter_turns();
 
-    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
+    loiter.total_cd = (uint32_t)(turns * 36000UL);
     condition_value = 1; // used to signify primary turns goal not yet met
 }
 
@@ -973,7 +978,7 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
-        aparm.min_gndspeed_cm.set(speed_target_ms * 100);
+        aparm.min_groundspeed.set(speed_target_ms);
         return true;
     }
 

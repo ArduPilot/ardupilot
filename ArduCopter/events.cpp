@@ -12,7 +12,7 @@ bool Copter::failsafe_option(FailsafeOption opt) const
 
 void Copter::failsafe_radio_on_event()
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
@@ -83,7 +83,7 @@ void Copter::failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
     gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
 
@@ -98,7 +98,7 @@ void Copter::announce_failsafe(const char *type, const char *action_undertaken)
 
 void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
 
     FailsafeAction desired_action = (FailsafeAction)action;
 
@@ -162,7 +162,7 @@ void Copter::failsafe_gcs_check()
 // failsafe_gcs_on_event - actions to take when GCS contact is lost
 void Copter::failsafe_gcs_on_event(void)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
     RC_Channels::clear_overrides();
 
     // convert the desired failsafe response to the FailsafeAction enum
@@ -236,7 +236,7 @@ void Copter::failsafe_gcs_on_event(void)
 void Copter::failsafe_gcs_off_event(void)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // executes terrain failsafe if data is missing for longer than a few seconds
@@ -251,7 +251,7 @@ void Copter::failsafe_terrain_check()
         if (trigger_event) {
             failsafe_terrain_on_event();
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
             failsafe.terrain = false;
         }
     }
@@ -282,7 +282,7 @@ void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
@@ -306,10 +306,10 @@ void Copter::gpsglitch_check()
     if (ap.gps_glitching != gps_glitching) {
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
         }
     }
@@ -361,7 +361,7 @@ void Copter::failsafe_deadreckon_check()
         if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
 
             // log error
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
 
             // immediately disarm while landed
             if (should_disarm_on_failsafe()) {

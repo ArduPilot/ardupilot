@@ -95,6 +95,10 @@ public:
         return true;
     }
 
+    bool is_detected() const {
+        return frontend._detected_protocol != AP_RCProtocol::NONE && frontend.backend[frontend._detected_protocol] == this;
+    }
+
 #if AP_VIDEOTX_ENABLED
     // called by static methods to confiig video transmitters:
     static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);

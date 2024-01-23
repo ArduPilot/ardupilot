@@ -7,10 +7,12 @@ static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCAT
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
     // To-Do: logging when new commands start/end
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     const Location &target_loc = cmd.content.location;
 
@@ -347,7 +349,7 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
         } else {
             // default to current altitude above origin
             circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
         }
     }
 
@@ -537,9 +539,10 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
         }
         return false;
     }
+    const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
 }
 
 #if NAV_GUIDED == ENABLED

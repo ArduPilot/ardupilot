@@ -318,7 +318,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location &current_loc, const Lo
                         destination_new = current_loc;
                         destination_new.offset_bearing_and_pitch(bearing_to_dest, pitch_delta, distance_to_dest);
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
-                    
+
                         Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_VERTICAL, active, bearing_to_dest, pitch_delta, false, margin, destination, destination_new);
                         return active;
                     }

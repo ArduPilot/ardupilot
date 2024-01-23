@@ -160,11 +160,13 @@ AC_Fence::AC_Fence()
 /// enable the Fence code generally; a master switch for all fences
 void AC_Fence::enable(bool value)
 {
+#if HAL_LOGGING_ENABLED
     if (_enabled && !value) {
         AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
     } else if (!_enabled && value) {
         AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
     }
+#endif
     _enabled.set(value);
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
@@ -177,19 +179,23 @@ void AC_Fence::enable(bool value)
 /// enable/disable fence floor only
 void AC_Fence::enable_floor()
 {
+#if HAL_LOGGING_ENABLED
     if (!_floor_enabled) {
         // Floor is currently disabled, enable it
         AP::logger().Write_Event(LogEvent::FENCE_FLOOR_ENABLE);
     }
+#endif
     _floor_enabled = true;
 }
 
 void AC_Fence::disable_floor()
 {
+#if HAL_LOGGING_ENABLED
     if (_floor_enabled) {
         // Floor is currently enabled, disable it
         AP::logger().Write_Event(LogEvent::FENCE_FLOOR_DISABLE);
     }
+#endif
     _floor_enabled = false;
     clear_breach(AC_FENCE_TYPE_ALT_MIN);
 }

@@ -62,6 +62,7 @@ private:
 #endif // HAL_PERIPH_NETWORK_NUM_PASSTHRU
 
     AP_Networking networking_lib;
+    bool got_addresses;
 
 #if AP_NETWORKING_BACKEND_PPP
     AP_Int8 ppp_port;

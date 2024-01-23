@@ -27,6 +27,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -172,10 +173,12 @@ public:
      */
     float lookahead(float bearing, float distance, float climb_ratio);
 
+#if HAL_LOGGING_ENABLED
     /*
       log terrain status to AP_Logger
      */
     void log_terrain_data();
+#endif
 
     /*
       get some statistics for TERRAIN_REPORT

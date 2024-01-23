@@ -33,6 +33,10 @@ class ChibiOSHWDef(object):
         self.default_params_filepath = default_params_filepath
         self.quiet = quiet
 
+        # if true then parameters will be appended in special apj-tool
+        # section at end of binary:
+        self.force_apj_default_parameters = False
+
         self.default_gpio = ['INPUT', 'FLOATING']
 
         self.vtypes = []
@@ -685,11 +689,13 @@ class ChibiOSHWDef(object):
         return lib.mcu[name]
 
     def get_ram_reserve_start(self):
-        '''get amount of memory to reserve for bootloader comms'''
+        '''get amount of memory to reserve for bootloader comms and the address if non-zero'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
         if ram_reserve_start == 0 and self.is_periph_fw():
             ram_reserve_start = 256
-        return ram_reserve_start
+        ram_map_bootloader = self.get_ram_map(use_bootloader=True)
+        ram0_start_address = ram_map_bootloader[0][0]
+        return ram_reserve_start, ram0_start_address
 
     def make_line(self, label):
         '''return a line for a label'''
@@ -753,19 +759,11 @@ class ChibiOSHWDef(object):
                 return True
         return False
 
-    def get_ram_map(self):
+    def get_ram_map(self, use_bootloader=False):
         '''get RAM_MAP. May be different for bootloader'''
-        if 'APP_RAM_START' not in self.env_vars:
-            self.env_vars['APP_RAM_START'] = None
-        if self.is_bootloader_fw():
+        if self.is_bootloader_fw() or use_bootloader:
             ram_map = self.get_mcu_config('RAM_MAP_BOOTLOADER', False)
             if ram_map is not None:
-                app_ram_map = self.get_mcu_config('RAM_MAP', False)
-                if app_ram_map is not None and app_ram_map[0][0] != ram_map[0][0]:
-                    # we need to find the location of app_ram_map[0] in ram_map
-                    for i in range(len(ram_map)):
-                        if app_ram_map[0][0] == ram_map[i][0] and self.env_vars['APP_RAM_START'] is None:
-                            self.env_vars['APP_RAM_START'] = i
                 return ram_map
         elif self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
             ram_map = self.get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
@@ -1103,7 +1101,13 @@ class ChibiOSHWDef(object):
             f.write('#define APP_START_OFFSET_KB %u\n' % self.get_config('APP_START_OFFSET_KB', default=0, type=int))
         f.write('\n')
 
+        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        f.write('#define HAL_RAM0_START 0x%08x\n' % ram0_start_address)
+        if ram_reserve_start > 0:
+            f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
+
         ram_map = self.get_ram_map()
+
         f.write('// memory regions\n')
         regions = []
         cc_regions = []
@@ -1111,8 +1115,7 @@ class ChibiOSHWDef(object):
         for (address, size, flags) in ram_map:
             size *= 1024
             cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size))
-            if self.env_vars['APP_RAM_START'] is not None and address == ram_map[self.env_vars['APP_RAM_START']][0]:
-                ram_reserve_start = self.get_ram_reserve_start()
+            if address == ram0_start_address:
                 address += ram_reserve_start
                 size -= ram_reserve_start
             regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size, flags))
@@ -1120,14 +1123,6 @@ class ChibiOSHWDef(object):
         f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
         f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
         f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % (total_memory/1024))
-
-        if self.env_vars['APP_RAM_START'] is not None:
-            f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[self.env_vars['APP_RAM_START']][0])
-        else:
-            f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
-        ram_reserve_start = self.get_ram_reserve_start()
-        if ram_reserve_start > 0:
-            f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
         f.write('\n// CPU serial number (12 bytes)\n')
         udid_start = self.get_mcu_config('UDID_START')
@@ -1257,7 +1252,9 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_MUTEXES
 #define CH_CFG_USE_MUTEXES FALSE
 #endif
+#ifndef CH_CFG_USE_EVENTS
 #define CH_CFG_USE_EVENTS FALSE
+#endif
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
 #define CH_CFG_OPTIMIZE_SPEED FALSE
 #define HAL_USE_EMPTY_STORAGE 1
@@ -1383,10 +1380,8 @@ class ChibiOSHWDef(object):
         if ext_flash_size > 32:
             self.error("We only support 24bit addressing over external flash")
 
-        if self.env_vars['APP_RAM_START'] is None:
-            # default to start of ram for shared ram
-            # possibly reserve some memory for app/bootloader comms
-            ram_reserve_start = self.get_ram_reserve_start()
+        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        if ram_reserve_start > 0 and ram0_start_address == ram0_start:
             ram0_start += ram_reserve_start
             ram0_len -= ram_reserve_start
         if ext_flash_length == 0 or self.is_bootloader_fw():
@@ -2388,12 +2383,13 @@ INCLUDE common.ld
         gpios = sorted(gpios)
         for (gpio, pwm, port, pin, p, enabled) in gpios:
             f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s,%uU)\n' % (gpio, port, pin))
-        f.write('#define HAL_GPIO_PINS { \\\n')
-        for (gpio, pwm, port, pin, p, enabled) in gpios:
-            f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
-                    (gpio, enabled, pwm, port, pin, p))
-        # and write #defines for use by config code
-        f.write('}\n\n')
+        if len(gpios) > 0:
+            f.write('#define HAL_GPIO_PINS { \\\n')
+            for (gpio, pwm, port, pin, p, enabled) in gpios:
+                f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
+                        (gpio, enabled, pwm, port, pin, p))
+            # and write #defines for use by config code
+            f.write('}\n\n')
         f.write('// full pin define list\n')
         last_label = None
         for label in sorted(list(set(self.bylabel.keys()))):
@@ -2520,6 +2516,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
 
+    def write_define(self, f, name, value):
+        f.write(f"#define {name} {value}\n")
+
     def write_hwdef_header(self, outfilename):
         '''write hwdef header file'''
         self.progress("Writing hwdef setup in %s" % outfilename)
@@ -2581,6 +2580,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.write_check_firmware(f)
 
         self.write_peripheral_enable(f)
+
+        if os.path.exists(self.processed_defaults_filepath()):
+            self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 1)
+        else:
+            self.write_define(f, 'AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED', 0)
 
         if self.mcu_series.startswith("STM32H7"):
             # add in ADC3 on H7 to get MCU temperature and reference voltage
@@ -2827,14 +2831,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         if defaults_abspath is None:
             self.progress("No default parameter file found")
-            return
+            return False
 
         content = self.get_processed_defaults_file(defaults_abspath)
 
         with open(filepath, "w") as processed_defaults_fh:
             processed_defaults_fh.write(content)
 
-        self.env_vars['DEFAULT_PARAMETERS'] = filepath
+        return True
 
     def write_env_py(self, filename):
         '''write out env.py for environment variables to control the build process'''
@@ -2854,10 +2858,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
             if fnmatch.fnmatch(f, pattern):
                 self.romfs[f] = os.path.join(pattern_dir, f)
 
-    def romfs_add_dir(self, subdirs):
+    def romfs_add_dir(self, subdirs, relative_to_base=False):
         '''add a filesystem directory to ROMFS'''
         for dirname in subdirs:
-            romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
+            if relative_to_base:
+                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
+            else:
+                romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
             if not self.is_bootloader_fw() and os.path.exists(romfs_dir):
                 for root, d, files in os.walk(romfs_dir):
                     for f in files:
@@ -2866,6 +2873,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                             continue
                         fullpath = os.path.join(root, f)
                         relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                        if relative_to_base:
+                            relpath = relpath[len(dirname)+1:]
                         self.romfs[relpath] = fullpath
 
     def valid_type(self, ptype, label):
@@ -2996,6 +3005,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.romfs_add(a[1], a[2])
         elif a[0] == 'ROMFS_WILDCARD':
             self.romfs_wildcard(a[1])
+        elif a[0] == 'ROMFS_DIRECTORY':
+            self.romfs_add_dir([a[1]], relative_to_base=True)
         elif a[0] == 'undef':
             for u in a[1:]:
                 self.progress("Removing %s" % u)
@@ -3037,15 +3048,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
             value = ' '.join(a[2:])
             if name == 'AP_PERIPH' and value != "1":
                 raise ValueError("AP_PERIPH may only have value 1")
-            if name == 'APP_RAM_START':
-                value = int(value, 0)
             self.env_vars[name] = value
         elif a[0] == 'define':
             # extract numerical defines for processing by other parts of the script
             result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', line)
             if result:
                 self.intdefines[result.group(1)] = int(result.group(2))
-
 
     def progress(self, message):
         if self.quiet:
@@ -3141,6 +3149,31 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.add_firmware_defaults_from_file(f, "defaults_normal.h", "normal")
 
+    def processed_defaults_filepath(self):
+        return os.path.join(self.outdir, "processed_defaults.parm")
+
+    def write_default_parameters(self):
+        '''handle default parameters'''
+
+        if self.is_bootloader_fw():
+            return
+
+        if self.is_io_fw():
+            return
+
+        filepath = self.processed_defaults_filepath()
+        if not self.write_processed_defaults_file(filepath):
+            return
+
+        if self.get_config('FORCE_APJ_DEFAULT_PARAMETERS', default=False):
+            # set env variable so that post-processing in waf uses
+            # apj-tool to append parameters to image:
+            if os.path.exists(filepath):
+                self.env_vars['DEFAULT_PARAMETERS'] = filepath
+            return
+
+        self.romfs_add('defaults.parm', filepath)
+
     def run(self):
 
         # process input file
@@ -3155,6 +3188,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
+
+        # write out a default parameters file, decide how to use it:
+        self.write_default_parameters()
 
         # write out hw.dat for ROMFS
         self.write_all_lines(os.path.join(self.outdir, "hw.dat"))
@@ -3173,9 +3209,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
-
-        if not self.is_bootloader_fw():
-            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 

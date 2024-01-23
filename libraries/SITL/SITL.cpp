@@ -1169,6 +1169,7 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             (int32_t)(state.longitude*1.0e7));
 }
 
+#if HAL_LOGGING_ENABLED
 /* report SITL state to AP_Logger */
 void SIM::Log_Write_SIMSTATE()
 {
@@ -1196,6 +1197,7 @@ void SIM::Log_Write_SIMSTATE()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 /*
  convert a set of roll rates from earth frame to body frame

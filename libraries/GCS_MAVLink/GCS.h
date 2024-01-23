@@ -1337,11 +1337,13 @@ GCS &gcs();
 // send text when we do have a GCS
 #if !defined(HAL_BUILD_AP_PERIPH)
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#define AP_HAVE_GCS_SEND_TEXT 1
 #else
 extern "C" {
 void can_printf(const char *fmt, ...);
 }
 #define GCS_SEND_TEXT(severity, format, args...) (void)severity; can_printf(format, ##args)
+#define AP_HAVE_GCS_SEND_TEXT 1
 #endif
 
 #define GCS_SEND_MESSAGE(msg) gcs().send_message(msg)
@@ -1354,11 +1356,13 @@ void can_printf(const char *fmt, ...);
 }
 #define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
 #define GCS_SEND_MESSAGE(msg)
+#define AP_HAVE_GCS_SEND_TEXT 1
 
 #else // HAL_GCS_ENABLED
 // empty send text when we have no GCS
 #define GCS_SEND_TEXT(severity, format, args...)
 #define GCS_SEND_MESSAGE(msg)
+#define AP_HAVE_GCS_SEND_TEXT 0
 
 #endif // HAL_GCS_ENABLED
 

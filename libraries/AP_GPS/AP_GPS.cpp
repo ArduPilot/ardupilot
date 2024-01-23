@@ -347,7 +347,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -2254,6 +2254,7 @@ bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // Logging support:
 // Write an GPS packet
 void AP_GPS::Write_GPS(uint8_t i)
@@ -2310,6 +2311,7 @@ void AP_GPS::Write_GPS(uint8_t i)
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif
 
 /*
   get GPS based yaw

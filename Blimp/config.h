@@ -111,13 +111,6 @@
 # define AUTO_DISARMING_DELAY  10
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Logging control
-//
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED                ENABLED
-#endif
-
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
 # define DEFAULT_LOG_BITMASK \

@@ -31,6 +31,11 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include "hwdef.h"
+#endif
+
 #ifdef   __cplusplus
 extern "C"
 {
@@ -70,7 +75,9 @@ extern "C"
 #define LWIP_NETCONN               (NO_SYS==0)
 #define LWIP_NETIF_API             (NO_SYS==0)
 
+#ifndef LWIP_IGMP
 #define LWIP_IGMP                  LWIP_IPV4
+#endif
 #define LWIP_ICMP                  LWIP_IPV4
 
 #define LWIP_SNMP                  LWIP_UDP
@@ -78,13 +85,17 @@ extern "C"
 #define LWIP_SNMP_V3               (LWIP_SNMP)
 #endif
 
-#define LWIP_DNS                   LWIP_UDP
-#define LWIP_MDNS_RESPONDER        LWIP_UDP
+#define LWIP_DNS                   0
+#define LWIP_MDNS_RESPONDER        0
 
 #define LWIP_NUM_NETIF_CLIENT_DATA (LWIP_MDNS_RESPONDER)
 
+#ifndef LWIP_HAVE_LOOPIF
 #define LWIP_HAVE_LOOPIF           1
+#endif
+#ifndef LWIP_NETIF_LOOPBACK
 #define LWIP_NETIF_LOOPBACK        1
+#endif
 #define LWIP_LOOPBACK_MAX_PBUFS    10
 
 #define TCP_LISTEN_BACKLOG         1
@@ -210,7 +221,9 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_TCP                1
 #define TCP_TTL                 255
 
+#ifndef LWIP_ALTCP
 #define LWIP_ALTCP              (LWIP_TCP)
+#endif
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_ALTCP_TLS          (LWIP_TCP)
 #define LWIP_ALTCP_TLS_MBEDTLS  (LWIP_TCP)
@@ -254,14 +267,18 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_ARP                1
 #define ARP_TABLE_SIZE          10
 #define ARP_QUEUEING            1
+#ifndef ARP_PROXYARP_SUPPORT
 #define ARP_PROXYARP_SUPPORT    1
+#endif
 
 
 /* ---------- IP options ---------- */
 /* Define IP_FORWARD to 1 if you wish to have the ability to forward
    IP packets across network interfaces. If you are going to run lwIP
    on a device with only one network interface, define this to 0. */
+#ifndef IP_FORWARD
 #define IP_FORWARD              1
+#endif
 
 /*
   extra header space when forwarding for adding the ethernet header
@@ -284,7 +301,9 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- DHCP options ---------- */
 /* Define LWIP_DHCP to 1 if you want DHCP configuration of
    interfaces. */
+#ifndef LWIP_DHCP
 #define LWIP_DHCP               1
+#endif
 
 /* 1 if you want to do an ARP check on the offered address
    (recommended). */
@@ -297,13 +316,15 @@ a lot of data that needs to be copied, this should be set high. */
 
 
 /* ---------- UDP options ---------- */
+#ifndef LWIP_UDP
 #define LWIP_UDP                1
+#endif
 #define LWIP_UDPLITE            LWIP_UDP
 #define UDP_TTL                 255
 
 
 /* ---------- RAW options ---------- */
-#define LWIP_RAW                1
+#define LWIP_RAW                0
 
 
 /* ---------- Statistics options ---------- */
@@ -312,11 +333,13 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_STATS_DISPLAY      0
 
 /* ---------- NETBIOS options ---------- */
-#define LWIP_NETBIOS_RESPOND_NAME_QUERY 1
+#define LWIP_NETBIOS_RESPOND_NAME_QUERY 0
 
 /* ---------- PPP options ---------- */
 
+#ifndef PPP_SUPPORT
 #define PPP_SUPPORT             1      /* Set > 0 for PPP */
+#endif
 
 #if PPP_SUPPORT
 
@@ -328,7 +351,7 @@ a lot of data that needs to be copied, this should be set high. */
  * in this file.
  */
 #define PPPOE_SUPPORT           0
-#define PPPOS_SUPPORT           1
+#define PPPOS_SUPPORT           PPP_SUPPORT
 
 #define PAP_SUPPORT             0      /* Set > 0 for PAP. */
 #define CHAP_SUPPORT            0      /* Set > 0 for CHAP. */

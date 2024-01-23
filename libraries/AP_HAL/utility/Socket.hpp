@@ -25,6 +25,8 @@
 #error "Don't include Socket.hpp directly"
 #endif
 
+#define IP4_STR_LEN 16
+
 class SOCKET_CLASS_NAME {
 public:
     SOCKET_CLASS_NAME(bool _datagram);

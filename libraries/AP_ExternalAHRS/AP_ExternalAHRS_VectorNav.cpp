@@ -513,6 +513,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
     }
 
 
+#if HAL_LOGGING_ENABLED
     // @LoggerMessage: EAH1
     // @Description: External AHRS data
     // @Field: TimeUS: Time since system startup
@@ -541,6 +542,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
                        float(pkt1.positionLLA[2]),
                        pkt1.posU, pkt1.velU,
                        pkt1.yprU[2], pkt1.yprU[1], pkt1.yprU[0]);
+#endif  // HAL_LOGGING_ENABLED
 }
 
 /*
@@ -651,6 +653,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
         AP::ins().handle_external(ins);
     }
 
+#if HAL_LOGGING_ENABLED
     // @LoggerMessage: EAH3
     // @Description: External AHRS data
     // @Field: TimeUS: Time since system startup
@@ -681,7 +684,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
                        state.accel[0], state.accel[1], state.accel[2],
                        state.gyro[0], state.gyro[1], state.gyro[2],
                        state.quat[0], state.quat[1], state.quat[2], state.quat[3]);
-
+#endif  // HAL_LOGGING_ENABLED
 }
 
 

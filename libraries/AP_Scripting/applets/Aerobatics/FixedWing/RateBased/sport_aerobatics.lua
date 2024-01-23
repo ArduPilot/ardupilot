@@ -28,7 +28,6 @@ local THR_PIT_FF = bind_add_param("PIT_FF",4,80) -- throttle FF from pitch
 local SPD_P = bind_add_param("SPD_P",5,5) -- speed P gain
 local SPD_I = bind_add_param("SPD_I",6,25) -- speed I gain
 local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
 local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
 local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 

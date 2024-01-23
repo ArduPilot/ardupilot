@@ -29,6 +29,8 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 
+#include "AP_Param_config.h"
+
 #include "float.h"
 
 #define AP_MAX_NAME_SIZE 16
@@ -46,11 +48,15 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if BOARD_FLASH_SIZE <= 1024
-# define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-#else
-# define AP_PARAM_MAX_EMBEDDED_PARAM 8192
-#endif
+  #if FORCE_APJ_DEFAULT_PARAMETERS
+    #if BOARD_FLASH_SIZE <= 1024
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+    #else
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+    #endif
+  #else
+    #define AP_PARAM_MAX_EMBEDDED_PARAM 0
+  #endif
 #endif
 
 // allow for dynamically added tables when scripting enabled
@@ -461,13 +467,18 @@ public:
 
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
+    // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
+    static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
     /*
       convert width of a parameter, allowing update to wider scalar
       values without changing the parameter indexes. This will return
       true if the parameter was converted from an old parameter value
     */
-    bool convert_parameter_width(ap_var_type old_ptype);
+    bool convert_parameter_width(ap_var_type old_ptype, float scale_factor=1.0);
+    bool convert_centi_parameter(ap_var_type old_ptype) {
+        return convert_parameter_width(old_ptype, 0.01f);
+    }
     
     // convert a single parameter with scaling
     enum {
@@ -726,7 +737,16 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
+    static bool count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count);
     static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx);
+
+    // load a defaults.parm using AP_FileSystem:
+    static void load_defaults_file_from_filesystem(const char *filename, bool lastpass);
+    // load an @ROMFS defaults.parm using ROMFS API:
+    static void load_defaults_file_from_romfs(const char *filename, bool lastpass);
+
+    // load defaults from supplied string:
+    static void load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass);
 
     /*
       load defaults from embedded parameters

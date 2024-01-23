@@ -35,9 +35,13 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
+#include <AP_ROMFS/AP_ROMFS.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
 #endif
+
+#include "AP_Param_config.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -1543,32 +1547,75 @@ bool AP_Param::load_all()
  */
 void AP_Param::reload_defaults_file(bool last_pass)
 {
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    if (param_defaults_data.length != 0) {
-        load_embedded_param_defaults(last_pass);
-        return;
-    }
-#endif
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#if AP_FILESYSTEM_POSIX_ENABLED
     /*
       if the HAL specifies a defaults parameter file then override
       defaults using that file
      */
     const char *default_file = hal.util->get_custom_defaults_file();
     if (default_file) {
-        if (load_defaults_file(default_file, last_pass)) {
-            printf("Loaded defaults from %s\n", default_file);
-        } else {
-            AP_HAL::panic("Failed to load defaults from %s\n", default_file);
-        }
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+        load_defaults_file_from_filesystem(default_file, last_pass);
+#elif defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+        load_defaults_file_from_romfs(default_file, last_pass);
+#endif
+    }
+
+#endif  // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    if (param_defaults_data.length != 0) {
+        load_embedded_param_defaults(last_pass);
     }
 #endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
     hal.util->set_cmdline_parameters();
 #endif
 }
 
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool last_pass)
+{
+    if (load_defaults_file(default_file, last_pass)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        printf("Loaded defaults from %s\n", default_file);
+#endif
+    } else {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Failed to load defaults from %s\n", default_file);
+#else
+        printf("Failed to load defaults from %s\n", default_file);
+#endif
+    }
+}
+#endif  // AP_FILESYSTEM_FILE_READING_ENABLED
+
+#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last_pass)
+{
+    const char *prefix = "@ROMFS/";
+    if (strncmp(default_file, prefix, strlen(prefix)) != 0) {
+        // does not start with ROMFS, do not attempt to retrieve from it
+        return;
+    }
+
+    // filename without the prefix:
+    const char *trimmed_filename = &default_file[strlen(prefix)];
+
+    uint32_t string_length;
+    const uint8_t *text = AP_ROMFS::find_decompress(trimmed_filename, string_length);
+    if (text == nullptr) {
+        return;
+    }
+
+    load_param_defaults((const char*)text, string_length, last_pass);
+
+    AP_ROMFS::free(text);
+
+}
+#endif  // HAL_HAVE_AP_ROMFS_EMBEDDED_H
 
 /* 
    Load all variables from EEPROM for a particular object. This is
@@ -1875,7 +1922,6 @@ bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *v
     return true;
 }
 
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 // convert one old vehicle parameter to new object parameter
@@ -1936,11 +1982,17 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 #pragma GCC diagnostic pop
 
 
-// convert old vehicle parameters to new object parametersv
+// convert old vehicle parameters to new object parameters
 void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags)
 {
+    convert_old_parameters_scaled(conversion_table, table_size, 1.0f, flags);
+}
+
+// convert old vehicle parameters to new object parameters with scaling - assumes all parameters will have the same scaling factor
+void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags)
+{
     for (uint8_t i=0; i<table_size; i++) {
-        convert_old_parameter(&conversion_table[i], 1.0f, flags);
+        convert_old_parameter(&conversion_table[i], scaler, flags);
     }
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter
@@ -1996,7 +2048,7 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
  convert width of a parameter, allowing update to wider scalar values
  without changing the parameter indexes
 */
-bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
+bool AP_Param::convert_parameter_width(ap_var_type old_ptype, float scale_factor)
 {
     if (configured_in_storage()) {
         // already converted or set by the user
@@ -2043,14 +2095,13 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     // going via float is safe as the only time we would be converting
     // from AP_Int32 is when converting to float
     float old_float_value = old_ap->cast_to_float(old_ptype);
-    set_value(new_ptype, this, old_float_value);
+    set_value(new_ptype, this, old_float_value*scale_factor);
 
     // force save as the new type
     save(true);
 
     return true;
 }
-
 
 /*
   set a parameter to a float value
@@ -2136,8 +2187,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 }
 
 
-// FIXME: make this AP_FILESYSTEM_FILE_READING_ENABLED
-#if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED || AP_PARAM_DYNAMIC_ENABLED
 
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
@@ -2283,17 +2333,15 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
     return true;
 }
+#endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#endif // AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
 
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (!AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
 /*
-  count the number of embedded parameter defaults
+  count the number of parameter defaults present in supplied string
  */
-bool AP_Param::count_embedded_param_defaults(uint16_t &count)
+bool AP_Param::count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count)
 {
-    const volatile char *ptr = param_defaults_data.data;
-    int32_t length = param_defaults_data.length;
     count = 0;
     
     while (length>0) {
@@ -2334,12 +2382,22 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
     return true;
 }
 
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
 /*
  * load a default set of parameters from a embedded parameter region
  * @last_pass: if this is the last pass on defaults - unknown parameters are
  *             ignored but if this is set a warning will be emitted
  */
 void AP_Param::load_embedded_param_defaults(bool last_pass)
+{
+    load_param_defaults(param_defaults_data.data, param_defaults_data.length, last_pass);
+}
+#endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
+
+/*
+ *  load parameter defaults from supplied string
+ */
+void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass)
 {
     delete[] param_overrides;
     param_overrides = nullptr;
@@ -2348,7 +2406,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
     num_read_only = 0;
 
     uint16_t num_defaults = 0;
-    if (!count_embedded_param_defaults(num_defaults)) {
+    if (!count_param_defaults(ptr, length, num_defaults)) {
         return;
     }
 
@@ -2360,8 +2418,6 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
 
     param_overrides_len = num_defaults;
 
-    const volatile char *ptr = param_defaults_data.data;
-    int32_t length = param_defaults_data.length;
     uint16_t idx = 0;
     
     while (idx < num_defaults && length > 0) {

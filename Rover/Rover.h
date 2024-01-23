@@ -136,7 +136,9 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     // flight modes convenience array
     AP_Int8 *modes;
@@ -226,7 +228,9 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
 
     static const AP_Param::Info var_info[];
+#if HAL_LOGGING_ENABLED
     static const LogStructure log_structure[];
+#endif
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;

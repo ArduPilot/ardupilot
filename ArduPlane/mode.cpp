@@ -290,3 +290,35 @@ bool Mode::use_throttle_limits() const
 
     return true;
 }
+
+// true if voltage correction should be applied to throttle
+bool Mode::use_battery_compensation() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        return false;
+    }
+#endif
+
+    if (this == &plane.mode_stabilize ||
+        this == &plane.mode_training ||
+        this == &plane.mode_acro ||
+        this == &plane.mode_fbwa ||
+        this == &plane.mode_autotune) {
+        // a manual throttle mode
+        return false;
+    }
+
+    if (is_guided_mode() && plane.guided_throttle_passthru) {
+        // manual pass through of throttle while in GUIDED
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        return false;
+    }
+#endif
+
+    return true;
+}

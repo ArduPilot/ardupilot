@@ -15,7 +15,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Relay/AP_Relay_Params.h>
-#include <AP_Common/Bitmask.h>
 
 #ifndef AP_RELAY_NUM_RELAYS
   #define AP_RELAY_NUM_RELAYS 6
@@ -95,7 +94,7 @@ private:
     // Get relay state from pin number
     bool get_pin(const int16_t pin) const;
 
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if AP_RELAY_DRONECAN_ENABLED
     // Virtual DroneCAN pins
     class DroneCAN {
     public:
@@ -130,7 +129,7 @@ private:
         } state[num_pins];
 
     } dronecan;
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif // AP_RELAY_DRONECAN_ENABLED
 
 };
 

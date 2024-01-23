@@ -43,32 +43,32 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     AP_SUBGROUPPTR(pos_control, "P", 17, QuadPlane, AC_PosControl),
 
-    // @Param: VELZ_MAX
+    // @Param: PILOT_SPD_UP
     // @DisplayName: Pilot maximum vertical speed up
-    // @Description: The maximum ascending vertical velocity the pilot may request in cm/s
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
+    // @Description: The maximum ascending vertical velocity the pilot may request in m/s
+    // @Units: m/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("VELZ_MAX", 18, QuadPlane, pilot_velocity_z_max_up, 250),
+    AP_GROUPINFO("PILOT_SPD_UP", 18, QuadPlane, pilot_speed_z_max_up, 2.50),
    
-   // @Param: VELZ_MAX_DN
+    // @Param: PILOT_SPD_DN
     // @DisplayName: Pilot maximum vertical speed down
-    // @Description: The maximum vertical velocity the pilot may request in cm/s going down. If 0, uses Q_VELZ_MAX value.
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
+    // @Description: The maximum vertical velocity the pilot may request in m/s going down. If 0, uses Q_PILOT_SPD_UP value.
+    // @Units: m/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("VELZ_MAX_DN", 60, QuadPlane, pilot_velocity_z_max_dn, 0),
+    AP_GROUPINFO("PILOT_SPD_DN", 60, QuadPlane, pilot_speed_z_max_dn, 0),
 
-     // @Param: ACCEL_Z
+     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
-    // @Range: 50 500
-    // @Increment: 10
+    // @Units: m/s/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("ACCEL_Z",  19, QuadPlane, pilot_accel_z,  250),
+    AP_GROUPINFO("PILOT_ACCEL_Z",  19, QuadPlane, pilot_accel_z,  2.5),
 
     // @Group: WP_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
@@ -120,14 +120,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // YAW_RATE_MAX index 25
 
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
+    // @Param: LAND_FINAL_SPD
+    // @DisplayName: Land final speed
+    // @Description: The descent speed for the final stage of landing in m/s
+    // @Units: m/s
+    // @Range: 0.3 2
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("LAND_SPEED", 26, QuadPlane, land_speed_cms, 50),
+    AP_GROUPINFO("LAND_FINAL_SPD", 26, QuadPlane, land_final_speed, 0.5),
 
     // @Param: LAND_FINAL_ALT
     // @DisplayName: Land final altitude
@@ -310,7 +310,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: TRIM_PITCH
     // @DisplayName: Quadplane AHRS trim pitch
-    // @Description: This sets the compensation for the pitch angle trim difference between calibrated AHRS level and vertical flight pitch. NOTE! this is relative to calibrated AHRS trim, not forward flight trim which includes TRIM_PITCH_CD. For tailsitters, this is relative to a baseline of 90 degrees in AHRS.
+    // @Description: This sets the compensation for the pitch angle trim difference between calibrated AHRS level and vertical flight pitch. NOTE! this is relative to calibrated AHRS trim, not forward flight trim which includes TRIM_PITCH. For tailsitters, this is relative to a baseline of 90 degrees in AHRS.
     // @Units: deg
     // @Range: -10 +10
     // @Increment: 0.1
@@ -823,6 +823,12 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
+    // centi-conversions added January 2024
+    land_final_speed.convert_centi_parameter(AP_PARAM_INT16);
+    pilot_speed_z_max_up.convert_centi_parameter(AP_PARAM_INT16);
+    pilot_speed_z_max_dn.convert_centi_parameter(AP_PARAM_INT16);
+    pilot_accel_z.convert_centi_parameter(AP_PARAM_INT16);
+
     tailsitter.setup();
 
     tiltrotor.setup();
@@ -1018,7 +1024,7 @@ void QuadPlane::run_z_controller(void)
     }
     if ((now - last_pidz_active_ms) > 20 || !pos_control->is_active_z()) {
         // set vertical speed and acceleration limits
-        pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+        pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
 
         // initialise the vertical position controller
         if (!tailsitter.enabled()) {
@@ -1053,7 +1059,7 @@ void QuadPlane::check_yaw_reset(void)
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
-        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
 }
 
@@ -1071,7 +1077,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
 
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
@@ -1246,7 +1252,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
         height_above_ground = MIN(height_above_ground, land_final_alt);
     }
     const float max_climb_speed = wp_nav->get_default_speed_up();
-    float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
+    float ret = linear_interpolate(land_final_speed*100, wp_nav->get_default_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
 
@@ -1357,7 +1363,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) *0.01f;
-    return throttle_request * (throttle_request > 0.0f ? pilot_velocity_z_max_up : get_pilot_velocity_z_max_dn());
+    return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up*100 : get_pilot_velocity_z_max_dn());
 }
 
 
@@ -1405,7 +1411,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
         climb_rate = plane.altitude_error_cm * 0.1f;
     } else {
         // otherwise estimate from pilot input
-        climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
+        climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(plane.aparm.pitch_limit_max*100));
         climb_rate *= plane.get_throttle_input();
     }
     climb_rate = constrain_float(climb_rate, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
@@ -1517,9 +1523,9 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
      */
 
     const uint16_t allowed_envelope_error_cd = 500U;
-    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit_cd+allowed_envelope_error_cd &&
-        ahrs.pitch_sensor < plane.aparm.pitch_limit_max_cd+allowed_envelope_error_cd &&
-        ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min_cd)) {
+    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit*100 + allowed_envelope_error_cd &&
+        ahrs.pitch_sensor < plane.aparm.pitch_limit_max*100+allowed_envelope_error_cd &&
+        ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min*100)) {
         // we are inside allowed attitude envelope
         in_angle_assist = false;
         angle_error_start_ms = 0;
@@ -1621,7 +1627,7 @@ void SLT_Transition::update()
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Transition failed, exceeded time limit");
                 quadplane.transition_failure.warned = true;
             }
-            // if option is set and ground speed> 1/2 arspd_fbw_min for non-tiltrotors, then complete transition, otherwise QLAND.
+            // if option is set and ground speed> 1/2 AIRSPEED_MIN for non-tiltrotors, then complete transition, otherwise QLAND.
             // tiltrotors will immediately transition
             const bool tiltrotor_with_ground_speed = quadplane.tiltrotor.enabled() && (plane.ahrs.groundspeed() > plane.aparm.airspeed_min * 0.5);
             if (quadplane.option_is_set(QuadPlane::OPTION::TRANS_FAIL_TO_FW) && tiltrotor_with_ground_speed) {
@@ -1866,6 +1872,7 @@ void QuadPlane::update(void)
 
     tiltrotor.update();
 
+#if HAL_LOGGING_ENABLED
     // motors logging
     if (motors->armed()) {
         const bool motors_active = in_vtol_mode() || assisted_flight;
@@ -1886,7 +1893,9 @@ void QuadPlane::update(void)
             Log_Write_QControl_Tuning();
         }
     }
-
+#else
+    (void)now;
+#endif  // HAL_LOGGING_ENABLED
 }
 
 /*
@@ -2296,6 +2305,7 @@ void QuadPlane::poscontrol_init_approach(void)
     poscontrol.slow_descent = false;
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   log the QPOS message
  */
@@ -2309,6 +2319,7 @@ void QuadPlane::log_QPOS(void)
                                 poscontrol.target_accel,
                                 poscontrol.overshoot);
 }
+#endif
 
 /*
   change position control state
@@ -2346,9 +2357,13 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             qp.landing_detect.lower_limit_start_ms = 0;
         }
         // double log to capture the state change
+#if HAL_LOGGING_ENABLED
         qp.log_QPOS();
+#endif
         state = s;
+#if HAL_LOGGING_ENABLED
         qp.log_QPOS();
+#endif
         last_log_ms = now;
         overshoot = false;
     }
@@ -2447,7 +2462,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // use TECS for pitch
         int32_t commanded_pitch = plane.TECS_controller.get_pitch_demand();
-        plane.nav_pitch_cd = constrain_int32(commanded_pitch, plane.pitch_limit_min_cd, plane.aparm.pitch_limit_max_cd.get());
+        plane.nav_pitch_cd = constrain_int32(commanded_pitch, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
         if (poscontrol.get_state() == QPOS_AIRBRAKE) {
             // don't allow down pitch in airbrake
             plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, 0);
@@ -2926,11 +2941,13 @@ void QuadPlane::vtol_position_controller(void)
         run_z_controller();
     }
 
+#if HAL_LOGGING_ENABLED
     if (now_ms - poscontrol.last_log_ms >= 40) {
         // log poscontrol at 25Hz
         poscontrol.last_log_ms = now_ms;
         log_QPOS();
     }
+#endif
 }
 
 /*
@@ -3025,6 +3042,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     // acceleration capability.
     const float nav_pitch_lower_limit_cd = - (int32_t)((float)aparm.angle_max * (1.0f - fwd_thr_scaler) + q_fwd_pitch_lim_cd * fwd_thr_scaler);
 
+#if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
     AP::logger().WriteStreaming("FWDT",
                                 "TimeUS,fts,qfplcd,npllcd,npcd,qft",  // labels
@@ -3035,6 +3053,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
                                 (double)nav_pitch_lower_limit_cd,
                                 (double)plane.nav_pitch_cd,
                                 (double)q_fwd_throttle);
+#endif
 
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
 }
@@ -3080,8 +3099,8 @@ void QuadPlane::setup_target_position(void)
     poscontrol.target_cm.z = plane.next_WP_loc.alt - origin.alt;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
 }
 
 /*
@@ -3330,8 +3349,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_speed_z_max_up*100, pilot_accel_z*100);
 
     // initialise the vertical position controller
     pos_control->init_z_controller();
@@ -3348,8 +3367,8 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     // t_{constant} = \frac{d_{remaining}}{V_z}
     // t = max(t_{accel}, 0) + max(t_{constant}, 0)
     const float d_total = (plane.next_WP_loc.alt - plane.current_loc.alt) * 0.01f;
-    const float accel_m_s_s = MAX(10, pilot_accel_z) * 0.01f;
-    const float vel_max = MAX(10, pilot_velocity_z_max_up) * 0.01f;
+    const float accel_m_s_s = MAX(0.1, pilot_accel_z);
+    const float vel_max = MAX(0.1, pilot_speed_z_max_up);
     const float vel_z = inertial_nav.get_velocity_z_up_cms() * 0.01f;
     const float t_accel = (vel_max - vel_z) / accel_m_s_s;
     const float d_accel = vel_z * t_accel + 0.5f * accel_m_s_s * sq(t_accel);
@@ -3640,6 +3659,7 @@ bool QuadPlane::verify_vtol_land(void)
     return false;
 }
 
+#if HAL_LOGGING_ENABLED
 // Write a control tuning packet
 void QuadPlane::Log_Write_QControl_Tuning()
 {
@@ -3671,6 +3691,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
     // write multicopter position control message
     pos_control->write_log();
 }
+#endif
 
 
 /*
@@ -3753,7 +3774,7 @@ float QuadPlane::forward_throttle_pct()
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
     // WP nav speed.
-    fwd_vel_error -= (wp_nav->get_default_speed_xy() * 0.01f) * plane.nav_pitch_cd / (float)plane.aparm.pitch_limit_max_cd;
+    fwd_vel_error -= (wp_nav->get_default_speed_xy() * 0.01f) * plane.nav_pitch_cd / (plane.aparm.pitch_limit_max*100);
 
     if (should_relax() && vel_ned.length() < 1) {
         // we may be landed
@@ -4033,7 +4054,7 @@ float QuadPlane::stopping_distance(void)
 float QuadPlane::transition_threshold(void)
 {
     // 1.5 times stopping distance for cruise speed
-    return 1.5 * stopping_distance(sq(plane.aparm.airspeed_cruise_cm*0.01));
+    return 1.5 * stopping_distance(sq(plane.aparm.airspeed_cruise));
 }
 
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
@@ -4196,13 +4217,16 @@ bool SLT_Transition::show_vtol_view() const
     return quadplane.in_vtol_mode();
 }
 
-// return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
+/*
+  return the PILOT_VELZ_MAX_DN value if non zero, otherwise returns the PILOT_VELZ_MAX value.
+  return is in cm/s
+*/
 uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
 {
-    if (pilot_velocity_z_max_dn == 0) {
-        return abs(pilot_velocity_z_max_up);
+    if (is_zero(pilot_speed_z_max_dn)) {
+        return abs(pilot_speed_z_max_up*100);
    }
-    return abs(pilot_velocity_z_max_dn);
+    return abs(pilot_speed_z_max_dn*100);
 }
 
 /*
@@ -4255,7 +4279,7 @@ Vector2f QuadPlane::landing_desired_closing_velocity()
 
     // don't let the target speed go above landing approach speed
     const float eas2tas = plane.ahrs.get_EAS2TAS();
-    float land_speed = plane.aparm.airspeed_cruise_cm * 0.01;
+    float land_speed = plane.aparm.airspeed_cruise;
     float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
     if (is_positive(tecs_land_airspeed)) {
         land_speed = tecs_land_airspeed;
@@ -4279,7 +4303,7 @@ float QuadPlane::get_land_airspeed(void)
     const auto qstate = poscontrol.get_state();
     if (qstate == QPOS_APPROACH ||
         plane.control_mode == &plane.mode_rtl) {
-        const float cruise_speed = plane.aparm.airspeed_cruise_cm * 0.01;
+        const float cruise_speed = plane.aparm.airspeed_cruise;
         float approach_speed = cruise_speed;
         float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
         if (is_positive(tecs_land_airspeed)) {
@@ -4445,7 +4469,7 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
     }
 
     // we limit pitch during initial transition
-    const float max_limit_cd = linear_interpolate(MAX(last_fw_nav_pitch_cd,0), MIN(angle_max,plane.aparm.pitch_limit_max_cd),
+    const float max_limit_cd = linear_interpolate(MAX(last_fw_nav_pitch_cd,0), MIN(angle_max,plane.aparm.pitch_limit_max*100),
                                             dt,
                                             0, limit_time_ms);
 
@@ -4465,7 +4489,7 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
         to prevent inability to progress to position if moving from a loiter
         to landing
     */
-    const float min_limit_cd = linear_interpolate(MIN(last_fw_nav_pitch_cd,0), MAX(-angle_max,plane.aparm.pitch_limit_min_cd),
+    const float min_limit_cd = linear_interpolate(MIN(last_fw_nav_pitch_cd,0), MAX(-angle_max,plane.aparm.pitch_limit_min*100),
                                                   dt,
                                                   0, limit_time_ms);
 
@@ -4640,7 +4664,7 @@ bool QuadPlane::landing_with_fixed_wing_spiral_approach(void) const
   setup scaling of roll and pitch angle P gains to match fixed wing gains
 
   we setup the angle P gain to match fixed wing at high speed (above
-  ARSPD_FBW_MIN) where fixed wing surfaces are presumed to
+  AIRSPEED_MIN) where fixed wing surfaces are presumed to
   dominate. At lower speeds we use the multicopter angle P gains.
 */
 void QuadPlane::setup_rp_fw_angle_gains(void)
