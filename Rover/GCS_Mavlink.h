@@ -7,6 +7,8 @@
 #define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 1
 #endif
 
+#include "defines.h"
+
 class GCS_MAVLINK_Rover : public GCS_MAVLINK
 {
 public:
@@ -35,6 +37,10 @@ protected:
 
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
 
 private:
 
