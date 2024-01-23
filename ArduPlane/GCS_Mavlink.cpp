@@ -1329,6 +1329,16 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
     }
 
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+        handle_set_position_target_global_int(msg);
+        break;
+
+    default:
+        GCS_MAVLINK::handle_message(msg);
+        break;
+    } // end switch
+} // end handle mavlink
+
+void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_message_t &msg)
     {
         // Only want to allow companion computer position control when
         // in a certain mode to avoid inadvertently sending these
@@ -1338,7 +1348,7 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
         if (plane.control_mode != &plane.mode_guided) {
             //don't screw up failsafes
-            break;
+            return;
         }
 
         mavlink_set_position_target_global_int_t pos_target;
@@ -1378,15 +1388,7 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
                 handle_change_alt_request(cmd);
             }
         } // end if alt_mask       
-
-        break;
     }
-
-    default:
-        GCS_MAVLINK::handle_message(msg);
-        break;
-    } // end switch
-} // end handle mavlink
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
