@@ -777,7 +777,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
-void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Rover::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -799,7 +799,7 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
         break;
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     }
 }
