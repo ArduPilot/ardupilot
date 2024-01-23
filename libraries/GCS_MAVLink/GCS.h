@@ -577,7 +577,7 @@ protected:
     void handle_serial_control(const mavlink_message_t &msg);
     void handle_vision_position_delta(const mavlink_message_t &msg);
 
-    void handle_common_message(const mavlink_message_t &msg);
+    virtual void handle_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
@@ -775,8 +775,6 @@ private:
     const char *last_deprecation_message;
 
     void service_statustext(void);
-
-    virtual void        handleMessage(const mavlink_message_t &msg) = 0;
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);
     bool send_relay_status() const;
