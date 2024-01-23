@@ -293,6 +293,7 @@ void AP_RCProtocol::SerialConfig::apply_to_uart(AP_HAL::UARTDriver *uart) const
 static const AP_RCProtocol::SerialConfig serial_configs[] {
     // BAUD PRTY STOP INVERT-RX
     // inverted and uninverted 115200 8N1:
+#if 0
     { 115200,  0,   1, false  },
     { 115200,  0,   1, true },
     // SBUS settings, even parity, 2 stop bits:
@@ -301,15 +302,18 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
+#endif
 #if AP_RCPROTOCOL_CRSF_ENABLED || AP_RCPROTOCOL_GHST_ENABLED
     // CrossFire:
-    { 416666,  0,   1, false },
+    { 400000,  0,   1, false },
+#if 0
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
     { 2000000, 0,   1, false },
 #endif
+#endif
 };
 
-static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
+static_assert(ARRAY_SIZE(serial_configs) > 0, "must have at least one serial config");
 
 void AP_RCProtocol::check_added_uart(void)
 {
@@ -338,6 +342,8 @@ void AP_RCProtocol::check_added_uart(void)
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
+            hal.gpio->toggle(54);
+            hal.gpio->toggle(54);
             process_byte(uint8_t(b), current_baud);
         }
     }
