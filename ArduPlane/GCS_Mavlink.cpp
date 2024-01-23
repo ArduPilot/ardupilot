@@ -1235,6 +1235,24 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+        handle_set_attitude_target(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+        handle_set_position_target_local_ned(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+        handle_set_position_target_global_int(msg);
+        break;
+
+    default:
+        GCS_MAVLINK::handle_message(msg);
+        break;
+    } // end switch
+} // end handle mavlink
+
+void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
     {
         // Only allow companion computer (or other external controller) to
         // control attitude in GUIDED mode.  We DON'T want external control
@@ -1242,7 +1260,7 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
         if (plane.control_mode != &plane.mode_guided) { // don't screw up failsafes
-            break; 
+            return;
         }
 
         mavlink_set_attitude_target_t att_target;
@@ -1300,23 +1318,7 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
             // Update timer for external throttle
             plane.guided_state.last_forced_throttle_ms = now;
         }
-
-        break;
     }
-
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
-        handle_set_position_target_local_ned(msg);
-        break;
-
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
-        handle_set_position_target_global_int(msg);
-        break;
-
-    default:
-        GCS_MAVLINK::handle_message(msg);
-        break;
-    } // end switch
-} // end handle mavlink
 
 void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_message_t &msg)
     {
