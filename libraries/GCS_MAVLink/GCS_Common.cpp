@@ -827,7 +827,7 @@ float GCS_MAVLINK::telemetry_radio_rssi()
     return last_radio_status.rssi/254.0f;
 }
 
-void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(&msg, &packet);
@@ -874,7 +874,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
 
 #if HAL_LOGGING_ENABLED
     //log rssi, noise, etc if logging Performance monitoring data
-    if (log_radio) {
+    if (AP::logger().should_log(log_radio_bit())) {
         AP::logger().Write_Radio(packet);
     }
 #endif
@@ -4068,6 +4068,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_PARAM_VALUE:
         handle_param_value(msg);
+        break;
+
+    case MAVLINK_MSG_ID_RADIO:
+    case MAVLINK_MSG_ID_RADIO_STATUS:
+        handle_radio_status(msg);
         break;
 
 #if AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
