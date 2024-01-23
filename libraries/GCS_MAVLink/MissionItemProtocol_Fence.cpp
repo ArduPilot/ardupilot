@@ -95,7 +95,7 @@ uint16_t MissionItemProtocol_Fence::item_count() const
     return _fence.polyfence().num_stored_items();
 }
 
-static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
+MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
 {
     if (mission_item_int.frame != MAV_FRAME_GLOBAL &&
         mission_item_int.frame != MAV_FRAME_GLOBAL_INT &&
