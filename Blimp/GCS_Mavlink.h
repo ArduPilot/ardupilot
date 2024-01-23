@@ -2,6 +2,8 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#include "defines.h"
+
 class GCS_MAVLINK_Blimp : public GCS_MAVLINK
 {
 
@@ -43,6 +45,10 @@ protected:
         return MAV_VTOL_STATE_MC;
     };
     virtual MAV_LANDED_STATE landed_state() const override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
 
 private:
 
