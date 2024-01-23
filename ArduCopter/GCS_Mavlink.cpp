@@ -1485,17 +1485,6 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
     }
 #endif
 
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
-    {
-#if HAL_LOGGING_ENABLED
-        handle_radio_status(msg, copter.should_log(MASK_LOG_PM));
-#else
-        handle_radio_status(msg, false);
-#endif
-        break;
-    }
-
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if AP_TERRAIN_AVAILABLE
