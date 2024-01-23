@@ -90,47 +90,46 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     }
 
     // create inner polygon fence
-    AP_OADijkstra_Error error_id;
     if (!_inclusion_polygon_with_margin_ok) {
-        _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
+        _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_inclusion_polygon_with_margin_ok) {
             dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create exclusion polygon outer fence
     if (!_exclusion_polygon_with_margin_ok) {
-        _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
+        _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_exclusion_polygon_with_margin_ok) {
             dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create exclusion circle points
     if (!_exclusion_circle_with_margin_ok) {
-        _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, error_id);
+        _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_exclusion_circle_with_margin_ok) {
             dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create visgraph for all fence (with margin) points
     if (!_polyfence_visgraph_ok) {
-        _polyfence_visgraph_ok = create_fence_visgraph(error_id);
+        _polyfence_visgraph_ok = create_fence_visgraph(_error_id);
         if (!_polyfence_visgraph_ok) {
             _shortest_path_ok = false;
             dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // reset logging count to restart logging updated graph
@@ -157,11 +156,11 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
 
     // calculate shortest path from current_loc to destination
     if (!_shortest_path_ok) {
-        _shortest_path_ok = calc_shortest_path(current_loc, destination, error_id);
+        _shortest_path_ok = calc_shortest_path(current_loc, destination, _error_id);
         if (!_shortest_path_ok) {
             dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
