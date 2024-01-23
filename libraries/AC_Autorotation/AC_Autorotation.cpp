@@ -403,11 +403,12 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
     float delta_t_flare = (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) - (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_2));
 
     // Estimate flare delta altitude
-    float a = (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * delta_t_flare + (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1));
+    float sq_gravity = sq(GRAVITY_MSS);
+    float a = (2 * safe_sqrt(_c * sq_gravity / _lift_hover )) * delta_t_flare + (2 * safe_sqrt(_c * sq_gravity / _lift_hover )) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1));
     float x = 1 - expf(a);
-    float s = 1 - expf((2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover/(GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)));
+    float s = 1 - expf((2 * safe_sqrt(_c * sq_gravity / _lift_hover )) * (0.5f * (_lift_hover/(GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)));
     float d = safe_sqrt(_lift_hover / _c);
-    float flare_distance = ((2 * d / (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS)))) * (a - logf(fabsf(x)) - (2 * safe_sqrt(_c * GRAVITY_MSS / (_lift_hover / GRAVITY_MSS))) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) + logf(fabsf(s)))) - d * delta_t_flare;
+    float flare_distance = ((2 * d / (2 * safe_sqrt(_c * sq_gravity / _lift_hover ))) * (a - logf(fabsf(x)) - (2 * safe_sqrt(_c * sq_gravity / _lift_hover )) * (0.5f * (_lift_hover / (GRAVITY_MSS * _c)) * safe_sqrt(_c / _lift_hover) * logf(k_1)) + logf(fabsf(s)))) - d * delta_t_flare;
     float delta_h = -flare_distance * cosf(radians(AP_ALPHA_TPP));
 
     // Estimate altitude to begin collective pull
