@@ -176,7 +176,7 @@ private:
     float _avg_sink_deriv;           // Averaged derivative of rate of descent
     float _avg_sink_deriv_sum;       // Sum of averaged sink rate derivative
     int16_t _index_sink_rate;        // Index for sink rate derivative rolling average
-    float _curr_sink_deriv[20]{};    // Array for storing sink rate derivatives
+    float _curr_sink_deriv[20];    // Array for storing sink rate derivatives
     bool  _flare_complete;           // Flare completed
     bool  _flare_update_check;       // Check for flare altitude updating
 
