@@ -118,7 +118,7 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #else
 #error "BOARD_FLASH_SIZE invalid"
 #endif
-#elif defined(STM32H730xx) || defined(STM32H750xx)
+#elif defined(STM32H730xx) || defined(STM32H750xx) || defined(STM32H723xx)
 #define STM32_FLASH_NPAGES 1
 #define STM32_FLASH_NBANKS 1
 #define STM32_FLASH_FIXED_PAGE_SIZE 128
