@@ -45,10 +45,10 @@ const AP_ROMFS::embedded_file *AP_ROMFS::find_file(const char *name)
 }
 
 /*
-  find a compressed file and uncompress it. Space for decompressed
-  data comes from malloc. Caller must be careful to free the resulting
-  data after use. The next byte after the file data is guaranteed to
-  be null
+  find a compressed file and uncompress it. Space for decompressed data comes
+  from malloc. Caller must be careful to free the resulting data after use. The
+  file data buffer is guaranteed to contain at least one null (though it may be
+  at buf[size]).
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
@@ -58,7 +58,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     }
 
 #ifdef HAL_ROMFS_UNCOMPRESSED
-    size = f->compressed_size;
+    size = f->decompressed_size;
     return f->contents;
 #else
     uint8_t *decompressed_data = (uint8_t *)malloc(f->decompressed_size+1);
@@ -66,7 +66,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
         return nullptr;
     }
 
-    // explicitly null terimnate the data
+    // explicitly null-terminate the data
     decompressed_data[f->decompressed_size] = 0;
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
