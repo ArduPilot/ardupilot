@@ -89,7 +89,9 @@ extern const AP_HAL::HAL& hal;
 
 #define STR(x) #x
 #define XSTR(x) STR(x)
+#if !defined(HAL_LLD_USE_CLOCK_MANAGEMENT)
 static_assert(STM32_FDCANCLK == 80U*1000U*1000U, "FDCAN clock must be 80MHz, got " XSTR(STM32_FDCANCLK));
+#endif
 
 using namespace ChibiOS;
 
