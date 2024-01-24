@@ -27,9 +27,10 @@ def test_arm_motors_service():
     # Check if the service call was successful
     if future.result() is not None:
         response = future.result()
-        assert response.result, True
+        assert response.result, "AP: Arming request unsuccessful"
+        node.get_logger().info("AP: Arming request successful")
     else:
-        node.get_logger().info('Service call failed.')
+        node.get_logger().info("AP: Arming service call failed.")
 
     # Shutdown the node
     node.destroy_node()
