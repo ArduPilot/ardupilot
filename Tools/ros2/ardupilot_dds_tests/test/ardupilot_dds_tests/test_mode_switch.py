@@ -6,6 +6,35 @@ from ardupilot_msgs.srv import ModeSwitch
 def test_mode_switch():
     rclpy.init()
 
+    modes = [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        11,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+    ]
+
     # Create a ROS node
     node = rclpy.create_node('mode_switch_client')
 
@@ -17,7 +46,7 @@ def test_mode_switch():
         node.get_logger().info('Service not available.')
         return False
 
-    for mode_value in range(10):
+    for mode_value in modes:
         # Create a request with the specified mode value
         request = ModeSwitch.Request()
         request.mode = mode_value
@@ -31,9 +60,11 @@ def test_mode_switch():
             response = future.result()
             assert response.status, f'''Mode switch to {mode_value}
                                         unsuccessful.'''
-            node.get_logger().info(f'''Mode switch to {mode_value}
+            node.get_logger().info(
+                f'''Mode switch to {mode_value}
                                     successful. Current mode:
-                                    {response.curr_mode}''')
+                                    {response.curr_mode}'''
+            )
         else:
             node.get_logger().info('Service call failed.')
 
