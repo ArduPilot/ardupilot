@@ -32,17 +32,21 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
     write_encode(out, '__EXTFLASHFUNC__ static const uint8_t ap_romfs_%u[] = {' % idx)
 
     if uncompressed:
-        # ensure nul termination
-        if contents[-1] != 0:
-            contents += bytes([0])
+        # terminate if there's not already an existing null. we don't add it to
+        # the contents to avoid storing the wrong length
+        null_terminate = 0 not in contents
         b = contents
     else:
         # compress it (max level, max window size, raw stream, max mem usage)
         z = zlib.compressobj(level=9, method=zlib.DEFLATED, wbits=-15, memLevel=9)
         b = z.compress(contents)
         b += z.flush()
+        # decompressed data will be null terminated at runtime, nothing to do here
+        null_terminate = False
 
     write_encode(out, ",".join(str(c) for c in b))
+    if null_terminate:
+        write_encode(out, ",0")
     write_encode(out, '};\n\n');
     return crc, len(contents)
 
