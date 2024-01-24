@@ -72,7 +72,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 
-    const auto raw_data = gps._raw_data.get();
+    const uint8_t raw_data = gps._raw_data;
     if(!validate_raw_data(raw_data)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GPS_RAW_DATA has invalid value %d", raw_data);
         return;
@@ -90,10 +90,10 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
+    const uint32_t now = AP_HAL::millis();
     const auto com_port = gps._com_port[state.instance].get();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
-        const uint32_t now = AP_HAL::millis();
         if (!validate_com_port(com_port)) {
             // The user parameter for COM port is not a valid GSOF port
             return false;
@@ -115,12 +115,10 @@ AP_GPS_GSOF::read(void)
     }
 
     if (gps._raw_data == 2){
-        const uint32_t now = AP_HAL::millis();
         if (hal.util->get_soft_armed()) {
             _has_been_armed = true;
         } else if (_has_been_armed) {
-            stopLogging(static_cast<HW_Port>(com_port));
-            gsofmsg_time = now + 110;   
+            stopLogging(static_cast<HW_Port>(com_port));  
         }
     }
     
@@ -435,10 +433,9 @@ AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
 bool 
 AP_GPS_GSOF::validate_raw_data(const uint8_t raw_data) const {
     switch(raw_data) {
-        case 0:
-        case 1: 
-        case 2:
-        case 5:
+        case 0: //ignore
+        case 1: //always log
+        case 2: //stop logging when disarmed
             return true;
         default:
             return false;
