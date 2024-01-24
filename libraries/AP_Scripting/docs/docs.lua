@@ -2768,6 +2768,14 @@ function notify:handle_rgb(red, green, blue, rate_hz) end
 ---@param tune string
 function notify:play_tune(tune) end
 
+-- Display text on a notify display, text too long to fit will automatically be scrolled.
+---@param text string -- upto 50 characters
+---@param row integer -- row number to display on, 0 is at the top.
+function notify:send_text(text, row) end
+
+-- desc
+---@param row integer
+function notify:release_text(row) end
 
 -- desc
 ---@class gps

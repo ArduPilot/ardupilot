@@ -191,6 +191,10 @@ singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+singleton AP_Notify method send_text_scripting void string uint8_t'skip_check
+singleton AP_Notify method send_text_scripting rename send_text
+singleton AP_Notify method release_text_scripting void uint8_t'skip_check
+singleton AP_Notify method release_text_scripting rename release_text
 
 include AP_Proximity/AP_Proximity.h
 include AP_Proximity/AP_Proximity_Backend.h
