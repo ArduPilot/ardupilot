@@ -26,6 +26,12 @@
 #endif
 
 /*
+  we need to use HAL_LLD_USE_CLOCK_MANAGEMENT in order to allow a
+  different clock tree in the main firmware from the bootloader.
+ */
+#define HAL_LLD_USE_CLOCK_MANAGEMENT 1
+
+/*
  * STM32G4xx drivers configuration.
  * The following settings override the default settings present in
  * the various device driver implementation headers.
