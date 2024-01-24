@@ -72,15 +72,9 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 
-    const uint8_t raw_data = gps._raw_data;
-    if(!validate_raw_data(raw_data)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GPS_RAW_DATA has invalid value %d", raw_data);
-        return;
-    }
-
-    if(!raw_data){
+    if(gps._raw_data != 0){
         requestLogging(static_cast<HW_Port>(com_port));
-        gsofmsg_time = AP_HAL::millis() + 110;
+        gsofmsg_time = now + 110;
     }
     
 }
@@ -436,6 +430,7 @@ AP_GPS_GSOF::validate_raw_data(const uint8_t raw_data) const {
         case 0: //ignore
         case 1: //always log
         case 2: //stop logging when disarmed
+        case 5: //only log every five samples
             return true;
         default:
             return false;
