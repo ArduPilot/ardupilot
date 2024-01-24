@@ -244,12 +244,13 @@ private:
     static void half_duplex_irq_cb(void* sd);
 #endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
-    static void tx_or_hdrx_complete(void* self, uint32_t flags);
+    static void tx_complete(void* self, uint32_t flags);
 
 #ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);
     void dma_rx_enable(void);
+    void dma_rx_disable(void);
 #endif
     void update_rts_line(void);
 
