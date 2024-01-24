@@ -342,8 +342,6 @@ void AP_RCProtocol::check_added_uart(void)
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
-            hal.gpio->toggle(54);
-            hal.gpio->toggle(54);
             process_byte(uint8_t(b), current_baud);
         }
     }
