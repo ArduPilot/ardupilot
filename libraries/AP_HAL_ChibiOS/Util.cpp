@@ -226,7 +226,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
-    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
         return;
     }
 

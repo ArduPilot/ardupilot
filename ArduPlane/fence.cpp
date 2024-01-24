@@ -83,7 +83,7 @@ void Plane::fence_check()
                     loc.alt = home.alt + 100.0f * fence.get_return_altitude();
                 } else if (fence.get_safe_alt_min() >= fence.get_safe_alt_max()) {
                     // invalid min/max, use RTL_altitude
-                    loc.alt = home.alt + g.RTL_altitude_cm;
+                    loc.alt = home.alt + g.RTL_altitude*100;
                 } else {
                     // fly to the return point, with an altitude half way between
                     // min and max

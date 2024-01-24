@@ -172,8 +172,8 @@ void Plane::ahrs_update()
 #endif
 
     // calculate a scaled roll limit based on current pitch
-    roll_limit_cd = aparm.roll_limit_cd;
-    pitch_limit_min_cd = aparm.pitch_limit_min_cd;
+    roll_limit_cd = aparm.roll_limit*100;
+    pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
 #if HAL_QUADPLANE_ENABLED
@@ -183,7 +183,7 @@ void Plane::ahrs_update()
 #endif
     if (rotate_limits) {
         roll_limit_cd *= ahrs.cos_pitch();
-        pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
+        pitch_limit_min *= fabsf(ahrs.cos_roll());
     }
 
     // updated the summed gyro used for ground steering and
@@ -418,8 +418,8 @@ void Plane::airspeed_ratio_update(void)
         return;
     }
     if (labs(ahrs.roll_sensor) > roll_limit_cd ||
-        ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
-        ahrs.pitch_sensor < pitch_limit_min_cd) {
+        ahrs.pitch_sensor > aparm.pitch_limit_max*100 ||
+        ahrs.pitch_sensor < pitch_limit_min*100) {
         // don't calibrate when going beyond normal flight envelope
         return;
     }
@@ -917,7 +917,7 @@ bool Plane::is_taking_off() const
     return control_mode->is_taking_off();
 }
 
-// correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
+// correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
 #if HAL_QUADPLANE_ENABLED
@@ -929,8 +929,8 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 #endif
     pitch = ahrs.get_pitch();
     roll = ahrs.get_roll();
-    if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH_CD))) {  // correct for TRIM_PITCH_CD
-        pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
+    if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
+        pitch -= g.pitch_trim * DEG_TO_RAD;
     }
 }
 

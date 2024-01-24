@@ -1305,10 +1305,13 @@ ADC2_map = {
 	# format is PIN : ADC2_CHAN
 	"PF13"  :   2,
 	"PB1"	:	5,
+	"PF14"  :   6,
 }
 
 ADC3_map = {
 	# format is PIN : ADC3_CHAN
 	"PC3"   :   1,
 	"PF3"	:   5,
+	"PF5"   :   4,
+	"PF4"   :   9,
 }

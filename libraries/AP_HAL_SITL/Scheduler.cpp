@@ -14,6 +14,7 @@
 #endif
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #ifdef UBSAN_ENABLED
+#include <fcntl.h>
 #include <sanitizer/asan_interface.h>
 #endif
 
@@ -61,6 +62,7 @@ void __ubsan_get_current_report_data(const char **OutIssueKind,
                                      const char **OutFilename, unsigned *OutLine,
                                      unsigned *OutCol, char **OutMemoryAddr);
 
+void __ubsan_on_report();
 void __ubsan_on_report()
 {
     static int fd = -1;

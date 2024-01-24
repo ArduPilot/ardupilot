@@ -476,8 +476,9 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    const float turns = cmd.get_loiter_turns();
 
-    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
+    loiter.total_cd = (uint32_t)(turns * 36000UL);
     condition_value = 1; // used to signify primary turns goal not yet met
 }
 
@@ -977,7 +978,7 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
-        aparm.min_gndspeed_cm.set(speed_target_ms * 100);
+        aparm.min_groundspeed.set(speed_target_ms);
         return true;
     }
 

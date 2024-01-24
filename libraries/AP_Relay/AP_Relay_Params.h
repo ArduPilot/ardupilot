@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
-#include "AP_Relay_config.h"
 
 class AP_Relay_Params {
 public:

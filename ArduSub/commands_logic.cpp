@@ -539,9 +539,10 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
         }
         return false;
     }
+    const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
 }
 
 #if NAV_GUIDED == ENABLED

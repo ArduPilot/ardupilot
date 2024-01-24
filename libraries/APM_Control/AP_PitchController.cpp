@@ -361,7 +361,7 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;
     }
-    const float roll_limit_margin = MIN(aparm.roll_limit_cd + 500.0, 8500.0);
+    const float roll_limit_margin = MIN(aparm.roll_limit*100 + 500.0, 8500.0);
     if (roll_wrapped > roll_limit_margin && labs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
         desired_rate *= (1 - roll_prop);

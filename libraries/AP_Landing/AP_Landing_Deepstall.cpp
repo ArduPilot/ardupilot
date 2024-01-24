@@ -429,7 +429,7 @@ int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
         stage == DEEPSTALL_STAGE_LAND) {
         return landing.pre_flare_airspeed * 100;
     } else {
-        return landing.aparm.airspeed_cruise_cm;
+        return landing.aparm.airspeed_cruise*100;
     }
 }
 
