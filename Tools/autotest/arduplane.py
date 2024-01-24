@@ -5318,6 +5318,34 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         home = self.home_position_as_mav_location()
         self.assert_distance(home, adsb_vehicle_loc, 0, 10000)
 
+    def unset_parameter(self, name):
+        self.mav.mav.param_unset_send(
+            self.sysid_thismav(),
+            1,
+            name.encode('ascii')
+        )
+        self.wait_message_field_values('PARAM_VALUE', {
+            'param_id': name,
+        })
+
+    def ParamUnset(self):
+        '''check unsetting of parameters'''
+        old_values = self.get_parameters(['AHRS_EKF_TYPE', 'LOG_BITMASK'])
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 37,
+            'LOG_BITMASK': 2,
+        })
+        self.unset_parameter('AHRS_EKF_TYPE')
+        self.assert_parameter_values({
+            'AHRS_EKF_TYPE': old_values['AHRS_EKF_TYPE'],
+            'LOG_BITMASK': 2,
+        })
+        self.unset_parameter('LOG_BITMASK')
+        self.assert_parameter_values({
+            'AHRS_EKF_TYPE': old_values['AHRS_EKF_TYPE'],
+            'LOG_BITMASK': old_values['LOG_BITMASK'],
+        })
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5425,6 +5453,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.ParamUnset,
         ])
         return ret
 
