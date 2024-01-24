@@ -23,6 +23,9 @@
 #define STM32_ENFORCE_H7_REV_XY
 #endif
 
+// MPU region for ethernet
+#define STM32_NOCACHE_MPU_REGION_ETH            MPU_REGION_2
+
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
 #endif
@@ -124,6 +127,8 @@
 #define STM32_PLL1_DIVM_VALUE               4
 #define STM32_PLL2_DIVM_VALUE               8
 #define STM32_PLL3_DIVM_VALUE               8
+#define STM32_PLLSRC                        STM32_PLLSRC_HSE_CK
+#define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 
 #elif STM32_HSECLK == 16000000U
 // this gives 520MHz system clock
@@ -132,6 +137,8 @@
 #define STM32_PLL1_DIVM_VALUE               8
 #define STM32_PLL2_DIVM_VALUE               16
 #define STM32_PLL3_DIVM_VALUE               16
+#define STM32_PLLSRC                        STM32_PLLSRC_HSE_CK
+#define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 
 #else
 #error "Unsupported HSE clock"
@@ -190,7 +197,6 @@
  * PLLs static settings.
  * Reading STM32 Reference Manual is required.
  */
-#define STM32_PLLSRC                        STM32_PLLSRC_HSE_CK
 #define STM32_PLLCFGR_MASK                  ~0
 
 #define STM32_PLL1_ENABLED                  TRUE
@@ -245,7 +251,6 @@
 #define STM32_STOPKERWUCK                   0
 #define STM32_STOPWUCK                      0
 #define STM32_RTCPRE_VALUE                  2
-#define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 #define STM32_OCTOSPISEL                    STM32_OCTOSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_OCTOSPISEL_HCLK

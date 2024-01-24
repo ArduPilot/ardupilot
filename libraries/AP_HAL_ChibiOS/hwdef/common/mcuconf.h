@@ -53,7 +53,7 @@
 #include "stm32f3_mcuconf.h"
 #elif defined(STM32F4) || defined(STM32F7)
 #include "stm32f47_mcuconf.h"
-#elif defined(STM32H730xx)
+#elif defined(STM32H730xx) || defined(STM32H723xx)
 #include "stm32h7_type2_mcuconf.h"
 #elif defined(STM32H7)
 #include "stm32h7_mcuconf.h"
