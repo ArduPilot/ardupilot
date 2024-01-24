@@ -400,7 +400,7 @@ public:
     ///
     /// @return                True if the variable was saved successfully.
     ///
-    void save_sync(bool force_save, bool send_to_gcs);
+    void save_sync(bool force_save, bool send_to_gcs, bool unset=false);
 
     /// flush all pending parameter saves
     /// used on reboot
@@ -447,6 +447,8 @@ public:
       set a parameter to a float
     */
     void set_float(float value, enum ap_var_type var_type);
+
+    void unset();
 
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
@@ -634,6 +636,8 @@ private:
     static const uint8_t        _sentinal_type  = 0x1F;
     static const uint8_t        _sentinal_group = 0xFF;
 
+    static const uint16_t       _unset_key   = 0x1FE;
+
     static uint16_t             _frame_type_flags;
 
     /*
@@ -759,6 +763,9 @@ private:
 
     // return true if the parameter is configured in EEPROM/FRAM
     bool configured_in_storage(void) const;
+    // return true if parameter is configured in storage, and store
+    // location in supplied offset reference
+    bool find_offset_in_storage(uint16_t &offset) const;
 
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
@@ -812,9 +819,11 @@ private:
     struct PACKED param_save {
         AP_Param *param;
         bool force_save;
+        bool unset;
     };
     static ObjectBuffer_TS<struct param_save> save_queue;
     static bool registered_save_handler;
+    void enqueue_param_save(const struct param_save &p, bool force_save);
 
     // background function for saving parameters
     void save_io_handler(void);

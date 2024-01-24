@@ -323,6 +323,60 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 #endif
 }
 
+void GCS_MAVLINK::handle_param_unset(const mavlink_message_t &msg)
+{
+    mavlink_param_unset_t packet;
+    mavlink_msg_param_unset_decode(&msg, &packet);
+    enum ap_var_type var_type;
+
+    // set parameter
+    char key[AP_MAX_NAME_SIZE+1];
+    strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
+    key[AP_MAX_NAME_SIZE] = 0;
+
+    // find existing param so we can get the old value
+    uint16_t parameter_flags = 0;
+    AP_Param *vp = AP_Param::find(key, &var_type, &parameter_flags);
+    if (vp == nullptr) {
+        return;
+    }
+
+    float old_value = vp->cast_to_float(var_type);
+
+    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+        // the user can set BRD_OPTIONS to enable set of internal
+        // parameters, for developer testing or unusual use cases
+        if (AP_BoardConfig::allow_set_internal_parameters()) {
+            parameter_flags &= ~AP_PARAM_FLAG_INTERNAL_USE_ONLY;
+        }
+    }
+
+    if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+        // send the readonly value
+        send_parameter_value(key, var_type, old_value);
+        return;
+    }
+
+    // unset the value
+    vp->unset();
+
+    // tell everyone the good news:
+    const float new_value = vp->cast_to_float(var_type);
+    send_parameter_value(key, var_type, new_value);
+
+    if (parameter_flags & AP_PARAM_FLAG_ENABLE) {
+        AP_Param::invalidate_count();
+    }
+
+#if HAL_LOGGING_ENABLED
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger != nullptr) {
+        logger->Write_Parameter(key, vp->cast_to_float(var_type));
+    }
+#endif
+}
+
 void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
 {
     if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
@@ -464,6 +518,9 @@ void GCS_MAVLINK::handle_common_param_message(const mavlink_message_t &msg)
         break;
     case MAVLINK_MSG_ID_PARAM_SET:
         handle_param_set(msg);
+        break;
+    case MAVLINK_MSG_ID_PARAM_UNSET:
+        handle_param_unset(msg);
         break;
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_param_request_read(msg);
