@@ -286,7 +286,7 @@ __bin_names = {
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
-    "SITLPeriphUniversal": "sitl_periph_universal.AP_Periph",
+    "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
     "CAN": "arducopter",
 }
 
@@ -298,16 +298,15 @@ def binary_path(step, debug=False):
     except Exception:
         return None
 
-    if vehicle in __bin_names:
-        if len(__bin_names[vehicle].split(".")) == 2:
-            config_name = __bin_names[vehicle].split(".")[0]
-            binary_name = __bin_names[vehicle].split(".")[1]
-        else:
-            config_name = 'sitl'
-            binary_name = __bin_names[vehicle]
-    else:
+    if vehicle not in __bin_names:
         # cope with builds that don't have a specific binary
         return None
+
+    try:
+        (config_name, binary_name) = __bin_names[vehicle]
+    except ValueError:
+        config_name = "sitl"
+        binary_name = __bin_names[vehicle]
 
     binary = util.reltopdir(os.path.join('build',
                                          config_name,
@@ -420,6 +419,7 @@ def run_step(step):
     build_opts = build_opts
 
     vehicle_binary = None
+    board = "sitl"
     if step == 'build.Plane':
         vehicle_binary = 'bin/arduplane'
 
@@ -442,7 +442,8 @@ def run_step(step):
         vehicle_binary = 'bin/ardusub'
 
     if step == 'build.SITLPeriphUniversal':
-        vehicle_binary = 'sitl_periph_universal.bin/AP_Periph'
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_universal'
 
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
@@ -453,14 +454,11 @@ def run_step(step):
             os.unlink(binary)
         except (FileNotFoundError, ValueError):
             pass
-        if len(vehicle_binary.split(".")) == 1:
-            return util.build_SITL(vehicle_binary, **build_opts)
-        else:
-            return util.build_SITL(
-                vehicle_binary.split(".")[1],
-                board=vehicle_binary.split(".")[0],
-                **build_opts
-            )
+        return util.build_SITL(
+            vehicle_binary,
+            board=board,
+            **build_opts
+        )
 
     binary = binary_path(step, debug=opts.debug)
 
