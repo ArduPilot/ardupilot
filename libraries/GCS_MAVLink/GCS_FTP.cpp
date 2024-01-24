@@ -105,7 +105,7 @@ bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
         send_banner();
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
-    if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
+    if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL) || get_last_txbuf() < 33) {
         return false;
     }
     uint8_t payload[251] = {};
