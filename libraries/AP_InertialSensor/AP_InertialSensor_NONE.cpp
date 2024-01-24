@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+// #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 
 static float sim_rand_float(void)
@@ -317,4 +317,4 @@ void AP_InertialSensor_NONE::start()
 
 }
 
-#endif // HAL_BOARD_NONE
+// #endif // HAL_BOARD_NONE
