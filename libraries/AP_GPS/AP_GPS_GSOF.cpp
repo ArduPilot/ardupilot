@@ -74,7 +74,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     if(gps._raw_data != 0){
         requestLogging(static_cast<HW_Port>(com_port));
-        gsofmsg_time = now + 110;
+        gsofmsg_time = AP_HAL::millis() + 110;
     }
     
 }
