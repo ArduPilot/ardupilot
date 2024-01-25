@@ -64,14 +64,18 @@ void AP_ODIDScanner::update_recv() {
 }
 
 void AP_ODIDScanner::handle_msg(mavlink_message_t msg) {
-    static int i = 0;
+    uint32_t now_ms = AP_HAL::millis();
     switch(msg.msgid) {
         case MAVLINK_MSG_ID_UAV_FOUND: 
         {
-            // mavlink_msg_uav_found_t uav;
-            // mavlink_msg_uav_found_decode(&msg, &uav);
-            i+=1;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ODIDScanner: uav's here %d", i);
+            mavlink_uav_found_t uav;
+            mavlink_msg_uav_found_decode(&msg, &uav);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ODIDScanner: uav's here %f", uav.lat);
+            break;
+        }
+        case MAVLINK_MSG_ID_ODID_HEARTBEAT:
+        {
+            last_dev_hb_ms = now_ms;
             break;
         }
     }
@@ -84,7 +88,6 @@ void AP_ODIDScanner::update() {
         _port->printf("Scanner: Where is this printing?");
     }
     if (now_ms - last_hb_send_ms > 1000) {
-        _port->printf("Scanner: HB Where is this printing?");
 
         last_hb_send_ms = now_ms;
     mavlink_msg_heartbeat_send(
