@@ -34,13 +34,13 @@ mcu = {
     ],
 
     'EXPECTED_CLOCK' : 400000000,
-
+    
 	'EXPECTED_CLOCKS' : [
-		('STM32_SYS_CK',	400000000),
-		('STM32_QSPICLK', 	200000000),
-		('STM32_SDMMC1CLK',  80000000),
+        ('STM32_SYS_CK',	400000000),
+		('STM32_OSPICLK', 	200000000),
+        ('STM32_SDMMC1CLK',  66666666),
 		('STM32_SPI45CLK',  100000000),
-		('STM32_FDCANCLK',   80000000),
+        ('STM32_FDCANCLK',   80000000),
 	],
 
     # this MCU has M7 instructions and hardware double precision
