@@ -662,13 +662,15 @@ void AC_Autorotation::get_entry_speed(void)
 }
 
 
-void AC_Autorotation::time_to_ground(void)
+float AC_Autorotation::get_time_to_ground(void)
 {
+    // Take the default position that time to ground is the touch down time + 1 s. If we are descending
+    // then we can calc an appropriate value.
+    float time_to_ground = _t_tch + 1.0f;
     if (_inav.get_velocity_z_up_cms() < 0.0f ) {
-        _time_to_ground = (-_radar_alt / _inav.get_velocity_z_up_cms());
-    } else {
-        _time_to_ground = _t_tch + 1.0f;
+        time_to_ground = (-_radar_alt / _inav.get_velocity_z_up_cms());
     }
+    return time_to_ground;
 }
 
 

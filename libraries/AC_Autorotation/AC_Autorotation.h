@@ -84,9 +84,7 @@ public:
 
     float get_ground_distance(void) const { return _radar_alt; }
 
-    float get_time_to_ground(void) const { return _time_to_ground; }
-
-    void time_to_ground(void);
+    float get_time_to_ground(void);
 
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
 
@@ -154,7 +152,6 @@ private:
     float _radar_alt;                // Altitude above ground (RF)
     float _flare_entry_speed;        // Traslational velocity at beginning of flare maneuver
     float _desired_speed;            // Desired traslational velocity during flare
-    float _time_to_ground;           // Time to ground
     float _desired_sink_rate;        // Desired vertical velocity during touchdown
     float _ground_clearance;         // Sensor offset distance
     float _est_alt;                  // Estimated altitude above ground
