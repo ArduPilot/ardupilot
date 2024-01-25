@@ -38,7 +38,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     }
 
     // init autorotation controllers object
-    g2.arot.init(motors);
+    g2.arot.init(motors, copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
 
     // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
@@ -151,14 +151,11 @@ void ModeAutorotate::run()
 
             gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
 
-            // Set following trim low pass cut off frequency
-            g2.arot.set_col_cutoff_freq(g2.arot.get_col_entry_freq());
+            // Set necessary variables for the entry phase in the autorotation obj
+            g2.arot.init_entry();
 
             // Target head speed is set to rpm at initiation to prevent unwanted changes in attitude
             _target_head_speed = _initial_rpm/g2.arot.get_hs_set_point();
-
-            // Set desired forward speed target
-            g2.arot.set_desired_fwd_speed();
 
             // Prevent running the initial entry functions again
             _flags.entry_initial = false;
@@ -183,9 +180,7 @@ void ModeAutorotate::run()
             _flags.bad_rpm = g2.arot.update_hs_glide_controller(); //run head speed/ collective controller
         } else {
             _pitch_target = 0.0f;
-            g2.arot.update_hover_autorotation_controller(); //run head speed/ collective controller
-            g2.arot.set_entry_sink_rate(curr_vel_z);
-            g2.arot.set_entry_alt(g2.arot.get_ground_distance());
+            g2.arot.update_hover_autorotation_controller();
         }
 
         break;
@@ -197,15 +192,11 @@ void ModeAutorotate::run()
 
             gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
 
-            // Set following trim low pass cut off frequency
-            g2.arot.set_col_cutoff_freq(g2.arot.get_col_glide_freq());
+            // Ensure target hs is set to glide in case hs hasn't reached target for glide
+            _target_head_speed = HEAD_SPEED_TARGET_RATIO;
 
-            // Set desired forward speed target
-            g2.arot.set_desired_fwd_speed();
-
-            // Set target head speed in head speed controller
-            _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs hasn't reached target for glide
-            g2.arot.set_target_head_speed(_target_head_speed);
+            // Set necessary variables for the glide phase in the autorotation obj
+            g2.arot.init_glide(_target_head_speed);
 
             // Prevent running the initial glide functions again
             _flags.ss_glide_initial = false;
@@ -236,13 +227,11 @@ void ModeAutorotate::run()
         if (_flags.flare_initial == true) {
             gcs().send_text(MAV_SEVERITY_INFO, "Flare_Phase");
 
-            // Set following trim low pass cut off frequency
-            g2.arot.set_col_cutoff_freq(g2.arot.get_col_glide_freq());
-
-            // Set target head speed in head speed controller
+            // Ensure target head speed is set in head speed controller
             _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs has not reached target for glide
-            g2.arot.set_target_head_speed(_target_head_speed);
-            g2.arot.get_entry_speed();
+
+            g2.arot.init_flare(_target_head_speed);
+
             // Prevent running the initial flare functions again
             _flags.flare_initial = false;
         }
@@ -268,10 +257,7 @@ void ModeAutorotate::run()
             // Prevent running the initial touchdown functions again
             _flags.touch_down_initial = false;
             _touchdown_time_ms = millis();
-            g2.arot.set_col_cutoff_freq(g2.arot.get_col_cushion_freq());
-            g2.arot.set_entry_sink_rate(curr_vel_z);
-            g2.arot.set_entry_alt(g2.arot.get_ground_distance());
-            g2.arot.set_ground_clearance(copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
+            g2.arot.init_touchdown();
         }
         g2.arot.touchdown_controller();
         _pitch_target = g2.arot.get_pitch();
