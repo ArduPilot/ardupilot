@@ -461,11 +461,6 @@ def setup_canmgr_build(cfg):
             'CANARD_ALLOCATE_SEM=1'
             ]
 
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
-
     cfg.get_board().with_can = True
 
 def setup_canperiph_build(cfg):
@@ -474,11 +469,6 @@ def setup_canperiph_build(cfg):
     env.DEFINES += [
         'CANARD_ENABLE_DEADLINE=1',
         ]
-
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
 
     cfg.get_board().with_can = True
     
