@@ -49,7 +49,7 @@ void CompassLearn::update(void)
     const AP_AHRS &ahrs = AP::ahrs();
     if (!have_earth_field) {
         Location loc;
-        if (!ahrs.get_position(loc)) {
+        if (!ahrs.get_position(loc) && !ahrs.get_origin(loc)) {
             // need to wait till we have a global position
             return;
         }
