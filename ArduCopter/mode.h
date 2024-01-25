@@ -1937,7 +1937,7 @@ private:
     uint32_t _touchdown_time_ms;
 	bool hover_autorotation;
 	bool initial_energy_check;
-	float last_tti;
+    float time_to_impact;
 
     enum class Autorotation_Phase {
         ENTRY,
