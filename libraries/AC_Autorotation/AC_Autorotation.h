@@ -19,7 +19,19 @@ public:
     AC_Autorotation(AP_InertialNav& inav, AP_AHRS& ahrs);
 
      // object initialisation
-    void init(AP_MotorsHeli* motors);
+    void init(AP_MotorsHeli* motors, float gnd_clear);
+
+    // Helper to set all necessary variables needed for the entry phase
+    void init_entry(void);
+
+    // Helper to set all necessary variables needed for the glide phase
+    void init_glide(float hs_targ);
+
+    // Helper to set all necessary variables needed for the flare phase
+    void init_flare(float hs_targ);
+
+    // Helper to set all necessary variables needed for the touchdown phase
+    void init_touchdown(void);
 
     void initial_flare_estimate(void);
 
@@ -40,12 +52,6 @@ public:
 
     int16_t get_hs_set_point(void) { return _param_head_speed_set_point; }
 
-    float get_col_entry_freq(void) { return _param_col_entry_cutoff_freq; }
-
-    float get_col_glide_freq(void) { return _param_col_glide_cutoff_freq; }
-
-    float get_col_cushion_freq(void) { return _param_col_cushion_cutoff_freq; }
-
     float get_bail_time(void) { return _param_bail_time; }
 
     float get_last_collective() const { return _collective_out; }
@@ -56,12 +62,6 @@ public:
 
     // Update forward speed controller
     void update_forward_speed_controller(void);
-
-    // Overloaded: Set desired speed for forward controller to parameter value
-    void set_desired_fwd_speed(void) { _vel_target = _param_target_speed; }
-
-    // Overloaded: Set desired speed to argument value
-    void set_desired_fwd_speed(float speed) { _vel_target = speed; }
 
     // Get pitch target
     int32_t get_pitch(void) const { return _pitch_target; }
@@ -89,8 +89,6 @@ public:
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
 
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
-
-    void set_ground_clearance(float ground_clearance) { _ground_clearance = ground_clearance; }
 
     void init_est_rangefinder_alt(void);
 
@@ -186,7 +184,7 @@ private:
     AC_P _p_coll_tch;
     AP_Float _param_col_entry_cutoff_freq;
     AP_Float _param_col_glide_cutoff_freq;
-    AP_Float _param_col_cushion_cutoff_freq;
+    AP_Float _param_col_touchdown_cutoff_freq;
     AP_Int16 _param_accel_max;
     AP_Float _param_bail_time;
     AP_Int8  _param_rpm_instance;

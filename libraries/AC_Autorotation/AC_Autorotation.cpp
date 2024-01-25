@@ -138,7 +138,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.2 0.8
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_cushion_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
+    AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_touchdown_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
 
     // @Param: ROT_SOL
     // @DisplayName: rotor solidity
@@ -182,7 +182,7 @@ AC_Autorotation::AC_Autorotation(AP_InertialNav& inav, AP_AHRS& ahrs) :
 }
 
 
-void AC_Autorotation::init(AP_MotorsHeli* motors) {
+void AC_Autorotation::init(AP_MotorsHeli* motors, float gnd_clear) {
 
     _motors_heli = motors;
     if (_motors_heli == nullptr) {
@@ -227,8 +227,54 @@ void AC_Autorotation::init(AP_MotorsHeli* motors) {
     _cmd_vel = calc_speed_forward(); //(cm/s)
     _accel_out_last = _cmd_vel * _param_fwd_k_ff;
 
+    // Store the ground clearance on the lidar sensor for use in touch down calculations
+    _ground_clearance = gnd_clear;
+
     // initialize radar altitude estimator
     init_est_rangefinder_alt();
+}
+
+
+void AC_Autorotation::init_entry(void)
+{
+    // Set following trim low pass cut off frequency
+    _col_cutoff_freq = _param_col_entry_cutoff_freq.get();
+
+    // Set desired forward speed target
+    _vel_target = _param_target_speed.get();
+}
+
+void AC_Autorotation::init_glide(float hs_targ)
+{
+    // Set following trim low pass cut off frequency
+    _col_cutoff_freq = _param_col_glide_cutoff_freq.get();
+
+    // Ensure desired forward speed target is set to param value
+    _vel_target = _param_target_speed.get();
+
+    // Update head speed target
+    _target_head_speed = hs_targ;
+}
+
+void AC_Autorotation::init_flare(float hs_targ)
+{
+    // Ensure following trim low pass cut off frequency
+    _col_cutoff_freq = _param_col_glide_cutoff_freq.get();
+
+    _flare_entry_speed = calc_speed_forward();
+
+    // Update head speed target
+    _target_head_speed = hs_targ;
+}
+
+void AC_Autorotation::init_touchdown(void)
+{
+    // Set following trim low pass cut off frequency
+    _col_cutoff_freq = _param_col_touchdown_cutoff_freq.get();
+
+    // store the descent speed and height at the start of the touch down
+    _entry_sink_rate = _inav.get_velocity_z_up_cms();
+    _entry_alt = _radar_alt;
 }
 
 
@@ -653,12 +699,6 @@ void AC_Autorotation::touchdown_controller(void)
     _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
     _pitch_target *= 0.95f;
-}
-
-
-void AC_Autorotation::get_entry_speed(void)
-{
-    _flare_entry_speed = calc_speed_forward();
 }
 
 
