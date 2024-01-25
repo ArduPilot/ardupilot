@@ -527,9 +527,8 @@ def setup_optimization(env):
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
-    #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
-    cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
     env = cfg.env
+    cfg.find_program('objcopy' if env.TOOLCHAIN == 'native' else 'arm-none-eabi-objcopy', var='OBJCOPY')
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
