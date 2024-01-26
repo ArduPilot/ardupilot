@@ -461,11 +461,6 @@ def setup_canmgr_build(cfg):
             'CANARD_ALLOCATE_SEM=1'
             ]
 
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
-
     cfg.get_board().with_can = True
 
 def setup_canperiph_build(cfg):
@@ -474,11 +469,6 @@ def setup_canperiph_build(cfg):
     env.DEFINES += [
         'CANARD_ENABLE_DEADLINE=1',
         ]
-
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
 
     cfg.get_board().with_can = True
     
@@ -731,7 +721,7 @@ def build(bld):
     # errors if we accidentially try to use one of those functions either
     # directly or via another libc call
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
-                'fiprintf','printf',
+                'printf',
                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',

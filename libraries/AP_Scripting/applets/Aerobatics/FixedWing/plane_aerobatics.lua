@@ -276,7 +276,7 @@ end
 
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
-ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
+AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 SYSID_THISMAV = Parameter("SYSID_THISMAV")
 
@@ -385,7 +385,7 @@ local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
 
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local AIRSPEED_CRUISE = Parameter("AIRSPEED_CRUISE")
 
 local last_id = 0
 local current_task = nil
@@ -2010,7 +2010,7 @@ end
    velocity at the start of the maneuver
 --]]
 function target_groundspeed()
-   return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
+   return math.max(ahrs:get_EAS2TAS()*AIRSPEED_CRUISE:get(), ahrs:get_velocity_NED():length())
 end
 
 --[[
@@ -2465,7 +2465,7 @@ function do_path()
    end
 
    -- airspeed, assume we don't go below min
-   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs_airspeed)
+   local airspeed_constrained = math.max(AIRSPEED_MIN:get(), ahrs_airspeed)
 
    --[[
       calculate positions and angles at previous, current and next time steps

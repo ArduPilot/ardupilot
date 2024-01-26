@@ -12,7 +12,7 @@
 #define AP_NETWORKING_SOCKETS_ENABLED 1
 #endif
 #include "Socket.hpp"
-#else
+#elif !AP_SIM_ENABLED
 #error "attempt to use Socket_native.h without native sockets"
 #endif
 

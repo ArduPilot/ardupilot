@@ -61,8 +61,6 @@ PA1 UART4_RX UART4 NODMA
 # use flash storage
 STORAGE_FLASH_PAGE 22
 
-env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
-
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True
 

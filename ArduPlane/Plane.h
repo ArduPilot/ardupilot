@@ -193,11 +193,13 @@ private:
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
-    int32_t pitch_limit_min_cd;
+    float pitch_limit_min;
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
@@ -1095,6 +1097,7 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
+    float apply_throttle_limits(float throttle_in);
     void set_throttle(void);
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);

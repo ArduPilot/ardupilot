@@ -631,6 +631,10 @@ bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op)
 #else
     uint32_t flags = MEM_REGION_FLAG_DMA_OK;
 #if defined(STM32H7)
+    if (!filesystem_op) {
+        // use bouncebuffer for all non FS ops on H7
+        return false;
+    }
     if (((uint32_t)addr) & 0x1F) {
         return false;
     }

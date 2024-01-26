@@ -2,6 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include "defines.h"
 
 #ifndef AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 #define AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED 1
@@ -57,6 +58,10 @@ protected:
 
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
 
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
+
 private:
 
     // sanity check velocity or acceleration vector components are numbers
@@ -66,7 +71,7 @@ private:
 
     MISSION_STATE mission_state(const class AP_Mission &mission) const override;
 
-    void handleMessage(const mavlink_message_t &msg) override;
+    void handle_message(const mavlink_message_t &msg) override;
     void handle_command_ack(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;

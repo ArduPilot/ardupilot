@@ -17,6 +17,7 @@ void Sub::terrain_update()
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // log terrain data - should be called at 1hz
 void Sub::terrain_logging()
 {
@@ -26,4 +27,5 @@ void Sub::terrain_logging()
     }
 #endif
 }
+#endif  // HAL_LOGGING_ENABLED
 

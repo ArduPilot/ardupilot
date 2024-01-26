@@ -267,6 +267,12 @@ class SizeCompareBranches(object):
                 print(output)
             self.progress("Process failed (%s)" %
                           str(returncode))
+            try:
+                path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
+                path.write_text(output)
+                self.progress("Wrote process failure file (%s)" % path)
+            except Exception:
+                self.progress("Writing process failure file failed")
             raise subprocess.CalledProcessError(
                 returncode, cmd_list)
         return output
@@ -416,7 +422,7 @@ class SizeCompareBranches(object):
                 break
             jobs = None
             if self.jobs is not None:
-                jobs = int(self.jobs / self.num_threads_remaining)
+                jobs = int(self.jobs / self.n_threads)
                 if jobs <= 0:
                     jobs = 1
             try:
@@ -436,27 +442,29 @@ class SizeCompareBranches(object):
             self.failure_exceptions.append(result)
 
     def run_build_tasks_in_parallel(self, tasks):
-        n_threads = self.parallel_copies
-        if len(tasks) < n_threads:
-            n_threads = len(tasks)
-        self.num_threads_remaining = n_threads
+        self.n_threads = self.parallel_copies
 
         # shared list for the threads:
         self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
         threads = []
         self.thread_exit_result_queue = Queue.Queue()
-        for i in range(0, n_threads):
-            t = threading.Thread(
-                target=self.parallel_thread_main,
-                name=f'task-builder-{i}',
-                args=[i],
-            )
-            t.start()
-            threads.append(t)
         tstart = time.time()
         self.failure_exceptions = []
 
-        while len(threads):
+        thread_number = 0
+        while len(self.parallel_tasks) or len(threads):
+            if len(tasks) < self.n_threads:
+                self.n_threads = len(tasks)
+            while len(threads) < self.n_threads:
+                self.progress(f"Starting thread {thread_number}")
+                t = threading.Thread(
+                    target=self.parallel_thread_main,
+                    name=f'task-builder-{thread_number}',
+                    args=[thread_number],
+                )
+                t.start()
+                threads.append(t)
+                thread_number += 1
 
             self.check_result_queue()
 
@@ -466,10 +474,9 @@ class SizeCompareBranches(object):
                 if thread.is_alive():
                     new_threads.append(thread)
             threads = new_threads
-            self.num_threads_remaining = len(threads)
             self.progress(
                 f"remaining-tasks={len(self.parallel_tasks)} " +
-                f"remaining-threads={len(threads)} failed-threads={len(self.failure_exceptions)} elapsed={int(time.time() - tstart)}s")  # noqa
+                f"failed-threads={len(self.failure_exceptions)} elapsed={int(time.time() - tstart)}s")  # noqa
 
             # write out a progress CSV:
             task_results = []

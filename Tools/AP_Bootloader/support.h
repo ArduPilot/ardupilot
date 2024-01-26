@@ -45,7 +45,11 @@ void led_on(unsigned led);
 void led_off(unsigned led);
 void led_toggle(unsigned led);
 
+void thread_sleep_ms(uint32_t ms);
+
 void custom_startup(void);
+
+void check_ecc_errors(void);
 
 // printf to debug uart (or USB)
 extern "C" {

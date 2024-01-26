@@ -184,9 +184,9 @@ void Copter::heli_update_rotor_speed_targets()
 
     // when rotor_runup_complete changes to true, log event
     if (!rotor_runup_complete_last && motors->rotor_runup_complete()) {
-        AP::logger().Write_Event(LogEvent::ROTOR_RUNUP_COMPLETE);
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
     } else if (rotor_runup_complete_last && !motors->rotor_runup_complete() && !heli_flags.in_autorotation) {
-        AP::logger().Write_Event(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
     }
     rotor_runup_complete_last = motors->rotor_runup_complete();
 }

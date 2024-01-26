@@ -139,11 +139,13 @@ void Copter::set_land_complete(bool b)
 
     land_detector_count = 0;
 
+#if HAL_LOGGING_ENABLED
     if(b){
         AP::logger().Write_Event(LogEvent::LAND_COMPLETE);
     } else {
         AP::logger().Write_Event(LogEvent::NOT_LANDED);
     }
+#endif
     ap.land_complete = b;
 
 #if STATS_ENABLED == ENABLED
@@ -170,7 +172,7 @@ void Copter::set_land_complete_maybe(bool b)
         return;
 
     if (b) {
-        AP::logger().Write_Event(LogEvent::LAND_COMPLETE_MAYBE);
+        LOGGER_WRITE_EVENT(LogEvent::LAND_COMPLETE_MAYBE);
     }
     ap.land_complete_maybe = b;
 }

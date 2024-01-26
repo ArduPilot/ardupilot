@@ -303,9 +303,9 @@ bool AP_Arming::barometer_checks(bool report)
     return true;
 }
 
+#if AP_AIRSPEED_ENABLED
 bool AP_Arming::airspeed_checks(bool report)
 {
-#if AP_AIRSPEED_ENABLED
     if (check_enabled(ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
         if (airspeed == nullptr) {
@@ -319,10 +319,10 @@ bool AP_Arming::airspeed_checks(bool report)
             }
         }
     }
-#endif
 
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 #if HAL_LOGGING_ENABLED
 bool AP_Arming::logging_checks(bool report)
@@ -579,6 +579,7 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
 
+#if AP_AHRS_ENABLED
         // if ahrs is using compass and we have location, check mag field versus expected earth magnetic model
         Location ahrs_loc;
         AP_AHRS &ahrs = AP::ahrs();
@@ -597,11 +598,13 @@ bool AP_Arming::compass_checks(bool report)
                 return false;
             }           
         }
+#endif  // AP_AHRS_ENABLED
     }
 
     return true;
 }
 
+#if AP_GPS_ENABLED
 bool AP_Arming::gps_checks(bool report)
 {
     const AP_GPS &gps = AP::gps();
@@ -692,7 +695,9 @@ bool AP_Arming::gps_checks(bool report)
 
     return true;
 }
+#endif  // AP_GPS_ENABLED
 
+#if AP_BATTERY_ENABLED
 bool AP_Arming::battery_checks(bool report)
 {
     if (check_enabled(ARMING_CHECK_BATTERY)) {
@@ -705,6 +710,7 @@ bool AP_Arming::battery_checks(bool report)
      }
     return true;
 }
+#endif  // AP_BATTERY_ENABLED
 
 bool AP_Arming::hardware_safety_check(bool report) 
 {
@@ -840,6 +846,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
+#if AP_MISSION_ENABLED
 bool AP_Arming::mission_checks(bool report)
 {
     AP_Mission *mission = AP::mission();
@@ -914,6 +921,7 @@ bool AP_Arming::mission_checks(bool report)
 
     return true;
 }
+#endif  // AP_MISSION_ENABLED
 
 bool AP_Arming::rangefinder_checks(bool report)
 {
@@ -1178,10 +1186,10 @@ bool AP_Arming::terrain_checks(bool report) const
 }
 
 
+#if HAL_PROXIMITY_ENABLED
 // check nothing is too close to vehicle
 bool AP_Arming::proximity_checks(bool report) const
 {
-#if HAL_PROXIMITY_ENABLED
     const AP_Proximity *proximity = AP::proximity();
     // return true immediately if no sensor present
     if (proximity == nullptr) {
@@ -1193,14 +1201,12 @@ bool AP_Arming::proximity_checks(bool report) const
         return false;
     }
     return true;
-#endif
-
-    return true;
 }
+#endif  // HAL_PROXIMITY_ENABLED
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
 bool AP_Arming::can_checks(bool report)
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
         char fail_msg[50] = {};
         (void)fail_msg; // might be left unused
@@ -1257,14 +1263,14 @@ bool AP_Arming::can_checks(bool report)
             }
         }
     }
-#endif
     return true;
 }
+#endif  // HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
 
 
+#if AP_FENCE_ENABLED
 bool AP_Arming::fence_checks(bool display_failure)
 {
-#if AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return true;
@@ -1283,15 +1289,13 @@ bool AP_Arming::fence_checks(bool display_failure)
     }
 
     return false;
-#else
-    return true;
-#endif
 }
+#endif  // AP_FENCE_ENABLED
 
+#if HAL_RUNCAM_ENABLED
 bool AP_Arming::camera_checks(bool display_failure)
 {
     if (check_enabled(ARMING_CHECK_CAMERA)) {
-#if HAL_RUNCAM_ENABLED
         AP_RunCam *runcam = AP::runcam();
         if (runcam == nullptr) {
             return true;
@@ -1303,14 +1307,14 @@ bool AP_Arming::camera_checks(bool display_failure)
             check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
             return false;
         }
-#endif
     }
     return true;
 }
+#endif  // HAL_RUNCAM_ENABLED
 
+#if OSD_ENABLED
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_ENABLED 
     if (check_enabled(ARMING_CHECK_OSD)) {
         // if no OSD then pass
         const AP_OSD *osd = AP::osd();
@@ -1324,13 +1328,13 @@ bool AP_Arming::osd_checks(bool display_failure) const
             return false;
         }
    }
-#endif
     return true;
 }
+#endif  // OSD_ENABLED
 
+#if HAL_MOUNT_ENABLED
 bool AP_Arming::mount_checks(bool display_failure) const
 {
-#if HAL_MOUNT_ENABLED
     if (check_enabled(ARMING_CHECK_CAMERA)) {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
@@ -1342,13 +1346,13 @@ bool AP_Arming::mount_checks(bool display_failure) const
             return false;
         }
     }
-#endif
     return true;
 }
+#endif  // HAL_MOUNT_ENABLED
 
+#if AP_FETTEC_ONEWIRE_ENABLED
 bool AP_Arming::fettec_checks(bool display_failure) const
 {
-#if AP_FETTEC_ONEWIRE_ENABLED
     const AP_FETtecOneWire *f = AP_FETtecOneWire::get_singleton();
     if (f == nullptr) {
         return true;
@@ -1360,9 +1364,9 @@ bool AP_Arming::fettec_checks(bool display_failure) const
         check_failed(ARMING_CHECK_ALL, display_failure, "FETtec: %s", fail_msg);
         return false;
     }
-#endif
     return true;
 }
+#endif  // AP_FETTEC_ONEWIRE_ENABLED
 
 #if AP_ARMING_AUX_AUTH_ENABLED
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
@@ -1483,9 +1487,9 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
 }
 #endif  // AP_ARMING_AUX_AUTH_ENABLED
 
+#if HAL_GENERATOR_ENABLED
 bool AP_Arming::generator_checks(bool display_failure) const
 {
-#if HAL_GENERATOR_ENABLED
     const AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return true;
@@ -1495,14 +1499,14 @@ bool AP_Arming::generator_checks(bool display_failure) const
         check_failed(display_failure, "Generator: %s", failure_msg);
         return false;
     }
-#endif
     return true;
 }
+#endif  // HAL_GENERATOR_ENABLED
 
+#if AP_OPENDRONEID_ENABLED
 // OpenDroneID Checks
 bool AP_Arming::opendroneid_checks(bool display_failure)
 {
-#if AP_OPENDRONEID_ENABLED
     auto &opendroneid = AP::opendroneid();
 
     char failure_msg[50] {};
@@ -1510,9 +1514,9 @@ bool AP_Arming::opendroneid_checks(bool display_failure)
         check_failed(display_failure, "OpenDroneID: %s", failure_msg);
         return false;
     }
-#endif
     return true;
 }
+#endif  // AP_OPENDRONEID_ENABLED
 
 //Check for multiple RC in serial protocols
 bool AP_Arming::serial_protocol_checks(bool display_failure)
@@ -1560,41 +1564,73 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if HAL_HAVE_IMU_HEATER
         &  heater_min_temperature_checks(report)
 #endif
+#if AP_BARO_ENABLED
         &  barometer_checks(report)
+#endif
 #if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)
 #endif
+#if AP_COMPASS_ENABLED
         &  compass_checks(report)
+#endif
+#if AP_GPS_ENABLED
         &  gps_checks(report)
+#endif
+#if AP_BATTERY_ENABLED
         &  battery_checks(report)
+#endif
 #if HAL_LOGGING_ENABLED
         &  logging_checks(report)
 #endif
 #if AP_RC_CHANNEL_ENABLED
         &  manual_transmitter_checks(report)
 #endif
+#if AP_MISSION_ENABLED
         &  mission_checks(report)
+#endif
+#if AP_RANGEFINDER_ENABLED
         &  rangefinder_checks(report)
+#endif
         &  servo_checks(report)
         &  board_voltage_checks(report)
         &  system_checks(report)
         &  terrain_checks(report)
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
         &  can_checks(report)
+#endif
+#if HAL_GENERATOR_ENABLED
         &  generator_checks(report)
+#endif
+#if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
+#endif
+#if HAL_RUNCAM_ENABLED
         &  camera_checks(report)
+#endif
+#if OSD_ENABLED
         &  osd_checks(report)
+#endif
+#if HAL_MOUNT_ENABLED
         &  mount_checks(report)
+#endif
+#if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
+#endif
+#if HAL_VISUALODOM_ENABLED
         &  visodom_checks(report)
+#endif
 #if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
 #endif
 #if AP_RC_CHANNEL_ENABLED
         &  disarm_switch_checks(report)
 #endif
+#if AP_FENCE_ENABLED
         &  fence_checks(report)
+#endif
+#if AP_OPENDRONEID_ENABLED
         &  opendroneid_checks(report)
+#endif
         &  serial_protocol_checks(report)
         &  estop_checks(report);
 
@@ -1630,6 +1666,7 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger->logging_present()) {
         // If we're configured to log, prep it
@@ -1640,6 +1677,8 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
+#endif  // HAL_LOGGING_ENABLED
+
     return true;
 }
 
@@ -1827,6 +1866,7 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
+#if HAL_VISUALODOM_ENABLED
 // check visual odometry is working
 bool AP_Arming::visodom_checks(bool display_failure) const
 {
@@ -1834,7 +1874,6 @@ bool AP_Arming::visodom_checks(bool display_failure) const
         return true;
     }
 
-#if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom != nullptr) {
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
@@ -1843,10 +1882,10 @@ bool AP_Arming::visodom_checks(bool display_failure) const
             return false;
         }
     }
-#endif
 
     return true;
 }
+#endif
 
 #if AP_RC_CHANNEL_ENABLED
 // check disarm switch is asserted

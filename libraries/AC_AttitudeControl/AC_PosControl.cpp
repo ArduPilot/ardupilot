@@ -1160,6 +1160,7 @@ void AC_PosControl::standby_xyz_reset()
     init_ekf_xy_reset();
 }
 
+#if HAL_LOGGING_ENABLED
 // write PSC and/or PSCZ logs
 void AC_PosControl::write_log()
 {
@@ -1180,6 +1181,7 @@ void AC_PosControl::write_log()
                                 -_accel_desired.z, -get_accel_target_cmss().z, -get_z_accel_cmss());
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 /// crosstrack_error - returns horizontal error to the closest point to the current track
 float AC_PosControl::crosstrack_error() const

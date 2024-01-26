@@ -132,7 +132,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
-        run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
@@ -332,6 +332,23 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board CubeOrange --enable-ppp
         $waf clean
         $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeOrange-SOHW" ]; then
+        echo "Building CubeOrange-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        continue
+    fi
+
+    if [ "$t" == "Pixhawk6X-PPPGW" ]; then
+        echo "Building Pixhawk6X-PPPGW"
+        $waf configure --board Pixhawk6X-PPPGW
+        $waf clean
+        $waf AP_Periph
+        $waf configure --board Pixhawk6X-PPPGW --bootloader
+        $waf clean
+        $waf bootloader
         continue
     fi
     

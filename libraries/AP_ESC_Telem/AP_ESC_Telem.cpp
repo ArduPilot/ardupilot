@@ -23,6 +23,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
+#include <AP_Math/AP_Math.h>
+
 //#define ESC_TELEM_DEBUG
 
 #define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
@@ -488,11 +490,14 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
 
 void AP_ESC_Telem::update()
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
+#endif
 
     const uint32_t now_us = AP_HAL::micros();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+#if HAL_LOGGING_ENABLED
         // Push received telemetry data into the logging system
         if (logger && logger->logging_enabled()) {
             if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
@@ -500,12 +505,12 @@ void AP_ESC_Telem::update()
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
-                float rawrpm = 0.0f;
-                get_raw_rpm(i, rawrpm);
+                float raw_rpm = 0.0f;
+                get_raw_rpm(i, raw_rpm);
 
                 // Write ESC status messages
                 //   id starts from 0
-                //   rpm is eRPM (rpm * 100)
+                //   rpm, raw_rpm is eRPM (in RPM units)
                 //   voltage is in Volt
                 //   current is in Ampere
                 //   esc_temp is in centi-degrees Celsius
@@ -516,8 +521,8 @@ void AP_ESC_Telem::update()
                     LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
                     time_us     : AP_HAL::micros64(),
                     instance    : i,
-                    rpm         : (int32_t) rpm * 100,
-                    raw_rpm     : (int32_t) rawrpm * 100,
+                    rpm         : rpm,
+                    raw_rpm     : raw_rpm,
                     voltage     : _telem_data[i].voltage,
                     current     : _telem_data[i].current,
                     esc_temp    : _telem_data[i].temperature_cdeg,
@@ -530,6 +535,7 @@ void AP_ESC_Telem::update()
                 _last_rpm_log_us[i] = _rpm_data[i].last_update_us;
             }
         }
+#endif  // HAL_LOGGING_ENABLED
 
         if ((now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
             _rpm_data[i].data_valid = false;

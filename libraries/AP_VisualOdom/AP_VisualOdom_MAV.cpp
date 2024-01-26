@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // consume vision pose estimate data and send to EKF. distances in meters
 void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter)
@@ -39,8 +40,10 @@ void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t t
     float yaw;
     attitude.to_euler(roll, pitch, yaw);
 
+#if HAL_LOGGING_ENABLED
     // log sensor data
     Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), posErr, angErr, reset_counter, false);
+#endif
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
@@ -54,7 +57,9 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter, false);
+#endif
 }
 
 #endif  // AP_VISUALODOM_MAV_ENABLED

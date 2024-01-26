@@ -1484,6 +1484,10 @@ function periph:get_yaw_earth() end
 function periph:can_printf(text) end
 
 -- desc
+---@param hold_in_bootloader boolean
+function periph:reboot(hold_in_bootloader) end
+
+-- desc
 ---@class ins
 ins = {}
 
@@ -1798,6 +1802,14 @@ function mission:get_index_of_jump_tag(tag) end
 ---@return integer|nil
 function mission:get_last_jump_tag() end
 
+
+-- Jump the mission to the start of the closest landing sequence. Returns true if one was found
+---@return boolean
+function mission:jump_to_landing_sequence() end
+
+-- Jump to the landing abort sequence
+-- @return boolean
+function mission:jump_to_abort_landing_sequence() end
 
 -- desc
 ---@class param
@@ -2862,10 +2874,63 @@ function gps:primary_sensor() end
 ---@return integer
 function gps:num_sensors() end
 
+-- desc
+---@class BattMonitorScript_State_ud
+local BattMonitorScript_State_ud = {}
+
+---@return BattMonitorScript_State_ud
+function BattMonitorScript_State() end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:temperature(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:consumed_wh(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:consumed_mah(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:current_amps(value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:cycle_count(value) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function BattMonitorScript_State_ud:cell_voltages(index, value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:capacity_remaining_pct(value) end
+
+-- set field
+---@param value integer
+function BattMonitorScript_State_ud:cell_count(value) end
+
+-- set field
+---@param value number
+function BattMonitorScript_State_ud:voltage(value) end
+
+-- set field
+---@param value boolean
+function BattMonitorScript_State_ud:healthy(value) end
 
 -- desc
 ---@class battery
 battery = {}
+
+-- desc
+---@param idx integer
+---@param state BattMonitorScript_State_ud
+---@return boolean
+function battery:handle_scripting(idx, state) end
 
 -- desc
 ---@param instance integer
@@ -3306,3 +3371,24 @@ fs = {}
 ---@param param1 string
 ---@return stat_t_ud|nil
 function fs:stat(param1) end
+
+-- desc
+---@class networking
+networking = {}
+
+-- conver uint32_t address to string
+---@param ip4addr uint32_t_ud
+---@return string
+function networking:address_to_str(ip4addr) end
+
+-- desc
+---@return uint32_t_ud
+function networking:get_gateway_active() end
+
+-- desc
+---@return uint32_t_ud
+function networking:get_netmask_active() end
+
+-- desc
+---@return uint32_t_ud
+function networking:get_ip_active() end

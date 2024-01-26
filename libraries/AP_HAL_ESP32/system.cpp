@@ -15,6 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_ESP32/HAL_ESP32_Class.h>
+#include <AP_Math/div1000.h>
 #include "SdCard.h"
 
 #include <stdint.h>
@@ -51,7 +52,7 @@ uint64_t micros64()
 
 uint64_t millis64()
 {
-    return micros64()/1000;
+    return uint64_div1000(micros64());
 }
 
 } // namespace AP_HAL

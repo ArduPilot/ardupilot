@@ -22,6 +22,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
@@ -92,6 +93,10 @@ struct sitl_fdm {
 
     // earthframe wind, from backends that know it
     Vector3f wind_ef;
+
+    // AGL altitude, usually derived from the terrain database in simulation:
+    float height_agl;
+
 };
 
 // number of rc output channels
@@ -152,9 +157,6 @@ public:
     // throttle when motors are active
     float throttle;
 
-    // height above ground
-    float height_agl;
-    
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
@@ -297,6 +299,7 @@ public:
     enum EFIType {
         EFI_TYPE_NONE = 0,
         EFI_TYPE_MS = 1,
+        EFI_TYPE_LOWEHEISER = 2,
         EFI_TYPE_HIRTH = 8,
     };
     
@@ -454,6 +457,9 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
+#if AP_SIM_LOWEHEISER_ENABLED
+    Loweheiser loweheiser_sim;
+#endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
 #if AP_TEST_DRONECAN_DRIVERS

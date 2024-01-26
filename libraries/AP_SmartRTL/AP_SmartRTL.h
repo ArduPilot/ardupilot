@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // definitions and macros
 #define SMARTRTL_ACCURACY_DEFAULT        2.0f   // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
@@ -172,8 +173,12 @@ private:
     // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(SRTL_Actions action, const char *reason);
 
+#if HAL_LOGGING_ENABLED
     // logging
     void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const;
+#else
+    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const {}
+#endif
 
     // parameters
     AP_Float _accuracy;

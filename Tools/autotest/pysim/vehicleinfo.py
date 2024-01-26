@@ -424,10 +424,10 @@ class VehicleInfo(object):
             },
         },
     },
-    "sitl_periph_gps": {
+    "sitl_periph_universal": {
         "frames": {
-            "gps": {
-                "configure_target": "sitl_periph_gps",
+            "universal": {
+                "configure_target": "sitl_periph_universal",
                 "waf_target": "bin/AP_Periph",
                 "default_params_filename": "default_params/periph.parm",
                 },

@@ -794,22 +794,20 @@ int lua_get_SocketAPM(lua_State *L) {
     const uint8_t datagram = get_uint8_t(L, 1);
     auto *scripting = AP::scripting();
 
-    if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
-        return luaL_argerror(L, 1, "no sockets available");
-    }
-
     auto *sock = new SocketAPM(datagram);
     if (sock == nullptr) {
         return luaL_argerror(L, 1, "SocketAPM device nullptr");
     }
-    scripting->_net_sockets[scripting->num_net_sockets] = sock;
+    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+        if (scripting->_net_sockets[i] == nullptr) {
+            scripting->_net_sockets[i] = sock;
+            new_SocketAPM(L);
+            *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[i];
+            return 1;
+        }
+    }
 
-    new_SocketAPM(L);
-    *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[scripting->num_net_sockets];
-
-    scripting->num_net_sockets++;
-
-    return 1;
+    return luaL_argerror(L, 1, "no sockets available");
 }
 
 /*
@@ -822,17 +820,12 @@ int SocketAPM_close(lua_State *L) {
 
     auto *scripting = AP::scripting();
 
-    if (scripting->num_net_sockets == 0) {
-        return luaL_argerror(L, 1, "socket close error");
-    }
-
     // clear allocated socket
     for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
         if (scripting->_net_sockets[i] == ud) {
             ud->close();
             delete ud;
             scripting->_net_sockets[i] = nullptr;
-            scripting->num_net_sockets--;
             break;
         }
     }
@@ -848,28 +841,15 @@ int SocketAPM_sendfile(lua_State *L) {
 
     SocketAPM *ud = *check_SocketAPM(L, 1);
 
-    auto *scripting = AP::scripting();
-
-    if (scripting->num_net_sockets == 0) {
-        return luaL_argerror(L, 1, "sendfile error");
-    }
-
     auto *p = (luaL_Stream *)luaL_checkudata(L, 2, LUA_FILEHANDLE);
     int fd = p->f->fd;
-    bool ret = false;
 
-    // find the socket
-    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
-        if (scripting->_net_sockets[i] == ud) {
-            ret = AP::network().sendfile(ud, fd);
-            if (ret) {
-                // remove from scripting, leave socket and fd open
-                p->f->fd = -1;
-                scripting->_net_sockets[i] = nullptr;
-                scripting->num_net_sockets--;
-            }
-            break;
-        }
+    bool ret = fd != -1 && AP::network().sendfile(ud, fd);
+    if (ret) {
+        // the fd is no longer valid. The lua script must
+        // still call close() to release the memory from the
+        // socket
+        p->f->fd = -1;
     }
 
     lua_pushboolean(L, ret);
@@ -912,23 +892,22 @@ int SocketAPM_accept(lua_State *L) {
     SocketAPM * ud = *check_SocketAPM(L, 1);
 
     auto *scripting = AP::scripting();
-    if (scripting->num_net_sockets >= SCRIPTING_MAX_NUM_NET_SOCKET) {
-        return 0;
+
+    // find an empty slot
+    for (uint8_t i=0; i<SCRIPTING_MAX_NUM_NET_SOCKET; i++) {
+        if (scripting->_net_sockets[i] == nullptr) {
+            scripting->_net_sockets[i] = ud->accept(0);
+            if (scripting->_net_sockets[i] == nullptr) {
+                return 0;
+            }
+            new_SocketAPM(L);
+            *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[i];
+            return 1;
+        }
     }
 
-    auto *sock = ud->accept(0);
-    if (sock == nullptr) {
-        return 0;
-    }
-
-    scripting->_net_sockets[scripting->num_net_sockets] = sock;
-
-    new_SocketAPM(L);
-    *((SocketAPM**)luaL_checkudata(L, -1, "SocketAPM")) = scripting->_net_sockets[scripting->num_net_sockets];
-
-    scripting->num_net_sockets++;
-
-    return 1;
+    // out of socket slots, return nil, caller can retry
+    return 0;
 }
 
 #endif // AP_NETWORKING_ENABLED

@@ -259,6 +259,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         _last_limit_time = AP_HAL::millis();
     }
 
+#if HAL_LOGGING_ENABLED
     if (limits_active()) {
         // log at not more than 10hz (adjust_velocity method can be potentially called at 400hz!)
         uint32_t now = AP_HAL::millis();
@@ -275,6 +276,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
             _last_log_ms = 0;
         }
     }
+#endif
 }
 
 /*

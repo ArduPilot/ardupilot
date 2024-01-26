@@ -227,7 +227,7 @@ static void main_loop()
 
     hal.serial(0)->begin(SERIAL0_BAUD);
 
-#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+#if (HAL_USE_SPI == TRUE) && defined(HAL_SPI_CHECK_CLOCK_FREQ)
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
@@ -268,10 +268,12 @@ static void main_loop()
 #ifdef IOMCU_FW
     stm32_watchdog_init();
 #elif !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_EARLY_WATCHDOG_INIT)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
     }
+#endif
 
     if (hal.util->was_watchdog_reset()) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
@@ -314,6 +316,10 @@ static void main_loop()
 
 void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+#if defined(HAL_EARLY_WATCHDOG_INIT) && !defined(DISABLE_WATCHDOG)
+    stm32_watchdog_init();
+    stm32_watchdog_pat();
+#endif
     /*
      * System initializations.
      * - ChibiOS HAL initialization, this also initializes the configured device drivers

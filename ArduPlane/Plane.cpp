@@ -24,7 +24,9 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Plane class
  */
 Plane::Plane(void)
+#if HAL_LOGGING_ENABLED
     : logger(g.log_bitmask)
+#endif
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;

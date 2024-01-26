@@ -21,6 +21,7 @@ private:
     AP_HAL::UARTDriver *uart;
     struct netif *pppif;
     struct ppp_pcb_s *ppp;
+    bool need_restart;
 
     static void ppp_status_callback(struct ppp_pcb_s *pcb, int code, void *ctx);
     static uint32_t ppp_output_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx);

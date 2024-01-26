@@ -135,6 +135,11 @@ public:
     // true if is taking 
     virtual bool is_taking_off() const;
 
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const;
+
+    // true if voltage correction should be applied to throttle
+    bool use_battery_compensation() const;
 
 protected:
 

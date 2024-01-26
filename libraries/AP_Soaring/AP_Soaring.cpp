@@ -144,14 +144,14 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
 
     // @Param: THML_ARSPD
     // @DisplayName: Specific setting for airspeed when soaring in THERMAL mode.
-    // @Description: If non-zero this airspeed will be used when thermalling. A value of 0 will use TRIM_ARSPD_CM.
+    // @Description: If non-zero this airspeed will be used when thermalling. A value of 0 will use AIRSPEED_CRUISE.
     // @Range: 0 50
     // @User: Advanced
     AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
 
     // @Param: CRSE_ARSPD
     // @DisplayName: Specific setting for airspeed when soaring in AUTO mode.
-    // @Description: If non-zero this airspeed will be used when cruising between thermals in AUTO. If set to -1, airspeed will be selected based on speed-to-fly theory. If set to 0, then TRIM_ARSPD_CM will be used while cruising between thermals.
+    // @Description: If non-zero this airspeed will be used when cruising between thermals in AUTO. If set to -1, airspeed will be selected based on speed-to-fly theory. If set to 0, then AIRSPEED_CRUISE will be used while cruising between thermals.
     // @Range: -1 50
     // @User: Advanced
     AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
@@ -280,8 +280,8 @@ void SoaringController::init_thermalling()
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {_vario.get_trigger_value(),
                               INITIAL_THERMAL_RADIUS,
-                              position.x + thermal_distance_ahead * cosf(_ahrs.yaw),
-                              position.y + thermal_distance_ahead * sinf(_ahrs.yaw)};
+                              position.x + thermal_distance_ahead * cosf(_ahrs.get_yaw()),
+                              position.y + thermal_distance_ahead * sinf(_ahrs.get_yaw())};
 
     const VectorN<float,4> xr{init_xr};
 
@@ -337,6 +337,7 @@ void SoaringController::update_thermalling()
     _position_x_filter.apply(_ekf.X[2], deltaT);
     _position_y_filter.apply(_ekf.X[3], deltaT);
 
+#if HAL_LOGGING_ENABLED
     // write log - save the data.
     // @LoggerMessage: SOAR
     // @Vehicles: Plane
@@ -367,6 +368,7 @@ void SoaringController::update_thermalling()
                                            (double)wind_drift.x,
                                            (double)wind_drift.y,
                                            (double)_thermalability);
+#endif
 }
 
 void SoaringController::update_cruising()
@@ -388,6 +390,7 @@ void SoaringController::update_cruising()
     // Update the calculation.
     _speedToFly.update(wx, wz, thermal_vspeed, CLmin, CLmax);
 
+#if HAL_LOGGING_ENABLED
     AP::logger().WriteStreaming("SORC", "TimeUS,wx,wz,wexp,CLmin,CLmax,Vopt", "Qffffff",
                                        AP_HAL::micros64(),
                                        (double)wx,
@@ -396,6 +399,7 @@ void SoaringController::update_cruising()
                                        (double)CLmin,
                                        (double)CLmax,
                                        (double)_speedToFly.speed_to_fly());
+#endif
 }
 
 void SoaringController::update_vario()

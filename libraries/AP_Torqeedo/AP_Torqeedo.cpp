@@ -564,6 +564,7 @@ void AP_Torqeedo::parse_message()
                         esc_temp,
                         motor_temp);
 
+#if HAL_LOGGING_ENABLED
                 // log data
                 if ((_options & options::LOG) != 0) {
                     // @LoggerMessage: TRST
@@ -592,6 +593,7 @@ void AP_Torqeedo::parse_message()
                                       _display_system_state.batt_voltage,
                                       _display_system_state.batt_current);
                 }
+#endif
 
                 // send to GCS
                 if ((_options & options::DEBUG_TO_GCS) != 0) {
@@ -625,6 +627,7 @@ void AP_Torqeedo::parse_message()
                 _display_system_setup.batt_type = _received_buff[9];
                 _display_system_setup.master_sw_version =  UINT16_VALUE(_received_buff[10], _received_buff[11]);
 
+#if HAL_LOGGING_ENABLED
                 // log data
                 if ((_options & options::LOG) != 0) {
                     // @LoggerMessage: TRSE
@@ -647,6 +650,7 @@ void AP_Torqeedo::parse_message()
                                        _display_system_setup.batt_type,
                                        _display_system_setup.master_sw_version);
                 }
+#endif
 
                 // send to GCS
                 if ((_options & options::DEBUG_TO_GCS) != 0) {
@@ -694,6 +698,7 @@ void AP_Torqeedo::parse_message()
                         _motor_param.pcb_temp,      // esc temp
                         _motor_param.stator_temp);  // motor temp
 
+#if HAL_LOGGING_ENABLED
                 // log data
                 if ((_options & options::LOG) != 0) {
                     // @LoggerMessage: TRMP
@@ -714,6 +719,7 @@ void AP_Torqeedo::parse_message()
                                        _motor_param.pcb_temp,
                                        _motor_param.stator_temp);
                 }
+#endif
 
                 // send to GCS
                 if ((_options & options::DEBUG_TO_GCS) != 0) {
@@ -736,6 +742,7 @@ void AP_Torqeedo::parse_message()
                 _motor_status.status_flags_value = _received_buff[2];
                 _motor_status.error_flags_value = UINT16_VALUE(_received_buff[3], _received_buff[4]);
 
+#if HAL_LOGGING_ENABLED
                 // log data
                 if ((_options & options::LOG) != 0) {
                     // @LoggerMessage: TRMS
@@ -743,11 +750,12 @@ void AP_Torqeedo::parse_message()
                     // @Field: TimeUS: Time since system startup
                     // @Field: State: Motor status flags
                     // @Field: Err: Motor error flags
-                    AP::logger().Write("TRMS", "TimeUS,State,Err", "QBHH",
+                    AP::logger().Write("TRMS", "TimeUS,State,Err", "QBH",
                                        AP_HAL::micros64(),
                                        _motor_status.status_flags_value,
                                        _motor_status.error_flags_value);
                 }
+#endif
 
                 // send to GCS
                 if ((_options & options::DEBUG_TO_GCS) != 0) {
@@ -1084,6 +1092,7 @@ void AP_Torqeedo::log_TRQD(bool force_logging)
     const bool health = healthy();
     int16_t actual_motor_speed = get_motor_speed_limited();
 
+#if HAL_LOGGING_ENABLED
     if ((_options & options::LOG) != 0) {
         // @LoggerMessage: TRQD
         // @Description: Torqeedo Status
@@ -1101,6 +1110,7 @@ void AP_Torqeedo::log_TRQD(bool force_logging)
                            _parse_success_count,
                            _parse_error_count);
     }
+#endif
 
     if ((_options & options::DEBUG_TO_GCS) != 0) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"TRQD h:%u dspd:%d spd:%d succ:%ld err:%ld",

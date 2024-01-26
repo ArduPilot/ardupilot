@@ -26,6 +26,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_Notify/AP_Notify.h>
+#include "AP_InertialSensor.h"
 
 // this scale factor ensures params are easy to work with in GUI parameter editors
 #define SCALE_FACTOR 1.0e6

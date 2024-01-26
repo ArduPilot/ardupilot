@@ -644,6 +644,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rtc,                   "RTC",    AP_RTC),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    // @Group: RELAY
+    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
+    GOBJECT(relay,                 "RELAY", AP_Relay),
+#endif
+
     AP_VAREND
 };
 

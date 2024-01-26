@@ -100,15 +100,15 @@ void AP_Periph_FW::init()
 
     can_start();
 
-#ifdef HAL_PERIPH_ENABLE_NETWORKING
-    networking_periph.init();
-#endif
-
 #if HAL_GCS_ENABLED
     stm32_watchdog_pat();
     gcs().init();
 #endif
     serial_manager.init();
+
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+    networking_periph.init();
+#endif
 
 #if HAL_GCS_ENABLED
     gcs().setup_console();
@@ -283,6 +283,10 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     notify.init();
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    relay.init();
 #endif
 
 #if AP_SCRIPTING_ENABLED
@@ -588,6 +592,14 @@ void AP_Periph_FW::prepare_reboot()
         // delay to give the ACK a chance to get out, the LEDs to flash,
         // the IO board safety to be forced on, the parameters to flush,
         hal.scheduler->delay(40);
+}
+
+/*
+  reboot, optionally holding in bootloader. For scripting
+ */
+void AP_Periph_FW::reboot(bool hold_in_bootloader)
+{
+    hal.scheduler->reboot(hold_in_bootloader);
 }
 
 AP_Periph_FW *AP_Periph_FW::_singleton;

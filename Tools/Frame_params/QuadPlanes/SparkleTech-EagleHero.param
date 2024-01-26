@@ -3,13 +3,13 @@
 # http://www.sparkletech.hk/%E9%B9%B0%E7%9C%BC-%E6%97%A0%E4%BA%BA%E6%9C%BA/electric-power/eagle-plus-vtol/
 
 # airspeed
-ARSPD_FBW_MAX    31
-ARSPD_FBW_MIN    22
-TRIM_ARSPD_CM    2400
+AIRSPEED_MAX    31
+AIRSPEED_MIN    22
+AIRSPEED_CRUISE 24.00
 SCALING_SPEED    20
 TRIM_THROTTLE    55
 
-LIM_ROLL_CD      5000
+ROLL_LIMIT_DEG 50.00
 
 # fixed wing tuning
 RLL2SRV_RMAX     75

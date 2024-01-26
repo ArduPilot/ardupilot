@@ -844,8 +844,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
         self.context_push()
         self.set_parameters({
-            "TRIM_ARSPD_CM": self.get_parameter("TRIM_ARSPD_CM"),
-            "MIN_GNDSPD_CM": self.get_parameter("MIN_GNDSPD_CM"),
+            "AIRSPEED_CRUISE": self.get_parameter("AIRSPEED_CRUISE"),
+            "MIN_GROUNDSPEED": self.get_parameter("MIN_GROUNDSPEED"),
             "TRIM_THROTTLE": self.get_parameter("TRIM_THROTTLE"),
         })
 
@@ -886,7 +886,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
 
         checks = [
-            (1, self.get_parameter("TRIM_ARSPD_CM") * 0.01),
+            (1, self.get_parameter("AIRSPEED_CRUISE")),
             (3, 10),
             (5, 20),
             (7, 15),
@@ -2274,7 +2274,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.set_parameters({
             "FLIGHT_OPTIONS": 0,
-            "ALT_HOLD_RTL": 8000,
+            "RTL_ALTITUDE": 80,
             "RTL_AUTOLAND": 1,
         })
         takeoff_alt = 10
@@ -2282,7 +2282,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("CRUISE")
         self.wait_distance_to_home(500, 1000, timeout=60)
         self.change_mode("RTL")
-        expected_alt = self.get_parameter("ALT_HOLD_RTL") / 100.0
+        expected_alt = self.get_parameter("RTL_ALTITUDE")
 
         home = self.home_position_as_mav_location()
         distance = self.get_distance(home, self.mav.location())
@@ -2306,7 +2306,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.set_parameters({
             "FLIGHT_OPTIONS": 16,
-            "ALT_HOLD_RTL": 10000,
+            "RTL_ALTITUDE": 100,
         })
         self.takeoff(alt=takeoff_alt)
         self.change_mode("CRUISE")
@@ -2339,7 +2339,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_distance_to_home(1000, 1500, timeout=60)
         post_cruise_alt = self.get_altitude(relative=True)
         self.change_mode('RTL')
-        expected_alt = self.get_parameter("ALT_HOLD_RTL")/100.0
+        expected_alt = self.get_parameter("RTL_ALTITUDE")
         if expected_alt == -1:
             expected_alt = self.get_altitude(relative=True)
 
@@ -2922,8 +2922,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         trim_airspeed = m.airspeed
         self.progress("Using trim_airspeed=%f" % (trim_airspeed,))
 
-        min_airspeed = self.get_parameter("ARSPD_FBW_MIN")
-        max_airspeed = self.get_parameter("ARSPD_FBW_MAX")
+        min_airspeed = self.get_parameter("AIRSPEED_MIN")
+        max_airspeed = self.get_parameter("AIRSPEED_MAX")
 
         if trim_airspeed > max_airspeed:
             raise NotAchievedException("trim airspeed > max_airspeed (%f>%f)" %
@@ -4381,8 +4381,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         seq = 0
         items = []
         tests = [
-            (self.home_relative_loc_ne(50, -50), 100),
-            (self.home_relative_loc_ne(100, 50), 1005),
+            (self.home_relative_loc_ne(50, -50), 100, 0.3),
+            (self.home_relative_loc_ne(100, 50), 1005, 3),
         ]
         # add a home position:
         items.append(self.mav.mav.mission_item_int_encode(
@@ -4423,7 +4423,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         seq += 1
 
         # add circles
-        for (loc, radius) in tests:
+        for (loc, radius, turn) in tests:
             items.append(self.mav.mav.mission_item_int_encode(
                 target_system,
                 target_component,
@@ -4432,7 +4432,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
                 0, # current
                 0, # autocontinue
-                3, # p1
+                turn, # p1
                 0, # p2
                 radius, # p3
                 0, # p4
@@ -4465,7 +4465,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         ofs = 2
         self.progress("Checking downloaded mission is as expected")
-        for (loc, radius) in tests:
+        for (loc, radius, turn) in tests:
             downloaded = downloaded_items[ofs]
             if radius > 255:
                 # ArduPilot only stores % 10
@@ -4474,6 +4474,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Did not get expected radius for item %u; want=%f got=%f" %
                     (ofs, radius, downloaded.param3))
+            if turn > 0 and turn < 1:
+                # ArduPilot stores fractions in 8 bits (*256) and unpacks it (/256)
+                turn = int(turn*256) / 256.0
+            if downloaded.param1 != turn:
+                raise NotAchievedException(
+                    "Did not get expected turn for item %u; want=%f got=%f" %
+                    (ofs, turn, downloaded.param1))
             ofs += 1
 
         self.change_mode('AUTO')
@@ -4483,7 +4490,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(2)
 
-        for (loc, expected_radius) in tests:
+        for (loc, expected_radius, _) in tests:
             self.wait_circling_point_with_radius(
                 loc,
                 expected_radius,
@@ -5392,7 +5399,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GlideSlopeThresh,
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
-            self.EmbeddedParamParser,
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
             self.RunMissionScript,

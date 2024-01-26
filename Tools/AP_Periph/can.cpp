@@ -34,6 +34,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL_SITL/CANSocketIface.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
 #endif
 
 #define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES))-1U)
@@ -145,6 +146,10 @@ HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 
 #if AP_CAN_SLCAN_ENABLED
 SLCAN::CANIface AP_Periph_FW::slcan_interface;
+#endif
+
+#ifdef EXT_FLASH_SIZE_MB
+static_assert(EXT_FLASH_SIZE_MB == 0, "DroneCAN bootloader cannot support external flash");
 #endif
 
 /*
@@ -367,8 +372,10 @@ void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance,
 {
 #if HAL_RAM_RESERVE_START >= 256
     // setup information on firmware request at start of ram
-    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
-    memset(comms, 0, sizeof(struct app_bootloader_comms));
+    auto *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    if (comms->magic != APP_BOOTLOADER_COMMS_MAGIC) {
+        memset(comms, 0, sizeof(*comms));
+    }
     comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
 
     uavcan_protocol_file_BeginFirmwareUpdateRequest req;
@@ -848,6 +855,13 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_notify_state(canard_instance, transfer);
         break;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
+        handle_hardpoint_command(canard_instance, transfer);
+        break;
+#endif
+
     }
 }
 
@@ -955,6 +969,11 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
 #if defined(HAL_PERIPH_ENABLE_NOTIFY)
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
+        return true;
+#endif
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE;
         return true;
 #endif
     default:
@@ -1341,7 +1360,7 @@ void AP_Periph_FW::node_status_send(void)
         uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
         node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-        node_status.vendor_specific_status_code = hal.util->available_memory();
+        node_status.vendor_specific_status_code = MIN(hal.util->available_memory(), unsigned(UINT16_MAX));
 
         uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !canfdout());
 

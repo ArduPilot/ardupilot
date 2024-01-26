@@ -476,7 +476,7 @@ void AP_Vehicle::loop()
     }
     const uint32_t new_internal_errors = AP::internalerror().errors();
     if(_last_internal_errors != new_internal_errors) {
-        AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
         _last_internal_errors = new_internal_errors;
     }
@@ -598,10 +598,12 @@ void AP_Vehicle::scheduler_delay_callback()
 
     static uint32_t last_1hz, last_50hz, last_5s;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger &logger = AP::logger();
 
     // don't allow potentially expensive logging calls:
     logger.EnableWrites(false);
+#endif
 
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -626,7 +628,9 @@ void AP_Vehicle::scheduler_delay_callback()
         }
     }
 
+#if HAL_LOGGING_ENABLED
     logger.EnableWrites(true);
+#endif
 }
 
 // if there's been a watchdog reset, notify the world via a statustext:
@@ -807,7 +811,7 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %u", mode_number);
-    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
 }
 
 // reboot the vehicle in an orderly manner, doing various cleanups and
@@ -879,8 +883,8 @@ void AP_Vehicle::publish_osd_info()
 
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
-    roll = ahrs.roll;
-    pitch = ahrs.pitch;
+    roll = ahrs.get_roll();
+    pitch = ahrs.get_pitch();
 }
 
 #if HAL_INS_ACCELCAL_ENABLED
