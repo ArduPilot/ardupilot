@@ -1137,17 +1137,16 @@ void UARTDriver::half_duplex_setup_tx(void)
     // if we only wait for empty output the line can be setup for receive too soon losing data bits
     hd_tx_active = CHN_TRANSMISSION_END | CHN_OUTPUT_EMPTY;
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
-    sdStop(sd);
+    volatile uint32_t cr3 = sd->usart->CR3;
 #ifndef HAL_UART_NODMA
     if (is_tx_dma_active()) {
         // disable RX DMA and enable TX DMA
-        sercfg.cr1 &= ~USART_CR1_IDLEIE;
-        sercfg.cr3 &= ~USART_CR3_DMAR;
-        sercfg.cr3 |= USART_CR3_DMAT;
+        sd->usart->CR1 &= ~USART_CR1_IDLEIE;
+        cr3 = (cr3 & ~USART_CR3_DMAR) | USART_CR3_DMAT;
     }
 #endif
-    sercfg.cr3 &= ~USART_CR3_HDSEL;
-    sdStart(sd, &sercfg);
+    cr3 &= ~USART_CR3_HDSEL;
+    sd->usart->CR3 = cr3;
 }
 
 void UARTDriver::half_duplex_setup_rx(void)
@@ -1156,17 +1155,16 @@ void UARTDriver::half_duplex_setup_rx(void)
     hd_tx_active = 0;
 
     SerialDriver *sd = (SerialDriver*)sdef.serial;
-    sdStop(sd);
+    volatile uint32_t cr3 = sd->usart->CR3;
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled) {
         // disable TX DMA and enable RX DMA
-        sercfg.cr1 |= USART_CR1_IDLEIE;
-        sercfg.cr3 &= ~USART_CR3_DMAT;
-        sercfg.cr3 |= USART_CR3_DMAR;
+        sd->usart->CR1 |= USART_CR1_IDLEIE;
+        cr3 = (cr3 & ~USART_CR3_DMAT) | USART_CR3_DMAR;
     }
 #endif
-    sercfg.cr3 |= USART_CR3_HDSEL;
-    sdStart(sd, &sercfg);   // clears interrupts
+    cr3 |= USART_CR3_HDSEL;
+    sd->usart->CR3 = cr3;
 
 #ifndef HAL_UART_NODMA
     if (!rx_dma_enabled) {
@@ -1416,7 +1414,11 @@ void UARTDriver::_tx_timer_tick(void)
 #ifndef HAL_UART_NODMA
         else {
             // wait for the completion to signal that we are done, or timeout after 1ms
-            eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_RX_DMA_COMPLETE, chTimeMS2I(1));
+            // if a transfer is in progress then wait longer
+            eventmask_t mask = 0;
+            do {
+                mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_RX_DMA_COMPLETE, chTimeMS2I(1));
+            } while (((SerialDriver*)sdef.serial)->usart->ISR & USART_ISR_BUSY);
             dma_rx_disable();
             if (!mask) {
                 TOGGLE_PIN_DEBUG(52);
