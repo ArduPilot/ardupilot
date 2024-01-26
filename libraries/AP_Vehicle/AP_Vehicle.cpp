@@ -251,6 +251,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../Filter/AP_Filter.cpp
     AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
 #endif
+
+#if AP_STATS_ENABLED
+    // @Group: STAT
+    // @Path: ../AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 27, AP_Vehicle, AP_Stats),
+#endif
+
     AP_GROUPEND
 };
 
@@ -344,6 +351,11 @@ void AP_Vehicle::setup()
 
 #if HAL_GENERATOR_ENABLED
     generator.init();
+#endif
+
+#if AP_STATS_ENABLED
+    // initialise stats module
+    stats.init();
 #endif
 
     // init_ardupilot is where the vehicle does most of its initialisation.
@@ -573,6 +585,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_FILTER_ENABLED
     SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
+#endif
+#if AP_STATS_ENABLED
+    SCHED_TASK_CLASS(AP_Stats,             &vehicle.stats,            update,           1, 100, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
 };
