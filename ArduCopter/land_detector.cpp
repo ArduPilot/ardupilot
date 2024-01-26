@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#include <AP_Stats/AP_Stats.h>              // statistics library
+
 // Code to detect a crash main ArduCopter code
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
 #define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
@@ -148,8 +150,8 @@ void Copter::set_land_complete(bool b)
 #endif
     ap.land_complete = b;
 
-#if STATS_ENABLED == ENABLED
-    g2.stats.set_flying(!b);
+#if AP_STATS_ENABLED
+    AP::stats()->set_flying(!b);
 #endif
 
     // tell AHRS flying state
