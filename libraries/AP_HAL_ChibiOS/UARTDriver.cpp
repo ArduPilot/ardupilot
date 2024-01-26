@@ -470,15 +470,13 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
-            if (rx_dma_enabled) {
-                //Configure serial driver to skip handling RX packets
-                //because we will handle them via DMA
+            if (rx_dma_enabled && !was_initialised && !half_duplex) {
+                // Configure serial driver to skip handling RX packets
+                // because we will handle them via DMA
                 ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
                 // Start DMA
-                if (!was_initialised && !half_duplex) {
-                    dmaStreamDisable(rxdma);
-                    dma_rx_enable();
-                }
+                dmaStreamDisable(rxdma);
+                dma_rx_enable();
             }
 #endif // HAL_UART_NODMA
         }
@@ -571,6 +569,7 @@ void UARTDriver::dma_rx_disable(void)
     // clear RXNE interrupt and IDLE detection
     (void)sd->usart->RDR;
     sd->usart->ICR |= USART_ICR_IDLECF;
+    rx_dma_active = false;
 }
 
 #endif
@@ -629,17 +628,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     // other bounce buffer. We restart the DMA before we copy the data
     // out to minimise the time with DMA disabled, which allows us to
     // handle much higher receiver baudrates
-
-    // in half-duplex mode if we completely filled the buffer or we got nothing
-    // then there might be more to come so setup the DMA again as well
-    if (!uart_drv->half_duplex || len == 0 || len == RX_BOUNCE_BUFSIZE) {
-        uart_drv->dma_rx_enable();
-    }
-
-        if (uart_drv->half_duplex) {
-            TOGGLE_PIN_DEBUG(51);
-            TOGGLE_PIN_DEBUG(51);
-        }
+    uart_drv->dma_rx_enable();
 
     if (len > 0) {
         /*
@@ -650,9 +639,8 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         uart_drv->receive_timestamp_update();
     }
 
-    // if we have data and we think that no more is coming then notify the
-    // half-duplex thread that we are done
-    if (uart_drv->half_duplex && len > 0 && len < RX_BOUNCE_BUFSIZE) {
+    // if we have enough data then notify the half-duplex thread that we are done
+    if (uart_drv->half_duplex && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
         chSysLockFromISR();
         chEvtSignalI(uart_drv->uart_thread_ctx, EVT_TRANSMIT_RX_DMA_COMPLETE);
         chSysUnlockFromISR();
@@ -1139,6 +1127,12 @@ void UARTDriver::half_duplex_setup_tx(void)
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
     volatile uint32_t cr3 = sd->usart->CR3;
 #ifndef HAL_UART_NODMA
+    // RX DMA enabled, lazily disable ready for TX
+    if (rx_dma_enabled && rx_dma_active) {
+        dma_rx_disable();
+        rx_dma_active = false;
+    }
+
     if (is_tx_dma_active()) {
         // disable RX DMA and enable TX DMA
         sd->usart->CR1 &= ~USART_CR1_IDLEIE;
@@ -1151,11 +1145,14 @@ void UARTDriver::half_duplex_setup_tx(void)
 
 void UARTDriver::half_duplex_setup_rx(void)
 {
-    // ensure transmit is disabled
-    hd_tx_active = 0;
-
     SerialDriver *sd = (SerialDriver*)sdef.serial;
     volatile uint32_t cr3 = sd->usart->CR3;
+
+    // RX already enabled
+    if (rx_dma_enabled && rx_dma_active) {
+        return;
+    }
+
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled) {
         // disable TX DMA and enable RX DMA
@@ -1170,6 +1167,8 @@ void UARTDriver::half_duplex_setup_rx(void)
     if (!rx_dma_enabled) {
         return;
     }
+
+    rx_dma_active = true;
 
     // Configure serial driver to skip handling RX packets
     // because we will handle them via DMA
@@ -1419,7 +1418,6 @@ void UARTDriver::_tx_timer_tick(void)
             do {
                 mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_RX_DMA_COMPLETE, chTimeMS2I(1));
             } while (((SerialDriver*)sdef.serial)->usart->ISR & USART_ISR_BUSY);
-            dma_rx_disable();
             if (!mask) {
                 TOGGLE_PIN_DEBUG(52);
                 TOGGLE_PIN_DEBUG(52);

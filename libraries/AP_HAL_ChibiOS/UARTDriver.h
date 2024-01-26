@@ -226,6 +226,7 @@ private:
     bool half_duplex;
     event_listener_t hd_listener;
     eventflags_t hd_tx_active;
+    bool rx_dma_active;
     void half_duplex_setup_tx(void);
     void half_duplex_setup_rx(void);
 #endif
