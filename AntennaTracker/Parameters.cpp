@@ -560,10 +560,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
 
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    GOBJECT(stats, "STAT",  AP_Stats),
-
     // @Param: AUTO_OPTIONS
     // @DisplayName: Auto mode options
     // @Description: 1: Scan for unknown target
@@ -617,6 +613,12 @@ void Tracker::load_parameters(void)
     uint32_t before = AP_HAL::micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
+
+#if AP_STATS_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024
+    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, 0, true);
+#endif
+
     hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
 
 #if HAL_HAVE_SAFETY_SWITCH
