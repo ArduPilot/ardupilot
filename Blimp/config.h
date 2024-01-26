@@ -134,10 +134,6 @@
 # define CH_MODE_DEFAULT   5
 #endif
 
-#ifndef STATS_ENABLED
-# define STATS_ENABLED ENABLED
-#endif
-
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT Fins::MOTOR_FRAME_TYPE_AIRFISH
 #endif
