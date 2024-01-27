@@ -91,7 +91,7 @@ void ModeAutorotate::run()
 
     float alt = g2.arot.get_ground_distance();
     // have autorotation library update estimated radar altitude
-    g2.arot.update_est_radar_alt();
+    g2.arot.update_est_rangefinder_alt();
     if (alt < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
         g2.arot._using_rfnd = true;
     } else {
@@ -101,6 +101,7 @@ void ModeAutorotate::run()
     // Initialise internal variables
     float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
     //calculate time to impact
+    float time_to_impact;
     if (phase_switch != Autorotation_Phase::TOUCH_DOWN) {
         g2.arot.time_to_ground();
         time_to_impact = g2.arot.get_time_to_ground();
