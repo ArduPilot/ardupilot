@@ -1,0 +1,23 @@
+# CAN
+CAN_P1_DRIVER 1  # Enables the use of CAN
+
+# Onboard ELRS
+SERIAL5_PROTOCOL 23 # RCIN
+RC_OPTIONS 8192  # Set 420k baud for ELRS
+# RC2_REVERSED 1 # Prevent inverse pitch controls
+RSSI_TYPE 3 # RC provided RSSI
+# ARMING_RUDDER 0  # Disable rudder arming
+
+
+# Onboard OSD
+OSD_TYPE 5 # MSP
+SERIAL2_PROTOCOL 42 # DisplayPort
+OSD_CELL_COUNT 0 # auto based on voltage at start
+
+
+# ESC telemetry
+SERIAL3_PROTOCOL 16 # ESC telemetry
+
+
+# Remove default serial protocols; set to None.
+SERIAL6_PROTOCOL -1
