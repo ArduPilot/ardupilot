@@ -457,11 +457,13 @@ bool Copter::get_target_location(Location& target_loc)
  */
 bool Copter::update_target_location(const Location &old_loc, const Location &new_loc)
 {
-    Location next_wp_loc;
-    next_wp_loc = new_loc;
-    next_wp_loc.change_alt_frame(old_loc.get_alt_frame());
+    Location next_WP_loc;
+    flightmode->get_wp(next_WP_loc);
+    if (!old_loc.same_loc_as(next_WP_loc)) {
+        return false;
+    }
 
-    return set_target_location(next_wp_loc);
+    return set_target_location(new_loc);
 }
 
 #endif // AP_SCRIPTING_ENABLED
