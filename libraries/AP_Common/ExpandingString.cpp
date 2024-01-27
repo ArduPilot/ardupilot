@@ -25,6 +25,13 @@ extern const AP_HAL::HAL& hal;
 
 #define EXPAND_INCREMENT 512
 
+ExpandingString::ExpandingString(char* s, uint32_t total_len) : buf(0)
+{
+    set_buffer(s, total_len, 0);
+    memset(buf, 0, buflen);
+}
+
+
 /*
   expand the string buffer
  */
