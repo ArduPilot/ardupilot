@@ -50,6 +50,15 @@ uint16_t AP_Param::sentinal_offset;
 // singleton instance
 AP_Param *AP_Param::_singleton;
 
+#ifndef AP_PARAM_STORAGE_BAK_ENABLED
+// we only have a storage region for backup storage if we have at
+// least 32768 bytes or storage. We also don't enable when using flash
+// storage as this can lead to loss of storage when updating to a
+// larger storage size
+#define AP_PARAM_STORAGE_BAK_ENABLED (HAL_STORAGE_SIZE>=32768) && !defined(STORAGE_FLASH_PAGE)
+#endif
+
+
 #define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
@@ -128,8 +137,10 @@ const AP_Param::param_defaults_struct AP_Param::param_defaults_data = {
 // storage object
 StorageAccess AP_Param::_storage(StorageManager::StorageParam);
 
+#if AP_PARAM_STORAGE_BAK_ENABLED
 // backup storage object
 StorageAccess AP_Param::_storage_bak(StorageManager::StorageParamBak);
+#endif
 
 // flags indicating frame type
 uint16_t AP_Param::_frame_type_flags;
@@ -138,7 +149,9 @@ uint16_t AP_Param::_frame_type_flags;
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
     _storage.write_block(ofs, ptr, size);
+#if AP_PARAM_STORAGE_BAK_ENABLED
     _storage_bak.write_block(ofs, ptr, size);
+#endif
 }
 
 bool AP_Param::_hide_disabled_groups = true;
@@ -337,14 +350,19 @@ void AP_Param::check_var_info(void)
 bool AP_Param::setup(void)
 {
     struct EEPROM_header hdr {};
-    struct EEPROM_header hdr2 {};
 
     // check the header
     _storage.read_block(&hdr, 0, sizeof(hdr));
+
+#if AP_PARAM_STORAGE_BAK_ENABLED
+    struct EEPROM_header hdr2 {};
     _storage_bak.read_block(&hdr2, 0, sizeof(hdr2));
+#endif
+
     if (hdr.magic[0] != k_EEPROM_magic0 ||
         hdr.magic[1] != k_EEPROM_magic1 ||
         hdr.revision != k_EEPROM_revision) {
+#if AP_PARAM_STORAGE_BAK_ENABLED
         if (hdr2.magic[0] == k_EEPROM_magic0 &&
             hdr2.magic[1] == k_EEPROM_magic1 &&
             hdr2.revision == k_EEPROM_revision &&
@@ -353,14 +371,17 @@ bool AP_Param::setup(void)
             INTERNAL_ERROR(AP_InternalError::error_t::params_restored);
             return true;
         }
+#endif // AP_PARAM_STORAGE_BAK_ENABLED
         // header doesn't match. We can't recover any variables. Wipe
         // the header and setup the sentinal directly after the header
         Debug("bad header in setup - erasing");
         erase_all();
     }
 
+#if AP_PARAM_STORAGE_BAK_ENABLED
     // ensure that backup is in sync with primary
     _storage_bak.copy_area(_storage);
+#endif
 
     return true;
 }
