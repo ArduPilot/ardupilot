@@ -333,7 +333,7 @@ public:
     void navigate() override;
 
     bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
-    bool isHeadingLinedUp_cd(const int32_t bearing_cd);
+    bool isHeadingLinedUp_cd(const int32_t bearing_cd, const int32_t initial_bearing_margin_cd = 1000);
 
     bool allows_throttle_nudging() const override { return true; }
 
