@@ -110,7 +110,7 @@ public:
 
     float get_cushion_alt(void) const { return _cushion_alt; }
 
-    bool get_flare_status(void) { return _flare_complete; }
+    bool is_flare_complete(void) { return _flare_complete; }
 
     void calc_sink_d_avg(void);
 
