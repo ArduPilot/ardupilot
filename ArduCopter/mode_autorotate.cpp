@@ -128,7 +128,7 @@ void ModeAutorotate::run()
                 // Flight phase can be progressed to steady state glide
                 phase_switch = Autorotation_Phase::SS_GLIDE;
             }
-        } else if ( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot.get_flare_status() ) {
+        } else if ( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot.is_flare_complete() ) {
             phase_switch = Autorotation_Phase::FLARE;
         } else if (time_to_impact <= g2.arot.get_t_touchdown() && _flags.flare_initial == false ) {
             phase_switch = Autorotation_Phase::TOUCH_DOWN;
