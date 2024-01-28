@@ -319,6 +319,7 @@ public:
         return last_radio_status.remrssi_ms;
     }
     static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
+    static uint8_t get_last_txbuf();
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -481,7 +482,6 @@ public:
 
     virtual uint64_t capabilities() const;
     uint16_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
-    uint8_t get_last_txbuf() const { return last_txbuf; }
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
@@ -768,6 +768,7 @@ private:
         uint32_t remrssi_ms;
         uint8_t rssi;
         uint32_t received_ms; // time RADIO_STATUS received
+        uint8_t txbuf = 100;
     } last_radio_status;
 
     enum class Flags {
@@ -814,7 +815,6 @@ private:
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
     // last reported radio buffer percent available
-    uint8_t          last_txbuf = 100;
 
     // outbound ("deferred message") queue.
 
