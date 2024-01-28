@@ -1,6 +1,6 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS || defined(HAL_BUILD_AP_PERIPH)
 #include <canard/interface.h>
 #include <dronecan_msgs.h>
 
@@ -50,20 +50,28 @@ public:
 
     bool add_interface(AP_HAL::CANIface *can_drv);
 
+#ifndef HAL_BUILD_AP_PERIPH
     // add an auxillary driver for 11 bit frames
     bool add_11bit_driver(CANSensor *sensor);
 
     // handler for outgoing frames for auxillary drivers
     bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us);
-    
+#endif
+
 #if AP_TEST_DRONECAN_DRIVERS
     static CanardInterface& get_test_iface() { return test_iface; }
     static void processTestRx();
 #endif
-
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
     void update_rx_protocol_stats(int16_t res);
-
+#endif
     uint8_t get_node_id() const override { return canard.node_id; }
+    void set_node_id(uint8_t node_id) { canardSetLocalNodeID(&canard, node_id); }
+
+    uint16_t pool_peak_percent();
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
+    const dronecan_protocol_Stats& get_protocol_stats() const { return protocol_stats; }
+#endif
 private:
     CanardInstance canard;
     AP_HAL::CANIface* ifaces[HAL_NUM_CAN_IFACES];
@@ -74,12 +82,17 @@ private:
     uint8_t num_ifaces;
     HAL_BinarySemaphore sem_handle;
     bool initialized;
+#ifdef CANARD_MUTEX_ENABLED
     HAL_Semaphore _sem_tx;
     HAL_Semaphore _sem_rx;
+#endif
     CanardTxTransfer tx_transfer;
+#if !defined(HAL_BUILD_AP_PERIPH) || HAL_ENABLE_SENDING_STATS
     dronecan_protocol_Stats protocol_stats;
-
+#endif
+#ifndef HAL_BUILD_AP_PERIPH
     // auxillary 11 bit CANSensor
     CANSensor *aux_11bit_driver;
+#endif
 };
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif // HAL_ENABLE_DRONECAN_DRIVERS || defined(HAL_BUILD_AP_PERIPH)

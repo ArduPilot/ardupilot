@@ -69,15 +69,12 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
 /*
   handle tunnel data
  */
-void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxTransfer* transfer)
+void AP_Periph_DroneCAN::handle_tunnel_Targetted(const CanardRxTransfer& transfer, const uavcan_tunnel_Targetted &pkt)
 {
-    uavcan_tunnel_Targetted pkt;
-    if (uavcan_tunnel_Targetted_decode(transfer, &pkt)) {
+    if (pkt.target_node != periph.dronecan->canard_iface.get_node_id()) {
         return;
     }
-    if (pkt.target_node != canardGetLocalNodeID(canard_ins)) {
-        return;
-    }
+    auto &uart_monitor = periph.uart_monitor;
     if (uart_monitor.buffer == nullptr) {
         uart_monitor.buffer = new ByteBuffer(1024);
         if (uart_monitor.buffer == nullptr) {
@@ -86,7 +83,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     }
     int8_t uart_num = pkt.serial_id;
     if (uart_num == -1) {
-        uart_num = get_default_tunnel_serial_port();
+        uart_num = periph.get_default_tunnel_serial_port();
     }
     if (uart_num < 0) {
         return;
@@ -120,7 +117,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     } else {
         uart_monitor.uart->lock_port(0,0);
     }
-    uart_monitor.node_id = transfer->source_node_id;
+    uart_monitor.node_id = transfer.source_node_id;
     uart_monitor.protocol = pkt.protocol.protocol;
     if (pkt.baudrate != uart_monitor.baudrate || !was_locked) {
         if (uart_monitor.locked && pkt.baudrate != 0) {
@@ -196,16 +193,9 @@ void AP_Periph_FW::send_serial_monitor_data()
         pkt.serial_id = uart_monitor.uart_num;
         memcpy(pkt.buffer.data, buf, n);
 
-        uint8_t buffer[UAVCAN_TUNNEL_TARGETTED_MAX_SIZE] {};
-        const uint16_t total_size = uavcan_tunnel_Targetted_encode(&pkt, buffer, !canfdout());
-
         debug("read %u", unsigned(n));
 
-        if (!canard_broadcast(UAVCAN_TUNNEL_TARGETTED_SIGNATURE,
-                              UAVCAN_TUNNEL_TARGETTED_ID,
-                              CANARD_TRANSFER_PRIORITY_MEDIUM,
-                              &buffer[0],
-                              total_size)) {
+        if (!dronecan->tunnel_pub.broadcast(pkt)) {
             break;
         }
         uart_monitor.buffer->advance(n);

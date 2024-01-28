@@ -72,14 +72,7 @@ void AP_Periph_FW::can_airspeed_update(void)
     }
 #endif
 
-    uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_MAX_SIZE] {};
-    uint16_t total_size = uavcan_equipment_air_data_RawAirData_encode(&pkt, buffer, !periph.canfdout());
-
-    canard_broadcast(UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIGNATURE,
-                    UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    dronecan->raw_air_data_pub.broadcast(pkt);
 }
 
 #endif // HAL_PERIPH_ENABLE_AIRSPEED

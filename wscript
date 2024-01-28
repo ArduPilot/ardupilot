@@ -717,12 +717,11 @@ def _build_dynamic_sources(bld):
             # this below is not ideal, mavgen tool should set this, but that's not
             # currently possible
             export_includes=[
-            bld.bldnode.make_node('libraries').abspath(),
-            bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
-            ],
+                bld.bldnode.make_node('libraries').abspath(),
+                bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
+                ],
             )
-
-    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES or bld.env.AP_PERIPH):
         bld(
             features='dronecangen',
             source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
@@ -734,17 +733,6 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
                 ]
             )
-    elif bld.env.AP_PERIPH:
-        bld(
-            features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
-            output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
-            name='dronecan',
-            export_includes=[
-                bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
-                bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
-            ]
-        )
 
     if bld.env.ENABLE_DDS:
         bld.recurse("libraries/AP_DDS")

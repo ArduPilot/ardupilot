@@ -165,15 +165,7 @@ void AP_Periph_FW::can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t n
     }
 
     // encode and send message:
-    uint8_t buffer[DRONECAN_SENSORS_RC_RCINPUT_MAX_SIZE] {};
-
-    uint16_t total_size = dronecan_sensors_rc_RCInput_encode(&pkt, buffer, !periph.canfdout());
-
-    canard_broadcast(DRONECAN_SENSORS_RC_RCINPUT_SIGNATURE,
-                     DRONECAN_SENSORS_RC_RCINPUT_ID,
-                     CANARD_TRANSFER_PRIORITY_HIGH,
-                     buffer,
-                     total_size);
+    dronecan->rc_input_pub.broadcast(pkt);
 }
 
 #endif  // HAL_PERIPH_ENABLE_RCIN

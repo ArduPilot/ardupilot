@@ -62,14 +62,7 @@ void AP_Periph_FW::can_mag_update(void)
         pkt.magnetic_field_ga[i] = field[i] * 0.001;
     }
 
-    uint8_t buffer[UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH_MAX_SIZE] {};
-    uint16_t total_size = uavcan_equipment_ahrs_MagneticFieldStrength_encode(&pkt, buffer, !periph.canfdout());
-
-    canard_broadcast(UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH_SIGNATURE,
-                    UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    dronecan->mag_pub.broadcast(pkt);
 }
 
 #endif // HAL_PERIPH_ENABLE_MAG

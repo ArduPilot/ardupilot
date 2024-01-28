@@ -164,13 +164,7 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.power_rating_pct = t.phase_current;
     pkt.error_count = t.error_count;
 
-    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
-    uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());
-    canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
-                    UAVCAN_EQUIPMENT_ESC_STATUS_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    dronecan->esc_status_pub.broadcast(pkt);
 }
 
 #endif // HAL_PERIPH_ENABLE_HWESC

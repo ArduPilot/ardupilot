@@ -83,7 +83,7 @@ void AP_Periph_FW::rcout_init_1Hz()
     }
 }
 
-void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
+void AP_Periph_FW::rcout_esc(const int16_t *rc, uint8_t num_channels)
 {
     if (rc == nullptr) {
         return;
