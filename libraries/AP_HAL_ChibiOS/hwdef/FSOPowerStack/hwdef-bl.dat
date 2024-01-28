@@ -1,0 +1,87 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# 512k flash part
+FLASH_SIZE_KB 512
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_FSO_POWER_STACK
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# order of UARTs
+SERIAL_ORDER USART2
+
+# LED
+PB2 LED_BOOTLOADER OUTPUT HIGH # change to PD2
+
+define HAL_LED_ON 0
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 FALSE
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
+
+# avoid timer and RCIN threads to save memory
+define HAL_NO_TIMER_THREAD
+define HAL_NO_RCIN_THREAD
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA5 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB5 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+PA4 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# pullup outputs to ensure they stay off
+PB10    PAYLOAD_PC      OUTPUT  PULLDOWN    LOW
+PB11    PAYLOAD_EN      OUTPUT  PULLDOWN    LOW
+PC4     PAYLOAD_1_EN    OUTPUT  PULLDOWN    LOW
+PC5     PAYLOAD_2_EN    OUTPUT  PULLDOWN    LOW
+PC13    MAIN_PC         OUTPUT  PULLDOWN    LOW
+PC14    BAT_1_EN        OUTPUT  PULLDOWN    LOW
+PC15    BAT_2_EN        OUTPUT  PULLDOWN    LOW
+PA1     LED_RED         OUTPUT  PULLDOWN    LOW
+PA2     LED_GREEN       OUTPUT  PULLDOWN    LOW
+PA3     LED_BLUE        OUTPUT  PULLDOWN    LOW
+PB13    LED_MAIN        OUTPUT  PULLDOWN    LOW
+PB15    LED_PAYLOAD     OUTPUT  PULLDOWN    LOW
+
+define CAN_APP_NODE_NAME "org.ardupilot.FSO_Power_Stack"
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500
+
+# do I need to define pins as pull down so the bootloader doesn't blow things up?
