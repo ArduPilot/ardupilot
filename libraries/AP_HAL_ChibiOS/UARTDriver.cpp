@@ -451,6 +451,12 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 #ifndef HAL_UART_NODMA
             if (half_duplex) {
                 sercfg.irq_cb = half_duplex_irq_cb;
+                if (rx_dma_enabled) {
+                    sercfg.cr3 |= USART_CR3_DMAR;
+                }
+                if (tx_dma_enabled) {
+                    sercfg.cr3 |= USART_CR3_DMAT;
+                }
             } else {
                 if (rx_dma_enabled) {
                     sercfg.cr1 |= USART_CR1_IDLEIE;
@@ -470,13 +476,15 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
-            if (rx_dma_enabled && !was_initialised && !half_duplex) {
+            if (rx_dma_enabled && !was_initialised) {
                 // Configure serial driver to skip handling RX packets
                 // because we will handle them via DMA
                 ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
-                // Start DMA
-                dmaStreamDisable(rxdma);
-                dma_rx_enable();
+                if (!half_duplex) {
+                    // Start DMA
+                    dmaStreamDisable(rxdma);
+                    dma_rx_enable();
+                }
             }
 #endif // HAL_UART_NODMA
         }
@@ -576,6 +584,11 @@ void UARTDriver::dma_rx_disable(void)
     // clear RXNE interrupt and IDLE detection
     (void)sd->usart->RDR;
     sd->usart->ICR |= USART_ICR_IDLECF;
+
+#if defined(USART_CR1_FIFOEN)
+    sd->usart->RQR |= USART_RQR_RXFRQ;
+#endif
+
     rx_dma_active = false;
 }
 
@@ -627,7 +640,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->rx_dma_enabled) {
         return;
     }
-    uint16_t len = uart_drv->half_duplex ? 5 : RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
+    uint16_t len = (uart_drv->half_duplex ? 5 : RX_BOUNCE_BUFSIZE) - dmaStreamGetTransactionSize(uart_drv->rxdma);
     const uint8_t bounce_idx = uart_drv->rx_bounce_idx;
 
     dmaStreamDisable(uart_drv->rxdma);
@@ -1171,12 +1184,16 @@ void UARTDriver::half_duplex_setup_rx(void)
 {
     SerialDriver *sd = (SerialDriver*)sdef.serial;
     volatile uint32_t cr3 = sd->usart->CR3;
-    volatile uint32_t cr1 = sd->usart->CR1;
+    volatile uint32_t cr1 = sd->usart->CR1 & ~(USART_CR1_TE | USART_CR1_RE);
 
     // RX already enabled
     if (rx_dma_enabled && rx_dma_active) {
         return;
     }
+
+    // uart must be disabled (UE = 0) to write HDSEL, this will also disable DMA and
+    // clear the FIFO buffer
+    sd->usart->CR1 = 0;
 
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled) {
@@ -1188,12 +1205,7 @@ void UARTDriver::half_duplex_setup_rx(void)
     }
 #endif
     cr3 |= USART_CR3_HDSEL;
-    // only enable RX side to avoid TX seeing spurious data
-    cr1 = (cr1 & ~USART_CR1_TE) | USART_CR1_RE;
 
-    // uart must be disabled (UE = 0) to write HDSEL, this will also disable DMA and
-    // clear the FIFO buffer
-    sd->usart->CR1 = 0;
     sd->usart->CR3 = cr3;
     // re-enable UART
     sd->usart->CR1 = cr1;
@@ -1210,6 +1222,8 @@ void UARTDriver::half_duplex_setup_rx(void)
 
     dma_rx_enable();
 #endif // HAL_UART_NODMA
+    // only enable RX side to avoid TX seeing spurious data
+    sd->usart->CR1 |= USART_CR1_RE;
 }
 
 /*
@@ -1446,11 +1460,10 @@ void UARTDriver::_tx_timer_tick(void)
             if (!mask) {
                 TOGGLE_PIN_DEBUG(52);
                 TOGGLE_PIN_DEBUG(52);
-                dma_rx_disable();
-                rx_dma_active = false;
             } else {
                 TOGGLE_PIN_DEBUG(54);
                 TOGGLE_PIN_DEBUG(54);
+                dma_rx_disable();
             }
         }
 #endif
@@ -1826,6 +1839,7 @@ bool UARTDriver::set_options(uint16_t options)
     } else {
         cr3 &= ~USART_CR3_HDSEL;
         _cr3_options &= ~USART_CR3_HDSEL;
+        half_duplex = false;
     }
 
     set_pushpull(options);
