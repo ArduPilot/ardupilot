@@ -1633,26 +1633,26 @@ private:
     void log_data() const;
 
     enum class AxisType {
-        NONE = 0,           // none
-        INPUT_ROLL = 1,     // angle input roll axis is being excited
-        INPUT_PITCH = 2,    // angle pitch axis is being excited
-        INPUT_YAW = 3,      // angle yaw axis is being excited
-        RECOVER_ROLL = 4,   // angle roll axis is being excited
-        RECOVER_PITCH = 5,  // angle pitch axis is being excited
-        RECOVER_YAW = 6,    // angle yaw axis is being excited
-        RATE_ROLL = 7,      // rate roll axis is being excited
-        RATE_PITCH = 8,     // rate pitch axis is being excited
-        RATE_YAW = 9,       // rate yaw axis is being excited
-        MIX_ROLL = 10,      // mixer roll axis is being excited
-        MIX_PITCH = 11,     // mixer pitch axis is being excited
-        MIX_YAW = 12,       // mixer pitch axis is being excited
-        MIX_THROTTLE = 13,  // mixer throttle axis is being excited
-        DISTURB_POS_LAT = 14,
-        DISTURB_POS_LONG = 15,
-        DISTURB_VEL_LAT = 16,
-        DISTURB_VEL_LONG = 17,
-        INPUT_LOITER_LAT = 18,
-        INPUT_LOITER_LONG = 19,
+        NONE = 0,               // none
+        INPUT_ROLL = 1,         // angle input roll axis is being excited
+        INPUT_PITCH = 2,        // angle pitch axis is being excited
+        INPUT_YAW = 3,          // angle yaw axis is being excited
+        RECOVER_ROLL = 4,       // angle roll axis is being excited
+        RECOVER_PITCH = 5,      // angle pitch axis is being excited
+        RECOVER_YAW = 6,        // angle yaw axis is being excited
+        RATE_ROLL = 7,          // rate roll axis is being excited
+        RATE_PITCH = 8,         // rate pitch axis is being excited
+        RATE_YAW = 9,           // rate yaw axis is being excited
+        MIX_ROLL = 10,          // mixer roll axis is being excited
+        MIX_PITCH = 11,         // mixer pitch axis is being excited
+        MIX_YAW = 12,           // mixer pitch axis is being excited
+        MIX_THROTTLE = 13,      // mixer throttle axis is being excited
+        DISTURB_POS_LAT = 14,   // lateral body axis measured position is being excited
+        DISTURB_POS_LONG = 15,  // longitudinal body axis measured position is being excited
+        DISTURB_VEL_LAT = 16,   // lateral body axis measured velocity is being excited
+        DISTURB_VEL_LONG = 17,  // longitudinal body axis measured velocity is being excited
+        INPUT_LOITER_LAT = 18,  // lateral body axis commanded velocity is being excited
+        INPUT_LOITER_LONG = 19, // longitudinal body axis commanded velocity is being excited
     };
 
     AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
