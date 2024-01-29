@@ -45,6 +45,7 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <FireFight/FireFight.h>                    //添加头文件
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
 #endif
@@ -90,6 +91,7 @@ public:
     friend class GCS_Rover;
     friend class Mode;
     friend class ModeAcro;
+    friend class ModeTest;      //增加自定义模式
     friend class ModeAuto;
     friend class ModeCircle;
     friend class ModeGuided;
@@ -121,6 +123,8 @@ private:
     // variables
     AP_Param param_loader;
 
+
+    FireFight firefight_rover;
     // all settable parameters
     Parameters g;
     ParametersG2 g2;
@@ -135,6 +139,7 @@ private:
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
+    // RC_Channel rc;      //读取RC数值
 
 #if HAL_LOGGING_ENABLED
     AP_Logger logger;
@@ -249,6 +254,7 @@ private:
     ModeHold mode_hold;
     ModeManual mode_manual;
     ModeAcro mode_acro;
+    ModeTest mode_test;                 //增加自定义模式
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeLoiter mode_loiter;
@@ -307,6 +313,8 @@ private:
 
     // crash_check.cpp
     void crash_check();
+
+    void FireFight_open();
 
     // cruise_learn.cpp
     void cruise_learn_start();

@@ -11,7 +11,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
 
-#define NUM_RC_CHANNELS 16
+#define NUM_RC_CHANNELS 12     //最大通道数12
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel

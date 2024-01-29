@@ -14,6 +14,7 @@ public:
     enum class Number : uint8_t {
         MANUAL       = 0,
         ACRO         = 1,
+        TEST    = 2, //增加test_mode作测试用
         STEERING     = 3,
         HOLD         = 4,
         LOITER       = 5,
@@ -26,7 +27,7 @@ public:
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
-        TEST_MODE    = 13, //增加test_mode作测试用
+
         GUIDED       = 15,
         INITIALISING = 16,
     };
@@ -236,42 +237,49 @@ public:
     void handle_tack_request() override;
 };
 
-// class TEST_MODE : public Mode
-// {
-// public:
+class ModeTest : public Mode
+{
+public:
 
-//     Number mode_number() const override { return Number::TEST_MODE; }
-//     const char *name4() const override { return "TEST"; }
+    Number mode_number() const override { return Number::TEST; }   //这个数值必须要根最上面的枚举一样
+    const char *name4() const override { return "TEST"; }
 
-//     // methods that affect movement of the vehicle in this mode
-//     void update() override;
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
 
-//     bool _enter() override;
+    // Number mode_number() const override { return Number::HOLD; }
+    // const char *name4() const override { return "HOLD"; }
 
-//     void _exit() override;
+    // // methods that affect movement of the vehicle in this mode
+    // void update() override;
+
+    // // attributes for mavlink system status reporting
+    // bool attitude_stabilized() const override { return false; }
+
+    // // hold mode does not require position or velocity estimate
+    // bool requires_position() const override { return false; }
+    // bool requires_velocity() const override { return false; }
+    // return if in non-manual mode : AUTO, GUIDED, RTL
+    // virtual bool is_autopilot_mode() const { return false; }
+
+    // // returns true if steering is directly controlled by RC
+    // virtual bool manual_steering() const { return false; }
+
+    // // returns true if the throttle is controlled automatically
+    // virtual bool auto_throttle() { return is_autopilot_mode(); }
 
 
-//     // return if in non-manual mode : AUTO, GUIDED, RTL
-//     virtual bool is_autopilot_mode() const { return false; }
 
-//     // returns true if steering is directly controlled by RC
-//     virtual bool manual_steering() const { return false; }
+    // // attributes for mavlink system status reporting
+    // bool has_manual_input() const override { return true; }
 
-//     // returns true if the throttle is controlled automatically
-//     virtual bool auto_throttle() { return is_autopilot_mode(); }
+    // // acro mode requires a velocity estimate for non skid-steer rovers
+    // bool requires_position() const override { return false; }
+    // bool requires_velocity() const override;
 
-
-
-//     // // attributes for mavlink system status reporting
-//     // bool has_manual_input() const override { return true; }
-
-//     // // acro mode requires a velocity estimate for non skid-steer rovers
-//     // bool requires_position() const override { return false; }
-//     // bool requires_velocity() const override;
-
-//     // // sailboats in acro mode support user manually initiating tacking from transmitter
-//     // void handle_tack_request() override;
-// };
+    // // sailboats in acro mode support user manually initiating tacking from transmitter
+    // void handle_tack_request() override;
+};
 
 
 class ModeAuto : public Mode
