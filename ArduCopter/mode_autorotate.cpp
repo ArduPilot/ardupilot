@@ -255,12 +255,10 @@ void ModeAutorotate::run()
             _touchdown_time_ms = millis();
             g2.arot.init_touchdown();
         }
+        // Run touchdown controller
         g2.arot.touchdown_controller();
+        // Retrieve pitch target
         _pitch_target = g2.arot.get_pitch();
-        uint32_t disarm_delay_ms = 1000*g.disarm_delay;
-        if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE && ((now -  _touchdown_time_ms) > disarm_delay_ms )) {
-            copter.arming.disarm(AP_Arming::Method::LANDED);
-        }
 
         break;
     }

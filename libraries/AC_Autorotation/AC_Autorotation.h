@@ -176,6 +176,8 @@ private:
     float _curr_sink_deriv[20];    // Array for storing sink rate derivatives
     bool  _flare_complete;           // Flare completed
     bool  _flare_update_check;       // Check for flare altitude updating
+    float _time_on_ground;           // Time elapsed after touch down
+    bool _touchdown_complete;        // Touchdown completed check
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
 

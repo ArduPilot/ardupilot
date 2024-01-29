@@ -26,6 +26,7 @@
 // flare controller default definitions
 #define AP_ALPHA_TPP                         20.0f
 #define AP_T_TO_G                            0.55f
+#define MIN_TIME_ON_GROUND                   3000.0f
 
 const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
@@ -422,9 +423,10 @@ void AC_Autorotation::initial_flare_estimate(void)
     float des_spd_fwd = _param_target_speed * 0.01f;
     calc_flare_alt(-_est_rod, des_spd_fwd);
 
-    // Initialize sink rate monitor and flare bools
+    // Initialize sink rate monitor and flare/touchdown bools
     _flare_complete = false;
     _flare_update_check = false;
+    _touchdown_complete = false;
     _avg_sink_deriv = 0.0f;
     _avg_sink_deriv_sum = 0.0f;
     _index_sink_rate = 0;
@@ -697,6 +699,15 @@ void AC_Autorotation::touchdown_controller(void)
     _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _current_sink_rate))*0.01f + _ff_term_hs, 0.0f, 1.0f);
     col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
     _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
+    if(_current_sink_rate < 10.0 && _radar_alt<=_ground_clearance && !_touchdown_complete){
+        _time_on_ground = AP_HAL::millis();
+        _touchdown_complete = true;
+    }
+    float now = AP_HAL::millis();
+    if((now - _time_on_ground) > MIN_TIME_ON_GROUND && _touchdown_complete){
+       //on ground, collective can be bottomed now
+       _collective_out = 0;
+    }
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
     _pitch_target *= 0.95f;
 }
