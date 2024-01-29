@@ -171,6 +171,9 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 			nav_status.altitude_offset = -alt_diff;
 			nav_status.alt_difference_baro = 0;
 			nav_status.need_altitude_calibration = false;
+#if HAL_LOGGING_ENABLED
+            logger.Write_NamedValueFloat("NAV_ALT_OFS", nav_status.altitude_offset);
+#endif
 		}
     }
 
