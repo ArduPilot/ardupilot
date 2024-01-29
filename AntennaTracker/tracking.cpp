@@ -157,7 +157,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
  */
 void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 {
-    float local_pressure = barometer.get_pressure();
+    float local_pressure = barometer.get_sealevel_pressure(barometer.get_pressure());
     float aircraft_pressure = msg.press_abs*100.0f;
 
     // calculate altitude difference based on difference in barometric pressure
@@ -171,6 +171,7 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 			nav_status.altitude_offset = -alt_diff;
 			nav_status.alt_difference_baro = 0;
 			nav_status.need_altitude_calibration = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "Pressure alt delta=%f", alt_diff);
 #if HAL_LOGGING_ENABLED
             logger.Write_NamedValueFloat("NAV_ALT_OFS", nav_status.altitude_offset);
 #endif
