@@ -76,6 +76,8 @@ def build(bld):
     idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
 
     for idl in idl_files:
+        container_prealloc_size = 8
+
         idl_path = pathlib.PurePath(idl.abspath())
         b = idl_path.name
 
@@ -85,7 +87,7 @@ def build(bld):
         idl_folder = idl_path.parts[-3:-1]
         dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
         gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
-        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
+        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -default-container-prealloc-size {container_prealloc_size} -d {dst_dir} -I {idl_include_path} {idl}"
         bld(
             # build IDL file
             source=idl,
