@@ -611,7 +611,7 @@ void AP_DDS_Client::main_loop(void)
     //! @todo check for request to stop task
     while (true) {
         if (comm == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: transport invalid, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
 
@@ -619,17 +619,17 @@ void AP_DDS_Client::main_loop(void)
         const uint64_t ping_timeout_ms{1000};
         const uint8_t ping_max_attempts{10};
         if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: No ping response, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
             return;
         }
 
         // create session
         if (!init_session() || !create()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Creation Requests failed");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
         }
         connected = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Initialization passed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
         populate_static_transforms(tx_static_transforms_topic);
         write_static_transforms();
@@ -668,7 +668,7 @@ void AP_DDS_Client::main_loop(void)
 
             if (num_pings_missed > 2) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
-                              "DDS Client: No ping response, disconnecting");
+                              "%s No ping response, disconnecting", msg_prefix);
                 connected = false;
             }
         }
