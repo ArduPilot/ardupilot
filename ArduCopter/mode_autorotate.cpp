@@ -257,11 +257,8 @@ void ModeAutorotate::run()
         }
         g2.arot.touchdown_controller();
         _pitch_target = g2.arot.get_pitch();
-
-        if (fabsf(inertial_nav.get_velocity_z_up_cms()) < 10) {
-            copter.ap.land_complete = true;
-        }
-        if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE && ((now -  _touchdown_time_ms)/1000.0f > TOUCHDOWN_TIME )) {
+        uint32_t disarm_delay_ms = 1000*g.disarm_delay;
+        if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE && ((now -  _touchdown_time_ms) > disarm_delay_ms )) {
             copter.arming.disarm(AP_Arming::Method::LANDED);
         }
 
