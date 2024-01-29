@@ -1478,8 +1478,6 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                 plane.adjust_altitude_target();
             }
         }
-
-        break;
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
