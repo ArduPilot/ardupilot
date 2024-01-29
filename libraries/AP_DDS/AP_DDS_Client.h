@@ -71,7 +71,6 @@ private:
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
-    tf2_msgs_msg_TFMessage tx_dynamic_transforms_topic;
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 
