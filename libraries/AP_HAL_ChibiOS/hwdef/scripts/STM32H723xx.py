@@ -37,7 +37,7 @@ mcu = {
     
 	'EXPECTED_CLOCKS' : [
         ('STM32_SYS_CK',	400000000),
-		('STM32_OSPICLK', 	200000000),
+        ('STM32_OSPICLK', 	200000000),
         ('STM32_SDMMC1CLK',  66666666),
 		('STM32_SPI45CLK',  100000000),
         ('STM32_FDCANCLK',   80000000),
@@ -84,7 +84,7 @@ ADC1_map = {
     "PA7"	:	7,
     "PC5"	:	8,
     "PB0"	:	9,
-	"PC0"	:	10,
+    "PC0"	:	10,
 	"PC1"	:	11,
 	"PC2"	:	12,
     "PC3"	:	13,
