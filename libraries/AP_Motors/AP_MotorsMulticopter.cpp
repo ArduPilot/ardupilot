@@ -479,13 +479,13 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
 
     // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_up_time)) {
-        float output_delta_up_max = 1.0f / (constrain_float(_slew_up_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_up_max = 1.0f / (constrain_float(_slew_up_time, 0.0f, 1.5f) * _loop_rate);
         output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
     }
 
     // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_dn_time)) {
-        float output_delta_dn_max = 1.0f / (constrain_float(_slew_dn_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_dn_max = 1.0f / (constrain_float(_slew_dn_time, 0.0f, 1.5f) * _loop_rate);
         output_slew_limit_dn = constrain_float(actuator_output - output_delta_dn_max, 0.0f, 1.0f);
     }
 
