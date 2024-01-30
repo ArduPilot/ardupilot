@@ -851,6 +851,8 @@ private:
 #ifdef HAL_GPIO_PPS
     void pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us);
     void set_pps_desired_freq(uint8_t freq) override;
+    void update_lag();
+    uint32_t _lag_us;
 #endif
 
     // status of active configuration for a role
