@@ -258,6 +258,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(stats, "STAT", 27, AP_Vehicle, AP_Stats),
 #endif
 
+#if AP_SCRIPTING_ENABLED
+    // @Group: SCR_
+    // @Path: ../AP_Scripting/AP_Scripting.cpp
+    AP_SUBGROUPINFO(scripting, "SCR_", 28, AP_Vehicle, AP_Scripting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -366,6 +372,10 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+
+#if AP_SCRIPTING_ENABLED
+    scripting.init();
+#endif // AP_SCRIPTING_ENABLED
 
 #if AP_AIRSPEED_ENABLED
     airspeed.init();
@@ -976,10 +986,7 @@ void AP_Vehicle::one_Hz_update(void)
     }
 
 #if AP_SCRIPTING_ENABLED
-    AP_Scripting *scripting = AP_Scripting::get_singleton();
-    if (scripting != nullptr) {
-        scripting->update();
-    }
+    scripting.update();
 #endif
 
 }
