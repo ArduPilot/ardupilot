@@ -188,7 +188,7 @@ void Plane::calc_airspeed_errors()
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 #if OFFBOARD_GUIDED == ENABLED
-    } else if (control_mode == &mode_guided && guided_state.target_airspeed_cm >  0.0) { // if offboard guided speed change cmd not set, then this section is skipped
+    } else if (control_mode == &mode_guided && is_positive(guided_state.target_airspeed_cm)) { // if offboard guided speed change cmd not set, then this section is skipped
         // offboard airspeed demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
@@ -257,7 +257,7 @@ void Plane::calc_airspeed_errors()
 
     // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
 #if OFFBOARD_GUIDED == ENABLED
-    if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
+    if (control_mode == &mode_guided && is_positive(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
         airspeed_nudge_cm = 0; //airspeed_nudge_cm forced to zero
     }
 #endif
