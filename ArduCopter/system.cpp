@@ -179,10 +179,6 @@ void Copter::init_ardupilot()
 
     startup_INS_ground();
 
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.init();
 #endif
