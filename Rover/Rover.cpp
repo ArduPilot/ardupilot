@@ -151,7 +151,8 @@ void Rover::FireFight_open()   //每20毫秒执行一次
     static uint8_t up_down = 0;
     static uint8_t left_right = 0;
     static uint8_t wu_zhu = 0;
-        
+    uint16_t under_offset = 1550;
+    uint16_t low_offset = 1450;
     uint8_t temp;
     static uint8_t time_cnt = 0;
     // firefight_rover.updata();
@@ -160,7 +161,7 @@ void Rover::FireFight_open()   //每20毫秒执行一次
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(3):%5d",hal.rcin->read(3));//地面站消息发送
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(4):%5d",hal.rcin->read(4));//地面站消息发送
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"steer:%d",channel_steer->get_control_in());//地面站消息发送
-    if ((hal.rcin->read(2)) > 1550  && up_down != 1)
+    if ((hal.rcin->read(2)) > under_offset  && up_down != 1)
     {
         if (/* condition */time_cnt == 0)
         {
@@ -179,7 +180,7 @@ void Rover::FireFight_open()   //每20毫秒执行一次
         
     }
 
-    else if ((hal.rcin->read(2)) < 1450  && up_down != 2)
+    else if ((hal.rcin->read(2)) < low_offset  && up_down != 2)
     {
         if (/* condition */time_cnt == 0)
         {
@@ -197,14 +198,25 @@ void Rover::FireFight_open()   //每20毫秒执行一次
         // firefight_rover.up_button(0);
 
     }
-    else if(up_down != 5 && ((hal.rcin->read(2)) > 1450) && (hal.rcin->read(2) < 1550))   //重复发送4次
+    else if(up_down != 3 && ((hal.rcin->read(2)) > low_offset) && ((hal.rcin->read(2)) < under_offset))   //重复发送4次
     {
-        firefight_rover.upanddown_zero();
-        up_down++;
+        if (/* condition */time_cnt == 0)
+        {
+           firefight_rover.up_button(0);     //将柱清零            /* code */
+        }
+        time_cnt++;
+        if (time_cnt >= 2 ) //延时一个执行周期
+        {
+            /* code */
+            firefight_rover.down_button(0);
+            time_cnt = 0;
+            up_down++;
+        }    
+
     }
         
 
-    if ((hal.rcin->read(3)) > 1550 && left_right != 1)
+    if ((hal.rcin->read(3)) > under_offset && left_right != 1)
     {
 
         if (/* condition */time_cnt == 0)
@@ -221,7 +233,7 @@ void Rover::FireFight_open()   //每20毫秒执行一次
             time_cnt = 0;
         }
     }
-    else if ((hal.rcin->read(3)) < 1450  && left_right != 2)
+    else if ((hal.rcin->read(3)) < low_offset  && left_right != 2)
     {
         if (/* condition */time_cnt == 0)
         {
@@ -236,13 +248,24 @@ void Rover::FireFight_open()   //每20毫秒执行一次
             time_cnt = 0;
         } 
     }
-    else if (left_right != 5 && ((hal.rcin->read(3)) > 1450) && (hal.rcin->read(3) < 1550))   //重复发送4次
+    else if (left_right != 3 && ((hal.rcin->read(3)) > low_offset) && ((hal.rcin->read(3)) < under_offset))   //重复发送4次
     {
-        firefight_rover.leftandright_zero();
-        left_right++;
+        if (/* condition */time_cnt == 0)
+        {
+            firefight_rover.left_button(0);    //将柱清零            /* code */
+        }
+        time_cnt++;
+        if (time_cnt >= 2 ) //延时一个执行周期
+        {
+            /* code */
+            firefight_rover.right_button(0);
+            time_cnt = 0;
+            left_right++;
+        }    
+
     }
 
-    if ((hal.rcin->read(4)) > 1550  && wu_zhu != 1)
+    if ((hal.rcin->read(4)) > under_offset  && wu_zhu != 1)
     {
         if (/* condition */time_cnt == 0)
         {
@@ -256,7 +279,7 @@ void Rover::FireFight_open()   //每20毫秒执行一次
             time_cnt = 0;
         }        
     }
-    else if((hal.rcin->read(4)) < 1450 && wu_zhu != 2)
+    else if((hal.rcin->read(4)) < low_offset && wu_zhu != 2)
     {
         if (/* condition */time_cnt == 0)
         {
@@ -270,7 +293,7 @@ void Rover::FireFight_open()   //每20毫秒执行一次
             time_cnt = 0;
         }   
     }
-    else if(wu_zhu != 5 && ((hal.rcin->read(4)) > 1450) && (hal.rcin->read(4) < 1550))
+    else if(wu_zhu != 3 && ((hal.rcin->read(4)) > low_offset) && ((hal.rcin->read(4)) < under_offset))
     {
         if (/* condition */time_cnt == 0)
         {
@@ -282,8 +305,9 @@ void Rover::FireFight_open()   //每20毫秒执行一次
             /* code */
             firefight_rover.wu_button(0);
             time_cnt = 0;
+            wu_zhu++;
         }    
-        wu_zhu++;
+  
     }
     temp = firefight_rover.check_send_one();
     if ( temp!= 0)

@@ -39,6 +39,11 @@ public:
     void zhu_zero();
     void wu_zero();
     uint8_t check_send_one();
+    void valve_button(uint16_t val);   //阀门按钮
+    void pump_button(uint16_t val);    //泵按钮
+    void Record_button(uint16_t val);  //录制按钮
+    void playback_button(uint16_t val);//回放按钮
+    // uint8_t check_send_one(uint16_t val);
 };
 
 #endif

@@ -217,8 +217,26 @@ void FireFight::wu_zero()      //雾归零
     write_one(0x0011,0);       //发送内存地址17,指令1，按键上功能
 }
 
+void FireFight::valve_button(uint16_t val)//具体定义请参考.h文件
 
+{
+    write_one(0x0013,val);
+}
 
+void FireFight::pump_button(uint16_t val)
+{
+    write_one(0x0014,val);
+}
+
+void FireFight::Record_button(uint16_t val)
+{
+    write_one(0x0015,val);
+}
+
+void FireFight::playback_button(uint16_t val)
+{
+    write_one(0x0016,val);
+}
 
 bool FireFight::updata()
 {
