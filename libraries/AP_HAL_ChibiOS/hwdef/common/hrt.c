@@ -73,6 +73,12 @@ static uint32_t system_time_u32_us(void)
 static uint32_t get_systime_us32(void)
 {
     uint32_t now = system_time_u32_us();
+#ifdef AP_INDUCE_PPM_OFFSET
+    // Please note that this will induce incorrect
+    // clock drift after 71 minutes, use hrt_micros64()
+    // as "now" here if you want to avoid that
+    now += (((uint64_t)now) * AP_INDUCE_PPM_OFFSET) / 1000000U;
+#endif
 #ifdef AP_BOARD_START_TIME
     now += AP_BOARD_START_TIME;
 #endif
@@ -89,6 +95,10 @@ static uint64_t hrt_micros64I(void)
     uint64_t ret = chVTGetTimeStampI();
 #if CH_CFG_ST_FREQUENCY != 1000000U
     ret *= 1000000U/CH_CFG_ST_FREQUENCY;
+#endif
+#ifdef AP_INDUCE_PPM_OFFSET
+    // induce clock drift
+    ret += (ret * AP_INDUCE_PPM_OFFSET) / 1000000U;
 #endif
 #ifdef AP_BOARD_START_TIME
     ret += AP_BOARD_START_TIME;

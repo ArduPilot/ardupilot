@@ -353,7 +353,18 @@ __FASTRAMFUNC__ uint32_t micros()
 {
 #if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
     // special case optimisation for 32 bit timers
-#ifdef AP_BOARD_START_TIME
+#if defined(AP_INDUCE_PPM_OFFSET)
+    uint64_t now = st_lld_get_counter();
+#if defined(AP_BOARD_START_TIME)
+    now += AP_BOARD_START_TIME;
+#else
+    // Please note that this will induce incorrect
+    // clock drift after 71 minutes, use hrt_micros64()
+    // as "now" here if you want to avoid that
+    now += (now * AP_INDUCE_PPM_OFFSET) / 1000000U;
+    return now & 0xFFFFFFFF;
+#endif
+#elif defined(AP_BOARD_START_TIME)
     return st_lld_get_counter() + AP_BOARD_START_TIME;
 #else
     return st_lld_get_counter();
