@@ -69,6 +69,9 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#if AP_SCRIPTING_ENABLED
+#include <AP_Scripting/AP_Scripting.h>
+#endif
 
 class AP_DDS_Client;
 
@@ -413,6 +416,10 @@ protected:
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
+#endif
+
+#if AP_SCRIPTING_ENABLED
+    AP_Scripting scripting;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
