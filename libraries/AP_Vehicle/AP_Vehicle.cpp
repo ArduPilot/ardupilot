@@ -512,7 +512,6 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI||APM_BUILD_TYPE(APM_BUILD_Rover)
     const float ref_freq = notch.params.center_freq_hz();
     const float ref = notch.params.reference();
-    const float min_ratio = notch.params.freq_min_ratio();
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
     const AP_Motors* motors = AP::motors();
@@ -522,7 +521,7 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
     const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() / 100.0f) : 0;
 #endif
 
-    float throttle_freq = ref_freq * MAX(min_ratio, sqrtf(motors_throttle / ref));
+    float throttle_freq = ref_freq * sqrtf(MAX(0,motors_throttle) / ref);
 
     notch.update_freq_hz(throttle_freq);
 #endif
@@ -542,17 +541,6 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
         return;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-    const AP_Motors* motors = AP::motors();
-    if (motors != nullptr && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
-        notch.set_inactive(true);
-    } else {
-        notch.set_inactive(false);
-    }
-#else  // APM_BUILD_Rover: keep notch active
-    notch.set_inactive(false);
-#endif
-
     switch (notch.params.tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
@@ -567,9 +555,9 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             float rpm;
             if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                notch.update_freq_hz(MAX(ref_freq, rpm * ref * (1.0/60)));
+                notch.update_freq_hz(rpm * ref * (1.0/60));
             } else {
-                notch.update_freq_hz(ref_freq);
+                notch.update_freq_hz(0);
             }
             break;
         }
@@ -581,18 +569,13 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
                 float notches[INS_MAX_NOTCHES];
                 // ESC telemetry will return 0 for missing data, but only after 1s
                 const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
-                for (uint8_t i = 0; i < num_notches; i++) {
-                    if (!is_zero(notches[i])) {
-                        notches[i] =  MAX(ref_freq, notches[i]);
-                    }
-                }
                 if (num_notches > 0) {
                     notch.update_frequencies_hz(num_notches, notches);
                 } else {    // throttle fallback
                     update_throttle_notch(notch);
                 }
             } else {
-                notch.update_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));
+                notch.update_freq_hz(AP::esc_telem().get_average_motor_frequency_hz() * ref);
             }
             break;
 #endif
@@ -604,20 +587,14 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
                 const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(notch.num_dynamic_notches, notches);
 
                 if (peaks > 0) {
-                    for (uint8_t i = 0; i < peaks; i++) {
-                        notches[i] =  MAX(ref_freq, notches[i]);
-                    }
+                    notch.set_inactive(false);
                     notch.update_frequencies_hz(peaks, notches);
                 } else {    // since FFT can be used post-filter it is better to disable the notch when there is no data
                     notch.set_inactive(true);
                 }
             } else {
                 float center_freq = gyro_fft.get_weighted_noise_center_freq_hz();
-                if (!is_zero(center_freq)) {
-                    notch.update_freq_hz(MAX(ref_freq, center_freq));
-                } else {    // since FFT can be used post-filter it is better to disable the notch when there is no data
-                    notch.set_inactive(true);
-                }
+                notch.update_freq_hz(center_freq);
             }
             break;
 #endif
