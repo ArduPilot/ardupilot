@@ -601,11 +601,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
 
-#if AP_SCRIPTING_ENABLED
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
-    AP_SUBGROUPINFO(scripting, "SCR_", 41, ParametersG2, AP_Scripting),
-#endif
+    // 41 was Scripting
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
@@ -931,6 +927,20 @@ void Rover::load_parameters(void)
         const uint16_t stats_old_index = 1;       // Old parameter index in g2
         const uint16_t stats_old_top_element = 4033; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(stats_info.old_key, &stats, stats.var_info, stats_old_index, stats_old_top_element, false);
+    }
+#endif
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+#if AP_SCRIPTING_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo scripting_info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, scripting_info.old_key)) {
+            return;
+        }
+
+        const uint16_t scripting_old_index = 41;       // Old parameter index in g2
+        const uint16_t scripting_old_top_element = 105; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
     }
 #endif
 

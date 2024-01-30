@@ -174,10 +174,6 @@ void Rover::startup_ground(void)
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
 }
 
 // update the ahrs flyforward setting which can allow
