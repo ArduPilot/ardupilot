@@ -396,10 +396,6 @@ public:
     // stick mixing for auto modes
     AP_Int8     stick_mixing;
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
-
     // waypoint navigation
     AR_WPNav_OA wp_nav;
 
