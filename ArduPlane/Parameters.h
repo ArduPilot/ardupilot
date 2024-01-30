@@ -519,10 +519,6 @@ public:
 
     AP_Int32 flight_options;
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
-
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
