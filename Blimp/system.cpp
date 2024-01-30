@@ -79,10 +79,6 @@ void Blimp::init_ardupilot()
 
     startup_INS_ground();
 
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // setup fin output
