@@ -2285,7 +2285,12 @@ void AP_InertialSensor::acal_update()
 }
 #endif
 
-// Update the harmonic notch frequency
+/*
+  Update the harmonic notch frequency
+
+  Note that zero is a valid value and will disable the notch unless
+  the TreatLowAsMin option is set
+*/
 void AP_InertialSensor::HarmonicNotch::update_freq_hz(float scaled_freq)
 {
     calculated_notch_freq_hz[0] = scaled_freq;
@@ -2294,7 +2299,7 @@ void AP_InertialSensor::HarmonicNotch::update_freq_hz(float scaled_freq)
 
 // Update the harmonic notch frequency
 void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]) {
-    // protect against zero as the scaled frequency
+    // note that we allow zero through, which will disable the notch
     for (uint8_t i = 0; i < num_freqs; i++) {
         calculated_notch_freq_hz[i] = scaled_freq[i];
     }
