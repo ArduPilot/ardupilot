@@ -690,6 +690,9 @@ const AP_Param::Info Sub::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
+
+    // 1 was AP_Stats
+
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
