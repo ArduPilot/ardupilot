@@ -28,10 +28,6 @@ void Tracker::init_ardupilot()
     log_init();
 #endif
 
-#if AP_SCRIPTING_ENABLED
-    scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();

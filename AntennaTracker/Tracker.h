@@ -53,10 +53,6 @@
 
 #include "AP_Arming.h"
 
-#if AP_SCRIPTING_ENABLED
-#include <AP_Scripting/AP_Scripting.h>
-#endif
-
 #include "mode.h"
 
 class Tracker : public AP_Vehicle {
@@ -114,10 +110,6 @@ private:
     ModeScan mode_scan;
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
-
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif
 
     // Vehicle state
     struct {
