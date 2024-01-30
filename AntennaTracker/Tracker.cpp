@@ -159,8 +159,7 @@ Mode *Tracker::mode_from_mode_num(const Mode::Number num)
 */
 void Tracker::stats_update(void)
 {
-    stats.set_flying(hal.util->get_soft_armed());
-    stats.update();
+    AP::stats()->set_flying(hal.util->get_soft_armed());
 }
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();

@@ -17,11 +17,6 @@ static void failsafe_check_static()
 void Plane::init_ardupilot()
 {
 
-#if STATS_ENABLED == ENABLED
-    // initialise stats module
-    g2.stats.init();
-#endif
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // setup any board specific drivers

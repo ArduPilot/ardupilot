@@ -40,7 +40,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
 // Configuration
@@ -97,8 +96,6 @@ private:
 
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
-
-    AP_Stats stats;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,

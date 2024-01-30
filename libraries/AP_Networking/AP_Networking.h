@@ -205,6 +205,7 @@ private:
         TCP_SERVER = 4,
     };
 
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
     // class for NET_Pn_* parameters
     class Port : public AP_SerialManager::RegisteredPort {
     public:
@@ -270,6 +271,7 @@ private:
 
         HAL_Semaphore sem;
     };
+#endif // AP_NETWORKING_REGISTER_PORT_ENABLED
 
 private:
     uint32_t announce_ms;
@@ -286,8 +288,10 @@ private:
     void test_TCP_discard(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
     // ports for registration with serial manager
     Port ports[AP_NETWORKING_NUM_PORTS];
+#endif
 
     // support for sendfile()
     struct SendFile {

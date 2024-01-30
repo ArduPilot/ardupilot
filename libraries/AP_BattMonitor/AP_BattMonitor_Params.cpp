@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // @Param: CRT_MAH
     // @DisplayName: Battery critical capacity
-    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@_FS_CRT_ACT parameter.
+    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@FS_CRT_ACT parameter.
     // @Units: mAh
     // @Increment: 50
     // @User: Standard

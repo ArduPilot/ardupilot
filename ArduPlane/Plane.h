@@ -44,7 +44,6 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
@@ -1090,6 +1089,7 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
+    bool check_takeoff_timeout(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
