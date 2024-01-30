@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_SerialManager/AP_SerialManager_config.h>
 
 #if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
 // allow --enable-ppp to enable networking
@@ -133,3 +134,6 @@
 #define AP_NETWORKING_REMOTE_PPP_IP "0.0.0.0"
 #endif
 
+#ifndef AP_NETWORKING_REGISTER_PORT_ENABLED
+#define AP_NETWORKING_REGISTER_PORT_ENABLED AP_NETWORKING_ENABLED && AP_SERIALMANAGER_REGISTER_ENABLED
+#endif

@@ -68,6 +68,7 @@
 #include <Filter/LowPassFilter.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
+#include <AP_Stats/AP_Stats.h>              // statistics library
 
 class AP_DDS_Client;
 
@@ -386,6 +387,11 @@ protected:
 
 #if AP_AIRSPEED_ENABLED
     AP_Airspeed airspeed;
+#endif
+
+#if AP_STATS_ENABLED
+    // vehicle statistics
+    AP_Stats stats;
 #endif
 
 #if AP_AIS_ENABLED

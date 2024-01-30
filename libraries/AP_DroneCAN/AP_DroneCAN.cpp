@@ -59,6 +59,8 @@
 #include <AP_Relay/AP_Relay.h>
 #endif
 
+#include <AP_TemperatureSensor/AP_TemperatureSensor_DroneCAN.h>
+
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
@@ -390,6 +392,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 #endif
 #if HAL_MOUNT_XACTI_ENABLED
     AP_Mount_Xacti::subscribe_msgs(this);
+#endif
+#if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
+    AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);
 #endif
 
     act_out_array.set_timeout_ms(5);

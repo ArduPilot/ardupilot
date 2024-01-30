@@ -617,10 +617,6 @@
   #error Toy mode is not available on Helicopters
 #endif
 
-#ifndef STATS_ENABLED
- # define STATS_ENABLED ENABLED
-#endif
-
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
 #endif

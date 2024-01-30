@@ -36,6 +36,7 @@ class AP_TemperatureSensor
     friend class AP_TemperatureSensor_MAX31865;
     friend class AP_TemperatureSensor_TSYS03;
     friend class AP_TemperatureSensor_Analog;
+    friend class AP_TemperatureSensor_DroneCAN;
 
 public:
 

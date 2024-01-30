@@ -95,9 +95,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75,  69),
 #endif
-#if STATS_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100,  75),
-#endif
 };
 
 void Blimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,

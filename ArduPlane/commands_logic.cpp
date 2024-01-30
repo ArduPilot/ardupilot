@@ -595,22 +595,8 @@ bool Plane::verify_takeoff()
     }
 
     // check for optional takeoff timeout
-    if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
-        const float ground_speed = gps.ground_speed();
-        const float takeoff_min_ground_speed = 4;
-        if (!arming.is_armed_and_safety_off()) {
-            return false;
-        }
-        if (ground_speed >= takeoff_min_ground_speed) {
-            takeoff_state.start_time_ms = 0;
-        } else {
-            uint32_t now = AP_HAL::millis();
-            if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout at %.1f m/s", ground_speed);
-                plane.arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
-                mission.reset();
-            }
-        }
+    if (plane.check_takeoff_timeout()) {
+        mission.reset();
     }
 
     // see if we have reached takeoff altitude

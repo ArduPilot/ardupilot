@@ -4,7 +4,7 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_ENABLED
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
 
 #include "AP_Networking.h"
 #include <AP_HAL/utility/Socket.h>
@@ -476,4 +476,6 @@ enum AP_HAL::UARTDriver::flow_control AP_Networking::Port::get_flow_control(void
     return AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
 }
 
-#endif // AP_NETWORKING_ENABLED
+#endif // AP_NETWORKING_REGISTER_PORT_ENABLED
+
+

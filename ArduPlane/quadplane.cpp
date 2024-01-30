@@ -1872,6 +1872,15 @@ void QuadPlane::update(void)
 
     tiltrotor.update();
 
+    if (in_vtol_mode()) {
+        // if enabled output forward throttle else 0
+        float fwd_thr = 0;
+        if (allow_forward_throttle_in_vtol_mode()) {
+            fwd_thr = forward_throttle_pct();
+        }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);
+    }
+
 #if HAL_LOGGING_ENABLED
     // motors logging
     if (motors->armed()) {

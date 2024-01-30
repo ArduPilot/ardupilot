@@ -1032,11 +1032,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:NotEnforced,1:Enforced
     // @User: Advanced
     AP_GROUPINFO("SYSID_ENFORCE", 4, ParametersG2, sysid_enforce, 0),
-#if STATS_ENABLED == ENABLED
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
-#endif
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -1556,6 +1551,21 @@ void Plane::load_parameters(void)
     aparm.roll_limit.convert_centi_parameter(AP_PARAM_INT16);
 
     landing.convert_parameters();
+
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
+#if AP_STATS_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 5;       // Old parameter index in g2
+        const uint16_t old_top_element = 4037; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &stats, stats.var_info, old_index, old_top_element, false);
+    }
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

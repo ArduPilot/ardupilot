@@ -55,6 +55,10 @@
 #endif
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE) && !AP_TEMPERATURE_SENSOR_ENABLED
+    #error "HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE requires AP_TEMPERATURE_SENSOR_ENABLED"
+#endif
+
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
     // Needs SerialManager + (AHRS or GPS)
@@ -356,6 +360,11 @@ public:
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    void temperature_sensor_update();
+    uint32_t temperature_last_send_ms;
+    uint8_t temperature_last_sent_index;
+#endif
 #endif
 
 #if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)

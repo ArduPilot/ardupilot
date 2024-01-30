@@ -690,11 +690,6 @@ const AP_Param::Info Sub::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
-#if STATS_ENABLED == ENABLED
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
-#endif
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
@@ -790,6 +785,21 @@ void Sub::load_parameters()
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: Jan-2024
+#if AP_STATS_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo stats_info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, stats_info.old_key)) {
+            return;
+        }
+
+        const uint16_t stats_old_index = 1;       // Old parameter index in g2
+        const uint16_t stats_old_top_element = 4033; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(stats_info.old_key, &stats, stats.var_info, stats_old_index, stats_old_top_element, false);
+    }
 #endif
 }
 

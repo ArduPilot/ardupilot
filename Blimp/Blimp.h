@@ -39,7 +39,6 @@
 // #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 // #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Stats/AP_Stats.h>     // statistics library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library

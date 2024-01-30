@@ -33,6 +33,7 @@ public:
         MAX31865                    = 3,
         TSYS03                      = 4,
         ANALOG                      = 5,
+        DRONECAN                    = 6,
     };
 
     // option to map to another system component
@@ -43,6 +44,7 @@ public:
         Battery_Index               = 3,
         Battery_ID_SerialNumber     = 4,
         Pitot_tube                  = 5,
+        DroneCAN                    = 6,
     };
 
     AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE

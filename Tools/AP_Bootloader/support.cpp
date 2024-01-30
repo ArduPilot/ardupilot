@@ -497,7 +497,15 @@ void check_ecc_errors(void)
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
     uint32_t buf[32];
     uint32_t ofs = 0;
-    while (ofs < BOARD_FLASH_SIZE*1024 && FLASH->SR1 == 0 && FLASH->SR2 == 0) {
+    while (ofs < BOARD_FLASH_SIZE*1024) {
+        if (FLASH->SR1 != 0) {
+            break;
+        }
+#if BOARD_FLASH_SIZE > 1024
+        if (FLASH->SR2 != 0) {
+            break;
+        }
+#endif
         dmaStartMemCopy(dma,
                         STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
                         STM32_DMA_CR_MSIZE_BYTE,

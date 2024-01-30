@@ -1827,6 +1827,9 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_PERIPH_ENABLE_EFI
         can_efi_update();
     #endif
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+        temperature_sensor_update();
+#endif
     }
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {

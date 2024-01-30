@@ -53,6 +53,7 @@
 #define STM32H755_MCUCONF
 #define STM32H747_MCUCONF
 #define STM32H757_MCUCONF
+#define STM32H723_MCUCONF
 
 /*
  * General settings.
@@ -101,7 +102,7 @@
 #define STM32_HSIDIV                        STM32_HSIDIV_DIV1
 
 /*
- * Clock setup for all other H7 variants including H743, H753, H750 and H757
+ * Clock setup for all other H7 variants including H743, H723, H753, H750 and H757
  */
 #define STM32_VOS                           STM32_VOS_SCALE1
 /*
@@ -306,7 +307,9 @@
 #ifndef STM32_QSPISEL
 #define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
 #endif
+#ifdef STM32_QSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
+#endif
 
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
 #define STM32_FDCANSEL                      STM32_FDCANSEL_PLL1_Q_CK
@@ -356,6 +359,9 @@
 #define STM32_IRQ_MDMA_PRIORITY             9
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
 #define STM32_IRQ_QUADSPI2_PRIORITY         10
+
+#define STM32_IRQ_OCTOSPI1_PRIORITY         10
+#define STM32_IRQ_OCTOSPI2_PRIORITY         10
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
 #define STM32_IRQ_SDMMC2_PRIORITY           9
@@ -633,10 +639,9 @@
 // limit ISR count per byte
 #define STM32_I2C_ISR_LIMIT                 6
 
-// limit SDMMC clock to 12.5MHz by default. This increases
-// reliability
+// limit SDMMC clock to 50MHz by default
 #ifndef STM32_SDC_MAX_CLOCK
-#define STM32_SDC_MAX_CLOCK                 12500000
+#define STM32_SDC_MAX_CLOCK                 50000000
 #endif
 
 #ifndef STM32_WSPI_USE_QUADSPI1

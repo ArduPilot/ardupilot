@@ -5,7 +5,6 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Gripper/AP_Gripper.h>
-#include <AP_Stats/AP_Stats.h>
 #include <AP_Arming/AP_Arming.h>
 
 #if AP_SCRIPTING_ENABLED
@@ -354,10 +353,6 @@ public:
 class ParametersG2 {
 public:
     ParametersG2(void);
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

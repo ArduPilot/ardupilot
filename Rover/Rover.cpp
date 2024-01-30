@@ -135,9 +135,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
 #endif
-#if STATS_ENABLED == ENABLED
-    SCHED_TASK(stats_update,            1,    200, 120),
-#endif
     SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
 #if ADVANCED_FAILSAFE == ENABLED
@@ -302,14 +299,13 @@ void Rover::nav_script_time_done(uint16_t id)
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if STATS_ENABLED == ENABLED
+#if AP_STATS_ENABLED
 /*
   update AP_Stats
 */
 void Rover::stats_update(void)
 {
-    g2.stats.set_flying(g2.motors.active());
-    g2.stats.update();
+    AP::stats()->set_flying(g2.motors.active());
 }
 #endif
 

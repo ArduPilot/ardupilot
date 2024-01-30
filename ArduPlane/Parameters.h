@@ -484,11 +484,6 @@ public:
     AP_Button *button_ptr;
 #endif
 
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
-
 #if AP_ICENGINE_ENABLED
     // internal combustion engine control
     AP_ICEngine ice_control;
