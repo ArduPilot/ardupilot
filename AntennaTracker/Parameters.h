@@ -115,7 +115,7 @@ public:
         k_param_servo_channels,
 
         k_param_stats_old = 218,
-        k_param_scripting = 219,
+        k_param_scripting_old = 219,
 
         //
         // 220: Waypoint data
