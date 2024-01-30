@@ -308,36 +308,36 @@ void ModeSystemId::run()
                 case AxisType::DISTURB_POS_LAT:
                     disturb_state.x = 0.0f;
                     disturb_state.y = waveform_sample * 100.0f;
-                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
                     pos_control->set_disturb_pos_cm(disturb_state);
                     break;
                 case AxisType::DISTURB_POS_LONG:
                     disturb_state.x = waveform_sample * 100.0f;
                     disturb_state.y = 0.0f;
-                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
                     pos_control->set_disturb_pos_cm(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LAT:
                     disturb_state.x = 0.0f;
                     disturb_state.y = waveform_sample * 100.0f;
-                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
                     pos_control->set_disturb_vel_cms(disturb_state);
                     break;
                 case AxisType::DISTURB_VEL_LONG:
                     disturb_state.x = waveform_sample * 100.0f;
                     disturb_state.y = 0.0f;
-                    copter.rotate_target_body_frame_to_NE(disturb_state.x, disturb_state.y);
+                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
                     pos_control->set_disturb_vel_cms(disturb_state);
                     break;
                 case AxisType::INPUT_LOITER_LAT:
                     input_vel.x = 0.0f;
                     input_vel.y = waveform_sample * 100.0f;
-                    copter.rotate_target_body_frame_to_NE(input_vel.x, input_vel.y);
+                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
                 case AxisType::INPUT_LOITER_LONG:
                     input_vel.x = waveform_sample * 100.0f;
                     input_vel.y = 0.0f;
-                    copter.rotate_target_body_frame_to_NE(input_vel.x, input_vel.y);
+                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
             }
             break;
