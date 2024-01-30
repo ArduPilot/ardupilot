@@ -305,11 +305,6 @@ public:
     // Land alt final stage
     AP_Int16 land_alt_low;
 
-
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
-
     // vibration failsafe enable/disable
     AP_Int8 fs_vibe_enabled;
 

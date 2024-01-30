@@ -807,11 +807,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
 
-#if AP_SCRIPTING_ENABLED
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
-    AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
-#endif
+    // 30 was AP_Scripting
 
     // @Param: FS_VIBE_ENABLE
     // @DisplayName: Vibration Failsafe enable
@@ -882,6 +878,20 @@ void Blimp::load_parameters(void)
         const uint16_t old_index = 12;       // Old parameter index in g2
         const uint16_t old_top_element = 4044; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(info.old_key, &stats, stats.var_info, old_index, old_top_element, false);
+    }
+#endif
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
+#if AP_SCRIPTING_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 30;       // Old parameter index in g2
+        const uint16_t old_top_element = 94; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &scripting, scripting.var_info, old_index, old_top_element, false);
     }
 #endif
 
