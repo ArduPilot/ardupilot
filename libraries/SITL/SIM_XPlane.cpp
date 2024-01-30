@@ -181,6 +181,9 @@ bool XPlane::handle_axis(const char *label, class ::AP_JSONParser &json_parser)
         return false;
     }
 
+    ::printf("axis: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
+             j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
+
     j->next = joyinputs;
     joyinputs = j;
 
@@ -217,7 +220,7 @@ bool XPlane::handle_button(const char *label, class ::AP_JSONParser &json_parser
             if (!json_parser.shift_token_int32_t(value)) {
                 return false;
             }
-            j->channel = value;
+            j->mask = value;
             continue;
         }
         if (streq(n, "type")) {
@@ -230,6 +233,9 @@ bool XPlane::handle_button(const char *label, class ::AP_JSONParser &json_parser
         ::printf("Unknown button nv %s\n", n);
         return false;
     }
+
+    ::printf("button: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
+             j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
 
     j->next = joyinputs;
     joyinputs = j;
@@ -328,7 +334,7 @@ bool XPlane::handle_dref(const char *name, class ::AP_JSONParser &json_parser)
         }
     }
 
-    ::printf("%s t=%s range=%f fv=%f channel=%u\n", d->name, type_s, d->range, d->fixed_value, (unsigned)d->channel);
+    ::printf("DREF: %s t=%s range=%f fv=%f channel=%u\n", d->name, type_s, d->range, d->fixed_value, (unsigned)d->channel);
 
 // add to linked list
     d->next = drefs;
