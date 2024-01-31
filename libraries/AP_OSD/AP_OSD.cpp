@@ -446,6 +446,7 @@ void AP_OSD::update_stats()
     // maximum altitude
     alt = -alt;
     _stats.max_alt_m = fmaxf(_stats.max_alt_m, alt);
+#if AP_BATTERY_ENABLED
     // maximum current
     AP_BattMonitor &battery = AP::battery();
     float amps;
@@ -457,6 +458,7 @@ void AP_OSD::update_stats()
     if (voltage > 0) {
         _stats.min_voltage_v = fminf(_stats.min_voltage_v, voltage);
     }
+#endif
 #if AP_RSSI_ENABLED
     // minimum rssi
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
