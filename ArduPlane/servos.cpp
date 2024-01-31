@@ -601,10 +601,6 @@ void Plane::set_throttle(void)
             // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_adjusted_throttle_input(true));
         }
-    } else if (control_mode->is_guided_mode() &&
-               guided_throttle_passthru) {
-        // manual pass through of throttle while in GUIDED
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     }
 
     if (control_mode->use_battery_compensation()) {
