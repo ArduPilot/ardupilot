@@ -1,5 +1,12 @@
 APM:Sub Release Notes:
 
+Sub 4.1.2 beta2 31-January-2024
+
+changes from 4.1.1:
+
+ - Add support for additional joystick axis for roll/pitch
+ - Allow using Compass Learn with no GPS
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 2-November-2023
 
