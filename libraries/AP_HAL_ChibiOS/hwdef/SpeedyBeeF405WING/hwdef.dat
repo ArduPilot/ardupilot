@@ -171,14 +171,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 define HAL_WITH_DSP FALSE
 
-# save some flash
-
-# disable SMBUS and fuel battery monitors to save flash
-define AP_BATTMON_SMBUS_ENABLE 0
-define AP_BATTMON_FUEL_ENABLE 0
-define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
-define HAL_BATTMON_INA2XX_ENABLED 0
-
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
