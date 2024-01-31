@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor.h"
@@ -334,3 +338,5 @@ void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &
         state.consumed_wh  += 0.001 * mah * state.voltage;
     }
 }
+
+#endif  // AP_BATTERY_ENABLED
