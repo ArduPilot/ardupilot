@@ -65,13 +65,48 @@ void AP_Periph_FW::can_gps_update(void)
     if (gps.get_type(0) == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
         return;
     }
+
+#ifdef HAL_PERIPH_ENABLE_GLOBALTIMESYNC
+    // we need to record this time as its reset when we call gps.update()
+    uint64_t last_message_local_time_us = periph.gps.last_pps_time_usec();
+#endif
     gps.update();
+
     send_moving_baseline_msg();
     send_relposheading_msg();
     if (last_gps_update_ms == gps.last_message_time_ms()) {
         return;
     }
     last_gps_update_ms = gps.last_message_time_ms();
+
+#ifdef HAL_PERIPH_ENABLE_GLOBALTIMESYNC
+    // send time sync message every second
+    uavcan_protocol_GlobalTimeSync ts {};
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+        uint8_t idx; // unused
+        if (gps.status() < AP_GPS::GPS_OK_FIX_3D &&
+            !gps.is_healthy() &&
+            !gps.first_unconfigured_gps(idx)) {
+            // no good fix and no healthy GPS, so we don't send timesync
+            break;
+        }
+        uint64_t last_message_epoch_usec = gps.last_message_epoch_usec();
+        if (last_message_local_time_us != 0 &&
+            last_message_epoch_usec != 0) {
+            // (last_message_epoch_usec - last_message_local_time_us) represents the offset between the time in gps epoch and the local time of the node
+            // periph.get_tracked_tx_timestamp(i) represent the offset timestamp in the local time of the node
+            ts.previous_transmission_timestamp_usec = (last_message_epoch_usec - last_message_local_time_us) + get_tracked_tx_timestamp(i);
+            uint8_t buffer[UAVCAN_PROTOCOL_GLOBALTIMESYNC_MAX_SIZE] {};
+            uint16_t total_size = uavcan_protocol_GlobalTimeSync_encode(&ts, buffer, !canfdout());
+            canard_broadcast(UAVCAN_PROTOCOL_GLOBALTIMESYNC_SIGNATURE,
+                                UAVCAN_PROTOCOL_GLOBALTIMESYNC_ID,
+                                CANARD_TRANSFER_PRIORITY_HIGH,
+                                buffer,
+                                total_size,
+                                1U<<i);
+        }
+    }
+#endif
 
     {
         /*
