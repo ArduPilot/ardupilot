@@ -28,17 +28,17 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 
-from sensor_msgs.msg import NavSatFix
+from geographic_msgs.msg import GeoPose
 
-TOPIC = "ap/navsat/navsat0"
+TOPIC = "ap/geopose/filtered"
 
 
-class NavSatFixListener(rclpy.node.Node):
-    """Subscribe to NavSatFix messages."""
+class GeoPoseListener(rclpy.node.Node):
+    """Subscribe to GeoPose messages"""
 
     def __init__(self):
         """Initialise the node."""
-        super().__init__("navsatfix_listener")
+        super().__init__("geopose_listener")
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter
@@ -53,18 +53,20 @@ class NavSatFixListener(rclpy.node.Node):
             depth=1,
         )
 
-        self.subscription = self.create_subscription(NavSatFix, self.topic, self.subscriber_callback, qos_profile)
+        self.subscription = self.create_subscription(GeoPose, self.topic, self.subscriber_callback, qos_profile)
 
         # Add a spin thread.
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
 
     def subscriber_callback(self, msg):
-        """Process a NavSatFix message."""
+        """Process a GeoPose message."""
         self.msg_event_object.set()
 
         if msg.latitude:
-            self.get_logger().info("From AP : True [lat:{}, lon: {}]".format(msg.latitude, msg.longitude))
+            self.get_logger().info(
+                "From AP : True [lat:{}, lon: {}]".format(msg.position.latitude, msg.position.longitude)
+            )
         else:
             self.get_logger().info("From AP : False")
 
@@ -100,8 +102,8 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
-def test_dds_serial_navsat_msg_recv(launch_context, launch_sitl_copter_dds_serial):
-    """Test NavSatFix messages are published by AP_DDS."""
+def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_serial):
+    """Test GeoPose messages are published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_serial
     virtual_ports = actions["virtual_ports"].action
     micro_ros_agent = actions["micro_ros_agent"].action
@@ -116,7 +118,7 @@ def test_dds_serial_navsat_msg_recv(launch_context, launch_sitl_copter_dds_seria
 
     rclpy.init()
     try:
-        node = NavSatFixListener()
+        node = GeoPoseListener()
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
@@ -126,8 +128,8 @@ def test_dds_serial_navsat_msg_recv(launch_context, launch_sitl_copter_dds_seria
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
-def test_dds_udp_navsat_msg_recv(launch_context, launch_sitl_copter_dds_udp):
-    """Test NavSatFix messages are published by AP_DDS."""
+def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
+    """Test GeoPose messages are published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_udp
     micro_ros_agent = actions["micro_ros_agent"].action
     mavproxy = actions["mavproxy"].action
@@ -140,7 +142,7 @@ def test_dds_udp_navsat_msg_recv(launch_context, launch_sitl_copter_dds_udp):
 
     rclpy.init()
     try:
-        node = NavSatFixListener()
+        node = GeoPoseListener()
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
