@@ -26,6 +26,8 @@ void ModeAcro::update()
 
 void ModeAcro::run()
 {
+    output_pilot_throttle();
+
     if (plane.g.acro_locking == 2 && plane.g.acro_yaw_rate > 0 &&
         plane.yawController.rate_control_enabled()) {
         // we can do 3D acro locking

@@ -66,4 +66,6 @@ void ModeTraining::run()
     // Always manual rudder control
     output_rudder_and_steering(plane.rudder_in_expo(false));
 
+    output_pilot_throttle();
+
 }
