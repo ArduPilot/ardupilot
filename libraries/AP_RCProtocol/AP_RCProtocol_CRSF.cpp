@@ -667,7 +667,7 @@ void AP_RCProtocol_CRSF::process_handshake(uint32_t baudrate)
         || baudrate != CRSF_BAUDRATE
         || baudrate == get_bootstrap_baud_rate()
         || uart->get_baud_rate() == get_bootstrap_baud_rate()
-        || (get_rc_protocols_mask() & ((1U<<(uint8_t(AP_RCProtocol::CRSF)+1))+1)) == 0) {
+        || !protocol_enabled(AP_RCProtocol::CRSF)) {
         return;
     }
 

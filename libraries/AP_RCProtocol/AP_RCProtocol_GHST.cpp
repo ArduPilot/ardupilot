@@ -435,7 +435,8 @@ void AP_RCProtocol_GHST::process_handshake(uint32_t baudrate)
         || baudrate != CRSF_BAUDRATE
         || baudrate == GHST_BAUDRATE
         || uart->get_baud_rate() == GHST_BAUDRATE
-        || (get_rc_protocols_mask() & (1U<<(uint8_t(AP_RCProtocol::GHST)+1))) == 0) {
+        || !protocol_enabled(AP_RCProtocol::GHST)
+        || protocol_enabled(AP_RCProtocol::CRSF)) {
         return;
     }
 
