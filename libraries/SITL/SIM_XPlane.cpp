@@ -166,11 +166,15 @@ public:
                 continue;
             }
             if (strncmp(label, "axis", 4) == 0) {
-                handle_axis(label);
+                if (!handle_axis(label)) {
+                    return false;
+                }
                 continue;
             }
             if (strncmp(label, "button", 6) == 0) {
-                handle_button(label);
+                if (!handle_button(label)) {
+                    return false;
+                }
                 continue;
             }
             ::printf("Invalid json type %s", label);
