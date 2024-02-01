@@ -302,7 +302,7 @@ void AP_RCProtocol_CRSF::frame_input_enabled(AP_HAL::UARTDriver* uart, bool onof
     }
 
     // due to bugs in CRSFv3, framing is not possible at higher baudrates
-    if (onoff && uart->get_baud_rate() > CRSF_BAUDRATE) {
+    if (onoff && uart->get_baud_rate() > CRSF_BAUDRATE_1MBIT) {
         return;
     }
 
@@ -644,7 +644,7 @@ bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
     }
 #endif
 
-    if (AP_RCProtocol_Backend::frame_input_enabled()) {
+    if (baudrate > CRSF_BAUDRATE_1MBIT && AP_RCProtocol_Backend::frame_input_enabled()) {
         return false;
     }
 
