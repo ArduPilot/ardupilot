@@ -14,10 +14,6 @@ static void failsafe_check_static()
 
 void Blimp::init_ardupilot()
 {
-
-    BoardConfig.init();
-
-
     // initialise notify system
     notify.init();
     notify_flight_mode();
