@@ -57,6 +57,21 @@ public:
     bool shift_token_vector3f(Vector3f &ret) WARN_IF_UNUSED;
     bool shift_token_object(uint16_t &count) WARN_IF_UNUSED;
 
+    enum class JSONType {
+        INT32,
+        FLOAT,
+        STRING,
+    };
+    struct JSONBits {
+        const char *name;
+        JSONType type;
+        void *value;
+        uint8_t valuesize;  // in bytes, in case value is a string
+    };
+
+    bool parse_all_json_bits(JSONBits *bits, uint8_t bitslen);
+    bool parse_json_bits(JSONBits *bits, uint8_t bitslen, const char *name);
+
 private:
 
     // this object may be declared on the stack, so initialise:

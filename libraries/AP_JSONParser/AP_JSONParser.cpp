@@ -225,4 +225,58 @@ bool AP_JSONParser::shift_token_object(uint16_t &ret)
     return true;
 }
 
+#ifndef streq
+#define streq(a,b) !strcmp(a, b)
+#endif
+
+bool AP_JSONParser::parse_json_bits(JSONBits *bits, uint8_t bitslen, const char *name)
+{
+    for (uint8_t i=0; i<bitslen; i++) {
+        auto &bit = bits[i];
+        if (!streq(name, bit.name)) {
+            continue;
+        }
+
+        switch (bit.type) {
+        case JSONType::INT32:
+            if (!shift_token_int32_t(*((int32_t*)bit.value))) {
+                return false;
+            }
+            continue;
+        case JSONType::FLOAT:
+            if (!shift_token_float(*((float*)bit.value))) {
+                return false;
+            }
+            continue;
+        case JSONType::STRING:
+            if (!shift_token_string((char*)bit.value, bit.valuesize)) {
+                return false;
+            }
+            continue;
+        }
+    }
+    return false;
+};
+
+bool AP_JSONParser::parse_all_json_bits(JSONBits *bits, uint8_t bitslen)
+{
+    uint16_t n_object_kv_pairs;
+    if (!shift_token_object(n_object_kv_pairs)) {
+        return false;
+    }
+
+    for (uint8_t i=0;i<n_object_kv_pairs; i++) {
+        char n[50] {};
+        if (!shift_token_string(n, ARRAY_SIZE(n))) {
+            return false;
+        }
+        if (!parse_json_bits(bits, bitslen, n)) {
+            return false;
+        }
+        ::printf("Unknown axis nv %s\n", n);
+        return false;
+    }
+    return true;
+};
+
 #endif  // AP_JSONPARSER_ENABLED
