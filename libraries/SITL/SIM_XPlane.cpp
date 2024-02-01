@@ -181,6 +181,66 @@ public:
         }
     }
 
+    enum class JSONType {
+        INT32,
+        FLOAT,
+        STRING,
+    };
+    struct JSONBits {
+        const char *name;
+        JSONType type;
+        void *value;
+        uint8_t valuesize;  // in bytes, in case value is a string
+    };
+
+    bool parse_json_bits(JSONBits *bits, uint8_t bitslen, const char *name) {
+        for (uint8_t i=0; i<bitslen; i++) {
+            auto &bit = bits[i];
+            if (!streq(n, bit.name)) {
+                continue;
+            }
+
+            switch (bit.type) {
+            case JSONType::INT32:
+                if (!shift_token_int32_t(*((int32_t*)bit.value))) {
+                    return false;
+                }
+                continue;
+            case JSONType::FLOAT:
+                if (!shift_token_float(*((float*)bit.value))) {
+                    return false;
+                }
+                continue;
+            case JSONType::STRING:
+                if (!shift_token_string((char*)bit.value, bit.valuesize)) {
+                    return false;
+                }
+                continue;
+            }
+        }
+        return false;
+    };
+
+    bool parse_all_json_bits(JSONBits *bits) {
+        uint16_t n_object_kv_pairs;
+        if (!shift_token_object(n_object_kv_pairs)) {
+            return false;
+        }
+
+        for (uint8_t i=0;i<n_object_kv_pairs; i++) {
+            char n[50] {};
+            if (!shift_token_string(n, ARRAY_SIZE(n))) {
+                return false;
+            }
+            if (!parse_json_bits(bits, n)) {
+                return false;
+            }
+            ::printf("Unknown axis nv %s\n", n);
+            return false;
+        }
+        return true;
+    };
+
     /*
       add one joystick axis to list
     */
@@ -193,48 +253,15 @@ public:
         j->type = JoyType::AXIS;
         j->axis = atoi(label+4);
 
-        uint16_t n_object_kv_pairs;
-        if (!shift_token_object(n_object_kv_pairs)) {
-            return false;
-        }
+        char unused_type[50] {};
+        struct JSONBits bits[] {
+            { "channel", Type;:INT32, j->channel, 0 },
+            { "input_min", Type;:FLOAT, j->input_min, 0 },
+            { "input_max", Type;:FLOAT, j->input_max, 0 },
+            { "type", Type;:STRING, unused_type, ARRAY_SIZE(unused_type) },
+        };
 
-        for (uint8_t i=0;i<n_object_kv_pairs; i++) {
-            char n[50] {};
-            if (!shift_token_string(n, ARRAY_SIZE(n))) {
-                return false;
-            }
-            if (streq(n, "channel")) {
-                int32_t value;
-                if (!shift_token_int32_t(value)) {
-                    return false;
-                }
-                j->channel = value;
-                continue;
-            }
-            if (streq(n, "input_min")) {
-                float value;
-                if (!shift_token_float(value)) {
-                    return false;
-                }
-                j->input_min = value;
-                continue;
-            }
-            if (streq(n, "input_max")) {
-                float value;
-                if (!shift_token_float(value)) {
-                    return false;
-                }
-                j->input_max = value;
-                continue;
-            }
-            if (streq(n, "type")) {
-                char unused[50] {};
-                if (!shift_token_string(unused, ARRAY_SIZE(unused))) {
-                    return false;
-                }
-                continue;
-            }
-            ::printf("Unknown axis nv %s\n", n);
+        if (!parse_all_bits(bits, n_object_kv_pairs)) {
             return false;
         }
 
@@ -255,40 +282,13 @@ public:
         }
         j->type = JoyType::BUTTON;
 
-        uint16_t n_object_kv_pairs;
-        if (!shift_token_object(n_object_kv_pairs)) {
-            return false;
-        }
-
-        for (uint8_t i=0;i<n_object_kv_pairs; i++) {
-            char n[50] {};
-            if (!shift_token_string(n, ARRAY_SIZE(n))) {
-                return false;
-            }
-            if (streq(n, "channel")) {
-                int32_t value;
-                if (!shift_token_int32_t(value)) {
-                    return false;
-                }
-                j->channel = value;
-                continue;
-            }
-            if (streq(n, "mask")) {
-                int32_t value;
-                if (!shift_token_int32_t(value)) {
-                    return false;
-                }
-                j->mask = value;
-                continue;
-            }
-            if (streq(n, "type")) {
-                char unused[50] {};
-                if (!shift_token_string(unused, ARRAY_SIZE(unused))) {
-                    return false;
-                }
-                continue;
-            }
-            ::printf("Unknown button nv %s\n", n);
+        char unused_type[50] {};
+        struct JSONBits bits[] {
+            { "channel", Type;:INT32, j->channel, 0 },
+            { "mask", Type;:INT32, j->mask, 0 },
+            { "type", Type;:STRING, unused_type, ARRAY_SIZE(unused_type) },
+        };
+        if (!parse_all_bits(bits)) {
             return false;
         }
 
@@ -341,52 +341,32 @@ public:
             AP_HAL::panic("out of memory for DRef %s", name);
         }
 
-        char type_s[6] {};
+        char type[50];
+        struct JSONBits bits[] {
+            { "range", Type;:FLOAT, (void*)&j->range, 0 },
+            { "channel", Type;:FLOAT, (void*)&j->channel, 0 },
+            { "value", Type;:FLOAT, (void*)&j->value, 0 },
+            { "type", Type;:STRING, (void*)type, ARRAY_SIZE(type) },
+        };
+
         for (uint8_t i=0;i<n_object_kv_pairs; i++) {
             char n[50] {};
             if (!shift_token_string(n, ARRAY_SIZE(n))) {
                 return false;
             }
-            if (streq(n, "type")) {
-                if (!shift_token_string(type_s, ARRAY_SIZE(type_s))) {
-                    return false;
-                }
-
-                if (streq(type_s, "angle")) {
-                    d->type = DRefType::ANGLE;
-                } else if (strcmp(type_s, "range") == 0) {
-                    d->type = DRefType::RANGE;
-                } else if (strcmp(type_s, "fixed") == 0) {
-                    d->type = DRefType::FIXED;
-                } else {
-                    ::printf("Invalid dref type %s for %s", type_s, name);
-                }
-
-                continue;
+            if (!parse_all_json_bits(bits, n)) {
+                return;
             }
-            if (streq(n, "range")) {
-                float range;
-                if (!shift_token_float(range)) {
-                    return false;
-                }
-                d->range = range;
-                continue;
-            }
-            if (streq(n, "channel")) {
-                int32_t channel;
-                if (!shift_token_int32_t(channel)) {
-                    return false;
-                }
-                d->channel = channel;
-                continue;
-            }
-            if (streq(n, "value")) {
-                float value;
-                if (!shift_token_float(value)) {
-                    return false;
-                }
-                d->fixed_value = value;
-                continue;
+            // convert from type string to DRefType in DRef:
+            if (streq(type, "angle")) {
+                d->type = DRefType::ANGLE;
+            } else if (strcmp(type_s, "range") == 0) {
+                d->type = DRefType::RANGE;
+            } else if (strcmp(type_s, "fixed") == 0) {
+                d->type = DRefType::FIXED;
+            } else {
+                ::printf("Invalid dref type %s for %s", type_s, name);
+                return false;
             }
         }
 
