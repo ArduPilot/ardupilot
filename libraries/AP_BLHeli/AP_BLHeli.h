@@ -24,9 +24,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#define HAVE_AP_BLHELI_SUPPORT HAL_SUPPORT_RCOUT_SERIAL
 
-#define HAVE_AP_BLHELI_SUPPORT
+#if HAL_SUPPORT_RCOUT_SERIAL
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 

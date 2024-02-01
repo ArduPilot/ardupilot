@@ -23,7 +23,7 @@
 
 #include "AP_BLHeli.h"
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAVE_AP_BLHELI_SUPPORT
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
