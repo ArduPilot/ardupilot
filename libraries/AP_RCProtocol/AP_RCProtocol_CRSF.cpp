@@ -238,6 +238,10 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         return;
     }
 
+    if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+        return;
+    }
+
     // parse the length
     if (_frame_ofs == CSRF_HEADER_TYPE_LEN) {
         _frame_crc = crc8_dvb_s2(0, _frame.type);
@@ -617,7 +621,7 @@ void AP_RCProtocol_CRSF::process_handshake(uint32_t baudrate)
         || baudrate != CRSF_BAUDRATE
         || baudrate == get_bootstrap_baud_rate()
         || uart->get_baud_rate() == get_bootstrap_baud_rate()
-        || (get_rc_protocols_mask() & ((1U<<(uint8_t(AP_RCProtocol::CRSF)+1))+1)) == 0) {
+        || !protocol_enabled(AP_RCProtocol::CRSF)) {
         return;
     }
 
