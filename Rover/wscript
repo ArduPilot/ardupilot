@@ -28,6 +28,8 @@ def build(bld):
             'AC_PrecLand',
             'AP_IRLock',
             'FireFight',
+            'Fire_motor_485',
+            'Fire_LED',
         ],
     )
 

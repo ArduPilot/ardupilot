@@ -74,7 +74,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(ahrs_update,           400,    400,   6),
     SCHED_TASK(read_rangefinders,      50,    200,   9),
     SCHED_TASK(FireFight_open,         50,    200,  11),
-    SCHED_TASK(Fire_motor,             50,    200,  10),  
+    SCHED_TASK(Fire_motor,             50,    200,  10),
+     SCHED_TASK(Fire_CLED,             50,    200,  13),
+        
 
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
@@ -149,15 +151,55 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 };
 void Rover::FireFight_open()   //每20毫秒执行一次
 {
-   firefight_rover.function_fire_fight();
+    // uint8_t GPIO_STATUS;
+    // firefight_rover.function_fire_fight();
+    // uint16_t ms = 1000; 
+    // static uint64_t start = AP_HAL::millis64();
+    // if ((AP_HAL::millis64() - start)/1000 > ms)
+    // {
+    // hal.scheduler->delay(100);  //1s
+    // hal.gpio->write(2,1);
+    // GPIO_STATUS = hal.gpio->read(2);
+    // hal.scheduler->delay(500);  //1s
+    // hal.scheduler.de
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
+    //     "现在是灯测试:%d",GPIO_STATUS);
+    // hal.gpio->write(2,0);
+    // GPIO_STATUS = hal.gpio->read(2);
+    // hal.scheduler->delay(500);  //1s
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
+    //         "现在是灯测试:%d",GPIO_STATUS);
+
+    // }
+    ;
+
 }
 
 void Rover::Fire_motor()       //
 {
-    fire_motor_rover.function_fire_motor_485();
+
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
+    //     "现在是延迟5s测试:%0.2f",v);
+    // uint16_t ms = 10000; 
+    // static uint64_t start = AP_HAL::millis64();
+    // if ((AP_HAL::millis64() - start)/1000 > ms)
+    // {
+    // hal.scheduler->delay(2000);  //5s
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
+    //         "现在是延迟5s测试");
+        // start = AP_HAL::millis64();
+    // }
+//   fire_motor_rover.function_fire_motor_485();
+;
+
 }
 
-
+void Rover::Fire_CLED()
+{
+    float v = battery.gcs_voltage(0);
+    fire_led.Fire_Power_LED(v,20);
+    
+}
 
 void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                 uint8_t &task_count,

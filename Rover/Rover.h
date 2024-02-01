@@ -45,7 +45,10 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
-#include <FireFight/FireFight.h>                    //添加头文件
+#include <FireFight/FireFight.h>                    //添加消防炮头文件
+#include <Fire_motor_485/Fire_motor_485.h>          //添加电机驱动头文件
+#include <Fire_LED/Fire_LED.h>                      //添加灯的头文件
+
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
 #endif
@@ -123,8 +126,9 @@ private:
     // variables
     AP_Param param_loader;
 
-
+    Fire_motor_485 fire_motor_rover;
     FireFight firefight_rover;
+    Fire_LED fire_led;
     // all settable parameters
     Parameters g;
     ParametersG2 g2;
@@ -314,8 +318,11 @@ private:
     // crash_check.cpp
     void crash_check();
 
-    void FireFight_open();
+    void FireFight_open();    //消防炮对应函数
 
+    void Fire_motor();        //消防车电机驱动
+
+    void Fire_CLED();
     // cruise_learn.cpp
     void cruise_learn_start();
     void cruise_learn_update();

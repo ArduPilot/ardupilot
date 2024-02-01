@@ -4,7 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-
+#include "FireFightCRC.h"
 #define BYTE0(dwTemp) (*((char *)(&dwTemp)))
 #define BYTE1(dwTemp) (*((char *)(&dwTemp) + 1))
 #define BYTE2(dwTemp) (*((char *)(&dwTemp) + 2))
@@ -17,17 +17,9 @@ class FireFight
 private:
     uint8_t linebuf[10];
     uint8_t linebuf_len = 0; 
+    FireFightCRC CRC;
 
-    /* data */
-public:
-    friend class FireFightCRC;
-    FireFight(void);
-    // ~FireFight(void);
-    void uart_init(void);
-    bool updata(void);
-    void read_one(uint16_t reg_adress, uint16_t reg_num);
-    void write_one(uint16_t reg_adress, uint16_t reg_num);
-    void write_two(uint16_t start_reg_adress,uint16_t val_1,uint16_t val_2);
+    void write_two(uint8_t address_ID,uint16_t start_reg_adress,uint16_t val_1,uint16_t val_2);
     void up_button(uint16_t val);
     void down_button(uint16_t val);
     void left_button(uint16_t val);
@@ -38,12 +30,18 @@ public:
     void leftandright_zero();
     void zhu_zero();
     void wu_zero();
-    uint8_t check_send_one();
     void valve_button(uint16_t val);   //阀门按钮
     void pump_button(uint16_t val);    //泵按钮
     void Record_button(uint16_t val);  //录制按钮
     void playback_button(uint16_t val);//回放按钮
+    /* data */
+public:
+    void uart_init(void);
+    void read_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);
+    void write_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);    
     // uint8_t check_send_one(uint16_t val);
+    uint8_t check_send_one(uint8_t addressID);
+    void function_fire_fight();
 };
 
 #endif
