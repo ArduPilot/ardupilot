@@ -5757,6 +5757,38 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         AP::ahrs().get_yaw_rate_earth());   // [rad/s] Z component of angular velocity in NED (North, East, Down). NaN if unknown
 }
 
+void GCS_MAVLINK::send_flight_duration()
+{
+    const uint32_t time_boot_ms = AP_HAL::millis();
+
+    const MAV_LANDED_STATE current_landed_state = landed_state();
+    if (flight_duration.last_landed_state != current_landed_state) {
+        switch (current_landed_state) {
+            case MAV_LANDED_STATE_IN_AIR:
+            case MAV_LANDED_STATE_TAKEOFF:
+            case MAV_LANDED_STATE_LANDING: {
+                if (!flight_duration.takeoff_time_ms) {
+                    flight_duration.takeoff_time_ms = time_boot_ms;
+                }
+                break;
+            }
+            default: {
+                flight_duration.takeoff_time_ms = 0;
+                break;
+            }
+        }
+
+        flight_duration.last_landed_state = current_landed_state;
+    }
+
+    mavlink_msg_flight_duration_send(
+        chan,
+        time_boot_ms,
+        AP::arming().arm_time_ms(),
+        flight_duration.takeoff_time_ms
+    );
+}
+
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
     // we're not expecting very many of these ever, so a tiny bit of
@@ -6204,6 +6236,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = send_relay_status();
         break;
 #endif
+
+    case MSG_FLIGHT_DURATION:
+        CHECK_PAYLOAD_SIZE(FLIGHT_DURATION);
+        send_flight_duration();
+        break;
 
     default:
         // try_send_message must always at some stage return true for

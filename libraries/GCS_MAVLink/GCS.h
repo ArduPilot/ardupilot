@@ -398,6 +398,13 @@ public:
     void send_uavionix_adsb_out_status() const;
     void send_autopilot_state_for_gimbal_device() const;
 
+    struct {
+        MAV_LANDED_STATE last_landed_state;
+        uint32_t takeoff_time_ms;
+    } flight_duration;
+
+    void send_flight_duration();
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
