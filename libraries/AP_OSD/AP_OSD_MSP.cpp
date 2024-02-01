@@ -96,7 +96,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "OSD_VSPEED_X",        1.0 },
     { "OSD_VSPEED_Y",        1.0 },
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAVE_AP_BLHELI_SUPPORT
     //OSD_ESC_TMP
     { "OSD_BLHTEMP_EN",       1.0 },
     { "OSD_BLHTEMP_X",        1.0 },
