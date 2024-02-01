@@ -73,7 +73,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_radio,             50,    200,   3),
     SCHED_TASK(ahrs_update,           400,    400,   6),
     SCHED_TASK(read_rangefinders,      50,    200,   9),
-    SCHED_TASK(FireFight_open,         50,    200,  10),
+    SCHED_TASK(FireFight_open,         50,    200,  11),
+    SCHED_TASK(Fire_motor,             50,    200,  10),  
+
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
@@ -147,205 +149,14 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 };
 void Rover::FireFight_open()   //每20毫秒执行一次
 {
-    // RC_Channel &_rc = rc();
-    static uint8_t up_down = 0;
-    static uint8_t left_right = 0;
-    static uint8_t wu_zhu = 0;
-    uint16_t under_offset = 1550;
-    uint16_t low_offset = 1450;
-    uint8_t temp;
-    static uint8_t time_cnt = 0;
-    // firefight_rover.updata();
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(5):%d",);//地面站消息发送
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(2):%5d",hal.rcin->read(2));//地面站消息发送
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(3):%5d",hal.rcin->read(3));//地面站消息发送
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"channel(4):%5d",hal.rcin->read(4));//地面站消息发送
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"steer:%d",channel_steer->get_control_in());//地面站消息发送
-    if ((hal.rcin->read(2)) > under_offset  && up_down != 1)
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.down_button(0);                /* code */
-        }
-        
-
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.up_button(1);
-            time_cnt = 0;
-        }
-        
-        
-    }
-
-    else if ((hal.rcin->read(2)) < low_offset  && up_down != 2)
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.up_button(0);                /* code */
-        }
-        
-
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.down_button(1);
-            time_cnt = 0;
-        }
-        // firefight_rover.up_button(0);
-
-    }
-    else if(up_down != 3 && ((hal.rcin->read(2)) > low_offset) && ((hal.rcin->read(2)) < under_offset))   //重复发送4次
-    {
-        if (/* condition */time_cnt == 0)
-        {
-           firefight_rover.up_button(0);     //将柱清零            /* code */
-        }
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.down_button(0);
-            time_cnt = 0;
-            up_down++;
-        }    
-
-    }
-        
-
-    if ((hal.rcin->read(3)) > under_offset && left_right != 1)
-    {
-
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.right_button(0);              /* code */
-        }
-        
-
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.left_button(1);
-            time_cnt = 0;
-        }
-    }
-    else if ((hal.rcin->read(3)) < low_offset  && left_right != 2)
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.left_button(0);               /* code */
-        }
-        
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.right_button(1);
-            time_cnt = 0;
-        } 
-    }
-    else if (left_right != 3 && ((hal.rcin->read(3)) > low_offset) && ((hal.rcin->read(3)) < under_offset))   //重复发送4次
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.left_button(0);    //将柱清零            /* code */
-        }
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.right_button(0);
-            time_cnt = 0;
-            left_right++;
-        }    
-
-    }
-
-    if ((hal.rcin->read(4)) > under_offset  && wu_zhu != 1)
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.wu_button(0);    //将雾清零             /* code */
-        }
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.zhu_button(1);
-            time_cnt = 0;
-        }        
-    }
-    else if((hal.rcin->read(4)) < low_offset && wu_zhu != 2)
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.zhu_button(0);  //将柱清零            /* code */
-        }
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.wu_button(1);
-            time_cnt = 0;
-        }   
-    }
-    else if(wu_zhu != 3 && ((hal.rcin->read(4)) > low_offset) && ((hal.rcin->read(4)) < under_offset))
-    {
-        if (/* condition */time_cnt == 0)
-        {
-            firefight_rover.zhu_button(0);  //将柱清零            /* code */
-        }
-        time_cnt++;
-        if (time_cnt >= 2 ) //延时一个执行周期
-        {
-            /* code */
-            firefight_rover.wu_button(0);
-            time_cnt = 0;
-            wu_zhu++;
-        }    
-  
-    }
-    temp = firefight_rover.check_send_one();
-    if ( temp!= 0)
-    {
-        switch (temp)
-        {
-        case 1/* constant-expression */:
-            /* code */
-            up_down = 1;
-            break;
-        case 2/* constant-expression */:
-            /* code */
-            up_down = 2;
-            break;
-        case 3/* constant-expression */:
-            /* code */
-            left_right = 1;
-            break;
-        case 4/* constant-expression */:
-            /* code */
-            left_right = 2;
-            break;
-        case 5/* constant-expression */:
-            /* code */
-            wu_zhu = 1;
-            break;
-        case 6/* constant-expression */:
-            /* code */
-            wu_zhu = 2;
-            break;        
-        default:
-            break;
-        }
-    }
-      
-
-    
+   firefight_rover.function_fire_fight();
 }
+
+void Rover::Fire_motor()       //
+{
+    fire_motor_rover.function_fire_motor_485();
+}
+
 
 
 void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
