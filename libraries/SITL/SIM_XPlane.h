@@ -126,10 +126,6 @@ private:
     struct stat map_st;
 
     bool load_dref_map(const char *map_json);
-    bool handle_axis(const char *name, class AP_JSONParser &json_parser);
-    bool handle_button(const char *name, class AP_JSONParser &json_parser);
-    bool handle_settings(class AP_JSONParser &json_parser);
-    bool handle_dref(const char *name, class ::AP_JSONParser &json_parser);
 
     void check_reload_dref(void);
 
