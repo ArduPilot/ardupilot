@@ -124,25 +124,22 @@ XPlane::XPlane(const char *frame_str) :
 #define streq(a,b) !strcmp(a, b)
 #endif
 
-class AP_JSONParser_XPlane(public AP_JSONParser)
+class AP_JSONParser_XPlane : public AP_JSONParser
 {
 public:
 
-    AP_JSONParser_XPlane(struct SIM_XPlane::DRef &*_drefs, struct SIM_XPlane::JoyInput &*_joyinputs, bool &_debug_drefs) :
+    AP_JSONParser_XPlane(struct XPlane::DRef *&_drefs, struct XPlane::JoyInput *&_joyinputs, uint32_t &_debug_drefs) :
         AP_JSONParser(),
         drefs{_drefs},
         joyinputs{_joyinputs},
         debug_drefs{_debug_drefs}
         { }
 
-    struct SIM_XPlane::DRef &*_drefs;
-    struct SIM_XPlane::JoyInput &*_joyinputs;
-    bool &_debug_drefs;
+    struct XPlane::DRef *&drefs;
+    struct XPlane::JoyInput *&joyinputs;
+    uint32_t &debug_drefs;
 
     bool populate_drefs() {
-        drefs = _drefs;
-        joyinput = _joyinputs;
-        debug_drefs = _debug_drefs;
 
         uint16_t count = 0;
         if (!shift_token_object(count)) {
@@ -163,7 +160,7 @@ public:
                 continue;
             }
             if (streq(label, "settings")) {
-                if (!handle_settings(json_parser)) {
+                if (!handle_settings()) {
                     return false;
                 }
                 continue;
@@ -176,10 +173,11 @@ public:
                 handle_button(label);
                 continue;
             }
-            ::printf("Invalid json type %s in %s", label, map_json);
+            ::printf("Invalid json type %s", label);
             return false;
         }
-    }
+        return true;
+    };
 
     enum class JSONType {
         INT32,
@@ -196,7 +194,7 @@ public:
     bool parse_json_bits(JSONBits *bits, uint8_t bitslen, const char *name) {
         for (uint8_t i=0; i<bitslen; i++) {
             auto &bit = bits[i];
-            if (!streq(n, bit.name)) {
+            if (!streq(name, bit.name)) {
                 continue;
             }
 
@@ -221,7 +219,7 @@ public:
         return false;
     };
 
-    bool parse_all_json_bits(JSONBits *bits) {
+    bool parse_all_json_bits(JSONBits *bits, uint8_t bitslen) {
         uint16_t n_object_kv_pairs;
         if (!shift_token_object(n_object_kv_pairs)) {
             return false;
@@ -232,7 +230,7 @@ public:
             if (!shift_token_string(n, ARRAY_SIZE(n))) {
                 return false;
             }
-            if (!parse_json_bits(bits, n)) {
+            if (!parse_json_bits(bits, bitslen, n)) {
                 return false;
             }
             ::printf("Unknown axis nv %s\n", n);
@@ -246,57 +244,57 @@ public:
     */
     bool handle_axis(const char *label)
     {
-        struct JoyInput *j = new struct JoyInput;
+        XPlane::JoyInput *j = new struct XPlane::JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
-        j->type = JoyType::AXIS;
+        j->type = XPlane::JoyType::AXIS;
         j->axis = atoi(label+4);
 
         char unused_type[50] {};
         struct JSONBits bits[] {
-            { "channel", Type;:INT32, j->channel, 0 },
-            { "input_min", Type;:FLOAT, j->input_min, 0 },
-            { "input_max", Type;:FLOAT, j->input_max, 0 },
-            { "type", Type;:STRING, unused_type, ARRAY_SIZE(unused_type) },
+            { "channel", JSONType::INT32, (void*)&j->channel, 0 },
+            { "type", JSONType::STRING, (void*)unused_type, ARRAY_SIZE(unused_type) },
+            { "input_min", JSONType::FLOAT, (void*)&j->input_min, 0 },
+            { "input_max", JSONType::FLOAT, (void*)&j->input_max, 0 },
         };
 
-        if (!parse_all_bits(bits, n_object_kv_pairs)) {
+        if (!parse_all_json_bits(bits, ARRAY_SIZE(bits))) {
             return false;
         }
 
-        ::printf("axis: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
-                 j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
+        // ::printf("axis: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
+        //          j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
 
         j->next = joyinputs;
-        *joyinputs = j;
+        joyinputs = j;
 
         return true;
     }
 
     bool handle_button(const char *label)
     {
-        struct JoyInput *j = new struct JoyInput;
+        struct XPlane::JoyInput *j = new struct XPlane::JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
-        j->type = JoyType::BUTTON;
+        j->type = XPlane::JoyType::BUTTON;
 
         char unused_type[50] {};
         struct JSONBits bits[] {
-            { "channel", Type;:INT32, j->channel, 0 },
-            { "mask", Type;:INT32, j->mask, 0 },
-            { "type", Type;:STRING, unused_type, ARRAY_SIZE(unused_type) },
+            { "channel", JSONType::INT32, (void*)&j->channel, 0 },
+            { "type", JSONType::STRING, unused_type, ARRAY_SIZE(unused_type) },
+            { "mask", JSONType::INT32, (void*)&j->mask, 0 },
         };
-        if (!parse_all_bits(bits)) {
+        if (!parse_all_json_bits(bits, ARRAY_SIZE(bits))) {
             return false;
         }
 
-        ::printf("button: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
-                 j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
+        // ::printf("button: axis=%u type=%u channel=%u input_min=%f input_max=%f\n",
+        //          j->axis, (unsigned)j->type, j->channel, j->input_min, j->input_max);
 
         j->next = joyinputs;
-        *joyinputs = j;
+        joyinputs = j;
 
         return true;
     }
@@ -321,18 +319,13 @@ public:
                 return false;
             }
 
-            *dref_debug = value;
+            debug_drefs = value;
         }
         return true;
     }
 
     bool handle_dref(const char *name) {
-        uint16_t n_object_kv_pairs;
-        if (!shift_token_object(n_object_kv_pairs)) {
-            return false;
-        }
-
-        struct DRef *d = new struct DRef;
+        XPlane::DRef *d = new XPlane::DRef;
         if (d == nullptr) {
             AP_HAL::panic("out of memory for DRef %s", name);
         }
@@ -341,36 +334,41 @@ public:
             AP_HAL::panic("out of memory for DRef %s", name);
         }
 
-        char type[50];
+        char type[6];
         struct JSONBits bits[] {
-            { "range", Type;:FLOAT, (void*)&j->range, 0 },
-            { "channel", Type;:FLOAT, (void*)&j->channel, 0 },
-            { "value", Type;:FLOAT, (void*)&j->value, 0 },
-            { "type", Type;:STRING, (void*)type, ARRAY_SIZE(type) },
+            { "type", JSONType::STRING, (void*)type, ARRAY_SIZE(type) },
+            { "channel", JSONType::FLOAT, (void*)&d->channel, 0 },
+            { "range", JSONType::FLOAT, (void*)&d->range, 0 },
+            { "value", JSONType::FLOAT, (void*)&d->fixed_value, 0 },
         };
+
+        uint16_t n_object_kv_pairs;
+        if (!shift_token_object(n_object_kv_pairs)) {
+            return false;
+        }
 
         for (uint8_t i=0;i<n_object_kv_pairs; i++) {
             char n[50] {};
             if (!shift_token_string(n, ARRAY_SIZE(n))) {
                 return false;
             }
-            if (!parse_all_json_bits(bits, n)) {
-                return;
+            if (!parse_json_bits(bits, ARRAY_SIZE(bits), n)) {
+                return false;
             }
             // convert from type string to DRefType in DRef:
             if (streq(type, "angle")) {
-                d->type = DRefType::ANGLE;
-            } else if (strcmp(type_s, "range") == 0) {
-                d->type = DRefType::RANGE;
-            } else if (strcmp(type_s, "fixed") == 0) {
-                d->type = DRefType::FIXED;
+                d->type = XPlane::DRefType::ANGLE;
+            } else if (strcmp(type, "range") == 0) {
+                d->type = XPlane::DRefType::RANGE;
+            } else if (strcmp(type, "fixed") == 0) {
+                d->type = XPlane::DRefType::FIXED;
             } else {
-                ::printf("Invalid dref type %s for %s", type_s, name);
+                ::printf("Invalid dref type %s for %s", type, name);
                 return false;
             }
         }
 
-        ::printf("DREF: %s t=%s range=%f fv=%f channel=%u\n", d->name, type_s, d->range, d->fixed_value, (unsigned)d->channel);
+        ::printf("DREF: %s t=%s range=%f fv=%f channel=%u\n", d->name, type, d->range, d->fixed_value, (unsigned)d->channel);
 
 // add to linked list
         d->next = drefs;
@@ -398,7 +396,7 @@ bool XPlane::load_dref_map(const char *map_json)
         return false;
     }
 
-    AP_JSONParser_XPlane json_parser{drefs, joyinputs, dref_debug)};
+    AP_JSONParser_XPlane json_parser{drefs, joyinputs, dref_debug};
     if (!json_parser.init(400)) {
         return false;
     }
@@ -428,7 +426,8 @@ bool XPlane::load_dref_map(const char *map_json)
         return false;
     }
 
-    ::printf("Loaded %u DRefs from %s\n", unsigned(count), map_filename);
+    // fixme: re-add count here
+    ::printf("Loaded DRefs from %s\n", map_filename);
     return true;
 }
 

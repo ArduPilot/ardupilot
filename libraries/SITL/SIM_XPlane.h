@@ -38,6 +38,7 @@ namespace SITL {
   a Xplane simulator
  */
 class XPlane : public Aircraft {
+    friend class AP_JSONParser_XPlane;
 public:
     XPlane(const char *frame_str);
 
@@ -49,7 +50,7 @@ public:
         return new XPlane(frame_str);
     }
 
-private:
+// private:
 
     bool receive_data(void);
     void send_dref(const char *name, float value);
