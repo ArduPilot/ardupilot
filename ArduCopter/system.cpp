@@ -15,10 +15,6 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
     // init cargo gripper
 #if AP_GRIPPER_ENABLED
     g2.gripper.init();
