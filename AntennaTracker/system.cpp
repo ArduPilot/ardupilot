@@ -5,10 +5,6 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 void Tracker::init_ardupilot()
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
     // initialise notify
     notify.init();
     AP_Notify::flags.pre_arm_check = true;
