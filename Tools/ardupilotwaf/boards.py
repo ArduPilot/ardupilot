@@ -274,6 +274,7 @@ class Board:
             env.CXXFLAGS += [
                 '-fcheck-new',
                 '-fsingle-precision-constant',
+                '-Wno-psabi',
             ]
 
         if cfg.env.DEBUG:
