@@ -127,4 +127,8 @@ SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
+
 include ../include/minimize_fpv_osd.inc

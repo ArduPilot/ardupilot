@@ -149,3 +149,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimize_fpv_osd.inc
+
+# defines to transition minimize-fpv-osd boards to parachute-not-compiled-in:
+define HAL_PARACHUTE_ENABLED 0
+define AP_PARACHUTE_UNAVAILABLE_ENABLED 1
