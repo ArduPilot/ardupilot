@@ -325,15 +325,20 @@ class LoggerDocco(object):
 
     def parse_file(self, filepath):
         with open(filepath) as f:
-            #            print("Opened (%s)" % filepath)
+#            print("Opened (%s)" % filepath)
             lines = f.readlines()
             f.close()
+        def debug(x):
+            pass
+#        if filepath == "/home/pbarker/rc/ardupilot/libraries/AP_HAL/AnalogIn.h":
+#            debug = print
         state_outside = "outside"
         state_inside = "inside"
         messagedef = ""
         state = state_outside
         docco = None
         for line in lines:
+            debug(f"{state}: {line}")
             if messagedef:
                 messagedef = messagedef + line
                 if "}" in line or ";" in line:
