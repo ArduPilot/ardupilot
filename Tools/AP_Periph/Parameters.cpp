@@ -661,6 +661,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(temperature_msg_rate, "TEMP_MSG_RATE", 0),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_FSO_POWER_STACK
+    // @Group: FSO
+    // @Path: FSOPowerStack.cpp
+    GOBJECT(FSO_power_stack, "FSO",  FSOPowerStack),
+#endif
+    
     AP_VAREND
 };
 

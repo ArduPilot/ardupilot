@@ -45,6 +45,10 @@
 #endif
 #include <AP_AHRS/AP_AHRS.h>
 
+#ifdef HAL_PERIPH_ENABLE_FSO_POWER_STACK
+#include "FSOPowerStack.h"
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_RELAY
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     #error "Relay and PWM_HARDPOINT both use hardpoint message"
@@ -354,6 +358,10 @@ public:
     BattBalance battery_balance;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_FSO_POWER_STACK
+    FSOPowerStack FSO_power_stack;
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
     SerialOptions serial_options;
 #endif
