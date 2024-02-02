@@ -86,6 +86,9 @@ protected:
         float ned_velocity_east;
         float ned_velocity_down;
         float speed_accuracy;
+        // 4x1 vector representation of the quaternion describing the orientation of the device with respect to the NED local-level frame.
+        // NED [Qw, Qx, Qy, Qz]
+        Quaternion attitude_quat;
     } filter_data;
 
     enum class DescriptorSet {

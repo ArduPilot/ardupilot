@@ -134,9 +134,6 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
         WITH_SEMAPHORE(state.sem);
         state.accel = imu_data.accel;
         state.gyro = imu_data.gyro;
-
-        state.quat = imu_data.quat;
-        state.have_quaternion = true;
     }
 
     {
@@ -188,6 +185,9 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         // Use GNSS 0 even though it may be bad.
         state.location = Location{filter_data.lat, filter_data.lon, gnss_data[0].msl_altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;
+
+        state.quat = filter_data.attitude_quat;
+        state.have_quaternion = true;
     }
 
     for (int instance = 0; instance < NUM_GNSS_INSTANCES; instance++) {
