@@ -1805,7 +1805,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                       0) # flags
         self.delay_sim_time(1)
 
-        return_radius = 150
+        return_radius = 100
         return_alt = 80
         self.set_parameters({
             "RTL_RADIUS": return_radius,
@@ -3768,7 +3768,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Tests calculated return point during fence breach when no fence return point present'''
         """ Attempts to change mode while a fence is breached.
             This should revert to the mode specified by the fence action. """
-        want_radius = 150 # Fence Return Radius
+        want_radius = 100 # Fence Return Radius
         self.set_parameters({
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 4,
@@ -3844,7 +3844,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Tests using home as fence return point when none is present, and no inclusion fence is uploaded'''
         """ Test result when a breach occurs and No fence return point is present and
             no inclusion fence is present and exclusion fence is present """
-        want_radius = 150 # Fence Return Radius
+        want_radius = 100 # Fence Return Radius
 
         self.set_parameters({
             "FENCE_ACTION": 6,
