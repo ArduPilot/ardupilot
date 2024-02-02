@@ -4928,6 +4928,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''
         self.takeoff(30, relative=True)
         self.change_mode('GUIDED')
+        
+        #Set throttle stick to neutral  
+        self.set_rc(3, 1500)
+        
         for alt in 50, 70:
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
