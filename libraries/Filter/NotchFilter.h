@@ -50,7 +50,7 @@ protected:
 
     bool initialised, need_reset;
     float b0, b1, b2, a1, a2, a0_inv;
-    float _center_freq_hz, _sample_freq_hz;
+    float _center_freq_hz, _sample_freq_hz, _A;
     T ntchsig, ntchsig1, ntchsig2, signal2, signal1;
 };
 
