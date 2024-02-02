@@ -123,4 +123,44 @@ namespace AP {
     AP_Parachute *parachute();
 };
 
+#elif AP_PARACHUTE_UNAVAILABLE_ENABLED
+
+/*
+ * minimal class definition for a shim AP_Parachute. just enough to be
+ * able to interpret the "enabled" parameter.
+ */
+
+#include <AP_Param/AP_Param.h>
+class AP_Parachute {
+public:
+    /// Constructor
+    AP_Parachute()
+    {
+        _singleton = this;
+        AP_Param::setup_object_defaults(this, var_info);
+
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_Parachute);
+
+    AP_Int8     _enabled;       // 1 if parachute release is enabled
+
+    static const struct AP_Param::GroupInfo        var_info[];
+
+    /// returns true if parachute is enabled but compiled out of the code
+    bool mistakenly_enabled() const { return _enabled != 0; }
+
+    // get singleton instance
+    static AP_Parachute *get_singleton() { return _singleton; }
+
+private:
+    static AP_Parachute *_singleton;
+};
+
+namespace AP {
+    AP_Parachute *parachute();
+};
+
 #endif // HAL_PARACHUTE_ENABLED
