@@ -25,6 +25,10 @@ void Copter::update_land_and_crash_detectors()
 #if HAL_PARACHUTE_ENABLED
     // check parachute
     parachute_check();
+#elif AP_PARACHUTE_UNAVAILABLE_ENABLED
+    if (AP::parachute()->mistakenly_enabled() && !motors->armed()) {
+        AP_BoardConfig::config_error("CHUTE_ENABLED=1 but not compiled in");
+    }
 #endif
 
     crash_check();

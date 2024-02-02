@@ -454,7 +454,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
-#if HAL_PARACHUTE_ENABLED
+#if HAL_PARACHUTE_ENABLED || AP_PARACHUTE_UNAVAILABLE_ENABLED
     // @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
     GOBJECT(parachute, "CHUTE_", AP_Parachute),
