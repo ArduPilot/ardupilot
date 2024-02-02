@@ -637,6 +637,11 @@ private:
     static uint16_t             _frame_type_flags;
 
     /*
+      this is true if when scanning a defaults file we find all of the parameters
+     */
+    static bool done_all_default_params;
+
+    /*
       structure for built-in defaults file that can be modified using apj_tool.py
      */
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0
