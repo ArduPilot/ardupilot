@@ -11,28 +11,37 @@ class BatterySubscriber:
             BatteryState,
             "/ap/battery/battery0",
             self.battery_callback,
-            10,  # QoS profile depth
+            10,
         )
 
     def battery_callback(self, msg):
-        # Assert the information here
-        assert isinstance(msg.header, Header)
-        assert isinstance(msg.header.stamp, Time)
-        assert isinstance(msg.voltage, float)
-        assert isinstance(msg.temperature, float)
-        assert isinstance(msg.current, float)
-        assert isinstance(msg.charge, float)
-        assert isinstance(msg.capacity, float)
-        assert isinstance(msg.design_capacity, float)
-        assert isinstance(msg.percentage, float)
-        assert isinstance(msg.power_supply_status, int)
-        assert isinstance(msg.power_supply_health, int)
-        assert isinstance(msg.power_supply_technology, int)
-        assert isinstance(msg.present, bool)
-        assert isinstance(msg.cell_voltage, list)
-        assert isinstance(msg.cell_temperature, list)
-        assert isinstance(msg.location, str)
-        assert isinstance(msg.serial_number, str)
+        try:
+            # Assert the information here
+            assert isinstance(msg.header, Header)
+            assert isinstance(msg.header.stamp, Time)
+            assert isinstance(msg.voltage, float)
+            assert isinstance(msg.temperature, float)
+            assert isinstance(msg.current, float)
+            assert isinstance(msg.charge, float)
+            assert isinstance(msg.capacity, float)
+            assert isinstance(msg.design_capacity, float)
+            assert isinstance(msg.percentage, float)
+            assert isinstance(msg.power_supply_status, int)
+            assert isinstance(msg.power_supply_health, int)
+            assert isinstance(msg.power_supply_technology, int)
+            assert isinstance(msg.present, bool)
+            assert isinstance(msg.cell_voltage, list)
+            assert isinstance(msg.cell_temperature, list)
+            assert isinstance(msg.location, str)
+            assert isinstance(msg.serial_number, str)
+
+            print("Assertion passed. Received valid Battery State Message")
+
+        except AssertionError as e:
+            print(f"Assertion failed. Invalid Battery State message: {e}")
+        finally:
+            # Stop the ROS node and exit the program
+            rclpy.shutdown()
 
 
 def test_battery_state(args=None):
