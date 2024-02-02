@@ -90,7 +90,7 @@ public:
 
         Vector3f accel;
         Vector3f gyro;
-        Quaternion quat;
+        Quaternion quat; // NED
         Location location;
         Vector3f velocity;
         Location origin;
