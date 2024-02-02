@@ -954,7 +954,9 @@ struct PACKED log_VER {
 // @Field: Vcc: Flight board voltage
 // @Field: VServo: Servo rail voltage
 // @Field: Flags: System power flags
+// @FieldBitmaskEnum: Flags: AP_HAL::AnalogIn::PowerStatusFlag
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
+// @FieldBitmaskEnum: AccFlags: AP_HAL::AnalogIn::PowerStatusFlag
 // @Field: Safety: Hardware Safety Switch status
 
 // @LoggerMessage: MCU
