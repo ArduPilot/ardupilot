@@ -529,6 +529,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: BCK_PIT_LIM
+    // @DisplayName: Q mode rearward pitch limit
+    // @Description: This sets the maximum number of degrees of back or pitch up in Q modes when the airspeed is at AIRSPEED_MIN and is used to prevent excessive sutructural loads when pitching up decelerate. If airspeed is above or below AIRSPEED_FBW_MIN the pitch up/back will be adjusted according to the formula pitch_limit = BCK_PIT_LIM * (AIRSPEED_FBW_MIN / IAS)^2. The backwards/up pitch limit controlled by this parameter is in addition to limiting applied by PTCH_LIM_MAX and Q_ANGLE_MAX. The BCK_PIT_LIM limit is only applied when Q_FWD_THR_USE is set to 1 or 2 and the vehicle is flying in a mode that uses forward throttle instead of forward tilt to generate forward speed. Set to a non positive value 0 to deactivate this limit.
+    // @Units: deg
+    // @Range: 0.0 15.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BCK_PIT_LIM", 38, QuadPlane, q_bck_pitch_lim, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -3027,6 +3036,37 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
         }
     }
 
+    // Prevent the wing from being overloaded when braking from high speed in a VTOL mode
+    float nav_pitch_upper_limit_cd = 100.0f * q_bck_pitch_lim;
+    float aspeed;
+    if (is_positive(q_bck_pitch_lim) && ahrs.airspeed_estimate(aspeed)) {
+        const float reference_speed = MAX(plane.aparm.airspeed_min, MIN_AIRSPEED_MIN);
+        float speed_scaler = sq(reference_speed / MAX(aspeed, 0.1f));
+        nav_pitch_upper_limit_cd *= speed_scaler;
+        nav_pitch_upper_limit_cd = MIN(nav_pitch_upper_limit_cd, (float)aparm.angle_max);
+
+        const float tconst = 0.5f;
+        const float dt = AP_HAL::millis() - q_pitch_limit_update_ms;
+        q_pitch_limit_update_ms = AP_HAL::millis();
+        if (is_positive(dt)) {
+            const float coef = dt / (dt + tconst);
+            q_bck_pitch_lim_cd = (1.0f - coef) * q_bck_pitch_lim_cd + coef * nav_pitch_upper_limit_cd;
+        }
+
+        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
+
+#if HAL_LOGGING_ENABLED
+        AP::logger().WriteStreaming("QBRK",
+                                "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
+                                "Qffii",    // fmt
+                                AP_HAL::micros64(),
+                                (double)speed_scaler,
+                                (double)nav_pitch_upper_limit_cd,
+                                (int32_t)q_bck_pitch_lim_cd,
+                                (int32_t)plane.nav_pitch_cd);
+#endif
+    }
+
     float fwd_thr_scaler;
     if (!in_vtol_land_approach()) {
         // To prevent forward motor prop strike, reduce throttle to zero when close to ground.
@@ -3048,14 +3088,15 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
 #if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
     AP::logger().WriteStreaming("FWDT",
-                                "TimeUS,fts,qfplcd,npllcd,npcd,qft",  // labels
-                                "Qfffff",    // fmt
+                                "TimeUS,fts,qfplcd,npllcd,npcd,qft,npulcd",  // labels
+                                "Qffffff",    // fmt
                                 AP_HAL::micros64(),
                                 (double)fwd_thr_scaler,
                                 (double)q_fwd_pitch_lim_cd,
                                 (double)nav_pitch_lower_limit_cd,
                                 (double)plane.nav_pitch_cd,
-                                (double)q_fwd_throttle);
+                                (double)q_fwd_throttle,
+                                (float)nav_pitch_upper_limit_cd);
 #endif
 
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
