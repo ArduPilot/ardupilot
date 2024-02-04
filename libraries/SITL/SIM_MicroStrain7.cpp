@@ -13,7 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate MicroStrain 7-series GNSS-INS devices
+    Simulate MicroStrain 7-series GNSS-INS devices
+
+    Usage:
+    PARAMS:
+        param set AHRS_EKF_TYPE 11
+        param set EAHRS_TYPE 7
+        param set SERIAL3_PROTOCOL 36
+        param set SERIAL3_BAUD 115
+    sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain7" --console --map -DG
 */
 
 #include "SIM_MicroStrain.h"
@@ -140,8 +148,17 @@ void MicroStrain7::send_filter_packet(void)
     put_int(packet, 0x03); // Dynamics mode (Airborne)
     put_int(packet, 0); // Filter flags (None, no warnings)
 
-    packet.header[3] = packet.payload_size;
+    // Add Attitude Quaternion
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_attitude_quaternion.htm
+    packet.payload[packet.payload_size++] = 0x14; // Attitude Quaternion Field Size
+    packet.payload[packet.payload_size++] = 0x03; // Descriptor
+    put_float(packet, fdm.quaternion.q1);
+    put_float(packet, fdm.quaternion.q2);
+    put_float(packet, fdm.quaternion.q3);
+    put_float(packet, fdm.quaternion.q4);
+    put_int(packet, 0x0001); // Valid flags
 
+    packet.header[3] = packet.payload_size;
 
     send_packet(packet);
 }
