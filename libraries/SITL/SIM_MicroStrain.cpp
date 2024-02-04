@@ -13,7 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate MicroStrain GNSS-INS devices
+    Simulate MicroStrain CX5 GNSS-INS devices
+    
+    Usage:
+    PARAMS:
+        param set AHRS_EKF_TYPE 11
+        param set EAHRS_TYPE 2
+        param set SERIAL3_PROTOCOL 36
+        param set SERIAL3_BAUD 115
+    sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain5" --console --map -DG
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
