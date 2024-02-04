@@ -278,7 +278,7 @@ AP_HW_VIMDRONES_PERIPH               1407
 
 AP_HW_PIXHAWK6X_PERIPH               1408
 AP_HW_CUBERED_PERIPH                 1409
-
+AP_HW_RadiolinkPIX6                  1410
 
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
