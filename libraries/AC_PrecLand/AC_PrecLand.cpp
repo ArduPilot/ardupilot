@@ -624,7 +624,8 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
         }
 
         return true;
-    } else {
+    } else
+    {
         return false;
     }
 }

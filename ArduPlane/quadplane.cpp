@@ -2355,6 +2355,20 @@ void QuadPlane::run_precland_horizontal_controller()
         Vector2p landing_pos = target_pos.topostype();
         // target vel will remain zero if landing target is stationary
         pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+            
+            
+            
+           
+            // if (!plane.precland.get_target_position_cm(target_pos)) {
+            //     target_pos.x = inertial_nav.get_position_xy_cm().x;
+            //     target_pos.y = inertial_nav.get_position_xy_cm().y;
+            // }
+            // if (!plane.precland.get_target_velocity_relative_cms(target_vel)) {
+            //     target_vel.x = -inertial_nav.get_velocity_xy_cms().x;
+            //     target_vel.y = -inertial_nav.get_velocity_xy_cms().y;
+            // }
+            // pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
+            // pos_control->set_vel_desired_xy_cms(-target_vel);
         
     } else {
         // should never happen since the caller of this funtion should already check if precland is active
@@ -3422,6 +3436,8 @@ bool QuadPlane::check_land_final(void)
     // trigger the switch to land final. This prevents a short term
     // glitch at high altitude from triggering land final
     const float max_change = 5;
+    // debug
+    // gcs().send_text(MAV_SEVERITY_INFO, "%f %f %f", height_above_ground, (float)land_final_alt, last_land_final_agl);
     if (height_above_ground < land_final_alt &&
         fabsf(height_above_ground - last_land_final_agl) < max_change) {
         return true;

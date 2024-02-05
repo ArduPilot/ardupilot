@@ -34,6 +34,10 @@ Plane::Plane(void)
 void Plane::update_precland()
 {
   // alt will be unused if we pass false through as the second parameter:
+      if (plane.g.rangefinder_landing &&
+        rangefinder_state.in_range) {
+        return precland.update(rangefinder_state.height_estimate,true);
+    }
   return precland.update(0,false);
 
 }
