@@ -576,6 +576,13 @@ void NavEKF3_core::readGpsData()
     gps.get_lag(selected_gps, gps_delay_sec);
     gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
 
+    if (last_gpsdata_time_ms && gpsDataNew.time_ms &&
+        (last_gpsdata_time_ms != gpsDataNew.time_ms)) {
+        gps_time_delta_ms = gpsDataNew.time_ms - last_gpsdata_time_ms;
+    } else {
+        gps_time_delta_ms = 0;
+    }
+    last_gpsdata_time_ms = gpsDataNew.time_ms;
     // Correct for the average intersampling delay due to the filter updaterate
     gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
 
