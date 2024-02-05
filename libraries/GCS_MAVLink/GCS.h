@@ -319,7 +319,7 @@ public:
         return last_radio_status.remrssi_ms;
     }
     static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
-    static uint8_t get_last_txbuf();
+    static bool last_txbuf_is_greater(uint8_t txbuf_limit);
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -814,7 +814,6 @@ private:
 
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
-    // last reported radio buffer percent available
 
     // outbound ("deferred message") queue.
 

@@ -833,13 +833,13 @@ float GCS_MAVLINK::telemetry_radio_rssi()
     return last_radio_status.rssi/254.0f;
 }
 
-uint8_t GCS_MAVLINK::get_last_txbuf()
+bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
 {
     if (AP_HAL::millis() - last_radio_status.received_ms > 5000) {
         // stale report
-        return 100;
+        return true;
     }
-    return last_radio_status.txbuf;
+    return last_radio_status.txbuf > txbuf_limit;
 }
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
@@ -1173,7 +1173,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         interval_ms *= 4;
     }
 #if AP_MAVLINK_FTP_ENABLED
-    if (AP_HAL::millis() - ftp.last_send_ms < 500) {
+    if (AP_HAL::millis() - ftp.last_send_ms < 1000) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
