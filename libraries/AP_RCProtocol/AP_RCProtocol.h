@@ -211,6 +211,11 @@ private:
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 
+    // explicitly investigate a backend for data, as opposed to
+    // feeding the backend a byte (or pulse-train) at a time and
+    // having them make an "add_input" callback):
+    bool detect_async_protocol(rcprotocol_t protocol);
+
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
