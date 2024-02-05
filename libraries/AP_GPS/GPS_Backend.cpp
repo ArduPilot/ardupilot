@@ -326,7 +326,10 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const
 bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
     constexpr float minimum_antenna_seperation = 0.05; // meters
     constexpr float permitted_error_length_pct = 0.2;  // percentage
-
+#if HAL_LOGGING_ENABLED || AP_AHRS_ENABLED
+    float min_D = 0.0f;
+    float max_D = 0.0f;
+#endif
     bool selectedOffset = false;
     Vector3f offset;
     switch (MovingBase::Type(gps.mb_params[interim_state.instance].type.get())) {
@@ -373,10 +376,6 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
 #if AP_AHRS_ENABLED
         {
-            // get lag
-            float lag = 0.1;
-            get_lag(lag);
-
             // get vehicle rotation, projected back in time using the gyro
             // this is not 100% accurate, but it is good enough for
             // this test. To do it completely accurately we'd need an
@@ -385,17 +384,21 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             // for this use case
             const auto &ahrs = AP::ahrs();
             const Vector3f &gyro = ahrs.get_gyro();
-            Matrix3f rot_body_to_ned = ahrs.get_rotation_body_to_ned();
-            rot_body_to_ned.rotate(gyro * (-lag));
+            Matrix3f rot_body_to_ned_min_lag = ahrs.get_rotation_body_to_ned();
+            rot_body_to_ned_min_lag.rotate(gyro * -AP_GPS_MB_MIN_LAG);
+            Matrix3f rot_body_to_ned_max_lag = ahrs.get_rotation_body_to_ned();
+            rot_body_to_ned_max_lag.rotate(gyro * -AP_GPS_MB_MAX_LAG);
 
             // apply rotation to the offset to get the Z offset in NED
-            const Vector3f antenna_tilt = rot_body_to_ned * offset;
-            const float alt_error = reported_D + antenna_tilt.z;
-
-            if (fabsf(alt_error) > permitted_error_length_pct * min_dist) {
+            const Vector3f antenna_tilt_min_lag = rot_body_to_ned_min_lag * offset;
+            const Vector3f antenna_tilt_max_lag = rot_body_to_ned_max_lag * offset;
+            min_D = MIN(-antenna_tilt_min_lag.z, -antenna_tilt_max_lag.z);
+            max_D = MAX(-antenna_tilt_min_lag.z, -antenna_tilt_max_lag.z);
+            min_D -= permitted_error_length_pct * min_dist;
+            max_D += permitted_error_length_pct * min_dist;
+            if (reported_D < min_D || reported_D > max_D) {
                 // the vertical component is out of range, reject it
-                Debug("bad alt_err %.1f > %.1f\n",
-                      alt_error, permitted_error_length_pct * min_dist);
+                Debug("bad alt_err %f < %f < %f", (double)min_D, (double)reported_D, (double)max_D);
                 goto bad_yaw;
             }
         }
@@ -425,16 +428,20 @@ good_yaw:
     // @Field: RHD: reported heading,deg
     // @Field: RDist: antenna separation,m
     // @Field: RDown: vertical antenna separation,m
+    // @Field: MinCDown: minimum tolerable vertical antenna separation,m
+    // @Field: MaxCDown: maximum tolerable vertical antenna separation,m 
     // @Field: OK: 1 if have yaw
-    AP::logger().WriteStreaming("GPYW", "TimeUS,Id,RHD,RDist,RDown,OK",
-                                "s#dmm-",
-                                "F-----",
-                                "QBfffB",
+    AP::logger().WriteStreaming("GPYW", "TimeUS,Id,RHD,RDist,RDown,MinCDown,MaxCDown,OK",
+                                "s#dmmmm-",
+                                "F-------",
+                                "QBfffffB",
                                 AP_HAL::micros64(),
                                 state.instance,
                                 reported_heading_deg,
                                 reported_distance,
                                 reported_D,
+                                min_D,
+                                max_D,
                                 interim_state.have_gps_yaw);
 #endif
 

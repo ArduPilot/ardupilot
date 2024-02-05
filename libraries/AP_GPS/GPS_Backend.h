@@ -34,6 +34,14 @@
 #define AP_GPS_DEBUG_LOGGING_ENABLED 0
 #endif
 
+#ifndef AP_GPS_MB_MIN_LAG
+#define AP_GPS_MB_MIN_LAG 0.05f
+#endif
+
+#ifndef AP_GPS_MB_MAX_LAG
+#define AP_GPS_MB_MAX_LAG 0.25f
+#endif
+
 #if AP_GPS_DEBUG_LOGGING_ENABLED
 #include <AP_HAL/utility/RingBuffer.h>
 #endif
