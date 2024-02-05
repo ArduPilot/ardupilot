@@ -115,6 +115,8 @@ uint16_t AP_Param::num_read_only;
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
 
+bool AP_Param::done_all_default_params;
+
 AP_Param::defaults_list *AP_Param::default_list;
 
 // we need a dummy object for the parameter save callback
@@ -1689,6 +1691,13 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
         }
     }
 
+    if (!done_all_default_params) {
+        /*
+          the new subtree may need defaults from defaults.parm
+         */
+        reload_defaults_file(false);
+    }
+
     // reset cached param counter as we may be loading a dynamic var_info
     invalidate_count();
 }
@@ -2250,6 +2259,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         return false;
     }
 
+    bool done_all = true;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
         char *pname;
@@ -2270,6 +2280,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
                          pname, filename);
 #endif
             }
+            done_all = false;
             continue;
         }
         if (idx >= param_overrides_len) {
@@ -2288,6 +2299,8 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         }
     }
     AP::FS().close(file_apfs);
+
+    done_all_default_params = done_all;
 
     return true;
 }

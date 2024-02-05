@@ -776,6 +776,7 @@ class ChibiOSHWDef(object):
 
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
+        mcu_type = self.mcu_type
         if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
@@ -802,6 +803,8 @@ class ChibiOSHWDef(object):
                         256, 256, 256, 256]
             else:
                 raise Exception("Unsupported flash size %u" % self.get_config('FLASH_SIZE_KB', type=int))
+        elif mcu_type.startswith('STM32H7A'):
+            return [8] * (self.get_config('FLASH_SIZE_KB', type=int)//8)
         elif mcu_series.startswith('STM32H7'):
             return [128] * (self.get_config('FLASH_SIZE_KB', type=int)//128)
         elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
@@ -873,6 +876,8 @@ class ChibiOSHWDef(object):
         storage_flash_page = self.get_storage_flash_page()
         pages = self.get_flash_pages_sizes()
         page_size = pages[storage_flash_page] * 1024
+        if self.intdefines.get('AP_FLASH_STORAGE_DOUBLE_PAGE', 0) == 1:
+            page_size *= 2
         storage_size = self.intdefines.get('HAL_STORAGE_SIZE', None)
         if storage_size is None:
             self.error('Need HAL_STORAGE_SIZE define')

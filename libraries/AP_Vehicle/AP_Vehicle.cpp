@@ -358,6 +358,8 @@ void AP_Vehicle::setup()
     stats.init();
 #endif
 
+    BoardConfig.init();
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 

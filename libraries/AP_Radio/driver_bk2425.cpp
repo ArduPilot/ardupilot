@@ -1,10 +1,12 @@
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_BK2425_ENABLED
+
 // --------------------------------------------------------------------
 //  low level driver for the beken radio on SPI
 // --------------------------------------------------------------------
 
 #include "driver_bk2425.h"
-
-#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 
 #include <utility>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
@@ -722,4 +724,4 @@ void Radio_Beken::DumpRegisters(void)
     SetRBank(0);
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
+#endif // AP_RADIO_BK2425_ENABLED
