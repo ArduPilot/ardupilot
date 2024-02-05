@@ -601,6 +601,9 @@ protected:
     // handle IPLS sensor status
     virtual void handle_land_sensor_status(const mavlink_land_sensor_status_t &packet) {}
 
+    // handle auth takeoff
+    virtual void handle_takeoff_auth(const mavlink_auth_takeoff_t &packet) {}
+
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
@@ -938,6 +941,7 @@ private:
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
     void handle_landing_target(const mavlink_message_t &msg);
     void handle_land_sensor_status(const mavlink_message_t &msg);
+    void handle_takeoff_auth(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 

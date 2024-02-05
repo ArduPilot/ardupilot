@@ -3870,6 +3870,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_land_sensor_status(msg);
         break;
 
+    case MAVLINK_MSG_ID_AUTH_TAKEOFF:
+
+        break;
+
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
         break;
@@ -4844,10 +4848,17 @@ void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_land_sensor_status(const mavlink_message_t &msg)
 {
-
     mavlink_land_sensor_status_t m;
     mavlink_msg_land_sensor_status_decode(&msg, &m);
     handle_land_sensor_status(m);
+}
+
+void GCS_MAVLINK::handle_takeoff_auth(const mavlink_message_t &msg)
+{
+
+    mavlink_auth_takeoff_t m;
+    mavlink_msg_auth_takeoff_decode(&msg, &m);
+    handle_takeoff_auth(m);
 }
 
 

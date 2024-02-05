@@ -14,6 +14,13 @@ bool ModeAuto::_enter()
             return false;
         }
     }
+
+    if(plane.auth_takeoff_flag != Plane::TAKEOFF_AUTH_STATUS::AUTHENTICATED)
+    {
+        gcs().send_text(MAV_SEVERITY_ERROR,"Command accepted only from webgcs");
+        return false;
+    }
+
     
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
@@ -70,6 +77,8 @@ void ModeAuto::update()
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
+
+    
 
     uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
 

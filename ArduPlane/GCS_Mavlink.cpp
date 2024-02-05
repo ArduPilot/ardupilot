@@ -148,6 +148,23 @@ void GCS_MAVLINK_Plane::handle_land_sensor_status(const mavlink_land_sensor_stat
 
 }
 
+void GCS_MAVLINK_Plane::handle_takeoff_auth(const mavlink_auth_takeoff_t &packet)
+{
+    switch (packet.status)
+    {
+        case Plane::TAKEOFF_AUTH_STATUS::AUTHENTICATED:
+            gcs().send_text(MAV_SEVERITY_INFO, "WebGCS Authenticated");
+        break;
+
+        case Plane::TAKEOFF_AUTH_STATUS::UNAUTHENTICATED:
+            gcs().send_text(MAV_SEVERITY_INFO, "WebGCS Authentication released");
+        break;
+
+        default:
+            break;
+    }
+}
+
 
 void GCS_MAVLINK_Plane::send_attitude() const
 {

@@ -348,6 +348,19 @@ private:
         VTOL_LANDING,
     };
 
+
+    //////////////////////////////////////////////////
+    enum TAKEOFF_AUTH_STATUS
+    {
+        NONE,
+        AUTHENTICATED,
+        UNAUTHENTICATED,
+    };
+
+    // Auth takeoff flag
+    uint8_t auth_takeoff_flag;
+    /////////////////////////////////////////////////
+
 #if HAL_QUADPLANE_ENABLED
     // Landing
     struct {
