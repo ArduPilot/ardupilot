@@ -3871,7 +3871,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_AUTH_TAKEOFF:
-
+        handle_takeoff_auth(msg);
         break;
 
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
