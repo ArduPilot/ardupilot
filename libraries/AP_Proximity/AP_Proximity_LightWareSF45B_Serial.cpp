@@ -18,9 +18,9 @@
 
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+#if AP_PROXIMITY_LIGHTWARE_SF45B_SERIAL_ENABLED
 
-#include "AP_Proximity_LightWareSF45B.h"
+#include "AP_Proximity_LightWareSF45B_Serial.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -28,16 +28,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-static const uint32_t PROXIMITY_SF45B_TIMEOUT_MS = 200;
-static const uint32_t PROXIMITY_SF45B_REINIT_INTERVAL_MS = 5000;    // re-initialise sensor after this many milliseconds
-static const float PROXIMITY_SF45B_COMBINE_READINGS_DEG = 5.0f;     // combine readings from within this many degrees to improve efficiency
 static const uint32_t PROXIMITY_SF45B_STREAM_DISTANCE_DATA_CM = 5;
 static const uint8_t PROXIMITY_SF45B_DESIRED_UPDATE_RATE = 6;       // 1:48hz, 2:55hz, 3:64hz, 4:77hz, 5:97hz, 6:129hz, 7:194hz, 8:388hz
-static const uint32_t PROXIMITY_SF45B_DESIRED_FIELDS = ((uint32_t)1 << 0 | (uint32_t)1 << 8);   // first return (unfiltered), yaw angle
-static const uint16_t PROXIMITY_SF45B_DESIRED_FIELD_COUNT = 2;      // DISTANCE_DATA_CM message should contain two fields
 
 // update the state of the sensor
-void AP_Proximity_LightWareSF45B::update(void)
+void AP_Proximity_LightWareSF45B_Serial::update(void)
 {
     if (_uart == nullptr) {
         return;
@@ -58,7 +53,7 @@ void AP_Proximity_LightWareSF45B::update(void)
 }
 
 // initialise sensor
-void AP_Proximity_LightWareSF45B::initialise()
+void AP_Proximity_LightWareSF45B_Serial::initialise()
 {
     // check sensor is configured correctly
     _init_complete = (_sensor_state.stream_data_type == PROXIMITY_SF45B_STREAM_DISTANCE_DATA_CM) &&
@@ -77,7 +72,7 @@ void AP_Proximity_LightWareSF45B::initialise()
 }
 
 // request start of streaming of distances
-void AP_Proximity_LightWareSF45B::request_stream_start()
+void AP_Proximity_LightWareSF45B_Serial::request_stream_start()
 {
     // request output rate
     send_message((uint8_t)MessageID::UPDATE_RATE, true, &PROXIMITY_SF45B_DESIRED_UPDATE_RATE, sizeof(PROXIMITY_SF45B_DESIRED_UPDATE_RATE));
@@ -90,7 +85,7 @@ void AP_Proximity_LightWareSF45B::request_stream_start()
 }
 
 // check for replies from sensor
-void AP_Proximity_LightWareSF45B::process_replies()
+void AP_Proximity_LightWareSF45B_Serial::process_replies()
 {
     if (_uart == nullptr) {
         return;
@@ -110,7 +105,7 @@ void AP_Proximity_LightWareSF45B::process_replies()
 }
 
 // process the latest message held in the _msg structure
-void AP_Proximity_LightWareSF45B::process_message()
+void AP_Proximity_LightWareSF45B_Serial::process_message()
 {
     // process payload
     switch ((MessageID)_msg.msgid) {
@@ -197,10 +192,4 @@ void AP_Proximity_LightWareSF45B::process_message()
     }
 }
 
-// convert an angle (in degrees) to a mini sector number
-uint8_t AP_Proximity_LightWareSF45B::convert_angle_to_minisector(float angle_deg) const
-{
-    return wrap_360(angle_deg + (PROXIMITY_SF45B_COMBINE_READINGS_DEG * 0.5f)) / PROXIMITY_SF45B_COMBINE_READINGS_DEG;
-}
-
-#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF45B_SERIAL_ENABLED
