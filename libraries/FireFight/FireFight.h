@@ -19,6 +19,16 @@ private:
     uint8_t linebuf_len = 0; 
     FireFightCRC CRC;
 
+    // void write_two(uint8_t address_ID,uint16_t start_reg_adress,uint16_t val_1,uint16_t val_2);
+
+    /* data */
+public:
+    void uart_init(void);
+    void read_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);
+    void write_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);    
+    // uint8_t check_send_one(uint16_t val);
+    uint8_t check_send_one(uint8_t addressID);
+    void function_fire_fight(uint8_t DT_ms);
     void write_two(uint8_t address_ID,uint16_t start_reg_adress,uint16_t val_1,uint16_t val_2);
     void up_button(uint16_t val);
     void down_button(uint16_t val);
@@ -28,20 +38,13 @@ private:
     void wu_button(uint16_t val);
     void upanddown_zero();
     void leftandright_zero();
+    void wuzhu_zero();
     void zhu_zero();
     void wu_zero();
     void valve_button(uint16_t val);   //阀门按钮
     void pump_button(uint16_t val);    //泵按钮
     void Record_button(uint16_t val);  //录制按钮
     void playback_button(uint16_t val);//回放按钮
-    /* data */
-public:
-    void uart_init(void);
-    void read_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);
-    void write_one(uint8_t address_ID,uint16_t reg_adress, uint16_t reg_num);    
-    // uint8_t check_send_one(uint16_t val);
-    uint8_t check_send_one(uint8_t addressID);
-    void function_fire_fight();
 };
 
 #endif

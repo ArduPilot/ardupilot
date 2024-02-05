@@ -73,8 +73,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_radio,             50,    200,   3),
     SCHED_TASK(ahrs_update,           400,    400,   6),
     SCHED_TASK(read_rangefinders,      50,    200,   9),
-    SCHED_TASK(FireFight_open,         50,    200,  11),
-    SCHED_TASK(Fire_motor,             50,    200,  10),
+    SCHED_TASK(FireFight_open,         200,   400,  11),
+    // SCHED_TASK(Fire_motor,             50,    200,  10),
+
      SCHED_TASK(Fire_CLED,             50,    200,  13),
         
 
@@ -151,11 +152,55 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 };
 void Rover::FireFight_open()   //每20毫秒执行一次
 {
+    uint8_t static stat = 0;
+    
+    // if(stat == 0)
+    // {
+    //     if(firefight_rover.function_fire_fight(5))
+    //     {
+    //         stat = 1;
+    //     }
+    // }
+    if(hal.rcin->read(6) > 1800)
+    {
+        if(stat == 0)
+        {
+            firefight_rover.function_fire_fight(5);
+        }
+        if(stat==1)
+        {
+            fire_motor_rover.function_fire_motor_485(5);
+        }
+        stat++;
+        if(stat >= 2)
+        {
+            stat = 0;
+        }
+    }
+    else
+    {   if(stat == 0)
+            firefight_rover.up_button(0);
+        if(stat == 1)    
+        firefight_rover.down_button(0);
+        if(stat == 2)
+        firefight_rover.left_button(0);
+        if(stat == 3)
+        firefight_rover.right_button(0);
+        if(stat == 4)
+        firefight_rover.write_two(100,0x2000,6,0);
+        if(stat == 5)
+        firefight_rover.write_two(101,0x2000,6,0);
+        if(stat == 6)
+             stat = 0;
+        stat++;        
+    }
+
     // uint8_t GPIO_STATUS;
     // firefight_rover.function_fire_fight();
     // uint16_t ms = 1000; 
     // static uint64_t start = AP_HAL::millis64();
     // if ((AP_HAL::millis64() - start)/1000 > ms)
+
     // {
     // hal.scheduler->delay(100);  //1s
     // hal.gpio->write(2,1);
@@ -171,12 +216,21 @@ void Rover::FireFight_open()   //每20毫秒执行一次
     //         "现在是灯测试:%d",GPIO_STATUS);
 
     // }
-    ;
+    // if(stat)
+    // {
+    //     if(fire_motor_rover.function_fire_motor_485(5))
+    //     {
+    //         stat = 0;
+    //     }
+            
+    // }
+    // hal.scheduler->delay(2);  //延时2毫秒等待发送
 
 }
 
 void Rover::Fire_motor()       //
 {
+    ;
 
     // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
     //     "现在是延迟5s测试:%0.2f",v);
@@ -189,9 +243,8 @@ void Rover::Fire_motor()       //
     //         "现在是延迟5s测试");
         // start = AP_HAL::millis64();
     // }
-//   fire_motor_rover.function_fire_motor_485();
+//   fire_motor_rover.function_fire_motor_485(20);
 ;
-
 }
 
 void Rover::Fire_CLED()

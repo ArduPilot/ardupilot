@@ -80,201 +80,171 @@ void Fire_motor_485::update_status()
 }
 
 
-void Fire_motor_485::function_fire_motor_485()
+void Fire_motor_485::function_fire_motor_485(uint8_t DT_ms)
 {
-    const float x_x = 6.66666;       //系数为6.666
-    int16_t V_L,V_R,x,y;          //设定速度量为（0～100）
-    uint16_t under_offset = 1550;   //死区设置
-    uint16_t low_offset = 1450;
+    const float dwb_2 = 0.2f;       //系数为6.666
+    const float vc = 0.00288;
+    const float w = 0.0144;
+    const float x_x = 2314.814f;
+    float V_L,V_R,x,y;          //设定速度量为（0～100）
+    // uint16_t under_offset = 1550;   //死区设置
+    // uint16_t low_offset = 1450;
     uint16_t mid_offset = 1500;
-    uint8_t stop_button = 0;
-    uint16_t rcin_1 = 3000 - hal.rcin->read(1); 
-    uint16_t rcin_0 = hal.rcin->read(0); 
+    uint8_t static  stop_button = 0;
+    uint16_t rcin_1 = hal.rcin->read(1); 
+    uint16_t rcin_0 = 3000 - hal.rcin->read(0); 
     uint16_t rcin_9 = hal.rcin->read(9); 
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"rcin(9):%d",rcin_9);
     static uint16_t last_rcin_9 = mid_offset;    
-    static uint8_t L_ord = 0,R_ord = 0,golab_cnt = 0; //判断朝向，当为0的时候没有朝向，为1的时候向前，2的时候向后    
-    static uint8_t L_cnt=0,R_cnt=0;
+    static uint8_t golab_cnt = 0; //判断朝向，当为0的时候没有朝向，为1的时候向前，2的时候向后    
+    // static uint8_t L_cnt=0,R_cnt=0;
     // static int16_t last_V_R  = 0;
     // static int16_t last_V_L  = 0;
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"按键标志位:%d",abs(rcin_9 - last_rcin_9));
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"rcin_1标志位:%d",abs(rcin_1 - mid_offset));
     // gcs().send_text(MAV_SEVERITY_CRITICAL,"rcin_0志位:%d",abs(rcin_0 - mid_offset));
-   
+    if((abs(rcin_1 - mid_offset) >100) || (abs(rcin_0 - mid_offset) >100))
+    {
+        y = (rcin_1 - mid_offset)*vc;
+        x = (rcin_0 - mid_offset)*w;
+        V_R = (y + dwb_2 * x)*x_x;
+        V_L = (y - dwb_2 * x)*x_x;
+
+    }
+    else
+    {
+        V_R = 0;
+        V_L = 0;
+    }
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,"V_L:%f",V_L);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,"V_R:%f",V_R);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,"IF:%d",(abs(rcin_1 - mid_offset) >100) || (abs(rcin_0 - mid_offset) >100));
+    // gcs().send_text(MAV_SEVERITY_CRITICAL,"abs:%d",abs(rcin_1 - mid_offset));
+
+
     if(abs(rcin_9 - last_rcin_9) > 800) //判断是否有案件按下
     {
-        stop_button = 1;//相当于按键被按下
+        stop_button = ~stop_button;//相当于按键被按下
     }
     last_rcin_9 = rcin_9; 
-    if(rcin_1 > under_offset && rcin_0 > under_offset)  //表示在第一象限
-    {
-        y = rcin_1 - mid_offset;
-        x = rcin_0 - mid_offset;
-        V_L = y * x_x;                                    //转换成PWM
-        V_R = (y - x/450*y*0.5)*x_x;
-    }
-    else if(rcin_1 > under_offset && rcin_0 < low_offset)  //表示在第二象限
-    {
-        y = rcin_1 - mid_offset;
-        x = rcin_0 - mid_offset;
-        V_L = (y + x/450*y*0.5)*x_x;                               //转换成PWM
-        V_R = y * x_x;     
-    }
-    else if(rcin_1 < low_offset && rcin_0 < low_offset)  //表示在第三象限
-    {
-        y = rcin_1 - mid_offset;
-        x = rcin_0 - mid_offset;
-        V_L = (y + x/450*y*0.5)*x_x;                               //转换成PWM
-        V_R = y * x_x;     
-    }    
-    else if(rcin_1 < low_offset && rcin_0 > under_offset)  //第四象限
-    {
-        y = rcin_1 - mid_offset;
-        x = rcin_0 - mid_offset;
-        V_L = y * x_x;                                    //转换成PWM
-        V_R = (y - x/450*y*0.5)*x_x;
-    }
-    else if(rcin_1 > under_offset && (abs(rcin_0 - mid_offset) <100))  //直线前进 
-    {
-        y = rcin_1 - mid_offset;
-        V_L = y * x_x;                                    //转换成PWM
-        V_R = y * x_x; 
-    }
-    else if(rcin_1 < low_offset && (abs(rcin_0 - mid_offset) <100))  //直线后退
-    {
-        y = rcin_1 - mid_offset;
-        V_L = y * x_x;                                    //转换成PWM
-        V_R = y * x_x; 
-    }
-    else if(rcin_0 < low_offset && (abs(rcin_1 - mid_offset) <100))  //原地逆时间
-    {
-        x = rcin_0 - mid_offset;
-        V_L = x * x_x;                                    //转换成PWM
-        V_R =-x * x_x; 
-    }
-    else if(rcin_0 > under_offset && (abs(rcin_1 - mid_offset) <100))  //原地顺时间 
-    {
-        x = rcin_0 - mid_offset;
-        V_L = x * x_x;                                    //转换成PWM
-        V_R =-x * x_x; 
-    }   
-    else if (stop_button || ((abs(rcin_1 - mid_offset) <100 && abs(rcin_0 - mid_offset) <100))/* condition */)
-    {
-        /* code */
-        V_L = 0;                                    //转换成PWM
-        V_R = 0; 
-    }
-    V_L = LIMIT(V_L,-3000,3000);   //输出限幅
-    V_R = LIMIT(V_R,-3000,3000);
+    // if(rcin_1 > under_offset && rcin_0 > under_offset)  //表示在第一象限
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     x = rcin_0 - mid_offset;
+    //     V_L = -y * x_x;                                    //转换成PWM
+    //     V_R = -(y + x/450*y*0.5)*x_x;
+    // }
+    // else if(rcin_1 > under_offset && rcin_0 < low_offset)  //表示在第二象限
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     x = rcin_0 - mid_offset;
+    //     V_L = -(y - x/450*y*0.5)*x_x;                               //转换成PWM
+    //     V_R = -y * x_x;     
+    // }
+    // else if(rcin_1 < low_offset && rcin_0 < low_offset)  //表示在第三象限
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     x = rcin_0 - mid_offset;
+    //     V_L = -(y - x/450*y*0.5)*x_x;                               //转换成PWM
+    //     V_R = -y * x_x;     
+    // }    
+    // else if(rcin_1 < low_offset && rcin_0 > under_offset)  //第四象限
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     x = rcin_0 - mid_offset;
+    //     V_L = -y * x_x;                            
+    //             //转换成PWM
+    //     V_R = -(y + x/450*y*0.5)*x_x;
+    // }
+    // else if(rcin_1 > under_offset && (abs(rcin_0 - mid_offset) <100))  //直线前进 
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     V_L = -y * x_x;                                    //转换成PWM
+    //     V_R = -y * x_x; 
+    // }
+    // else if(rcin_1 < low_offset && (abs(rcin_0 - mid_offset) <100))  //直线后退
+    // {
+    //     y = rcin_1 - mid_offset;
+    //     V_L = -y * x_x;                                    //转换成PWM
+    //     V_R = -y * x_x; 
+    // }
+    // else if(rcin_0 < low_offset && (abs(rcin_1 - mid_offset) <100))  //原地逆时间
+    // {
+    //     x = rcin_0 - mid_offset;
+    //     V_L = x * x_x;                                    //转换成PWM
+    //     V_R =-x * x_x; 
+    // }
+    // else if(rcin_0 > under_offset && (abs(rcin_1 - mid_offset) <100))  //原地顺时间 
+    // {
+    //     x = rcin_0 - mid_offset;
+    //     V_L = x * x_x;                                    //转换成PWM
+    //     V_R =-x * x_x; 
+    // }   
+    // else if (stop_button || ((abs(rcin_1 - mid_offset) <100 && abs(rcin_0 - mid_offset) <100))/* condition */)
+    // {
+    //     /* code */
+    //     V_L = 0;                                    //转换成PWM
+    //     V_R = 0; 
+    // }
+    V_L = LIMIT(V_L,-2950,2950);   //输出限幅
+    V_R = LIMIT(V_R,-2950,2950);
     
     if( golab_cnt == 0)  //如果更新数值没有改变，则见不输出V_L != last_V_L &&
     {
-        V_L = -V_L;
+        // V_L = -V_L;
         if (V_L > 0)
         {
-            if (L_cnt==0/* condition */|| L_ord != 1)  //若这个不等于1,则代表已经转过方向
-            {
-                // if(L_ord != 1)
-                // {
-                    set_Forward(Left_motor);                 
-                    L_ord = 1;
-                    L_cnt = 0;//延时标志位                    
-                // }
-            }
-            L_cnt++;
-            if (/* condition */L_cnt==2)
-            {
-                /* code */
-                set_RPM(Left_motor,V_L);
-                L_cnt = 0;
 
-            }
+            FF.write_two(Left_motor,0X2000,2,(uint16_t)V_L);     //左边轮子反转
+            
         }
         else if(V_L < 0)
         {
-            if (L_cnt==0/* condition */|| L_ord != 2)
-            {
-                set_Reverse(Left_motor);
-                L_ord = 2;
-                L_cnt = 0;  //延时标志位
-            }
-            L_cnt++;
-            if (/* condition */L_cnt==2)
-            {
-                /* code */
-                // V_L = -V_L;
-                set_RPM(Left_motor,-V_L);
-                L_cnt = 0;
-            }        
+
+            FF.write_two(Left_motor,0X2000,1,(uint16_t)-V_L); //左边轮子正转
         }
         else if(V_L == 0)
         {
-            if (L_cnt==0/* condition */|| L_ord != 0)
+
+            if(stop_button)
             {
-                free_stop(Left_motor);
-                L_ord = 0;
-                L_cnt = 0;  //延时标志位
+                FF.write_two(Left_motor,0X2000,9,0);     //左边轮子刹车
             }
-            L_cnt++;
-            if (/* condition */L_cnt==2)
+            else
             {
-                set_RPM(Left_motor,0);
-                L_cnt = 0;
-            }   
+                FF.write_two(Left_motor,0X2000,6,0);     //左边轮子刹车
+            }
+
         } 
         // last_V_L = V_L;     
 
     }
+
     
     if(golab_cnt == 1)  //如果更新数值没有改变，则见不输出V_R != last_V_R 
     {
+        V_R = -V_R;
         if (V_R > 0)
         {
-            if (R_cnt==0/* condition */|| R_ord != 1)
-            {
-                set_Forward(Right_motor);
-                R_ord = 1;
-                R_cnt = 0;
-            }
-            R_cnt++;
-            if (/* condition */R_cnt==2)
-            {
-                /* code */
-                set_RPM(Right_motor,V_R);
-                R_cnt = 0;
-            }
+
+            FF.write_two(Right_motor,0X2000,2,(uint16_t)V_R); 
         }
         else if(V_R < 0)
         {
-            if (R_cnt==0/* condition */|| R_ord != 2)
-            {
-                set_Reverse(Right_motor);
-                R_ord = 2;
-
-            }
-            R_cnt++;
-            if (/* condition */R_cnt==2)
-            {
-                /* code */
-                // V_R = -V_R;
-                set_RPM(Right_motor,-V_R);
-                R_cnt = 0;
-            }        
+ 
+            FF.write_two(Right_motor,0X2000,1,(uint16_t)-V_R); 
         }
         else if(V_R == 0)
-        {
-            if (R_cnt==0/* condition */|| R_ord != 0)
+        { 
+            if(stop_button)
             {
-                free_stop(Right_motor);
-                R_ord = 0;
-                R_cnt = 0;
+                FF.write_two(Right_motor,0X2000,9,0); 
             }
-            R_cnt++;
-            if (/* condition */R_cnt==2)
+            else
             {
-                set_RPM(Right_motor,0);
-                R_cnt = 0;
-            }   
+                FF.write_two(Right_motor,0X2000,6,0); 
+            }
+
         }
         // last_V_R = V_R;
         golab_cnt = 2;

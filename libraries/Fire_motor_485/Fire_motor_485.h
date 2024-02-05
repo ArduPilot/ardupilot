@@ -32,7 +32,7 @@ private:
 public: /*addressID为控制板的485ID，不是功能地址*/
     /*下面为动态调整参数*/
 
-    void function_fire_motor_485();
+    void function_fire_motor_485(uint8_t DT_ms);
     
 
 };
