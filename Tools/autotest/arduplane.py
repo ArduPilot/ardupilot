@@ -3846,7 +3846,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Wait for guided return to vehicle calculated fence return location
         self.wait_distance_to_location(ret_loc, 90, 110)
-        
+
         self.wait_circling_point_with_radius(ret_loc, 92)
 
         self.progress("Test complete, disable fence and come home")
