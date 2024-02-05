@@ -1818,7 +1818,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.takeoff(alt=50, alt_max=300)
 
-        #Set throttle stick to neutral  
+        # Set throttle stick to neutral  
         self.set_rc(3, 1500)
 
         # Trigger fence breach, fly to rally location
@@ -3511,7 +3511,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # get flying
         self.takeoff(alt=50)
         
-        #Set throttle stick to neutral  
+        # Set throttle stick to neutral  
         self.set_rc(3, 1500)
 
         self.change_mode('CIRCLE')
@@ -3807,7 +3807,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
         self.wait_mode("GUIDED", timeout=120) # We should RTL because of fence breach
  
-        #Set throttle stick to neutral  
+        # Set throttle stick to neutral  
         self.set_rc(3, 1500)
  
         self.delay_sim_time(60)
@@ -3881,7 +3881,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
         self.wait_mode("GUIDED") # We should RTL because of fence breach
         
-        #Set throttle stick to neutral  
+        # Set throttle stick to neutral  
         self.set_rc(3, 1500)
 
         self.delay_sim_time(30)
@@ -4946,7 +4946,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff(30, relative=True)
         self.change_mode('GUIDED')
         
-        #Set throttle stick to neutral  
+        # Set throttle stick to neutral  
         self.set_rc(3, 1500)
         
         for alt in 50, 70:
