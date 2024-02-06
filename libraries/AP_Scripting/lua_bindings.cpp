@@ -956,4 +956,23 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
 }
 #endif
 
+/*
+  lua wants to abort, and doesn't have access to a panic function
+ */
+void lua_abort()
+{
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+#if AP_SIM_ENABLED
+    AP_HAL::panic("lua_abort called");
+#else
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("lua_abort called");
+    }
+    // abort while flying, all we can do is loop
+    while (true) {
+        hal.scheduler->delay(1000);
+    }
+#endif
+}
+
 #endif  // AP_SCRIPTING_ENABLED
