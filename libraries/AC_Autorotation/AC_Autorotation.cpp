@@ -13,9 +13,8 @@
 #define TCH_P                                         0.1f    // Default touchdown phase collective controller P gain
 
 // flare controller default definitions
-#define AP_ALPHA_TPP                         20.0f
-#define AP_T_TO_G                            0.55f
-#define MIN_TIME_ON_GROUND                   3000.0f
+#define AP_ALPHA_TPP                                  20.0f   // (deg) Maximum angle of the Tip Path Plane
+#define MIN_TIME_ON_GROUND                            3000    // (ms) Time on ground required before collective is slewed to zero thrust
 
 const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
@@ -188,7 +187,7 @@ void AC_Autorotation::init(AP_MotorsHeli* motors, float gnd_clear) {
     initial_flare_estimate();
 
     // Initialisation of head speed controller
-    // Set initial collective position to be the collective position on initialisation
+    // Set initial collective position to be the zero thrust collective and minimize loss in head speed
     _collective_out = _motors_heli->get_coll_mid();
 
     // Reset feed forward filter
@@ -205,7 +204,6 @@ void AC_Autorotation::init(AP_MotorsHeli* motors, float gnd_clear) {
     _param_head_speed_set_point.set(MAX(_param_head_speed_set_point, 500.0));
 
     // Initialise forward speed controller
-    // Reset I term and acceleration target
     _accel_target = 0.0;
 
     // Ensure parameter acceleration doesn't exceed hard-coded limit
