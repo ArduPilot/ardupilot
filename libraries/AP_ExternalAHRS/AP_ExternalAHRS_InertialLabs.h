@@ -77,6 +77,10 @@ public:
         SUPPLY_VOLTAGE = 0x50,
         TEMPERATURE = 0x52,
         UNIT_STATUS2 = 0x5A,
+        GNSS_ANGLES = 0x33,
+        GNSS_ANGLE_POS_TYPE = 0x3A,
+        GNSS_HEADING_TIMESTAMP = 0x40,
+        GNSS_DOP = 0x42,
     };
 
     /*
@@ -139,7 +143,7 @@ public:
         } baro_data;
         vec3_16_t mag_data; // nT/10
         struct PACKED {
-            int16_t yaw; // deg*100
+            uint16_t yaw; // deg*100
             int16_t pitch; // deg*100
             int16_t roll; // deg*100
         } orientation_angles; // 321 euler order?
@@ -170,6 +174,19 @@ public:
         uint16_t supply_voltage; // V*100
         int16_t temperature; // degC*10
         uint16_t unit_status2;
+        struct PACKED {
+            uint16_t gnss_heading; // deg*100
+            int16_t gnss_pitch; // deg*100
+        } gnss_angles;
+        uint8_t gnss_angle_pos_type;
+        uint32_t gnss_heading_timestamp; // ms
+        struct PACKED {
+            uint16_t gnss_gdop;
+            uint16_t gnss_pdop;
+            uint16_t gnss_hdop;
+            uint16_t gnss_vdop;
+            uint16_t gnss_tdop;
+        } gnss_dop; // *10e3
     };
 
     AP_ExternalAHRS::gps_data_message_t gps_data;
@@ -214,6 +231,13 @@ private:
         Vector3f wind_speed;
         uint16_t air_data_status;
         float supply_voltage;
+        float gnss_heading;
+        float gnss_pitch;
+        uint8_t gnss_angle_pos_type;
+        uint32_t gnss_heading_timestamp;
+        float gnss_gdop;
+        float gnss_pdop;
+        float gnss_tdop;
     } state2;
 
     uint32_t last_att_ms;

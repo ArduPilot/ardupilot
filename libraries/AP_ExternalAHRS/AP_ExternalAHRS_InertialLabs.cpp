@@ -96,6 +96,7 @@ AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_fro
 
     // don't offer IMU by default, at 200Hz it is too slow for many aircraft
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
+                        uint16_t(AP_ExternalAHRS::AvailableSensor::IMU) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
     
@@ -267,7 +268,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::ACCEL_DATA_HR: {
             CHECK_SIZE(u.accel_data_hr);
-            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*GRAVITY_MSS*1.0e-6;
+            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6;      
             break;
         }
         case MessageType::GYRO_DATA_HR: {
@@ -349,10 +350,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::GNSS_VEL_TRACK: {
             CHECK_SIZE(u.gnss_vel_track);
-            Vector2f velxy;
-            velxy.offset_bearing(u.gnss_vel_track.track_over_ground*0.01, u.gnss_vel_track.hor_speed*0.01);
-            gps_data.ned_vel_north = velxy.x;
-            gps_data.ned_vel_east = velxy.y;
+            gps_data.ned_vel_north = cosF(radians(u.gnss_vel_track.track_over_ground*0.01))*u.gnss_vel_track.hor_speed*0.01;
+            gps_data.ned_vel_east = sinF(radians(u.gnss_vel_track.track_over_ground*0.01))*u.gnss_vel_track.hor_speed*0.01;
             gps_data.ned_vel_down = -u.gnss_vel_track.ver_speed*0.01;
             break;
         }
@@ -378,7 +377,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::DIFFERENTIAL_PRESSURE: {
             CHECK_SIZE(u.differential_pressure);
-            airspeed_data.differential_pressure = u.differential_pressure*1.0e-4;
+            airspeed_data.differential_pressure = u.differential_pressure*1.0e-2; //  Pa
             break;
         }
         case MessageType::TRUE_AIRSPEED: {
@@ -411,6 +410,31 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         case MessageType::UNIT_STATUS2: {
             CHECK_SIZE(u.unit_status2);
             state2.unit_status2 = u.unit_status2;
+            break;
+        }
+        case MessageType::GNSS_ANGLES: {
+            CHECK_SIZE(u.gnss_angles);
+            state2.gnss_heading = u.gnss_angles.gnss_heading * 1.0e-2;
+            state2.gnss_pitch = u.gnss_angles.gnss_pitch * 1.0e-2;
+            break;
+        }
+        case MessageType::GNSS_ANGLE_POS_TYPE: {
+            CHECK_SIZE(u.gnss_angle_pos_type);
+            state2.gnss_angle_pos_type = u.gnss_angle_pos_type;
+            break;
+        }
+        case MessageType::GNSS_HEADING_TIMESTAMP: {
+            CHECK_SIZE(u.gnss_heading_timestamp);
+            state2.gnss_heading_timestamp = u.gnss_heading_timestamp;
+            break;
+        }
+        case MessageType::GNSS_DOP: {
+            CHECK_SIZE(u.gnss_dop);
+            state2.gnss_gdop = u.gnss_dop.gnss_gdop * 1.0e-1;
+            state2.gnss_pdop = u.gnss_dop.gnss_pdop * 1.0e-1;
+            gps_data.hdop = u.gnss_dop.gnss_hdop * 1.0e-1;
+            gps_data.vdop = u.gnss_dop.gnss_vdop * 1.0e-1;
+            state2.gnss_tdop = u.gnss_dop.gnss_tdop * 1.0e-1;
             break;
         }
         }
@@ -472,7 +496,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         AP::baro().handle_external(baro_data);
     }
 #endif
-    #if AP_COMPASS_EXTERNALAHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     if (GOT_MSG(MAG_DATA)) {
         AP::compass().handle_external(mag_data);
     }
@@ -489,7 +513,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 #endif // AP_AIRSPEED_EXTERNAL_ENABLED
     buffer_ofs = 0;
 
-#if HAL_LOGGING_ENABLED
     if (GOT_MSG(POSITION) &&
         GOT_MSG(ORIENTATION_ANGLES) &&
         GOT_MSG(VELOCITIES)) {
@@ -510,15 +533,18 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: Lat: latitude
         // @Field: Lon: longitude
         // @Field: Alt: altitude AMSL
+        // @Field: TimeINS: GPS INS time (round)
+        // @Field: INSvolt: Supply voltage
 
-        AP::logger().WriteStreaming("ILB1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
-                                    "sdddnnnDUm",
-                                    "F000000GG0",
-                                    "QffffffLLf",
+        AP::logger().WriteStreaming("ILB1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,TimeINS,INSvolt",
+                                    "sdddnnnDUmsv",
+                                    "F000000GG000",
+                                    "QffffffLLfIf",
                                     now_us,
                                     degrees(roll), degrees(pitch), degrees(yaw),
                                     state.velocity.x, state.velocity.y, state.velocity.z,
-                                    state.location.lat, state.location.lng, state.location.alt*0.01);
+                                    state.location.lat, state.location.lng, state.location.alt*0.01,
+                                    state2.gnss_ins_time_ms, state2.supply_voltage);
 
         // @LoggerMessage: ILB2
         // @Description: InertialLabs AHRS data2
@@ -535,8 +561,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     "F000000",
                                     "Qffffff",
                                     now_us,
-                                    state2.kf_pos_covariance.x, state2.kf_pos_covariance.x, state2.kf_pos_covariance.z,
-                                    state2.kf_vel_covariance.x, state2.kf_vel_covariance.x, state2.kf_vel_covariance.z);
+                                    state2.kf_pos_covariance.x, state2.kf_pos_covariance.y, state2.kf_pos_covariance.z,
+                                    state2.kf_vel_covariance.x, state2.kf_vel_covariance.y, state2.kf_vel_covariance.z);
 
         // @LoggerMessage: ILB3
         // @Description: InertialLabs AHRS data3
@@ -552,21 +578,45 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: WVN: Wind velocity north
         // @Field: WVE: Wind velocity east
         // @Field: WVD: Wind velocity down
+        // @Field: ADU: Air Data Unit status
 
-        AP::logger().WriteStreaming("ILB3", "TimeUS,Stat1,Stat2,FType,SpStat,GI1,GI2,GJS,TAS,WVN,WVE,WVD",
-                                    "s-----------",
-                                    "F-----------",
-                                    "QHHBBBBBffff",
+        AP::logger().WriteStreaming("ILB3", "TimeUS,Stat1,Stat2,FType,SpStat,GI1,GI2,GJS,TAS,WVN,WVE,WVD,ADU",
+                                    "s------------",
+                                    "F------------",
+                                    "QHHBBBBBffffH",
                                     now_us,
                                     state2.unit_status, state2.unit_status2,
                                     state2.gnss_extended_info.fix_type, state2.gnss_extended_info.spoofing_status,
                                     state2.gnss_info_short.info1, state2.gnss_info_short.info2,
                                     state2.gnss_jam_status,
                                     state2.true_airspeed,
-                                    state2.wind_speed.x, state2.wind_speed.y, state2.wind_speed.z);
-    }
-#endif  // HAL_LOGGING_ENABLED
+                                    state2.wind_speed.x, state2.wind_speed.y, state2.wind_speed.z,
+                                    state2.air_data_status);
 
+        // @LoggerMessage: ILB4
+        // @Description: InertialLabs AHRS data4
+        // @Field: TimeUS: Time since system startup
+        // @Field: GpsYaw: GNSS Heading
+        // @Field: GpsPitch: GNSS Pitch
+        // @Field: GpsHTS: GNSS Heading timestamp        
+        // @Field: GpsAType: GNSS Angles position type
+        // @Field: GDOP: GNSS GDOP
+        // @Field: PDOP: GNSS PDOP
+        // @Field: HDOP: GNSS HDOP
+        // @Field: VDOP: GNSS VDOP
+        // @Field: TDOP: GNSS TDOP
+
+        AP::logger().WriteStreaming("ILB4", "TimeUS,GpsYaw,GpsPitch,GpsHTS,GpsAType,GDOP,PDOP,HDOP,VDOP,TDOP",
+                                    "sdds------",
+                                    "F00I------",
+                                    "QffIBfffff",
+                                    now_us,
+                                    state2.gnss_heading, state2.gnss_pitch,
+                                    state2.gnss_heading_timestamp, state2.gnss_angle_pos_type,
+                                    state2.gnss_gdop * 1.0e-2, state2.gnss_pdop * 1.0e-2, gps_data.hdop * 1.0e-2,
+                                    gps_data.vdop * 1.0e-2, state2.gnss_tdop * 1.0e-2);
+    }
+        
     return true;
 }
 
