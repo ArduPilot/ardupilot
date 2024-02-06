@@ -78,11 +78,9 @@ public:
     // Update the touchdown controller
     void touchdown_controller(void);
 
-    void set_ground_distance(float radalt) { _radar_alt = radalt; }
+    void set_ground_distance(float gnd_dist) { _gnd_hgt = (float)gnd_dist; }
 
     void get_entry_speed(void);
-
-    float get_ground_distance(void) const { return _radar_alt; }
 
     float get_time_to_ground(void);
 
@@ -90,13 +88,7 @@ public:
 
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
 
-    void init_est_rangefinder_alt(void);
-
-    void update_est_rangefinder_alt(void);
-
-    float get_est_alt(void) const { return _est_alt; }
-
-    bool above_flare_height(void) const { return _est_alt > _flare_alt_calc; }
+    bool above_flare_height(void) const { return _gnd_hgt > _flare_alt_calc; }
 
     void update_hover_autorotation_controller();
 
@@ -118,8 +110,6 @@ public:
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
-
-    bool  _using_rfnd;
 
 private:
 
@@ -149,15 +139,11 @@ private:
     float _accel_out;                // Acceleration value used to calculate pitch target.
     float _entry_sink_rate;          // Descent rate at beginning of touvhdown collective pull
     float _entry_alt;                // Altitude at beginning of touchdown coll pull
-    float _radar_alt;                // Altitude above ground (RF)
     float _flare_entry_speed;        // Traslational velocity at beginning of flare maneuver
     float _desired_speed;            // Desired traslational velocity during flare
     float _desired_sink_rate;        // Desired vertical velocity during touchdown
     float _ground_clearance;         // Sensor offset distance
-    float _est_alt;                  // Estimated altitude above ground
-    float _descent_rate_filtered;    // Filtered vertical speed
-    float _radar_alt_prev;           // Last cycle calculated altitude
-    float _radar_alt_calc;           // Inertial calculated altitude
+    float _gnd_hgt;                  // Height above ground, passed down from copter, can be from lidar or terrain
     float _avg_acc_z;                // Averaged vertical acceleration
     float _acc_z_sum;                // Sum of vertical acceleration samples
     int16_t _index;                  // Index for vertical acceleration rolling average
@@ -211,9 +197,6 @@ private:
 
     // low pass filter for collective trim
     LowPassFilterFloat col_trim_lpf;
-
-    // low pass filter for descent rate
-    LowPassFilterFloat descent_rate_lpf;
 
     //--------References to Other Libraries--------
     AP_InertialNav&    _inav;
