@@ -1935,8 +1935,7 @@ private:
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
     uint32_t _touchdown_time_ms;
-    bool initial_energy_check;
-    float time_to_impact;
+    bool _hover_autorotation;       // bool to determine if we should enter the hover autorotation or not
 
     enum class Autorotation_Phase {
         ENTRY,
@@ -1948,7 +1947,13 @@ private:
 
     // --- Internal flags ---
     struct controller_flags {
+            bool entry_init             : 1;
             bool hover_entry_init       : 1;
+            bool ss_glide_init          : 1;
+            bool flare_init             : 1;
+            bool touch_down_init        : 1;
+            bool bail_out_init          : 1;
+            bool bad_rpm                : 1;
     } _flags;
 
     struct message_flags {
