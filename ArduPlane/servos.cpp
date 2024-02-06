@@ -582,12 +582,6 @@ void Plane::set_throttle(void)
     // Update voltage scaling
     g2.fwd_batt_cmp.update();
 
-#if AP_SCRIPTING_ENABLED
-    if (nav_scripting_active()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
-    }
-#endif
-
     if (control_mode->use_battery_compensation()) {
         // Apply voltage compensation to throttle output from flight mode
         const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
