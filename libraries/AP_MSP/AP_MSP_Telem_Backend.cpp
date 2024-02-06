@@ -1051,6 +1051,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
+#if AP_RCMAPPER_ENABLED
     const RCMapper* rcmap = AP::rcmap();
     if (rcmap == nullptr) {
         return MSP_RESULT_ERROR;
@@ -1074,6 +1075,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
+#else
+    return MSP_RESULT_ERROR;
+#endif
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
