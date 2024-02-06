@@ -304,13 +304,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 
     if (rover.g2.sailboat.sail_enabled()) {
         // sailboats use special throttle and mainsail controller
-        float mainsail_out = 0.0f;
-        float wingsail_out = 0.0f;
-        float mast_rotation_out = 0.0f;
-        rover.g2.sailboat.get_throttle_and_mainsail_out(target_speed, throttle_out, mainsail_out, wingsail_out, mast_rotation_out);
-        rover.g2.motors.set_mainsail(mainsail_out);
-        rover.g2.motors.set_wingsail(wingsail_out);
-        rover.g2.motors.set_mast_rotation(mast_rotation_out);
+        rover.g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
     } else {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {
@@ -348,8 +342,7 @@ bool Mode::stop_vehicle()
     }
 
     // relax sails if present
-    g2.motors.set_mainsail(100.0f);
-    g2.motors.set_wingsail(0.0f);
+    g2.sailboat.relax_sails();
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
