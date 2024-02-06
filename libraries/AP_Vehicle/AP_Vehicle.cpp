@@ -605,7 +605,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if AP_STATS_ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &vehicle.stats,            update,           1, 100, 252),
 #endif
+#if AP_ARMING_ENABLED
     SCHED_TASK(update_arming,          1,     50, 253),
+#endif
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -692,10 +694,14 @@ void AP_Vehicle::send_watchdog_reset_statustext()
 
 bool AP_Vehicle::is_crashed() const
 {
+#if AP_ARMING_ENABLED
     if (AP::arming().is_armed()) {
         return false;
     }
     return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
+#else
+    return false;
+#endif
 }
 
 // update the harmonic notch filter for throttle based notch
@@ -950,11 +956,13 @@ void AP_Vehicle::accel_cal_update()
 }
 #endif // HAL_INS_ACCELCAL_ENABLED
 
+#if AP_ARMING_ENABLED
 // call the arming library's update function
 void AP_Vehicle::update_arming()
 {
     AP::arming().update();
 }
+#endif
 
 /*
   one Hz checks common to all vehicles
