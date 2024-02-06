@@ -4,24 +4,13 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 
-//Autorotation controller defaults
-#define AROT_BAIL_OUT_TIME                            2.0f     // Default time for bail out controller to run (unit: s)
-#define ROT_SOLIDITY                                 0.05f    // Main rotor solidity
-#define ROT_DIAMETER                                 1.25f    // Main rotor diameter
-
 // Head Speed (HS) controller specific default definitions
 #define HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ          2.0f     // low-pass filter on accel error (unit: hz)
 #define HS_CONTROLLER_HEADSPEED_P                     0.7f     // Default P gain for head speed controller (unit: -)
-#define HS_CONTROLLER_ENTRY_COL_FILTER                0.7f    // Default low pass filter frequency during the entry phase (unit: Hz)
-#define HS_CONTROLLER_GLIDE_COL_FILTER                0.1f    // Default low pass filter frequency during the glide phase (unit: Hz)
-#define HS_CONTROLLER_CUSHION_COL_FILTER           0.5f
 
 // Speed Height controller specific default definitions for autorotation use
-#define FWD_SPD_CONTROLLER_GND_SPEED_TARGET           1100     // Default target ground speed for speed height controller (unit: cm/s)
-#define FWD_SPD_CONTROLLER_MAX_ACCEL                  60      // Default acceleration limit for speed height controller (unit: cm/s/s)
-#define AP_FW_VEL_P                       0.9f
-#define TCH_P                                    0.1f
-#define AP_FW_VEL_FF                      0.15f
+#define AP_FW_VEL_P                                   0.9f    // Default forward speed controller P gain
+#define TCH_P                                         0.1f    // Default touchdown phase collective controller P gain
 
 // flare controller default definitions
 #define AP_ALPHA_TPP                         20.0f
@@ -61,7 +50,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 800 2000
     // @Increment: 50
     // @User: Advanced
-    AP_GROUPINFO("TARG_SP", 4, AC_Autorotation, _param_target_speed, FWD_SPD_CONTROLLER_GND_SPEED_TARGET),
+    AP_GROUPINFO("TARG_SP", 4, AC_Autorotation, _param_target_speed, 1100),
 
     // @Param: COL_FILT_E
     // @DisplayName: Entry Phase Collective Filter
@@ -70,7 +59,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.2 0.5
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("COL_FILT_E", 5, AC_Autorotation, _param_col_entry_cutoff_freq, HS_CONTROLLER_ENTRY_COL_FILTER),
+    AP_GROUPINFO("COL_FILT_E", 5, AC_Autorotation, _param_col_entry_cutoff_freq, 0.7),
 
     // @Param: COL_FILT_G
     // @DisplayName: Glide Phase Collective Filter
@@ -79,7 +68,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.03 0.15
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("COL_FILT_G", 6, AC_Autorotation, _param_col_glide_cutoff_freq, HS_CONTROLLER_GLIDE_COL_FILTER),
+    AP_GROUPINFO("COL_FILT_G", 6, AC_Autorotation, _param_col_glide_cutoff_freq, 0.1),
 
     // @Param: AS_ACC_MAX
     // @DisplayName: Forward Acceleration Limit
@@ -88,7 +77,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 30 60
     // @Increment: 10
     // @User: Advanced
-    AP_GROUPINFO("AS_ACC_MAX", 7, AC_Autorotation, _param_accel_max, FWD_SPD_CONTROLLER_MAX_ACCEL),
+    AP_GROUPINFO("AS_ACC_MAX", 7, AC_Autorotation, _param_accel_max, 60),
 
     // @Param: BAIL_TIME
     // @DisplayName: Bail Out Timer
@@ -97,7 +86,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.5 4
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("BAIL_TIME", 8, AC_Autorotation, _param_bail_time, AROT_BAIL_OUT_TIME),
+    AP_GROUPINFO("BAIL_TIME", 8, AC_Autorotation, _param_bail_time, 2.0),
 
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor
@@ -122,7 +111,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("FW_V_FF", 11, AC_Autorotation, _param_fwd_k_ff, AP_FW_VEL_FF),
+    AP_GROUPINFO("FW_V_FF", 11, AC_Autorotation, _param_fwd_k_ff, 0.15),
 
     // @Param: TCH_P
     // @DisplayName: P gain for vertical touchdown controller
@@ -139,7 +128,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.2 0.8
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_touchdown_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
+    AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_touchdown_cutoff_freq, 0.5),
 
     // @Param: ROT_SOL
     // @DisplayName: rotor solidity
@@ -147,7 +136,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.001 0.01
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("ROT_SOL", 14, AC_Autorotation, _param_solidity, ROT_SOLIDITY),
+    AP_GROUPINFO("ROT_SOL", 14, AC_Autorotation, _param_solidity, 0.05),
 
     // @Param: ROT_DIAM
     // @DisplayName: rotor diameter
@@ -156,7 +145,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.001 0.01
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("ROT_DIAM", 15, AC_Autorotation, _param_diameter, ROT_DIAMETER),
+    AP_GROUPINFO("ROT_DIAM", 15, AC_Autorotation, _param_diameter, 1.25),
 
     // @Param: T_TCH
     // @DisplayName: time touchdown
@@ -165,7 +154,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.001 0.01
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("T_TCH", 16, AC_Autorotation, _t_tch, AP_T_TO_G),
+    AP_GROUPINFO("T_TCH", 16, AC_Autorotation, _t_tch, 0.55),
 
     AP_GROUPEND
 };
