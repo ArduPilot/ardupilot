@@ -241,7 +241,17 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
 bool AP_Parachute::get_legacy_relay_index(int8_t &index) const
 {
     // PARAMETER_CONVERSION - Added: Dec-2023
-    if (!enabled() || (_release_type > AP_PARACHUTE_TRIGGER_TYPE_RELAY_3)) {
+    if (_release_type > AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+        // Not relay type
+        return false;
+    }
+    if (!enabled() && !_enabled.configured()) {
+        // Disabled and parameter never changed
+        // Copter manual parachute release enables and deploys in one step
+        // This means it is possible for parachute to still function correctly if disabled at boot
+        // Checking if the enable param is configured means the user must have setup chute at some point
+        // this means relay parm conversion will be done if parachute has ever been enabled
+        // Parachute has priority in relay param conversion, so this might mean we overwrite some other function
         return false;
     }
     index = _release_type; 
