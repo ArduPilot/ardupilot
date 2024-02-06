@@ -18,6 +18,15 @@
 */
 class Sailboat
 {
+
+   friend class Rover;
+   friend class Mode;
+   friend class ModeManual;
+   friend class ModeHold;
+   friend class ModeLoiter;
+   friend class ModeAcro;
+   friend class RC_Channel_Rover;
+
 public:
 
     // constructor
@@ -29,44 +38,14 @@ public:
     // true if sailboat navigation (aka tacking) is enabled
     bool tack_enabled() const;
 
-    // setup
-    void init();
-
-    // initialise rc input (channel_mainsail)
-    void init_rc_in();
-
-    // decode pilot mainsail input and return in steer_out and throttle_out arguments
-    // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
-    // wingsail_out is in the range -100 to 100, defaults to 0
-    // mast_rotation_out is in the range -100 to 100, defaults to 0
-    void get_pilot_desired_mainsail(float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
-
-    // calculate throttle and mainsail angle required to attain desired speed (in m/s)
-    void get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
-
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;
-
-    // handle user initiated tack while in acro mode
-    void handle_tack_request_acro();
-
-    // return target heading in radians when tacking (only used in acro)
-    float get_tack_heading_rad();
-
-    // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
-    void handle_tack_request_auto();
-
-    // clear tacking state variables
-    void clear_tack();
 
     // returns true if boat is currently tacking
     bool tacking() const;
 
     // returns true if sailboat should take a indirect navigation route to go upwind
     bool use_indirect_route(float desired_heading_cd) const;
-
-    // calculate the heading to sail on if we cant go upwind
-    float calc_heading(float desired_heading_cd);
 
     // states of USE_MOTOR parameter and motor_state variable
     enum class UseMotor {
@@ -75,17 +54,47 @@ public:
         USE_MOTOR_ALWAYS = 2
     };
 
-    // set state of motor
-    // if report_failure is true a message will be sent to all GCSs
-    void set_motor_state(UseMotor state, bool report_failure = true);
+    // return sailboat loiter radius
+    float get_loiter_radius() const {return loit_radius;}
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    // return sailboat loiter radius
-    float get_loiter_radius() const {return loit_radius;}
-
 private:
+
+    // handle user initiated tack while in acro mode
+    void handle_tack_request_acro();
+
+  // setup
+    void init();
+
+    // initialise rc input (channel_mainsail)
+    void init_rc_in();
+
+
+    // return target heading in radians when tacking (only used in acro)
+    float get_tack_heading_rad();
+
+    // clear tacking state variables
+    void clear_tack();
+
+    // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
+    void handle_tack_request_auto();
+
+    // set state of motor
+    // if report_failure is true a message will be sent to all GCSs
+    void set_motor_state(UseMotor state, bool report_failure = true);
+
+        // calculate the heading to sail on if we cant go upwind
+    float calc_heading(float desired_heading_cd);
+
+    void set_pilot_desired_mainsail();
+
+    void set_auto_mainsail(float desired_speed);
+    void relax_sails();
+
+    // calculate throttle and set sail
+    void get_throttle_and_set_mainsail(float desired_speed, float &throttle_out);
 
     // true if motor is on to assist with slow tack
     bool motor_assist_tack() const;
