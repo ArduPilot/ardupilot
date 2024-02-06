@@ -1023,7 +1023,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RTC_ENABLED
     if (AP::rtc().get_utc_usec(time_usec)) { // may fail, leaving time_unix at 0
         const time_t time_sec = time_usec / 1000000;
-        localtime_tm = *gmtime(&time_sec);
+        struct tm tmd {};
+        localtime_tm = *gmtime_r(&time_sec, &tmd);
     }
 #endif
     const struct PACKED {
