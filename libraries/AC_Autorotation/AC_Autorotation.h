@@ -82,8 +82,6 @@ public:
 
     void get_entry_speed(void);
 
-    float get_time_to_ground(void);
-
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
 
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
@@ -94,17 +92,14 @@ public:
 
     void update_avg_acc_z(void);
 
-    float get_flare_alt(void) const { return _flare_alt_calc; }
-
     void update_flare_alt(void);
 
     void calc_flare_alt(float sink_rate, float fwd_speed);
 
-    float get_t_touchdown(void) const { return _t_tch; }
+    // Estimate the time to impact and compare it with the touchdown time param
+    bool should_begin_touchdown(void);
 
-    float get_cushion_alt(void) const { return _cushion_alt; }
 
-    bool is_flare_complete(void) { return _flare_complete; }
 
     void calc_sink_d_avg(void);
 

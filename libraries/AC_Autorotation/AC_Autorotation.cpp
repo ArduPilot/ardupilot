@@ -717,15 +717,20 @@ void AC_Autorotation::touchdown_controller(void)
 }
 
 
-float AC_Autorotation::get_time_to_ground(void)
+// Determine if we are above the touchdown height using the descent rate and param values
+bool AC_Autorotation::should_begin_touchdown(void)
 {
-    // Take the default position that time to ground is the touch down time + 1 s. If we are descending
-    // then we can calc an appropriate value.
-    float time_to_ground = _t_tch + 1.0f;
-    if (_inav.get_velocity_z_up_cms() < 0.0f ) {
-        time_to_ground = (-_gnd_hgt / _inav.get_velocity_z_up_cms());
+    float vz = _inav.get_velocity_z_up_cms();
+
+    // We need to be descending for the touch down controller to interpolate the target
+    // sensibly between the entry of the touch down phase zero.
+    if (vz >= 0.0) {
+        return false;
     }
-    return time_to_ground;
+
+    float time_to_ground = (-_gnd_hgt / _inav.get_velocity_z_up_cms());
+
+    return time_to_ground <= _t_tch.get();
 }
 
 
