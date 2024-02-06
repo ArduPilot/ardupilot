@@ -270,6 +270,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(logger, "LOG",  29, AP_Vehicle, AP_Logger),
 #endif
 
+#if HAL_CANMANAGER_ENABLED
+    // @Group: CAN_
+    // @Path: ../AP_CANManager/AP_CANManager.cpp
+    AP_SUBGROUPINFO(can_mgr, "CAN_", 30, AP_Vehicle, AP_CANManager),
+#endif
+
     AP_GROUPEND
 };
 
