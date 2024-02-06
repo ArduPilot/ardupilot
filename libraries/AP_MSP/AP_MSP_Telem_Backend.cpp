@@ -66,7 +66,9 @@ void AP_MSP_Telem_Backend::setup_wfq_scheduler(void)
     set_scheduler_entry(ATTITUDE, 200, 200);          // 5Hz  attitude
     set_scheduler_entry(ALTITUDE, 250, 250);          // 4Hz  altitude(cm) and velocity(cm/s)
     set_scheduler_entry(ANALOG, 250, 250);            // 4Hz  rssi + batt
+#if AP_BATTERY_ENABLED
     set_scheduler_entry(BATTERY_STATE, 500, 500);     // 2Hz  battery
+#endif
 #if HAL_WITH_ESC_TELEM
     set_scheduler_entry(ESC_SENSOR_DATA, 500, 500);   // 2Hz  ESC telemetry
 #endif
@@ -114,7 +116,9 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
     case ATTITUDE:          // Attitude
     case ALTITUDE:          // Altitude and Vario
     case ANALOG:            // Rssi, Battery, mAh, Current
+#if AP_BATTERY_ENABLED
     case BATTERY_STATE:     // voltage, capacity, current, mAh
+#endif
 #if HAL_WITH_ESC_TELEM
     case ESC_SENSOR_DATA:   // esc temp + rpm
 #endif
@@ -155,10 +159,12 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
     _msp_port.c_state = MSP_IDLE;
 }
 
+#if AP_BATTERY_ENABLED
 uint8_t AP_MSP_Telem_Backend::calc_cell_count(const float battery_voltage)
 {
     return floorf((battery_voltage / CELLFULL) + 1);
 }
+#endif
 
 float AP_MSP_Telem_Backend::get_vspeed_ms(void) const
 {
@@ -215,6 +221,7 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
     }
 }
 
+#if AP_BATTERY_ENABLED
 void AP_MSP_Telem_Backend::update_battery_state(battery_state_t &battery_state)
 {
     memset(&battery_state, 0, sizeof(battery_state));
@@ -241,6 +248,7 @@ void AP_MSP_Telem_Backend::update_battery_state(battery_state_t &battery_state)
         battery_state.batt_cellcount = cc;
     }
 }
+#endif  // AP_BATTERY_ENABLED
 
 void AP_MSP_Telem_Backend::update_airspeed(airspeed_state_t &airspeed_state)
 {
@@ -334,7 +342,9 @@ void AP_MSP_Telem_Backend::enable_warnings()
         return;
     }
     BIT_SET(msp->_osd_config.enabled_warnings, OSD_WARNING_FAIL_SAFE);
+#if AP_BATTERY_ENABLED
     BIT_SET(msp->_osd_config.enabled_warnings, OSD_WARNING_BATTERY_CRITICAL);
+#endif
 }
 
 void AP_MSP_Telem_Backend::process_incoming_data()
@@ -466,8 +476,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_altitude(dst);
     case MSP_ANALOG:
         return msp_process_out_analog(dst);
+#if AP_BATTERY_ENABLED
     case MSP_BATTERY_STATE:
         return msp_process_out_battery_state(dst);
+#endif
     case MSP_UID:
         return msp_process_out_uid(dst);
 #if HAL_WITH_ESC_TELEM
@@ -905,6 +917,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_analog(sbuf_t *dst)
 {
+#if AP_BATTERY_ENABLED
     battery_state_t battery_state;
     update_battery_state(battery_state);
 
@@ -922,10 +935,27 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_analog(sbuf_t *dst)
         current_ca : (int16_t)constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF),         // current A to cA (0.01 steps, range is -320A to 320A)
         voltage_cv : (uint16_t)constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF)                 // battery voltage in 0.01V steps
     };
+#else
+    float rssi;
+    const struct PACKED {
+        uint8_t voltage_dv;
+        uint16_t mah;
+        uint16_t rssi;
+        int16_t current_ca;
+        uint16_t voltage_cv;
+    } analog {
+        voltage_dv : 0,
+        mah : 0,
+        rssi : uint16_t(get_rssi(rssi) ? constrain_float(rssi,0,1) * 1023 : 0),                             // rssi 0-1 to 0-1023)
+        current_ca : 0,
+        voltage_cv : 0
+    };
+#endif
     sbuf_write_data(dst, &analog, sizeof(analog));
     return MSP_RESULT_ACK;
 }
 
+#if AP_BATTERY_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst)
 {
     const AP_MSP *msp = AP::msp();
@@ -956,6 +986,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     sbuf_write_data(dst, &battery, sizeof(battery));
     return MSP_RESULT_ACK;
 }
+#endif
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *dst)
 {
@@ -1104,7 +1135,9 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
     if (msp == nullptr) {
         return;
     }
+#if AP_BATTERY_ENABLED
     const AP_Notify &notify = AP::notify();
+#endif
     // clear all and only set the flashing ones
     BIT_CLEAR(osd_hidden_items_bitmask, OSD_GPS_SATS);
     BIT_CLEAR(osd_hidden_items_bitmask, OSD_HOME_DIR);
@@ -1146,11 +1179,13 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
         if (msp->_msp_status.flight_mode_focus) {
             BIT_SET(osd_hidden_items_bitmask, OSD_CRAFT_NAME);
         }
+#if AP_BATTERY_ENABLED
         // flash battery on failsafe
         if (notify.flags.failsafe_battery) {
             BIT_SET(osd_hidden_items_bitmask, OSD_AVG_CELL_VOLTAGE);
             BIT_SET(osd_hidden_items_bitmask, OSD_MAIN_BATT_VOLTAGE);
         }
+#endif
         // flash rtc if no time available
 #if AP_RTC_ENABLED
         uint64_t time_usec;

@@ -1319,11 +1319,13 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 #endif
 
+#if AP_BATTERY_ENABLED
     case AUX_FUNC::BATTERY_MPPT_ENABLE:
         if (ch_flag != AuxSwitchPos::MIDDLE) {
             AP::battery().MPPT_set_powered_state_to_all(ch_flag == AuxSwitchPos::HIGH);
         }
         break;
+#endif
 
 #if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:

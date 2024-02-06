@@ -407,15 +407,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
-bool GCS_MAVLINK_Blimp::handle_guided_request(AP_Mission::Mission_Command &cmd)
-{
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //     // return blimp.mode_auto.do_guided(cmd);
-    // #else
-    return false;
-    // #endif
-}
-
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {

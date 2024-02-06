@@ -90,7 +90,7 @@ userdata BattMonitorScript_State field consumed_wh float'skip_check write
 userdata BattMonitorScript_State field temperature float'skip_check write
 
 singleton AP_BattMonitor rename battery
-singleton AP_BattMonitor depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY))
+singleton AP_BattMonitor depends AP_BATTERY_ENABLED
 singleton AP_BattMonitor method num_instances uint8_t
 singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()

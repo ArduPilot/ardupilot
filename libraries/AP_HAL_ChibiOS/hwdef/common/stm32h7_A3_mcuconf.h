@@ -18,6 +18,9 @@
  */
 #pragma once
 
+// this is a newer H7 varient
+#define STM32_ENFORCE_H7_REV_XY
+
 // MPU region for ethernet
 #define STM32_NOCACHE_MPU_REGION_ETH            MPU_REGION_2
 
