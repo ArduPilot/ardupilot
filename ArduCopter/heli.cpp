@@ -209,14 +209,10 @@ void Copter::heli_update_autorotation()
             motors->set_in_autorotation(heli_flags.in_autorotation);
             motors->set_enable_bailout(true);
 
-            // get height above ground. If using a healthy LiDaR below will return 
-            // an interpolated distance based on inertial measurement.
-            int32_t gnd_dist = flightmode->get_alt_above_ground_cm();
-
-            // handle the out of range case, assume we are on the ground by that point
-            if (rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
-                gnd_dist = 0;
-            }
+            // Get height above ground. If using a healthy LiDaR below func will return an interpolated
+            // distance based on inertial measurement. If LiDaR is unhealthy and terrain is available
+            // we will get a terrain database estimate. Otherwise we will get height above home.
+            int32_t gnd_dist = flightmode->get_alt_above_ground_cm(false);
 
             // set the height in the autorotation controller
             g2.arot.set_ground_distance(gnd_dist);

@@ -609,13 +609,13 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 /*
   get a height above ground estimate for landing
  */
-int32_t Mode::get_alt_above_ground_cm(void)
+int32_t Mode::get_alt_above_ground_cm(bool use_psc_case)
 {
     int32_t alt_above_ground_cm;
     if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
         return alt_above_ground_cm;
     }
-    if (!pos_control->is_active_xy()) {
+    if (!pos_control->is_active_xy() && use_psc_case) {
         return copter.current_loc.alt;
     }
     if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_cm)) {
