@@ -37,7 +37,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type, // unused
-        k_param_can_mgr,
+        k_param_can_mgr_old,
 
         // Misc
         //
