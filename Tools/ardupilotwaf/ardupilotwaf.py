@@ -262,6 +262,7 @@ def ap_program(bld,
                program_dir=None,
                use_legacy_defines=True,
                program_name=None,
+               vehicle_binary=True,
                **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
@@ -300,6 +301,9 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
+
+    tg.env.vehicle_binary = vehicle_binary
+
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library
         tg.env.STLIB += [kw['use']]
@@ -313,7 +317,7 @@ def ap_program(bld,
 @conf
 def ap_example(bld, **kw):
     kw['program_groups'] = 'examples'
-    ap_program(bld, use_legacy_defines=False, **kw)
+    ap_program(bld, use_legacy_defines=False, vehicle_binary=False, **kw)
 
 def unique_list(items):
     '''remove duplicate elements from a list while maintaining ordering'''
@@ -383,6 +387,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
             program_name=f.change_ext('').name,
             program_groups='tests',
             use_legacy_defines=False,
+            vehicle_binary=False,
             cxxflags=['-Wno-undef'],
         )
         filename = os.path.basename(f.abspath())
@@ -444,6 +449,7 @@ def ap_find_benchmarks(bld, use=[]):
             includes=includes,
             source=[f],
             use=use,
+            vehicle_binary=False,
             program_name=f.change_ext('').name,
             program_groups='benchmarks',
             use_legacy_defines=False,

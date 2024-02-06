@@ -14,6 +14,7 @@ import re
 import pickle
 import struct
 import base64
+import subprocess
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -143,6 +144,27 @@ class set_default_parameters(Task.Task):
             defaults.save()
 
 
+def check_elf_symbols(task):
+    '''
+    check for disallowed symbols in elf file, such as C++ exceptions
+    '''
+    elfpath = task.inputs[0].abspath()
+
+    if not task.env.vehicle_binary or task.env.SIM_ENABLED:
+        # we only want to check symbols for vehicle binaries, allowing examples
+        # to use C++ exceptions. We also allow them in simulator builds
+        return
+
+    # we use string find on these symbols, so this catches all types of throw
+    # calls this should catch all uses of exceptions unless the compiler
+    # manages to inline them
+    blacklist = ['std::__throw']
+
+    nmout = subprocess.getoutput("%s -C %s" % (task.env.get_flat('NM'), elfpath))
+    for b in blacklist:
+        if nmout.find(b) != -1:
+            raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
@@ -154,6 +176,8 @@ class generate_bin(Task.Task):
     def keyword(self):
         return "Generating"
     def run(self):
+        check_elf_symbols(self)
+
         if self.env.HAS_EXTERNAL_FLASH_SECTIONS:
             ret = self.split_sections()
             if (ret < 0):
@@ -529,6 +553,7 @@ def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
+    cfg.find_program('arm-none-eabi-nm', var='NM')
     env = cfg.env
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
@@ -716,16 +741,19 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
-    # own code note that we also include functions that we deliberately don't
-    # implement anywhere (the FILE* functions). This allows us to get link
-    # errors if we accidentially try to use one of those functions either
-    # directly or via another libc call
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
-                'printf',
-                'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
-                'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
-                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
-                '_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r']
-    for w in wraplist:
+    # own code
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+
+    # list of functions that we will give a link error for if they are
+    # used. This is to prevent accidential use of these functions
+    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
+                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
+                'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+
+    # these functions use global state that is not thread safe
+    blacklist += ['gmtime']
+
+    for w in wraplist + blacklist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
