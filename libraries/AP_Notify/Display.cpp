@@ -406,7 +406,9 @@ void Display::update_all()
 {
     update_text(0);
     update_mode(1);
+#if AP_BATTERY_ENABLED
     update_battery(2);
+#endif
 #if AP_GPS_ENABLED
     update_gps(3);
 #endif
@@ -530,6 +532,7 @@ void Display::update_ekf(uint8_t r)
     }
 }
 
+#if AP_BATTERY_ENABLED
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
@@ -541,7 +544,8 @@ void Display::update_battery(uint8_t r)
         snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV --%% ", (double)battery.voltage()) ;
     }
     draw_text(COLUMN(0), ROW(r), msg);
- }
+}
+#endif  // AP_BATTERY_ENABLED
 
 void Display::update_mode(uint8_t r)
 {

@@ -1,4 +1,9 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
@@ -1117,3 +1122,5 @@ AP_BattMonitor &battery()
 }
 
 };
+
+#endif  // AP_BATTERY_ENABLED

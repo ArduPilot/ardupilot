@@ -43,7 +43,6 @@ private:
     void handle_message_manual_control(const mavlink_message_t &msg);
     void handle_message_global_position_int(const mavlink_message_t &msg);
     void handle_message_scaled_pressure(const mavlink_message_t &msg);
-    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_set_attitude_target(const mavlink_message_t &msg);
 
     void send_global_position_int() override;

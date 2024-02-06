@@ -67,6 +67,10 @@ public:
         return frontend.rc_protocols_mask;
     }
 
+    bool protocol_enabled(enum AP_RCProtocol::rcprotocol_t protocol) const {
+        return frontend.protocol_enabled(protocol);
+    }
+
     // get RSSI
     int16_t get_RSSI(void) const {
         return rssi;

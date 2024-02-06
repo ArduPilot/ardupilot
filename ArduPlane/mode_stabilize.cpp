@@ -13,4 +13,6 @@ void ModeStabilize::run()
     plane.stabilize_pitch();
     stabilize_stick_mixing_direct();
     plane.stabilize_yaw();
+
+    output_pilot_throttle();
 }

@@ -42,7 +42,9 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         SBUS_NI    =  3,
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
         DSM        =  4,
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
 #endif
@@ -111,7 +113,9 @@ public:
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
         switch (p) {
+#if AP_RCPROTOCOL_DSM_ENABLED
         case DSM:
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         case FASTSBUS:
 #endif

@@ -14,8 +14,13 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include "AP_BattMonitor.h"
+
+#include <AP_Common/AP_Common.h>
 
 class AP_BattMonitor_Backend
 {
@@ -141,3 +146,5 @@ struct BattMonitorScript_State {
     float temperature=nanf(""); // Battery temperature in degrees Celsius
 };
 #endif // AP_BATTERY_SCRIPTING_ENABLED
+
+#endif  // AP_BATTERY_ENABLED

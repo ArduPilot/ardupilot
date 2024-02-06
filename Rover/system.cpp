@@ -14,10 +14,6 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
     // init gripper
 #if AP_GRIPPER_ENABLED
     g2.gripper.init();

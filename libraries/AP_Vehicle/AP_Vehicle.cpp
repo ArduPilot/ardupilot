@@ -360,6 +360,10 @@ void AP_Vehicle::setup()
 
     BoardConfig.init();
 
+#if HAL_CANMANAGER_ENABLED
+    can_mgr.init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 

@@ -585,23 +585,8 @@ void Plane::set_throttle(void)
 #if AP_SCRIPTING_ENABLED
     if (nav_scripting_active()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
-    } else
-#endif
-           if (control_mode == &mode_stabilize ||
-               control_mode == &mode_training ||
-               control_mode == &mode_acro ||
-               control_mode == &mode_fbwa ||
-               control_mode == &mode_autotune) {
-        // a manual throttle mode
-        if (g.throttle_passthru_stabilize) {
-            // manual pass through of throttle while in FBWA or
-            // STABILIZE mode with THR_PASS_STAB set
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
-        } else {
-            // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_adjusted_throttle_input(true));
-        }
     }
+#endif
 
     if (control_mode->use_battery_compensation()) {
         // Apply voltage compensation to throttle output from flight mode

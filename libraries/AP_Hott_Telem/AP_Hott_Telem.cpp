@@ -109,6 +109,7 @@ void AP_Hott_Telem::send_EAM(void)
         uint8_t stop_byte = 0x7D;     //#44 stop
     } msg {};
 
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
         msg.batt1_voltage = uint16_t(battery.voltage(0) * 10);
@@ -125,6 +126,7 @@ void AP_Hott_Telem::send_EAM(void)
     if (battery.consumed_mah(used_mah)) {
         msg.batt_used = used_mah * 0.1;
     }
+#endif  // AP_BATTERY_ENABLED
 
     const AP_Baro &baro = AP::baro();
     msg.temp1 = uint8_t(baro.get_temperature(0) + 20.5);

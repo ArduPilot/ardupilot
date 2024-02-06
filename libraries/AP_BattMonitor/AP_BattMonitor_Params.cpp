@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_BattMonitor_Params.h"
@@ -172,3 +176,5 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 AP_BattMonitor_Params::AP_BattMonitor_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_BATTERY_ENABLED

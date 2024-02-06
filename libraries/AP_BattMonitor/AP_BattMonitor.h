@@ -1,12 +1,15 @@
 #pragma once
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
-#include "AP_BattMonitor_config.h"
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
@@ -315,3 +318,5 @@ private:
 namespace AP {
     AP_BattMonitor &battery();
 };
+
+#endif  // AP_BATTERY_ENABLED

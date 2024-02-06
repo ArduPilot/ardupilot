@@ -1334,6 +1334,7 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%4d%c", (int)u_scale(ALTITUDE, alt), u_icon(ALTITUDE));
 }
 
+#if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
@@ -1409,6 +1410,7 @@ void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
 {
     draw_bat_volt(0,VoltageType::RESTING_VOLTAGE,x,y);
 }
+#endif  // AP_BATTERY_ENABLED
 
 #if AP_RSSI_ENABLED
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
@@ -1434,6 +1436,7 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
 }
 #endif  // AP_RSSI_ENABLED
 
+#if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
     float amps;
@@ -1454,6 +1457,7 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     draw_current(0, x, y);
 }
+#endif
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
@@ -1477,6 +1481,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
+#if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_batused(uint8_t instance, uint8_t x, uint8_t y)
 {
     float mah;
@@ -1495,6 +1500,7 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
     draw_batused(0, x, y);
 }
+#endif
 
 //Autoscroll message is the same as in minimosd-extra.
 //Thanks to night-ghost for the approach.
@@ -2035,6 +2041,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     }
 }
 
+#if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
@@ -2052,7 +2059,9 @@ void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c---%c", SYMBOL(SYM_EFF),SYMBOL(SYM_MAH));
     }
 }
+#endif  // AP_BATTERY_ENABLED
 
+#if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
 {
     char unit_icon = u_icon(DISTANCE);
@@ -2082,6 +2091,7 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
         backend->write(x, y, false,"%c%c---%c",SYMBOL(SYM_PTCHUP),SYMBOL(SYM_EFF),unit_icon);
     }
 }
+#endif
 
 #if BARO_MAX_INSTANCES > 1
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)

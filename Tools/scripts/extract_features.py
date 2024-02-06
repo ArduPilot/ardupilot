@@ -242,6 +242,8 @@ class ExtractFeatures(object):
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
             ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
+            ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'AP_Compass::mag_cal_fixed_yaw'),
+            ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
         ]
 
     def progress(self, msg):
