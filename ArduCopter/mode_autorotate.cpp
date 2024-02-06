@@ -47,14 +47,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
 
     // Set all intial flags to on
-    _flags.entry_initial = true;
-    _flags.ss_glide_initial = true;
-    _flags.flare_initial = true;
-    _flags.touch_down_initial = true;
-    _flags.level_initial = true;
-    _flags.break_initial = true;
-    _flags.straight_ahead_initial = true;
-    _flags.bail_out_initial = true;
+    _flags.hover_entry_init = false;
     _msg_flags.bad_rpm = true;
     initial_energy_check = true;
 
@@ -158,27 +151,39 @@ void ModeAutorotate::run()
 
         }
 
-        if (!hover_autorotation) {
-            // Slowly change the target head speed until the target head speed matches the parameter defined value
-            float norm_rpm = g2.arot.get_rpm()/g2.arot.get_hs_set_point();
-            if (norm_rpm > HEAD_SPEED_TARGET_RATIO*1.005f  ||  norm_rpm < HEAD_SPEED_TARGET_RATIO*0.995f) {
-                _target_head_speed -= _hs_decay * last_loop_time_s;
-            } else {
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;
-            }
-            // Set target head speed in head speed controller
-            g2.arot.set_target_head_speed(_target_head_speed);
-            // Run airspeed/attitude controller
-            g2.arot.update_forward_speed_controller();
-            // Retrieve pitch target
-            _pitch_target = g2.arot.get_pitch();
-            // Update controllers
-            _flags.bad_rpm = g2.arot.update_hs_glide_controller(); //run head speed/ collective controller
+        // Slowly change the target head speed until the target head speed matches the parameter defined value
+        float norm_rpm = g2.arot.get_rpm()/g2.arot.get_hs_set_point();
+
+        if (norm_rpm > HEAD_SPEED_TARGET_RATIO*1.005f  ||  norm_rpm < HEAD_SPEED_TARGET_RATIO*0.995f) {
+            _target_head_speed -= _hs_decay * last_loop_time_s;
         } else {
-            _pitch_target = 0.0f;
-            g2.arot.update_hover_autorotation_controller();
+            _target_head_speed = HEAD_SPEED_TARGET_RATIO;
         }
 
+        // Set target head speed in head speed controller
+        g2.arot.set_target_head_speed(_target_head_speed);
+
+        // Run airspeed/attitude controller
+        g2.arot.update_forward_speed_controller();
+
+        // Retrieve pitch target
+        _pitch_target = g2.arot.get_pitch();
+
+        // Update controllers
+        _flags.bad_rpm = g2.arot.update_hs_glide_controller(); //run head speed/ collective controller
+
+        break;
+    }
+
+    case Autorotation_Phase::HOVER_ENTRY: {
+        // Controller phase where the aircraft is too low and too slow to perform a full autorotation
+        // instead, we will try to minimize rotor drag until we can jump to the touch down phase
+        if (!_flags.hover_entry_init) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Hover Entry Phase");
+            _flags.hover_entry_init = true;
+        }
+        _pitch_target = 0.0f;
+        g2.arot.update_hover_autorotation_controller();
         break;
     }
 
