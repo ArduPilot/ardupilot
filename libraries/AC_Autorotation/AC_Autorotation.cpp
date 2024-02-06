@@ -231,6 +231,9 @@ void AC_Autorotation::init(AP_MotorsHeli* motors, float gnd_clear) {
     // Store the ground clearance on the lidar sensor for use in touch down calculations
     _ground_clearance = gnd_clear;
 
+    // reset on ground timer
+    _time_on_ground = 0;
+
     // initialize radar altitude estimator
     init_est_rangefinder_alt();
 }
@@ -423,10 +426,9 @@ void AC_Autorotation::initial_flare_estimate(void)
     float des_spd_fwd = _param_target_speed * 0.01f;
     calc_flare_alt(-_est_rod, des_spd_fwd);
 
-    // Initialize sink rate monitor and flare/touchdown bools
+    // Initialize sink rate monitor and flare bools
     _flare_complete = false;
     _flare_update_check = false;
-    _touchdown_complete = false;
     _avg_sink_deriv = 0.0f;
     _avg_sink_deriv_sum = 0.0f;
     _index_sink_rate = 0;
@@ -696,19 +698,28 @@ void AC_Autorotation::touchdown_controller(void)
     // Update forward speed for logging
     _speed_forward = calc_speed_forward(); // (cm/s)
 
-    _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _current_sink_rate))*0.01f + _ff_term_hs, 0.0f, 1.0f);
-    col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
-    _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
-    if(_current_sink_rate < 10.0 && _radar_alt<=_ground_clearance && !_touchdown_complete){
+    // Check to see if we think the aircraft is on the ground
+    if(_current_sink_rate < 10.0 && _radar_alt<=_ground_clearance && _time_on_ground == 0){
         _time_on_ground = AP_HAL::millis();
-        _touchdown_complete = true;
     }
-    float now = AP_HAL::millis();
-    if((now - _time_on_ground) > MIN_TIME_ON_GROUND && _touchdown_complete){
-       //on ground, collective can be bottomed now
-       _collective_out = 0;
+
+    // Use a timer to get confidence that the aircraft is on the ground.
+    // Note: The landing detector uses the zero thust collective as an indicator for being on the ground. The touch down controller will have
+    // driven the collective high to cushion the landing so the landing detector will not trip until we drive the collective back to zero thrust and below.
+    if ((_time_on_ground > 0) && ((AP_HAL::millis() - _time_on_ground) > MIN_TIME_ON_GROUND)) {
+       // On ground, smoothly lower collective to just bellow zero thrust, to make sure we trip the landing detector
+       float desired_col = _motors_heli->get_coll_mid() * 0.95;
+       _collective_out = _collective_out*0.9 + desired_col*0.1;
+
+    } else {
+        _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _current_sink_rate))*0.01f + _ff_term_hs, 0.0f, 1.0f);
+        col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
+        _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
     }
+
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
+
+    // Smoothly scale the pitch target back to zero (level)
     _pitch_target *= 0.95f;
 }
 
