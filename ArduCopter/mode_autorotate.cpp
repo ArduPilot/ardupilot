@@ -13,10 +13,9 @@
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
 
-#define AUTOROTATE_ENTRY_TIME          2000    // (ms) number of seconds that the entry phase operates for
-#define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single
-#define HEAD_SPEED_TARGET_RATIO        1.0f    // Normalised target main rotor head speed (unit: -)
-#define TOUCHDOWN_TIME                 5.0f    // time in seconds after land complete flag until aircraft is disarmed 
+#define AUTOROTATE_ENTRY_TIME          2000    // (ms) Number of milliseconds that the entry phase operates for
+#define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) Time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single
+#define HEAD_SPEED_TARGET_RATIO        1.0f    // Normalised target main rotor head speed
 
 bool ModeAutorotate::init(bool ignore_checks)
 {
@@ -37,7 +36,7 @@ bool ModeAutorotate::init(bool ignore_checks)
         return false;
     }
 
-    // init autorotation controllers object
+    // Init autorotation controllers object
     g2.arot.init(motors, copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
 
     // Retrieve rpm and start rpm sensor health checks
@@ -70,7 +69,6 @@ bool ModeAutorotate::init(bool ignore_checks)
 
     return true;
 }
-
 
 
 void ModeAutorotate::run()
@@ -158,8 +156,8 @@ void ModeAutorotate::run()
         // Retrieve pitch target
         _pitch_target = g2.arot.get_pitch();
 
-        // Update controllers
-        _flags.bad_rpm = g2.arot.update_hs_glide_controller(); //run head speed/ collective controller
+        // Update head speed controllers
+        _flags.bad_rpm = g2.arot.update_hs_glide_controller();
 
         break;
     }
@@ -233,6 +231,7 @@ void ModeAutorotate::run()
 
         // Update head speed/ collective controller
         _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+
         // Retrieve pitch target
         _pitch_target = g2.arot.get_pitch();
 
@@ -241,16 +240,23 @@ void ModeAutorotate::run()
 
         break;
     }
+
     case Autorotation_Phase::TOUCH_DOWN: {
         if (!_flags.touch_down_init) {
             gcs().send_text(MAV_SEVERITY_INFO, "Touchdown_Phase");
+
+            // Save the time on init of touchdown
+            _touchdown_time_ms = millis();
+
+            g2.arot.init_touchdown();
+
             // Prevent running the initial touchdown functions again
             _flags.touch_down_init = true;
-            _touchdown_time_ms = millis();
-            g2.arot.init_touchdown();
         }
+
         // Run touchdown controller
         g2.arot.touchdown_controller();
+
         // Retrieve pitch target
         _pitch_target = g2.arot.get_pitch();
 
@@ -304,6 +310,7 @@ void ModeAutorotate::run()
             _desired_v_z -= _target_climb_rate_adjust * last_loop_time_s;
             _pitch_target -= _target_pitch_adjust * last_loop_time_s;
         }
+
         // Set position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(_desired_v_z);
 
