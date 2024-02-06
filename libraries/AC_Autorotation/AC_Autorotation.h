@@ -96,6 +96,8 @@ public:
 
     float get_est_alt(void) const { return _est_alt; }
 
+    bool above_flare_height(void) const { return _est_alt > _flare_alt_calc; }
+
     void update_hover_autorotation_controller();
 
     void update_avg_acc_z(void);
