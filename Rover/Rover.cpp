@@ -153,14 +153,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 void Rover::FireFight_open()   //每20毫秒执行一次
 {
     uint8_t static stat = 0;
-    
-    // if(stat == 0)
-    // {
-    //     if(firefight_rover.function_fire_fight(5))
-    //     {
-    //         stat = 1;
-    //     }
-    // }
+
     if(hal.rcin->read(6) > 1800)
     {
         if(stat == 0)
@@ -195,36 +188,6 @@ void Rover::FireFight_open()   //每20毫秒执行一次
         stat++;        
     }
 
-    // uint8_t GPIO_STATUS;
-    // firefight_rover.function_fire_fight();
-    // uint16_t ms = 1000; 
-    // static uint64_t start = AP_HAL::millis64();
-    // if ((AP_HAL::millis64() - start)/1000 > ms)
-
-    // {
-    // hal.scheduler->delay(100);  //1s
-    // hal.gpio->write(2,1);
-    // GPIO_STATUS = hal.gpio->read(2);
-    // hal.scheduler->delay(500);  //1s
-    // hal.scheduler.de
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
-    //     "现在是灯测试:%d",GPIO_STATUS);
-    // hal.gpio->write(2,0);
-    // GPIO_STATUS = hal.gpio->read(2);
-    // hal.scheduler->delay(500);  //1s
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
-    //         "现在是灯测试:%d",GPIO_STATUS);
-
-    // }
-    // if(stat)
-    // {
-    //     if(fire_motor_rover.function_fire_motor_485(5))
-    //     {
-    //         stat = 0;
-    //     }
-            
-    // }
-    // hal.scheduler->delay(2);  //延时2毫秒等待发送
 
 }
 

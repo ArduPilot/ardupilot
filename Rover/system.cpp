@@ -46,7 +46,7 @@ void Rover::init_ardupilot()
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
-
+    // 消防炮初始化
     firefight_rover.uart_init();
     // setup telem slots with serial ports
     gcs().setup_uarts();

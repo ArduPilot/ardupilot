@@ -15,9 +15,16 @@ void FireFight::uart_init()
     hal.serial(1)->set_unbuffered_writes(true);
     hal.scheduler->delay(100);       //等待初始化串口
     write_two(100,0x2003,10,5);
-    hal.scheduler->delay(100);       //等待初始化串口
+    hal.scheduler->delay(100);       //设置电机加减速时间
     write_two(101,0x2003,10,5);
     hal.scheduler->delay(100);       //等待初始化串口
+    write_one(1,2,1000);
+    hal.scheduler->delay(100);       //上下电机堵转电流
+    write_one(1,3,1000);
+    hal.scheduler->delay(100);       //雾柱电机堵转电流
+    write_one(1,4,1);
+    hal.scheduler->delay(100);       //堵转时间
+
     
     
     gcs().send_text(MAV_SEVERITY_CRITICAL,  //地面站消息发送
