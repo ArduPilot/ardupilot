@@ -21,16 +21,6 @@ _ap_bin() {
     '--gimbal[enable simulated MAVLink gimbal]' \
     '--autotest-dir[set directory for additional files]:DIR:' \
     '--defaults[set path to defaults file]:PATH:' \
-    '--uartA[(deprecated) set device string for SERIAL0]:DEVICE:' \
-    '--uartC[(deprecated) set device string for SERIAL1]:DEVICE:' \
-    '--uartD[(deprecated) set device string for SERIAL2]:DEVICE:' \
-    '--uartB[(deprecated) set device string for SERIAL3]:DEVICE:' \
-    '--uartE[(deprecated) set device string for SERIAL4]:DEVICE:' \
-    '--uartF[(deprecated) set device string for SERIAL5]:DEVICE:' \
-    '--uartG[(deprecated) set device string for SERIAL6]:DEVICE:' \
-    '--uartH[(deprecated) set device string for SERIAL7]:DEVICE:' \
-    '--uartI[(deprecated) set device string for SERIAL8]:DEVICE:' \
-    '--uartJ[(deprecated) set device string for SERIAL9]:DEVICE:' \
     '--serial0[set device string for SERIAL0]:DEVICE:' \
     '--serial1[set device string for SERIAL1]:DEVICE:' \
     '--serial2[set device string for SERIAL2]:DEVICE:' \
