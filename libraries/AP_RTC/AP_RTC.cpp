@@ -111,7 +111,8 @@ void AP_RTC::clock_ms_to_hms_fields(const uint64_t time_ms, uint8_t &hour, uint8
 bool AP_RTC::clock_s_to_date_fields(const uint32_t utc_sec32, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint8_t &wday) const
 {
     const time_t utc_sec = utc_sec32;
-    struct tm* tm = gmtime(&utc_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&utc_sec, &tmd);
     if (tm == nullptr) {
         return false;
     }
@@ -284,7 +285,8 @@ bool AP_RTC::get_date_and_time_utc(uint16_t& year, uint8_t& month, uint8_t& day,
         return false;
     }
     time_t utc_sec = time_us / (1000U * 1000U);
-    struct tm* tm = gmtime(&utc_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&utc_sec, &tmd);
     if (tm == nullptr) {
         return false;
     }
