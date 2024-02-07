@@ -162,7 +162,7 @@ void Mode::update_navigation()
 void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
 {
     // throttle failsafe check
-    if (blimp.failsafe.radio || !blimp.ap.rc_receiver_present) {
+    if (blimp.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         pilot.y = 0;
         pilot.x = 0;
         pilot.z = 0;
