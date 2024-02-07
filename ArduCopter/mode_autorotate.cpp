@@ -331,31 +331,38 @@ void ModeAutorotate::run()
     }
     }
 
-    float pilot_roll, pilot_pitch, pilot_yaw_rate;
-    // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch
-    // is controlled by speed-height controller.
+    float pilot_roll, pilot_pitch, pilot_yaw_rate, target_roll;
+    // Operator is in control of roll and yaw. Pitch is controlled by speed-height controller.
     get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
-    float target_roll;
+    // Allow pilot control of the roll and yaw. Two control schemes available, a stabilise-like control scheme
+    // and a loiter like control scheme.
+    if (g2.arot.use_stabilise_controls()) {
+        // Get pilot's desired yaw rate
+        pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_roll = pilot_roll;
 
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    Vector2f vel = ahrs.earth_to_body2D(inertial_nav.get_velocity_neu_cms().xy());
-    float roll_vel = vel.y;
-    float pitch_vel = vel.x;
+    } else {
+        // loiter-like control scheme
+        // rotate roll, pitch input from north facing to vehicle's perspective
+        Vector2f vel = ahrs.earth_to_body2D(inertial_nav.get_velocity_neu_cms().xy());
+        float roll_vel = vel.y;
+        float pitch_vel = vel.x;
 
-    // gain scheduling for yaw
-    float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    pilot_yaw_rate = ((float)pilot_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_pilot.get_rate() / 45.0;
+        // gain scheduling for yaw
+        float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
+        pilot_yaw_rate = ((float)pilot_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_pilot.get_rate() / 45.0;
 
-    roll_vel = constrain_float(roll_vel, -560.0f, 560.0f);
-    pitch_vel = constrain_float(pitch_vel, -560.0f, 560.0f);
+        roll_vel = constrain_float(roll_vel, -560.0f, 560.0f);
+        pitch_vel = constrain_float(pitch_vel, -560.0f, 560.0f);
 
-    // convert user input into desired roll velocity
-    float roll_vel_error = roll_vel - (pilot_roll / 0.8f);
+        // convert user input into desired roll velocity
+        float roll_vel_error = roll_vel - (pilot_roll / 0.8f);
 
-    // roll velocity is feed into roll acceleration to minimize slip
-    target_roll = roll_vel_error * -0.8f;
-    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
+        // roll velocity is feed into roll acceleration to minimize slip
+        target_roll = roll_vel_error * -0.8f;
+        target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
+    }
 
     // Pitch target is calculated in autorotation phase switch above
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, _pitch_target, pilot_yaw_rate);
