@@ -113,10 +113,6 @@ private:
     RC_Channel *channel_up;
     RC_Channel *channel_yaw;
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger logger;
-#endif
-
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
@@ -354,8 +350,14 @@ private:
     void landinggear_update();
 
 #if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     // Log.cpp
-    void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_PIDs();
     void Log_Write_EKF_POS();
@@ -365,11 +367,9 @@ private:
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
 
 
     void Log_Write_Vehicle_Startup_Messages();
-    void log_init(void);
     void Write_FINI(float right, float front, float down, float yaw);
     void Write_FINO(float *amp, float *off);
 #endif

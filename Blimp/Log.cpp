@@ -393,6 +393,12 @@ const struct LogStructure Blimp::log_structure[] = {
     },
 };
 
+uint8_t Blimp::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+
+}
+
 void Blimp::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -400,11 +406,6 @@ void Blimp::Log_Write_Vehicle_Startup_Messages()
     logger.Write_Mode((uint8_t)control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
-}
-
-void Blimp::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
 #endif // HAL_LOGGING_ENABLED
