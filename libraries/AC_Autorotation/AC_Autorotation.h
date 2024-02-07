@@ -90,6 +90,7 @@ public:
 
     void update_hover_autorotation_controller();
 
+    // update rolling average z-accel filter
     void update_avg_acc_z(void);
 
     void update_flare_alt(void);
