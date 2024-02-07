@@ -1221,7 +1221,6 @@ compass = {}
 ---@return boolean
 function compass:healthy(instance) end
 
-
 -- desc
 ---@class camera
 camera = {}
@@ -3371,6 +3370,14 @@ fs = {}
 ---@param param1 string
 ---@return stat_t_ud|nil
 function fs:stat(param1) end
+
+-- Format the SD card. This is a async operation, use get_format_status to get the status of the format
+---@return boolean
+function fs:format() end
+
+-- Get the current status of a format. 0=NOT_STARTED, 1=PENDING, 2=IN_PROGRESS, 3=SUCCESS, 4=FAILURE
+---@return number
+function fs:get_format_status() end
 
 -- desc
 ---@class networking
