@@ -327,8 +327,12 @@ ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
     socklen_t len = sizeof(struct sockaddr_in);
     int fin = get_read_fd();
     ssize_t ret;
-    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&last_in_addr[0], &len);
-    if (ret <= 0) {
+    uint32_t in_addr[4] = {};
+    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr[0], &len);
+    if (ret > 0) {
+        // only update last_in_addr if we received data
+        memcpy(last_in_addr, in_addr, sizeof(last_in_addr));
+    } else {
         if (!datagram && connected && ret == 0) {
             // remote host has closed connection
             connected = false;
