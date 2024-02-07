@@ -1495,8 +1495,8 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
--- Check if a specific gyrometer sensor is healthy
----@param instance integer -- the 0-based index of the gyrometer instance to return.
+-- Check if a specific gyroscope sensor is healthy
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
 ---@return boolean
 function ins:get_gyro_health(instance) end
 
@@ -1508,6 +1508,16 @@ function ins:get_accel_health(instance) end
 -- Get if the INS is currently calibrating
 ---@return boolean
 function ins:calibrating() end
+
+-- Get the value of a specific gyroscope
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
+---@return Vector3f_ud
+function ins:get_gyro(instance) end
+
+-- Get the value of a specific accelerometer
+---@param instance integer -- the 0-based index of the accelerometer instance to return.
+---@return Vector3f_ud
+function ins:get_accel(instance) end
 
 -- desc
 ---@class Motors_dynamic
