@@ -192,10 +192,6 @@ private:
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger logger;
-#endif
-
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
     float pitch_limit_min;
@@ -886,9 +882,16 @@ private:
     int16_t calc_nav_yaw_course(void);
     int16_t calc_nav_yaw_ground(void);
 
-    // Log.cpp
-    uint32_t last_log_fast_ms;
+#if HAL_LOGGING_ENABLED
 
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
+    // Log.cpp
     void Log_Write_FullRate(void);
     void Log_Write_Attitude(void);
     void Log_Write_Control_Tuning();
@@ -900,6 +903,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AETR();
     void log_init();
+#endif
 
     // Parameters.cpp
     void load_parameters(void) override;
