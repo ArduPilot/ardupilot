@@ -141,13 +141,12 @@ private:
     float _avg_acc_z;                // Averaged vertical acceleration
     float _acc_z_sum;                // Sum of vertical acceleration samples
     int16_t _index;                  // Index for vertical acceleration rolling average
-    float _curr_acc_z[10]{};         // Array for storing vertical acceleration samples
+    float _curr_acc_z[10];           // Array for storing vertical acceleration samples
     float _flare_alt_calc;           // Calculated flare altitude
     float _lift_hover;               // Main rotor thrust in hover condition
     float _c;                        // Main rotor drag coefficient
     float _cushion_alt;              // Altitude for touchdown collective pull
     float _disc_area;                // Main rotor disc area
-    float _last_vertical_speed;      // Last cycle measured vertical speed
     float _est_rod;                  // Estimated rate of descent (vertical autorotation)
     bool  _flare_complete;           // Flare completed
     bool  _flare_update_check;       // Check for flare altitude updating
