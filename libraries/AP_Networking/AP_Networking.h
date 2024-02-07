@@ -266,6 +266,8 @@ private:
         uint32_t last_size_rx;
         bool packetise;
         bool connected;
+        uint32_t last_udp_connect_address;
+        uint16_t last_udp_connect_port;
         bool have_received;
         bool close_on_recv_error;
 

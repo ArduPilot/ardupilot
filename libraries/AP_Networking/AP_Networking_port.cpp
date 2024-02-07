@@ -345,6 +345,22 @@ bool AP_Networking::Port::send_receive(void)
         }
     }
 
+    if (type == NetworkPortType::UDP_SERVER && have_received) {
+        // connect the socket to the last receive address if we have one
+        uint32_t last_addr = 0;
+        uint16_t last_port = 0;
+        if (sock->last_recv_address(last_addr, last_port)) {
+            if (!connected || (last_addr != last_udp_connect_address) || (last_port != last_udp_connect_port)) {
+                char last_addr_str[16];
+                sock->inet_addr_to_str(last_addr, last_addr_str, 16);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", unsigned(state.idx), last_addr_str, unsigned(last_port));
+                connected = true;
+                last_udp_connect_address = last_addr;
+                last_udp_connect_port = last_port;
+            }
+        }
+    }
+
     if (connected) {
         // handle outgoing packets
         uint32_t available;
@@ -353,7 +369,7 @@ bool AP_Networking::Port::send_receive(void)
             WITH_SEMAPHORE(sem);
             available = writebuffer->available();
             available = MIN(300U, available);
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_PACKETISE_ENABLED
             if (packetise) {
                 available = mavlink_packetise(*writebuffer, available);
             }
@@ -368,23 +384,27 @@ bool AP_Networking::Port::send_receive(void)
             WITH_SEMAPHORE(sem);
             n = writebuffer->peekbytes(buf, available);
         }
-        if (n > 0) {
-            const auto ret = sock->send(buf, n);
-            if (ret > 0) {
-                WITH_SEMAPHORE(sem);
-                writebuffer->advance(ret);
-                active = true;
-            }
+
+        // nothing to send return
+        if (n <= 0) {
+            return active;
         }
-    } else {
-        if (type == NetworkPortType::UDP_SERVER && have_received) {
-            // connect the socket to the last receive address if we have one
-            char buf[16];
-            uint16_t last_port;
-            const char *last_addr = sock->last_recv_address(buf, sizeof(buf), last_port);
-            if (last_addr != nullptr && port != 0) {
-                connected = sock->connect(last_addr, last_port);
+
+        ssize_t ret = -1;
+        if (type == NetworkPortType::UDP_SERVER) {
+            // UDP Server uses sendto, allowing us to change the destination address port on the fly
+            if(last_udp_connect_address != 0 && last_udp_connect_port != 0) {
+                ret = sock->sendto(buf, n, last_udp_connect_address, last_udp_connect_port);
             }
+        } else {
+            // TCP Server and Client and UDP Client use send
+            ret = sock->send(buf, n);
+        }
+
+        if (ret > 0) {
+            WITH_SEMAPHORE(sem);
+            writebuffer->advance(ret);
+            active = true;
         }
     }
 
