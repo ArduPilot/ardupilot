@@ -193,9 +193,6 @@ void ModeAutorotate::run()
         // Run airspeed/attitude controller
         g2.arot.update_forward_speed_controller();
 
-        //update sink rate derivative
-        g2.arot.calc_sink_d_avg();
-
         //update flare altitude estimate
         g2.arot.update_flare_alt();
 
@@ -225,9 +222,6 @@ void ModeAutorotate::run()
         }
         // Run flare controller
         g2.arot.flare_controller();
-
-        //update sink rate derivative
-        g2.arot.calc_sink_d_avg();
 
         // Update head speed/ collective controller
         _flags.bad_rpm = g2.arot.update_hs_glide_controller();
