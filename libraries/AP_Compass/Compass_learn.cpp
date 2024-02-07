@@ -9,6 +9,8 @@
 
 #if COMPASS_LEARN_ENABLED
 
+#include <AP_Logger/AP_Logger.h>
+
 extern const AP_HAL::HAL &hal;
 
 // constructor
