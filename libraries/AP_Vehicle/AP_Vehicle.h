@@ -37,6 +37,7 @@
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -316,6 +317,14 @@ protected:
     AP_Button button;
 #endif
     RangeFinder rangefinder;
+
+#if HAL_LOGGING_ENABLED
+    AP_Logger logger;
+    // method supplied by vehicle to provide log bitmask:
+    virtual const AP_Int32 &get_log_bitmask() = 0;
+    virtual const struct LogStructure *get_log_structures() const = 0;
+    virtual uint8_t get_num_log_structures() const = 0;
+#endif
 
 #if AP_RSSI_ENABLED
     AP_RSSI rssi;
