@@ -203,6 +203,7 @@ void ModeAutorotate::run()
 
         // Update head speed/ collective controller
         _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+
         // Attitude controller is updated in navigation switch-case statements
         g2.arot.update_avg_acc_z();
 
@@ -346,6 +347,7 @@ void ModeAutorotate::run()
         float pitch_vel = vel.x;
 
         // gain scheduling for yaw
+        // TODO: Need to change consts to sensibly named defines
         float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
         pilot_yaw_rate = ((float)pilot_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_pilot.get_rate() / 45.0;
 
