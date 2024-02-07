@@ -101,6 +101,8 @@ public:
 
     void calc_sink_d_avg(void);
 
+    bool use_stabilise_controls(void) const { return _options.get() & int32_t(OPTION::STABILISE_CONTROLS); }
+
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -176,6 +178,11 @@ private:
     AP_Float _param_solidity;
     AP_Float _param_diameter;
     AP_Float _t_tch;
+    AP_Int32 _options;
+
+    enum class OPTION {
+        STABILISE_CONTROLS=(1<<0),
+    };
 
     //--------Internal Flags--------
     struct controller_flags {

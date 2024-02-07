@@ -155,6 +155,12 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("T_TCH", 16, AC_Autorotation, _t_tch, 0.55),
 
+    // @Param: OPTIONS
+    // @DisplayName: Autorotation options
+    // @Description: Bitmask for autorotation options.
+    // @Bitmask: 0: Use stabilize-like controls (roll angle, yaw rate)
+    AP_GROUPINFO("OPTIONS", 16, AC_Autorotation, _options, 0),
+
     AP_GROUPEND
 };
 
