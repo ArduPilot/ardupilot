@@ -56,7 +56,8 @@ void GPS_MSP::publish(const GPS_Data *d)
     auto t = gps_time();
     struct timeval tv;
     simulation_timeval(&tv);
-    auto *tm = gmtime(&tv.tv_sec);
+    struct tm tvd {};
+    auto *tm = gmtime_r(&tv.tv_sec, &tvd);
 
     msp_gps.gps_week = t.week;
     msp_gps.ms_tow = t.ms;
