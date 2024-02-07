@@ -1956,12 +1956,7 @@ private:
             bool bad_rpm                : 1;
     } _flags;
 
-    struct message_flags {
-            bool bad_rpm                   : 1;
-    } _msg_flags;
-
-    //--- Internal functions ---
-    void warning_message(uint8_t message_n);    //Handles output messages to the terminal
+    uint32_t _last_bad_rpm_ms;
 
 };
 #endif

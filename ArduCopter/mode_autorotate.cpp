@@ -16,6 +16,7 @@
 #define AUTOROTATE_ENTRY_TIME          2000    // (ms) Number of milliseconds that the entry phase operates for
 #define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) Time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single
 #define HEAD_SPEED_TARGET_RATIO        1.0f    // Normalised target main rotor head speed
+#define MSG_TIMER                      7000    // (ms) time interval between sending repeat warning messages
 
 bool ModeAutorotate::init(bool ignore_checks)
 {
@@ -52,7 +53,8 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.flare_init = false;
     _flags.touch_down_init = false;
     _flags.bail_out_init = false;
-    _msg_flags.bad_rpm = true;
+
+    _last_bad_rpm_ms = 0;
 
     // Check if we have sufficient speed or height to do a full autorotation otherwise we have to do one from the hover
     // Note: This must be called after arot.init()
@@ -363,24 +365,14 @@ void ModeAutorotate::run()
 
     // Output warning messaged if rpm signal is bad
     if (_flags.bad_rpm) {
-        warning_message(1);
-    }
-
-} // End function run()
-
-void ModeAutorotate::warning_message(uint8_t message_n)
-{
-    switch (message_n) {
-    case 1: {
-        if (_msg_flags.bad_rpm) {
+        if ((millis() - _last_bad_rpm_ms > MSG_TIMER) || (_last_bad_rpm_ms == 0)) {
             // Bad rpm sensor health.
             gcs().send_text(MAV_SEVERITY_INFO, "Warning: Poor RPM Sensor Health");
             gcs().send_text(MAV_SEVERITY_INFO, "Action: Minimum Collective Applied");
-            _msg_flags.bad_rpm = false;
+            _last_bad_rpm_ms = millis();
         }
-        break;
     }
-    }
-}
+
+} // End function run()
 
 #endif
