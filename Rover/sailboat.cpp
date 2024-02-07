@@ -172,14 +172,14 @@ void Sailboat::init_rc_in()
     }
 }
 
-// @brief decode pilot mainsail input in manual modes and update the various sail values for different sail types
-// ready for SRV_Channel output.
+/// @brief decode pilot mainsail input in manual modes and update the various
+/// sail actuator values for different sail types ready for SRV_Channel output.
 void Sailboat::set_pilot_desired_mainsail()
 {
     // no RC input means mainsail is moved to trim
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
        relax_sails();
-    }else{
+    } else {
        rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f));
        rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
        rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
@@ -202,7 +202,7 @@ void Sailboat::set_auto_mainsail(float desired_speed)
     // mainsail control.
     //
     // mainsail_out represents a range from 0 to 100
-    float mainsail_out = 100.f;
+    float mainsail_out = 100.0f;
     // main sails cannot be used to reverse
     if (is_positive(desired_speed)) {
         // Sails are sheeted the same on each side use abs wind direction
@@ -221,13 +221,13 @@ void Sailboat::set_auto_mainsail(float desired_speed)
     // wing sails auto trim, we only need to reduce power if we are tipping over, must also be trimmed for correct tack
     // dont allow to reduce power to less than 0, ie not backwinding the sail to self-right
     // wing sails can be used to go backwards, probably not recommended though
-    const float wing_sail_out_sign = is_negative(desired_speed)?-1.f:1.f;
+    const float wing_sail_out_sign = is_negative(desired_speed) ? -1.0f : 1.0f;
     const float wingsail_out = (100.0f - MIN(pid_offset,100.0f)) * wind_dir_apparent_sign * wing_sail_out_sign;
     rover.g2.motors.set_wingsail(wingsail_out);
     //
     // direct mast rotation control
     //
-    float mast_rotation_out = 0.f;
+    float mast_rotation_out = 0.0f;
     if (is_positive(desired_speed)) {
         // rotating sails can be used to reverse, but not in this version
         if (wind_dir_apparent_abs < sail_angle_ideal) {
@@ -258,7 +258,6 @@ void Sailboat::set_auto_mainsail(float desired_speed)
                     mast_rotation_angle *= wind_dir_apparent_sign;
                 }
             }
-
             // linear interpolate servo displacement (-100 to 100) from mast rotation angle and restore sign
             mast_rotation_out = linear_interpolate(-100.0f, 100.0f, mast_rotation_angle, -sail_angle_max, sail_angle_max);
         }
@@ -268,9 +267,9 @@ void Sailboat::set_auto_mainsail(float desired_speed)
 
 void Sailboat::relax_sails()
 {
-   rover.g2.motors.set_mainsail(100.0f);
-   rover.g2.motors.set_wingsail(0.f);
-   rover.g2.motors.set_mast_rotation(0.f);
+    rover.g2.motors.set_mainsail(100.0f);
+    rover.g2.motors.set_wingsail(0.0f);
+    rover.g2.motors.set_mast_rotation(0.0f);
 }
 
 // calculate throttle and mainsail angle required to attain desired speed (in m/s)
@@ -298,9 +297,9 @@ void Sailboat::get_throttle_and_set_mainsail(float desired_speed, float &throttl
     }
 
     if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {
-       relax_sails();
-    }else{
-       set_auto_mainsail(desired_speed);
+        relax_sails();
+    } else {
+        set_auto_mainsail(desired_speed);
     }
 }
 
@@ -441,7 +440,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
 
     // check for user requested tack
     uint32_t now = AP_HAL::millis();
-    if (tack_request_ms != 0 && !should_tack  && !currently_tacking) {
+    if (tack_request_ms != 0 && !should_tack && !currently_tacking) {
         // set should_tack flag is user requested tack within last 0.5 sec
         should_tack = ((now - tack_request_ms) < 500);
         tack_request_ms = 0;
