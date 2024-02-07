@@ -1495,10 +1495,20 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
+-- Check if the gyrometers are consistent
+---@param threshold integer -- the allowed threshold in degrees per second
+---@return boolean
+function ins:gyros_consistent(threshold) end
+
 -- Check if a specific gyroscope sensor is healthy
 ---@param instance integer -- the 0-based index of the gyroscope instance to return.
 ---@return boolean
 function ins:get_gyro_health(instance) end
+
+-- Check if the accelerometers are consistent
+---@param threshold float -- the threshold allowed before returning false
+---@return boolean
+function ins:accels_consistent(threshold) end
 
 -- Check if a specific accelerometer sensor is healthy
 ---@param instance integer -- the 0-based index of the accelerometer instance to return.
