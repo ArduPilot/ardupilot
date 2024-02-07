@@ -338,12 +338,10 @@ void ModeAutorotate::run()
 
     float target_roll;
 
-    // Grab inertial velocity
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
-
     // rotate roll, pitch input from north facing to vehicle's perspective
-    float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
-    float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
+    Vector2f vel = ahrs.earth_to_body2D(inertial_nav.get_velocity_neu_cms().xy());
+    float roll_vel = vel.y;
+    float pitch_vel = vel.x;
 
     // gain scheduling for yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
