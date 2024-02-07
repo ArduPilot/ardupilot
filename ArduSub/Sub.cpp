@@ -25,9 +25,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub()
     :
-#if HAL_LOGGING_ENABLED
-          logger(g.log_bitmask),
-#endif
           control_mode(Mode::Number::MANUAL),
           motors(MAIN_LOOP_RATE),
           auto_mode(Auto_WP),
