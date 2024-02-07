@@ -78,6 +78,8 @@ bool RC_Channels::read_input(void)
         return false;
     }
 
+    _has_ever_seen_rc_input = true;
+
     has_new_overrides = false;
 
     last_update_ms = AP_HAL::millis();
