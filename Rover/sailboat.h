@@ -71,7 +71,6 @@ private:
     // initialise rc input (channel_mainsail)
     void init_rc_in();
 
-
     // return target heading in radians when tacking (only used in acro)
     float get_tack_heading_rad();
 
