@@ -303,7 +303,27 @@ ssize_t SOCKET_CLASS_NAME::send(const void *buf, size_t size) const
 }
 
 /*
-  send some data
+  send some data with address as a uint32_t
+ */
+ssize_t SOCKET_CLASS_NAME::sendto(const void *buf, size_t size, uint32_t address, uint16_t port)
+{
+    if (fd == -1) {
+        return -1;
+    }
+    struct sockaddr_in sockaddr = {};
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(port);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = htonl(address);
+
+    return CALL_PREFIX(sendto)(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+}
+
+/*
+  send some data with address as a string
  */
 ssize_t SOCKET_CLASS_NAME::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
@@ -382,6 +402,24 @@ const char *SOCKET_CLASS_NAME::last_recv_address(char *ip_addr_buf, uint8_t bufl
     }
     port = ntohs(sin.sin_port);
     return ret;
+}
+
+/*
+  return the IP address and port of the last received packet
+ */
+bool SOCKET_CLASS_NAME::last_recv_address(uint32_t &ip_addr, uint16_t &port) const
+{
+    const struct sockaddr_in &sin = *(struct sockaddr_in *)&last_in_addr[0];
+    if (sin.sin_family != AF_INET) {
+        return false;
+    }
+    ip_addr = ntohl(sin.sin_addr.s_addr);
+    port = ntohs(sin.sin_port);
+    if (ip_addr == 0 ||
+        port == 0) {
+        return false;
+    }
+    return true;
 }
 
 void SOCKET_CLASS_NAME::set_broadcast(void) const
