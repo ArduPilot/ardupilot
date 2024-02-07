@@ -99,8 +99,6 @@ public:
     // Estimate the time to impact and compare it with the touchdown time param
     bool should_begin_touchdown(void);
 
-    void calc_sink_d_avg(void);
-
     bool use_stabilise_controls(void) const { return _options.get() & int32_t(OPTION::STABILISE_CONTROLS); }
 
     // User Settable Parameters
@@ -149,12 +147,7 @@ private:
     float _cushion_alt;              // Altitude for touchdown collective pull
     float _disc_area;                // Main rotor disc area
     float _last_vertical_speed;      // Last cycle measured vertical speed
-    float _sink_deriv;               // Derivative of sink rate
     float _est_rod;                  // Estimated rate of descent (vertical autorotation)
-    float _avg_sink_deriv;           // Averaged derivative of rate of descent
-    float _avg_sink_deriv_sum;       // Sum of averaged sink rate derivative
-    int16_t _index_sink_rate;        // Index for sink rate derivative rolling average
-    float _curr_sink_deriv[20];      // Array for storing sink rate derivatives
     bool  _flare_complete;           // Flare completed
     bool  _flare_update_check;       // Check for flare altitude updating
     uint32_t _time_on_ground;        // Time elapsed after touch down

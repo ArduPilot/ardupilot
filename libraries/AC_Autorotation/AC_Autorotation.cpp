@@ -414,13 +414,10 @@ void AC_Autorotation::initial_flare_estimate(void)
     float des_spd_fwd = _param_target_speed * 0.01f;
     calc_flare_alt(-_est_rod, des_spd_fwd);
 
-    // Initialize sink rate monitor and flare bools
+    // Initialize flare bools
     _flare_complete = false;
     _flare_update_check = false;
-    _avg_sink_deriv = 0.0f;
-    _avg_sink_deriv_sum = 0.0f;
-    _index_sink_rate = 0;
-    memset(_curr_sink_deriv, 0, sizeof(_curr_sink_deriv));
+
 
     gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/GRAVITY_MSS, _flare_alt_calc*0.01f, _c);
 }
@@ -568,31 +565,12 @@ void AC_Autorotation::update_forward_speed_controller(void)
 }
 
 
-void AC_Autorotation::calc_sink_d_avg(void)
-{
-    float vertical_speed = _inav.get_velocity_z_up_cms();
-    _sink_deriv = ((vertical_speed - _last_vertical_speed) * 0.01f) / _dt;
-    _last_vertical_speed = vertical_speed;
-
-    if (_index_sink_rate < 20) {
-        _avg_sink_deriv_sum -= _curr_sink_deriv[_index_sink_rate];
-        _curr_sink_deriv[_index_sink_rate] = _sink_deriv;
-        _avg_sink_deriv_sum += _curr_sink_deriv[_index_sink_rate];
-        _index_sink_rate = _index_sink_rate + 1;
-    } else {
-        _index_sink_rate = 0;
-    }
-    _avg_sink_deriv = _avg_sink_deriv_sum / 20.0f;
-    _avg_sink_deriv = constrain_float( _avg_sink_deriv, -10.0f, 10.0f);
-}
-
-
 void AC_Autorotation::update_flare_alt(void)
 {
     if (!_flare_update_check) {
         float delta_v_z = fabsf((_inav.get_velocity_z_up_cms()) * 0.01f + _est_rod);
 
-        if ((_speed_forward >= 0.8f * _param_target_speed) && (delta_v_z <= 1) && (fabsf(_avg_sink_deriv)<=0.005)) {
+        if ((_speed_forward >= 0.8f * _param_target_speed) && (delta_v_z <= 1) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.005f)) {
             float vel_z = _inav.get_velocity_z_up_cms() * 0.01f;
             float spd_fwd = _speed_forward * 0.01f;
             _c = (_lift_hover / (sq(vel_z) * 0.5f * SSL_AIR_DENSITY * _disc_area)) * 1.15f;
@@ -656,7 +634,7 @@ void AC_Autorotation::flare_controller(void)
     _accel_out_last = _accel_out;
 
     // Estimate flare effectiveness
-    if (_speed_forward <= (0.6 * _flare_entry_speed) && (fabsf(_avg_sink_deriv) <= 0.005f) && (_avg_acc_z>= -1.1 * 9.80665f)) {
+    if (_speed_forward <= (0.6 * _flare_entry_speed) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.005f) && (_avg_acc_z>= -1.1 * GRAVITY_MSS)) {
         if (!_flare_complete) {
             _flare_complete = true;
             gcs().send_text(MAV_SEVERITY_INFO, "Flare_complete");
