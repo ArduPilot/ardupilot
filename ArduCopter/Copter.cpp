@@ -820,9 +820,6 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
  */
 Copter::Copter(void)
     :
-#if HAL_LOGGING_ENABLED
-    logger(g.log_bitmask),
-#endif
     flight_modes(&g.flight_mode1),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
