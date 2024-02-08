@@ -218,16 +218,7 @@ const app_descriptor_t *get_app_descriptor(void)
 
 #if !defined(HAL_BOOTLOADER_BUILD)
 extern const AP_HAL::HAL &hal;
-
-/*
-  declare constant app_descriptor in flash
- */
 extern const app_descriptor_t app_descriptor;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-const app_descriptor_t app_descriptor __attribute__((section(".app_descriptor")));
-#else
-const app_descriptor_t app_descriptor;
-#endif
 
 /*
   this is needed to ensure we don't elide the app_descriptor
