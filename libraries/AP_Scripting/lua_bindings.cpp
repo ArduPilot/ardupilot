@@ -826,6 +826,7 @@ int SocketAPM_close(lua_State *L) {
             ud->close();
             delete ud;
             scripting->_net_sockets[i] = nullptr;
+            *check_SocketAPM(L, 1) = nullptr;
             break;
         }
     }
