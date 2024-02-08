@@ -78,7 +78,7 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
 /*
   check firmware CRC and board ID to see if it matches
  */
-static check_fw_result_t check_good_firmware_signed(void)
+static check_fw_result_t check_good_firmware_signed()
 {
     const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
     const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
@@ -130,7 +130,7 @@ static check_fw_result_t check_good_firmware_signed(void)
   check firmware CRC and board ID to see if it matches, using unsigned
   signature
  */
-static check_fw_result_t check_good_firmware_unsigned(void)
+static check_fw_result_t check_good_firmware_unsigned()
 {
     const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
     const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
