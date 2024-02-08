@@ -32,6 +32,9 @@
 #ifndef MATH_CHECK_INDEXES
 #define MATH_CHECK_INDEXES 0
 #endif
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 #include <cmath>
 #include <float.h>
