@@ -352,7 +352,7 @@ private:
     //////////////////////////////////////////////////
     enum TAKEOFF_AUTH_STATUS
     {
-        NONE,
+        NONE = 0,
         AUTHENTICATED,
         UNAUTHENTICATED,
     };

@@ -2845,17 +2845,17 @@ void QuadPlane::vtol_position_controller(void)
         
         // // run appropriate controller
 
-        if(precland_active())
-        {
-            if (!pos_control->is_active_xy()) {
-                pos_control->init_xy_controller();
-            }
+        // if(precland_active())
+        // {
+        //     if (!pos_control->is_active_xy()) {
+        //         pos_control->init_xy_controller();
+        //     }
 
-            pos_control->update_xy_controller();
+        //     pos_control->update_xy_controller();
 
-        }
+        // }
 
-        else
+        // else
             run_xy_controller();
 
 

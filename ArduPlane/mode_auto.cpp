@@ -54,7 +54,7 @@ void ModeAuto::_exit()
 {
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
-
+        plane.auth_takeoff_flag = Plane::TAKEOFF_AUTH_STATUS::NONE;
         bool restart = plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND;
 #if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id)) {

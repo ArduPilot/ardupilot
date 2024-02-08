@@ -154,10 +154,12 @@ void GCS_MAVLINK_Plane::handle_takeoff_auth(const mavlink_auth_takeoff_t &packet
     {
         case Plane::TAKEOFF_AUTH_STATUS::AUTHENTICATED:
             gcs().send_text(MAV_SEVERITY_INFO, "WebGCS Authenticated");
+            plane.auth_takeoff_flag = packet.status;
         break;
 
         case Plane::TAKEOFF_AUTH_STATUS::UNAUTHENTICATED:
             gcs().send_text(MAV_SEVERITY_INFO, "WebGCS Authentication released");
+            plane.auth_takeoff_flag = packet.status;
         break;
 
         default:
