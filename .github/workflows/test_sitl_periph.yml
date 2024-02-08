@@ -192,7 +192,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl_periph_universal
+          ./waf configure --board sitl_periph_universal --debug
           ./waf build --target bin/AP_Periph
           ccache -s
           ccache -z
