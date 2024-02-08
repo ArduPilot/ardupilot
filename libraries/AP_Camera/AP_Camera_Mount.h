@@ -54,6 +54,9 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t lens) override;
 
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
