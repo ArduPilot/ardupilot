@@ -37,6 +37,7 @@
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
+#include "SIM_TI_DACx3204.h"
 
 #include <signal.h>
 
@@ -85,6 +86,9 @@ static IS31FL3195 is31fl3195;
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
 static QMC5883L qmc5883l;
 #endif
+#if AP_SIM_DAC_TI_DACx3204_ENABLED
+static TI_DACx3204 dac_x3204;
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -109,6 +113,9 @@ struct i2c_device_at_address {
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
 #if AP_SIM_LP5562_ENABLED
     { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
+#endif
+#if AP_SIM_DAC_TI_DACx3204_ENABLED
+    { 2, 0x4A, dac_x3204 },  // TI DAC, addr is (0b1001 << 3) | 0b011 (p49)
 #endif
 #if AP_SIM_LM2755_ENABLED
     { 2, 0x67, lm2755 },        // LM2755 RGB LED driver
