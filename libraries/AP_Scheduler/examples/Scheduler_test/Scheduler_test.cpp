@@ -17,8 +17,7 @@ GCS_Dummy _gcs;
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-AP_Int32 log_bitmask;
-AP_Logger AP_Logger{log_bitmask};
+AP_Logger logger;
 
 class SchedTest {
 public:
