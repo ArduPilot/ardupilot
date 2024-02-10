@@ -29,6 +29,8 @@ AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value, float volta
 
 void AnalogSource_IIO::init_pins(void)
 {
+    static_assert(ARRAY_SIZE(AnalogSource_IIO::analog_sources) == ARRAY_SIZE(fd_analog_sources), "AnalogIn_IIO channels count mismatch");
+
     char buf[100];
     for (unsigned int i = 0; i < ARRAY_SIZE(AnalogSource_IIO::analog_sources); i++) {
         // Construct the path by appending strings
@@ -44,7 +46,11 @@ void AnalogSource_IIO::init_pins(void)
  */
 void AnalogSource_IIO::select_pin(void)
 {
-    _pin_fd = fd_analog_sources[_pin];
+    if (0 <= _pin && (size_t)_pin < ARRAY_SIZE(fd_analog_sources)) {
+        _pin_fd = fd_analog_sources[_pin];
+    } else {
+        _pin_fd = -1;
+    }
 }
 
 float AnalogSource_IIO::read_average()
