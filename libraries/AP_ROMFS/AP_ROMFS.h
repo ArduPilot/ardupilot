@@ -7,13 +7,11 @@
 
 class AP_ROMFS {
 public:
-    // find a file and de-compress, assumning gzip format. The
-    // decompressed data will be allocated with malloc(). You must
-    // call AP_ROMFS::free() on the return value after use. The next byte after
-    // the file data is guaranteed to be null.
+    // Find the named file and return its decompressed data and size. Caller
+    // must call AP_ROMFS::free() on the return value after use to free it.
     static const uint8_t *find_decompress(const char *name, uint32_t &size);
 
-    // free returned data
+    // free decompressed file data
     static void free(const uint8_t *data);
 
     /*
