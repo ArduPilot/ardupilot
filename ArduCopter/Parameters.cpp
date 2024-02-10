@@ -1338,25 +1338,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
 
 void Copter::load_parameters(void)
 {
-    hal.util->set_soft_armed(false);
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    if (!g.format_version.load() ||
-        g.format_version != Parameters::k_format_version) {
-
-        // erase all parameters
-        DEV_PRINTF("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
-
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        DEV_PRINTF("done.\n");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
-
-    uint32_t before = micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
 #if AP_LANDINGGEAR_ENABLED
@@ -1409,11 +1392,8 @@ void Copter::load_parameters(void)
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
 #endif
 
-    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
-
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
-
 }
 
 // handle conversion of PID gains
