@@ -725,7 +725,7 @@ def _build_dynamic_sources(bld):
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/[a-z]* libraries/AP_DroneCAN/dsdl/[a-z]*', dir=True, src=False),
             output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
             name='dronecan',
             export_includes=[
