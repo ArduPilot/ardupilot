@@ -1627,15 +1627,15 @@ void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last
     // filename without the prefix:
     const char *trimmed_filename = &default_file[strlen(prefix)];
 
-    uint32_t string_length;
-    const uint8_t *text = AP_ROMFS::find_decompress(trimmed_filename, string_length);
-    if (text == nullptr) {
+    uint32_t data_length;
+    const uint8_t *data = AP_ROMFS::find_decompress(trimmed_filename, data_length);
+    if (data == nullptr) {
         return;
     }
 
-    load_param_defaults((const char*)text, string_length, last_pass);
+    load_param_defaults((const char*)data, data_length, last_pass);
 
-    AP_ROMFS::free(text);
+    AP_ROMFS::free(data);
 
 }
 #endif  // HAL_HAVE_AP_ROMFS_EMBEDDED_H
@@ -2372,7 +2372,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (!AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
 /*
-  count the number of parameter defaults present in supplied string
+  count the number of parameter defaults present in supplied buffer
  */
 bool AP_Param::count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count)
 {
@@ -2429,7 +2429,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
 #endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
 
 /*
- *  load parameter defaults from supplied string
+ *  load parameter defaults from supplied buffer
  */
 void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass)
 {

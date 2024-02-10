@@ -750,7 +750,7 @@ private:
     // load an @ROMFS defaults.parm using ROMFS API:
     static void load_defaults_file_from_romfs(const char *filename, bool lastpass);
 
-    // load defaults from supplied string:
+    // load defaults from supplied buffer:
     static void load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass);
 
     /*
