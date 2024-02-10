@@ -157,10 +157,6 @@ void Sub::init_ardupilot()
 
     startup_INS_ground();
 
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
     // enable CPU failsafe
     mainloop_failsafe_enable();
 

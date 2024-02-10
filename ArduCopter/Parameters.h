@@ -600,10 +600,6 @@ public:
     void *autotune_ptr;
 #endif
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
-
     AP_Float tuning_min;
     AP_Float tuning_max;
 
@@ -684,6 +680,9 @@ public:
     AP_Int16 takeoff_rpm_min;
     AP_Int16 takeoff_rpm_max;
 #endif
+
+    // EKF variance filter cutoff
+    AP_Float fs_ekf_filt_hz;
 
 #if WEATHERVANE_ENABLED == ENABLED
     AC_WeatherVane weathervane;

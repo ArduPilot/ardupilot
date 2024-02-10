@@ -589,6 +589,12 @@ public:
     bool get_aux_cached(RC_Channel::aux_func_t aux_fn, uint8_t &pos);
 #endif
 
+    // returns true if we've ever seen RC input, via overrides or via
+    // AP_RCProtocol
+    bool has_ever_seen_rc_input() const {
+        return _has_ever_seen_rc_input;
+    }
+
     // get failsafe timeout in milliseconds
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
 
@@ -613,6 +619,9 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
     AP_Float _fs_timeout;
+
+    // set to true if we see overrides or other RC input
+    bool _has_ever_seen_rc_input;
 
     RC_Channel *flight_mode_channel() const;
 

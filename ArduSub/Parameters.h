@@ -7,10 +7,6 @@
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Arming/AP_Arming.h>
 
-#if AP_SCRIPTING_ENABLED
-#include <AP_Scripting/AP_Scripting.h>
-#endif
-
 // Global parameter class.
 //
 class Parameters {
@@ -372,9 +368,6 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
 };
 
 extern const AP_Param::Info        var_info[];

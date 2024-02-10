@@ -179,10 +179,6 @@ void Copter::init_ardupilot()
 
     startup_INS_ground();
 
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.init();
 #endif
@@ -203,6 +199,10 @@ void Copter::init_ardupilot()
         // set mode to STABILIZE will trigger mode change notification to pilot
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
     }
+
+    pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
+    vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
+    hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
 
     // flag that initialisation has completed
     ap.initialised = true;

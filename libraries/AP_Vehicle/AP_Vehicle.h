@@ -69,6 +69,9 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#if AP_SCRIPTING_ENABLED
+#include <AP_Scripting/AP_Scripting.h>
+#endif
 
 class AP_DDS_Client;
 
@@ -120,7 +123,9 @@ public:
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
+#if AP_SCHEDULER_ENABLED
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
+#endif
 
     /*
       set the "likely flying" flag. This is not guaranteed to be
@@ -304,7 +309,9 @@ protected:
 #endif
     AP_Baro barometer;
     Compass compass;
+#if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor ins;
+#endif
 #if HAL_BUTTON_ENABLED
     AP_Button button;
 #endif
@@ -337,8 +344,10 @@ protected:
     // false disables external leds)
     AP_Notify notify;
 
+#if AP_AHRS_ENABLED
     // Inertial Navigation EKF
     AP_AHRS ahrs;
+#endif
 
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
@@ -415,6 +424,10 @@ protected:
     AP_TemperatureSensor temperature_sensor;
 #endif
 
+#if AP_SCRIPTING_ENABLED
+    AP_Scripting scripting;
+#endif
+
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
@@ -457,6 +470,7 @@ private:
     // statustext:
     void send_watchdog_reset_statustext();
 
+#if AP_INERTIALSENSOR_ENABLED
     // update the harmonic notch for throttle based notch
     void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
 
@@ -465,6 +479,7 @@ private:
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
+#endif
 
     // decimation for 1Hz update
     uint8_t one_Hz_counter;

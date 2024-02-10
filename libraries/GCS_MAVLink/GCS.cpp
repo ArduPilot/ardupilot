@@ -18,6 +18,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
+#include <RC_Channel/RC_Channel.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -336,6 +337,16 @@ void GCS::update_sensor_status_flags()
         control_sensors_enabled |= MAV_SYS_STATUS_PREARM_CHECK;
         if (hal.util->get_soft_armed() || AP_Notify::flags.pre_arm_check) {
             control_sensors_health |= MAV_SYS_STATUS_PREARM_CHECK;
+        }
+    }
+#endif
+
+#if AP_RC_CHANNEL_ENABLED
+    if (rc().has_ever_seen_rc_input()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+        if (!rc().in_rc_failsafe()) {  // should this be has_valid_input?
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
         }
     }
 #endif

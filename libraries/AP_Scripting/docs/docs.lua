@@ -1221,7 +1221,6 @@ compass = {}
 ---@return boolean
 function compass:healthy(instance) end
 
-
 -- desc
 ---@class camera
 camera = {}
@@ -1496,15 +1495,39 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
--- Check if a specific gyrometer sensor is healthy
----@param instance integer -- the 0-based index of the gyrometer instance to return.
+-- Check if the gyrometers are consistent
+---@param threshold integer -- the allowed threshold in degrees per second
+---@return boolean
+function ins:gyros_consistent(threshold) end
+
+-- Check if a specific gyroscope sensor is healthy
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
 ---@return boolean
 function ins:get_gyro_health(instance) end
+
+-- Check if the accelerometers are consistent
+---@param threshold float -- the threshold allowed before returning false
+---@return boolean
+function ins:accels_consistent(threshold) end
 
 -- Check if a specific accelerometer sensor is healthy
 ---@param instance integer -- the 0-based index of the accelerometer instance to return.
 ---@return boolean
 function ins:get_accel_health(instance) end
+
+-- Get if the INS is currently calibrating
+---@return boolean
+function ins:calibrating() end
+
+-- Get the value of a specific gyroscope
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
+---@return Vector3f_ud
+function ins:get_gyro(instance) end
+
+-- Get the value of a specific accelerometer
+---@param instance integer -- the 0-based index of the accelerometer instance to return.
+---@return Vector3f_ud
+function ins:get_accel(instance) end
 
 -- desc
 ---@class Motors_dynamic
@@ -2765,6 +2788,14 @@ function notify:handle_rgb(red, green, blue, rate_hz) end
 ---@param tune string
 function notify:play_tune(tune) end
 
+-- Display text on a notify display, text too long to fit will automatically be scrolled.
+---@param text string -- upto 50 characters
+---@param row integer -- row number to display on, 0 is at the top.
+function notify:send_text(text, row) end
+
+-- desc
+---@param row integer
+function notify:release_text(row) end
 
 -- desc
 ---@class gps
@@ -3371,6 +3402,14 @@ fs = {}
 ---@param param1 string
 ---@return stat_t_ud|nil
 function fs:stat(param1) end
+
+-- Format the SD card. This is a async operation, use get_format_status to get the status of the format
+---@return boolean
+function fs:format() end
+
+-- Get the current status of a format. 0=NOT_STARTED, 1=PENDING, 2=IN_PROGRESS, 3=SUCCESS, 4=FAILURE
+---@return number
+function fs:get_format_status() end
 
 -- desc
 ---@class networking

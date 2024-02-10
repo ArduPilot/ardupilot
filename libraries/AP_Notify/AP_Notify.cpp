@@ -535,6 +535,27 @@ void AP_Notify::send_text(const char *str)
     _send_text_updated_millis = AP_HAL::millis();
 }
 
+#if AP_SCRIPTING_ENABLED
+void AP_Notify::send_text_scripting(const char *str, uint8_t r)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->send_text_blocking(str, r);
+        }
+    }
+}
+
+void AP_Notify::release_text_scripting(uint8_t r)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->release_text(r);
+        }
+    }
+}
+#endif
+
+
 // convert 0-3 to 0-100
 int8_t AP_Notify::get_rgb_led_brightness_percent() const
 {
