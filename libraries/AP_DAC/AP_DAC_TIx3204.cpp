@@ -18,6 +18,7 @@
 
 #define REG_TIx3204_CHAN_BASE 0x01 // offset to first channel
 #define REG_TIx3204_CHAN_SKIP 6 // 6 registers per channel
+#define REG_TIx3204_CHAN_CONFIG(chan) (REG_TIx3204_CHAN_BASE + (chan)*REG_TIx3204_CHAN_SKIP)
 
 // per channel config registers
 #define REG_TIx3204_OFS_MARGIN_HIGH      0x00
@@ -81,6 +82,12 @@ bool AP_DAC_TIx3204::set_voltage(uint8_t chan, float v)
     }
 
     if (!configured[chan]) {
+            // setup as VDD reference
+        const uint16_t vout_config = 1<<10;
+        if (!register_write(REG_TIx3204_CHAN_CONFIG(chan) + REG_TIx3204_OFS_VOUT_CMP_CONFIG, vout_config)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TIx3204 vout config write %u fail", unsigned(chan));
+            return false;
+        }
         uint16_t config;
         if (!register_read(REG_TIx3204_COMMON_CONFIG, config)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TIx3204 chan config read %u fail", unsigned(chan));
