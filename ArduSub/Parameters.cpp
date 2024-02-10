@@ -732,26 +732,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
 
 void Sub::load_parameters()
 {
-    hal.util->set_soft_armed(false);
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    if (!g.format_version.load() ||
-            g.format_version != Parameters::k_format_version) {
-
-        // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
-
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println("done.");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
-
-    uint32_t before = AP_HAL::micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
-    hal.console->printf("load_all took %uus\n", (unsigned)(AP_HAL::micros() - before));
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
