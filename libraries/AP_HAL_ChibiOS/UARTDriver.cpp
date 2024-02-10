@@ -106,6 +106,7 @@ _baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many SERIALn drivers");
     serial_drivers[serial_num] = this;
+    chVTObjectInit(&_frame.rx_timeout);
 }
 
 /*
@@ -123,6 +124,11 @@ void UARTDriver::uart_thread()
     while (uart_thread_ctx == nullptr) {
         hal.scheduler->delay_microseconds(1000);
     }
+
+    hal.gpio->pinMode(51,1);
+    hal.gpio->pinMode(52,1);
+    hal.gpio->pinMode(53,1);
+    hal.gpio->pinMode(54,1);
 
     while (true) {
         eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DATA_READY | EVT_TRANSMIT_END | EVT_TRANSMIT_UNBUFFERED, chTimeMS2I(1));
@@ -310,7 +316,6 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
     if (clear_buffers) {
-        _frame.idle = false;
         _frame.bounce_len[0] = _frame.bounce_len[1] = 0;
         _frame.bounce_idx = _frame.read_bounce_idx = 0;
         _readbuf.clear();
@@ -462,7 +467,6 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sercfg.ctx = (void*)this;
 
             sdStop((SerialDriver*)sdef.serial);
-            _frame.idle = false;
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
@@ -537,7 +541,6 @@ void UARTDriver::_end_framing()
     _frame.bounce_len[0] = _frame.bounce_len[1] = 0;
     _frame.bounce_idx = _frame.read_bounce_idx = 0;
     _framing_initialised = false;
-    _frame.idle = false;
 }
 
 bool UARTDriver::_frame_available()
@@ -570,8 +573,10 @@ ssize_t UARTDriver::_read_frame(uint8_t *buffer, uint16_t buf_size)
         return -1;
     }
 
+    //hal.gpio->toggle(53);
+    //hal.gpio->toggle(53);
+
     const uint8_t bounce_idx = _frame.read_bounce_idx;
-    _frame.read_bounce_idx ^= 1;
 
     uint16_t flen = _frame.bounce_len[bounce_idx];
     if (flen == 0) {
@@ -580,7 +585,7 @@ ssize_t UARTDriver::_read_frame(uint8_t *buffer, uint16_t buf_size)
 
     memcpy(buffer, _frame.bounce_buf[bounce_idx], MIN(buf_size, flen));
 
-    _frame.bounce_len[bounce_idx] = 0;
+    _frame.bounce_len[bounce_idx] = 0;  // frame has been consumed
 
     if (!_rts_is_active) {
         update_rts_line();
@@ -653,9 +658,13 @@ void UARTDriver::transfer_frame()
         return;
     }
 
+    //hal.gpio->toggle(52);
+    //hal.gpio->toggle(52);
+
     _frame.bounce_len[frame_bounce_idx] = _readbuf.read(_frame.bounce_buf[frame_bounce_idx], fsize);
+    _readbuf.clear();   // discard anything left over
+    _frame.read_bounce_idx = frame_bounce_idx;  // fresh data
     _frame.bounce_idx ^= 1;
-    _frame.idle = false;
 }
 
 // UART idle ISR, only ever called if IDLEIE has been set
@@ -670,16 +679,15 @@ void UARTDriver::rx_irq_cb(void* self)
 
 #ifndef HAL_UART_NODMA
     if (!uart_drv->rx_dma_enabled) {
-#endif
-        // this is only ever called if IDLEIE is set
-        if (uart_drv->_framing_initialised) {
-            uart_drv->transfer_frame();
-        }
-#ifndef HAL_UART_NODMA
         return;
     }
 
-    uart_drv->_frame.idle = true;
+    if (uart_drv->_framing_initialised) {
+        chSysLockFromISR();
+        chVTSetI(&uart_drv->_frame.rx_timeout, chTimeUS2I(10), transfer_frame, self);
+        chSysUnlockFromISR();
+    }
+
 
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
@@ -699,6 +707,20 @@ void UARTDriver::rx_irq_cb(void* self)
 #endif // STM32F7
 #endif // HAL_UART_NODMA
 #endif // HAL_USE_SERIAL
+}
+
+void UARTDriver::transfer_frame(virtual_timer_t* vt, void *p)
+{
+    chSysLockFromISR();
+    UARTDriver *uart = (UARTDriver *)p;
+
+    if (uart->_readbuf.available() && dmaStreamGetTransactionSize(uart->rxdma) == RX_BOUNCE_BUFSIZE) {
+        hal.gpio->toggle(51);
+        hal.gpio->toggle(51);
+        uart->transfer_frame();
+    }
+
+    chSysUnlockFromISR();
 }
 
 /*
@@ -730,10 +752,6 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->_rx_stats_bytes += len;
         uart_drv->receive_timestamp_update();
-    }
-
-    if (uart_drv->_framing_initialised && uart_drv->_frame.idle) {
-        uart_drv->transfer_frame();
     }
 
     if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
@@ -1577,9 +1595,6 @@ void UARTDriver::configure_parity(uint8_t v)
         break;
     }
 
-    // restarting the serial device results in a spurious IDLE interrupt
-    _frame.idle = false;
-
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 
     _framing_initialised = frminit;
@@ -1633,8 +1648,6 @@ void UARTDriver::set_stop_bits(int n)
         break;
     }
     sercfg.cr2 = _cr2_options;
-
-    _frame.idle = false;
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 

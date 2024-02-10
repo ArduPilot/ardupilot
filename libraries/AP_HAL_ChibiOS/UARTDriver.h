@@ -185,7 +185,7 @@ private:
     struct {
         volatile uint8_t bounce_idx;
         volatile uint8_t read_bounce_idx;
-        volatile bool idle;
+        virtual_timer_t rx_timeout;
         uint8_t *bounce_buf[2];
         uint16_t bounce_len[2];
     } _frame;
@@ -293,6 +293,7 @@ protected:
 
 private:
     void transfer_frame();
+    static void transfer_frame(virtual_timer_t* vt, void *p);
 };
 
 // access to usb init for stdio.cpp
