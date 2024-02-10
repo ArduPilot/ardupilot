@@ -1106,7 +1106,7 @@ class ChibiOSHWDef(object):
             f.write('#define APP_START_OFFSET_KB %u\n' % self.get_config('APP_START_OFFSET_KB', default=0, type=int))
         f.write('\n')
 
-        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        ram_reserve_start, ram0_start_address = self.get_ram_reserve_start()
         f.write('#define HAL_RAM0_START 0x%08x\n' % ram0_start_address)
         if ram_reserve_start > 0:
             f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
@@ -1385,7 +1385,7 @@ class ChibiOSHWDef(object):
         if ext_flash_size > 32:
             self.error("We only support 24bit addressing over external flash")
 
-        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        ram_reserve_start, ram0_start_address = self.get_ram_reserve_start()
         if ram_reserve_start > 0 and ram0_start_address == ram0_start:
             ram0_start += ram_reserve_start
             ram0_len -= ram_reserve_start
@@ -2413,6 +2413,10 @@ INCLUDE common.ld
         this_dir = os.path.realpath(__file__)
         rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
         hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef[0]))
+        # allow re-using of bootloader from different build:
+        use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
+        if use_bootloader_from_board is not None:
+            hwdef_dirname = use_bootloader_from_board
         bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
         bootloader_path = os.path.join(rootdir,
                                        "Tools",
