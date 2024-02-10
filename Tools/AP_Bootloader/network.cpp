@@ -307,40 +307,40 @@ BL_Network::web_var BL_Network::variables[] = {
 /*
   substitute variables of the form {VARNAME}
  */
-char *BL_Network::substitute_vars(const char *str, uint32_t size)
+char *BL_Network::substitute_vars(const char *buf, uint32_t size)
 {
     // assume 1024 is enough room for new variables
-    char *result = (char *)malloc(strlen(str) + 1024);
+    char *result = (char *)malloc(size + 1024);
     if (result == nullptr) {
         return nullptr;
     }
     char *p = result;
-    const char *str0 = str;
-    while (*str && str-str0<size) {
-        if (*str != '{') {
-            *p++ = *str++;
+    const char *buf0 = buf;
+    while (buf-buf0<size && *buf) {
+        if (*buf != '{') {
+            *p++ = *buf++;
             continue;
         }
-        char *q = strchr(str+1, '}');
+        char *q = (char*)memchr((const void*)(buf+1), '}', size-(buf+1-buf0));
         if (q == nullptr) {
-            *p++ = *str++;
+            *p++ = *buf++;
             continue;
         }
-        const uint32_t len = (q - str)-1;
+        const uint32_t len = (q - buf)-1;
         bool found = false;
         for (auto &v : variables) {
-            if (strlen(v.name) == len && strncmp(v.name, str+1, len) == 0) {
+            if (strlen(v.name) == len && strncmp(v.name, buf+1, len) == 0) {
                 found = true;
                 strcpy(p, v.value);
                 p += strlen(v.value);
-                str = q+1;
+                buf = q+1;
                 break;
             }
         }
         if (found) {
             continue;
         }
-        *p++ = *str++;
+        *p++ = *buf++;
     }
     *p = '\0';
     return result;
