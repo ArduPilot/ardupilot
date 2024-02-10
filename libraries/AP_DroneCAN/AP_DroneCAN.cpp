@@ -1457,13 +1457,40 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
 void AP_DroneCAN::handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg)
 {
 #if HAL_LOGGING_ENABLED
-    if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
+    const auto log_level = AP::can().get_log_level();
+    const auto msg_level = msg.level.value;
+    bool send_mavlink = false;
+
+    if (log_level != AP_CANManager::LOG_NONE) {
         // log to onboard log and mavlink
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
-    } else {
-        // only log to onboard log
-        AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
+        enum MAV_SEVERITY level = MAV_SEVERITY_INFO;
+        switch (msg_level) {
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_DEBUG:
+            level = MAV_SEVERITY_DEBUG;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_DEBUG);
+            break;
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_INFO:
+            level = MAV_SEVERITY_INFO;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_INFO);
+            break;
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_WARNING:
+            level = MAV_SEVERITY_WARNING;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_WARNING);
+            break;
+        default:
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_ERROR);
+            level = MAV_SEVERITY_ERROR;
+            break;
+        }
+        if (send_mavlink) {
+            // when we send as MAVLink it also gets logged locally
+            GCS_SEND_TEXT(level, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
+            return;
+        }
     }
+
+    // if not sending to MAVLink then log to onboard log only
+    AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
 #endif
 }
 
