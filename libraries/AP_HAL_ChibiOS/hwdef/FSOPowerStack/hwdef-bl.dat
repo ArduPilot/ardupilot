@@ -62,7 +62,7 @@ PB5 CAN2_RX CAN2
 PB6 CAN2_TX CAN2
 PA4 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
-# pullup outputs to ensure they stay off
+# pulldown outputs to ensure they stay off
 PB10    PAYLOAD_PC      OUTPUT  PULLDOWN    LOW
 PB11    PAYLOAD_EN      OUTPUT  PULLDOWN    LOW
 PC4     PAYLOAD_1_EN    OUTPUT  PULLDOWN    LOW
