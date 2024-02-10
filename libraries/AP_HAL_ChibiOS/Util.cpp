@@ -304,9 +304,6 @@ Util::FlashBootloader Util::flash_bootloader()
     }
 #endif
 
-    // make sure size is multiple of 32
-    fw_size = (fw_size + 31U) & ~31U;
-
     bool uptodate = true;
     const uint32_t addr = hal.flash->getpageaddr(0);
 
