@@ -584,23 +584,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
 void Tracker::load_parameters(void)
 {
-    if (!g.format_version.load() ||
-        g.format_version != Parameters::k_format_version) {
-
-        // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
-
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
-
-    uint32_t before = AP_HAL::micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
@@ -616,8 +600,6 @@ void Tracker::load_parameters(void)
 #if HAL_LOGGING_ENABLED
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
 #endif
-
-    hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
 
 #if HAL_HAVE_SAFETY_SWITCH
     // configure safety switch to allow stopping the motors while armed
