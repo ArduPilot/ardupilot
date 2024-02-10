@@ -49,7 +49,7 @@ class TestBuildOptions(object):
                  do_step_disable_in_turn=True,
                  do_step_enable_in_turn=True,
                  build_targets=None,
-                 board="DevEBoxH7v2",
+                 board="CubeOrange",  # DevEBoxH7v2 also works
                  extra_hwdef=None):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
