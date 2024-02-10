@@ -287,6 +287,8 @@ protected:
 
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
+    void load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version);
+
     virtual void set_control_channels() {}
 
     // board specific config
