@@ -1852,23 +1852,42 @@ void AP_Periph_FW::can_update()
 }
 
 // printf to CAN LogMessage for debugging
-void can_printf(const char *fmt, ...)
+void can_vprintf(uint8_t severity, const char *fmt, va_list ap)
 {
+    // map MAVLink levels to CAN levels
+    uint8_t level = UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_DEBUG;
+    switch (severity) {
+    case MAV_SEVERITY_DEBUG:
+        level = UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_DEBUG;
+        break;
+    case MAV_SEVERITY_INFO:
+        level = UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_INFO;
+        break;
+    case MAV_SEVERITY_NOTICE:
+    case MAV_SEVERITY_WARNING:
+        level = UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_WARNING;
+        break;
+    case MAV_SEVERITY_ERROR:
+    case MAV_SEVERITY_CRITICAL:
+    case MAV_SEVERITY_ALERT:
+    case MAV_SEVERITY_EMERGENCY:
+        level = UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_ERROR;
+        break;
+    }
+
 #if HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF
     const uint8_t packet_count_max = 4; // how many packets we're willing to break up an over-sized string into
     const uint8_t packet_data_max = 90; // max single debug string length = sizeof(uavcan_protocol_debug_LogMessage.text.data)
     uint8_t buffer_data[packet_count_max*packet_data_max] {};
 
-    va_list ap;
-    va_start(ap, fmt);
     // strip off any negative return errors by treating result as 0
     uint32_t char_count = MAX(vsnprintf((char*)buffer_data, sizeof(buffer_data), fmt, ap), 0);
-    va_end(ap);
 
     // send multiple uavcan_protocol_debug_LogMessage packets if the fmt string is too long.
     uint16_t buffer_offset = 0;
     for (uint8_t i=0; i<packet_count_max && char_count > 0; i++) {
         uavcan_protocol_debug_LogMessage pkt {};
+        pkt.level.value = level;
         pkt.text.len = MIN(char_count, sizeof(pkt.text.data));
         char_count -= pkt.text.len;
 
@@ -1888,10 +1907,8 @@ void can_printf(const char *fmt, ...)
 #else
     uavcan_protocol_debug_LogMessage pkt {};
     uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE] {};
-    va_list ap;
-    va_start(ap, fmt);
     uint32_t n = vsnprintf((char*)pkt.text.data, sizeof(pkt.text.data), fmt, ap);
-    va_end(ap);
+    pkt.level.value = level;
     pkt.text.len = MIN(n, sizeof(pkt.text.data));
 
     uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer, !periph.canfdout());
@@ -1903,4 +1920,22 @@ void can_printf(const char *fmt, ...)
                             len);
 
 #endif
+}
+
+// printf to CAN LogMessage for debugging, with severity
+void can_printf_severity(uint8_t severity, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    can_vprintf(severity, fmt, ap);
+    va_end(ap);
+}
+
+// printf to CAN LogMessage for debugging, with DEBUG level
+void can_printf(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    can_vprintf(MAV_SEVERITY_DEBUG, fmt, ap);
+    va_end(ap);
 }
