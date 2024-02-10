@@ -2131,9 +2131,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "SIM_WIND_DIR": 0,
             "ARSPD_WIND_MAX": 15,
         })
-        self.change_mode("TAKEOFF")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.takeoff(alt=50, mode='TAKEOFF')
         # simulate the effect of a blocked pitot tube
         self.set_parameter("ARSPD_RATIO", 0.1)
         self.delay_sim_time(10)
@@ -2156,7 +2154,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Sensor Re-Enabled")
         else:
             raise NotAchievedException("Airspeed Sensor Not Re-Enabled")
-        self.disarm_vehicle(force=True)
+        self.fly_home_land_and_disarm()
 
     def AIRSPEED_AUTOCAL(self):
         '''Test AIRSPEED_AUTOCAL'''
