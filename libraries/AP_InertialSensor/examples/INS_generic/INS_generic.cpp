@@ -22,7 +22,7 @@ static void run_test();
 // board specific config
 static AP_BoardConfig BoardConfig;
 static AP_Int32 log_bitmask;
-static AP_Logger logger{log_bitmask};
+static AP_Logger logger;
 
 void setup(void);
 void loop(void);
