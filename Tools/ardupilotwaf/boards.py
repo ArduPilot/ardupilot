@@ -454,12 +454,10 @@ class Board:
 
         if cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_root_certificate:
             sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-            from AP_AerobridgeTrustedFlight.helpers import validate_self_signed_cert
+            from AP_AerobridgeTrustedFlight.utils.helpers import get_certificate_from_file, validate_certificate
 
-            status, message = validate_self_signed_cert(cfg.options.trusted_flight_root_certificate)
-            if not status:
-                log_error_msg(f'{message}. Please provide valid root certificate.')
-                exit(1)
+            root_certificate = get_certificate_from_file(cfg.options.trusted_flight_root_certificate)
+            validate_certificate(root_certificate, root_certificate)
 
             # prepare a temp file to embed issuer string into ROMFS
             trusted_flight_issuer_file = cfg.bldnode.make_node('trusted_flight_issuer.tmp').abspath()

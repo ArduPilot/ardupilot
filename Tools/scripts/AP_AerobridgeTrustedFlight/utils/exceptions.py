@@ -1,0 +1,2 @@
+class ExpiredCertificateException(Exception):
+    pass
