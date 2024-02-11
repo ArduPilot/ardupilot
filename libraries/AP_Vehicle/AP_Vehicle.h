@@ -320,10 +320,11 @@ protected:
 
 #if HAL_LOGGING_ENABLED
     AP_Logger logger;
+    AP_Int32 bitmask_unused;
     // method supplied by vehicle to provide log bitmask:
-    virtual const AP_Int32 &get_log_bitmask() = 0;
-    virtual const struct LogStructure *get_log_structures() const = 0;
-    virtual uint8_t get_num_log_structures() const = 0;
+    virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
+    virtual const struct LogStructure *get_log_structures() const { return nullptr; }
+    virtual uint8_t get_num_log_structures() const { return 0; }
 #endif
 
 #if AP_RSSI_ENABLED
