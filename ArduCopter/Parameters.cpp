@@ -1,6 +1,7 @@
 #include "Copter.h"
 
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 /*
    This program is free software: you can redistribute it and/or modify
@@ -1231,6 +1232,22 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
+
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // @Param: FSTRATE_ENABLE
+    // @DisplayName: Enable the fast Rate thread
+    // @Description: Enable the fast Rate thread
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled-Dynamic,2:Enabled-FixedWhenArmed,3:Enabled-Fixed
+    AP_GROUPINFO("FSTRATE_ENABLE", 9, ParametersG2, att_enable, 0),
+
+    // @Param: FSTRATE_DIV
+    // @DisplayName: Fast rate thread divisor
+    // @Description: Fast rate thread divisor used to control the maximum fast rate update rate. The actual rate is the gyro rate divided by this value.
+    // @User: Advanced
+    // @Range: 1 10
+    AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
+#endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
