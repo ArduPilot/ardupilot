@@ -796,6 +796,15 @@ private:
     bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }
+
+    /*
+      binary semaphore for rate loop to use to start a rate loop when
+      we hav finished filtering the primary IMU
+     */
+    HAL_BinarySemaphore *rate_loop_sem;
+
+public:
+    void set_rate_loop_sem(HAL_BinarySemaphore *sem) { rate_loop_sem = sem; }
 };
 
 namespace AP {
