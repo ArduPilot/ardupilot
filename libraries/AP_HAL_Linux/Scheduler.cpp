@@ -173,15 +173,20 @@ void Scheduler::delay(uint16_t ms)
         return;
     }
 
-    uint64_t start = AP_HAL::millis64();
+    if (ms == 0) {
+        return;
+    }
 
-    while ((AP_HAL::millis64() - start) < ms) {
+    uint64_t now = AP_HAL::micros64();
+    uint64_t end = now + 1000UL * ms + 1U;
+    do {
         // this yields the CPU to other apps
-        microsleep(1000);
+        microsleep(MIN(1000UL, end-now));
         if (in_main_thread() && _min_delay_cb_ms <= ms) {
             call_delay_cb();
         }
-    }
+        now = AP_HAL::micros64();
+    } while (now < end);
 }
 
 void Scheduler::delay_microseconds(uint16_t us)
