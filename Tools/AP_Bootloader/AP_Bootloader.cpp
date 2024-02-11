@@ -136,8 +136,9 @@ int main(void)
     }
 #endif  // AP_CHECK_FIRMWARE_ENABLED
 #ifndef BOOTLOADER_DEV_LIST
-    else if (timeout != 0) {
-        // fast boot for good firmware
+    else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
+        // fast boot for good firmware if we haven't been told to stay
+        // in bootloader
         try_boot = true;
         timeout = 1000;
     }
