@@ -76,6 +76,7 @@ public:
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f * _thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
+    void rate_controller_run_dt(float dt) override;
     void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off
@@ -93,7 +94,7 @@ protected:
     void update_throttle_gain_boost();
 
     // update_throttle_rpy_mix - updates thr_low_comp value towards the target
-    void update_throttle_rpy_mix();
+    void update_throttle_rpy_mix(float dt);
 
     // get maximum value throttle can be raised to based on throttle vs attitude prioritisation
     float get_throttle_avg_max(float throttle_in);
