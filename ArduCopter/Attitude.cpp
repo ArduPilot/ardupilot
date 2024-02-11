@@ -29,6 +29,8 @@ void Copter::rate_controller_thread()
         // run the rate controller
         attitude_control->rate_controller_run_dt(dt);
 
+        motors_output();
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         // ensure we give at least some CPU to other threads
         // don't sleep on SITL where small sleeps are not possible

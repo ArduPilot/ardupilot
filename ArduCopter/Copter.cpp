@@ -121,7 +121,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK(heli_update_autorotation),
 #endif //HELI_FRAME
     // send outputs to the motors library immediately
-    FAST_TASK(motors_output),
+    FAST_TASK(motors_output_main),
      // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
 #if FRAME_CONFIG == HELI_FRAME

@@ -901,6 +901,7 @@ private:
     void arm_motors_check();
     void auto_disarm_check();
     void motors_output();
+    void motors_output_main();
     void lost_vehicle_check();
 
     // navigation.cpp

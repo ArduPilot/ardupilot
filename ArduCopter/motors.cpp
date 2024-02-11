@@ -183,6 +183,14 @@ void Copter::motors_output()
     SRV_Channels::push();
 }
 
+// motors_output from main thread
+void Copter::motors_output_main()
+{
+    if (!using_rate_thread) {
+        motors_output();
+    }
+}
+
 // check for pilot stick input to trigger lost vehicle alarm
 void Copter::lost_vehicle_check()
 {
