@@ -228,6 +228,7 @@ private:
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
     AP_Int32 _esc_rv;
+    AP_Int16 _esc_sc;
 
     uint32_t *mem_pool;
 
