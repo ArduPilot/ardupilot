@@ -30,6 +30,7 @@ jobs:
             revo-mini,
             MatekF405-Wing,
             CubeOrange-ODID,
+            CubeOrange-Aerobridge,
             CubeRedPrimary-bootloader,
             configure-all,
             build-options-defaults-test,
