@@ -327,6 +327,19 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-Aerobridge" ]; then
+        echo "Building CubeOrange-Aerobridge (Trusted Flight)"
+        # generate root cert and use during build
+        Tools/scripts/AP_AerobridgeTrustedFlight/generate_root_cert.py ${BUILDROOT}
+
+        # root cert path and token issuer defined in Tools/scripts/AP_AerobridgeTrustedFlight/utils/constants.py
+        $waf configure --board CubeOrange-Aerobridge --trusted-flight-issuer=leaf.cname --trusted-flight-root-certificate=${BUILDROOT}/root_ca/certificate.crt
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+
     if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
         Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter

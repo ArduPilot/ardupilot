@@ -1,0 +1,8 @@
+include ../CubeOrange/hwdef.dat
+
+# use a different board ID, so vehicles with this installed are prevented from loading
+# the firmware without OpenDroneID enabled
+# APJ_BOARD_ID 10140
+
+# enable Aerobridge Trusted Flight
+# define AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED 1
