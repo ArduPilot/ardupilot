@@ -4,9 +4,55 @@
  *  Attitude Rate controllers and timing
  ****************************************************************/
 
-// update rate controllers and output to roll, pitch and yaw actuators
-//  called at 400hz by default
-void Copter::run_rate_controller()
+/*
+  thread for rate control
+*/
+void Copter::rate_controller_thread()
+{
+    using_rate_thread = true;
+
+    HAL_BinarySemaphore rate_sem;
+    ins.set_rate_loop_sem(&rate_sem);
+
+    uint32_t last_run_us = AP_HAL::micros();
+    float dt_avg = 0.0;
+    uint32_t last_report_ms = AP_HAL::millis();
+
+    while (true) {
+        // wait for an IMU sample
+        rate_sem.wait_blocking();
+        const uint32_t now_us = AP_HAL::micros();
+        const uint32_t dt_us = now_us - last_run_us;
+        const float dt = dt_us * 1.0e-6;
+        last_run_us = now_us;
+
+        // run the rate controller
+        attitude_control->rate_controller_run_dt(dt);
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        // ensure we give at least some CPU to other threads
+        // don't sleep on SITL where small sleeps are not possible
+        hal.scheduler->delay_microseconds(100);
+#endif
+
+        if (is_zero(dt_avg)) {
+            dt_avg = dt;
+        } else {
+            dt_avg = 0.99f * dt_avg + 0.01f * dt;
+        }
+
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_report_ms >= 2000) {
+            last_report_ms = now_ms;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rate: %.2fHz", 1.0/dt_avg);
+        }
+    }
+}
+
+/*
+  update rate controller when run from main thread (normal operation)
+*/
+void Copter::run_rate_controller_main()
 {
     // set attitude and position controller loop time
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
@@ -14,8 +60,10 @@ void Copter::run_rate_controller()
     attitude_control->set_dt(last_loop_time_s);
     pos_control->set_dt(last_loop_time_s);
 
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run(); 
+    if (!using_rate_thread) {
+        // only run the rate controller if we are not using the rate thread
+        attitude_control->rate_controller_run();
+    }
 }
 
 /*************************************************************
