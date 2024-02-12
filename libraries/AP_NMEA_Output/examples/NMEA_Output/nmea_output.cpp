@@ -50,14 +50,6 @@ public:
     void init() {
         BoardConfig.init();
     }
-
-    // methods for AP_Vehicle:
-    AP_Int32 log_bitmask;
-    const AP_Int32 &get_log_bitmask() override { return log_bitmask; }
-    const struct LogStructure *get_log_structures() const override {
-        return nullptr;
-    }
-    uint8_t get_num_log_structures() const override { return 0; }
 };
 
 static DummyVehicle vehicle;
