@@ -33,8 +33,19 @@ void Copter::rate_controller_thread()
         const float dt = dt_us * 1.0e-6;
         last_run_us = now_us;
 
-        // run the rate controller
-        attitude_control->rate_controller_run_dt(dt);
+        if (is_zero(dt_avg)) {
+            dt_avg = dt;
+        } else {
+            dt_avg = 0.99f * dt_avg + 0.01f * dt;
+        }
+
+        /*
+          run the rate controller. We pass in the long term average dt
+          not the per loop dt, as most of the timing jitter is from
+          the timing of the FIFO reads on the SPI bus, which does not
+          reflect the actual time between IMU samples, which is steady
+        */
+        attitude_control->rate_controller_run_dt(dt_avg);
 
         motors_output();
 
@@ -43,12 +54,6 @@ void Copter::rate_controller_thread()
         // don't sleep on SITL where small sleeps are not possible
         hal.scheduler->delay_microseconds(100);
 #endif
-
-        if (is_zero(dt_avg)) {
-            dt_avg = dt;
-        } else {
-            dt_avg = 0.99f * dt_avg + 0.01f * dt;
-        }
 
         const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_report_ms >= 2000) {
