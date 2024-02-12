@@ -14,12 +14,21 @@ void Copter::rate_controller_thread()
 
     uint32_t last_run_us = AP_HAL::micros();
     float dt_avg = 0.0;
-    uint32_t last_report_ms = AP_HAL::millis();
+    uint32_t now_ms = AP_HAL::millis();
+    uint32_t last_report_ms = now_ms;
+    uint32_t last_notch_sample_ms = now_ms;
+    bool was_using_rate_thread = false;
 
     while (true) {
         // allow changing option at runtime
         if (!flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD)) {
             using_rate_thread = false;
+            if (was_using_rate_thread) {
+                // if we were using the rate thread, we need to
+                // setup the notch filter sample rate
+                attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+                was_using_rate_thread = false;
+            }
             hal.scheduler->delay_microseconds(500);
             last_run_us = AP_HAL::micros();
             continue;
@@ -56,11 +65,21 @@ void Copter::rate_controller_thread()
         hal.scheduler->delay_microseconds(100);
 #endif
 
-        const uint32_t now_ms = AP_HAL::millis();
+        now_ms = AP_HAL::millis();
+
+        if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
+            // update the PID notch sample rate at 1Hz if if we are
+            // enabled at runtime
+            last_notch_sample_ms = now_ms;
+            attitude_control->set_notch_sample_rate(1.0 / dt_avg);
+        }
+        
         if (now_ms - last_report_ms >= 2000) {
             last_report_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rate: %.2fHz", 1.0/dt_avg);
         }
+
+        was_using_rate_thread = true;
     }
 }
 
