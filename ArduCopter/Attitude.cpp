@@ -21,6 +21,7 @@ void Copter::rate_controller_thread()
         if (!flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD)) {
             using_rate_thread = false;
             hal.scheduler->delay_microseconds(500);
+            last_run_us = AP_HAL::micros();
             continue;
         }
 
