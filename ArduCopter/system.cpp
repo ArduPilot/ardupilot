@@ -200,15 +200,6 @@ void Copter::init_ardupilot()
     vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
 
-    // see if we should have a separate rate thread
-    if ((copter.g2.flight_options & uint32_t(FlightOptions::USE_RATE_LOOP_THREAD)) != 0) {
-        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                                         "rate_controller",
-                                         2048, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
-            using_rate_thread = true;
-        }
-    }
-
     // flag that initialisation has completed
     ap.initialised = true;
 }

@@ -679,6 +679,15 @@ void Copter::one_hz_loop()
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
+
+    // see if we should have a separate rate thread
+    if (!started_rate_thread && flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD)) {
+        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
+                                         "rate_controller",
+                                         2048, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
+            started_rate_thread = true;
+        }
+    }
 }
 
 void Copter::init_simple_bearing()

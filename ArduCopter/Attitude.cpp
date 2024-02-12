@@ -9,8 +9,6 @@
 */
 void Copter::rate_controller_thread()
 {
-    using_rate_thread = true;
-
     HAL_BinarySemaphore rate_sem;
     ins.set_rate_loop_sem(&rate_sem);
 
@@ -19,6 +17,15 @@ void Copter::rate_controller_thread()
     uint32_t last_report_ms = AP_HAL::millis();
 
     while (true) {
+        // allow changing option at runtime
+        if (!flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD)) {
+            using_rate_thread = false;
+            hal.scheduler->delay_microseconds(500);
+            continue;
+        }
+
+        using_rate_thread = true;
+
         // wait for an IMU sample
         rate_sem.wait_blocking();
         const uint32_t now_us = AP_HAL::micros();
