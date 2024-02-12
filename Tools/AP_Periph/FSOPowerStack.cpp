@@ -105,6 +105,60 @@ const AP_Param::GroupInfo FSOPowerStack::var_info[] {
     // @Path: ../../libraries/AP_DAC/AP_DAC.cpp
     AP_SUBGROUPINFO(dac, "_DAC", 12, FSOPowerStack, AP_DAC),
 
+    // @Param: _CAL_MV
+    // @DisplayName: Main voltage reference
+    // @Description: Main voltage reference
+    // @Range: 0 50
+    AP_GROUPINFO("_CAL_MV", 13, FSOPowerStack, cal_main_voltage, 50.0),
+
+    // @Param: _CAL_MC
+    // @DisplayName: Main current reference
+    // @Description: Main current reference
+    // @Range: 0 200
+    AP_GROUPINFO("_CAL_MC", 14, FSOPowerStack, cal_main_current, 10.0),
+
+    // @Param: _CAL_HVC
+    // @DisplayName: High voltage payload current reference
+    // @Description: High voltage payload current reference
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_HVC", 15, FSOPowerStack, cal_HV_current, 2.5),
+
+    // @Param: _CAL_HCC
+    // @DisplayName: High current BEC current reference
+    // @Description: High current BEC current reference
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_HCC", 16, FSOPowerStack, cal_HCB_current, 5.0),
+
+    // @Param: _CAL_LCC
+    // @DisplayName: Low current BEC current reference
+    // @Description: Low current BEC current reference
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_LCC", 17, FSOPowerStack, cal_LCB_current, 1.0),
+
+    // @Param: _CAL_P1C1
+    // @DisplayName: Payload 1 Coefficient 1
+    // @Description: Payload 1 Coefficient 1
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_P1C1", 18, FSOPowerStack, cal_payload_P1c1, 25.4948),
+
+    // @Param: _CAL_P1C2
+    // @DisplayName: Payload 1 Coefficient 2
+    // @Description: Payload 1 Coefficient 2
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_P1C2", 19, FSOPowerStack, cal_payload_P1c2, 0.2007),
+
+    // @Param: _CAL_P2C1
+    // @DisplayName: Payload 2 Coefficient 1
+    // @Description: Payload 2 Coefficient 1
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_P2C1", 20, FSOPowerStack, cal_payload_P2c1, 25.4948),
+
+    // @Param: _CAL_P2C2
+    // @DisplayName: Payload 2 Coefficient 2
+    // @Description: Payload 2 Coefficient 2
+    // @Range: 0 10
+    AP_GROUPINFO("_CAL_P2C2", 21, FSOPowerStack, cal_payload_P2c2, 0.2007),
+
     AP_GROUPEND
 };
 
@@ -255,14 +309,14 @@ void FSOPowerStack::update_switches()
         switch_1_switch_released = true;
     }
     
-    if (switch_1_on == false){
+    if (switch_1_is_off()){
         if (switch_1_switch_released && (now_ms - switch_1_press_time_ms > FSO_SWITCH_ON_TIME_MS)) {
-            switch_1_on = true;
+            set_switch_1_on();
             switch_1_switch_released = false;
         }
     } else {
         if (switch_1_switch_released && (now_ms - switch_1_press_time_ms > FSO_SWITCH_OFF_TIME_MS)) {
-            switch_1_on = false;
+            set_switch_1_off();
             switch_1_switch_released = false;
         }
     }
@@ -274,12 +328,12 @@ void FSOPowerStack::update_switches()
     
     if (switch_2_on == false){
         if (switch_2_switch_released && (now_ms - switch_2_press_time_ms > FSO_SWITCH_ON_TIME_MS)) {
-            switch_2_on = true;
+            set_switch_2_on();
             switch_2_switch_released = false;
         }
     } else {
         if (switch_2_switch_released && (now_ms - switch_2_press_time_ms > FSO_SWITCH_OFF_TIME_MS)) {
-            switch_2_on = false;
+            set_switch_2_off();
             switch_2_switch_released = false;
         }
     }
@@ -291,67 +345,53 @@ void FSOPowerStack::update_main_power()
     auto &batt = AP::battery();
     
     // Main Turn On State Machine
-    switch (main_turn_on_state) {
+    switch (main_state) {
 
-    case Off:
-        if (switch_1_on == true) {
-            main_turn_on_state = PreChargeStart;
+    case TurnOnState::Off:
+        if (main_on == true) {
+            main_state = TurnOnState::PreChargeStart;
         }
         break;
 
-    case PreChargeStart:
+    case TurnOnState::PreChargeStart:
         if (fabsf(batt.voltage(0) - batt.voltage(1)) < FSO_BATT_VOLTS_DIFF_MAX) {
-            hal.gpio->write(FSO_LED_DEBUG_PIN, 1);
-            hal.gpio->write(FSO_MAIN_PC_PIN, 1);
+            set_main_PC_on();
             start_main_precharge_ms = now_ms;
-            main_turn_on_state = PreCharge;
+            main_state = TurnOnState::PreCharge;
             break;
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Unbalanced Battery Voltage");
-            main_turn_on_state = ShutDown;
+            main_state = TurnOnState::ShutDown;
         }
         break;
 
-    case PreCharge:
+    case TurnOnState::PreCharge:
         if (MAX(batt.voltage(0), batt.voltage(1)) - batt.voltage(8) < FSO_OUT_VOLTS_DIFF_MAX) {
             // Turn off Pre-Charge
-            hal.gpio->write(FSO_LED_DEBUG_PIN, 0);
-            hal.gpio->write(FSO_MAIN_PC_PIN, 0);
+            set_main_PC_off();
 
-            // Turn on Main Power and Led indicator
-            hal.gpio->write(FSO_LED_MAIN_PIN, 1);
-            hal.gpio->write(FSO_BAT_1_EN_PIN, 1);
-            hal.gpio->write(FSO_BAT_2_EN_PIN, 1);
-            main_turn_on_state = On;
+            // Turn on main battery switches
+            set_bat_1_SW_on();
+            set_bat_2_SW_on();
+            main_state = TurnOnState::On;
         } else if (now_ms - start_main_precharge_ms > FSO_PRECHARGE_TIMEOUT_MS) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main Pre-Charge Failure Diff Voltage: %.2f", MAX(batt.voltage(0), batt.voltage(1)) - batt.voltage(9));
-            main_turn_on_state = ShutDown;
+            main_state = ShutDown;
         }
         break;
 
-    case On:
-        if (switch_1_on == false) {
-            // Check if armed
-            // If armed override switch state
-            // switch_1_on == true;
-            // else
-            main_turn_on_state = ShutDown;
+    case TurnOnState::On:
+        if (main_on == false) {
+            main_state = TurnOnState::ShutDown;
         }
         break;
 
-    case ShutDown:
+    case TurnOnState::ShutDown:
         // Turn off Pre-Charge
-        hal.gpio->write(FSO_LED_DEBUG_PIN, 0);
-        hal.gpio->write(FSO_MAIN_PC_PIN, 0);
-
-        // Turn off Main Power and Led indicator
-        hal.gpio->write(FSO_LED_MAIN_PIN, 0);
-        hal.gpio->write(FSO_BAT_1_EN_PIN, 0);
-        hal.gpio->write(FSO_BAT_2_EN_PIN, 0);
-        main_turn_on_state = Off;
-
-        // Override swich state
-        switch_1_on = false;
+        set_main_PC_off();
+        set_bat_1_SW_off();
+        set_bat_2_SW_off();
+        main_state = TurnOnState::Off;
         break;
     }
 }
@@ -365,70 +405,56 @@ void FSOPowerStack::update_payload_HV_power()
     if (batt.current_amps(payload_HV_current, 3)) {
         payload_HV_current_filter.apply(payload_HV_current, 0.001 * FSO_LOOP_TIME_MS);
         if (payload_HV_current_filter.get() > MIN(payload_HV_current_max, FSO_PAYLOAD_HV_CURRENT_MAX)) {
-            payload_HV_turn_on_state = ShutDown;
+            payload_HV_state = ShutDown;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload HV over current shutdown");
         }
     }
     
     // Payload Turn On State Machine
-    switch (payload_HV_turn_on_state) {
+    switch (payload_HV_state) {
 
-    case Off:
-        if (switch_1_on == true || switch_2_on == true) {
-            payload_HV_turn_on_state = PreChargeStart;
+    case TurnOnState::Off:
+        if (payload_HV_on == true) {
+            payload_HV_state = TurnOnState::PreChargeStart;
         }
         break;
 
-    case PreChargeStart:
-        // Turn on Payload BEC
-        hal.gpio->write(FSO_PAYLOAD_1_EN_PIN, 1);
-        hal.gpio->write(FSO_PAYLOAD_2_EN_PIN, 1);
-
+    case TurnOnState::PreChargeStart:
         // Turn on Payload HV pre-charge
-        hal.gpio->write(FSO_PAYLOAD_HV_PC_PIN, 1);
+        set_payload_HV_PC_on();
         start_payload_HV_precharge_ms = now_ms;
-        payload_HV_turn_on_state = PreCharge;
+        payload_HV_state = TurnOnState::PreCharge;
         break;
 
-    case PreCharge:
+    case TurnOnState::PreCharge:
         if (MAX(batt.voltage(0), batt.voltage(1)) - batt.voltage(2) < FSO_OUT_VOLTS_DIFF_MAX) {
-            // Turn off Pre-Charge
-            hal.gpio->write(FSO_LED_DEBUG_PIN, 0);
-            hal.gpio->write(FSO_PAYLOAD_HV_PC_PIN, 0);
+            // Turn off payload HV pre-charge
+            set_payload_HV_PC_off();
 
-            // Turn on Main Power and Led indicator
-            hal.gpio->write(FSO_LED_PAYLOAD_PIN, 1);
-            hal.gpio->write(FSO_PAYLOAD_HV_EN_PIN, 1);
-            payload_HV_turn_on_state = On;
+            // Turn on payload HV switch
+            set_payload_HV_SW_on();
+
+            payload_HV_state = TurnOnState::On;
         } else if (now_ms - start_payload_HV_precharge_ms > FSO_PRECHARGE_TIMEOUT_MS) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload Pre-Charge Failure Diff Voltage: %.2f", MAX(batt.voltage(0), batt.voltage(1)) - batt.voltage(2));
-            payload_HV_turn_on_state = ShutDown;
+            payload_HV_state = ShutDown;
         }
         break;
 
-    case On:
-        if (switch_1_on == false && switch_2_on == false) {
-            payload_HV_turn_on_state = ShutDown;
+    case TurnOnState::On:
+        if (payload_HV_on == false) {
+            payload_HV_state = TurnOnState::ShutDown;
         }
         break;
 
-    case ShutDown:
-        // Turn off Payload BEC
-        hal.gpio->write(FSO_PAYLOAD_1_EN_PIN, 0);
-        hal.gpio->write(FSO_PAYLOAD_2_EN_PIN, 0);
-        
-        // Turn off Pre-Charge
-        hal.gpio->write(FSO_LED_DEBUG_PIN, 0);
-        hal.gpio->write(FSO_PAYLOAD_HV_PC_PIN, 0);
+    case TurnOnState::ShutDown:
+        // Turn off payload HV pre-charge
+        set_payload_HV_PC_off();
 
-        // Turn off Main Power and Led indicator
-        hal.gpio->write(FSO_LED_PAYLOAD_PIN, 0);
-        hal.gpio->write(FSO_PAYLOAD_HV_EN_PIN, 0);
-        payload_HV_turn_on_state = Off;
+        // Turn off payload HV switch
+        set_payload_HV_SW_off();
 
-        // Override swich state
-        // This needs to be improved as it will turn on again due to switch 1.
-        switch_2_on = false;
+        payload_HV_state = TurnOnState::Off;
         break;
     }
 }
@@ -441,7 +467,7 @@ void FSOPowerStack::update_payload_BEC()
     if (batt.current_amps(payload_1_current, 3)) {
         payload_1_current_filter.apply(payload_1_current, 0.001 * FSO_LOOP_TIME_MS);
         if (payload_1_current_filter.get() > MIN(payload_1_current_max, FSO_PAYLOAD_BEC_CURRENT_MAX)) {
-            hal.gpio->write(FSO_PAYLOAD_1_EN_PIN, 0);
+            set_payload_BEC_1_off();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload 1 over current shutdown");
         }
     }
@@ -450,21 +476,21 @@ void FSOPowerStack::update_payload_BEC()
     if (batt.current_amps(payload_2_current, 4)) {
         payload_2_current_filter.apply(payload_2_current, 0.001 * FSO_LOOP_TIME_MS);
         if (payload_2_current_filter.get() > MIN(payload_2_current_max, FSO_PAYLOAD_BEC_CURRENT_MAX)) {
-            hal.gpio->write(FSO_PAYLOAD_2_EN_PIN, 0);
+            set_payload_BEC_2_off();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload 2 over current shutdown");
         }
     }
     
     if (batt.get_temperature(payload_1_temp, 3)) {
         if (payload_1_temp > MIN(bec_temperature_max, FSO_PAYLOAD_BEC_TEMPERATURE_MAX)) {
-            hal.gpio->write(FSO_PAYLOAD_1_EN_PIN, 0);
+            set_payload_BEC_1_off();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload 1 over temperature shutdown");
         }
     }
     
     if (batt.get_temperature(payload_2_temp, 4)) {
         if (payload_2_temp > MIN(bec_temperature_max, FSO_PAYLOAD_BEC_TEMPERATURE_MAX)) {
-            hal.gpio->write(FSO_PAYLOAD_2_EN_PIN, 0);
+            set_payload_BEC_2_off();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload 2 over temperature shutdown");
         }
     }
@@ -522,13 +548,734 @@ void FSOPowerStack::update_internal_BEC()
  */
 void FSOPowerStack::update_DAC()
 {
-    const float t = AP_HAL::micros() * 1.0e-6;
-    for (uint8_t i=0; i<4; i++) {
-        const float freq = 0.2;
-        const float v = 1 + sinf(freq * (i+1) * t * 2 * M_PI);
-        if (!dac.set_voltage(0, i, v)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(i), v);
+    const float v1 = (cal_payload_P1c1 - payload_1_voltage) * cal_payload_P1c2;
+    if (!dac.set_voltage(0, 0, v1)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(0), v1);
+    }
+    const float v2 = (cal_payload_P2c1 - payload_2_voltage) * cal_payload_P2c2;
+    if (!dac.set_voltage(0, 3, v2)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(3), v2);
+    }
+}
+
+/*
+  Calibrate Power Stack
+ */
+void FSOPowerStack::calibrate()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    auto &batt = AP::battery();
+    float payload_current;
+    // Calibration State Machine
+    switch (cal_state) {
+
+    case  CalibrateState::Begin:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_main_off();
+            set_HV_payload_off();
+            set_payload_BEC_1_off();
+            set_payload_BEC_2_off();
+            set_switch_1_off();
+            set_LED_1_off();
+            set_LED_debug_on();
+            last_update_ms = now_ms;
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+
+        default:
+            if (now_ms - last_update_ms > 2000) {
+                cal_state = CalibrateState::Payload_BEC_C1;
+                cal_sub_state = CalibrateSubState::Setup;
+            }
+            break;
         }
+        break;
+
+    case  CalibrateState::Payload_BEC_C1:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating BEC control: C1");
+
+            // Setup for Payload_BEC_C1
+            if (!dac.set_voltage(0, 0, 0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(0), 0.0);
+            }
+            if (!dac.set_voltage(0, 3, 0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(3), 0.0);
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                // Turn on Payload BEC
+                set_payload_BEC_1_on();
+                set_payload_BEC_2_on();
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                cal_measurement_2 = 0.0;
+                last_update_ms = now_ms;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring C1");
+                cal_sub_state = CalibrateSubState::Measure;
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                cal_sub_state = CalibrateSubState::Write;
+            } else if (now_ms - last_update_ms > 1000) {
+                cal_measurement_count += 1;
+                cal_measurement_1 += batt.voltage(3);
+                cal_measurement_2 += batt.voltage(4);
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            cal_payload_P1c1.set_and_save(cal_measurement_1 / cal_measurement_count);
+            cal_payload_P2c1.set_and_save(cal_measurement_2 / cal_measurement_count);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_C1 done. P1c1: %.4f, P2c1: %.4f", (float)cal_payload_P1c1, (float)cal_payload_P2c1);
+            set_payload_BEC_1_off();
+            set_payload_BEC_2_off();
+            update_DAC();
+
+            cal_state = CalibrateState::Payload_BEC_C2;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Payload_BEC_C2:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating BEC control: C2");
+            if (!dac.set_voltage(0, 0, 4.0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(0), 4.0);
+            }
+            if (!dac.set_voltage(0, 3, 4.0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(3), 4.0);
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                set_payload_BEC_1_on();
+                set_payload_BEC_2_on();
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                cal_measurement_2 = 0.0;
+                last_update_ms = now_ms;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring C2");
+                cal_sub_state = CalibrateSubState::Measure;
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                cal_sub_state = CalibrateSubState::Write;
+            } else if (now_ms - last_update_ms > 1000) {
+                cal_measurement_count += 1;
+                cal_measurement_1 += batt.voltage(3);
+                cal_measurement_2 += batt.voltage(4);
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            cal_payload_P1c2.set_and_save(4.0 / (cal_payload_P1c1 - cal_measurement_1 / cal_measurement_count));
+            cal_payload_P2c2.set_and_save(4.0 / (cal_payload_P2c1 - cal_measurement_2 / cal_measurement_count));
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_C2 done. P1c2: %.4f, P2c2: %.4f", (float)cal_payload_P1c2, (float)cal_payload_P2c2);
+            set_payload_BEC_1_off();
+            set_payload_BEC_2_off();
+            update_DAC();
+
+            cal_state = CalibrateState::Payload_BEC_1_Shunt;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Payload_BEC_1_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup: {
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Payload BEC 1 shunt");
+            power_on = false;
+            const float v1 = (cal_payload_P1c1 - 5.0) * cal_payload_P1c2;
+            if (!dac.set_voltage(0, 0, v1)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(0), v1);
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect P1 and set Load to %.1f A", (float)cal_HCB_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+        }
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on() && !power_on) {
+                set_LED_1_on();
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+
+                // Turn on Payload BEC
+                set_payload_BEC_1_on();
+                power_on = true;
+
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+            } else if (switch_1_is_on() && power_on) {
+                if (batt.current_amps(payload_current, 3)) {
+                    if (payload_current > 0.75 * cal_HCB_current) {
+                        last_update_ms = now_ms;
+                        cal_sub_state = CalibrateSubState::Measure;
+                        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT4_SHUNT");
+                    }
+                }
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                cal_sub_state = CalibrateSubState::Write;
+            } else if (now_ms - last_update_ms > 1000) {
+                if (batt.current_amps(payload_current, 3)) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+                float shunt;
+                if (!AP_Param::get("BATT4_SHUNT", shunt)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not get BATT4_SHUNT");
+                }
+                if (!AP_Param::set_by_name("BATT4_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT4_SHUNT");
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_1_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
+                set_payload_BEC_1_off();
+                set_payload_BEC_2_off();
+                update_DAC();
+                cal_state = CalibrateState::Payload_BEC_2_Shunt;
+                cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Payload_BEC_2_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup: {
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Payload BEC 2 shunt");
+            power_on = false;
+            const float v2 = (cal_payload_P2c1 - 5.0) * cal_payload_P2c2;
+            if (!dac.set_voltage(0, 3, v2)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "set voltage %u %.3f failed", unsigned(3), v2);
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect P2 and set Load to %.1f A", (float)cal_HCB_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+        }
+
+        case CalibrateSubState::Start: 
+            if (switch_1_is_on() && !power_on) {
+                set_LED_1_on();
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+
+                // Turn on Payload BEC
+                set_payload_BEC_2_on();
+                power_on = true;
+
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+            } else if (switch_1_is_on() && power_on) {
+                if (batt.current_amps(payload_current, 4)) {
+                    if (payload_current > 0.75 * cal_HCB_current) {
+                        last_update_ms = now_ms;
+                        cal_sub_state = CalibrateSubState::Measure;
+                        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT5_SHUNT");
+                    }
+                }
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                cal_sub_state = CalibrateSubState::Write;
+            } else if (now_ms - last_update_ms > 1000) {
+                if (batt.current_amps(payload_current, 4)) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float shunt;
+            if (!AP_Param::get("BATT5_SHUNT", shunt)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT5_SHUNT");
+            }
+            if (!AP_Param::set_by_name("BATT5_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT5_SHUNT");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_2_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
+            set_payload_BEC_1_off();
+            set_payload_BEC_2_off();
+            update_DAC();
+            cal_state = CalibrateState::Internal_BEC_HC_Shunt;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Internal_BEC_HC_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup: {
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Internal BEC HC shunt");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect IHC and set Load to %.1f A", (float)cal_HCB_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+        }
+
+        case CalibrateSubState::Start: 
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+                cal_sub_state = CalibrateSubState::Measure;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT6_SHUNT");
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (batt.current_amps(payload_current, 5)) {
+                if (payload_current < 0.75 * cal_HCB_current) {
+                    last_update_ms = now_ms;
+                }
+                if (now_ms - last_update_ms > 5000) {
+                    cal_sub_state = CalibrateSubState::Write;
+                } else if (now_ms - last_update_ms > 1000) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float shunt;
+            if (!AP_Param::get("BATT6_SHUNT", shunt)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT6_SHUNT");
+            }
+            if (!AP_Param::set_by_name("BATT6_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT6_SHUNT");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_HC_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
+
+            cal_state = CalibrateState::Internal_BEC_1_Shunt;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Internal_BEC_1_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup: {
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Internal BEC 1 shunt");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect I1 and set Load to %.1f A", (float)cal_LCB_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+        }
+
+        case CalibrateSubState::Start: 
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT7_SHUNT");
+                cal_sub_state = CalibrateSubState::Measure;
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (batt.current_amps(payload_current, 6)) {
+                if (payload_current < 0.75 * cal_LCB_current) {
+                    last_update_ms = now_ms;
+                }
+                if (now_ms - last_update_ms > 5000) {
+                    cal_sub_state = CalibrateSubState::Write;
+                } else if (now_ms - last_update_ms > 1000) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float shunt;
+            if (!AP_Param::get("BATT7_SHUNT", shunt)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT7_SHUNT");
+            }
+            if (!AP_Param::set_by_name("BATT7_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT7_SHUNT");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_1_Shunt done. Shunt correction factor: %.4f", cal_LCB_current / (cal_measurement_1/cal_measurement_count));
+
+            cal_state = CalibrateState::Internal_BEC_2_Shunt;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Internal_BEC_2_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup: {
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Internal BEC 2 shunt");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect I2 and set Load to %.1f A", (float)cal_LCB_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+        }
+
+        case CalibrateSubState::Start: 
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+                cal_sub_state = CalibrateSubState::Measure;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT8_SHUNT");
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (batt.current_amps(payload_current, 7)) {
+                if (payload_current < 0.75 * cal_LCB_current) {
+                    last_update_ms = now_ms;
+                }
+                if (now_ms - last_update_ms > 5000) {
+                    cal_sub_state = CalibrateSubState::Write;
+                } else if (now_ms - last_update_ms > 1000) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float shunt;
+            if (!AP_Param::get("BATT8_SHUNT", shunt)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT8_SHUNT");
+            }
+            if (!AP_Param::set_by_name("BATT8_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT8_SHUNT");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_2_Shunt done. Shunt correction factor: %.4f", cal_LCB_current / (cal_measurement_1/cal_measurement_count));
+
+            cal_state = CalibrateState::Payload_HV_Shunt;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Payload_HV_Shunt:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Payload HV shunt");
+            power_on = false;
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect Phv and set Load to %.1f A", (float)cal_HV_current);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on() && HV_payload_is_off()) {
+                // Turn on Payload HV
+                set_HV_payload_on();
+            } else if (switch_1_is_on() && HV_payload_is_on() && !power_on) {
+                set_LED_1_on();
+                power_on = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Turn on load");
+            } else if (switch_1_is_on() && HV_payload_is_on() && power_on) {
+                if (batt.current_amps(payload_current, 2)) {
+                    if (payload_current > 0.75 * cal_HV_current) {
+                        last_update_ms = now_ms;
+                        cal_measurement_count = 0;
+                        cal_measurement_1 = 0.0;
+                        cal_sub_state = CalibrateSubState::Measure;
+                        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT3_SHUNT");
+                    }
+                }
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                set_HV_payload_off();
+                if (HV_payload_is_off()){
+                    cal_sub_state = CalibrateSubState::Write;
+                }
+            } else if (now_ms - last_update_ms > 1000) {
+                if (batt.current_amps(payload_current, 2)) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+
+            break;
+
+        case CalibrateSubState::Write:
+            float shunt;
+            if (!AP_Param::get("BATT3_SHUNT", shunt)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT3_SHUNT");
+            }
+            if (!AP_Param::set_by_name("BATT3_SHUNT", shunt * cal_HV_current / (cal_measurement_1/cal_measurement_count))) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT3_SHUNT");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_HV_Shunt done. Shunt correction factor: %.4f", cal_HV_current / (cal_measurement_1/cal_measurement_count));
+            cal_state = CalibrateState::Main_V_Divider;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Main_V_Divider:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Main voltage dividers");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Set Main voltage to %.1f V", (float)cal_main_voltage);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+            cal_sub_state = CalibrateSubState::Start;
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on() && main_is_off()) {
+                // Turn on Main
+                set_main_on();
+            } else if (switch_1_is_on() && main_is_on()) {
+                set_LED_1_on();
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                cal_measurement_2 = 0.0;
+                cal_measurement_3 = 0.0;
+                last_update_ms = now_ms;
+                cal_sub_state = CalibrateSubState::Measure;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT_VOLT_MULT");
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                set_main_off();
+                if (main_is_off()){
+                    cal_sub_state = CalibrateSubState::Write;
+                }
+            } else if (now_ms - last_update_ms > 1000) {
+                cal_measurement_count += 1;
+                cal_measurement_1 += batt.voltage(0);
+                cal_measurement_2 += batt.voltage(1);
+                cal_measurement_3 += batt.voltage(8);
+            }
+            break;
+
+        case CalibrateSubState::Write: {
+                float mult;
+                if (!AP_Param::get("BATT_VOLT_MULT", mult)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT_VOLT_MULT");
+                }
+                if (!AP_Param::set_by_name("BATT_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_1/cal_measurement_count))) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT_VOLT_MULT");
+                }
+                if (!AP_Param::get("BATT2_VOLT_MULT", mult)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT2_VOLT_MULT");
+                }
+                if (!AP_Param::set_by_name("BATT2_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_2/cal_measurement_count))) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_VOLT_MULT");
+                }
+                if (!AP_Param::get("BATT9_VOLT_MULT", mult)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT9_VOLT_MULT");
+                }
+                if (!AP_Param::set_by_name("BATT9_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_3/cal_measurement_count))) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT9_VOLT_MULT");
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main_V_Divider done. VOLT_MULT correction factor - B1: %.4f B2: %.4f Out: %.4f", cal_main_voltage / (cal_measurement_1/cal_measurement_count), cal_main_voltage / (cal_measurement_2/cal_measurement_count), cal_main_voltage / (cal_measurement_3/cal_measurement_count));
+
+                cal_state = CalibrateState::Bat1_Amp_Offset;
+                cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        }
+        break;
+
+    case  CalibrateState::Bat1_Amp_Offset:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            if (!AP_Param::set_by_name("BATT_AMP_OFFSET", 0.0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
+            }
+            // Turn on Main
+            set_main_on();
+            if (main_is_on()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Battery 1 current offset");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Disconnect B1 and fan");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+                cal_sub_state = CalibrateSubState::Start;
+            }
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+                cal_sub_state = CalibrateSubState::Measure;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT_AMP_OFFSET");
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                set_main_off();
+                if (main_is_off()){
+                    cal_sub_state = CalibrateSubState::Write;
+                }
+            } else if (now_ms - last_update_ms > 1000) {
+                if (batt.current_amps(payload_current, 0)) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float mult = 0.0;
+            if (!AP_Param::get("BATT_AMP_PERVLT", mult)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT_AMP_PERVLT");
+            }
+            if (!AP_Param::set_by_name("BATT_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT_AMP_OFFSET");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Bat1_Amp_Offset done. Current Offset: %.4f", (cal_measurement_1/cal_measurement_count)/mult);
+            cal_state = CalibrateState::Bat2_Amp_Offset;
+            cal_sub_state = CalibrateSubState::Setup;
+            break;
+        }
+        break;
+
+    case  CalibrateState::Bat2_Amp_Offset:
+        switch (cal_sub_state) {
+
+        case CalibrateSubState::Setup:
+            set_switch_1_off();
+            set_LED_1_off();
+            // set BATT2_AMP_OFFSET = 0.0
+            if (!AP_Param::set_by_name("BATT2_AMP_OFFSET", 0.0)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
+            }
+            set_main_on();
+            if (main_is_on()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Calibrating Battery 2 current offset");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Connect B1 and Disconnect B2");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Press Main Button to start");
+                cal_sub_state = CalibrateSubState::Start;
+            }
+            break;
+
+        case CalibrateSubState::Start:
+            if (switch_1_is_on()) {
+                set_LED_1_on();
+                cal_measurement_count = 0;
+                cal_measurement_1 = 0.0;
+                last_update_ms = now_ms;
+                cal_sub_state = CalibrateSubState::Measure;
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Measuring BATT2_AMP_OFFSET");
+            }
+            break;
+
+        case CalibrateSubState::Measure:
+            if (now_ms - last_update_ms > 5000) {
+                set_main_off();
+                if (main_is_off()){
+                    cal_sub_state = CalibrateSubState::Write;
+                }
+            } else if (now_ms - last_update_ms > 1000) {
+                if (batt.current_amps(payload_current, 1)) {
+                    cal_measurement_count += 1;
+                    cal_measurement_1 += payload_current;
+                }
+            }
+            break;
+
+        case CalibrateSubState::Write:
+            float mult = 0.0;
+            if (!AP_Param::get("BATT2_AMP_PERVLT", mult)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT2_AMP_PERVLT");
+            }
+            if (!AP_Param::set_by_name("BATT2_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Bat2_Amp_Offset done. Current Offset: %.4f", (cal_measurement_1/cal_measurement_count)/mult);
+            cal_state = CalibrateState::Finished;
+            cal_sub_state = CalibrateSubState::Setup;
+
+            // I would like to move this to CalibrateState::Finished:
+            set_main_off();
+            set_HV_payload_off();
+            set_payload_BEC_1_off();
+            set_payload_BEC_2_off();
+            set_switch_1_off();
+            set_LED_1_off();
+            set_LED_debug_off(); 
+            // I would like to unset the options bit to stop this running
+            break;
+        }
+        break;
+
+    case  CalibrateState::Finished:
+        break;
     }
 }
 
@@ -544,8 +1291,16 @@ void FSOPowerStack::update()
         late_init();
     }
 
-    // update DAC fast to get smooth sine wave
-    update_DAC();
+    update_switches();
+
+    update_main_power();
+
+    update_payload_HV_power();
+
+    if (option_is_set(Option::CAL) && cal_state != CalibrateState::Finished) {
+        calibrate();
+        return;
+    }    
     
     if (now_ms - last_update_ms < FSO_LOOP_TIME_MS) {
         // run at 10Hz
@@ -553,19 +1308,35 @@ void FSOPowerStack::update()
     }
     last_update_ms = now_ms;
 
-    update_switches();
+    if (switch_1_is_on()) {
+        set_LED_1_on();
+        set_main_on();
+    } else {
+        set_LED_1_off();
+        set_main_off();
+    }
+
+    if (switch_2_is_on()) {
+        set_LED_2_on();
+        set_HV_payload_on();
+        set_payload_BEC_1_on();
+        set_payload_BEC_2_on();
+    } else {
+        set_LED_2_off();
+        set_HV_payload_off();
+        set_payload_BEC_1_off();
+        set_payload_BEC_2_off();
+    }
+
+    update_DAC();
 
     update_fans();
-
-    report();
-
-    update_main_power();
-
-    update_payload_HV_power();
 
     update_payload_BEC();
 
     update_internal_BEC();
+
+    report();
 }
 
 #endif  // HAL_PERIPH_ENABLE_FSO_POWER_STACK
