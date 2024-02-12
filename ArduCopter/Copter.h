@@ -644,6 +644,11 @@ private:
         USE_RATE_LOOP_THREAD           = (1<<3),  // 8
     };
 
+    // return true if a flight option is set
+    bool flight_option_is_set(FlightOptions option) const {
+        return (g2.flight_options & uint32_t(FlightOptions::USE_RATE_LOOP_THREAD)) != 0;
+    }
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       (int8_t)FailsafeAction::TERMINATE,
                                                       (int8_t)FailsafeAction::LAND,
