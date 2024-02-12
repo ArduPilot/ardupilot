@@ -642,7 +642,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
             // distance to target and distance to target along approach vector
-            float dist_to_target, dist_to_target_along_av;
+            float dist_to_target_along_av;
             // figure out ned camera orientation w.r.t its offset
             Vector3f cam_pos_ned;
             if (!_cam_offset.get().is_zero()) {
@@ -652,12 +652,12 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             }
             if (_backend->distance_to_target() > 0.0f) {
                 // sensor has provided distance to landing target
-                dist_to_target = _backend->distance_to_target();
+                _distance_to_target_alt = _backend->distance_to_target();
             } else {
                 // sensor only knows the horizontal location of the landing target
                 // rely on rangefinder for the vertical target
                 dist_to_target_along_av = MAX(rangefinder_alt_m - cam_pos_ned.projected(approach_vector_NED).length(), 0.0f);
-                dist_to_target = dist_to_target_along_av / target_vec_unit_ned.projected(approach_vector_NED).length();
+                _distance_to_target_alt = dist_to_target_along_av / target_vec_unit_ned.projected(approach_vector_NED).length();
             }
 
             // Compute camera position relative to IMU
@@ -665,7 +665,9 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             const Vector3f cam_pos_ned_rel_imu = cam_pos_ned - accel_pos_ned;
 
             // Compute target position relative to IMU
-            _target_pos_rel_meas_NED = (target_vec_unit_ned * dist_to_target) + cam_pos_ned_rel_imu;
+            // USED here distance to target mainly
+            // _distance_to_target_alt = dist_to_target;
+            _target_pos_rel_meas_NED = (target_vec_unit_ned * _distance_to_target_alt) + cam_pos_ned_rel_imu;
 
             // store the current relative down position so that if we need to retry landing, we know at this height landing target can be found
             const AP_AHRS &_ahrs = AP::ahrs();
@@ -749,6 +751,7 @@ void AC_PrecLand::Write_Precland()
         time_us         : AP_HAL::micros64(),
         healthy         : healthy(),
         target_acquired : target_acquired(),
+        dist_to_target  : _distance_to_target_alt,
         pos_x           : target_pos_rel.x,
         pos_y           : target_pos_rel.y,
         vel_x           : target_vel_rel.x,

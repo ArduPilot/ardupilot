@@ -202,6 +202,8 @@ private:
 
     TargetState                 _current_target_state;  // Current status of the landing target
 
+    float                       _distance_to_target_alt; // distance to target in meters
+
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {
         Matrix3f Tbn;                               // dcm rotation matrix to rotate body frame to north
