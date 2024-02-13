@@ -38,6 +38,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
