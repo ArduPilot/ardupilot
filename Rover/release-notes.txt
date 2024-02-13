@@ -1,4 +1,28 @@
 Rover Release Notes:
+--------------------
+
+Rover 4.5.0-beta2 14th February 2024
+Changes from 4.5.0-beta1:
+
+1) New Autopilots supported
+ - YJUAV_A6Ultra
+ - AnyLeaf H7
+
+2) System level changes
+ - fixed float rounding issue in HAL_Linux millis and micros functions
+ - fixed loading of defaults.parm parameters for dynamic parameter subtrees
+ - fixed discrimination between GHST and CRSF protocols
+ - fixed bug in DroneCAN packet parsing for corrupt packets that could cause a crash
+ - fixed handling of network sockets in scripting when used after close
+ - fixed bit timing of CANFD buses
+
+3) Camera and gimbal enhancements
+ - wait for non-zero camera version in SIYI driver
+
+4) Miscellaneous
+ - do relay parameter conversion for parachute parameters if ever has been used
+ - broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
+
 ------------------------------------------------------------------
 Rover 4.5.0-beta1 30-Jan-2025
 Changes from 4.4.4
