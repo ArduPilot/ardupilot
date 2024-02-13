@@ -322,7 +322,9 @@ void Sub::update_altitude()
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         AP::ins().write_notch_log_messages();
+#endif
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif
