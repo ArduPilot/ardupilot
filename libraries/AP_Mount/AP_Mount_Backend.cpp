@@ -387,7 +387,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
 
     // send gimbal_manager_status if control has changed
     if (prev_control_id != mavlink_control_id) {
-        gcs().send_message(MSG_GIMBAL_MANAGER_STATUS);
+        GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
     }
 
     return MAV_RESULT_ACCEPTED;
