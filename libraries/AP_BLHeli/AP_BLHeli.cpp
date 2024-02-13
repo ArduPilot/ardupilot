@@ -1472,10 +1472,12 @@ void AP_BLHeli::read_telemetry_packet(void)
     update_rpm(normalized_motor_idx, new_rpm);
 
     TelemetryData t {
-        .temperature_cdeg = int16_t(buf[0] * 100),
         .voltage = float(uint16_t((buf[1]<<8) | buf[2])) * 0.01,
         .current = float(uint16_t((buf[3]<<8) | buf[4])) * 0.01,
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
+        .usage_s = 0,
+        .last_update_ms = 0,
+        .temperature_cdeg = int16_t(buf[0] * 100),
     };
 
     update_telem_data(normalized_motor_idx, t,
