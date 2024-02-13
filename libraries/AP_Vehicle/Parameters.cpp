@@ -1,5 +1,7 @@
 #include "AP_Vehicle.h"
 
+#if AP_VEHICLE_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 
@@ -22,3 +24,5 @@ void AP_Vehicle::load_parameters(AP_Int16 &format_version, const uint16_t expect
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
 }
+
+#endif  // AP_VEHICLE_ENABLED
