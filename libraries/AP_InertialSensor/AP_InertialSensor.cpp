@@ -2464,7 +2464,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     }
     
     // remove existing accel offsets and scaling
-    for (uint8_t k=0; k<num_accels; k++) {
+    for (uint8_t k=0; k<INS_MAX_INSTANCES; k++) {
         _accel_offset(k).set(Vector3f());
         _accel_scale(k).set(Vector3f(1,1,1));
         new_accel_offset[k].zero();
@@ -2551,6 +2551,12 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
             caltemp_accel(k).set_and_save(get_temperature(k));
 #endif
+        }
+        for (uint8_t k=num_accels; k<INS_MAX_INSTANCES; k++) {
+            _accel_offset(k).set_and_save(Vector3f());
+            _accel_scale(k).set_and_save(Vector3f());
+            _gyro_offset(k).set_and_save(Vector3f());
+            _accel_id(k).set_and_save(0);
         }
 
 #if AP_AHRS_ENABLED
