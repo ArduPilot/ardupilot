@@ -2,18 +2,19 @@
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
 #include "AP_Mission_config.h"
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_Gripper/AP_Gripper_config.h>
-#include <GCS_MAVLink/GCS.h>
 
 #if AP_MISSION_ENABLED
 
-#include "AP_Mission.h"
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Camera/AP_Camera.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Camera/AP_Camera.h>
+#include <AP_Gripper/AP_Gripper_config.h>
+#include "AP_Mission.h"
+#include <AP_Scripting/AP_Scripting.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel_config.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
@@ -836,8 +837,6 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     return true;
 }
 
-#endif  // AP_MISSION_ENABLED
-
 bool AP_Mission::stored_in_location(uint16_t id)
 {
     switch (id) {
@@ -863,8 +862,6 @@ bool AP_Mission::stored_in_location(uint16_t id)
         return false;
     }
 }
-
-#if AP_MISSION_ENABLED
 
 /// write_cmd_to_storage - write a command to storage
 ///     index is used to calculate the storage location
@@ -938,8 +935,6 @@ void AP_Mission::write_home_to_storage()
     home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
 }
-
-#endif  // AP_MISSION_ENABLED
 
 MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_int_t& packet)
 {
@@ -1509,8 +1504,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
 
     return MAV_MISSION_ACCEPTED;
 }
-
-#if AP_MISSION_ENABLED
 
 // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
 //  return true on success, false on failure
@@ -2746,8 +2739,6 @@ bool AP_Mission::contains_item(MAV_CMD command) const
     return false;
 }
 
-#endif  // AP_MISSION_ENABLED
-
 /*
   return true if the mission item has a location
 */
@@ -2756,8 +2747,6 @@ bool AP_Mission::cmd_has_location(const uint16_t command)
 {
     return stored_in_location(command);
 }
-
-#if AP_MISSION_ENABLED
 
 /*
   return true if the mission has a terrain relative item.  ~2200us for 530 items on H7
