@@ -629,9 +629,12 @@ void AP_DroneCAN::handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, 
     uint8_t esc_index;
     if (hobbywing_find_esc_index(transfer.source_node_id, esc_index)) {
         TelemetryData t {
-            .temperature_cdeg = int16_t(msg.temperature*100),
             .voltage = msg.input_voltage*0.1f,
             .current = msg.current*0.1f,
+            .consumption_mah = 0.0f,
+            .usage_s = 0,
+            .last_update_ms = 0,
+            .temperature_cdeg = int16_t(msg.temperature*100),
         };
         update_telem_data(esc_index, t,
                           AP_ESC_Telem_Backend::TelemetryType::CURRENT|
@@ -1430,9 +1433,12 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
     }
 
     TelemetryData t {
-        .temperature_cdeg = int16_t((KELVIN_TO_C(msg.temperature)) * 100),
         .voltage = msg.voltage,
         .current = msg.current,
+        .consumption_mah = 0.0f,
+        .usage_s = 0,
+        .last_update_ms = 0,
+        .temperature_cdeg = int16_t((KELVIN_TO_C(msg.temperature)) * 100),
     };
 
     update_rpm(esc_index, msg.rpm, msg.error_count);
