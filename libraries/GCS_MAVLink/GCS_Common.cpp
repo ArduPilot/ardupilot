@@ -54,6 +54,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Winch/AP_Winch.h>
+#include <AP_Mission/AP_Mission.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
@@ -887,18 +888,30 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
+#if AP_MISSION_ENABLED
         MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
         if (ret != MAV_MISSION_ACCEPTED) {
             const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
             send_mission_ack(msg, type, ret);
             return;
         }
+#else
+        // No mission library, so we can't convert from MISSION_ITEM
+        // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
+        // or rally items via MISSION_ITEM, we don't need to work hard
+        // here, just fail:
+        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
+        send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+        return;
+#endif
         send_mission_item_warning = true;
     } else {
         mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
-    const uint8_t current = mission_item_int.current;
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
+
+#if AP_MISSION_ENABLED
+    const uint8_t current = mission_item_int.current;
 
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
         struct AP_Mission::Mission_Command cmd = {};
@@ -925,6 +938,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
         return;
     }
+#endif
 
     // not a guided-mode reqest
     MissionItemProtocol *prot = gcs().get_prot_for_mission_type(type);
