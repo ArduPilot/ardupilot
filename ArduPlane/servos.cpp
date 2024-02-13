@@ -547,38 +547,6 @@ float Plane::apply_throttle_limits(float throttle_in)
 void Plane::set_throttle(void)
 {
 
-    if (!arming.is_armed_and_safety_off()) {
-        // Always set 0 scaled even if overriding to zero pwm.
-        // This ensures slew limits and other functions using the scaled value pick up in the correct place
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
-
-        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
-        }
-        return;
-    }
-
-    if (suppress_throttle()) {
-        if (g.throttle_suppress_manual) {
-            // manual pass through of throttle while throttle is suppressed
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
-
-        } else if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
-            // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
-
-        } else {
-            // default
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
-
-        }
-        return;
-    }
-
     // Update voltage scaling
     g2.fwd_batt_cmp.update();
 
@@ -593,6 +561,36 @@ void Plane::set_throttle(void)
         const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
     }
+
+    if (!arming.is_armed_and_safety_off()) {
+        // Always set 0 scaled even if overriding to zero pwm.
+        // This ensures slew limits and other functions using the scaled value pick up in the correct place
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
+        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
+        }
+
+    } else if (suppress_throttle()) {
+        if (g.throttle_suppress_manual) {
+            // manual pass through of throttle while throttle is suppressed
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+
+        } else if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
+            // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
+
+        } else {
+            // default
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+
+        }
+    }
+
 }
 
 /*
