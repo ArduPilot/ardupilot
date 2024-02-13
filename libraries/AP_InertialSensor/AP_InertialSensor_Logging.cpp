@@ -140,6 +140,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 }
 #endif
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // @LoggerMessage: FTN
 // @Description: Filter Tuning Message - per motor
 // @Field: TimeUS: microseconds since system startup
@@ -198,5 +199,6 @@ void AP_InertialSensor::write_notch_log_messages() const
         notch.filter[primary_gyro].log_notch_centers(i, now_us);
     }
 }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 #endif  // HAL_LOGGING_ENABLED

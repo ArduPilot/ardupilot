@@ -564,6 +564,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU,6:SeventhIMU
     AP_GROUPINFO("_ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // @Group: _HNTCH_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[0].params, "_HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
@@ -572,6 +573,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Group: _HNTC2_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
 #endif
 
     // @Param: _GYRO_RATE
@@ -895,7 +897,7 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
     return true;
 }
 
-#if HAL_WITH_DSP
+#if HAL_WITH_DSP && AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 bool AP_InertialSensor::has_fft_notch() const
 {
     for (auto &notch : harmonic_notches) {
@@ -919,10 +921,12 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // cause divergence of state estimators
     _loop_delta_t_max = 10 * _loop_delta_t;
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // Initialize notch params
     for (auto &notch : harmonic_notches) {
         notch.params.init();
     }
+#endif
 
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
@@ -965,6 +969,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     //  Gyro -> Notch1/2 -> LPF -> Filtered Gyro
 
     if (_post_filter_fft) {
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         for (auto &notch : harmonic_notches) {
             if (!notch.params.enabled()) {
                 continue;
@@ -975,10 +980,14 @@ AP_InertialSensor::init(uint16_t loop_rate)
             }
             _fft_window_phase++;
         }
+#endif
     }
 #else
     bool fft_enabled = false;
+    (void)fft_enabled;
 #endif
+
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
@@ -1006,12 +1015,15 @@ AP_InertialSensor::init(uint16_t loop_rate)
         }
 #endif
     }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
     // count number of used sensors
     uint8_t sensors_used = 0;
     for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
         sensors_used += _use(i);
     }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     uint16_t num_filters = 0;
     for (auto &notch : harmonic_notches) {
         // calculate number of notches we might want to use for harmonic notch
@@ -1041,6 +1053,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
             }
         }
     }
+#endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     /*
@@ -1822,6 +1835,7 @@ void AP_InertialSensor::_save_gyro_calibration()
     }
 }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 /*
   update harmonic notch parameters
  */
@@ -1844,6 +1858,7 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
         }
     }
 }
+#endif
 
 /*
   update gyro and accel values from backends
@@ -2285,6 +2300,7 @@ void AP_InertialSensor::acal_update()
 }
 #endif
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 /*
   Update the harmonic notch frequency
 
@@ -2327,6 +2343,7 @@ bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz,
 
     return false;
 }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 /*
     set and save accelerometer bias along with trim calculation
