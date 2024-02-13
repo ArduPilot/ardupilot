@@ -163,7 +163,9 @@ public:
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     bool has_fft_notch() const;
+#endif
 #endif
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
@@ -229,11 +231,13 @@ public:
     // get the accel filter rate in Hz
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // setup the notch for throttle based tracking
     bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics);
 
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
+#endif
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -431,6 +435,7 @@ public:
     // force save of current calibration as valid
     void force_save_calibration(void);
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // structure per harmonic notch filter. This is public to allow for
     // easy iteration
     class HarmonicNotch {
@@ -473,6 +478,7 @@ public:
         float last_attenuation_dB[INS_MAX_INSTANCES];
         bool inactive;
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 private:
     // load backend drivers

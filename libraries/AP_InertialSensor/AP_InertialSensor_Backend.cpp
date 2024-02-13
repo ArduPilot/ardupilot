@@ -213,6 +213,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 
     Vector3f gyro_filtered = gyro;
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
         if (!notch.params.enabled()) {
@@ -237,6 +238,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         }
         save_gyro_window(instance, gyro_filtered, filter_phase++);
     }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // apply the low pass filter last to attenuate any notch induced noise
     gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
@@ -247,9 +249,11 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #if HAL_GYROFFT_ENABLED
         _imu._post_filter_gyro_filter[instance].reset();
 #endif
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         for (auto &notch : _imu.harmonic_notches) {
             notch.filter[instance].reset();
         }
+#endif
     } else {
         _imu._gyro_filtered[instance] = gyro_filtered;
     }
@@ -788,11 +792,13 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
         _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     for (auto &notch : _imu.harmonic_notches) {
         if (notch.params.enabled()) {
             notch.update_params(instance, sensors_converging(), gyro_rate);
         }
     }
+#endif
 }
 
 /*
