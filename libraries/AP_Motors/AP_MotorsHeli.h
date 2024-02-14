@@ -158,6 +158,9 @@ public:
     // Return collective hover position as an angle in deg
     float get_hover_coll_ang(void);
 
+    // Helper function to calculate the normalised collective position given a desired blade pitch angle (deg)
+    float calc_coll_from_ang(float col_ang_deg);
+
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
