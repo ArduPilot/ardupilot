@@ -1918,7 +1918,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->take_blocking();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
+    fprintf(source, "#endif\n");
   }
 
   int static_cast = TRUE;
@@ -2050,7 +2052,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->give();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().give();\n");
+    fprintf(source, "#endif\n");
   }
 
   // we need to emit out refernce arguments, iterate the args again, creating and copying objects, while keeping a new count
