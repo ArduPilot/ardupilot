@@ -33,7 +33,7 @@ public:
     uint32_t los_meas_time_ms() override { return _los_meas_time_ms; }
 
     // return true if there is a valid los measurement available
-    bool have_los_meas() override;
+    bool have_los_meas() override { return _have_los_meas; }
 
     // returns distance to target in meters (0 means distance is not known)
     float distance_to_target() override { return _distance_to_target; }
