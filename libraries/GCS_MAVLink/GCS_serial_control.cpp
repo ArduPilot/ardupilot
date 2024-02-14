@@ -64,6 +64,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         link->lock(exclusive);
         break;
     }
+#if AP_GPS_ENABLED
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.serial(3);
         AP::gps().lock_port(0, exclusive);
@@ -72,6 +73,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         stream = port = hal.serial(4);
         AP::gps().lock_port(1, exclusive);
         break;
+#endif  // AP_GPS_ENABLED
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();
         if (stream == nullptr) {

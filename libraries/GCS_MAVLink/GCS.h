@@ -25,6 +25,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AP_Arming/AP_Arming_config.h>
 
 #include "ap_message.h"
 
@@ -527,7 +528,9 @@ protected:
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
 
+#if AP_ARMING_ENABLED
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet);
+#endif
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
@@ -1281,10 +1284,12 @@ private:
 
     char statustext_printf_buffer[256+1];
 
+#if AP_GPS_ENABLED
     virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
         // NO_FIX simply excludes NO_GPS
         return AP_GPS::GPS_Status::NO_FIX;
     }
+#endif
 
     void update_sensor_status_flags();
 

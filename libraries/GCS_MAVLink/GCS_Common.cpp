@@ -1619,11 +1619,13 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
         }
     }
 
+#if AP_SCHEDULER_ENABLED
     // send messages out at most 80% of main loop rate
     if (interval_ms != 0 &&
         interval_ms*800 < AP::scheduler().get_loop_period_us()) {
         interval_ms = AP::scheduler().get_loop_period_us()/800.0f;
     }
+#endif
 
     // check if it's a specially-handled message:
     const int8_t deferred_offset = get_deferred_message_index(id);
@@ -1995,6 +1997,12 @@ void GCS_MAVLINK::send_system_time() const
 }
 
 
+bool GCS_MAVLINK::sending_mavlink1() const
+{
+    return ((_channel_status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
+}
+
+#if AP_RC_CHANNEL_ENABLED
 /*
   send RC_CHANNELS messages
  */
@@ -2033,11 +2041,6 @@ void GCS_MAVLINK::send_rc_channels() const
         );
 }
 
-bool GCS_MAVLINK::sending_mavlink1() const
-{
-    return ((_channel_status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
-}
-
 void GCS_MAVLINK::send_rc_channels_raw() const
 {
     // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD
@@ -2068,6 +2071,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 #endif
 );
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 void GCS_MAVLINK::send_raw_imu()
 {
@@ -2907,6 +2911,7 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
+#if AP_RC_CHANNEL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int_t &packet)
 {
     if (packet.param2 > 2) {
@@ -2921,6 +2926,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int
     }
     return MAV_RESULT_ACCEPTED;
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_int_t &packet)
 {
@@ -3369,6 +3375,7 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &p
 #endif
 }
 
+#if AP_RC_CHANNEL_ENABLED
 /*
   handle a R/C bind request (for spektrum)
  */
@@ -3382,6 +3389,7 @@ MAV_RESULT GCS_MAVLINK::handle_START_RX_PAIR(const mavlink_command_int_t &packet
     }
     return MAV_RESULT_ACCEPTED;
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
 {
@@ -3781,6 +3789,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 #endif
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // allow override of RC channel values for complete GCS
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
@@ -3833,6 +3842,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
     gcs().sysid_myggcs_seen(tnow);
 
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 #if AP_OPTICALFLOW_ENABLED
 void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
@@ -4120,9 +4130,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
         handle_manual_control(msg);
         break;
+#endif
 
 #if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
@@ -4185,9 +4197,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
         handle_rc_channels_override(msg);
         break;
+#endif
 
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
@@ -4489,7 +4503,9 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         return _handle_command_preflight_calibration_baro(msg);
     }
 
+#if AP_RC_CHANNEL_ENABLED
     rc().calibrating(is_positive(packet.param4));
+#endif
 
 #if HAL_INS_ACCELCAL_ENABLED
     if (packet.x == 1) {
@@ -4548,6 +4564,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet, msg);
 }
 
+#if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_int_t &packet)
 {
     if (hal.util->get_soft_armed()) {
@@ -4556,6 +4573,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_i
     (void)AP::arming().pre_arm_checks(true);
     return MAV_RESULT_ACCEPTED;
 }
+#endif  // AP_ARMING_ENABLED
 
 #if AP_MISSION_ENABLED
 // changes the current waypoint; at time of writing GCS
@@ -4793,6 +4811,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 }
 #endif  // HAL_MOUNT_ENABLED
 
+#if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
     if (is_equal(packet.param1,1.0f)) {
@@ -4820,6 +4839,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 
     return MAV_RESULT_UNSUPPORTED;
 }
+#endif // AP_ARMING_ENABLED
 
 bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
 {
@@ -5166,8 +5186,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return  MAV_RESULT_FAILED;
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
+#endif
 
 #if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -5242,9 +5264,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return handle_command_int_external_position_estimate(packet);
 #endif
+#if AP_ARMING_ENABLED
     case MAV_CMD_COMPONENT_ARM_DISARM:
         return handle_command_component_arm_disarm(packet);
-
+#endif
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     case MAV_CMD_FIXED_MAG_CAL_YAW:
         return handle_command_fixed_mag_cal_yaw(packet);
@@ -5293,8 +5316,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_request_autopilot_capabilities(packet);
 #endif
 
+#if AP_ARMING_ENABLED
     case MAV_CMD_RUN_PREARM_CHECKS:
         return handle_command_run_prearm_checks(packet);
+#endif
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
@@ -5312,8 +5337,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_set_ekf_source_set(packet);
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_START_RX_PAIR:
         return handle_START_RX_PAIR(packet);
+#endif
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
     case MAV_CMD_STORAGE_FORMAT:
@@ -5482,7 +5509,11 @@ void GCS_MAVLINK::send_sys_status()
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
+#if AP_SCHEDULER_ENABLED
         static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
+#else
+        0,
+#endif
 #if AP_BATTERY_ENABLED
         battery.gcs_voltage() * 1000,  // mV
         battery_current,        // in 10mA units
@@ -6051,6 +6082,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
     case MSG_RC_CHANNELS:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_rc_channels();
@@ -6060,6 +6092,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_rc_channels_raw();
         break;
+#endif
 
     case MSG_RAW_IMU:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
@@ -6735,6 +6768,7 @@ uint64_t GCS_MAVLINK::capabilities() const
 }
 
 
+#if AP_RC_CHANNEL_ENABLED
 void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_t offset, const float scaler, const uint32_t tnow, const bool reversed)
 {
     if (c == nullptr) {
@@ -6773,7 +6807,7 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     // from the ground station for failsafe purposes
     gcs().sysid_myggcs_seen(tnow);
 }
-
+#endif  // AP_RC_CHANNEL_ENABLED
 
 #if AP_RSSI_ENABLED
 uint8_t GCS_MAVLINK::receiver_rssi() const
