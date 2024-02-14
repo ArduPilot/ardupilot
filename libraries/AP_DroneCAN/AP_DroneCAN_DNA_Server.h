@@ -40,6 +40,7 @@ class AP_DroneCAN_DNA_Server
     Bitmask<128> verified_mask;
     Bitmask<128> node_seen_mask;
     Bitmask<128> logged;
+    Bitmask<128> logged_duplicate;
     Bitmask<128> node_healthy_mask;
 
     uint8_t last_logging_count;

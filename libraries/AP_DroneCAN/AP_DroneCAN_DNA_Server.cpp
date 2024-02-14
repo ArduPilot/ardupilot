@@ -357,6 +357,7 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
     if (log_count != last_logging_count) {
         last_logging_count = log_count;
         logged.clearall();
+        logged_duplicate.clearall();
     }
 #endif
 
@@ -437,12 +438,27 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     if (transfer.source_node_id > MAX_NODE_ID) {
         return;
     }
+
+    // Check if we have seen this node ID before
+    const bool seen_node_id = isNodeIDOccupied(transfer.source_node_id);
+
+    // Get node ID for this unique ID if it has been seen before
+    const uint8_t prev_node_id = getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16);
+
+    // Unique ID for this node is the same as the one registered
+    const bool unique_id_match = transfer.source_node_id == prev_node_id;
+
     /*
       if we haven't logged this node then log it now
      */
 #if HAL_LOGGING_ENABLED
-    if (!logged.get(transfer.source_node_id) && AP::logger().logging_started()) {
+    const bool duplicate_node = seen_node_id && !unique_id_match;
+    const bool log_duplicate = duplicate_node && !logged_duplicate.get(transfer.source_node_id);
+    if (AP::logger().logging_started() && (!logged.get(transfer.source_node_id) || log_duplicate)) {
         logged.set(transfer.source_node_id);
+        if (duplicate_node) {
+            logged_duplicate.set(transfer.source_node_id);
+        }
         uint64_t uid[2];
         memcpy(uid, rsp.hardware_version.unique_id, sizeof(rsp.hardware_version.unique_id));
         // @LoggerMessage: CAND
@@ -467,9 +483,9 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     }
 #endif
 
-    if (isNodeIDOccupied(transfer.source_node_id)) {
+    if (seen_node_id) {
         //if node_id already registered, just verify if Unique ID matches as well
-        if (transfer.source_node_id == getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16)) {
+        if (unique_id_match) {
             if (transfer.source_node_id == curr_verifying_node) {
                 nodeInfo_resp_rcvd = true;
             }
@@ -484,7 +500,6 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     } else {
         /* Node Id was not allocated by us, or during this boot, let's register this in our records
         Check if we allocated this Node before */
-        uint8_t prev_node_id = getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16);
         if (prev_node_id != 255) {
             //yes we did, remove this registration
             freeNodeID(prev_node_id);
