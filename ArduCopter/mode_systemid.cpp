@@ -80,17 +80,17 @@ bool ModeSystemId::init(bool ignore_checks)
         return false;
     }
 
-    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors->armed() && copter.ap.land_complete && (!copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::LOITER)) {
+    // ensure we are flying
+    if (!copter.motors->armed() || !copter.ap.auto_armed || copter.ap.land_complete) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Aircraft must be flying");
         return false;
     }
 
-    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
-         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
-         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
+    if (!is_poscontrol_axis_type()) {
 
         // System ID is being done on the attitude control loops
-            
+
+        // Can only switch into System ID Axes 1-13 with a flight mode that has manual throttle
         if (!copter.flightmode->has_manual_throttle()) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Axis requires manual throttle");
             return false;
@@ -104,6 +104,7 @@ bool ModeSystemId::init(bool ignore_checks)
 
         // System ID is being done on the position control loops
 
+        // Can only switch into System ID Axes 14-19 from Loiter flight mode
         if (copter.flightmode->mode_number() != Mode::Number::LOITER) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Axis requires switch from Loiter");
             return false;
@@ -162,9 +163,7 @@ void ModeSystemId::run()
     float target_climb_rate = 0.0f;
     Vector2f input_vel;
 
-    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
-         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
-         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
+    if (!is_poscontrol_axis_type()) {
 
         // apply simple mode transform to pilot inputs
         update_simple_mode();
@@ -196,7 +195,7 @@ void ModeSystemId::run()
 
         case AP_Motors::SpoolState::GROUND_IDLE:
             // Landed
-            // Tradheli initializes targets when going from disarmed to armed state. 
+            // Tradheli initializes targets when going from disarmed to armed state.
             // init_targets_on_arming is always set true for multicopter.
             if (motors->init_targets_on_arming()) {
                 attitude_control->reset_yaw_target_and_rate();
@@ -343,9 +342,7 @@ void ModeSystemId::run()
             break;
     }
 
-    if ((AxisType)axis.get() != AxisType::DISTURB_POS_LAT && (AxisType)axis.get() != AxisType::DISTURB_POS_LONG 
-         && (AxisType)axis.get() != AxisType::DISTURB_VEL_LAT && (AxisType)axis.get() != AxisType::DISTURB_VEL_LONG
-         && (AxisType)axis.get() != AxisType::INPUT_LOITER_LAT && (AxisType)axis.get() != AxisType::INPUT_LOITER_LONG) {
+    if (!is_poscontrol_axis_type()) {
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
@@ -410,14 +407,25 @@ void ModeSystemId::log_data() const
     copter.Log_Write_Attitude();
     copter.Log_Write_PIDS();
 
-    if ((AxisType)axis.get() == AxisType::DISTURB_POS_LAT || (AxisType)axis.get() == AxisType::DISTURB_POS_LONG 
-         || (AxisType)axis.get() == AxisType::DISTURB_VEL_LAT || (AxisType)axis.get() == AxisType::DISTURB_VEL_LONG
-         || (AxisType)axis.get() == AxisType::INPUT_LOITER_LAT || (AxisType)axis.get() == AxisType::INPUT_LOITER_LONG) {
+    if (is_poscontrol_axis_type()) {
         pos_control->write_log();
         copter.logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
         copter.logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
 
     }
+}
+
+bool ModeSystemId::is_poscontrol_axis_type() const
+{
+    bool ret = false;
+
+    if ((AxisType)axis.get() == AxisType::DISTURB_POS_LAT || (AxisType)axis.get() == AxisType::DISTURB_POS_LONG
+         || (AxisType)axis.get() == AxisType::DISTURB_VEL_LAT || (AxisType)axis.get() == AxisType::DISTURB_VEL_LONG
+         || (AxisType)axis.get() == AxisType::INPUT_LOITER_LAT || (AxisType)axis.get() == AxisType::INPUT_LOITER_LONG) {
+        ret = true;
+    }
+
+    return ret;
 }
 
 #endif
