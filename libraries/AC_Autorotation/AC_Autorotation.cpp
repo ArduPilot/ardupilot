@@ -199,13 +199,6 @@ void AC_Autorotation::init(AP_MotorsHeli* motors, float gnd_clear) {
     // Reset feed forward filter
     col_trim_lpf.reset(_collective_out);
 
-    // Reset flags
-    _flags.bad_rpm = false;
-
-    // Reset RPM health monitoring
-    _unhealthy_rpm_counter = 0;
-    _healthy_rpm_counter = 0;
-
     // Protect against divide by zero
     _param_head_speed_set_point.set(MAX(_param_head_speed_set_point, 500.0));
 
@@ -271,16 +264,12 @@ void AC_Autorotation::init_touchdown(void)
 
 
 // Rotor Speed controller for entry, glide and flare phases of autorotation
-bool AC_Autorotation::update_hs_glide_controller(void)
+void AC_Autorotation::update_hs_glide_controller(void)
 {
-    // Reset rpm health flag
-    _flags.bad_rpm = false;
-    _flags.bad_rpm_warning = false;
-
     // Get current rpm and update healthy signal counters
-    _current_rpm = get_rpm(true);
+    _current_rpm = get_rpm();
 
-    if (_unhealthy_rpm_counter <= 30) {
+    if (_current_rpm > 0.0) {
         // Normalised head speed
         float head_speed_norm = _current_rpm / _param_head_speed_set_point;
 
@@ -300,16 +289,12 @@ bool AC_Autorotation::update_hs_glide_controller(void)
         _collective_out = constrain_value((_p_term_hs + _ff_term_hs), 0.0f, 1.0f) ;
 
     } else {
-        // RPM sensor is bad set collective to minimum
-        _collective_out = 0.0f;
-
-        _flags.bad_rpm_warning = true;
+         // RPM sensor is bad, set collective to angle of -2 deg and hope for the best
+         _collective_out = _motors_heli->calc_coll_from_ang(-2.0);
     }
 
     // Send collective to setting to motors output library
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
-
-    return _flags.bad_rpm_warning;
 }
 
 
@@ -339,9 +324,9 @@ void AC_Autorotation::set_collective(float collective_filter_cutoff) const
 
 // Function that gets rpm and does rpm signal checking to ensure signal is reliable
 // before using it in the controller
-float AC_Autorotation::get_rpm(bool update_counter)
+float AC_Autorotation::get_rpm(void)
 {
-    float current_rpm = 0.0f;
+    float current_rpm = 0.0;
 
 #if AP_RPM_ENABLED
     // Get singleton for RPM library
@@ -358,33 +343,11 @@ float AC_Autorotation::get_rpm(bool update_counter)
         uint8_t instance = _param_rpm_instance;
 
         // Check RPM sensor is returning a healthy status
-        if (!rpm->get_rpm(instance, current_rpm) || current_rpm <= -1) {
-            //unhealthy, rpm unreliable
-            _flags.bad_rpm = true;
+        if (!rpm->get_rpm(instance, current_rpm)) {
+            current_rpm = 0.0;
         }
-
-    } else {
-        _flags.bad_rpm = true;
     }
-#else
-    _flags.bad_rpm = true;
 #endif
-
-    if (_flags.bad_rpm) {
-        // Count unhealthy rpm updates and reset healthy rpm counter
-        _unhealthy_rpm_counter++;
-        _healthy_rpm_counter = 0;
-
-    } else if (!_flags.bad_rpm && _unhealthy_rpm_counter > 0) {
-        // Poor rpm reading may have cleared.  Wait 10 update cycles to clear.
-        _healthy_rpm_counter++;
-
-        if (_healthy_rpm_counter >= 10) {
-            // Poor rpm health has cleared, reset counters
-            _unhealthy_rpm_counter = 0;
-            _healthy_rpm_counter = 0;
-        }
-    }
     return current_rpm;
 }
 

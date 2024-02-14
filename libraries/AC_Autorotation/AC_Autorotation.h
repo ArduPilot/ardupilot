@@ -36,13 +36,10 @@ public:
     void initial_flare_estimate(void);
 
     // Update head speed controller
-    bool update_hs_glide_controller(void);
-
-    // Function just returns the rpm as last read in this library
-    float get_rpm(void) const { return _current_rpm; }
+    void update_hs_glide_controller(void);
 
     // Function fetches fresh rpm update and continues sensor health monitoring
-    float get_rpm(bool update_counter);
+    float get_rpm(void);
 
     // Sets the normalised target head speed
     void set_target_head_speed(float ths) { _target_head_speed = ths; }
@@ -112,8 +109,7 @@ private:
     float _collective_out;
     float _head_speed_error;         // Error between target head speed and current head speed.  Normalised by head speed set point RPM.
     float _col_cutoff_freq;          // Lowpass filter cutoff frequency (Hz) for collective.
-    uint8_t _unhealthy_rpm_counter;  // Counter used to track RPM sensor unhealthy signal.
-    uint8_t _healthy_rpm_counter;    // Counter used to track RPM sensor healthy signal.
+    uint16_t _unhealthy_rpm_counter;  // Counter used to track RPM sensor unhealthy signal.
     float _target_head_speed;        // Normalised target head speed.  Normalised by head speed set point RPM.
     float _p_term_hs;                // Proportional contribution to collective setting.
     float _ff_term_hs;               // Following trim feed forward contribution to collective setting.
@@ -176,12 +172,6 @@ private:
     enum class OPTION {
         STABILISE_CONTROLS=(1<<0),
     };
-
-    //--------Internal Flags--------
-    struct controller_flags {
-            bool bad_rpm             : 1;
-            bool bad_rpm_warning     : 1;
-    } _flags;
 
     //--------Internal Functions--------
     // set the collective in the motors library
