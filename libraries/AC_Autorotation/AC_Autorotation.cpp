@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @DisplayName: Autorotation options
     // @Description: Bitmask for autorotation options.
     // @Bitmask: 0: Use stabilize-like controls (roll angle, yaw rate)
-    AP_GROUPINFO("OPTIONS", 16, AC_Autorotation, _options, 0),
+    AP_GROUPINFO("OPTIONS", 17, AC_Autorotation, _options, 0),
 
     AP_GROUPEND
 };
