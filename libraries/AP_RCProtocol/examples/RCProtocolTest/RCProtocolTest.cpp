@@ -20,6 +20,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_VideoTX/AP_VideoTX.h>
+#include <RC_Channel/RC_Channel.h>
 #include <stdio.h>
 
 void setup();
@@ -30,6 +31,31 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static AP_VideoTX vtx; // for set_vtx functions
 
 static AP_RCProtocol *rcprot;
+
+class RC_Channel_Test : public RC_Channel
+{
+protected:
+    void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override {}
+    bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override { return false; }
+};
+
+class RC_Channels_Test : public RC_Channels
+{
+public:
+    bool has_valid_input() const override { return false; }
+    bool in_rc_failsafe() const override { return false; }
+    RC_Channel *get_arming_channel(void) const override { return nullptr; }
+    RC_Channel_Test *channel(const uint8_t chan) override { return nullptr; }
+    RC_Channel_Test obj_channels[NUM_RC_CHANNELS];
+protected:
+    int8_t flight_mode_channel_number() const override { return 5; }
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_Test
+#define RC_CHANNEL_SUBCLASS RC_Channel_Test
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+static RC_Channels_Test rcchan;
 
 // setup routine
 void setup()
