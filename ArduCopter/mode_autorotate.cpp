@@ -41,7 +41,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     g2.arot.init(motors, copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
 
     // Retrieve rpm and start rpm sensor health checks
-    _initial_rpm = g2.arot.get_rpm(true);
+    _initial_rpm = g2.arot.get_rpm();
 
     // Display message
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
@@ -53,8 +53,6 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.flare_init = false;
     _flags.touch_down_init = false;
     _flags.bail_out_init = false;
-
-    _last_bad_rpm_ms = 0;
 
     // Check if we have sufficient speed or height to do a full autorotation otherwise we have to do one from the hover
     // Note: This must be called after arot.init()
@@ -159,7 +157,7 @@ void ModeAutorotate::run()
         _pitch_target = g2.arot.get_pitch();
 
         // Update head speed controllers
-        _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+        g2.arot.update_hs_glide_controller();
 
         break;
     }
@@ -202,7 +200,7 @@ void ModeAutorotate::run()
         _pitch_target = g2.arot.get_pitch();
 
         // Update head speed/ collective controller
-        _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+        g2.arot.update_hs_glide_controller();
 
         // Attitude controller is updated in navigation switch-case statements
         g2.arot.update_avg_acc_z();
@@ -227,7 +225,7 @@ void ModeAutorotate::run()
         g2.arot.flare_controller();
 
         // Update head speed/ collective controller
-        _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+        g2.arot.update_hs_glide_controller();
 
         // Retrieve pitch target
         _pitch_target = g2.arot.get_pitch();
@@ -364,16 +362,6 @@ void ModeAutorotate::run()
 
     // Pitch target is calculated in autorotation phase switch above
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, _pitch_target, pilot_yaw_rate);
-
-    // Output warning messaged if rpm signal is bad
-    if (_flags.bad_rpm) {
-        if ((millis() - _last_bad_rpm_ms > MSG_TIMER) || (_last_bad_rpm_ms == 0)) {
-            // Bad rpm sensor health.
-            gcs().send_text(MAV_SEVERITY_INFO, "Warning: Poor RPM Sensor Health");
-            gcs().send_text(MAV_SEVERITY_INFO, "Action: Minimum Collective Applied");
-            _last_bad_rpm_ms = millis();
-        }
-    }
 
 } // End function run()
 
