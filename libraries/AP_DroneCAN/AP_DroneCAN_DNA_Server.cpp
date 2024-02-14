@@ -448,6 +448,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
         // @LoggerMessage: CAND
         // @Description: Info from GetNodeInfo request
         // @Field: TimeUS: Time since system startup
+        // @Field: Driver: Driver index
         // @Field: NodeId: Node ID
         // @Field: UID1: Hardware ID, part 1
         // @Field: UID2: Hardware ID, part 2
@@ -455,9 +456,10 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
         // @Field: Major: major revision id
         // @Field: Minor: minor revision id
         // @Field: Version: AP_Periph git hash
-        AP::logger().Write("CAND", "TimeUS,NodeId,UID1,UID2,Name,Major,Minor,Version",
-                           "s#------", "F-------", "QBQQZBBI",
+        AP::logger().Write("CAND", "TimeUS,Driver,NodeId,UID1,UID2,Name,Major,Minor,Version",
+                           "s-#------", "F--------", "QBBQQZBBI",
                            AP_HAL::micros64(),
+                           _ap_dronecan.get_driver_index(),
                            transfer.source_node_id,
                            uid[0], uid[1],
                            rsp.name.data,
