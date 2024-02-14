@@ -78,7 +78,7 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
 /*
   check firmware CRC and board ID to see if it matches
  */
-static check_fw_result_t check_good_firmware_signed()
+static check_fw_result_t check_good_firmware_signed(void)
 {
     const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
     const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
@@ -130,7 +130,7 @@ static check_fw_result_t check_good_firmware_signed()
   check firmware CRC and board ID to see if it matches, using unsigned
   signature
  */
-static check_fw_result_t check_good_firmware_unsigned()
+static check_fw_result_t check_good_firmware_unsigned(void)
 {
     const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
     const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
@@ -199,6 +199,19 @@ check_fw_result_t check_good_firmware(void)
     }
     return ret;
 #endif
+}
+
+const app_descriptor_t *get_app_descriptor(void)
+{
+#if AP_SIGNED_FIRMWARE
+    const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
+#else
+    const uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
+#endif
+    const uint8_t *flash1 = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
+    const app_descriptor_t *ad = (const app_descriptor_t *)memmem(flash1, flash_size-sizeof(app_descriptor_t), sig, sizeof(sig));
+    return ad;
 }
 
 #endif // HAL_BOOTLOADER_BUILD

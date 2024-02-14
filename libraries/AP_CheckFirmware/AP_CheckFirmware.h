@@ -126,6 +126,7 @@ struct PACKED ap_secure_data {
 
 #ifdef HAL_BOOTLOADER_BUILD
 check_fw_result_t check_good_firmware(void);
+const app_descriptor_t *get_app_descriptor(void);
 #else
 void check_firmware_print(void);
 
