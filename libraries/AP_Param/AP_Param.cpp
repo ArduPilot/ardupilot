@@ -2370,7 +2370,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
 
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (!AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
 /*
   count the number of parameter defaults present in supplied string
  */
