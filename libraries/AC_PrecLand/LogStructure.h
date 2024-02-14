@@ -27,7 +27,6 @@ struct PACKED log_Precland {
     uint64_t time_us;
     uint8_t healthy;
     uint8_t target_acquired;
-    float dist_to_target;
     float pos_x;
     float pos_y;
     float vel_x;
@@ -42,4 +41,4 @@ struct PACKED log_Precland {
 
 #define LOG_STRUCTURE_FROM_PRECLAND                                     \
     { LOG_PRECLAND_MSG, sizeof(log_Precland),                           \
-      "PL",    "QBBffffffffIIB",    "TimeUS,Heal,TAcq,pZ,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmmnnmmms--","F--BBBBBBBBC--" , true },
+      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" , true },
