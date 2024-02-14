@@ -196,6 +196,19 @@ void Copter::heli_update_rotor_speed_targets()
 // to autorotation flight mode if manual collective is not being used.
 void Copter::heli_update_autorotation()
 {
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+    // Always update the ground distance to prevent a race on init
+    if (motors->armed() && g2.arot.is_enable()) {
+        // Get height above ground. If using a healthy LiDaR below func will return an interpolated
+        // distance based on inertial measurement. If LiDaR is unhealthy and terrain is available
+        // we will get a terrain database estimate. Otherwise we will get height above home.
+        int32_t gnd_dist = flightmode->get_alt_above_ground_cm(false);
+
+        // set the height in the autorotation controller
+        g2.arot.set_ground_distance(gnd_dist);
+    }
+#endif
+
     // check if flying and interlock disengaged
     if (!ap.land_complete && !motors->get_interlock()) {
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -208,14 +221,6 @@ void Copter::heli_update_autorotation()
             heli_flags.in_autorotation = true;
             motors->set_in_autorotation(heli_flags.in_autorotation);
             motors->set_enable_bailout(true);
-
-            // Get height above ground. If using a healthy LiDaR below func will return an interpolated
-            // distance based on inertial measurement. If LiDaR is unhealthy and terrain is available
-            // we will get a terrain database estimate. Otherwise we will get height above home.
-            int32_t gnd_dist = flightmode->get_alt_above_ground_cm(false);
-
-            // set the height in the autorotation controller
-            g2.arot.set_ground_distance(gnd_dist);
         }
 #endif
         if (flightmode->has_manual_throttle() && motors->arot_man_enabled()) {
