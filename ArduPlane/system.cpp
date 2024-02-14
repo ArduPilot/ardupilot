@@ -57,6 +57,8 @@ void Plane::init_ardupilot()
     // init baro
     barometer.init();
 
+    target_lander.init(4);
+
     // initialise rangefinder
     rangefinder.set_log_rfnd_bit(MASK_LOG_SONAR);
     rangefinder.init(ROTATION_PITCH_270);

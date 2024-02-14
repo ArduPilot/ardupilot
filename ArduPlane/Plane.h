@@ -98,6 +98,10 @@
 #include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
 
+// Lander added for distance to target
+
+#include <AC_Lander/AC_Lander.h>
+
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_plane.h"
 #endif
@@ -192,6 +196,16 @@ private:
     RC_Channel *channel_airbrake;
 
     AP_Logger logger;
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    AC_Lander target_lander;
+
+    // used to hold distance to target 
+    float distance_to_target;
+
+    ////////////////////////////////////////////////////////////////////////////////////////
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
