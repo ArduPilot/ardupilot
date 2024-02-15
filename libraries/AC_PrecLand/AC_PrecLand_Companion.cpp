@@ -47,7 +47,7 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, u
             //we do not support this frame
             if (!_wrong_frame_msg_sent) {
                 _wrong_frame_msg_sent = true;
-                gcs().send_text(MAV_SEVERITY_INFO,"Plnd: Frame not supported ");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Plnd: Frame not supported ");
             }
             return;
         }
