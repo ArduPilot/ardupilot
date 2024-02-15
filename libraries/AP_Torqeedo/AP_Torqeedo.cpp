@@ -345,6 +345,7 @@ void AP_Torqeedo::report_error_codes()
 
     // report display system errors
     const char* msg_prefix = "Torqeedo:";
+    (void)msg_prefix;  // sometimes unused when HAL_GCS_ENABLED is false
     if (_display_system_state.flags.set_throttle_stop) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s zero throttle required", msg_prefix);
     }
