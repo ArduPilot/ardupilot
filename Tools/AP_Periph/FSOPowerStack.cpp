@@ -763,7 +763,7 @@ void FSOPowerStack::calibrate()
                 if (!AP_Param::get("BATT4_SHUNT", shunt)) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not get BATT4_SHUNT");
                 }
-                if (!AP_Param::set_by_name("BATT4_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+                if (!AP_Param::set_and_save_by_name("BATT4_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT4_SHUNT");
                 }
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_1_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
@@ -833,7 +833,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT5_SHUNT", shunt)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT5_SHUNT");
             }
-            if (!AP_Param::set_by_name("BATT5_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+            if (!AP_Param::set_and_save_by_name("BATT5_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT5_SHUNT");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_BEC_2_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
@@ -890,7 +890,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT6_SHUNT", shunt)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT6_SHUNT");
             }
-            if (!AP_Param::set_by_name("BATT6_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
+            if (!AP_Param::set_and_save_by_name("BATT6_SHUNT", shunt * cal_HCB_current / (cal_measurement_1/cal_measurement_count))) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT6_SHUNT");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_HC_Shunt done. Shunt correction factor: %.4f", cal_HCB_current / (cal_measurement_1/cal_measurement_count));
@@ -945,7 +945,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT7_SHUNT", shunt)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT7_SHUNT");
             }
-            if (!AP_Param::set_by_name("BATT7_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
+            if (!AP_Param::set_and_save_by_name("BATT7_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT7_SHUNT");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_1_Shunt done. Shunt correction factor: %.4f", cal_LCB_current / (cal_measurement_1/cal_measurement_count));
@@ -1000,7 +1000,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT8_SHUNT", shunt)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT8_SHUNT");
             }
-            if (!AP_Param::set_by_name("BATT8_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
+            if (!AP_Param::set_and_save_by_name("BATT8_SHUNT", shunt * cal_LCB_current / (cal_measurement_1/cal_measurement_count))) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT8_SHUNT");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal_BEC_2_Shunt done. Shunt correction factor: %.4f", cal_LCB_current / (cal_measurement_1/cal_measurement_count));
@@ -1065,7 +1065,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT3_SHUNT", shunt)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT3_SHUNT");
             }
-            if (!AP_Param::set_by_name("BATT3_SHUNT", shunt * cal_HV_current / (cal_measurement_1/cal_measurement_count))) {
+            if (!AP_Param::set_and_save_by_name("BATT3_SHUNT", shunt * cal_HV_current / (cal_measurement_1/cal_measurement_count))) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT3_SHUNT");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Payload_HV_Shunt done. Shunt correction factor: %.4f", cal_HV_current / (cal_measurement_1/cal_measurement_count));
@@ -1122,19 +1122,19 @@ void FSOPowerStack::calibrate()
                 if (!AP_Param::get("BATT_VOLT_MULT", mult)) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT_VOLT_MULT");
                 }
-                if (!AP_Param::set_by_name("BATT_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_1/cal_measurement_count))) {
+                if (!AP_Param::set_and_save_by_name("BATT_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_1/cal_measurement_count))) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT_VOLT_MULT");
                 }
                 if (!AP_Param::get("BATT2_VOLT_MULT", mult)) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT2_VOLT_MULT");
                 }
-                if (!AP_Param::set_by_name("BATT2_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_2/cal_measurement_count))) {
+                if (!AP_Param::set_and_save_by_name("BATT2_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_2/cal_measurement_count))) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_VOLT_MULT");
                 }
                 if (!AP_Param::get("BATT9_VOLT_MULT", mult)) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT9_VOLT_MULT");
                 }
-                if (!AP_Param::set_by_name("BATT9_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_3/cal_measurement_count))) {
+                if (!AP_Param::set_and_save_by_name("BATT9_VOLT_MULT", mult * cal_main_voltage / (cal_measurement_3/cal_measurement_count))) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT9_VOLT_MULT");
                 }
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main_V_Divider done. VOLT_MULT correction factor - B1: %.4f B2: %.4f Out: %.4f", cal_main_voltage / (cal_measurement_1/cal_measurement_count), cal_main_voltage / (cal_measurement_2/cal_measurement_count), cal_main_voltage / (cal_measurement_3/cal_measurement_count));
@@ -1152,7 +1152,7 @@ void FSOPowerStack::calibrate()
         case CalibrateSubState::Setup:
             set_switch_1_off();
             set_LED_1_off();
-            if (!AP_Param::set_by_name("BATT_AMP_OFFSET", 0.0)) {
+            if (!AP_Param::set_and_save_by_name("BATT_AMP_OFFSET", 0.0)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
             }
             // Turn on Main
@@ -1195,7 +1195,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT_AMP_PERVLT", mult)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT_AMP_PERVLT");
             }
-            if (!AP_Param::set_by_name("BATT_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
+            if (!AP_Param::set_and_save_by_name("BATT_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT_AMP_OFFSET");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Bat1_Amp_Offset done. Current Offset: %.4f", (cal_measurement_1/cal_measurement_count)/mult);
@@ -1212,7 +1212,7 @@ void FSOPowerStack::calibrate()
             set_switch_1_off();
             set_LED_1_off();
             // set BATT2_AMP_OFFSET = 0.0
-            if (!AP_Param::set_by_name("BATT2_AMP_OFFSET", 0.0)) {
+            if (!AP_Param::set_and_save_by_name("BATT2_AMP_OFFSET", 0.0)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
             }
             set_main_on();
@@ -1254,7 +1254,7 @@ void FSOPowerStack::calibrate()
             if (!AP_Param::get("BATT2_AMP_PERVLT", mult)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not read BATT2_AMP_PERVLT");
             }
-            if (!AP_Param::set_by_name("BATT2_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
+            if (!AP_Param::set_and_save_by_name("BATT2_AMP_OFFSET", (cal_measurement_1/cal_measurement_count)/mult)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Could not write to BATT2_AMP_OFFSET");
             }
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Bat2_Amp_Offset done. Current Offset: %.4f", (cal_measurement_1/cal_measurement_count)/mult);
