@@ -401,12 +401,36 @@
 #define AP_FILTER_ENABLED 0
 #endif
 
+#ifndef AC_PRECLAND_ENABLED
+#define AC_PRECLAND_ENABLED 0
+#endif
+
+#ifndef AC_AUTOTUNE_ENABLED
+#define AC_AUTOTUNE_ENABLED 0
+#endif
+
 #ifndef AP_ADVANCEDFAILSAFE_ENABLED
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
 #endif
 
 #ifndef AP_ARMING_ENABLED
 #define AP_ARMING_ENABLED 0
+#endif
+
+#ifndef HAL_RUNCAM_ENABLED
+#define HAL_RUNCAM_ENABLED 0
+#endif
+
+#ifndef HAL_WITH_MSP_DISPLAYPORT
+#define HAL_WITH_MSP_DISPLAYPORT 0
+#endif
+
+#ifndef HAL_PICCOLO_CAN_ENABLE
+#define HAL_PICCOLO_CAN_ENABLE 0
+#endif
+
+#ifndef AP_RSSI_ENABLED
+#define AP_RSSI_ENABLED 0
 #endif
 
 #ifndef AP_LTM_TELEM_ENABLED
@@ -425,6 +449,22 @@
 #define AP_VEHICLE_ENABLED 0
 #endif
 
+#ifndef HAL_SOARING_ENABLED
+#define HAL_SOARING_ENABLED 0
+#endif
+
+#ifndef AP_FOLLOW_ENABLED
+#define AP_FOLLOW_ENABLED 0
+#endif
+
+#ifndef AP_WINDVANE_ENABLED
+#define AP_WINDVANE_ENABLED 0
+#endif
+
+#ifndef AP_TUNING_ENABLED
+#define AP_TUNING_ENABLED 0
+#endif
+
 #ifndef OSD_ENABLED
 #define OSD_ENABLED 0
 #endif
@@ -439,4 +479,8 @@
 
 #ifndef AP_RC_CHANNEL_ENABLED
 #define AP_RC_CHANNEL_ENABLED 0
+#endif
+
+#ifndef HAL_LANDING_DEEPSTALL_ENABLED
+#define HAL_LANDING_DEEPSTALL_ENABLED 0
 #endif
