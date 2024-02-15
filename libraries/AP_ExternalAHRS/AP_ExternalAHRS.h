@@ -163,7 +163,12 @@ public:
         float differential_pressure; // Pa
         float temperature; // degC
     } airspeed_data_message_t;
-    
+
+    // set GNSS disable for auxillary function GPS_DISABLE
+    void set_gnss_disable(bool disable) {
+        gnss_is_disabled = disable;
+    }
+
 protected:
 
     enum class OPTIONS {
@@ -193,6 +198,9 @@ private:
     }
 
     uint32_t last_log_ms;
+
+    // true when user has disabled the GNSS
+    bool gnss_is_disabled;
 };
 
 namespace AP {
