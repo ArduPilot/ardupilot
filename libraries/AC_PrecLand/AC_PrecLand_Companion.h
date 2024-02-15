@@ -31,13 +31,13 @@ public:
     bool get_los_body(Vector3f& ret) override;
 
     // returns system time in milliseconds of last los measurement
-    uint32_t los_meas_time_ms() override;
+    uint32_t los_meas_time_ms() override { return _los_meas_time_ms; }
 
     // return true if there is a valid los measurement available
-    bool have_los_meas() override;
+    bool have_los_meas() override { return _have_los_meas; }
 
     // returns distance to target in meters (0 means distance is not known)
-    float distance_to_target() override;
+    float distance_to_target() override { return _distance_to_target; }
 
     // parses a mavlink message from the companion computer
     void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
