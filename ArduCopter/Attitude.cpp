@@ -57,7 +57,15 @@ void Copter::rate_controller_thread()
         */
         attitude_control->rate_controller_run_dt(dt_avg);
 
+        /*
+          immediately output the new motor values
+         */
         motors_output();
+
+        /*
+          update the center frequencies of notch filters
+         */
+        update_dynamic_notch_at_specified_rate();
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         // ensure we give at least some CPU to other threads
