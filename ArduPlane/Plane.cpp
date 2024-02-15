@@ -33,23 +33,31 @@ Plane::Plane(void)
 #if PRECISION_LANDING == ENABLED
 void Plane::update_precland()
 {
-  // alt will be unused if we pass false through as the second parameter:
+  
   //
   // hal.console->printf(" Distance : %f\n", rangefinder.distance_orient(ROTATION_PITCH_270));
-      
-  target_lander.get_reading(distance_to_target);
+
+  // distance_to_target = 0.0f;
+  // target_lander.get_reading(distance_to_target);
+
     // if (plane.g.rangefinder_landing && rangefinder_state.in_range)
     // {
     //     return precland.update(rangefinder_state.height_estimate,true);
     // }
+  
 
+ 
 
-  if(distance_to_target > 0)
-  {
-    return precland.update(distance_to_target, true);
-    hal.console->printf("reading: %f\n", distance_to_target);
-  }
-  return precland.update(0,false);
+    // if((distance_to_target) > 0.0f && (distance_to_target <= 50.0f))
+    // {
+    //   // hal.console->printf("reading: %f\n", distance_to_target);
+    //   return precland.update(distance_to_target * 100.0f, true);  // meters to centi-meters
+      
+      
+    // }
+
+  // alt will be unused if we pass false through as the second parameter:
+  return precland.update(0,true);
 
 }
 #endif

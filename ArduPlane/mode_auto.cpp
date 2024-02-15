@@ -15,11 +15,11 @@ bool ModeAuto::_enter()
         }
     }
 
-    if(plane.auth_takeoff_flag != Plane::TAKEOFF_AUTH_STATUS::AUTHENTICATED)
-    {
-        gcs().send_text(MAV_SEVERITY_ERROR,"Command accepted only from webgcs");
-        return false;
-    }
+    // if(plane.auth_takeoff_flag != Plane::TAKEOFF_AUTH_STATUS::AUTHENTICATED)
+    // {
+    //     gcs().send_text(MAV_SEVERITY_ERROR,"Command accepted only from webgcs");
+    //     return false;
+    // }
 
     
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {

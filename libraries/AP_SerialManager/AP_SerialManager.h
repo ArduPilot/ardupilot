@@ -170,6 +170,7 @@ public:
         SerialProtocol_MSP_DisplayPort = 42,
         SerialProtocol_MAVLinkHL = 43,
         SerialProtocol_Tramp = 44,
+        SerialProtocol_Target_Lander = 45,              // SerialProtocol_DDS_XRCE = 45, in master
         SerialProtocol_NumProtocols                    // must be the last value
     };
 

@@ -19,10 +19,11 @@ void AC_Lander::init_serial(uint8_t serial_instance)
 
 uint32_t AC_Lander::initial_baudrate(const uint8_t serial_instance) const
 {
-    return AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
+    return AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Target_Lander, serial_instance);
 
 }
 
+// return distance to target in meters
 bool AC_Lander::get_reading(float &reading_m)
 {
     

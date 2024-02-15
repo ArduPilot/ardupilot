@@ -42,7 +42,7 @@ private:
     float max_distance_cm =  700;
 
 public:
-    // AC_Lander(AC_Lander::Lander_State &_state);
+    // return distance to target in meters
     bool get_reading(float &reading_m);
     void init(uint8_t serial_instance);
 

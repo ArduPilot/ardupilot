@@ -57,6 +57,7 @@ void Plane::init_ardupilot()
     // init baro
     barometer.init();
 
+    //  hard coded serial 4 (GPS 2)
     target_lander.init(4);
 
     // initialise rangefinder

@@ -658,6 +658,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
                 // rely on rangefinder for the vertical target
                 dist_to_target_along_av = MAX(rangefinder_alt_m - cam_pos_ned.projected(approach_vector_NED).length(), 0.0f);
                 dist_to_target = dist_to_target_along_av / target_vec_unit_ned.projected(approach_vector_NED).length();
+                // dist_to_target = rangefinder_alt_m ;
             }
 
             // Compute camera position relative to IMU

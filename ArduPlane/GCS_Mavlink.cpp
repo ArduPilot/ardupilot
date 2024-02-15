@@ -127,10 +127,25 @@ MAV_STATE GCS_MAVLINK_Plane::vehicle_system_status() const
 // Precise landing target handling
 void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
+    if(packet.distance <= 0.0f)
+    {
+        plane.distance_to_target = 0.0f;
+        plane.target_lander.get_reading(plane.distance_to_target);
 
-    #if PRECISION_LANDING==ENABLED
-    plane.precland.handle_msg(packet, timestamp_ms);
-    #endif
+        mavlink_landing_target_t lnd_msg;
+        lnd_msg.angle_x = packet.angle_x;
+        lnd_msg.angle_y = packet.angle_y;
+        lnd_msg.frame = packet.frame;
+        lnd_msg.time_usec = packet.time_usec;
+        lnd_msg.distance = plane.distance_to_target;
+#if PRECISION_LANDING==ENABLED
+        plane.precland.handle_msg(lnd_msg, timestamp_ms);
+#endif
+    }
+    else
+#if PRECISION_LANDING==ENABLED
+        plane.precland.handle_msg(packet, timestamp_ms);
+#endif
 
 
 }
