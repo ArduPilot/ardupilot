@@ -17,10 +17,13 @@
 
 #pragma once
 
-#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_FPORT_ENABLED
 
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
+#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
 
 #define FPORT_CONTROL_FRAME_SIZE 29
 
@@ -50,10 +53,12 @@ private:
 
     const bool inverted;
 
+#if AP_FRSKY_SPORT_TELEM_ENABLED
     struct {
         bool available = false;
         AP_Frsky_SPort::sport_packet_t packet;
     } telem_data;
+#endif // AP_FRSKY_SPORT_TELEM_ENABLED
 
     // receiver sends 0x10 when ready to receive telemetry frames (R-XSR)
     bool rx_driven_frame_rate = false;
@@ -61,3 +66,5 @@ private:
     // if the receiver is not controlling frame rate apply a constraint on consecutive frames
     uint8_t consecutive_telemetry_frame_count;
 };
+
+#endif  // AP_RCPROTOCOL_FPORT_ENABLED

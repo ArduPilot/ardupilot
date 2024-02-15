@@ -17,21 +17,20 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_TECS/AP_TECS.h>
 #include <AP_Common/Location.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl)
+    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
         : _ahrs(ahrs)
-        , _spdHgtControl(spdHgtControl)
+        , _tecs(tecs)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
     /* Do not allow copies */
-    AP_L1_Control(const AP_L1_Control &other) = delete;
-    AP_L1_Control &operator=(const AP_L1_Control&) = delete;
+    CLASS_NO_COPY(AP_L1_Control);
 
     /* see AP_Navigation.h for the definitions and units of these
      * functions */
@@ -51,8 +50,8 @@ public:
     float turn_distance(float wp_radius) const override;
     float turn_distance(float wp_radius, float turn_angle) const override;
     float loiter_radius (const float loiter_radius) const override;
-    void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min = 0.0f) override;
-    void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction) override;
+    void update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min = 0.0f) override;
+    void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
     bool reached_loiter_target(void) override;
@@ -81,7 +80,7 @@ private:
     AP_AHRS &_ahrs;
 
     // pointer to the SpdHgtControl object
-    const AP_SpdHgtControl *_spdHgtControl;
+    const AP_TECS *_tecs;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)

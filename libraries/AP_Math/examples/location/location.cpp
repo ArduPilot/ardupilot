@@ -40,9 +40,9 @@ static const struct {
       Vector2f(-2.0f, 2.0f), true },
 };
 
-static struct Location location_from_point(Vector2f pt)
+static Location location_from_point(Vector2f pt)
 {
-    struct Location loc = {};
+    Location loc = {};
     loc.lat = pt.x * 1.0e7f;
     loc.lng = pt.y * 1.0e7f;
     return loc;
@@ -52,9 +52,9 @@ static void test_passed_waypoint(void)
 {
     hal.console->printf("waypoint tests starting\n");
     for (uint8_t i = 0; i < ARRAY_SIZE(test_points); i++) {
-        struct Location loc = location_from_point(test_points[i].location);
-        struct Location wp1 = location_from_point(test_points[i].wp1);
-        struct Location wp2 = location_from_point(test_points[i].wp2);
+        Location loc = location_from_point(test_points[i].location);
+        Location wp1 = location_from_point(test_points[i].wp1);
+        Location wp2 = location_from_point(test_points[i].wp2);
         if (loc.past_interval_finish_line(wp1, wp2) != test_points[i].passed) {
             hal.console->printf("Failed waypoint test %u\n", (unsigned)i);
             return;
@@ -63,11 +63,11 @@ static void test_passed_waypoint(void)
     hal.console->printf("waypoint tests OK\n");
 }
 
-static void test_one_offset(const struct Location &loc,
+static void test_one_offset(const Location &loc,
                             float ofs_north, float ofs_east,
                             float dist, float bearing)
 {
-    struct Location loc2;
+    Location loc2;
     float dist2, bearing2;
 
     loc2 = loc;
@@ -102,7 +102,7 @@ static const struct {
 
 static void test_offset(void)
 {
-    struct Location loc {};
+    Location loc {};
 
     loc.lat = -35 * 1.0e7f;
     loc.lng = 149 * 1.0e7f;
@@ -122,12 +122,12 @@ static void test_offset(void)
  */
 static void test_accuracy(void)
 {
-    struct Location loc {};
+    Location loc {};
 
     loc.lat = 0.0e7f;
     loc.lng = -120.0e7f;
 
-    struct Location loc2 = loc;
+    Location loc2 = loc;
     Vector2f v((loc.lat * 1.0e-7f), (loc.lng*  1.0e-7f));
     Vector2f v2;
 

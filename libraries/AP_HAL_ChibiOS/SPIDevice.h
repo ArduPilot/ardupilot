@@ -25,6 +25,10 @@
 #include "Scheduler.h"
 #include "Device.h"
 
+#ifndef HAL_SPI_SCK_SAVE_RESTORE
+#define HAL_SPI_SCK_SAVE_RESTORE !defined(STM32F1)
+#endif
+
 namespace ChibiOS {
 
 class SPIBus : public DeviceBus {
@@ -35,7 +39,6 @@ public:
     SPIConfig spicfg;
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
-    bool spi_started;
     uint8_t slowdown;
 
     // we need an additional lock in the dma_allocate and
@@ -43,6 +46,21 @@ public:
     // have two DMA channels that we are handling with the shared_dma
     // code
     mutex_t dma_lock;
+
+    // store the last spi mode for stop_peripheral()
+    uint32_t spi_mode;
+
+    // start and stop the hardware peripheral
+    void start_peripheral(void);
+    void stop_peripheral(void);
+
+private:
+    bool spi_started;
+
+    // mode line for SCK pin
+#if HAL_SPI_SCK_SAVE_RESTORE
+    iomode_t sck_mode;
+#endif
 };
 
 struct SPIDesc {
@@ -52,7 +70,7 @@ struct SPIDesc {
         : name(_name), bus(_bus), device(_device),
           pal_line(_pal_line), mode(_mode),
           lowspeed(_lowspeed), highspeed(_highspeed),
-          bank_select_cb(nullptr)
+          bank_select_cb(nullptr), register_rw_cb(nullptr)
     {
     }
 
@@ -64,6 +82,7 @@ struct SPIDesc {
     uint32_t lowspeed;
     uint32_t highspeed;
     AP_HAL::Device::BankSelectCb bank_select_cb;
+    AP_HAL::Device::RegisterRWCb register_rw_cb;
 };
 
 
@@ -159,6 +178,8 @@ public:
     }
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+
+    void set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb) override;
 
 private:
     static SPIDesc device_table[];

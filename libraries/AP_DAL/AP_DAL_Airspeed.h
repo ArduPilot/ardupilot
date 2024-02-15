@@ -4,8 +4,6 @@
 
 #include <AP_Airspeed/AP_Airspeed.h>
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
 class AP_DAL_Airspeed {
 public:
 

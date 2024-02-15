@@ -1,10 +1,7 @@
 -- switch between DCM and EKF3 on a switch
 
 local scripting_rc1 = rc:find_channel_for_option(300)
-local EKF_TYPE = Parameter()
-if not EKF_TYPE:init('AHRS_EKF_TYPE') then
-  gcs:send_text(6, 'init AHRS_EKF_TYPE failed')
-end
+local EKF_TYPE = Parameter('AHRS_EKF_TYPE')
 
 function update()
    local sw_pos = scripting_rc1:get_aux_switch_pos()

@@ -19,6 +19,23 @@ public:
     //clear framebuffer
     void clear() override {};
 
+    bool is_compatible_with_backend_type(AP_OSD::osd_types type) const override {
+        switch(type) {
+        case AP_OSD::osd_types::OSD_MSP:
+        case AP_OSD::osd_types::OSD_MSP_DISPLAYPORT:
+            return false;
+        case AP_OSD::osd_types::OSD_NONE:
+        case AP_OSD::osd_types::OSD_TXONLY:
+        case AP_OSD::osd_types::OSD_MAX7456:
+        case AP_OSD::osd_types::OSD_SITL:
+            return true;
+        }
+        return false;
+    }
+
+    AP_OSD::osd_types get_backend_type() const override {
+        return AP_OSD::osd_types::OSD_MSP;
+    }
 private:
     void setup_defaults(void);
 };

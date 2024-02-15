@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_AK8963_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -34,6 +38,12 @@ public:
     virtual ~AP_Compass_AK8963();
 
     void read() override;
+
+    /* Must be public so the BusDriver can access its definition */
+    struct PACKED sample_regs {
+        int16_t val[3];
+        uint8_t st2;
+    };
 
 private:
     AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
@@ -136,3 +146,5 @@ private:
     AuxiliaryBusSlave *_slave;
     bool _started;
 };
+
+#endif  // AP_COMPASS_AK8963_ENABLED

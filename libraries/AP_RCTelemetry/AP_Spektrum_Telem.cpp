@@ -31,9 +31,8 @@
 #include <AP_Common/Location.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_GPS/AP_GPS.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #ifdef HAVE_AP_BLHELI_SUPPORT
 #include <AP_BLheli/AP_BLHeli.h>
 #endif
@@ -68,7 +67,7 @@ AP_Spektrum_Telem::~AP_Spektrum_Telem(void)
 bool AP_Spektrum_Telem::init(void)
 {
     // sanity check that we are using a UART for RC input
-    if (!AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_RCIN, 0)) {
+    if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)) {
         return false;
     }
     return AP_RCTelemetry::init();
@@ -297,13 +296,18 @@ void AP_Spektrum_Telem::calc_qos()
 // prepare rpm data - B/E mandatory frame that must be sent periodically
 void AP_Spektrum_Telem::calc_rpm()
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
+#endif
 
     _telem.rpm.identifier = TELE_DEVICE_RPM;
     _telem.rpm.sID = 0;
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
+#if AP_BATTERY_ENABLED
     _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.voltage(0) * 100.0f)));
+#endif
     _telem.rpm.temperature = htobe16(int16_t(roundf(32.0f + AP::baro().get_temperature(0) * 9.0f / 5.0f)));
+#if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
     float rpm_value;
     if (!rpm || !rpm->get_rpm(0, rpm_value) || rpm_value < 999.0f) {
@@ -312,6 +316,7 @@ void AP_Spektrum_Telem::calc_rpm()
     _telem.rpm.microseconds = htobe16(uint16_t(roundf(MICROSEC_PER_MINUTE / rpm_value)));
     _telem.rpm.dBm_A = 0x7F;
     _telem.rpm.dBm_B = 0x7F;
+#endif
     _telem_pending = true;
 }
 
@@ -327,10 +332,12 @@ void AP_Spektrum_Telem::send_msg_chunk(const MessageChunk& chunk)
 // prepare battery data - B/E but not supported by Spektrum
 void AP_Spektrum_Telem::calc_batt_volts(uint8_t instance)
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
 
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     _telem.hv.volts = htobe16(uint16_t(roundf(_battery.voltage(instance) * 100.0f)));
+#endif
     _telem.hv.identifier = TELE_DEVICE_VOLTAGE;
     _telem.hv.sID = 0;
     _telem_pending = true;
@@ -339,6 +346,7 @@ void AP_Spektrum_Telem::calc_batt_volts(uint8_t instance)
 // prepare battery data - B/E but not supported by Spektrum
 void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
 
     float current;
@@ -348,6 +356,7 @@ void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 
     // Range: +/- 150A     Resolution: 300A / 2048 = 0.196791 A/count
     _telem.amps.current = htobe16(int16_t(roundf(current * 2048.0f / 300.0f)));
+#endif
     _telem.amps.identifier = TELE_DEVICE_AMPS;
     _telem.amps.sID = 0;
     _telem_pending = true;
@@ -356,11 +365,14 @@ void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 // prepare battery data - L/E
 void AP_Spektrum_Telem::calc_batt_mah()
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
+#endif
 
     _telem.fpMAH.identifier = TELE_DEVICE_FP_MAH;
     _telem.fpMAH.sID = 0;
 
+#if AP_BATTERY_ENABLED
     float current;
     if (!_battery.current_amps(current, 0)) {
         current = 0;
@@ -395,6 +407,10 @@ void AP_Spektrum_Telem::calc_batt_mah()
     } else {
         _telem.fpMAH.temp_B = 0x7FFF;
     }
+#else
+        _telem.fpMAH.temp_A = 0x7FFF;
+        _telem.fpMAH.temp_B = 0x7FFF;
+#endif
 
     _telem_pending = true;
 }
@@ -435,13 +451,18 @@ void AP_Spektrum_Telem::calc_airspeed()
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    const AP_Airspeed *airspeed = AP::airspeed();
     float speed = 0.0f;
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *airspeed = AP::airspeed();
     if (airspeed && airspeed->healthy()) {
         speed = roundf(airspeed->get_airspeed() * 3.6);
     } else {
         speed = roundf(AP::ahrs().groundspeed() * 3.6);
     }
+#else
+    speed = roundf(AP::ahrs().groundspeed() * 3.6);
+#endif
+
     _telem.speed.airspeed = htobe16(uint16_t(speed));           // 1 km/h increments
     _max_speed = MAX(speed, _max_speed);
     _telem.speed.maxAirspeed = htobe16(uint16_t(_max_speed));   // 1 km/h increments
@@ -538,7 +559,15 @@ void AP_Spektrum_Telem::calc_gps_status()
     _telem.gpsstat.speed = ((knots % 10000 / 1000) << 12) | ((knots % 1000 / 100) << 8) | ((knots % 100 / 10) << 4) | (knots % 10); // BCD, knots, format 3.1
     uint16_t ms;
     uint8_t h, m, s;
+#if AP_RTC_ENABLED
     AP::rtc().get_system_clock_utc(h, m, s, ms);                    // BCD, format HH:MM:SS.S, format 6.1
+    // FIXME: the above call can fail!
+#else
+    h = 0;
+    m = 0;
+    s = 0;
+    ms = 0;
+#endif
     _telem.gpsstat.UTC = ((((h / 10) << 4) | (h % 10)) << 20) | ((((m / 10) << 4) | (m % 10)) << 12) | ((((s / 10) << 4) | (s % 10)) << 4) | (ms / 100) ;
     uint8_t nsats =  AP::gps().num_sats();
     _telem.gpsstat.numSats = ((nsats / 10) << 4) | (nsats % 10);    // BCD, 0-99

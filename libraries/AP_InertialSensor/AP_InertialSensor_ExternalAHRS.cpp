@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_ExternalAHRS.h"
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <stdio.h>
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 
@@ -53,6 +54,17 @@ void AP_InertialSensor_ExternalAHRS::start()
 void AP_InertialSensor_ExternalAHRS::accumulate()
 {
     AP::externalAHRS().update();
+}
+
+// get a startup banner to output to the GCS
+bool AP_InertialSensor_ExternalAHRS::get_output_banner(char* banner, uint8_t banner_len)
+{
+    const char* name = AP::externalAHRS().get_name();
+    snprintf(banner, banner_len, "IMU%u: External: %s %0.0fHz",
+             gyro_instance,
+             (name != nullptr) ? name : "",
+              AP::externalAHRS().get_IMU_rate());
+    return true;
 }
 
 #endif // HAL_EXTERNAL_AHRS_ENABLED

@@ -17,8 +17,17 @@
 */
 
 #pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_WEBOTS_ENABLED
+#define HAL_SIM_WEBOTS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_WEBOTS_ENABLED
+
 #include <cmath>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -70,7 +79,7 @@ private:
     uint8_t sensor_buffer[50000];
     uint32_t sensor_buffer_len;
 
-    SocketAPM *sim_sock;
+    SocketAPM_native *sim_sock;
 
     uint32_t connect_counter;
 
@@ -135,3 +144,5 @@ private:
 
 
 } // namespace SITL
+
+#endif // HAL_SIM_WEBOTS_ENABLED

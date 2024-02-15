@@ -2,6 +2,7 @@
 Script to control LED strips based on the roll of the aircraft. This is an example to demonstrate
 the LED interface for WS2812 LEDs
 --]]
+-- luacheck: only 0
 
 --[[
 for this demo we will use a single strip with 30 LEDs

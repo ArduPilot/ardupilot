@@ -19,14 +19,18 @@
     This is an advanced failsafe module originally modelled on the
     failsafe rules of the Outback Challenge
 */
-#include <AP_HAL/AP_HAL.h>
 #include "AP_AdvancedFailsafe.h"
+
+#if AP_ADVANCEDFAILSAFE_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AC_Fence/AC_Fence.h>
 
 AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
 
@@ -42,13 +46,13 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 
     // @Param: MAN_PIN
     // @DisplayName: Manual Pin
-    // @Description: This sets a digital output pin to set high when in manual mode
+    // @Description: This sets a digital output pin to set high when in manual mode.  See the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Advanced
     AP_GROUPINFO("MAN_PIN",     0, AP_AdvancedFailsafe, _manual_pin,    -1),
 
     // @Param: HB_PIN
     // @DisplayName: Heartbeat Pin
-    // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination.
+    // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Advanced
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("HB_PIN",      1, AP_AdvancedFailsafe, _heartbeat_pin, -1),
@@ -79,7 +83,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 
     // @Param: TERM_PIN
     // @DisplayName: Terminate Pin
-    // @Description: This sets a digital output pin to set high on flight termination
+    // @Description: This sets a digital output pin to set high on flight termination. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Advanced
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("TERM_PIN",    7, AP_AdvancedFailsafe, _terminate_pin,    -1),
@@ -158,6 +162,20 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     // @Units: km
     AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
+
+    // @Param: OPTIONS
+    // @DisplayName: AFS options
+    // @Description: See description for each bitmask bit description
+    // @Bitmask: 0: Continue the mission even after comms are recovered (does not go to the mission item at the time comms were lost)
+    // @Bitmask: 1: Enable AFS for all autonomous modes (not just AUTO) 
+    AP_GROUPINFO("OPTIONS", 21, AP_AdvancedFailsafe, options, 0),
+
+    // @Param: GCS_TIMEOUT
+    // @DisplayName: GCS timeout
+    // @Description: The time (in seconds) of persistent data link loss before GCS failsafe occurs. 
+    // @User: Advanced
+    // @Units: s
+    AP_GROUPINFO("GCS_TIMEOUT", 22, AP_AdvancedFailsafe, _gcs_fail_time_seconds, 10),
     
     AP_GROUPEND
 };
@@ -165,21 +183,24 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
-{    
+AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
+{
     if (!_enable) {
         return;
     }
 
+#if AP_FENCE_ENABLED
     // we always check for fence breach
     if(_enable_geofence_fs) {
-        if (geofence_breached || check_altlimit()) {
+        const AC_Fence *ap_fence = AP::fence();
+        if ((ap_fence != nullptr && ap_fence->get_breaches() != 0) || check_altlimit()) {
             if (!_terminate) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to fence breach");
                 _terminate.set_and_notify(1);
             }
         }
     }
+#endif
 
     // update max range check
     max_range_update();
@@ -206,7 +227,7 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
 
     const uint32_t last_heartbeat_ms = gcs().sysid_myggcs_last_seen_time_ms();
     uint32_t now = AP_HAL::millis();
-    bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
+    bool gcs_link_ok = ((now - last_heartbeat_ms) < (_gcs_fail_time_seconds*1000.0f));
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
 
     AP_Mission *_mission = AP::mission();
@@ -233,6 +254,9 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
             if (_wp_comms_hold) {
                 _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_comms_hold);
+                if (mode == AFS_AUTO && option_is_set(Option::GCS_FS_ALL_AUTONOMOUS_MODES)) {
+                    set_mode_auto();
+                }
             }
             // if two events happen within 30s we consider it to be part of the same event
             if (now - _last_comms_loss_ms > 30*1000UL) {
@@ -270,6 +294,11 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
             gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: AFS_AUTO, GCS now OK");
+
+            if (option_is_set(Option::CONTINUE_AFTER_RECOVERED)) {
+                break;
+            }
+
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
             if (_saved_wp != 0 && 
                 (_max_comms_loss <= 0 || 
@@ -303,11 +332,7 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
 
     // if we are not terminating or if there is a separate terminate
     // pin configured then toggle the heartbeat pin at 10Hz
-    if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
-        _heartbeat_pin_value = !_heartbeat_pin_value;
-        hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-    }    
+    heartbeat();
 
     // set the terminate pin
     if (_terminate_pin != -1) {
@@ -472,3 +497,5 @@ AP_AdvancedFailsafe *advancedfailsafe()
 }
 
 };
+
+#endif  // AP_ADVANCEDFAILSAFE_ENABLED

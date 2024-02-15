@@ -5,7 +5,7 @@
 include ../fmuv5/hwdef.dat
 
 # order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
-SERIAL_ORDER OTG1 USART2 UART4 USART1 USART6 OTG2
+SERIAL_ORDER OTG1 USART2 UART4 USART1 USART6 UART7 OTG2
 
 # enable TX on USART6 (disabled for fmuv5 with iomcu)
 PG14 USART6_TX USART6 NODMA
@@ -21,7 +21,7 @@ undef UART8_RX
 undef AP_FEATURE_SBUS_OUT
 
 # RCInput on the PPM pin, for all protocols
-PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
+PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
 
 # setup for supplied power brick
 undef HAL_BATT_VOLT_SCALE
@@ -36,3 +36,5 @@ define HAL_WITH_RAMTRON 1
 
 # use a longer frame gap detector for more robust SBUS with H12 controller
 define HAL_SBUS_FRAME_GAP 5000U
+
+AUTOBUILD_TARGETS Plane

@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_PWM.h"
 
+#if AP_RANGEFINDER_PWM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -29,6 +31,8 @@ AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
     AP_RangeFinder_Backend(_state, _params),
     estimated_terrain_height(_estimated_terrain_height)
 {
+    // this gives one mm per us
+    params.scaling.set_default(1.0);
 }
 
 /*
@@ -40,14 +44,15 @@ bool AP_RangeFinder_PWM::detect()
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_PWM::get_reading(float &reading_m)
 {
     const uint32_t value_us = pwm_source.get_pwm_avg_us();
     if (value_us == 0) {
         return false;
     }
 
-    reading_cm = value_us/10; // correct for LidarLite.  Parameter needed?  Converts from decimetres -> cm here
+    // LidarLite uses one mm per us
+    reading_m = value_us * 0.001 * params.scaling;
     return true;
 }
 
@@ -94,7 +99,7 @@ void AP_RangeFinder_PWM::update(void)
                 // we are above the power saving range. Disable the sensor
                 hal.gpio->write(params.stop_pin, false);
                 set_status(RangeFinder::Status::NoData);
-                state.distance_cm = 0;
+                state.distance_m = 0.0f;
                 state.voltage_mv = 0;
                 was_out_of_range = oor;
             }
@@ -107,7 +112,7 @@ void AP_RangeFinder_PWM::update(void)
         }
     }
 
-    if (!get_reading(state.distance_cm)) {
+    if (!get_reading(state.distance_m)) {
         // failure; consider changing our state
         if (AP_HAL::millis() - state.last_reading_ms > 200) {
             set_status(RangeFinder::Status::NoData);
@@ -115,7 +120,7 @@ void AP_RangeFinder_PWM::update(void)
         return;
     }
     // add offset
-    state.distance_cm += params.offset;
+    state.distance_m += params.offset * 0.01f;
 
     // update range_valid state based on distance measured
     state.last_reading_ms = AP_HAL::millis();
@@ -127,3 +132,5 @@ void AP_RangeFinder_PWM::update(void)
 bool AP_RangeFinder_PWM::out_of_range(void) const {
     return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
+
+#endif  // AP_RANGEFINDER_PWM_ENABLED

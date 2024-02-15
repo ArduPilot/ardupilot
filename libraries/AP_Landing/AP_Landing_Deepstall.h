@@ -15,16 +15,15 @@
 
 #pragma once
 
+#include "AP_Landing_config.h"
+
+#if HAL_LANDING_DEEPSTALL_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <PID/PID.h>
-
-#ifndef HAL_LANDING_DEEPSTALL_ENABLED
-#define HAL_LANDING_DEEPSTALL_ENABLED (BOARD_FLASH_SIZE > 1024)
-#endif
 
 class AP_Landing;
 
@@ -101,7 +100,7 @@ private:
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 
-    const AP_Logger::PID_Info& get_pid_info(void) const;
+    const AP_PIDInfo& get_pid_info(void) const;
 
     //private helpers
     void build_approach_path(bool use_current_heading);
@@ -111,3 +110,5 @@ private:
 
     #define DEEPSTALL_LOITER_ALT_TOLERANCE 5.0f
 };
+
+#endif  // HAL_LANDING_DEEPSTALL_ENABLED

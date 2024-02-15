@@ -1,13 +1,17 @@
 #pragma once
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_UPFLOW_ENABLED
+
+#include "AP_OpticalFlow_Backend.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_UPFLOW : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_UPFLOW(OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
+    AP_OpticalFlow_UPFLOW(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
 
     // initialise the sensor
     void init() override;
@@ -16,7 +20,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_UPFLOW *detect(OpticalFlow &_frontend);
+    static AP_OpticalFlow_UPFLOW *detect(AP_OpticalFlow &_frontend);
 
 private:
     struct PACKED UpixelsOpticalFlow {
@@ -34,3 +38,5 @@ private:
     Vector2f gyro_sum;                      // sum of gyro sensor values since last frame from flow sensor
     uint16_t gyro_sum_count;                // number of gyro sensor values in sum
 };
+
+#endif // AP_OPTICALFLOW_UPFLOW_ENABLED

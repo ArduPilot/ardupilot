@@ -3,11 +3,12 @@
 // fence_check - ask fence library to check for breaches and initiate the response
 void Rover::fence_check()
 {
+#if AP_FENCE_ENABLED
     uint8_t new_breaches;  // the type of fence that has been breached
-    const uint8_t orig_breaches = g2.fence.get_breaches();
+    const uint8_t orig_breaches = fence.get_breaches();
 
     // check for a breach
-    new_breaches = g2.fence.check();
+    new_breaches = fence.check();
 
     // return immediately if motors are not armed
     if (!arming.is_armed()) {
@@ -17,31 +18,32 @@ void Rover::fence_check()
     // if there is a new breach take action
     if (new_breaches) {
         // if the user wants some kind of response and motors are armed
-        if (g2.fence.get_action() != Failsafe_Action_None) {
+        if ((FailsafeAction)fence.get_action() != FailsafeAction::None) {
             // if within 100m of the fence, it will take the action specified by the FENCE_ACTION parameter
-            if (g2.fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                switch (g2.fence.get_action()) {
-                case Failsafe_Action_None:
+            if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
+                switch ((FailsafeAction)fence.get_action()) {
+                case FailsafeAction::None:
                     break;
-                case Failsafe_Action_RTL:
-                    if (!set_mode(mode_rtl, ModeReason::FENCE_BREACHED)) {
-                        set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                case FailsafeAction::SmartRTL:
+                    if (set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
+                        break;
                     }
-                    break;
-                case Failsafe_Action_Hold:
-                    set_mode(mode_hold, ModeReason::FENCE_BREACHED);
-                    break;
-                case Failsafe_Action_SmartRTL:
-                    if (!set_mode(mode_smartrtl, ModeReason::FENCE_BREACHED)) {
-                        if (!set_mode(mode_rtl, ModeReason::FENCE_BREACHED)) {
-                            set_mode(mode_hold, ModeReason::FENCE_BREACHED);
-                        }
+                    FALLTHROUGH;
+                case FailsafeAction::RTL:
+                    if (set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE)) {
+                        break;
                     }
+                    FALLTHROUGH;
+                case FailsafeAction::Hold:
+                    set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
                     break;
-                case Failsafe_Action_SmartRTL_Hold:
+                case FailsafeAction::SmartRTL_Hold:
                     if (!set_mode(mode_smartrtl, ModeReason::FENCE_BREACHED)) {
                         set_mode(mode_hold, ModeReason::FENCE_BREACHED);
                     }
+                    break;
+                case FailsafeAction::Terminate:
+                    arming.disarm(AP_Arming::Method::FENCEBREACH);
                     break;
                 }
             } else {
@@ -49,11 +51,12 @@ void Rover::fence_check()
                 set_mode(mode_hold, ModeReason::FENCE_BREACHED);
             }
         }
-        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
 
     } else if (orig_breaches) {
         // record clearing of breach
-        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE,
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE,
                                  LogErrorCode::ERROR_RESOLVED);
     }
+#endif // AP_FENCE_ENABLED
 }

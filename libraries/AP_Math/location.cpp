@@ -17,20 +17,14 @@
  */
 
 /*
- *  this module deals with calculations involving struct Location
+ *  this module deals with calculations involving locations
  */
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
 
-// return horizontal distance between two positions in cm
-float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
-{
-    return norm(destination.x-origin.x,destination.y-origin.y);
-}
-
 // return bearing in centi-degrees between two positions
-float get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
+float get_bearing_cd(const Vector2f &origin, const Vector2f &destination)
 {
     float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
     if (bearing < 0) {

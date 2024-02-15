@@ -66,7 +66,7 @@ bool AP_IRLock_SITL_Gazebo::update()
       reply packet sent from simulator to ArduPilot
      */
     struct irlock_packet {
-        uint64_t timestamp;  // in miliseconds
+        uint64_t timestamp;  // in milliseconds
         uint16_t num_targets;
         float pos_x;
         float pos_y;

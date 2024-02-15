@@ -244,8 +244,11 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 #if HAL_USE_SERIAL_USB
 uint32_t get_usb_baud(uint16_t endpoint_id)
 {
-    if(endpoint_id == 0)
-        return *((uint32_t*)linecoding.dwDTERate);
+    if (endpoint_id == 0) {
+        uint32_t rate;
+        memcpy(&rate, &linecoding.dwDTERate[0], sizeof(rate));
+        return rate;
+    }
     return 0;
 }
 #endif
@@ -398,7 +401,11 @@ const USBConfig usbcfg = {
  * Serial over USB driver configuration.
  */
 const SerialUSBConfig serusbcfg1 = {
+#if STM32_OTG2_IS_OTG1
+  &USBD2,
+#else
   &USBD1,
+#endif
   USBD1_DATA_REQUEST_EP,
   USBD1_DATA_AVAILABLE_EP,
   USBD1_INTERRUPT_REQUEST_EP

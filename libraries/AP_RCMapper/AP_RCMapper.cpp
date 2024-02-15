@@ -5,7 +5,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Param: ROLL
     // @DisplayName: Roll channel
     // @Description: Roll channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Roll is normally on channel 1, but you can move it to any channel with this parameter.  Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -14,7 +14,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Param: PITCH
     // @DisplayName: Pitch channel
     // @Description: Pitch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Pitch is normally on channel 2, but you can move it to any channel with this parameter.  Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -22,8 +22,8 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
 
     // @Param: THROTTLE
     // @DisplayName: Throttle channel
-    // @Description: Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Warning APM 2.X: Changing the throttle channel could produce unexpected fail-safe results if connection between receiver and on-board PPM Encoder is lost. Disabling on-board PPM Encoder is recommended.  Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Description: Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -32,25 +32,25 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Param: YAW
     // @DisplayName: Yaw channel
     // @Description: Yaw channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Yaw (also known as rudder) is normally on channel 4, but you can move it to any channel with this parameter.  Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("YAW",         3, RCMapper, _ch_yaw, 4),
 
-    // @Param{Rover,Sub}: FORWARD
+    // @Param{Sub}: FORWARD
     // @DisplayName: Forward channel
     // @Description: Forward channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Forward is normally on channel 5, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FRAME("FORWARD",    4, RCMapper, _ch_forward, 6, AP_PARAM_FRAME_SUB),
 
-    // @Param{Rover,Sub}: LATERAL
+    // @Param{Sub}: LATERAL
     // @DisplayName: Lateral channel
     // @Description: Lateral channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Lateral is normally on channel 6, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
-    // @Range: 1 8
+    // @Range: 1 16
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True

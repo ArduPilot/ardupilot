@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_RSSI_config.h"
+
+#if AP_RSSI_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -33,8 +37,7 @@ public:
     AP_RSSI();
 
     /* Do not allow copies */
-    AP_RSSI(const AP_RSSI &other) = delete;
-    AP_RSSI &operator=(const AP_RSSI&) = delete;
+    CLASS_NO_COPY(AP_RSSI);
 
     // destructor
     ~AP_RSSI(void);
@@ -93,7 +96,7 @@ private:
     // read the PWM value from a pin
     float read_pwm_pin_rssi();
 
-    // read the (RC) RSSI value from telemtry radio RSSI (e.g. rfd900x pass-through)
+    // read the (RC) RSSI value from telemetry radio RSSI (e.g. rfd900x pass-through)
     float read_telemetry_radio_rssi();
 
     // Scale and constrain a float rssi value to 0.0 to 1.0 range
@@ -103,3 +106,5 @@ private:
 namespace AP {
     AP_RSSI *rssi();
 };
+
+#endif  // AP_RSSI_ENABLED

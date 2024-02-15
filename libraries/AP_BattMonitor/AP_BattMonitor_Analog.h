@@ -1,7 +1,10 @@
 #pragma once
 
-#include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_ANALOG_ENABLED
+
+#include "AP_BattMonitor.h"
 
 // default pins and dividers
 #if defined(HAL_BATT_VOLT_PIN)
@@ -122,6 +125,9 @@ protected:
     AP_Float _volt_multiplier;          /// voltage on volt pin multiplied by this to calculate battery voltage
     AP_Float _curr_amp_per_volt;        /// voltage on current pin multiplied by this to calculate current in amps
     AP_Float _curr_amp_offset;          /// offset voltage that is subtracted from current pin before conversion to amps
+    AP_Float _volt_offset;              /// offset voltage that is subtracted from voltage pin before conversion
     AP_Int8  _volt_pin;                 /// board pin used to measure battery voltage
     AP_Int8  _curr_pin;                 /// board pin used to measure battery current
 };
+
+#endif  // AP_BATTERY_ANALOG_ENABLED

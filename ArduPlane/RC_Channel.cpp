@@ -16,9 +16,14 @@ int8_t RC_Channels_Plane::flight_mode_channel_number() const
     return plane.g.flight_mode_channel.get();
 }
 
+bool RC_Channels_Plane::in_rc_failsafe() const
+{
+    return (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe);
+}
+
 bool RC_Channels_Plane::has_valid_input() const
 {
-    if (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe) {
+    if (in_rc_failsafe()) {
         return false;
     }
     if (plane.failsafe.throttle_counter != 0) {
@@ -45,8 +50,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
         // return to flight mode switch's flight mode if we are currently
         // in this mode
         if (plane.control_mode->mode_number() == number) {
-// TODO:           rc().reset_mode_switch();
-            plane.reset_control_switch();
+            rc().reset_mode_switch();
         }
     }
 }
@@ -137,7 +141,7 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 }
 
 
-void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
+void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
@@ -154,6 +158,11 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FBWA:
+    case AUX_FUNC::AIRBRAKE:
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::QRTL:
+    case AUX_FUNC::QSTABILIZE:
+#endif
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
@@ -163,12 +172,18 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::ARMDISARM_AIRMODE:
 #endif
+    case AUX_FUNC::PLANE_AUTO_LANDING_ABORT:
+    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
+    case AUX_FUNC::EMERGENCY_LANDING_EN:
+    case AUX_FUNC::FW_AUTOTUNE:
+    case AUX_FUNC::VFWD_THR_OVERRIDE:
         break;
 
     case AUX_FUNC::SOARING:
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::AIRMODE:
+    case AUX_FUNC::WEATHER_VANE_ENABLE:
 #endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     case AUX_FUNC::ARSPD_CALIBRATE:
@@ -196,8 +211,8 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     }
 }
 
-// do_aux_function - implement the function invoked by auxillary switches
-bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+// do_aux_function - implement the function invoked by auxiliary switches
+bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
@@ -249,12 +264,32 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_change_mode(Mode::Number::FLY_BY_WIRE_A, ch_flag);
         break;
 
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::QRTL:
+        do_aux_function_change_mode(Mode::Number::QRTL, ch_flag);
+        break;
+
+    case AUX_FUNC::QSTABILIZE:
+        do_aux_function_change_mode(Mode::Number::QSTABILIZE, ch_flag);
+        break;
+
+    case AUX_FUNC::VFWD_THR_OVERRIDE: {
+        const bool enable = (ch_flag == AuxSwitchPos::HIGH);
+        if (enable != plane.quadplane.vfwd_enable_active) {
+            plane.quadplane.vfwd_enable_active = enable;
+            gcs().send_text(MAV_SEVERITY_INFO, "QFwdThr: %s", enable?"ON":"OFF");
+        }
+        break;
+    }
+#endif
+
     case AUX_FUNC::SOARING:
         do_aux_function_soaring_3pos(ch_flag);
         break;
 
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
+    case AUX_FUNC::AIRBRAKE:
         break; // input labels, nothing to do
 
 #if HAL_QUADPLANE_ENABLED
@@ -295,6 +330,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.quadplane.air_mode = AirMode::ON;
+            plane.quadplane.throttle_wait = false;
             break;
         case AuxSwitchPos::MIDDLE:
             break;
@@ -305,9 +341,9 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 #endif
 
-case AUX_FUNC::ARSPD_CALIBRATE:
+    case AUX_FUNC::ARSPD_CALIBRATE:
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-       switch (ch_flag) {
+        switch (ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.airspeed.set_calibration_enabled(true);
             break;
@@ -320,18 +356,20 @@ case AUX_FUNC::ARSPD_CALIBRATE:
 #endif
         break;
 
-   case AUX_FUNC::LANDING_FLARE:
-       do_aux_function_flare(ch_flag);
-       break;
+    case AUX_FUNC::LANDING_FLARE:
+        do_aux_function_flare(ch_flag);
+        break;
 
     case AUX_FUNC::PARACHUTE_RELEASE:
 #if PARACHUTE == ENABLED
-        plane.parachute_manual_release();
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.parachute_manual_release();
+        }
 #endif
         break;
 
     case AUX_FUNC::MODE_SWITCH_RESET:
-        plane.reset_control_switch();
+        rc().reset_mode_switch();
         break;
 
     case AUX_FUNC::CRUISE:
@@ -343,9 +381,67 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         RC_Channel::do_aux_function_armdisarm(ch_flag);
         if (plane.arming.is_armed()) {
             plane.quadplane.air_mode = AirMode::ON;
+            plane.quadplane.throttle_wait = false;
         }
         break;
+
+    case AUX_FUNC::WEATHER_VANE_ENABLE: {
+        if (plane.quadplane.weathervane != nullptr) {
+            switch (ch_flag) {
+                case AuxSwitchPos::HIGH:
+                    plane.quadplane.weathervane->allow_weathervaning(true);
+                    break;
+                case AuxSwitchPos::MIDDLE:
+                    // nothing
+                    break;
+                case AuxSwitchPos::LOW:
+                    plane.quadplane.weathervane->allow_weathervaning(false);
+                    break;
+            }
+        }
+        break;
+    }
 #endif
+
+    case AUX_FUNC::PLANE_AUTO_LANDING_ABORT:
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            IGNORE_RETURN(plane.trigger_land_abort(0));
+            break;
+        case AuxSwitchPos::MIDDLE:
+        case AuxSwitchPos::LOW:
+            break;
+        }
+        break;
+
+    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.trim_radio();
+        }
+        break;
+
+    case AUX_FUNC::EMERGENCY_LANDING_EN:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.emergency_landing = true;
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.emergency_landing = false;
+            break;
+        }
+        break;
+
+    case AUX_FUNC::FW_AUTOTUNE:
+        if (ch_flag == AuxSwitchPos::HIGH && plane.control_mode->mode_allows_autotuning()) {
+           plane.autotune_enable(true);
+        } else if (ch_flag == AuxSwitchPos::HIGH) {
+           GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Autotuning not allowed in this mode!");
+        } else {
+           plane.autotune_enable(false); 
+        }
+        break;
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

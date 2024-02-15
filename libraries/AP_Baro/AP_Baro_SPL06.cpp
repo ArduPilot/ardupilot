@@ -14,7 +14,10 @@
  */
 #include "AP_Baro_SPL06.h"
 
+#if AP_BARO_SPL06_ENABLED
+
 #include <utility>
+#include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -176,7 +179,7 @@ int32_t AP_Baro_SPL06::raw_value_scale_factor(uint8_t oversampling)
     }
 }
 
-// acumulate a new sensor reading
+// accumulate a new sensor reading
 void AP_Baro_SPL06::_timer(void)
 {
     uint8_t buf[3];
@@ -246,3 +249,5 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
     _pressure_sum += press_comp;
     _pressure_count++;
 }
+
+#endif  // AP_BARO_SPL06_ENABLED

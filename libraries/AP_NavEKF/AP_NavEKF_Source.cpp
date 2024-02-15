@@ -17,6 +17,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -152,12 +153,14 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(uint8_t source_set_idx)
     // sanity check source idx
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         active_source_set = source_set_idx;
+#if HAL_LOGGING_ENABLED
         static const LogEvent evt[AP_NAKEKF_SOURCE_SET_MAX] {
             LogEvent::EK3_SOURCES_SET_TO_PRIMARY,
             LogEvent::EK3_SOURCES_SET_TO_SECONDARY,
             LogEvent::EK3_SOURCES_SET_TO_TERTIARY,
         };
         AP::logger().Write_Event(evt[active_source_set]);
+#endif
     }
 }
 
@@ -231,6 +234,18 @@ AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
     return _source_set[active_source_set].yaw;
 }
 
+// get pos Z source
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
+{
+#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    // check for special case of missing baro
+    if ((_source_set[active_source_set].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+        return SourceZ::NONE;
+    }
+#endif
+    return _source_set[active_source_set].posz;
+}
+
 // align position of inactive sources to ahrs
 void AP_NavEKF_Source::align_inactive_sources()
 {
@@ -286,20 +301,20 @@ bool AP_NavEKF_Source::usingGPS() const
 }
 
 // true if some parameters have been configured (used during parameter conversion)
-bool AP_NavEKF_Source::configured_in_storage()
+bool AP_NavEKF_Source::configured()
 {
-    if (config_in_storage) {
+    if (_configured) {
         return true;
     }
 
     // first source parameter is used to determine if configured or not
-    config_in_storage = _source_set[0].posxy.configured_in_storage();
+    _configured = _source_set[0].posxy.configured();
 
-    return config_in_storage;
+    return _configured;
 }
 
-// mark parameters as configured in storage (used to ensure parameter conversion is only done once)
-void AP_NavEKF_Source::mark_configured_in_storage()
+// mark parameters as configured (used to ensure parameter conversion is only done once)
+void AP_NavEKF_Source::mark_configured()
 {
     // save first parameter's current value to mark as configured
     return _source_set[0].posxy.save(true);
@@ -385,6 +400,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 visualodom_required = true;
                 break;
             case SourceZ::NONE:
+                break;
             default:
                 // invalid posz value
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
@@ -443,9 +459,16 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         return false;
     }
 
-    if (beacon_required && (dal.beacon() == nullptr || !dal.beacon()->enabled())) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Beacon");
-        return false;
+    if (beacon_required) {
+#if AP_BEACON_ENABLED
+        const bool beacon_available = (dal.beacon() != nullptr && dal.beacon()->enabled());
+#else
+        const bool beacon_available = false;
+#endif
+        if (!beacon_available) {
+            hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Beacon");
+            return false;
+        }
     }
 
     if (compass_required && (dal.compass().get_num_enabled() == 0)) {
@@ -522,6 +545,12 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
         }
     }
     return false;
+}
+
+// returns active source set
+uint8_t AP_NavEKF_Source::get_active_source_set() const
+{
+    return active_source_set;
 }
 
 // return true if GPS yaw is enabled on any source

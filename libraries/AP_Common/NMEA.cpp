@@ -82,3 +82,32 @@ bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...)
     free(s);
     return true;
 }
+
+
+/*
+  formatted print of NMEA message to a buffer, with checksum appended.
+  Returns the length of the string filled into buf. If the NMEA string does not fit in the buffer, returns 0
+ */
+uint16_t nmea_printf_buffer(char* buf, const uint16_t buf_max_len, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    char *s = nmea_vaprintf(fmt, ap);
+    va_end(ap);
+    if (s == nullptr) {
+        return 0;
+    }
+
+    size_t len = strlen(s);
+    if (len > buf_max_len) {
+        // our string is larger than the buffer we've supplied.
+        // Instead of populating the buffer with a partial message, just quietly fail and do nothing
+        len = 0;
+    } else {
+        strncpy(buf, s, buf_max_len);
+    }
+    free(s);
+    
+    return len;
+}

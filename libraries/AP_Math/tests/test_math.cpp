@@ -7,6 +7,7 @@
 #include <AP_gtest.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/div1000.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -81,8 +82,15 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_45, 1, 0, SQRT_2);
     TEST_ROTATION(ROTATION_ROLL_315, 1, SQRT_2, 0);
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
-    TEST_ROTATION(ROTATION_CUSTOM, 1, 1, 1);  // TODO look at internal error ?
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    TEST_ROTATION(ROTATION_CUSTOM_OLD, 1, 1, 1);
     TEST_ROTATION(ROTATION_MAX, 1, 1, 1);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    Vector3F v {1, 1, 1};
+    EXPECT_EXIT(v.rotate(ROTATION_CUSTOM_OLD), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
+    EXPECT_EXIT(v.rotate(ROTATION_MAX), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
+#endif
 }
 
 TEST(MathTest, IsZero)
@@ -93,9 +101,9 @@ TEST(MathTest, IsZero)
     EXPECT_TRUE(is_zero(FLT_MIN));
     EXPECT_TRUE(is_zero(-FLT_MIN));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_FALSE(is_zero(t_float));
-    t_float = 0.0f;
+    t_float.set(0.0f);
     EXPECT_TRUE(is_zero(t_float));
 }
 
@@ -106,9 +114,9 @@ TEST(MathTest, IsPositive)
     EXPECT_FALSE(is_positive(0.0f));
     EXPECT_FALSE(is_positive(-1.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_TRUE(is_positive(t_float));
-    t_float = -0.1f;
+    t_float.set(-0.1f);
     EXPECT_FALSE(is_positive(t_float));
 }
 
@@ -119,9 +127,9 @@ TEST(MathTest, IsNegative)
     EXPECT_FALSE(is_negative(0.0f));
     EXPECT_FALSE(is_negative(1.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_FALSE(is_negative(t_float));
-    t_float = -0.1f;
+    t_float.set(-0.1f);
     EXPECT_TRUE(is_negative(t_float));
 }
 
@@ -210,18 +218,18 @@ TEST(MathTest, MAX)
     EXPECT_EQ(2.0f, MAX(testushort, 2.0f));
     EXPECT_EQ(2.0f, MAX(testi32, 2.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_EQ(2.0f, MAX(t_float, 2.0f));
     EXPECT_EQ(2.0f, MAX(2.0f, t_float));
     AP_Int8 t_int8;
-    t_int8 = 1;
+    t_int8.set(1);
     EXPECT_EQ(2, MAX(t_int8, 2));
     EXPECT_EQ(2, MAX(2, t_int8));
     AP_Int16 t_int16;
-    t_int16 = 1;
+    t_int16.set(1);
     EXPECT_EQ(2, MAX(t_int16, 2));
     AP_Int32 t_int32;
-    t_int32 = 1;
+    t_int32.set(1);
     EXPECT_EQ(2, MAX(t_int32, 2));
     EXPECT_EQ(2.0f, MAX(1.0f, 2.0f));
     EXPECT_EQ(2.0f, MAX(1.0f, 2));
@@ -268,8 +276,14 @@ TEST(MathTest, Square)
     EXPECT_EQ(1.f, sq_1);
     EXPECT_EQ(4.f, sq_2);
     AP_Float t_sqfloat;
-    t_sqfloat = sq(2);
+    t_sqfloat.set(sq(2));
     EXPECT_EQ(4.f, t_sqfloat);
+
+    EXPECT_FLOAT_EQ(sq(2.3), 5.289999999999999);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(2.3f), 5.29); // uses sq(float v)
+    EXPECT_EQ(sq(4294967295), 18446744065119617025U);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(4294967295.0), 1.8446744e+19);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(pow(2,25)), pow(2,50));
 }
 
 TEST(MathTest, Norm)
@@ -281,9 +295,9 @@ TEST(MathTest, Norm)
     float norm_5 = norm(3,4);
     float norm_6 = norm(4,3,12);
     AP_Float t_float1, t_float2, t_float3;
-    t_float1 = 4.0f;
-    t_float2 = 3.0f;
-    t_float3 = 12.f;
+    t_float1.set(4.0f);
+    t_float2.set(3.0f);
+    t_float3.set(12.f);
     float norm_7 = norm(t_float1, t_float2, t_float3);
 
     EXPECT_FLOAT_EQ(norm_1, 4.3174066f);
@@ -370,8 +384,17 @@ TEST(MathTest, Constrain)
     EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
     EXPECT_EQ(19.9f, constrain_value(19.8f, 19.9f, 20.1f));
 
+    // test that constrain on 32 bit integer works correctly. Note the asymmetry
+    EXPECT_EQ(10,    constrain_int32( 0xFFFFFFFFU, 10U, 1200U));
+    EXPECT_EQ(1200U, constrain_uint32(0xFFFFFFFFU, 10U, 1200U));
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
     EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(constrain_float(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+    EXPECT_EXIT(constrain_value(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+#endif
 }
 
 TEST(MathWrapTest, Angle180)
@@ -643,10 +666,8 @@ TEST(MathTest, VELCORRECTION)
 TEST(MathTest, LOWPASSALPHA)
 {
     const float accuracy = 1.0e-5f;
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(0.0f, 2.0f));
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(-1.0f, 2.0f));
+    EXPECT_EQ(0.0f, calc_lowpass_alpha_dt(0.0f, 2.0f));
     EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(1.0f, 0.0f));
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(1.0f, -2.0f));
 
     EXPECT_NEAR(0.926288f, calc_lowpass_alpha_dt(1.0f, 2.0f), accuracy);
 }
@@ -660,6 +681,30 @@ TEST(MathTest, FIXEDWINGTURNRATE)
     EXPECT_NEAR(56.187965393066406f, fixedwing_turn_rate(45, 10.0f), accuracy);
 }
 
+TEST(CRCTest, parity)
+{
+    EXPECT_EQ(parity(0b1), 1);
+    EXPECT_EQ(parity(0b10), 1);
+    EXPECT_EQ(parity(0b100), 1);
+
+    EXPECT_EQ(parity(0b11), 0);
+    EXPECT_EQ(parity(0b110), 0);
+    EXPECT_EQ(parity(0b111), 1);
+    EXPECT_EQ(parity(0b11111111), 0);
+}
+
+TEST(MathTest, div1000)
+{
+    for (uint32_t i=0; i<1000000; i++) {
+        uint64_t v;
+        EXPECT_EQ(hal.util->get_random_vals((uint8_t*)&v, sizeof(v)), true);
+        uint64_t v1 = v / 1000ULL;
+        uint64_t v2 = uint64_div1000(v);
+        EXPECT_EQ(v1, v2);
+    }
+}
+
+AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop

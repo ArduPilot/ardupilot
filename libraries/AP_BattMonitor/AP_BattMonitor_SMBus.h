@@ -1,16 +1,20 @@
 #pragma once
 
+#include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_SMBUS_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/I2CDevice.h>
-#include "AP_BattMonitor_Backend.h"
 #include <utility>
 
 #define AP_BATTMONITOR_SMBUS_BUS_INTERNAL           0
 #define AP_BATTMONITOR_SMBUS_BUS_EXTERNAL           1
 #define AP_BATTMONITOR_SMBUS_I2C_ADDR               0x0B
-#define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
+#define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS         5000000         // sensor becomes unhealthy if no successful readings for 5 seconds
+#define AP_BATTMONITOR_SMBUS_READ_BLOCK_MAXIMUM_TRANSFER 0x20       // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
 
 class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 {
@@ -84,6 +88,9 @@ protected:
      // returns true if read was successful, false if failed
     bool read_word(uint8_t reg, uint16_t& data) const;
 
+    // read_block - returns number of characters read if successful, zero if unsuccessful
+    uint8_t read_block(uint8_t reg, uint8_t* data, uint8_t len) const;
+
     // get_PEC - calculate PEC for a read or write from the battery
     // buff is the data that was read or will be written
     uint8_t get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const;
@@ -107,3 +114,5 @@ protected:
     AP_Int8  _address;      // I2C address
 
 };
+
+#endif  // AP_BATTERY_SMBUS_ENABLED

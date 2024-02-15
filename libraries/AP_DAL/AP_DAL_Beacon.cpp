@@ -1,9 +1,10 @@
 #include "AP_DAL_Beacon.h"
 
-#include <AP_Beacon/AP_Beacon.h>
+#if AP_BEACON_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_DAL_Beacon::AP_DAL_Beacon()
 {
@@ -46,3 +47,5 @@ void AP_DAL_Beacon::start_frame()
         WRITE_REPLAY_BLOCK_IFCHANGED(RBCI, RBCI, old_RBCI);
     }
 }
+
+#endif

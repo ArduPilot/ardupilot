@@ -1,7 +1,12 @@
 #pragma once
 
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_IRLOCK_ENABLED
+
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <AP_Math/AP_Math.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #include <AP_IRLock/AP_IRLock_SITL.h>
 #else
@@ -46,3 +51,5 @@ private:
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
+
+#endif // AC_PRECLAND_IRLOCK_ENABLED

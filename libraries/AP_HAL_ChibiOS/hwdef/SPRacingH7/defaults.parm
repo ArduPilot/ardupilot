@@ -1,0 +1,10 @@
+# setup for LEDs on chan5
+SERVO11_FUNCTION 120
+
+# setup SERIAL2 for SmartPort
+SERIAL2_PROTOCOL 10
+SERIAL2_OPTIONS 15
+
+# currently using both IMUs is too CPU intensive
+INS_ENABLE_MASK 1
+

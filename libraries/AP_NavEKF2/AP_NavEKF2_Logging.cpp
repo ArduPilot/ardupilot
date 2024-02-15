@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 
@@ -170,7 +174,7 @@ void NavEKF2_core::Log_Write_NKF5(uint64_t time_us) const
         FIX : (int16_t)(1000*innovOptFlow[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*innovOptFlow[1]),  // optical flow LOS rate vector innovations from the main nav filter
         AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
-        HAGL : (int16_t)(100*(terrainState - stateStruct.position.z)),  // height above ground level
+        HAGL : float_to_int16(100*(terrainState - stateStruct.position.z)),  // height above ground level
         offset : (int16_t)(100*terrainState),  // // estimated vertical position of the terrain relative to the nav filter zero datum
         RI : (int16_t)(100*innovRng),  // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
@@ -199,6 +203,7 @@ void NavEKF2_core::Log_Write_Quaternion(uint64_t time_us) const
     AP::logger().WriteBlock(&pktq1, sizeof(pktq1));
 }
 
+#if AP_BEACON_ENABLED
 void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
 {
     if (core_index != frontend->primary) {
@@ -248,11 +253,11 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
     AP::logger().WriteBlock(&pkt0, sizeof(pkt0));
     rngBcnFuseDataReportIndex++;
 }
+#endif  // AP_BEACON_ENABLED
 
 void NavEKF2_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
-    static uint32_t lastTimingLogTime_ms = 0;
     if (AP::dal().millis() - lastTimingLogTime_ms <= 5000) {
         return;
     }
@@ -315,8 +320,10 @@ void NavEKF2_core::Log_Write(uint64_t time_us)
     Log_Write_Quaternion(time_us);
     Log_Write_GSF(time_us);
 
+#if AP_BEACON_ENABLED
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
+#endif
 
     Log_Write_Timing(time_us);
 }
@@ -328,3 +335,5 @@ void NavEKF2_core::Log_Write_GSF(uint64_t time_us) const
     }
     yawEstimator->Log_Write(time_us, LOG_NKY0_MSG, LOG_NKY1_MSG, DAL_CORE(core_index));
 }
+
+#endif  // HAL_LOGGING_ENABLED

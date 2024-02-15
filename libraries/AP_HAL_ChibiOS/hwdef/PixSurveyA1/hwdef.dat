@@ -1,0 +1,21 @@
+# hw definition file for processing by chibios_hwdef.py
+# for MFE-V3, based on fmuv3
+include ../fmuv3/hwdef.dat
+
+APJ_BOARD_ID 1076
+
+#Use MPU9250 or ICM20948 on the new hardware
+COMPASS AK8963:probe_mpu9250 0 ROTATION_PITCH_180
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# two baros
+BARO MS56XX SPI:ms5611_ext
+BARO MS56XX SPI:ms5611
+
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5

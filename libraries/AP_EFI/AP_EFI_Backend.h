@@ -16,7 +16,9 @@
 
 #include "AP_EFI.h"
 #include "AP_EFI_State.h"
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Semaphores.h>
+#include <AP_Scripting/AP_Scripting_config.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_EFI; //forward declaration
 
@@ -31,19 +33,33 @@ public:
     // Update the state structure
     virtual void update() = 0;
 
+    virtual void handle_EFI_message(const mavlink_message_t &msg) {};
+
+#if AP_SCRIPTING_ENABLED
+    virtual bool handle_scripting(const EFI_State &efi_state) { return false; }
+#endif
+
 protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();
 
-    // Semaphore for access to shared frontend data
-    HAL_Semaphore sem;
-
     // Internal state for this driver (before copying to frontend)
     EFI_State internal_state;
 
-    int8_t get_uavcan_node_id(void) const;
+    int8_t get_dronecan_node_id(void) const;
     float get_coef1(void) const;
     float get_coef2(void) const;
+
+    void set_default_coef1(float coef1);
+    
+    float get_ecu_fuel_density(void) const;
+
+    /*
+      linearise throttle if enabled
+     */
+    float linearise_throttle(float throttle_percent);
+
+    HAL_Semaphore &get_sem(void);
 
 private:
     AP_EFI &frontend;

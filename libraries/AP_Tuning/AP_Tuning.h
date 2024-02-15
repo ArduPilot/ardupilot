@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Tuning_config.h"
+
+#if AP_TUNING_ENABLED
+
 #include <AP_Param/AP_Param.h>
 
 #include "stdint.h"
@@ -80,9 +84,6 @@ private:
     // last flight mode we were tuning in
     uint8_t last_flightmode;
 
-    // last time we reported controller error
-    uint32_t last_controller_error_ms;
-    
     const tuning_set *tuning_sets;
     const tuning_name *tuning_names;
     
@@ -92,7 +93,6 @@ private:
     void save_parameters(void);
     void revert_parameters(void);
     const char *get_tuning_name(uint8_t parm);
-    void check_controller_error(void);
 
 protected:
     // virtual functions that must be implemented in vehicle subclass
@@ -100,8 +100,9 @@ protected:
     virtual void save_value(uint8_t parm) = 0;
     virtual void reload_value(uint8_t parm) = 0;
     virtual void set_value(uint8_t parm, float value) = 0;
-    virtual float controller_error(uint8_t parm) = 0;
 
     // parmset is in vehicle subclass var table
     AP_Int16 parmset;
 };
+
+#endif  // AP_TUNING_ENABLED

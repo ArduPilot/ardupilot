@@ -27,8 +27,6 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #if AP_MODULE_SUPPORTED
 
 #include <AP_AHRS/AP_AHRS.h>

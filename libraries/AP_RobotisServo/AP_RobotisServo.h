@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_ROBOTISSERVO_ENABLED
+#define AP_ROBOTISSERVO_ENABLED BOARD_FLASH_SIZE > 1024
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -26,8 +34,7 @@ public:
     AP_RobotisServo();
 
     /* Do not allow copies */
-    AP_RobotisServo(const AP_RobotisServo &other) = delete;
-    AP_RobotisServo &operator=(const AP_RobotisServo&) = delete;
+    CLASS_NO_COPY(AP_RobotisServo);
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -42,7 +49,6 @@ private:
     void init(void);
     void detect_servos();
 
-    uint16_t update_crc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
     void add_stuffing(uint8_t *packet);
     void send_packet(uint8_t *txpacket);
     void read_bytes();
@@ -51,7 +57,7 @@ private:
     void configure_servos(void);
 
     // auto-detected mask of available servos, from a broadcast ping
-    uint16_t servo_mask;
+    uint32_t servo_mask;
     uint8_t detection_count;
     uint8_t configured_servos;
     bool initialised;
@@ -66,3 +72,5 @@ private:
     uint32_t last_send_us;
     uint32_t delay_time_us;
 };
+
+#endif  // AP_ROBOTISSERVO_ENABLED

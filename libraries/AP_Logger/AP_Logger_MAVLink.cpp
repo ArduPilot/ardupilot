@@ -2,17 +2,20 @@
    AP_Logger Remote(via MAVLink) logging
 */
 
-#include "AP_Logger_MAVLink.h"
+#include "AP_Logger_config.h"
 
 #if HAL_LOGGING_MAVLINK_ENABLED
 
+#include "AP_Logger_MAVLink.h"
+
 #include "LogStructure.h"
+#include <AP_Logger/AP_Logger.h>
 
 #define REMOTE_LOG_DEBUGGING 0
 
 #if REMOTE_LOG_DEBUGGING
 #include <stdio.h>
- # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+ # define Debug(fmt, args ...)  do {fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -22,6 +25,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_Logger_MAVLink::AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+    AP_Logger_Backend(front, writer),
+    _max_blocks_per_send_blocks(8)
+{
+    _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
+    // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
+}
 
 // initialisation
 void AP_Logger_MAVLink::Init()
@@ -274,10 +284,16 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
-        handle_retry(packet.seqno);
-    } else {
-        handle_ack(link, msg, packet.seqno);
+    switch ((MAV_REMOTE_LOG_DATA_BLOCK_STATUSES)packet.status) {
+        case MAV_REMOTE_LOG_DATA_BLOCK_NACK:
+            handle_retry(packet.seqno);
+            break;
+        case MAV_REMOTE_LOG_DATA_BLOCK_ACK:
+            handle_ack(link, msg, packet.seqno);
+            break;
+        // we apparently have to handle an END enum entry, just drop it so we catch future additions
+        case MAV_REMOTE_LOG_DATA_BLOCK_STATUSES_ENUM_END:
+            break;
     }
     semaphore.give();
 }
@@ -352,7 +368,7 @@ void AP_Logger_MAVLink::stats_log()
     Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           dropped,
+           _dropped,
            _blocks_retry.sent_count,
            stats.resends,
            stats.state_free_min,
@@ -524,9 +540,12 @@ void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
 }
 void AP_Logger_MAVLink::periodic_1Hz()
 {
-    if (rate_limiter == nullptr && _front._params.mav_ratemax > 0) {
-        // setup rate limiting
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax);
+    if (rate_limiter == nullptr &&
+        (_front._params.mav_ratemax > 0 ||
+         _front._params.disarm_ratemax > 0 ||
+         _front._log_pause)) {
+        // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
     }
 
     if (_sending_to_client &&

@@ -1,13 +1,9 @@
 -- demo of waving paw of opendog
---
-local flipflop = true
 
-pwm = { 1500, 1500, 2000,
-        1500, 1500, 1000,
-        1500, 1500, 1500,
-        1500, 1500, 1500 }
-
-local angle = 0.0
+local pwm = { 1500, 1500, 2000,
+              1500, 1500, 1000,
+              1500, 1500, 1500,
+              1500, 1500, 1500 }
 
 function update()
    local t = 0.001 * millis():tofloat()

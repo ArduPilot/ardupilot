@@ -1,18 +1,18 @@
-/// @file    AP_Rally.h
-/// @brief   Handles rally point storage and retrieval.
+#include "AP_Rally_config.h"
+
+#if HAL_RALLY_ENABLED
+
 #include "AP_Rally.h"
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
-assert_storage_size<RallyLocation, 15> _assert_storage_size_RallyLocation;
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_COPTER_OR_HELI
   #define RALLY_LIMIT_KM_DEFAULT 0.3f
   #define RALLY_INCLUDE_HOME_DEFAULT 1
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -54,6 +54,8 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 // constructor
 AP_Rally::AP_Rally()
 {
+    ASSERT_STORAGE_SIZE(RallyLocation, 15);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
         AP_HAL::panic("Rally must be singleton");
@@ -114,7 +116,9 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _last_change_time_ms = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+#endif
 
     return true;
 }
@@ -122,18 +126,13 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 // helper function to translate a RallyLocation to a Location
 Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) const
 {
-    Location ret = {};
-
-    // we return an absolute altitude, as we add homeloc.alt below
-    ret.relative_alt = false;
-
-    //Currently can't do true AGL on the APM.  Relative altitudes are
-    //relative to HOME point's altitude.  Terrain on the board is inbound
-    //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = (rally_loc.alt*100UL) + AP::ahrs().get_home().alt;
-
-    ret.lat = rally_loc.lat;
-    ret.lng = rally_loc.lng;
+    //Relative altitudes are relative to HOME point's altitude:
+    Location ret {
+        rally_loc.lat,
+        rally_loc.lng,
+        rally_loc.alt * 100,
+        (rally_loc.alt_frame_valid == 1) ? Location::AltFrame(rally_loc.alt_frame) : Location::AltFrame::ABOVE_HOME
+    };
 
     return ret;
 }
@@ -167,17 +166,13 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
 }
 
 // return best RTL location from current position
-Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const
+Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt_amsl_cm) const
 {
-    RallyLocation ral_loc = {};
-    Location return_loc = {};
-    const struct Location &home_loc = AP::ahrs().get_home();
-    
-    // no valid rally point, return home position
-    return_loc = home_loc;
-    return_loc.alt = rtl_home_alt;
-    return_loc.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+    // if no valid rally point, return home position:
+    Location return_loc { AP::ahrs().get_home() };
+    return_loc.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
 
+    RallyLocation ral_loc;
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable

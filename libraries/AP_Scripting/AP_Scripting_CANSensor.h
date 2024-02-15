@@ -18,15 +18,26 @@
  
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
+#if defined(HAL_BUILD_AP_PERIPH)
+    // Must have at least two CAN ports on Periph
+    #define AP_SCRIPTING_CAN_SENSOR_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1)
+#else
+    #define AP_SCRIPTING_CAN_SENSOR_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif
+
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
+
 #include <AP_CANManager/AP_CANSensor.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 class ScriptingCANBuffer;
 class ScriptingCANSensor : public CANSensor {
 public:
 
-    ScriptingCANSensor():CANSensor("Script") {
-        register_driver(AP_CANManager::Driver_Type::Driver_Type_Scripting);
+    ScriptingCANSensor(AP_CAN::Protocol dtype)
+        : CANSensor("Script") {
+        register_driver(dtype);
     }
 
     // handler for outgoing frames, using uint32
@@ -63,6 +74,9 @@ public:
     // recursively add new buffer
     void add_buffer(ScriptingCANBuffer* new_buff);
 
+    // Add a filter to this buffer
+    bool add_filter(uint32_t mask, uint32_t value);
+
 private:
 
     ObjectBuffer<AP_HAL::CANFrame> buffer;
@@ -73,6 +87,12 @@ private:
 
     HAL_Semaphore sem;
 
+    struct {
+        uint32_t mask;
+        uint32_t value;
+    } filter[8];
+    uint8_t num_filters;
+
 };
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED

@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 
 /*
   code to monitor and report on the rate controllers, allowing for
@@ -24,20 +25,21 @@ void AC_AttitudeControl::control_monitor_filter_pid(float value, float &rms)
  */
 void AC_AttitudeControl::control_monitor_update(void)
 {
-    const AP_Logger::PID_Info &iroll  = get_rate_roll_pid().get_pid_info();
+    const AP_PIDInfo &iroll  = get_rate_roll_pid().get_pid_info();
     control_monitor_filter_pid(iroll.P + iroll.FF,  _control_monitor.rms_roll_P);
     control_monitor_filter_pid(iroll.D,             _control_monitor.rms_roll_D);
 
-    const AP_Logger::PID_Info &ipitch = get_rate_pitch_pid().get_pid_info();
+    const AP_PIDInfo &ipitch = get_rate_pitch_pid().get_pid_info();
     control_monitor_filter_pid(ipitch.P + ipitch.FF,  _control_monitor.rms_pitch_P);
     control_monitor_filter_pid(ipitch.D,             _control_monitor.rms_pitch_D);
 
-    const AP_Logger::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
+    const AP_PIDInfo &iyaw   = get_rate_yaw_pid().get_pid_info();
     control_monitor_filter_pid(iyaw.P + iyaw.D + iyaw.FF,  _control_monitor.rms_yaw);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
-  log a CRTL message
+  log a CTRL message
  */
 void AC_AttitudeControl::control_monitor_log(void) const
 {
@@ -58,6 +60,7 @@ void AC_AttitudeControl::control_monitor_log(void) const
                                            (double)safe_sqrt(_control_monitor.rms_yaw));
 
 }
+#endif  // HAL_LOGGING_ENABLED
 
 /*
   return current controller RMS filter value for roll

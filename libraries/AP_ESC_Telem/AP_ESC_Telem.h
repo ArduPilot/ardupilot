@@ -1,11 +1,15 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 #include "AP_ESC_Telem_Backend.h"
 
 #if HAL_WITH_ESC_TELEM
 
-#define ESC_TELEM_MAX_ESCS   12
+#define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
+
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
 
@@ -16,8 +20,9 @@ public:
     AP_ESC_Telem();
 
     /* Do not allow copies */
-    AP_ESC_Telem(const AP_ESC_Telem &other) = delete;
-    AP_ESC_Telem &operator=(const AP_ESC_Telem&) = delete;
+    CLASS_NO_COPY(AP_ESC_Telem);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     static AP_ESC_Telem *get_singleton();
 
@@ -27,11 +32,19 @@ public:
     // get an individual ESC's raw rpm if available
     bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
 
+    // get raw telemetry data, used by IOMCU
+    const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {
+        return _telem_data[esc_index];
+    }
+
     // return the average motor RPM
     float get_average_motor_rpm(uint32_t servo_channel_mask) const;
 
     // return the average motor RPM
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
+
+    // determine whether all the motors in servo_channel_mask are running
+    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const;
 
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
@@ -68,7 +81,7 @@ public:
 
     // get mask of ESCs that sent valid telemetry data in the last
     // ESC_TELEM_DATA_TIMEOUT_MS
-    uint16_t get_active_esc_mask() const;
+    uint32_t get_active_esc_mask() const;
 
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
@@ -79,14 +92,31 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // udpate at 10Hz to log telemetry
+    // update at 10Hz to log telemetry
     void update();
 
-private:
+    // is rpm telemetry configured for the provided channel mask
+    bool is_telemetry_active(uint32_t servo_channel_mask) const;
+
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
-    void update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate);
+    // can also be called from scripting
+    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
+
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
+
+#if AP_SCRIPTING_ENABLED
+    /*
+      set RPM scale factor from script
+     */
+    void set_rpm_scale(const uint8_t esc_index, const float scale_factor);
+#endif
+
+private:
+
+    // helper that validates RPM data
+    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us);
+    static bool was_rpm_data_ever_reported (const volatile AP_ESC_Telem_Backend::RpmData &instance);
 
     // rpm data
     volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];
@@ -95,8 +125,17 @@ private:
 
     uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
+    uint8_t next_idx;
 
+#if AP_SCRIPTING_ENABLED
+    // allow for scaling of RPMs via lua scripts
+    float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
+    uint32_t rpm_scale_mask;
+#endif
+    
     bool _have_data;
+
+    AP_Int8 mavlink_offset;
 
     static AP_ESC_Telem *_singleton;
 };
@@ -105,4 +144,4 @@ namespace AP {
     AP_ESC_Telem &esc_telem();
 };
 
-#endif
+#endif // HAL_WITH_ESC_TELEM

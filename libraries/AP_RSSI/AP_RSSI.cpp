@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RSSI_config.h"
+
+#if AP_RSSI_ENABLED
+
 #include <AP_RSSI/AP_RSSI.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
@@ -51,7 +55,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: PIN_LOW
     // @DisplayName: RSSI pin's lowest voltage
-    // @Description: RSSI pin's voltage received on the RSSI_ANA_PIN when the signal strength is the weakest. Some radio receivers put out inverted values so this value may be higher than RSSI_PIN_HIGH
+    // @Description: RSSI pin's voltage received on the RSSI_ANA_PIN when the signal strength is the weakest. Some radio receivers put out inverted values so this value may be higher than RSSI_PIN_HIGH. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -60,7 +64,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: PIN_HIGH
     // @DisplayName: RSSI pin's highest voltage
-    // @Description: RSSI pin's voltage received on the RSSI_ANA_PIN when the signal strength is the strongest. Some radio receivers put out inverted values so this value may be lower than RSSI_PIN_LOW
+    // @Description: RSSI pin's voltage received on the RSSI_ANA_PIN when the signal strength is the strongest. Some radio receivers put out inverted values so this value may be lower than RSSI_PIN_LOW. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -141,7 +145,7 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RECEIVER: {
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
-                return rssi / 255.0;
+                return rssi * (1/255.0);
             }
             return 0.0f;
         }
@@ -176,10 +180,9 @@ uint8_t AP_RSSI::read_receiver_rssi_uint8()
 // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
 float AP_RSSI::read_pin_rssi()
 {
-    if (!rssi_analog_source) {
+    if (!rssi_analog_source || !rssi_analog_source->set_pin(rssi_analog_pin)) {
         return 0;
     }
-    rssi_analog_source->set_pin(rssi_analog_pin);
     float current_analog_voltage = rssi_analog_source->voltage_average();
 
     return scale_and_constrain_float_rssi(current_analog_voltage, rssi_analog_pin_range_low, rssi_analog_pin_range_high);
@@ -226,7 +229,11 @@ float AP_RSSI::read_pwm_pin_rssi()
 
 float AP_RSSI::read_telemetry_radio_rssi()
 {
+#if HAL_GCS_ENABLED
     return GCS_MAVLINK::telemetry_radio_rssi();
+#else
+    return 0;
+#endif
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
@@ -269,3 +276,5 @@ AP_RSSI *rssi()
 }
 
 };
+
+#endif  // AP_RSSI_ENABLED

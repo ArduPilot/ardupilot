@@ -14,7 +14,6 @@ local warn_ms = 10000
 
 
 local height_threshold_passed = false
-local last_warn = 0
 function update()
 
   if not arming:is_armed() then

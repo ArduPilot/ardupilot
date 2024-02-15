@@ -78,11 +78,11 @@ static void mat_pivot(const T* A, T* pivot, uint16_t n)
         uint16_t max_j = i;
         for(uint16_t j=i;j<n;j++){
             if (std::is_same<T, double>::value) {
-                if(fabsf(A[j*n + i]) > fabsf(A[max_j*n + i])) {
+                if(fabsF(A[j*n + i]) > fabsF(A[max_j*n + i])) {
                     max_j = j;
                 }
             } else {
-                if(fabsf(A[j*n + i]) > fabsf(A[max_j*n + i])) {
+                if(fabsF(A[j*n + i]) > fabsF(A[max_j*n + i])) {
                     max_j = j;
                 }
             }

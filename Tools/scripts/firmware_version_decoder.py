@@ -29,6 +29,7 @@ class VehicleType(enum.Enum):
     ArduSub = 7
     iofirmware = 8
     AP_Periph = 9
+    NONE = 256
 
 
 class BoardType(enum.Enum):
@@ -67,6 +68,7 @@ class BoardSubType(enum.Enum):
     LINUX_NAVIGATOR = 1023
     LINUX_VNAV = 1024
     LINUX_OBAL = 1025
+    LINUX_CANZERO = 1026
     CHIBIOS_SKYVIPER_F412 = 5000
     CHIBIOS_FMUV3 = 5001
     CHIBIOS_FMUV4 = 5002
@@ -84,9 +86,9 @@ class FWVersion:
     header: int = 0x61706677766572FB
     header_version: bytes = bytes([0, 0])
     pointer_size: int = 0
-    vehicle_type: int = 0
-    board_type: int = 0
-    board_subtype: int = 0
+    vehicle_type: VehicleType = VehicleType.NONE
+    board_type: BoardType = BoardType.EMPTY
+    board_subtype: BoardSubType = BoardSubType.NONE
     major: int = 0
     minor: int = 0
     patch: int = 0
@@ -94,6 +96,7 @@ class FWVersion:
     os_software_version: int = 0
     firmware_string: str = ""
     firmware_hash_string: str = ""
+    firmware_hash: int = 0
     middleware_name: str = ""
     middleware_hash_string: str = ""
     os_name: str = ""
@@ -116,12 +119,13 @@ class FWVersion:
         pointer_size: {self.pointer_size}
     firmware:
         string: {self.firmware_string}
-        vehicle: {VehicleType(self.vehicle_type).name}
-        board: {BoardType(self.board_type).name}
-        board subtype: {BoardSubType(self.board_subtype).name}
+        vehicle: {self.vehicle_type.name}
+        board: {self.board_type.name}
+        board subtype: {self.board_subtype.name}
         hash: {self.firmware_hash_string}
+        hash integer: 0x{self.firmware_hash:02x}
         version: {self.major}.{self.minor}.{self.patch}
-        type: {FirmwareVersionType(self.firmware_type).name}
+        type: {self.firmware_type.name}
     os:
         name: {self.os_name}
         hash: {self.os_hash_string}
@@ -177,27 +181,32 @@ class Decoder:
         )
 
         self.fwversion.header_version = self.unpack("H")
+        major_version = self.fwversion.header_version >> 8
+
         self.pointer_size = self.unpack("B")
         self.fwversion.pointer_size = self.pointer_size
         self.unpack("B")  # reserved
-        self.fwversion.vehicle_type = self.unpack("B")
-        self.fwversion.board_type = self.unpack("B")
-        self.fwversion.board_subtype = self.unpack("H")
+        self.fwversion.vehicle_type = VehicleType(self.unpack("B"))
+        self.fwversion.board_type = BoardType(self.unpack("B"))
+        self.fwversion.board_subtype = BoardSubType(self.unpack("H"))
 
         self.fwversion.major = self.unpack("B")
         self.fwversion.minor = self.unpack("B")
         self.fwversion.patch = self.unpack("B")
-        self.fwversion.firmware_type = self.unpack("B")
+        self.fwversion.firmware_type = FirmwareVersionType(self.unpack("B"))
         self.fwversion.os_software_version = self.unpack("I")
 
         self.fwversion.firmware_string = self.unpack_string_from_pointer()
         self.fwversion.firmware_hash_string = self.unpack_string_from_pointer()
+        if major_version >= 2:
+            self.fwversion.firmware_hash = self.unpack("I")
+
         self.fwversion.middleware_name = self.unpack_string_from_pointer()
         self.fwversion.middleware_hash_string = self.unpack_string_from_pointer()
         self.fwversion.os_name = self.unpack_string_from_pointer()
         self.fwversion.os_hash_string = self.unpack_string_from_pointer()
 
-    def process(self, filename) -> None:
+    def process(self, filename) -> FWVersion:
         # We need the file open for ELFFile
         file = open(filename, "rb")
         data = file.read()
@@ -219,7 +228,7 @@ class Decoder:
 
         # Unpack struct and print it
         self.unpack_fwversion()
-        print(self.fwversion)
+        return self.fwversion
 
 
 if __name__ == "__main__":
@@ -235,7 +244,21 @@ if __name__ == "__main__":
         required=True,
         help="File that contains a valid ardupilot firmware in ELF format.",
     )
+    parser.add_argument(
+        "--expected-hash",
+        dest="expected_hash",
+        help="Expected git hash. The script fails if this doesn't match the git hash in the binary file. Used in CI",
+    )
     args = parser.parse_args()
 
     decoder = Decoder()
-    decoder.process(args.file)
+    try:
+        firmware_data = decoder.process(args.file)
+    except Exception as e:
+        print(f"Error decoding FWVersion: {type(e)}")
+        exit(-1)
+
+    print(firmware_data)
+    if args.expected_hash and args.expected_hash != firmware_data.firmware_hash_string:
+        print(f"Git hashes don't match! expected: {args.expected_hash}, got {firmware_data.firmware_hash_string}")
+        exit(-1)

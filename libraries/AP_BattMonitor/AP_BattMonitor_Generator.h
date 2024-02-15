@@ -2,7 +2,7 @@
 
 #include <AP_Generator/AP_Generator.h>
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
@@ -44,7 +44,7 @@ public:
     // This is where we tell the battery monitor 'we have current' if we want to report a fuel level remaining
     bool has_current(void) const override;
 
-    // This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
+    // This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel level remaining
     bool has_consumed_energy(void) const override;
 };
 #endif

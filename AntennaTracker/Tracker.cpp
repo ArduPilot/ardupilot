@@ -23,35 +23,49 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros, _prio)
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 20ms units) and the maximum time they are expected to take (in
-  microseconds)
+  All entries in this table must be ordered by priority.
+
+  This table is interleaved with the table in AP_Vehicle to determine
+  the order in which tasks are run.  Convenience methods SCHED_TASK
+  and SCHED_TASK_CLASS are provided to build entries in this structure:
+
+SCHED_TASK arguments:
+ - name of static function to call
+ - rate (in Hertz) at which the function should be called
+ - expected time (in MicroSeconds) that the function should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
+SCHED_TASK_CLASS arguments:
+ - class name of method to be called
+ - instance on which to call the method
+ - method to call on that instance
+ - rate (in Hertz) at which the method should be called
+ - expected time (in MicroSeconds) that the method should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
  */
 const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
-    SCHED_TASK(update_ahrs,            50,   1000),
-    SCHED_TASK(read_radio,             50,    200),
-    SCHED_TASK(update_tracking,        50,   1000),
-    SCHED_TASK(update_GPS,             10,   4000),
-    SCHED_TASK(update_compass,         10,   1500),
-    SCHED_TASK(compass_save,           0.02,   200),
-    SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500),
-    SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10,   1500),
-    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700),
-    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000),
-    SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900),
-    SCHED_TASK(ten_hz_logging_loop,    10,    300),
-#if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300),
+    SCHED_TASK(update_ahrs,            50,    1000,  5),
+    SCHED_TASK(read_radio,             50,     200, 10),
+    SCHED_TASK(update_tracking,        50,    1000, 15),
+    SCHED_TASK(update_GPS,             10,    4000, 20),
+    SCHED_TASK(update_compass,         10,    1500, 25),
+    SCHED_TASK(compass_save,            0.02,  200, 30),
+    SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500, 35),
+    SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10, 1500, 40),
+    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700, 45),
+    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000, 50),
+    SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900, 55),
+#if HAL_LOGGING_ENABLED
+    SCHED_TASK(ten_hz_logging_loop,    10,    300, 60),
+    SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300, 65),
 #endif
-    SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50),
-    SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
-    SCHED_TASK(one_second_loop,         1,   3900),
-    SCHED_TASK_CLASS(Compass,          &tracker.compass,              cal_update, 50, 100),
-    SCHED_TASK(stats_update,            1,    200),
+    SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50, 70),
+    SCHED_TASK(one_second_loop,         1,   3900, 80),
+    SCHED_TASK(stats_update,            1,    200, 90),
 };
 
 void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -65,9 +79,6 @@ void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 void Tracker::one_second_loop()
 {
-    // make it possible to change orientation at runtime
-    ahrs.update_orientation();
-
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -80,7 +91,7 @@ void Tracker::one_second_loop()
     if (!ahrs.home_is_set()) {
         // set home to current location
         Location temp_loc;
-        if (ahrs.get_position(temp_loc)) {
+        if (ahrs.get_location(temp_loc)) {
             if (!set_home(temp_loc)){
                 // fail silently
             }
@@ -92,8 +103,11 @@ void Tracker::one_second_loop()
     set_likely_flying(hal.util->get_soft_armed());
 
     AP_Notify::flags.flying = hal.util->get_soft_armed();
+
+    g.pidYaw2Srv.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 }
 
+#if HAL_LOGGING_ENABLED
 void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
@@ -109,6 +123,7 @@ void Tracker::ten_hz_logging_loop()
         logger.Write_RCOUT();
     }
 }
+#endif
 
 Mode *Tracker::mode_from_mode_num(const Mode::Number num)
 {
@@ -144,16 +159,10 @@ Mode *Tracker::mode_from_mode_num(const Mode::Number num)
 */
 void Tracker::stats_update(void)
 {
-    stats.set_flying(hal.util->get_soft_armed());
-    stats.update();
+    AP::stats()->set_flying(hal.util->get_soft_armed());
 }
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
-Tracker::Tracker(void)
-    : logger(g.log_bitmask)
-{
-}
 
 Tracker tracker;
 AP_Vehicle& vehicle = tracker;

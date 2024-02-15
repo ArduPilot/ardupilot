@@ -15,7 +15,7 @@
 /*
   Simulator for the FETtecOneWire ESCs
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:fetteconewireesc --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:fetteconewireesc --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 38
 param set SERIAL5_BAUD 500000
@@ -39,15 +39,15 @@ param fetch
 
 #include "SIM_SerialDevice.h"
 
+#include <stdio.h>
+
 #define SIM_FTW_DEBUGGING 0
 #if SIM_FTW_DEBUGGING
-#include <stdio.h>
 #define simfet_debug(fmt, args ...)  do {::fprintf(stderr,"SIMFET: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define simfet_debug(fmt, args ...)
 #endif
 
-#include <stdio.h>
 
 namespace SITL {
 

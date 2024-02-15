@@ -16,3 +16,6 @@ void bootloader(unsigned timeout);
 #define MAX_DES_LENGTH 20
 
 #define arraySize(a) (sizeof((a))/sizeof(((a)[0])))
+
+enum led_state {LED_BLINK, LED_ON, LED_OFF, LED_BAD_FW};
+void led_set(enum led_state state);

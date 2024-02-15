@@ -461,7 +461,7 @@ static const luaL_Reg base_funcs[] = {
 //  {"getmetatable", luaB_getmetatable},
   {"ipairs", luaB_ipairs},
 //  {"loadfile", luaB_loadfile},
-//  {"load", luaB_load},
+  {"load", luaB_load},
 #if defined(LUA_COMPAT_LOADSTRING)
   {"loadstring", luaB_load},
 #endif
@@ -501,6 +501,13 @@ LUAMOD_API int luaopen_base (lua_State *L) {
 
 LUAMOD_API int luaopen_base_sandbox(lua_State *L) {
   luaL_setfuncs(L, base_funcs, 0);
+  // for debugging what has been loaded
+  // lua_pushvalue(L, -1);
+  // lua_setfield(L, -2, "_Sandbox");
+  // lua_pushglobaltable(L);
+  // lua_pushvalue(L, -1);
+  // lua_setfield(L, -3, "_G");
+  // lua_pop(L, 1);
+
   return 1;
 }
-

@@ -13,9 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
+
 #include "AP_Proximity_LightWareSF40C.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -307,8 +310,8 @@ void AP_Proximity_LightWareSF40C::process_message()
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
-        const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
-        const float angle_correction = frontend.get_yaw_correction(state.instance);
+        const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+        const float angle_correction = params.yaw_correction;
         const uint16_t dist_min_cm = distance_min() * 100;
         const uint16_t dist_max_cm = distance_max() * 100;
 
@@ -320,16 +323,16 @@ void AP_Proximity_LightWareSF40C::process_message()
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
 
             // if point is on a new face then finish off previous face
             if (face != _face) {
                 // update boundary used for avoidance
                 if (_face_distance_valid) {
-                    boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                    frontend.boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance, state.instance);
                 } else {
                     // mark previous face invalid
-                    boundary.reset_face(_face);
+                    frontend.boundary.reset_face(_face, state.instance);
                 }
                 // init for new face
                 _face = face;
@@ -421,4 +424,4 @@ uint16_t AP_Proximity_LightWareSF40C::buff_to_uint16(uint8_t b0, uint8_t b1) con
     return leval;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED

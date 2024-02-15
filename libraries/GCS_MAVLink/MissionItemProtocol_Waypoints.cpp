@@ -16,6 +16,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "GCS_config.h"
+#include <AP_Mission/AP_Mission_config.h>
+
+#if HAL_GCS_ENABLED && AP_MISSION_ENABLED
+
 #include "MissionItemProtocol_Waypoints.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -53,7 +58,9 @@ bool MissionItemProtocol_Waypoints::clear_all_items()
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::complete(const GCS_MAVLINK &_link)
 {
     _link.send_text(MAV_SEVERITY_INFO, "Flight plan received");
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_EntireMission();
+#endif
     return MAV_MISSION_ACCEPTED;
 }
 
@@ -65,11 +72,14 @@ MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_l
     if (packet.seq != 0 && // always allow HOME to be read
         packet.seq >= mission.num_commands()) {
         // try to educate the GCS on the actual size of the mission:
-        mavlink_msg_mission_count_send(_link.get_chan(),
-                                       msg.sysid,
-                                       msg.compid,
-                                       mission.num_commands(),
-                                       MAV_MISSION_TYPE_MISSION);
+        const mavlink_channel_t chan = _link.get_chan();
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_COUNT)) {
+            mavlink_msg_mission_count_send(chan,
+                                           msg.sysid,
+                                           msg.compid,
+                                           mission.num_commands(),
+                                           MAV_MISSION_TYPE_MISSION);
+        }
         return MAV_MISSION_ERROR;
     }
 
@@ -136,3 +146,5 @@ void MissionItemProtocol_Waypoints::truncate(const mavlink_mission_count_t &pack
     // new mission arriving, truncate mission to be the same length
     mission.truncate(packet.count);
 }
+
+#endif  // HAL_GCS_ENABLED && AP_MISSION_ENABLED

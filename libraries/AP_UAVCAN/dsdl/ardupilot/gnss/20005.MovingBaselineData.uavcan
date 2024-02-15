@@ -1,3 +1,0 @@
-# length of data is set per the number of bytes for pkt in
-# libraries/AP_GPS/RTCM3_Parser.h
-uint8[<=300] data

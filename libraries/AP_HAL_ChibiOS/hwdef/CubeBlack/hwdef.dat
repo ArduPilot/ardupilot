@@ -4,7 +4,7 @@
 
 include ../fmuv3/hwdef.dat
 
-define HAL_CHIBIOS_ARCH_CUBEBLACK 1
+define HAL_CHIBIOS_ARCH_CUBE 1
 
 env OPTIMIZE -O2
 
@@ -90,3 +90,20 @@ PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
 # means sensors off, then it is pulled HIGH in peripheral_power_enable()
 undef PE3
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+
+# if you want to enable parameter backup/restore then uncomment the following two lines
+# Note: this will use 16k more RAM, so ensure you have enough by looking at MEMINFO messages
+# in MAVLink2 or in PM message in logs
+# undef HAL_STORAGE_SIZE
+# define HAL_STORAGE_SIZE 32768
+
+
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# default the 2nd interface to SLCAN
+define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
+# enable support for dshot on iomcu
+define HAL_WITH_IO_MCU_DSHOT 1

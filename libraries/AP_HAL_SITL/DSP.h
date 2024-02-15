@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_WITH_DSP
+
 #include "AP_HAL_SITL.h"
 
 #include <complex>
@@ -27,7 +30,7 @@ typedef std::complex<float> complexf;
 class HALSITL::DSP : public AP_HAL::DSP {
 public:
     // initialise an FFT instance
-    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics) override;
+    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size) override;
     // start an FFT analysis with an ObjectBuffer
     virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) override;
     // perform remaining steps of an FFT analysis
@@ -38,7 +41,7 @@ public:
         friend class HALSITL::DSP;
 
     public:
-        FFTWindowStateSITL(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics);
+        FFTWindowStateSITL(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size);
         virtual ~FFTWindowStateSITL();
 
     private:
@@ -52,5 +55,8 @@ private:
     void vector_max_float(const float* vin, uint16_t len, float* maxValue, uint16_t* maxIndex) const override;
     void vector_scale_float(const float* vin, float scale, float* vout, uint16_t len) const override;
     float vector_mean_float(const float* vin, uint16_t len) const override;
+    void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const override;
     void calculate_fft(complexf* f, uint16_t length);
 };
+
+#endif

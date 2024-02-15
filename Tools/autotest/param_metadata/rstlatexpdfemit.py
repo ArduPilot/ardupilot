@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from rstemit import RSTEmit
 
 

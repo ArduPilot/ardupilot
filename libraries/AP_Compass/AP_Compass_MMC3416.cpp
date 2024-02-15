@@ -17,6 +17,8 @@
  */
 #include "AP_Compass_MMC3416.h"
 
+#if AP_COMPASS_MMC3416_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 #include <AP_Math/AP_Math.h>
@@ -247,6 +249,10 @@ void AP_Compass_MMC3416::timer()
 #endif
 
         last_sample_ms = AP_HAL::millis();
+
+        // sensor is not FRD
+        field.y = -field.y;
+
         accumulate_sample(field, compass_instance);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
@@ -273,6 +279,9 @@ void AP_Compass_MMC3416::timer()
         field *= -counts_to_milliGauss;
         field += offset;
 
+        // sensor is not FRD
+        field.y = -field.y;
+
         last_sample_ms = AP_HAL::millis();
         accumulate_sample(field, compass_instance);
 
@@ -294,3 +303,5 @@ void AP_Compass_MMC3416::read()
 {
     drain_accumulated_samples(compass_instance);
 }
+
+#endif  // AP_COMPASS_MMC3416_ENABLED

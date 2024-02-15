@@ -13,9 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_RANGEFINDER_ENABLED
+
 #include "AP_Proximity_RangeFinder.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -45,17 +48,17 @@ void AP_Proximity_RangeFinder::update(void)
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 const uint8_t sector = (uint8_t)sensor->orientation();
                 const float angle = sector * 45;
-                const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle);
+                const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle);
                 // distance in meters
-                const float distance_m = sensor->distance_cm() * 0.01f;
+                const float distance = sensor->distance();
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
-                if ((distance_m <= _distance_max) && (distance_m >= _distance_min) && !check_obstacle_near_ground(angle, distance_m)) {
-                    boundary.set_face_attributes(face, angle, distance_m);
+                if ((distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
+                    frontend.boundary.set_face_attributes(face, angle, distance, state.instance);
                     // update OA database
-                    database_push(angle, distance_m);
+                    database_push(angle, distance);
                 } else {
-                    boundary.reset_face(face);
+                    frontend.boundary.reset_face(face, state.instance);
                 }
                 _last_update_ms = now;
             }
@@ -94,4 +97,4 @@ bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
     return false;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_RANGEFINDER_ENABLED

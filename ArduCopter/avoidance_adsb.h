@@ -12,8 +12,7 @@ public:
     using AP_Avoidance::AP_Avoidance;
 
     /* Do not allow copies */
-    AP_Avoidance_Copter(const AP_Avoidance_Copter &other) = delete;
-    AP_Avoidance_Copter &operator=(const AP_Avoidance_Copter&) = delete;
+    CLASS_NO_COPY(AP_Avoidance_Copter);
 
 private:
     // helper function to set modes and always succeed

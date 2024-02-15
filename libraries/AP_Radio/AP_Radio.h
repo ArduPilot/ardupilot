@@ -14,13 +14,16 @@
  */
 #pragma once
 
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_ENABLED
+
 /*
  * base class for direct attached radios
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Radio_backend;
 
@@ -129,3 +132,5 @@ private:
 
     static AP_Radio *_singleton;
 };
+
+#endif  // AP_RADIO_ENABLED

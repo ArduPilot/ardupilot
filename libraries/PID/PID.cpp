@@ -14,22 +14,22 @@ const AP_Param::GroupInfo PID::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P",    0, PID, _kp, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    0, PID, _kp, default_kp),
 
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
-    AP_GROUPINFO("I",    1, PID, _ki, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    1, PID, _ki, default_ki),
 
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
-    AP_GROUPINFO("D",    2, PID, _kd, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    2, PID, _kd, default_kd),
 
     // @Param: IMAX
     // @DisplayName: PID Integral Maximum
     // @Description: The maximum/minimum value that the I term can output
-    AP_GROUPINFO("IMAX", 3, PID, _imax, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 3, PID, _imax, default_kimax),
 
     AP_GROUPEND
 };
@@ -52,7 +52,7 @@ float PID::get_pid(float error, float scaler)
     }
     _last_t = tnow;
 
-    delta_time = (float)dt / 1000.0f;
+    delta_time = (float)dt * 0.001f;
 
     // Compute proportional component
     _pid_info.P = error * _kp;

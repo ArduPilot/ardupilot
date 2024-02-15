@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_Wasp.h"
 
+#if AP_RANGEFINDER_WASP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -76,7 +78,7 @@ AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
+bool AP_RangeFinder_Wasp::get_reading(float &reading_m) {
     if (uart == nullptr) {
         return false;
     }
@@ -84,9 +86,11 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
     // read any available lines from the lidar
     float sum = 0;
     uint16_t count = 0;
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        char c = uart->read();
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
         if (c == '\n') {
             linebuf[linebuf_len] = 0;
             linebuf_len = 0;
@@ -118,7 +122,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
         return false;
     }
 
-    reading_cm = 100 * sum / count;
+    reading_m = sum / count;
     set_status(RangeFinder::Status::Good);
 
     return true;
@@ -127,7 +131,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
 #define COMMAND_BUFFER_LEN 15
 
 void AP_RangeFinder_Wasp::update(void) {
-    if (!get_reading(state.distance_cm)) {
+    if (!get_reading(state.distance_m)) {
         set_status(RangeFinder::Status::NoData);
     }
 
@@ -247,3 +251,4 @@ void AP_RangeFinder_Wasp::parse_response(void) {
     }
 }
 
+#endif  // AP_RANGEFINDER_WASP_ENABLED

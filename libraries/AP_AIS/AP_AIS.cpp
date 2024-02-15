@@ -19,11 +19,19 @@
 
 #include "AP_AIS.h"
 
-#if HAL_AIS_ENABLED
+#if AP_AIS_ENABLED
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#define AP_AIS_DUMMY_METHODS_ENABLED ((AP_AIS_ENABLED == 2) && !APM_BUILD_TYPE(APM_BUILD_Rover))
+
+#if !AP_AIS_DUMMY_METHODS_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_Param::GroupInfo AP_AIS::var_info[] = {
 
@@ -63,7 +71,18 @@ const AP_Param::GroupInfo AP_AIS::var_info[] = {
 // constructor
 AP_AIS::AP_AIS()
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AIS must be singleton");
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// return true if AIS is enabled
+bool AP_AIS::enabled() const
+{ 
+    return AISType(_type.get()) != AISType::NONE;
 }
 
 // Initialize the AIS object and prepare it for use
@@ -89,7 +108,7 @@ void AP_AIS::update()
     }
 
     // read any available lines
-    uint32_t nbytes = MAX(_uart->available(),1024U);
+    uint32_t nbytes = MIN(_uart->available(),1024U);
     while (nbytes-- > 0) {
         const int16_t byte = _uart->read();
         if (byte == -1) {
@@ -102,20 +121,26 @@ void AP_AIS::update()
 
             if (_incoming.total  > AIVDM_BUFFER_SIZE)  {
                 // no point in trying to decode it wont fit
+#if HAL_LOGGING_ENABLED
                 if (log_all || log_unsupported) {
                     log_raw(&_incoming);
                 }
+#endif
                 break;
             }
+#if HAL_LOGGING_ENABLED
             if (log_all) {
                 log_raw(&_incoming);
             }
+#endif
 
             if (_incoming.num == 1 && _incoming.total == 1) {
                 // single part message
                 if (!payload_decode(_incoming.payload) && log_unsupported) {
+#if HAL_LOGGING_ENABLED
                     // could not decode so log
                     log_raw(&_incoming);
+#endif
                 }
             } else if (_incoming.num == _incoming.total) {
                 // last part of a multi part message
@@ -123,7 +148,7 @@ void AP_AIS::update()
                 uint8_t msg_parts[_incoming.num - 1];
                 for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE; i++) {
                     // look for the rest of the message from the start of the buffer
-                    // we assume the mesage has be received in the correct order
+                    // we assume the message has be received in the correct order
                     if (_AIVDM_buffer[i].num == (index + 1) && _AIVDM_buffer[i].total == _incoming.total && _AIVDM_buffer[i].ID == _incoming.ID) {
                         msg_parts[index] = i;
                         index++;
@@ -136,12 +161,14 @@ void AP_AIS::update()
                 // did we find the right number?
                 if (_incoming.num != index) {
                     // could not find all of the message, save messages
+#if HAL_LOGGING_ENABLED
                     if (log_unsupported) {
                         for (uint8_t i = 0; i < index; i++) {
                             log_raw(&_AIVDM_buffer[msg_parts[i]]);
                         }
                         log_raw(&_incoming);
                     }
+#endif
                     // remove
                     for (uint8_t i = 0; i < index; i++) {
                         buffer_shift(msg_parts[i]);
@@ -156,17 +183,23 @@ void AP_AIS::update()
                     strncat(multi,_AIVDM_buffer[msg_parts[i]].payload,sizeof(multi));
                 }
                 strncat(multi,_incoming.payload,sizeof(multi));
+#if HAL_LOGGING_ENABLED
                 const bool decoded = payload_decode(multi);
+#endif
                 for (uint8_t i = 0; i < _incoming.total; i++) {
+#if HAL_LOGGING_ENABLED
                     // unsupported type, log and discard
                     if (!decoded && log_unsupported) {
                         log_raw(&_AIVDM_buffer[msg_parts[i]]);
                     }
+#endif
                     buffer_shift(msg_parts[i]);
                 }
+#if HAL_LOGGING_ENABLED
                 if (!decoded && log_unsupported) {
                     log_raw(&_incoming);
                 }
+#endif
             } else {
                 // multi part message, store in buffer
                 bool fits_in = false;
@@ -180,10 +213,12 @@ void AP_AIS::update()
                 }
                 if (!fits_in) {
                     // remove the oldest message
+#if HAL_LOGGING_ENABLED
                     if (log_unsupported) {
                         // log the unused message before removing it
                         log_raw(&_AIVDM_buffer[0]);
                     }
+#endif
                     buffer_shift(0);
                     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1] = _incoming;
                 }
@@ -291,12 +326,12 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
         return false;
     }
 
-    struct Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
 
-    struct Location loc;
+    Location loc;
     float dist;
     float max_dist = 0;
     for (uint16_t i = 0; i < list_size; i++) {
@@ -331,11 +366,11 @@ void AP_AIS::clear_list_item(uint16_t index)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Functions for decoding AIVDM payload mesages
+// Functions for decoding AIVDM payload messages
 
 bool AP_AIS::payload_decode(const char *payload)
 {
-    // the mesage type is defined by the first character
+    // the message type is defined by the first character
     const uint8_t type = payload_char_decode(payload[0]);
 
     switch (type) {
@@ -375,6 +410,7 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     bool raim = get_bits(payload, 148, 148);
     uint32_t radio = get_bits(payload, 149, 167);
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         const struct log_AIS_msg1 pkt{
@@ -398,6 +434,19 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)nav;
+    (void)rot;
+    (void)sog;
+    (void)pos_acc;
+    (void)cog;
+    (void)head;
+    (void)sec_utc;
+    (void)maneuver;
+    (void)raim;
+    (void)radio;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index, lat, lon)) {
@@ -464,6 +513,7 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     bool raim          = get_bits(payload, 148, 148);
     uint32_t radio     = get_bits(payload, 149, 167);
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg4 pkt {
@@ -486,6 +536,19 @@ bool AP_AIS::decode_base_station_report(const char *payload)
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)year;
+    (void)month;
+    (void)day;
+    (void)hour;
+    (void)minute;
+    (void)second;
+    (void)fix;
+    (void)epfd;
+    (void)raim;
+    (void)radio;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index)) {
@@ -530,6 +593,7 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
     bool dte            = get_bits(payload, 422, 422);
     // 423 - 426: spare
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg5 pkt {
@@ -556,6 +620,14 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
         strncpy(pkt.dest, dest, sizeof(pkt.dest));
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)ver;
+    (void)imo;
+    (void)fix;
+    (void)draught;
+    (void)dte;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index)) {
@@ -656,7 +728,7 @@ uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
 }
 
 // read the specified bits from the char array each char giving 6 bits
-// As the values are a arbitrary length the sign bit is in the wrong place for standard length varables
+// As the values are a arbitrary length the sign bit is in the wrong place for standard length variables
 int32_t AP_AIS::get_bits_signed(const char *payload, uint16_t low, uint16_t high)
 {
     uint32_t value = get_bits(payload, low, high);
@@ -681,6 +753,7 @@ uint8_t AP_AIS::payload_char_decode(const char c)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions for decoding and logging AIVDM NMEA sentence
 
+#if HAL_LOGGING_ENABLED
 // log a raw AIVDM a message
 void AP_AIS::log_raw(const AIVDM *msg)
 {
@@ -695,6 +768,7 @@ void AP_AIS::log_raw(const AIVDM *msg)
     memcpy(pkt.payload, msg->payload, sizeof(pkt.payload));
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 // add a single character to the buffer and attempt to decode
 // returns true if a complete sentence was successfully decoded
@@ -804,15 +878,30 @@ bool AP_AIS::decode_latest_term()
     return false;
 }
 
-// return the numeric value of an ascii hex character
-int16_t AP_AIS::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
+// get singleton instance
+AP_AIS *AP_AIS::get_singleton() {
+    return _singleton;
 }
 
-#endif  // HAL_AIS_ENABLED
+#else
+// Dummy methods are required to allow functionality to be enabled for Rover.
+// It is not possible to compile in or out the full code based on vehicle type due to limitations
+// of the handling of `APM_BUILD_TYPE` define.
+// These dummy methods minimise flash cost in that case.
+
+const AP_Param::GroupInfo AP_AIS::var_info[] = { AP_GROUPEND };
+AP_AIS::AP_AIS() {};
+
+bool AP_AIS::enabled() const { return false; }
+
+void AP_AIS::init() {};
+void AP_AIS::update() {};
+void AP_AIS::send(mavlink_channel_t chan) {};
+
+AP_AIS *AP_AIS::get_singleton() { return nullptr; }
+
+#endif // AP_AIS_DUMMY_METHODS_ENABLED
+
+AP_AIS *AP_AIS::_singleton;
+
+#endif  // AP_AIS_ENABLED

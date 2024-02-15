@@ -8,7 +8,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -32,19 +31,13 @@ public:
 
 static AP_SerialManager serial_manager;
 
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&v, {group_info : class::var_info} }
 const struct AP_Param::Info var_info[] = {
-//    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
-    { AP_PARAM_GROUP, "SERIAL", Parameters::k_param_serial_manager, (const void *)&serial_manager, {group_info : AP_SerialManager::var_info} },
+    { "SERIAL", (const void *)&serial_manager, {group_info : AP_SerialManager::var_info}, 0, Parameters::k_param_serial_manager, AP_PARAM_GROUP },
     AP_VAREND
 };
 
 
 static AP_Param param{var_info};
-
-
-AP_Int32 logger_bitmask;
-static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle : public AP_Vehicle {
 public:

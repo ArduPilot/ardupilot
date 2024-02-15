@@ -15,9 +15,6 @@ FLASH_SIZE_KB 2048
 # bootloader starts at zero offset
 FLASH_RESERVE_START_KB 0
 
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 256
-
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128
@@ -37,11 +34,11 @@ PA12 OTG_FS_DP OTG1
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
+# make sure Vsw is on during bootloader
+PD10  PINIO1 OUTPUT LOW
+
 PE3 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
-
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
 
 # Add CS pins to ensure they are high in bootloader
 PC15 IMU1_CS CS

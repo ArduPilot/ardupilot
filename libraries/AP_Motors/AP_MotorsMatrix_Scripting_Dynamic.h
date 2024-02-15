@@ -1,5 +1,5 @@
 #pragma once
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include "AP_MotorsMatrix.h"
 
@@ -7,8 +7,8 @@ class AP_MotorsMatrix_Scripting_Dynamic : public AP_MotorsMatrix {
 public:
 
     // Constructor
-    AP_MotorsMatrix_Scripting_Dynamic(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMatrix(loop_rate, speed_hz)
+    AP_MotorsMatrix_Scripting_Dynamic(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMatrix(speed_hz)
     {
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_MotorsMatrix_Scripting_Dynamic must be singleton");
@@ -43,13 +43,13 @@ public:
     // output - sends commands to the motors
     void output_to_motors() override;
 
-    const char* get_frame_string() const override { return "Dynamic Matrix"; }
-
 protected:
 
     // Do not apply thrust compensation, this is used by Quadplane tiltrotors
     // assume the compensation is done in the mixer and should not be done by quadplane
     void thrust_compensation(void) override {};
+
+    const char* _get_frame_string() const override { return "Dynamic Matrix"; }
 
 private:
 
@@ -62,4 +62,4 @@ private:
     static AP_MotorsMatrix_Scripting_Dynamic *_singleton;
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

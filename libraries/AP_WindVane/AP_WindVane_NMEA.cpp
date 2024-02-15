@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_NMEA_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_WindVane_NMEA.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -198,13 +202,4 @@ bool AP_WindVane_NMEA::decode_latest_term()
     return false;
 }
 
-// return the numeric value of an ascii hex character
-int16_t AP_WindVane_NMEA::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
-}
+#endif  // AP_WINDVANE_NMEA_ENABLED

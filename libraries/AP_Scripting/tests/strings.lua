@@ -27,6 +27,8 @@
 
 -- This code is copied from https://github.com/lua/tests and slightly modified to work within ArduPilot
 
+-- luacheck: ignore 581 (Negation of a relational operator - operator can be flipped)
+
 gcs:send_text(6, 'testing strings and string library')
 
 local maxi, mini = math.maxinteger, math.mininteger

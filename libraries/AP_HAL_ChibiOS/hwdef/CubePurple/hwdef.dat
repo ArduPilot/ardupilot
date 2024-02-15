@@ -4,6 +4,8 @@
 
 include ../fmuv3/hwdef.dat
 
+define HAL_CHIBIOS_ARCH_CUBE 1
+
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
 USB_PRODUCT 0x1015
@@ -31,3 +33,9 @@ COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1

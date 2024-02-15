@@ -341,7 +341,6 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
 
-    // copy required states to local variable names
     q0       = stateStruct.quat[0];
     q1       = stateStruct.quat[1];
     q2       = stateStruct.quat[2];
@@ -1161,7 +1160,7 @@ void NavEKF2_core::recordMagReset()
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
 {
-    // Don't do a reset unless permitted by the EK2_GSF_USE_MASK and EKF@_GSF_RUN_MASK parameter masks
+    // Don't do a reset unless permitted by the EK2_GSF_USE_MASK and EKF2_GSF_RUN_MASK parameter masks
     if ((yawEstimator == nullptr)
         || !(frontend->_gsfUseMask & (1U<<core_index))
         || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {

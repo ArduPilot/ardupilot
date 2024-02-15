@@ -146,10 +146,6 @@ SPIDEV rm3100      SPI3 DEVID4  CS_RM3100        MODE3  2*MHZ  8*MHZ
 SPIDEV dps310      SPI4 DEVID3  CS_DPS310        MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron     SPI4 DEVID10 CS_FRAM          MODE3  8*MHZ  8*MHZ
 
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 0
 

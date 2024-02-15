@@ -133,7 +133,9 @@ l_noret luaD_throw (lua_State *L, int errcode) {
   }
 }
 
-
+// remove optimization
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   unsigned short oldnCcalls = L->nCcalls;
   struct lua_longjmp lj;
@@ -141,13 +143,19 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   lj.previous = L->errorJmp;  /* chain new error handler */
   L->errorJmp = &lj;
   LUAI_TRY(L, &lj,
+#ifdef ARM_MATH_CM7
+    __asm__("vpush {s16-s31}");
+#endif
     (*f)(L, ud);
   );
+#ifdef ARM_MATH_CM7
+  __asm__("vpop {s16-s31}");
+#endif
   L->errorJmp = lj.previous;  /* restore old error handler */
   L->nCcalls = oldnCcalls;
   return lj.status;
 }
-
+#pragma GCC pop_options
 /* }====================================================== */
 
 
@@ -768,11 +776,15 @@ static void f_parser (lua_State *L, void *ud) {
   LClosure *cl;
   struct SParser *p = cast(struct SParser *, ud);
   int c = zgetc(p->z);  /* read first character */
+#if LUA_SUPPORT_LOAD_BINARY
+  // support loading pre-compiled luac
   if (c == LUA_SIGNATURE[0]) {
     checkmode(L, p->mode, "binary");
     cl = luaU_undump(L, p->z, p->name);
   }
-  else {
+  else
+#endif
+  {
     checkmode(L, p->mode, "text");
     cl = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
   }

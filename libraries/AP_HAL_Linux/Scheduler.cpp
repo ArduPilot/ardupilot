@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_MAX_PRIORITY          20
 #define APM_LINUX_TIMER_PRIORITY        15
 #define APM_LINUX_UART_PRIORITY         14
+#define APM_LINUX_NET_PRIORITY          14
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
@@ -37,7 +38,8 @@ extern const AP_HAL::HAL& hal;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
 #define APM_LINUX_RCIN_RATE             500
 #define APM_LINUX_IO_RATE               50
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
@@ -58,7 +60,9 @@ extern const AP_HAL::HAL& hal;
     }
 
 Scheduler::Scheduler()
-{ }
+{
+    CPU_ZERO(&_cpu_affinity);
+}
 
 
 void Scheduler::init_realtime()
@@ -84,6 +88,17 @@ void Scheduler::init_realtime()
     }
 }
 
+void Scheduler::init_cpu_affinity()
+{
+    if (!CPU_COUNT(&_cpu_affinity)) {
+        return;
+    }
+
+    if (sched_setaffinity(0, sizeof(_cpu_affinity), &_cpu_affinity) != 0) {
+        AP_HAL::panic("Failed to set affinity for main process: %m");
+    }
+}
+
 void Scheduler::init()
 {
     int ret;
@@ -103,6 +118,7 @@ void Scheduler::init()
     _main_ctx = pthread_self();
 
     init_realtime();
+    init_cpu_affinity();
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
@@ -311,7 +327,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     exit(1);
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     if (time_usec < _stopped_clock_usec) {
@@ -370,6 +386,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
         { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
+        { PRIORITY_NET, APM_LINUX_NET_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

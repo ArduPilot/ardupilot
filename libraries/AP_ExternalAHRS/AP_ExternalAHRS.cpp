@@ -13,15 +13,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for serial connected AHRS systems
+  support for serial connected AHRS systems
  */
 
-#include "AP_ExternalAHRS.h"
-#include "AP_ExternalAHRS_VectorNav.h"
+#include "AP_ExternalAHRS_config.h"
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 
+#include "AP_ExternalAHRS.h"
+#include "AP_ExternalAHRS_backend.h"
+#include "AP_ExternalAHRS_VectorNav.h"
+#include "AP_ExternalAHRS_MicroStrain5.h"
+#include "AP_ExternalAHRS_MicroStrain7.h"
+#include "AP_ExternalAHRS_InertialLabs.h"
+
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -49,7 +56,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav
+    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,7:MicroStrain7
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -59,6 +66,20 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 50),
+
+    // @Param: _OPTIONS
+    // @DisplayName: External AHRS options
+    // @Description: External AHRS options bitmask
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
+
+    // @Param: _SENSORS
+    // @DisplayName: External AHRS sensors
+    // @Description: External AHRS sensors bitmask
+    // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
+    // @User: Advanced
+    AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
     
     AP_GROUPEND
 };
@@ -74,20 +95,46 @@ void AP_ExternalAHRS::init(void)
     switch (DevType(devtype)) {
     case DevType::None:
         // nothing to do
-        break;
+        return;
+
+#if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
     case DevType::VecNav:
         backend = new AP_ExternalAHRS_VectorNav(this, state);
-        break;
-    default:
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
-        break;
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
+    case DevType::MicroStrain5:
+        backend = new AP_ExternalAHRS_MicroStrain5(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+    case DevType::MicroStrain7:
+        backend = new AP_ExternalAHRS_MicroStrain7(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+    case DevType::InertialLabs:
+        backend = new AP_ExternalAHRS_InertialLabs(this, state);
+        return;
+#endif
+
     }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
+}
+
+bool AP_ExternalAHRS::enabled() const
+{
+    return DevType(devtype) != DevType::None;
 }
 
 // get serial port number for the uart, or -1 if not applicable
-int8_t AP_ExternalAHRS::get_port(void) const
+int8_t AP_ExternalAHRS::get_port(AvailableSensor sensor) const
 {
-    if (!backend) {
+    if (!backend || !has_sensor(sensor)) {
         return -1;
     }
     return backend->get_port();
@@ -131,6 +178,19 @@ bool AP_ExternalAHRS::get_location(Location &loc)
     }
     WITH_SEMAPHORE(state.sem);
     loc = state.location;
+
+    if (state.last_location_update_us != 0 &&
+        state.have_velocity) {
+        // extrapolate position based on velocity to cope with slow backends
+        const float dt = (AP_HAL::micros() - state.last_location_update_us)*1.0e-6;
+        if (dt < 1) {
+            // only extrapolate for 1s max
+            Vector3p ofs = state.velocity.topostype();
+            ofs *= dt;
+            loc.offset(ofs);
+        }
+    }
+
     return true;
 }
 
@@ -163,7 +223,12 @@ bool AP_ExternalAHRS::get_speed_down(float &speedD)
 
 bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
-    return backend && backend->pre_arm_check(failure_msg, failure_msg_len);
+    if (backend == nullptr) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: Invalid backend");
+        return false;
+    }
+
+    return backend->pre_arm_check(failure_msg, failure_msg_len);
 }
 
 /*
@@ -190,10 +255,10 @@ Vector3f AP_ExternalAHRS::get_accel(void)
 }
 
 // send an EKF_STATUS message to GCS
-void AP_ExternalAHRS::send_status_report(mavlink_channel_t chan) const
+void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
-        backend->send_status_report(chan);
+        backend->send_status_report(link);
     }
 }
 
@@ -202,6 +267,29 @@ void AP_ExternalAHRS::update(void)
     if (backend) {
         backend->update();
     }
+
+    /*
+      if backend has not supplied an origin and AHRS has an origin
+      then use that origin so we get a common origin for minimum
+      disturbance when switching backends
+     */
+    WITH_SEMAPHORE(state.sem);
+    if (!state.have_origin) {
+        Location origin;
+        if (AP::ahrs().get_origin(origin)) {
+            state.origin = origin;
+            state.have_origin = true;
+        }
+    }
+}
+
+// Get model/type name
+const char* AP_ExternalAHRS::get_name() const
+{
+    if (backend) {
+        return backend->get_name();
+    }
+    return nullptr;
 }
 
 namespace AP {

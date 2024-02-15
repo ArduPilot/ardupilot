@@ -1,5 +1,10 @@
-from LogAnalyzer import Test,TestResult
+# AP_FLAKE8_CLEAN
+
+
 import math
+
+from LogAnalyzer import Test, TestResult
+
 
 class TestNaN(Test):
     '''test for NaNs present in log'''
@@ -16,8 +21,8 @@ class TestNaN(Test):
             self.result.status = TestResult.StatusType.FAIL
 
         nans_ok = {
-            "CTUN": [ "DSAlt", "TAlt" ],
-            "POS": [ "RelOriginAlt"],
+            "CTUN": ["DSAlt", "TAlt"],
+            "POS": ["RelOriginAlt"],
         }
 
         for channel in logdata.channels.keys():
@@ -29,7 +34,10 @@ class TestNaN(Test):
                         (ts, val) = tupe
                         if isinstance(val, float) and math.isnan(val):
                             FAIL()
-                            self.result.statusMessage += "Found NaN in %s.%s\n" % (channel, field,)
+                            self.result.statusMessage += "Found NaN in %s.%s\n" % (
+                                channel,
+                                field,
+                            )
                             raise ValueError()
-                except ValueError as e:
+                except ValueError:
                     continue

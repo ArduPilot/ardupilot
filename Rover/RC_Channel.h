@@ -11,8 +11,8 @@ public:
 
 protected:
 
-    void init_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
-    bool do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
+    void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
+    bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
 
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
@@ -32,6 +32,7 @@ class RC_Channels_Rover : public RC_Channels
 
 public:
 
+    bool in_rc_failsafe() const override;
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;

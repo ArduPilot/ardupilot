@@ -1,0 +1,12 @@
+set pagination off
+set logging overwrite on
+set logging on
+set var $ptr=&__ram0_start__
+set var $end=&__ram0_end__
+while $ptr < $end
+x/16wx $ptr
+set var $ptr+=16
+end
+info all-registers
+set logging off
+set pagination on

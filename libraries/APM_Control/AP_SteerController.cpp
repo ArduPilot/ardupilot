@@ -235,7 +235,7 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 {
     if (_tau < 0.1f) {
-        _tau = 0.1f;
+        _tau.set(0.1f);
     }
 	
 	// Calculate the desired steering rate (deg/sec) from the angle error
@@ -247,5 +247,11 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 void AP_SteerController::reset_I()
 {
 	_pid_info.I = 0;
+}
+
+// Returns true if controller has been run recently
+bool AP_SteerController::active() const
+{
+    return (AP_HAL::millis() - _last_t) < 1000;
 }
 

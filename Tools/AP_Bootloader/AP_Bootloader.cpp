@@ -30,11 +30,14 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include "support.h"
 #include "bl_protocol.h"
+#include "flash_from_sd.h"
 #include "can.h"
 #include <stdio.h>
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include "network.h"
 
 extern "C" {
     int main(void);
@@ -44,7 +47,7 @@ struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
     .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
-    .extf_size = (EXTERNAL_PROG_FLASH_MB * 1024 * 1024)
+    .extf_size = (EXT_FLASH_SIZE_MB * 1024 * 1024) - (EXT_FLASH_RESERVE_START_KB + EXT_FLASH_RESERVE_END_KB) * 1024
 };
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
@@ -55,15 +58,31 @@ struct boardinfo board_info = {
 #define HAL_STAY_IN_BOOTLOADER_VALUE 0
 #endif
 
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 AP_FlashIface_JEDEC ext_flash;
+#endif
+
+#if AP_BOOTLOADER_NETWORK_ENABLED
+static BL_Network network;
 #endif
 
 int main(void)
 {
+#ifdef AP_BOOTLOADER_CUSTOM_HERE4
+    custom_startup();
+#endif
+
+    flash_init();
+
+#ifdef STM32H7
+    check_ecc_errors();
+#endif
+    
+#ifdef STM32F427xx
     if (BOARD_FLASH_SIZE > 1024 && check_limit_flash_1M()) {
         board_info.fw_size = (1024 - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
     }
+#endif
 
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
@@ -76,7 +95,15 @@ int main(void)
     AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
 #endif
 
-#ifndef NO_FASTBOOT
+#if HAL_FLASH_PROTECTION
+    stm32_flash_unprotect_flash();
+#endif
+
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    network.save_comms_ip();
+#endif
+
+#if AP_FASTBOOT_ENABLED
     enum rtc_boot_magic m = check_fast_reboot();
     bool was_watchdog = stm32_was_watchdog_reset();
     if (was_watchdog) {
@@ -94,15 +121,24 @@ int main(void)
         timeout = 10000;
         can_set_node_id(m & 0xFF);
     }
-    can_check_update();
-    if (!can_check_firmware()) {
+    if (can_check_update()) {
+        // trying to update firmware, stay in bootloader
+        try_boot = false;
+        timeout = 0;
+    }
+#if AP_CHECK_FIRMWARE_ENABLED
+    const auto ok = check_good_firmware();
+    if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware CRC, don't try and boot
         timeout = 0;
         try_boot = false;
+        led_set(LED_BAD_FW);
     }
+#endif  // AP_CHECK_FIRMWARE_ENABLED
 #ifndef BOOTLOADER_DEV_LIST
-    else if (timeout != 0) {
-        // fast boot for good firmware
+    else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
+        // fast boot for good firmware if we haven't been told to stay
+        // in bootloader
         try_boot = true;
         timeout = 1000;
     }
@@ -115,7 +151,16 @@ int main(void)
         try_boot = false;
         timeout = 0;
     }
+#elif AP_CHECK_FIRMWARE_ENABLED
+    const auto ok = check_good_firmware();
+    if (ok != check_fw_result_t::CHECK_FW_OK) {
+        // bad firmware, don't try and boot
+        timeout = 0;
+        try_boot = false;
+        led_set(LED_BAD_FW);
+    }
 #endif
+
 #if defined(HAL_GPIO_PIN_VBUS) && defined(HAL_ENABLE_VBUS_CHECK)
 #if HAL_USE_SERIAL_USB == TRUE
     else if (palReadLine(HAL_GPIO_PIN_VBUS) == 0)  {
@@ -128,13 +173,21 @@ int main(void)
     // if we fail to boot properly we want to pause in bootloader to give
     // a chance to load new app code
     set_fast_reboot(RTC_BOOT_OFF);
-#endif
+#endif  // AP_FASTBOOT_ENABLED
 
 #ifdef HAL_GPIO_PIN_STAY_IN_BOOTLOADER
     // optional "stay in bootloader" pin
     if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == HAL_STAY_IN_BOOTLOADER_VALUE) {
         try_boot = false;
         timeout = 0;
+    }
+#endif
+
+#if EXT_FLASH_SIZE_MB
+    while (!ext_flash.init()) {
+        // keep trying until we get it working
+        // there's no future without it
+        chThdSleep(chTimeMS2I(20));
     }
 #endif
 
@@ -148,14 +201,14 @@ int main(void)
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     can_start();
 #endif
-    flash_init();
 
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    network.init();
+#endif
 
-#if EXTERNAL_PROG_FLASH_MB
-    while (!ext_flash.init()) {
-        // keep trying until we get it working
-        // there's no future without it
-        chThdSleep(1000);
+#if AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
+    if (flash_from_sd()) {
+        jump_to_app();
     }
 #endif
 
@@ -165,7 +218,7 @@ int main(void)
         jump_to_app();
     }
 #else
-    // CAN only
+    // CAN and network only
     while (true) {
         uint32_t t0 = AP_HAL::millis();
         while (timeout == 0 || AP_HAL::millis() - t0 <= timeout) {

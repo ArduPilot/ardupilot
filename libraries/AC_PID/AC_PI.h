@@ -33,4 +33,10 @@ protected:
     AP_Float        imax;
     float           integrator;
     float           output_P;
+
+private:
+    const float default_kp;
+    const float default_ki;
+    const float default_imax;
+
 };

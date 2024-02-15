@@ -1,7 +1,12 @@
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_LWI2C_ENABLED
+
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
 #include <AP_HAL/I2CDevice.h>
 
 #define NUM_SF20_DATA_STREAMS 1
@@ -49,8 +54,8 @@ private:
     void sf20_timer();
 
     // get a reading
-    bool legacy_get_reading(uint16_t &reading_cm);
-    bool sf20_get_reading(uint16_t &reading_cm);
+    bool legacy_get_reading(float &reading_m);
+    bool sf20_get_reading(float &reading_m);
     bool sf20_parse_stream(uint8_t *stream_buf,
                            size_t *p_num_processed_chars,
                            const char *string_identifier,
@@ -58,3 +63,5 @@ private:
     void data_log(uint16_t *val);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
+
+#endif  // AP_RANGEFINDER_LWI2C_ENABLED

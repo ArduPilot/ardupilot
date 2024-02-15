@@ -20,7 +20,6 @@ public:
 private:
 
     // should be a call on aircraft:
-    float some_temperature = 26.5;
     float last_temperature = -1000.0f;
 
     enum class State {
@@ -41,6 +40,8 @@ private:
     uint32_t time_in_state_ms() const {
         return AP_HAL::millis() - state_start_time_ms;
     }
+
+    float get_sim_temperature() const;
 
     float temperature_for_adc(uint32_t adc) const;
     uint32_t calculate_adc(float temperature) const;

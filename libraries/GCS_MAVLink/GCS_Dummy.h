@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 #include <AP_Common/AP_FWVersion.h>
 
@@ -20,14 +24,10 @@ public:
 private:
 
     uint32_t telem_delay() const override { return 0; }
-    void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
-    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}
+    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
-
-    uint8_t sysid_my_gcs() const override { return 1; }
 
     // dummy information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
@@ -62,23 +62,17 @@ protected:
     }
 
 private:
-    GCS_MAVLINK_Dummy *chan(const uint8_t ofs) override {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
-            return nullptr;
-        }
-        return (GCS_MAVLINK_Dummy *)_chan[ofs];
-    };
-    const GCS_MAVLINK_Dummy *chan(const uint8_t ofs) const override {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
-            return nullptr;
-        }
-        return (GCS_MAVLINK_Dummy *)_chan[ofs];
-    };
+    // the following define expands to a pair of methods to retrieve a
+    // pointer to an object of the correct subclass for the link at
+    // offset ofs.  These are of the form:
+    // GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override;
+    // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
+    GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Dummy);
 
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override;
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
+
+#endif  // HAL_GCS_ENABLED

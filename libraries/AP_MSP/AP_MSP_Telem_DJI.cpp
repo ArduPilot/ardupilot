@@ -17,6 +17,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_Notify/AP_Notify.h>
 
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_DJI.h"
@@ -68,13 +69,8 @@ void AP_MSP_Telem_DJI::hide_osd_items(void)
 
 uint32_t AP_MSP_Telem_DJI::get_osd_flight_mode_bitmask(void)
 {
-    uint32_t mode_mask = 0;
+    uint32_t mode_mask = AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask();
     const AP_Notify& notify = AP::notify();
-
-    // set arming status
-    if (notify.flags.armed) {
-        BIT_SET(mode_mask, DJI_FLAG_ARM);
-    }
 
     // check failsafe
     if (notify.flags.failsafe_battery || notify.flags.failsafe_gcs || notify.flags.failsafe_radio || notify.flags.ekf_bad ) {
@@ -97,13 +93,16 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_esc_sensor_data(sbuf_t *dst)
     if (!displaying_stats_screen()) {
         telem.get_highest_motor_temperature(highest_temperature);
     } else {
+#if OSD_ENABLED
         AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
             return MSP_RESULT_ERROR;
         }
         WITH_SEMAPHORE(osd->get_semaphore());
         highest_temperature = osd->get_stats_info().max_esc_temp;
+#endif
     }
+
     const struct PACKED {
         uint8_t temp;
         uint16_t rpm;
@@ -225,6 +224,7 @@ bool AP_MSP_Telem_DJI::get_rssi(float &rssi) const
     if (!displaying_stats_screen()) {
         return true;
     }
+#if AP_RSSI_ENABLED
     AP_RSSI* ap_rssi = AP::rssi();
     if (ap_rssi == nullptr) {
         return false;
@@ -232,6 +232,9 @@ bool AP_MSP_Telem_DJI::get_rssi(float &rssi) const
     if (!ap_rssi->enabled()) {
         return false;
     }
+#else
+    return false;
+#endif
     AP_OSD *osd = AP::osd();
     if (osd == nullptr) {
         return false;

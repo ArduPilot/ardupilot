@@ -5,9 +5,11 @@
 
 #include "AP_Baro_Backend.h"
 
-#define MOVING_AVERAGE_WEIGHT 0.20f // a 5 samples moving average
+// AP_BARO_MSP_ENABLED is defined in AP_Baro.h
 
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
+
+#define MOVING_AVERAGE_WEIGHT 0.20f // a 5 samples moving average
 
 class AP_Baro_MSP : public AP_Baro_Backend
 {
@@ -24,4 +26,4 @@ private:
     uint16_t count;
 };
 
-#endif // HAL_MSP_BARO_ENABLED
+#endif // AP_BARO_MSP_ENABLED

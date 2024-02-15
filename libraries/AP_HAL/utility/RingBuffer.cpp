@@ -41,6 +41,20 @@ bool ByteBuffer::set_size(uint32_t _size)
     return true;
 }
 
+/*
+  set buffer size, accepting a smaller size if desired size isn't achievable
+ */
+bool ByteBuffer::set_size_best(uint32_t _size)
+{
+    while (_size > 0) {
+        if (set_size(_size)) {
+            return true;
+        }
+        _size = (3 * _size)/4;
+    }
+    return false;
+}
+
 uint32_t ByteBuffer::available(void) const
 {
     /* use a copy on stack to avoid race conditions of @tail being updated by

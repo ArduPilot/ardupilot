@@ -20,15 +20,12 @@
  
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_NWPWU_ENABLED
+
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
-#include <AP_CANManager/AP_CANSensor.h>
-
-#ifndef HAL_EFI_NWPWU_ENABLED
-#define HAL_EFI_NWPWU_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS && BOARD_FLASH_SIZE > 1024
-#endif
-
-#if HAL_EFI_NWPWU_ENABLED
 
 class AP_EFI_NWPMU : public CANSensor, public AP_EFI_Backend {
 public:
@@ -111,5 +108,5 @@ private:
     };
 };
 
-#endif // HAL_EFI_NWPWU_ENABLED
+#endif // AP_EFI_NWPWU_ENABLED
 

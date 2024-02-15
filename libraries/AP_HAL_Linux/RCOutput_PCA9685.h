@@ -33,9 +33,12 @@ public:
     void     push() override;
     uint16_t read(uint8_t ch) override;
     void     read(uint16_t* period_us, uint8_t len) override;
+    bool     supports_gpio() override { return true; };
+    void     write_gpio(uint8_t chan, bool active) override;
 
 private:
     void reset();
+    void write_raw(uint8_t ch, uint16_t period_us);
 
     AP_HAL::DigitalSource *_enable_pin;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
@@ -48,7 +51,8 @@ private:
     bool _corking = false;
     uint8_t _channel_offset;
     int16_t _oe_pin_number;
-    uint16_t _pending_write_mask;
+    uint32_t _pending_write_mask;
+    uint32_t _is_gpio_mask;
 };
 
 }

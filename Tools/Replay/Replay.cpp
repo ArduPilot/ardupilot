@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Filesystem/posix_compat.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Scheduler.h>
@@ -39,10 +40,6 @@ user_parameter *user_parameters;
 bool replay_force_ekf2;
 bool replay_force_ekf3;
 
-#define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
-
 const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
@@ -50,17 +47,19 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "BARO", AP_Baro),
 
-    // @Group: INS_
+    // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT(ins,                    "INS_", AP_InertialSensor),
+    GOBJECT(ins,                    "INS", AP_InertialSensor),
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
+#if AP_AIRSPEED_ENABLED
     // @Group: ARSPD_
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     GOBJECT(airspeed,                               "ARSP_",   AP_Airspeed),
+#endif
 
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -70,10 +69,6 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
 
-    // @Group: LOG
-    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(logger, "LOG", AP_Logger),
-    
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ekf3, NavEKF3, "EK3_", NavEKF3),
@@ -87,9 +82,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
 void ReplayVehicle::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     StorageManager::erase();
     AP_Param::erase_all();
     // Load all auto-loaded EEPROM variables - also registers thread
@@ -102,16 +96,22 @@ const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
 };
 GCS_Dummy _gcs;
 
+#if AP_ADVANCEDFAILSAFE_ENABLED
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+#endif
 
 // dummy method to avoid linking AP_Avoidance
 // AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 
+#if AP_LTM_TELEM_ENABLED
 // avoid building/linking LTM:
 void AP_LTM_Telem::init() {};
+#endif
+#if AP_DEVO_TELEM_ENABLED
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
+#endif
 
 void ReplayVehicle::init_ardupilot(void)
 {
@@ -120,7 +120,6 @@ void ReplayVehicle::init_ardupilot(void)
     // message as a product of Replay), or the format understood in
     // the current code (if we do emit the message in the normal
     // places in the EKF, for example)
-    logger.Init(log_structure, 0);
     logger.set_force_log_disarmed(true);
 }
 

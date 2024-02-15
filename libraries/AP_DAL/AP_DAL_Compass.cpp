@@ -24,6 +24,7 @@ void AP_DAL_Compass::start_frame()
     _RMGH.num_enabled = compass.get_num_enabled();
     _RMGH.consistent = compass.consistent();
     _RMGH.first_usable = compass.get_first_usable();
+    _RMGH.learn_offsets_enabled = compass.learn_offsets_enabled();
 
     WRITE_REPLAY_BLOCK_IFCHANGED(RMGH, _RMGH, old);
 

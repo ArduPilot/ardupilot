@@ -4,8 +4,6 @@
 
 #include <AP_Logger/LogStructure.h>
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
 class AP_DAL_Baro {
 public:
     // methods so we look like AP_Baro:

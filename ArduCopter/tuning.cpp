@@ -2,7 +2,7 @@
 
 /*
  * Function to update various parameters in flight using the ch6 tuning knob
- * This should not be confused with the AutoTune feature which can bve found in control_autotune.cpp
+ * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
  */
 
 // tuning - updates parameters based on the ch6 tuning knob's position
@@ -22,13 +22,15 @@ void Copter::tuning()
     }
 
     // exit immediately if a function is assigned to channel 6
-    if ((RC_Channel::aux_func_t)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
+    if ((RC_Channel::AUX_FUNC)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
         return;
     }
 
     const uint16_t radio_in = rc6->get_radio_in();
     float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, radio_in, rc6->get_radio_min(), rc6->get_radio_max());
+#if HAL_LOGGING_ENABLED
     Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g2.tuning_min, g2.tuning_max);
+#endif
 
     switch(g.radio_tuning) {
 
@@ -104,15 +106,19 @@ void Copter::tuning()
         wp_nav->set_speed_xy(tuning_value);
         break;
 
-    // Acro roll pitch gain
-    case TUNING_ACRO_RP_KP:
-        g.acro_rp_p = tuning_value;
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+    // Acro roll pitch rates
+    case TUNING_ACRO_RP_RATE:
+        g2.command_model_acro_rp.set_rate(tuning_value);
         break;
+#endif
 
-    // Acro yaw gain
-    case TUNING_ACRO_YAW_KP:
-        g.acro_yaw_p = tuning_value;
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+    // Acro yaw rate
+    case TUNING_ACRO_YAW_RATE:
+        g2.command_model_acro_y.set_rate(tuning_value);
         break;
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:
@@ -176,14 +182,18 @@ void Copter::tuning()
         break;
 #endif
 
-     case TUNING_RATE_YAW_FILT:
-         attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
-         break;
+    case TUNING_RATE_YAW_FILT:
+        attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
+        break;
 
-     case TUNING_SYSTEM_ID_MAGNITUDE:
+    case TUNING_SYSTEM_ID_MAGNITUDE:
 #if MODE_SYSTEMID_ENABLED == ENABLED
-         copter.mode_systemid.set_magnitude(tuning_value);
+        copter.mode_systemid.set_magnitude(tuning_value);
 #endif
-         break;
+        break;
+
+    case TUNING_POS_CONTROL_ANGLE_MAX:
+        pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
+        break;
     }
 }

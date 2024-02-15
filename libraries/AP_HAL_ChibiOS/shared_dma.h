@@ -23,7 +23,7 @@
 // DMA stream ID for stream_id2 when only one is needed
 #define SHARED_DMA_NONE 255
 
-#ifndef HAL_NO_SHARED_DMA
+#if AP_HAL_SHARED_DMA_ENABLED
 
 class ChibiOS::Shared_DMA
 {
@@ -69,6 +69,7 @@ public:
 
     // return true if a stream ID is shared between two peripherals
     static bool is_shared(uint8_t stream_id);
+    bool is_shared();
 
 private:
     dma_allocate_fn_t allocate;
@@ -114,4 +115,4 @@ private:
     } *_contention_stats;
 };
 
-#endif // HAL_NO_SHARED_DMA
+#endif // AP_HAL_SHARED_DMA_ENABLED

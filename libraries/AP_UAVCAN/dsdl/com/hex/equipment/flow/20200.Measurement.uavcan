@@ -1,4 +1,0 @@
-float32 integration_interval    # Integration Interval in seconds
-float32[2] rate_gyro_integral   # Integrated Gyro Data in radians
-float32[2] flow_integral        # Integrated LOS Data in radians
-uint8 quality                   # Flow Data Quality Lowest(0)-Highest(255) Unitless

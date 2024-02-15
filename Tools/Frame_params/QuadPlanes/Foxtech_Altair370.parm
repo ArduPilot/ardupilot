@@ -1,0 +1,159 @@
+# this is a dual-canard IC quadplane Altair 370
+# https://www.foxtechfpv.com/foxtech-altair-370-tandem-wing-hybrid-vtol.html
+
+# the dual canard design is setup with the front two canards setup as elevons
+# with MIXING_OFFSET used to give 75% elevator control and 25% roll control
+
+# the rear two elevons are setup for roll only (ailerons)
+
+# setup airspeed range
+AIRSPEED_MAX    35
+AIRSPEED_MIN    22
+AIRSPEED_CRUISE 27.00
+
+# fixed wing limits
+PTCH_LIM_MAX_DEG 15.00
+PTCH_LIM_MIN_DEG -15.00
+ROLL_LIMIT_DEG 25.00
+
+# setup elevons as 75% elevator and 25% aileron
+MIXING_GAIN      0.25
+MIXING_OFFSET    -200
+
+# fixed wing pitch tune
+PTCH_RATE_D      0.01
+PTCH_RATE_FF     0.15
+PTCH_RATE_FLTT   6
+PTCH_RATE_I      0.27
+PTCH_RATE_P      0.54
+
+# fixed wing roll tune
+RLL_RATE_D       0.004
+RLL_RATE_FF      0.2
+RLL_RATE_I       0.2
+RLL_RATE_P       0.5
+
+# vtol motor notch filter
+INS_HNTCH_ENABLE 1
+INS_HNTCH_ATT   60
+INS_HNTCH_BW    31
+INS_HNTCH_FREQ  62
+INS_HNTCH_HMNCS 3
+INS_HNTCH_MODE  1
+INS_HNTCH_OPTS  1
+INS_HNTCH_REF   0.332000
+
+# IC motor notch filter. Note that
+# you need to setup RPM with EFI or pin input
+INS_HNTC2_ENABLE 1
+INS_HNTC2_ATT   50
+INS_HNTC2_BW    15
+INS_HNTC2_FREQ  30
+INS_HNTC2_HMNCS 3
+INS_HNTC2_MODE  2
+INS_HNTC2_OPTS  1
+INS_HNTC2_REF   1
+
+# enable quadplane as X frame
+Q_ENABLE         1
+Q_FRAME_CLASS    1
+Q_FRAME_TYPE     1
+
+# adjust rates
+Q_ACRO_PIT_RATE  150
+Q_ACRO_RLL_RATE  300
+Q_ACRO_YAW_RATE  15
+
+# small angle max
+Q_ANGLE_MAX      1000
+
+# setup assistance
+Q_ASSIST_ANGLE   35
+Q_ASSIST_SPEED   22
+
+# lower rate accels
+Q_A_ACCEL_P_MAX  25000
+Q_A_ACCEL_R_MAX  25000
+Q_A_ACCEL_Y_MAX  9000
+Q_WP_ACCEL       173
+
+Q_A_ANG_PIT_P    4
+Q_A_ANG_RLL_P    4
+Q_A_ANG_YAW_P    3
+
+Q_A_RATE_FF_ENAB 0
+
+# pitch PID gains
+Q_A_RAT_PIT_D    0.018
+Q_A_RAT_PIT_FLTT 10
+Q_A_RAT_PIT_I    0.227
+Q_A_RAT_PIT_P    0.454
+
+# roll PID gains
+Q_A_RAT_RLL_D    0.0108
+Q_A_RAT_RLL_FLTT 10
+Q_A_RAT_RLL_I    0.156
+Q_A_RAT_RLL_P    0.312
+Q_A_RAT_YAW_FLTE 2
+Q_A_RAT_YAW_FLTT 10
+Q_A_RAT_YAW_P    1.5
+
+# adjust loiter break
+Q_LOIT_BRK_DELAY 0.5
+Q_LOIT_BRK_JERK  500
+
+# approx expo and hover
+Q_M_THST_EXPO    0.7
+Q_M_THST_HOVER   0.383955
+
+# adjust transition time
+Q_TRANSITION_MS  3000
+
+
+# rear canards on servos 9 and 10, setup as ailerons
+SERVO9_FUNCTION  4
+SERVO10_FUNCTION 4
+
+# front canards on servos 11 and 12, setup as elevons, with
+# 75% elevator and 25% aileron.
+# servo11 as right elevon, servo12 as left elevon
+SERVO11_FUNCTION 78
+SERVO11_REVERSED 1
+SERVO12_FUNCTION 77
+
+# VTOL motors on outputs 1 to 4
+SERVO1_FUNCTION  33
+SERVO2_FUNCTION  34
+SERVO3_FUNCTION  35
+SERVO4_FUNCTION  36
+
+# rudder on servo5
+SERVO5_FUNCTION  21
+SERVO5_REVERSED  1
+
+# throttle on servo7
+SERVO7_FUNCTION  70
+
+# motor start on servo8
+SERVO8_FUNCTION  69
+
+TECS_PTCH_DAMP   0.1
+
+WP_LOITER_RAD    300
+WP_RADIUS        100
+
+# enable ICE subsystem
+ICE_ENABLE      1
+ICE_IDLE_DB     50
+ICE_IDLE_PCT    15
+ICE_IDLE_RPM    2200
+ICE_IDLE_SLEW   1
+ICE_OPTIONS     4
+ICE_RPM_CHAN    1
+
+# cut ICE engine on landing
+Q_LAND_ICE_CUT  1
+
+# setup RPM as interrupt on AUX6
+RPM1_TYPE 2
+RPM1_PIN 55

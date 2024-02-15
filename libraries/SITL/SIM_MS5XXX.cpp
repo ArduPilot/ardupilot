@@ -6,6 +6,9 @@
 
 using namespace SITL;
 
+#include <AP_HAL/AP_HAL.h>
+extern const AP_HAL::HAL& hal;
+
 MS5XXX::MS5XXX() :
     I2CDevice()
 {
@@ -163,7 +166,7 @@ int MS5XXX::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             cmd == Command::RESET) {
             // this is OK - RESET is OK in UNINITIALISED
         } else {
-            ::fprintf(stderr, "Command (0x%02x) received while not running (state=%u)\n", (unsigned)cmd, (unsigned)state);
+            hal.console->printf("Command (0x%02x) received while not running (state=%u)\n", (unsigned)cmd, (unsigned)state);
             return -1;  // we could die instead...
         }
     }
@@ -199,7 +202,7 @@ int MS5XXX::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
         if (data->msgs[1].len == 0) {
             // upon not getting a reading back the driver commands a
             // conversion-read but doesn't wait for a response!
-            ::fprintf(stderr, "read of length zero\n");
+            hal.console->printf("read of length zero\n");
             return -1;
         }
         if (data->msgs[1].len != 3) {

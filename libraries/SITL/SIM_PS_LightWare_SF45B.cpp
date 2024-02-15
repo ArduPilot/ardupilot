@@ -18,6 +18,8 @@
 
 #include "SIM_PS_LightWare_SF45B.h"
 
+#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 #include <errno.h>
@@ -51,7 +53,7 @@ void PS_LightWare_SF45B::send(const char *data, uint32_t len)
 {
     const ssize_t ret = write_to_autopilot(data, len);
     if (ret < 0 || (uint32_t)ret != len) {
-        abort();
+        // abort();
     }
 }
 
@@ -181,17 +183,17 @@ void PS_LightWare_SF45B::update_output_responses()
 
 void PS_LightWare_SF45B::update_output_scan(const Location &location)
 {
-    const uint32_t now = AP_HAL::millis();
-    if (last_scan_output_time_ms == 0) {
-        last_scan_output_time_ms = now;
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t time_delta_ms = (now_ms - last_scan_output_time_ms);
+    if (time_delta_ms > 1000) {
+        last_scan_output_time_ms = now_ms;
         return;
     }
-    const uint32_t time_delta = (now - last_scan_output_time_ms);
 
-    const uint32_t samples_per_second = 1000;
+    const uint32_t samples_per_second = 133;
     const float samples_per_ms = samples_per_second / 1000.0f;
-    const uint32_t sample_count = time_delta / samples_per_ms;
-    const float degrees_per_ms = 1000 / 1000.0f;  // Randy reports 1 degree increments
+    const uint32_t sample_count = samples_per_ms * time_delta_ms;
+    const float degrees_per_ms = 390 / 1000.0f;
     const float degrees_per_sample = degrees_per_ms / samples_per_ms;
 
 //    ::fprintf(stderr, "Packing %u samples in for %ums interval (%f degrees/sample)\n", sample_count, time_delta, degrees_per_sample);
@@ -199,24 +201,37 @@ void PS_LightWare_SF45B::update_output_scan(const Location &location)
     last_scan_output_time_ms += sample_count/samples_per_ms;
 
     for (uint32_t i=0; i<sample_count; i++) {
-        const float current_degrees_bf = fmod((last_degrees_bf + degrees_per_sample), 360.0f);
+
+        const float ANGLE_MIN_DEG = -170;
+        const float ANGLE_MAX_DEG = +170;
+        float current_degrees_bf = last_degrees_bf + (last_dir * degrees_per_sample);
+        if (current_degrees_bf < ANGLE_MIN_DEG) {
+            current_degrees_bf += (ANGLE_MIN_DEG - current_degrees_bf);
+            last_dir = -last_dir;
+        }
+        if (current_degrees_bf > ANGLE_MAX_DEG) {
+            current_degrees_bf += (ANGLE_MAX_DEG - current_degrees_bf);
+            last_dir = -last_dir;
+        }
         last_degrees_bf = current_degrees_bf;
 
 
-        const float MAX_RANGE = 16.0f;
+        const float MAX_RANGE = 53.0f;
         float distance = measure_distance_at_angle_bf(location, current_degrees_bf);
         // ::fprintf(stderr, "SIM: %f=%fm\n", current_degrees_bf, distance);
         if (distance > MAX_RANGE) {
-            // sensor returns zero for out-of-range
-            distance = 0.0f;
+            // sensor returns -1 for out-of-range
+            distance = -1.0f;
         }
 
         PackedMessage<DistanceDataCM> packed_distance_data {
             DistanceDataCM(
                 uint16_t(distance*100.0),
-                uint16_t(current_degrees_bf * 100)
+                wrap_180(current_degrees_bf) * 100
                 ), 0x1 };
         packed_distance_data.update_checksum();
         send((char*)&packed_distance_data, sizeof(packed_distance_data));
     }
 }
+
+#endif  // HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED

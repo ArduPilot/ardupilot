@@ -25,8 +25,7 @@ public:
     }
 
     /* Do not allow copies */
-    AC_InputManager_Heli(const AC_InputManager_Heli &other) = delete;
-    AC_InputManager_Heli &operator=(const AC_InputManager_Heli&) = delete;
+    CLASS_NO_COPY(AC_InputManager_Heli);
 
     // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
     float get_pilot_desired_collective(int16_t control_in);

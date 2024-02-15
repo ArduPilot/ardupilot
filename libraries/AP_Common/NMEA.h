@@ -25,3 +25,10 @@ char *nmea_vaprintf(const char *fmt, va_list ap);
   formatted print of NMEA message to a uart, with checksum appended
  */
 bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...) FMT_PRINTF(2,3);
+
+/*
+  formatted print of NMEA message to a buffer, with checksum appended.
+  Returns the length of the string filled into buf. If the NMEA string does not fit in the buffer, returns 0
+ */
+uint16_t nmea_printf_buffer(char* buf, const uint16_t buf_max_len, const char *fmt, ...);
+

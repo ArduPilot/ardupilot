@@ -44,9 +44,6 @@ PA12 OTG_FS_DP OTG1
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
-
 # Add CS pins to ensure they are high in bootloader
 PA4 MPU_CS CS
 PC7 BARO_CS CS

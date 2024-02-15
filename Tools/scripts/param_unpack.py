@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 unpack a param.pck file from @PARAM/param.pck via mavlink FTP
 '''
@@ -54,7 +54,7 @@ while True:
     flags = (ptype>>4) & 0x0F
     ptype &= 0x0F
 
-    if not ptype in data_types:
+    if ptype not in data_types:
         raise Exception("bad type 0x%x" % ptype)
 
     (type_len, type_format) = data_types[ptype]

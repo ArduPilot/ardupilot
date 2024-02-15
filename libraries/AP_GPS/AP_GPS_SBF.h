@@ -22,6 +22,8 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#if AP_GPS_SBF_ENABLED
+
 #define SBF_DISK_ACTIVITY (1 << 7)
 #define SBF_DISK_FULL     (1 << 8)
 #define SBF_DISK_MOUNTED  (1 << 9)
@@ -43,7 +45,9 @@ public:
 
     void broadcast_configuration_failure_reason(void) const override;
 
+#if HAL_GCS_ENABLED
     bool supports_mavlink_gps_rtk_message(void) const override { return true; };
+#endif
 
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override { lag_sec = 0.08f; return true; } ;
@@ -71,6 +75,7 @@ private:
         SSO,
         Blob,
         SBAS,
+        SGA,
         Complete
     };
     Config_State config_step;
@@ -107,7 +112,9 @@ private:
         PVTGeodetic = 4007,
         ReceiverStatus = 4014,
         BaseVectorGeod = 4028,
-        VelCovGeodetic = 5908
+        VelCovGeodetic = 5908,
+        AttEulerCov = 5939,
+        AuxAntPositions = 5942,
     };
 
     struct PACKED msg4007 // PVTGeodetic
@@ -215,12 +222,51 @@ private:
         float Cov_VuDt;
     };
 
+    struct PACKED msg5939       // AttEulerCoV
+    {
+        uint32_t TOW;           // receiver time stamp, 0.001s
+        uint16_t WNc;           // receiver time stamp, 1 week
+        uint8_t Reserved;       // unused
+        uint8_t Error;          // error code.  bit 0-1:antenna 1, bit 2-3:antenna2, bit 7: when att not requested
+                                //   00b:no error, 01b:not enough meausurements, 10b:antennas are on one line, 11b:inconsistent with manual anntena pos info
+        float Cov_HeadHead;     // heading estimate variance
+        float Cov_PitchPitch;   // pitch estimate variance
+        float Cov_RollRoll;     // roll estimate variance
+        float Cov_HeadPitch;    // covariance between Euler angle estimates.  Always set to Do-No-Use values
+        float Cov_HeadRoll;
+        float Cov_PitchRoll;
+    };
+
+    struct PACKED AuxAntPositionSubBlock {
+        uint8_t NrSV;           // total number of satellites tracked by the antenna
+        uint8_t Error;          // aux antenna position error code
+        uint8_t AmbiguityType;  // aux antenna positions obtained with 0: fixed ambiguities, 1: float ambiguities
+        uint8_t AuxAntID;       // aux antenna ID: 1 for the first auxiliary antenna, 2 for the second, etc.
+        double DeltaEast;       // position in East direction (relative to main antenna)
+        double DeltaNorth;      // position in North direction (relative to main antenna)
+        double DeltaUp;         // position in Up direction (relative to main antenna)
+        double EastVel;         // velocity in East direction (relative to main antenna)
+        double NorthVel;        // velocity in North direction (relative to main antenna)
+        double UpVel;           // velocity in Up direction (relative to main antenna)
+    };
+
+    struct PACKED msg5942   // AuxAntPositions
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t N;          // number of AuxAntPosition sub-blocks in this AuxAntPositions block
+        uint8_t SBLength;   // length of one sub-block in bytes
+        AuxAntPositionSubBlock ant1;    // first aux antennas position
+    };
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
         msg4014 msg4014u;
         msg4028 msg4028u;
         msg5908 msg5908u;
+        msg5939 msg5939u;
+        msg5942 msg5942u;
         uint8_t bytes[256];
     };
 
@@ -262,3 +308,4 @@ private:
     uint8_t portLength;
     bool readyForCommand;
 };
+#endif

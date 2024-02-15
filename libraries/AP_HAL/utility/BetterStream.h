@@ -36,13 +36,12 @@ public:
 
     virtual size_t write(uint8_t) = 0;
     virtual size_t write(const uint8_t *buffer, size_t size) = 0;
-    size_t write(const char *str);
+    virtual size_t write(const char *str);
 
     virtual uint32_t available() = 0;
 
-    /* return value for read():
-     * -1 if nothing available, uint8_t value otherwise. */
-    virtual int16_t read() = 0;
+    virtual int16_t read(void);
+    virtual bool read(uint8_t &b) WARN_IF_UNUSED = 0;
 
     // no base-class implementation to force descendants to
     // do things efficiently.  Looping over 2^32-1 bytes would be bad.

@@ -25,7 +25,7 @@ gcs:send_text(0,"Script started")
 gcs:send_text(0,"Trajectory period: " .. tostring(2 * math.rad(180) / omega_radps))
 
 function circle()
-    local cur_freq = 0
+    local cur_freq
     -- increase target speed lineary with time until ramp_up_time_s is reached
     if time <= ramp_up_time_s then 
         cur_freq = omega_radps*(time/ramp_up_time_s)^2
@@ -56,9 +56,7 @@ function update()
     if arming:is_armed() and vehicle:get_mode() == copter_guided_mode_num and -test_start_location:z()>=5 then
 
         -- calculate current position and velocity for circle trajectory
-        local target_pos = Vector3f()
-        local target_vel = Vector3f()
-        target_pos, target_vel = circle()
+        local target_pos, target_vel = circle()
 
         -- advance the time
         time = time + sampling_time_s
@@ -69,7 +67,7 @@ function update()
         end
     else 
         -- calculate test starting location in NED
-        local cur_loc = ahrs:get_position()        
+        local cur_loc = ahrs:get_location()        
         if cur_loc then
              test_start_location = cur_loc.get_vector_from_origin_NEU(cur_loc)             
              if test_start_location then

@@ -704,7 +704,7 @@ Changes from 3.1.4
 11) CLI removed from APM1/2 to save flash space, critical functions moved to MAVLink:
     a) Individual motor tests (see MP's Initial Setup > Optional Hardware > Motor Test)
     b) compassmot (see MP's Initial Setup > Optional Hardware > Compass/Motor Calib)
-    c) parameter reset to factory defautls (see MP's Config/Tuning > Full Parameter List > Reset to Default)
+    c) parameter reset to factory defaults (see MP's Config/Tuning > Full Parameter List > Reset to Default)
 ------------------------------------------------------------------
 ArduCopter 3.1.5 27-May-2014 / 3.1.5-rc2 20-May-2014
 Changes from 3.1.5-rc1

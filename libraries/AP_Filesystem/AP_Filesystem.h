@@ -22,29 +22,44 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#include "AP_Filesystem_Available.h"
+#include "AP_Filesystem_config.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if HAVE_FILESYSTEM_SUPPORT
-#include "AP_Filesystem_FATFS.h"
+#ifndef MAX_NAME_LEN
+#define MAX_NAME_LEN 255
 #endif
+
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32)
 #define DT_REG 0
 #define DT_DIR 1
-#if defined(FF_MAX_LFN) && FF_USE_LFN != 0
-#define MAX_NAME_LEN FF_MAX_LFN 
-#else
-#define MAX_NAME_LEN 13
+#define DT_LNK 10
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_FILESYSTEM_FATFS_ENABLED
+#include "AP_Filesystem_FATFS.h"
+#endif
+
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */
    uint8_t d_type;
 };
+
+#endif // HAL_BOARD_CHIBIOS
+
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
-#endif // HAL_BOARD_CHIBIOS
+
+#ifndef AP_FILESYSTEM_FORMAT_ENABLED
+#define AP_FILESYSTEM_FORMAT_ENABLED 1
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Filesystem_posix.h"
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#include "AP_Filesystem_ESP32.h"
 #endif
 
 #include "AP_Filesystem_backend.h"
@@ -60,15 +75,30 @@ public:
     AP_Filesystem() {}
 
     // functions that closely match the equivalent posix calls
-    int open(const char *fname, int flags);
+    int open(const char *fname, int flags, bool allow_absolute_paths = false);
     int close(int fd);
     int32_t read(int fd, void *buf, uint32_t count);
     int32_t write(int fd, const void *buf, uint32_t count);
     int fsync(int fd);
     int32_t lseek(int fd, int32_t offset, int whence);
     int stat(const char *pathname, struct stat *stbuf);
+
+    // stat variant for scripting
+    typedef struct {
+        uint32_t size;
+        int32_t mode;
+        uint32_t mtime;
+        uint32_t atime;
+        uint32_t ctime;
+        bool is_directory(void) const {
+            return (mode & S_IFMT) == S_IFDIR;
+        }
+    } stat_t;
+    bool stat(const char *pathname, stat_t &stbuf);
+
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
+    int rename(const char *oldpath, const char *newpath);
 
     DirHandle *opendir(const char *pathname);
     struct dirent *readdir(DirHandle *dirp);
@@ -89,11 +119,26 @@ public:
     // unmount filesystem for reboot
     void unmount(void);
 
+    // returns null-terminated string; cr or lf terminates line
+    bool fgets(char *buf, uint8_t buflen, int fd);
+
+    // run crc32 over file with given name, returns true if successful
+    bool crc32(const char *fname, uint32_t& checksum) WARN_IF_UNUSED;
+
+    // format filesystem.  This is async, monitor get_format_status for progress
+    bool format(void);
+
+    // retrieve status of format process:
+    AP_Filesystem_Backend::FormatStatus get_format_status() const;
+
     /*
       load a full file. Use delete to free the data
      */
     FileData *load_file(const char *filename);
-    
+
+    // get_singleton for scripting
+    static AP_Filesystem *get_singleton(void);
+
 private:
     struct Backend {
         const char *prefix;

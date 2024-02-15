@@ -18,7 +18,15 @@
 
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_FLIGHTAXIS_ENABLED
+#define HAL_SIM_FLIGHTAXIS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_FLIGHTAXIS_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -174,6 +182,7 @@ private:
     bool heli_demix;
     bool rev4_servos;
     bool controller_started;
+    uint32_t glitch_count;
     uint64_t frame_counter;
     uint64_t activation_frame_counter;
     uint64_t socket_frame_counter;
@@ -184,8 +193,8 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-    SocketAPM *socknext;
-    SocketAPM *sock;
+    SocketAPM_native *socknext;
+    SocketAPM_native *sock;
     char replybuf[10000];
     pid_t socket_pid;
     uint32_t sock_error_count;
@@ -194,3 +203,5 @@ private:
 
 
 } // namespace SITL
+
+#endif // HAL_SIM_FLIGHTAXIS_ENABLED

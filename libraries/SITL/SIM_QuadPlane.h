@@ -39,12 +39,6 @@ public:
         return new QuadPlane(frame_str);
     }
 
-    // get motor offset for model
-    virtual uint16_t get_motors_offset() const override {
-        return frame->motor_offset;
-    }
-
-
 private:
     Frame *frame;
 };

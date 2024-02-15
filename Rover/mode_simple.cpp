@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Rover.h"
 
 void ModeSimple::init_heading()

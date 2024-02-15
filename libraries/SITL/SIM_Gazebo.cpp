@@ -18,12 +18,10 @@
 
 #include "SIM_Gazebo.h"
 
+#if HAL_SIM_GAZEBO_ENABLED
+
 #include <stdio.h>
 #include <errno.h>
-
-#include <AP_HAL/AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
@@ -171,3 +169,6 @@ void Gazebo::update(const struct sitl_input &input)
 }
 
 }  // namespace SITL
+
+
+#endif  // HAL_SIM_GAZEBO_ENABLED

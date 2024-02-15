@@ -4,8 +4,6 @@
 
 #include <AP_VisualOdom/AP_VisualOdom.h>
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
 #if HAL_VISUALODOM_ENABLED
 
 class AP_DAL_VisualOdom {

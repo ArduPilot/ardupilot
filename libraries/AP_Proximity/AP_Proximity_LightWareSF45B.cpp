@@ -16,8 +16,11 @@
    http://support.lightware.co.za/sf45/#/commands
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+
 #include "AP_Proximity_LightWareSF45B.h"
-#if HAL_PROXIMITY_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -29,7 +32,7 @@ static const uint32_t PROXIMITY_SF45B_TIMEOUT_MS = 200;
 static const uint32_t PROXIMITY_SF45B_REINIT_INTERVAL_MS = 5000;    // re-initialise sensor after this many milliseconds
 static const float PROXIMITY_SF45B_COMBINE_READINGS_DEG = 5.0f;     // combine readings from within this many degrees to improve efficiency
 static const uint32_t PROXIMITY_SF45B_STREAM_DISTANCE_DATA_CM = 5;
-static const uint8_t PROXIMITY_SF45B_DESIRED_UPDATE_RATE = 8;       // 1:48hz, 2:55hz, 3:64hz, 4:77hz, 5:97hz, 6:129hz, 7:194hz, 8:388hz
+static const uint8_t PROXIMITY_SF45B_DESIRED_UPDATE_RATE = 6;       // 1:48hz, 2:55hz, 3:64hz, 4:77hz, 5:97hz, 6:129hz, 7:194hz, 8:388hz
 static const uint32_t PROXIMITY_SF45B_DESIRED_FIELDS = ((uint32_t)1 << 0 | (uint32_t)1 << 8);   // first return (unfiltered), yaw angle
 static const uint16_t PROXIMITY_SF45B_DESIRED_FIELD_COUNT = 2;      // DISTANCE_DATA_CM message should contain two fields
 
@@ -141,13 +144,13 @@ void AP_Proximity_LightWareSF45B::process_message()
 
         // if distance is from a new face then update distance, angle and boundary for previous face
         // get face from 3D boundary based on yaw angle to the object
-        const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+        const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
         if (face != _face) {
             if (_face_distance_valid) {
-                boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                frontend.boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance, state.instance);
             } else {
                 // mark previous face invalid
-                boundary.reset_face(_face);
+                frontend.boundary.reset_face(_face, state.instance);
             }
             // record updated face
             _face = face;
@@ -200,4 +203,4 @@ uint8_t AP_Proximity_LightWareSF45B::convert_angle_to_minisector(float angle_deg
     return wrap_360(angle_deg + (PROXIMITY_SF45B_COMBINE_READINGS_DEG * 0.5f)) / PROXIMITY_SF45B_COMBINE_READINGS_DEG;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED

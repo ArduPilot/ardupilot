@@ -6,6 +6,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -22,77 +25,83 @@
 #include "Util.h"
 #include "DSP.h"
 #include "CANSocketIface.h"
+#include "SPIDevice.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 using namespace HALSITL;
+
+HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL_mutable();
 
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
-#if !defined(HAL_BUILD_AP_PERIPH)
-static RCInput  sitlRCInput(&sitlState);
-static RCOutput sitlRCOutput(&sitlState);
-static GPIO sitlGPIO(&sitlState);
+#if AP_RCPROTOCOL_ENABLED
+static RCInput sitlRCInput(&sitlState);
 #else
 static Empty::RCInput  sitlRCInput;
-static Empty::RCOutput sitlRCOutput;
-static Empty::GPIO sitlGPIO;
 #endif
+static RCOutput sitlRCOutput(&sitlState);
+static GPIO sitlGPIO(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
+#if HAL_WITH_DSP
 static DSP dspDriver;
+#endif
 
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
-static UARTDriver sitlUart0Driver(0, &sitlState);
-static UARTDriver sitlUart1Driver(1, &sitlState);
-static UARTDriver sitlUart2Driver(2, &sitlState);
-static UARTDriver sitlUart3Driver(3, &sitlState);
-static UARTDriver sitlUart4Driver(4, &sitlState);
-static UARTDriver sitlUart5Driver(5, &sitlState);
-static UARTDriver sitlUart6Driver(6, &sitlState);
-static UARTDriver sitlUart7Driver(7, &sitlState);
-static UARTDriver sitlUart8Driver(8, &sitlState);
+static UARTDriver sitlSerial0Driver(0, &sitlState);
+static UARTDriver sitlSerial1Driver(1, &sitlState);
+static UARTDriver sitlSerial2Driver(2, &sitlState);
+static UARTDriver sitlSerial3Driver(3, &sitlState);
+static UARTDriver sitlSerial4Driver(4, &sitlState);
+static UARTDriver sitlSerial5Driver(5, &sitlState);
+static UARTDriver sitlSerial6Driver(6, &sitlState);
+static UARTDriver sitlSerial7Driver(7, &sitlState);
+static UARTDriver sitlSerial8Driver(8, &sitlState);
+static UARTDriver sitlSerial9Driver(9, &sitlState);
+
+static I2CDeviceManager i2c_mgr_instance;
 
 #if defined(HAL_BUILD_AP_PERIPH)
-static Empty::I2CDeviceManager i2c_mgr_instance;
+static Empty::SPIDeviceManager spi_mgr_instance;
 #else
-static I2CDeviceManager i2c_mgr_instance;
+static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);
-
 
 #if HAL_NUM_CAN_IFACES
 static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-static Empty::QSPIDeviceManager qspi_mgr_instance;
+static Empty::WSPIDeviceManager wspi_mgr_instance;
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
-        &sitlUart0Driver,   /* uartA */
-        &sitlUart1Driver,   /* uartB */
-        &sitlUart2Driver,   /* uartC */
-        &sitlUart3Driver,   /* uartD */
-        &sitlUart4Driver,   /* uartE */
-        &sitlUart5Driver,   /* uartF */
-        &sitlUart6Driver,   /* uartG */
-        &sitlUart7Driver,   /* uartH */
-        &sitlUart8Driver,   /* uartI */
+        &sitlSerial0Driver,
+        &sitlSerial1Driver,
+        &sitlSerial2Driver,
+        &sitlSerial3Driver,
+        &sitlSerial4Driver,
+        &sitlSerial5Driver,
+        &sitlSerial6Driver,
+        &sitlSerial7Driver,
+        &sitlSerial8Driver,
+        &sitlSerial9Driver,
         &i2c_mgr_instance,
-        &emptySPI,          /* spi */
-        &qspi_mgr_instance,
+        &spi_mgr_instance,  /* spi */
+        &wspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
-        &sitlUart0Driver,   /* console */
+        &sitlSerial0Driver, /* console */
         &sitlGPIO,          /* gpio */
         &sitlRCInput,       /* rcinput */
         &sitlRCOutput,      /* rcoutput */
@@ -100,7 +109,9 @@ HAL_SITL::HAL_SITL() :
         &utilInstance,      /* util */
         &emptyOpticalFlow,  /* onboard optical flow */
         &emptyFlash,        /* flash driver */
+#if HAL_WITH_DSP
         &dspDriver,         /* dsp driver */
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
@@ -165,6 +176,12 @@ void HAL_SITL::setup_signal_handlers() const
     sa.sa_flags = SA_NOCLDSTOP;
     sa.sa_handler = HAL_SITL::exit_signal_handler;
     sigaction(SIGTERM, &sa, NULL);
+#if defined(HAL_COVERAGE_BUILD) && HAL_COVERAGE_BUILD == 1
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
+#endif
+
 }
 
 /*
@@ -176,6 +193,18 @@ static void fill_stack_nan(void)
     float stk[2048];
     fill_nanf(stk, ARRAY_SIZE(stk));
 }
+
+uint8_t HAL_SITL::get_instance() const
+{
+    return _sitl_state->get_instance();
+}
+
+#if defined(HAL_BUILD_AP_PERIPH)
+bool HAL_SITL::run_in_maintenance_mode() const
+{
+    return _sitl_state->run_in_maintenance_mode();
+}
+#endif
 
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
@@ -241,7 +270,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     uint32_t last_watchdog_save = AP_HAL::millis();
     uint8_t fill_count = 0;
 
-    while (!HALSITL::Scheduler::_should_reboot) {
+    while (true) {
         if (HALSITL::Scheduler::_should_exit) {
             ::fprintf(stderr, "Exitting\n");
             exit(0);
@@ -249,6 +278,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         if (fill_count++ % 10 == 0) {
             // only fill every 10 loops. This still gives us a lot of
             // protection, but saves a lot of CPU
+            fill_count = 1u;
             fill_stack_nan();
         }
         callbacks->loop();
@@ -276,9 +306,14 @@ void HAL_SITL::actually_reboot()
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
+static HAL_SITL hal_sitl_inst;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_SITL hal;
-    return hal;
+    return hal_sitl_inst;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
+    return hal_sitl_inst;
 }
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

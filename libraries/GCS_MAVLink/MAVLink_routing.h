@@ -2,7 +2,6 @@
 /// @brief	handle routing of MAVLink packets by ID
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 
@@ -27,7 +26,7 @@ public:
 
       This returns true if the message should be processed locally
     */
-    bool check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t &msg);
+    bool check_and_forward(class GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -44,6 +43,12 @@ public:
      */
     bool find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel);
 
+    /*
+      search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
+      returns true if a match is found
+     */
+    bool find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const;
+
 private:
     // a simple linear routing table. We don't expect to have a lot of
     // routes, so a scalable structure isn't worthwhile yet.
@@ -59,13 +64,16 @@ private:
     uint8_t no_route_mask;
     
     // learn new routes
-    void learn_route(mavlink_channel_t in_channel, const mavlink_message_t &msg);
+    void learn_route(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     // extract target sysid and compid from a message
     void get_targets(const mavlink_message_t &msg, int16_t &sysid, int16_t &compid);
 
     // special handling for heartbeat messages
-    void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t &msg);
+    void handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     void send_to_components(const char *pkt, const mavlink_msg_entry_t *entry, uint8_t pkt_len);
+
+    // check for Gopro in Solo gimbal status
+    bool gopro_status_check; // default is none
 };

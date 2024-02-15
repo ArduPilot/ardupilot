@@ -1,0 +1,4 @@
+# setup the four built-in Neopixel LEDs on chan 9
+SERVO9_FUNCTION 120
+# Use 115k for GPS
+GPS_DRV_OPTIONS 4

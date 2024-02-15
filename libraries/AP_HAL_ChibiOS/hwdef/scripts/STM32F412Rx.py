@@ -17,7 +17,14 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     'RAM_MAP' : [
         (0x20000000, 256, 1), # main memory, DMA safe
-    ]
+    ],
+
+    'EXPECTED_CLOCK' : 100000000,
+
+    'DEFINES' : {
+        'STM32F4' : '1',
+    }
+
 }
 
 DMA_Map = {

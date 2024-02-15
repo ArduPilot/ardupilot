@@ -19,34 +19,42 @@
 #pragma once
 
 #include <unistd.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 namespace SITL {
 
 class SerialDevice {
 public:
 
-    SerialDevice();
+    SerialDevice(uint16_t tx_bufsize=512, uint16_t rx_bufsize=512);
 
-    // return fd on which data from the device can be read
-    // to the device can be written
-    int fd() const { return fd_their_end; }
-    // return fd on which data to the device can be written
-    int write_fd() const { return read_fd_their_end; }
 
+    // methods for autopilot to use to talk to device:
+    ssize_t read_from_device(char *buffer, size_t size) const;
+    ssize_t write_to_device(const char *buffer, size_t size) const;
+    void set_autopilot_baud(uint32_t baud) { autopilot_baud = baud; }
+
+    // methods for simulated device to use:
     ssize_t read_from_autopilot(char *buffer, size_t size) const;
-    ssize_t write_to_autopilot(const char *buffer, size_t size) const;
+    virtual ssize_t write_to_autopilot(const char *buffer, size_t size) const;
+    virtual uint32_t device_baud() const { return 0; }  // 0 meaning unset
 
 protected:
 
     class SIM *_sitl;
 
-    int fd_their_end;
-    int fd_my_end;
+    ByteBuffer *to_autopilot;
+    ByteBuffer *from_autopilot;
 
-    int read_fd_their_end;
-    int read_fd_my_end;
+    bool init_sitl_pointer() WARN_IF_UNUSED;
 
-    bool init_sitl_pointer();
+private:
+
+    bool is_match_baud(void) const;
+
+    uint32_t autopilot_baud;
+
+    ssize_t corrupt_transfer(char *buffer, const ssize_t ret, const size_t size) const;
 };
 
 }

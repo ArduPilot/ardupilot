@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+
+import pathlib
+
+
+def configure(cfg):
+    extra_src = [
+        'modules/Micro-XRCE-DDS-Client/src/c/core/session/stream/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/core/serialization/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/util/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/custom/custom_transport.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/stream_framing/stream_framing_protocol.c',
+        'modules/Micro-CDR/src/c/types/*.c',
+        'modules/Micro-CDR/src/c/common.c',
+    ]
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'].append(str(x))
+
+    extra_src_inc = [
+        'modules/Micro-XRCE-DDS-Client/include',
+        'modules/Micro-XRCE-DDS-Client/include/uxr/client',
+        'modules/Micro-CDR/src/c',
+        'modules/Micro-CDR/include',
+        'modules/Micro-CDR/include/ucdr',
+    ]
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    # auto update submodules
+    cfg.env.append_value('GIT_SUBMODULES', 'Micro-XRCE-DDS-Client')
+    cfg.env.append_value('GIT_SUBMODULES', 'Micro-CDR')
+
+
+def build(bld):
+    config_h_in = [
+        'modules/Micro-XRCE-DDS-Client/include/uxr/client/config.h.in',
+        'modules/Micro-CDR/include/ucdr/config.h.in',
+    ]
+    config_h_in_nodes = [bld.srcnode.make_node(h) for h in config_h_in]
+    config_h_nodes = [bld.bldnode.find_or_declare(h[:-3]) for h in config_h_in]
+
+    gen_path = "libraries/AP_DDS"
+    extra_bld_inc = [
+        'modules/Micro-CDR/include',
+        'modules/Micro-XRCE-DDS-Client/include',
+        str(pathlib.PurePath(gen_path, "generated")),
+    ]
+    for inc in extra_bld_inc:
+        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
+
+    for i in range(len(config_h_nodes)):
+        print(f"building {config_h_nodes[i].abspath()}")
+        bld(
+            # build config.h file
+            source=config_h_in_nodes[i],
+            target=config_h_nodes[i],
+            rule="%s %s/%s %s %s"
+            % (
+                bld.env.get_flat('PYTHON'),
+                bld.env.SRCROOT,
+                "libraries/AP_DDS/gen_config_h.py",
+                config_h_in_nodes[i].abspath(),
+                config_h_nodes[i].abspath(),
+            ),
+            group='dynamic_sources',
+        )
+
+    # TODO instead of keeping standard IDL files in the source tree, copy them with "ros2 pkg prefix --share " tools
+    idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
+    idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
+
+    for idl in idl_files:
+        idl_path = pathlib.PurePath(idl.abspath())
+        b = idl_path.name
+
+        gen_h = idl_path.with_suffix('.h').name
+        gen_c = idl_path.with_suffix('.c').name
+
+        idl_folder = idl_path.parts[-3:-1]
+        dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
+        gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
+        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
+        bld(
+            # build IDL file
+            source=idl,
+            target=gen,
+            rule=gen_cmd,
+            group='dynamic_sources',
+        )
+
+        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(gen[1])]

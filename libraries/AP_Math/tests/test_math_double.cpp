@@ -3,7 +3,6 @@
 // you're doing when directly comparing floats:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
 #include <AP_gtest.h>
 
 #include <AP_Math/AP_Math.h>
@@ -23,7 +22,7 @@ TEST(MathTest, IsZeroDouble)
 TEST(MathTest, MAXDouble)
 {
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_EQ(2.0, MAX(t_float, 2.0));
 }
 TEST(MathTest, IsEqualDouble)
@@ -86,7 +85,11 @@ TEST(MathTest, ConstrainDouble)
 
     EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     EXPECT_EQ(1.0, constrain_value(nan("0x4152"), 1.0, 1.0));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(constrain_value(nan("0x4152"), 1.0, 1.0), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+#endif
 }
 
 TEST(MathWrapTest, Angle180Double)
@@ -183,8 +186,8 @@ TEST(MathWrapTest, Angle2PIDouble)
     const double accuracy = 1.0e-5;
 
     EXPECT_NEAR(M_PI, wrap_2PI((double)M_PI), accuracy);
-    EXPECT_NEAR(0.0,  wrap_2PI((double)M_2PI), accuracy);
-    EXPECT_NEAR(0.0,  wrap_2PI((double)M_PI * 10.0), accuracy);
+    EXPECT_NEAR(0.0,  wrap_PI((double)M_2PI), accuracy);
+    EXPECT_NEAR(0.0,  wrap_PI((double)M_PI * 10.0), accuracy);
     EXPECT_NEAR(0.0,  wrap_2PI(0.0), accuracy);
     EXPECT_NEAR(M_PI, wrap_2PI((double)-M_PI), accuracy);
     EXPECT_NEAR(0,    wrap_2PI((double)-M_2PI), accuracy);
@@ -232,6 +235,7 @@ TEST(MathTest, NormDouble)
     EXPECT_DOUBLE_EQ(norm_6, 13.0);
 }
 
+AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop

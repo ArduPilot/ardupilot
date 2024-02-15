@@ -2,6 +2,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 // Tests that quaternion multiplication obeys Hamilton's quaternion multiplication convention
 // i*i == j*j == k*k == i*j*k == -1
 TEST(QuaternionTest, QuaternionMultiplicationOfBases) {
@@ -161,6 +163,92 @@ TEST(QuaternionTest, QuatenionInverseRotationFormulaEquivalence) {
         EXPECT_FLOAT_EQ(res_0[i], res_1[i]);
         EXPECT_FLOAT_EQ(res_0[i], res_2[i]);
     }
+}
+
+// Test zero()
+TEST(QuaternionTest, Quaternion_zero)
+{
+    Quaternion q {0.0, 0.0, 0.0, 0.0};
+    q.zero();
+    EXPECT_TRUE(q.is_zero());
+
+    q = Quaternion{0.8365163, 0.48296291, 0.22414387, -0.12940952};
+    q.zero();
+    EXPECT_TRUE(q.is_zero());
+
+    // unit length
+    q = Quaternion{1.0, 0.0, 0.0, 0.0};
+    q.zero();
+    EXPECT_TRUE(q.is_zero());
+}
+
+// Tests is_zero()
+TEST(QuaternionTest, Quaternion_is_zero)
+{
+    Quaternion q {0.0, 0.0, 0.0, 0.0};
+    EXPECT_TRUE(q.is_zero());
+
+    q = Quaternion{0.8365163, 0.48296291, 0.22414387, -0.12940952};
+    EXPECT_FALSE(q.is_zero());
+
+    q = Quaternion{0.9, 0.0, 0.0, 0.0};
+    EXPECT_FALSE(q.is_zero());
+}
+
+// Tests is_unit_length()
+TEST(QuaternionTest, Quaternion_is_unit_length)
+{
+    // zero length
+    Quaternion q {0.0, 0.0, 0.0, 0.0};
+    EXPECT_FALSE(q.is_unit_length());
+
+    // Length == 1.0 - 0.0009, slightly within the tolerance
+    q = Quaternion{0.8361398, 0.4827455, 0.2240430, -0.1293512};
+    EXPECT_TRUE(q.is_unit_length());
+
+    // unit length
+    q  = Quaternion{0.8365163, 0.48296291, 0.22414387, -0.12940952};
+    EXPECT_TRUE(q.is_unit_length());
+
+    // unit length
+    q = Quaternion{1.0, 0.0, 0.0, 0.0};
+    EXPECT_TRUE(q.is_unit_length());
+
+    // Length == 1.0 + 0.0009, slightly within the tolerance
+    q = Quaternion{0.8368926, 0.4831802, 0.2242447, -0.1294677};
+    EXPECT_TRUE(q.is_unit_length());
+
+    // Length == 1.2
+    q = Quaternion{1.00382, 0.579555, 0.268973, -0.155291};
+    EXPECT_FALSE(q.is_unit_length());
+}
+
+// Tests length_squared()
+TEST(QuaternionTest, Quaternion_length_squared)
+{
+    // zero length
+    Quaternion q {0.0, 0.0, 0.0, 0.0};
+    EXPECT_FLOAT_EQ(q.length_squared(), 0.0);
+
+    // Length == 1.0 - 0.0009, slightly within the tolerance
+    q = Quaternion{0.8361398, 0.4827455, 0.2240430, -0.1293512};
+    EXPECT_FLOAT_EQ(q.length_squared(), 1.0 - 0.0009);
+
+    // unit length
+    q  = Quaternion{0.8365163, 0.48296291, 0.22414387, -0.12940952};
+    EXPECT_FLOAT_EQ(q.length_squared(), 1.0);
+
+    // unit length
+    q = Quaternion{1.0, 0.0, 0.0, 0.0};
+    EXPECT_FLOAT_EQ(q.length_squared(), 1.0);
+
+    // Length == 1.0 + 0.0009, slightly within the tolerance
+    q = Quaternion{0.8368926, 0.4831802, 0.2242447, -0.1294677};
+    EXPECT_FLOAT_EQ(q.length_squared(), 1.0 + 0.0009);
+
+    // Length == 1.2
+    q = Quaternion{1.00382, 0.579555, 0.268973, -0.155291};
+    EXPECT_FLOAT_EQ(q.length_squared(), 1.44);
 }
 
 AP_GTEST_MAIN()

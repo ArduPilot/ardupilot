@@ -14,10 +14,14 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "RCInput.h"
 #include "hal.h"
 #include "hwdef/common/ppm.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -36,7 +40,7 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     AP::RC().init();
 #endif
 
@@ -148,9 +152,10 @@ void RCInput::_timer_tick(void)
     }
 #ifndef HAL_NO_UARTDRIVER
     const char *rc_protocol = nullptr;
+    RCSource source = last_source;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     AP_RCProtocol &rcprot = AP::RC();
 
 #if HAL_USE_ICU == TRUE
@@ -173,7 +178,20 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-    if (rcprot.new_input()) {
+#endif  // AP_RCPROTOCOL_ENABLED
+
+#if HAL_WITH_IO_MCU
+    uint32_t now = AP_HAL::millis();
+    const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
+    if (!have_iocmu_rc) {
+        _rcin_last_iomcu_ms = 0;
+    }
+#elif AP_RCPROTOCOL_ENABLED || HAL_RCINPUT_WITH_AP_RADIO
+    const bool have_iocmu_rc = false;
+#endif
+
+#if AP_RCPROTOCOL_ENABLED
+    if (rcprot.new_input() && !have_iocmu_rc) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcprot.num_channels();
@@ -183,12 +201,13 @@ void RCInput::_timer_tick(void)
         _rx_link_quality = rcprot.get_rx_link_quality();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = rcprot.protocol_name();
+        source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
 #endif
     }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_RCPROTOCOL_ENABLED
 
 #if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio && radio->last_recv_us() != last_radio_us) {
+    if (radio && radio->last_recv_us() != last_radio_us && !have_iocmu_rc) {
         last_radio_us = radio->last_recv_us();
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = last_radio_us;
@@ -197,6 +216,9 @@ void RCInput::_timer_tick(void)
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = radio->read(i);
         }
+#ifndef HAL_NO_UARTDRIVER
+        source = RCSource::APRADIO;
+#endif
     }
 #endif
 
@@ -206,18 +228,21 @@ void RCInput::_timer_tick(void)
         if (AP_BoardConfig::io_enabled() &&
             iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
             _rcin_timestamp_last_signal = last_iomcu_us;
+            _rcin_last_iomcu_ms = now;
 #ifndef HAL_NO_UARTDRIVER
             rc_protocol = iomcu.get_rc_protocol();
             _rssi = iomcu.get_RSSI();
+            source = RCSource::IOMCU;
 #endif
         }
     }
 #endif
 
 #ifndef HAL_NO_UARTDRIVER
-    if (rc_protocol && rc_protocol != last_protocol) {
+    if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        last_source = source;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
     }
 #endif
 
@@ -239,7 +264,7 @@ bool RCInput::rc_bind(int dsmMode)
     }
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     // ask AP_RCProtocol to start a bind
     AP::RC().start_bind();
 #endif

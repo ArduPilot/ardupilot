@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_MAG3110_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
@@ -44,3 +48,5 @@ private:
     uint8_t _compass_instance;
     bool _initialised;
 };
+
+#endif  // AP_COMPASS_MAG3110_ENABLED

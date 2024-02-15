@@ -9,7 +9,7 @@
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->is_brushed_pwm_type()) {
         // ESC cal not valid for brushed motors
         return;
     }
@@ -96,7 +96,7 @@ void Copter::esc_calibration_passthrough()
 
         // pass through to motors
         SRV_Channels::cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
         SRV_Channels::push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
@@ -153,7 +153,7 @@ void Copter::esc_calibration_setup()
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
+    if (motors->is_normal_pwm_type()) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
     } else {

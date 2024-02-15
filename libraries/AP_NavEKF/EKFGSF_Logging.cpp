@@ -2,6 +2,8 @@
 
 #include <AP_Logger/AP_Logger.h>
 
+#if HAL_LOGGING_ENABLED
+
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
 void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, uint8_t core_index)
@@ -16,13 +18,13 @@ void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, u
         LOG_PACKET_HEADER_INIT(id0),
         time_us                 : time_us,
         core                    : core_index,
-        yaw_composite           : GSF.yaw,
-        yaw_composite_variance  : sqrtF(MAX(GSF.yaw_variance, 0.0f)),
-        yaw0                    : EKF[0].X[2],
-        yaw1                    : EKF[1].X[2],
-        yaw2                    : EKF[2].X[2],
-        yaw3                    : EKF[3].X[2],
-        yaw4                    : EKF[4].X[2],
+        yaw_composite           : wrap_360(degrees(GSF.yaw)),
+        yaw_composite_variance  : sqrtF(MAX(degrees(GSF.yaw_variance), 0.0f)),
+        yaw0                    : wrap_360(degrees(EKF[0].X[2])),
+        yaw1                    : wrap_360(degrees(EKF[1].X[2])),
+        yaw2                    : wrap_360(degrees(EKF[2].X[2])),
+        yaw3                    : wrap_360(degrees(EKF[3].X[2])),
+        yaw4                    : wrap_360(degrees(EKF[4].X[2])),
         wgt0                    : GSF.weights[0],
         wgt1                    : GSF.weights[1],
         wgt2                    : GSF.weights[2],
@@ -48,3 +50,5 @@ void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, u
     };
     AP::logger().WriteBlock(&ky1, sizeof(ky1));
 }
+
+#endif  // HAL_LOGGING_ENABLED

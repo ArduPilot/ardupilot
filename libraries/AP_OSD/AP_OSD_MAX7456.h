@@ -39,7 +39,25 @@ public:
     void clear() override;
 
     // return a correction factor used to display angles correctly
-   float get_aspect_ratio_correction() const override;
+    float get_aspect_ratio_correction() const override;
+
+    bool is_compatible_with_backend_type(AP_OSD::osd_types type) const override {
+        switch(type) {
+        case AP_OSD::osd_types::OSD_MAX7456:
+        case AP_OSD::osd_types::OSD_SITL:
+            return false;
+        case AP_OSD::osd_types::OSD_NONE:
+        case AP_OSD::osd_types::OSD_TXONLY:
+        case AP_OSD::osd_types::OSD_MSP:
+        case AP_OSD::osd_types::OSD_MSP_DISPLAYPORT:
+            return true;
+        }
+        return false;
+    }
+
+    AP_OSD::osd_types get_backend_type() const override {
+        return AP_OSD::osd_types::OSD_MAX7456;
+    }
 
 private:
 

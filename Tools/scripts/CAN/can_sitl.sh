@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # this script sets up SITL to be able to attach to real CAN devices
 # once run, you can configure SITL for CAN just like a real board, with the CAN parameters
 #
@@ -32,6 +32,7 @@ done
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
 sudo ip link set up vcan0
+sudo ip link set vcan0 mtu 72
 sudo modprobe slcan
 sudo modprobe can-gw
 sudo slcan_attach -f -s8 -o "$DEVPATH"

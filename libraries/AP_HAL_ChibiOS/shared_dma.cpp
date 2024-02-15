@@ -14,13 +14,15 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "shared_dma.h"
 
 /*
   code to handle sharing of DMA channels between peripherals
  */
 
-#if CH_CFG_USE_MUTEXES == TRUE && !defined(HAL_NO_SHARED_DMA)
+#if CH_CFG_USE_MUTEXES == TRUE && AP_HAL_SHARED_DMA_ENABLED
 
 #include <AP_Common/ExpandingString.h>
 
@@ -59,6 +61,11 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
 bool Shared_DMA::is_shared(uint8_t stream_id)
 {
     return (stream_id < SHARED_DMA_MAX_STREAM_ID) && ((1U<<stream_id) & SHARED_DMA_MASK) != 0;
+}
+
+bool Shared_DMA::is_shared()
+{
+    return is_shared(stream_id1) || is_shared(stream_id2);
 }
 
 //remove any assigned deallocator or allocator

@@ -27,6 +27,8 @@
 
 using namespace SITL;
 
+extern const AP_HAL::HAL& hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo RichenPower::var_info[] = {
 
@@ -49,6 +51,8 @@ const AP_Param::GroupInfo RichenPower::var_info[] = {
 
 RichenPower::RichenPower() : SerialDevice::SerialDevice()
 {
+    ASSERT_STORAGE_SIZE(RichenPacket, 70);
+
     AP_Param::setup_object_defaults(this, var_info);
 
     u.packet.magic1 = 0xAA;
@@ -59,6 +63,11 @@ RichenPower::RichenPower() : SerialDevice::SerialDevice()
 
     u.packet.footermagic1 = 0x55;
     u.packet.footermagic2 = 0xAA;
+}
+
+void RichenPower::set_run_state(State newstate) {
+    hal.console->printf("Moving to state %u from %u\n", (unsigned)newstate, (unsigned)_state);
+    _state = newstate;
 }
 
 void RichenPower::update(const struct sitl_input &input)
@@ -119,47 +128,29 @@ void RichenPower::update_control_pin(const struct sitl_input &input)
     // RICHENPOWER, 13:49
     // Idle RMP 4800 +-300, RUN RPM 13000 +- 1500
 
-    uint16_t desired_rpm = 0;
     switch (_state) {
     case State::STOP:
-        desired_rpm = 0;
+        generatorengine.desired_rpm = 0;
         break;
     case State::IDLE:
     case State::STOPPING:
-        desired_rpm = 4800; // +/- 300
+        generatorengine.desired_rpm = 4800; // +/- 300
         break;
     case State::RUN:
-        desired_rpm = 13000; // +/- 1500
+        generatorengine.desired_rpm = 13000; // +/- 1500
         break;
     }
 
     _current_current = AP::sitl()->state.battery_current;
     _current_current = MIN(_current_current, max_current);
-    if (_current_current > 1 && _state != State::RUN) {
-        AP_HAL::panic("Generator stalled due to high current demand");
-    } else if (_current_current > max_current) {
-        AP_HAL::panic("Generator stalled due to high current demand (run)");
-    }
 
-    // linear degradation in RPM up to maximum load
-    if (desired_rpm) {
-        desired_rpm -= 1500 * (_current_current/max_current);
-    }
+    generatorengine.current_current = _current_current;
+    generatorengine.max_current = max_current;
+    generatorengine.max_slew_rpm_per_second = 2000;
 
-    const float max_slew_rpm_per_second = 2000;
-    const float max_slew_rpm = max_slew_rpm_per_second * ((now - last_rpm_update_ms) / 1000.0f);
-    last_rpm_update_ms = now;
-    const float rpm_delta = _current_rpm - desired_rpm;
-    if (rpm_delta > 0) {
-        _current_rpm -= MIN(max_slew_rpm, rpm_delta);
-    } else {
-        _current_rpm += MIN(max_slew_rpm, abs(rpm_delta));
-    }
+    generatorengine.update();
 
-    // if (!is_zero(rpm_delta)) {
-        // ::fprintf(stderr, "richenpower pwm: %f\n", _current_rpm);
-    // }
-
+    _current_rpm = generatorengine.current_rpm;
 }
 
 void RichenPower::RichenUnion::update_checksum()
@@ -191,11 +182,15 @@ void RichenPower::update_send()
     u.packet.runtime_seconds = runtime_seconds_remainder;
 
     const int32_t seconds_until_maintenance = (original_seconds_until_maintenance - _runtime_ms/1000.0f);
+    uint16_t errors = htobe16(u.packet.errors);
     if (seconds_until_maintenance <= 0) {
         u.packet.seconds_until_maintenance = htobe32(0);
+        errors |= (1U<<(uint8_t(Errors::MaintenanceRequired)));
     } else {
         u.packet.seconds_until_maintenance = htobe32(seconds_until_maintenance);
+        errors &= ~(1U<<(uint8_t(Errors::MaintenanceRequired)));
     }
+    u.packet.errors = htobe16(errors);
 
     switch (_state) {
     case State::IDLE:

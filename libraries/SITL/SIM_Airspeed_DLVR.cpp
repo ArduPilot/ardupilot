@@ -69,5 +69,5 @@ void SITL::Airspeed_DLVR::update(const class Aircraft &aircraft)
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
 
     // To Do: Add a sensor board temperature offset parameter
-    temperature = (SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN) + 25.0;
+    temperature = (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
 }

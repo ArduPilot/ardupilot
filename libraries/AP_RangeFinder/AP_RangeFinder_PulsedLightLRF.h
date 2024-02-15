@@ -1,7 +1,12 @@
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
+
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
 #include <AP_HAL/I2CDevice.h>
 
 /* Connection diagram
@@ -57,3 +62,5 @@ private:
     
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
+
+#endif  // AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED

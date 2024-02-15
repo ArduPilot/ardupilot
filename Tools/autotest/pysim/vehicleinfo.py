@@ -105,7 +105,11 @@ class VehicleInfo(object):
             },
             "deca-cwx": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-deca.parm",
+                    "default_params/copter-deca-cwx.parm"
+                 ],
             },
             "tri": {
                 "waf_target": "bin/arducopter",
@@ -145,6 +149,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
             },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": ["default_params/copter-heli.parm",
@@ -179,6 +188,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
             },
+            "quad-can": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm", "default_params/quad-can.parm"],
+                "periph_params_filename": ["default_params/periph.parm", "default_params/quad-periph.parm"],
+            },
         },
     },
     "Helicopter": {
@@ -187,6 +201,11 @@ class VehicleInfo(object):
             "heli": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
+            },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
             },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
@@ -228,7 +247,7 @@ class VehicleInfo(object):
             },
             "quadplane-tilthvec": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/quadplane-tilthvec.parm"],
+                "default_params_filename": ["models/plane.parm", "default_params/quadplane-tilthvec.parm"],
             },
             "quadplane-tri": {
                 "waf_target": "bin/arduplane",
@@ -242,17 +261,26 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane.parm",
             },
+            "quadplane-ice": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/quadplane.parm", "default_params/plane-ice.parm", "default_params/quadplane-ice.parm"],
+            },
+            "quadplane-can": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/quadplane.parm", "default_params/quadplane-can.parm"],
+                "periph_params_filename": ["default_params/periph.parm", "default_params/quadplane-periph.parm"],
+            },
             "firefly": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/firefly.parm",
             },
             "plane-elevon": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-elevons.parm"],
+                "default_params_filename": ["models/plane.parm", "default_params/plane-elevons.parm"],
             },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-vtail.parm"],
+                "default_params_filename": ["models/plane.parm", "default_params/plane-vtail.parm"],
             },
             "plane-tailsitter": {
                 "waf_target": "bin/arduplane",
@@ -260,19 +288,31 @@ class VehicleInfo(object):
             },
             "plane-jet": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-jet.parm"],
+                "default_params_filename": ["models/plane.parm", "default_params/plane-jet.parm"],
+            },
+            "plane-ice": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["models/plane.parm", "default_params/plane-ice.parm"],
+            },
+            "plane-3d": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [], # defaults are loaded in SIM_Plane.cpp
+            },
+            "quadplane-copter_tailsitter": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/quadplane.parm","default_params/quadplane-copter_tailsitter.parm"],
             },
             "plane": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane.parm",
+                "default_params_filename": "models/plane.parm",
             },
             "plane-dspoilers": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-dspoilers.parm"]
+                "default_params_filename": ["models/plane.parm", "default_params/plane-dspoilers.parm"]
             },
             "plane-soaring": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-soaring.parm"]
+                "default_params_filename": ["models/plane.parm", "default_params/plane-soaring.parm"]
             },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
@@ -281,12 +321,12 @@ class VehicleInfo(object):
             },
             "last_letter": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane.parm",
+                "default_params_filename": "models/plane.parm",
                 "external": True,
             },
             "CRRCSim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane.parm",
+                "default_params_filename": "models/plane.parm",
                 "external": True,
             },
             "jsbsim": {
@@ -296,7 +336,7 @@ class VehicleInfo(object):
             },
             "scrimmage-plane" : {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane.parm",
+                "default_params_filename": "models/plane.parm",
                 "external": True,
             },
             "calibration": {
@@ -328,6 +368,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm",
                                             "default_params/balancebot.parm"],
+            },
+            "motorboat": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/motorboat.parm"],
             },
             "sailboat": {
                 "waf_target": "bin/ardurover",
@@ -378,6 +423,15 @@ class VehicleInfo(object):
                 "waf_target": "bin/antennatracker",
             },
         },
+    },
+    "sitl_periph_universal": {
+        "frames": {
+            "universal": {
+                "configure_target": "sitl_periph_universal",
+                "waf_target": "bin/AP_Periph",
+                "default_params_filename": "default_params/periph.parm",
+                },
+            }
     },
 }
 

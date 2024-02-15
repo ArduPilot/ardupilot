@@ -41,10 +41,16 @@ def build(bld):
     generated_cpp = bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.cpp')
     generated_h = bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.h')
 
+    docs_command = ""
+    if bld.options.scripting_docs:
+        docs = bld.srcnode.make_node('libraries/AP_Scripting/docs/docs.lua')
+        docs_rel = relpath(bld,docs)
+        docs_command = "-d %s" % docs_rel
+
     bld(
         # build the bindings
         source=[bindings, gen_bindings],
-        rule="./gen-bindings -o libraries/AP_Scripting/lua_generated_bindings -i %s" % bindings_rel,
+        rule="./gen-bindings -o libraries/AP_Scripting/lua_generated_bindings -i %s %s" % (bindings_rel, docs_command),
         target=[generated_cpp, generated_h],
         group='dynamic_sources',
     )

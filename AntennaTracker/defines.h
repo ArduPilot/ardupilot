@@ -34,6 +34,8 @@ enum class PWMDisarmed {
 #define MASK_LOG_CURRENT                (1<<6)
 #define MASK_LOG_ANY                    0xFFFF
 
-//  Logging messages
-#define LOG_V_BAR_MSG                   0x04
-#define LOG_V_POS_MSG                   0x05
+//  Logging messages - only 32 messages are available to the vehicle here.
+enum log_messages {
+    LOG_V_BAR_MSG,
+    LOG_V_POS_MSG,
+};

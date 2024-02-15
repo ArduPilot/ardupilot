@@ -1,0 +1,37 @@
+# hw definition file for processing by chibios_pins.py
+# for speedybeef4 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1106
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# LEDs
+PA14 LED_BOOTLOADER OUTPUT LOW GPIO(0)
+PA13 LED_ACTIVITY OUTPUT LOW GPIO(1)
+define HAL_LED_ON 0
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU_CS CS
+PB12 OSD_CS CS
+PC14 SDCARD_CS CS

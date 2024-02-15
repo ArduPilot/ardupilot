@@ -23,9 +23,6 @@ FLASH_RESERVE_START_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART6 USART1 UART4 UART8 UART7 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -183,7 +180,7 @@ PH9  TIM12_CH2 TIM12 PWM(14) GPIO(63) NODMA
 PE5 TIM15_CH1 TIM15 GPIO(77) ALARM
 
 # RC input
-PB4 TIM3_CH1 TIM3 RCININT PULLUP LOW 
+PB4 TIM3_CH1 TIM3 RCININT PULLDOWN LOW
 
 # analog in
 PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -191,12 +188,17 @@ PA1 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 # ADC3.3/ADC6.6
 PC4 SPARE1_ADC1 ADC1 SCALE(1)
+
+# Note that this should be SCALE(2), but we don't want to break existing setups
+# See: https://github.com/ArduPilot/ardupilot/pull/22831
 PA4 SPARE2_ADC1 ADC1 SCALE(1)
 
 PF12 RSSI_IN ADC1 SCALE(1)
 
 PC5 VDD_5V_SENS ADC1 SCALE(2)
 PC1 SCALED_V3V3 ADC1 SCALE(2)
+
+PB1 FMU_SERVORAIL_VCC_SENS ADC1 SCALE(3)
 
 # CAN bus
 PI9  CAN1_RX CAN1
@@ -305,11 +307,12 @@ PE10 SAFETY_IN INPUT PULLDOWN
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 DMA_PRIORITY  ADC* SPI1* TIM*UP*
 DMA_NOSHARE  SPI1* TIM*UP* 
 
 # default to 45C target temp
 define HAL_IMU_TEMP_DEFAULT 45
+
+# Enable Sagetech MXS ADSB transponder
+define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
+

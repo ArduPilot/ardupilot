@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_ENABLED
+
 #include "AP_BattMonitor_SMBus.h"
 
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
@@ -6,13 +10,15 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
 
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
+
     // @Param: I2C_BUS
     // @DisplayName: Battery monitor I2C bus number
     // @Description: Battery monitor I2C bus number
     // @Range: 0 3
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_BUS", 1, AP_BattMonitor_SMBus, _bus, 0),
+    AP_GROUPINFO("I2C_BUS", 10, AP_BattMonitor_SMBus, _bus, 0),
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
@@ -20,7 +26,9 @@ const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_ADDR", 2, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
+    AP_GROUPINFO("I2C_ADDR", 11, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
+
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };
@@ -35,8 +43,8 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
     _state.var_info = var_info;
 
     _bus.set_default(i2c_bus);
-    _params._serial_number = AP_BATT_SERIAL_NUMBER_DEFAULT;
-    _params._pack_capacity = 0;
+    _params._serial_number.set(AP_BATT_SERIAL_NUMBER_DEFAULT);
+    _params._pack_capacity.set(0);
 }
 
 void AP_BattMonitor_SMBus::init(void)
@@ -113,7 +121,7 @@ void AP_BattMonitor_SMBus::read_temp(void)
     _has_temperature = true;
 
     _state.temperature_time = AP_HAL::millis();
-    _state.temperature = (data * 0.1f) - C_TO_KELVIN;
+    _state.temperature = KELVIN_TO_C(0.1f * data);
 }
 
 // reads the serial number if it's not already known
@@ -169,6 +177,45 @@ bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
     return true;
 }
 
+// read_block - returns number of characters read if successful, zero if unsuccessful
+uint8_t AP_BattMonitor_SMBus::read_block(uint8_t reg, uint8_t* data, uint8_t len) const
+{
+    // get length
+    uint8_t bufflen;
+    // read byte (first byte indicates the number of bytes in the block)
+    if (!_dev->read_registers(reg, &bufflen, 1)) {
+        return 0;
+    }
+
+    // sanity check length returned by smbus
+    if (bufflen == 0 || bufflen > len) {
+        return 0;
+    }
+
+    // buffer to hold results (2 extra byte returned holding length and PEC)
+    const uint8_t read_size = bufflen + 1 + (_pec_supported ? 1 : 0);
+    uint8_t buff[read_size];
+
+    // read bytes
+    if (!_dev->read_registers(reg, buff, read_size)) {
+        return 0;
+    }
+
+    // check PEC
+    if (_pec_supported) {
+        const uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
+        if (pec != buff[bufflen+1]) {
+            return 0;
+        }
+    }
+
+    // copy data (excluding length & PEC)
+    memcpy(data, &buff[1], bufflen);
+
+    // return success
+    return bufflen;
+}
+
 /// get_PEC - calculate packet error correction code of buffer
 uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const
 {
@@ -207,3 +254,5 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
+
+#endif  // AP_BATTERY_SMBUS_ENABLED

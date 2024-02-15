@@ -31,8 +31,7 @@ class ChibiOS::SoftSigReaderInt {
 public:
     SoftSigReaderInt();
     /* Do not allow copies */
-    SoftSigReaderInt(const SoftSigReaderInt &other) = delete;
-    SoftSigReaderInt &operator=(const SoftSigReaderInt&) = delete;
+    CLASS_NO_COPY(SoftSigReaderInt);
 
     // get singleton
     static SoftSigReaderInt *get_singleton(void)

@@ -23,6 +23,8 @@
  */
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 
+#if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -114,10 +116,10 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     if (ret) {
         // combine results into distance
         reading_cm = be16toh(val);
-
-        // trigger a new reading
-        start_reading();
     }
+
+    // trigger a new reading
+    start_reading();
 
     return ret;
 }
@@ -143,7 +145,7 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
 {
     WITH_SEMAPHORE(_sem);
     if (new_distance) {
-        state.distance_cm = distance;
+        state.distance_m = distance * 0.01f;
         new_distance = false;
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
@@ -151,3 +153,5 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif  // AP_RANGEFINDER_MAXSONARI2CXL_ENABLED

@@ -57,6 +57,10 @@
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
  */
 
+#include "AP_Compass_config.h"
+
+#if COMPASS_CAL_ENABLED
+
 #include "AP_Compass.h"
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
@@ -324,6 +328,7 @@ void CompassCalibrator::update_cal_report()
     cal_report.orientation_confidence = _orientation_confidence;
     cal_report.original_orientation = _orig_orientation;
     cal_report.orientation = _orientation_solution;
+    cal_report.check_orientation = _check_orientation;
 }
 
 // running method for use in thread
@@ -1067,7 +1072,7 @@ bool CompassCalibrator::fix_radius(void)
         _params.scale_factor = 0;
         return true;
     }
-    const struct Location &loc = AP::gps().location();
+    const Location &loc = AP::gps().location();
     float intensity;
     float declination;
     float inclination;
@@ -1152,3 +1157,5 @@ bool CompassCalibrator::right_angle_rotation(Rotation r) const
             return false;
     }
 }
+
+#endif  // COMPASS_CAL_ENABLED

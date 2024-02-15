@@ -20,6 +20,7 @@
 #include <SITL/SITL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
+#include "SIM_EFI_MegaSquirt.h"
 
 using namespace SITL;
 
@@ -37,35 +38,27 @@ static uint32_t CRC32_MS(const uint8_t *buf, uint32_t len)
 void EFI_MegaSquirt::update()
 {
     auto sitl = AP::sitl();
-    if (!sitl || sitl->efi_type == SIM::EFI_TYPE_NONE) {
+    if (!sitl || sitl->efi_type != SIM::EFI_TYPE_MS) {
         return;
     }
-    if (!connected) {
-        connected = sock.connect("127.0.0.1", 5763);
-    }
-    if (!connected) {
-        return;
-    }
-    float rpm = sitl->state.rpm[0];
+    const float rpm = sitl->state.rpm[2];
+
+    tps = 0.9 * tps + 0.1 * (rpm / 7000) * 100;
 
     table7.rpm = rpm;
     table7.fuelload = 20;
     table7.dwell = 2.0;
     table7.baro_hPa = 1000;
     table7.map_hPa = 895;
-    table7.mat_cF = 3013;
+    table7.mat_cF = C_TO_F(AP::baro().get_temperature()) * 10;
     table7.fuelPressure = 6280;
-    table7.throttle_pos = 580;
+    table7.throttle_pos = tps * 10;
     table7.ct_cF = 3940;
     table7.afr_target1 = 148;
 
-    if (!sock.pollin(0)) {
-        return;
-    }
-
     // receive command
     while (ofs < sizeof(r_command)) {
-        if (sock.recv(&buf[ofs], 1, 0) != 1) {
+        if (read_from_autopilot((char*)&buf[ofs], 1) != 1) {
             break;
         }
         switch (ofs) {
@@ -141,8 +134,8 @@ void EFI_MegaSquirt::send_table(void)
     outbuf[0] = 0;
     swab(table_offset+(const uint8_t *)&table7, &outbuf[1], table_size);
 
-    sock.send(&len, sizeof(len));
-    sock.send(outbuf, sizeof(outbuf));
+    write_to_autopilot((const char*)&len, sizeof(len));
+    write_to_autopilot((const char*)outbuf, sizeof(outbuf));
     uint32_t crc = htobe32(CRC32_MS(outbuf, sizeof(outbuf)));
-    sock.send((const uint8_t *)&crc, sizeof(crc));
+    write_to_autopilot((const char *)&crc, sizeof(crc));
 }

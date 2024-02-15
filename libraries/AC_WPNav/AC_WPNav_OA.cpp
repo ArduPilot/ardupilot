@@ -44,9 +44,7 @@ float AC_WPNav_OA::get_wp_distance_to_destination() const
         return AC_WPNav::get_wp_distance_to_destination();
     }
 
-    // get current location
-    const Vector3f &curr = _inav.get_position();
-    return norm(_destination_oabak.x-curr.x, _destination_oabak.y-curr.y);
+    return get_horizontal_distance_cm(_inav.get_position_xy_cm(), _destination_oabak.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
@@ -57,7 +55,7 @@ int32_t AC_WPNav_OA::get_wp_bearing_to_destination() const
         return AC_WPNav::get_wp_bearing_to_destination();
     }
 
-    return get_bearing_cd(_inav.get_position(), _destination_oabak);
+    return get_bearing_cd(_inav.get_position_xy_cm(), _destination_oabak.xy());
 }
 
 /// true when we have come within RADIUS cm of the waypoint
@@ -72,33 +70,67 @@ bool AC_WPNav_OA::update_wpnav()
     // run path planning around obstacles
     AP_OAPathPlanner *oa_ptr = AP_OAPathPlanner::get_singleton();
     Location current_loc;
-    if ((oa_ptr != nullptr) && AP::ahrs().get_position(current_loc)) {
+    if ((oa_ptr != nullptr) && AP::ahrs().get_location(current_loc)) {
 
         // backup _origin and _destination when not doing oa
         if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
             _origin_oabak = _origin;
             _destination_oabak = _destination;
             _terrain_alt_oabak = _terrain_alt;
+            _next_destination_oabak = _next_destination;
         }
 
-        // convert origin and destination to Locations and pass into oa
+        // convert origin, destination and next_destination to Locations and pass into oa
         const Location origin_loc(_origin_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         const Location destination_loc(_destination_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        Location oa_origin_new, oa_destination_new;
+        const Location next_destination_loc(_next_destination_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        Location oa_origin_new, oa_destination_new, oa_next_destination_new;
+        bool dest_to_next_dest_clear = true;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used = AP_OAPathPlanner::OAPathPlannerUsed::None;
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc, origin_loc, destination_loc, oa_origin_new, oa_destination_new, path_planner_used);
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc,
+                                                                                    origin_loc,
+                                                                                    destination_loc,
+                                                                                    next_destination_loc,
+                                                                                    oa_origin_new,
+                                                                                    oa_destination_new,
+                                                                                    oa_next_destination_new,
+                                                                                    dest_to_next_dest_clear,
+                                                                                    path_planner_used);
 
         switch (oa_retstate) {
 
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
                 // object avoidance has become inactive so reset target to original destination
-                set_wp_destination(_destination_oabak, _terrain_alt_oabak);
+                if (!set_wp_destination(_destination_oabak, _terrain_alt_oabak)) {
+                    // trigger terrain failsafe
+                    return false;
+                }
+
+                // if path from destination to next_destination is clear
+                if (dest_to_next_dest_clear && (oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS)) {
+                    // set next destination if non-zero
+                    if (!_next_destination_oabak.is_zero()) {
+                        set_wp_destination_next(_next_destination_oabak);
+                    }
+                }
                 _oa_state = oa_retstate;
+            }
+
+            // ensure we stop at next waypoint
+            // Note that this check is run on every iteration even if the path planner is not active
+            if (!dest_to_next_dest_clear) {
+                force_stop_at_next_wp();
             }
             break;
 
         case AP_OAPathPlanner::OA_PROCESSING:
+            if (oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS) {
+                // if fast waypoint option is set, proceed during processing
+                break;
+            }
+            FALLTHROUGH;
+
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error stop the vehicle
             // by setting the oa_destination to a stopping point
@@ -107,6 +139,7 @@ bool AC_WPNav_OA::update_wpnav()
                 Vector3f stopping_point;
                 get_wp_stopping_point(stopping_point);
                 _oa_destination = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
+                _oa_next_destination.zero();
                 if (set_wp_destination(stopping_point, false)) {
                     _oa_state = oa_retstate;
                 }
@@ -129,6 +162,8 @@ bool AC_WPNav_OA::update_wpnav()
                     Location origin_oabak_loc(_origin_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
                     Location destination_oabak_loc(_destination_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
                     oa_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
+
+                    // set new OA adjusted destination
                     if (!set_wp_destination_loc(oa_destination_new)) {
                         // trigger terrain failsafe
                         return false;
@@ -136,6 +171,17 @@ bool AC_WPNav_OA::update_wpnav()
                     // if new target set successfully, update oa state and destination
                     _oa_state = oa_retstate;
                     _oa_destination = oa_destination_new;
+
+                    // if a next destination was provided then use it
+                    if ((oa_ptr->get_options() & AP_OAPathPlanner::OA_OPTION_FAST_WAYPOINTS) && !oa_next_destination_new.is_zero()) {
+                        // calculate oa_next_destination_new's altitude using linear interpolation between original origin and destination
+                        // this "next destination" is still an intermediate point between the origin and destination
+                        Location next_destination_oabak_loc(_next_destination_oabak, _terrain_alt_oabak ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+                        oa_next_destination_new.linearly_interpolate_alt(origin_oabak_loc, destination_oabak_loc);
+                        if (set_wp_destination_next_loc(oa_next_destination_new)) {
+                            _oa_next_destination = oa_next_destination_new;
+                        }
+                    }
                 }
                 break;
 

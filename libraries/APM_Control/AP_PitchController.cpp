@@ -3,12 +3,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -19,45 +19,47 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_PitchController.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: 2SRV_TCONST
-	// @DisplayName: Pitch Time Constant
-	// @Description: Time constant in seconds from demanded to achieved pitch angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
-	// @Range: 0.4 1.0
-	// @Units: s
-	// @Increment: 0.1
-	// @User: Advanced
+    // @DisplayName: Pitch Time Constant
+    // @Description: Time constant in seconds from demanded to achieved pitch angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
+    // @Range: 0.4 1.0
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_TCONST",      0, AP_PitchController, gains.tau,       0.5f),
 
     // index 1 to 3 reserved for old PID values
 
     // @Param: 2SRV_RMAX_UP
-	// @DisplayName: Pitch up max rate
-	// @Description: Maximum pitch up rate that the pitch controller demands (degrees/sec) in ACRO mode.
-	// @Range: 0 100
-	// @Units: deg/s
-	// @Increment: 1
-	// @User: Advanced
+    // @DisplayName: Pitch up max rate
+    // @Description: This sets the maximum nose up pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.
+    // @Range: 0 100
+    // @Units: deg/s
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_RMAX_UP",     4, AP_PitchController, gains.rmax_pos,   0.0f),
 
     // @Param: 2SRV_RMAX_DN
-	// @DisplayName: Pitch down max rate
-	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
-	// @Range: 0 100
-	// @Units: deg/s
-	// @Increment: 1
-	// @User: Advanced
+    // @DisplayName: Pitch down max rate
+    // @Description: This sets the maximum nose down pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.
+    // @Range: 0 100
+    // @Units: deg/s
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_RMAX_DN",     5, AP_PitchController, gains.rmax_neg,   0.0f),
 
     // @Param: 2SRV_RLL
-	// @DisplayName: Roll compensation
-	// @Description: Gain added to pitch to keep aircraft from descending or ascending in turns. Increase in increments of 0.05 to reduce altitude loss. Decrease for altitude gain.
-	// @Range: 0.7 1.5
-	// @Increment: 0.05
+    // @DisplayName: Roll compensation
+    // @Description: Gain added to pitch to keep aircraft from descending or ascending in turns. Increase in increments of 0.05 to reduce altitude loss. Decrease for altitude gain.
+    // @Range: 0.7 1.5
+    // @Increment: 0.05
     // @User: Standard
     AP_GROUPINFO("2SRV_RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
@@ -65,7 +67,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _RATE_P
     // @DisplayName: Pitch axis rate controller P gain
-    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Description: Pitch axis rate controller P gain. Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -79,7 +81,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _RATE_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
-    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -129,12 +131,37 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Pitch axis rate controller PD sum maximum
+    // @Description: Pitch axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Pitch Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Pitch Target notch filter index
+    // @Description: Pitch Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Pitch Error notch filter index
+    // @Description: Pitch Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
-    
+
     AP_GROUPEND
 };
 
-AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
+AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
     : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -144,7 +171,7 @@ AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
 /*
   AC_PID based rate controller
 */
-int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
+float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode)
 {
     const float dt = AP::scheduler().get_loop_period_s();
 
@@ -154,8 +181,6 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     bool limit_I = fabsf(_last_out) >= 45;
     float rate_y = _ahrs.get_gyro().y;
     float old_I = rate_pid.get_i();
-
-    rate_pid.set_dt(dt);
 
     bool underspeed = aspeed <= 0.5*float(aparm.airspeed_min);
     if (underspeed) {
@@ -167,17 +192,18 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_y * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_y * scaler * scaler, dt, limit_I);
 
     if (underspeed) {
         // when underspeed we lock the integrator
         rate_pid.set_integrator(old_I);
     }
-    
+
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
-    const float ff = degrees(rate_pid.get_ff() / (scaler * eas2tas));
+    const float ff = degrees(ff_scale * rate_pid.get_ff() / (scaler * eas2tas));
+    ff_scale = 1.0;
 
     if (disable_integrator) {
         rate_pid.reset_I();
@@ -192,132 +218,134 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.DFF *= deg_scale;
 
     // fix the logged target and actual values to not have the scalers applied
     pinfo.target = desired_rate;
     pinfo.actual = degrees(rate_y);
 
     // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
+    if (ground_mode) {
+        // when on ground suppress D and half P term to prevent oscillations
+        out -= pinfo.D + 0.5*pinfo.P;
+    }
 
     // remember the last output to trigger the I limit
     _last_out = out;
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
+        // let autotune have a go at the values
         autotune->update(pinfo, scaler, angle_err_deg);
     }
-    
+
     // output is scaled to notional centidegrees of deflection
-    return constrain_int32(out * 100, -4500, 4500);
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 /*
  Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are: 
+ Inputs are:
  1) demanded pitch rate in degrees/second
  2) control gain scaler = scaling_speed / aspeed
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
  5) maximum FBW airspeed (metres/sec)
 */
-int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
+float AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
     float aspeed;
-	if (!AP::ahrs().airspeed_estimate(aspeed)) {
-	    // If no airspeed available use average of min and max
+    if (!AP::ahrs().airspeed_estimate(aspeed)) {
+        // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
-	}
-    return _get_rate_out(desired_rate, scaler, false, aspeed);
+    }
+    return _get_rate_out(desired_rate, scaler, false, aspeed, false);
 }
 
 /*
   get the rate offset in degrees/second needed for pitch in body frame
   to maintain height in a coordinated turn.
-  
+
   Also returns the inverted flag and the estimated airspeed in m/s for
   use by the rest of the pitch controller
  */
 float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inverted) const
 {
-	float rate_offset;
-	float bank_angle = AP::ahrs().roll;
+    float rate_offset;
+    float bank_angle = AP::ahrs().get_roll();
 
-	// limit bank angle between +- 80 deg if right way up
-	if (fabsf(bank_angle) < radians(90))	{
-	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+    // limit bank angle between +- 80 deg if right way up
+    if (fabsf(bank_angle) < radians(90))	{
+        bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
         inverted = false;
-	} else {
-		inverted = true;
-		if (bank_angle > 0.0f) {
-			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
-		} else {
-			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
-		}
-	}
+    } else {
+        inverted = true;
+        if (bank_angle > 0.0f) {
+            bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+        } else {
+            bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+        }
+    }
     const AP_AHRS &_ahrs = AP::ahrs();
-	if (!_ahrs.airspeed_estimate(aspeed)) {
-	    // If no airspeed available use average of min and max
+    if (!_ahrs.airspeed_estimate(aspeed)) {
+        // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
-	}
+    }
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.get_pitch())*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
-	if (inverted) {
-		rate_offset = -rate_offset;
-	}
+    if (inverted) {
+        rate_offset = -rate_offset;
+    }
     return rate_offset;
 }
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
 // A positive demand is up
-// Inputs are: 
+// Inputs are:
 // 1) demanded pitch angle in centi-degrees
 // 2) control gain scaler = scaling_speed / aspeed
 // 3) boolean which is true when stabilise mode is active
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
 {
-	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
-	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
-	// Pitch rate offset is the component of turn rate about the pitch axis
-	float aspeed;
-	float rate_offset;
-	bool inverted;
+    // Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
+    // Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
+    // Pitch rate offset is the component of turn rate about the pitch axis
+    float aspeed;
+    float rate_offset;
+    bool inverted;
 
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
     }
 
     rate_offset = _get_coordination_rate_offset(aspeed, inverted);
-	
-	// Calculate the desired pitch rate (deg/sec) from the angle error
+
+    // Calculate the desired pitch rate (deg/sec) from the angle error
     angle_err_deg = angle_err * 0.01;
     float desired_rate = angle_err_deg / gains.tau;
-	
-	// limit the maximum pitch rate demand. Don't apply when inverted
-	// as the rates will be tuned when upright, and it is common that
-	// much higher rates are needed inverted	
-	if (!inverted) {
+
+    // limit the maximum pitch rate demand. Don't apply when inverted
+    // as the rates will be tuned when upright, and it is common that
+    // much higher rates are needed inverted
+    if (!inverted) {
+        desired_rate += rate_offset;
         if (gains.rmax_neg && desired_rate < -gains.rmax_neg) {
             desired_rate = -gains.rmax_neg;
         } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
             desired_rate = gains.rmax_pos;
-		}
-	}
-	
-	if (inverted) {
-		desired_rate = -desired_rate;
-	}
-
-	// Apply the turn correction offset
-	desired_rate = desired_rate + rate_offset;
+        }
+    } else {
+        // Make sure not to invert the turn coordination offset
+        desired_rate = -desired_rate + rate_offset;
+    }
 
     /*
       when we are past the users defined roll limit for the aircraft
@@ -333,18 +361,17 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;
     }
-    const float roll_limit_margin = MIN(aparm.roll_limit_cd + 500.0, 8500.0);
+    const float roll_limit_margin = MIN(aparm.roll_limit*100 + 500.0, 8500.0);
     if (roll_wrapped > roll_limit_margin && labs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
         desired_rate *= (1 - roll_prop);
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
 }
 
 void AP_PitchController::reset_I()
 {
-    _pid_info.I = 0;
     rate_pid.reset_I();
 }
 
@@ -355,7 +382,7 @@ void AP_PitchController::reset_I()
 void AP_PitchController::convert_pid()
 {
     AP_Float &ff = rate_pid.ff();
-    if (ff.configured_in_storage()) {
+    if (ff.configured()) {
         return;
     }
 

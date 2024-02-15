@@ -9,7 +9,7 @@ class AP_Param;
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "SPIDevice.h"
-#include "QSPIDevice.h"
+#include "WSPIDevice.h"
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"
@@ -20,18 +20,19 @@ class AP_Param;
 
 class AP_HAL::HAL {
 public:
-    HAL(AP_HAL::UARTDriver* _uartA, // console
-        AP_HAL::UARTDriver* _uartB, // 1st GPS
-        AP_HAL::UARTDriver* _uartC, // telem1
-        AP_HAL::UARTDriver* _uartD, // telem2
-        AP_HAL::UARTDriver* _uartE, // 2nd GPS
-        AP_HAL::UARTDriver* _uartF, // extra1
-        AP_HAL::UARTDriver* _uartG, // extra2
-        AP_HAL::UARTDriver* _uartH, // extra3
-        AP_HAL::UARTDriver* _uartI, // extra4
+    HAL(AP_HAL::UARTDriver* _serial0, // console
+        AP_HAL::UARTDriver* _serial1, // telem1
+        AP_HAL::UARTDriver* _serial2, // telem2
+        AP_HAL::UARTDriver* _serial3, // 1st GPS
+        AP_HAL::UARTDriver* _serial4, // 2nd GPS
+        AP_HAL::UARTDriver* _serial5, // extra1
+        AP_HAL::UARTDriver* _serial6, // extra2
+        AP_HAL::UARTDriver* _serial7, // extra3
+        AP_HAL::UARTDriver* _serial8, // extra4
+        AP_HAL::UARTDriver* _serial9, // extra5
         AP_HAL::I2CDeviceManager* _i2c_mgr,
         AP_HAL::SPIDeviceManager* _spi,
-        AP_HAL::QSPIDeviceManager* _qspi,
+        AP_HAL::WSPIDeviceManager* _wspi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::UARTDriver* _console,
@@ -42,25 +43,32 @@ public:
         AP_HAL::Util*       _util,
         AP_HAL::OpticalFlow*_opticalflow,
         AP_HAL::Flash*      _flash,
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        class AP_HAL::SIMState*   _simstate,
+#endif
+#if HAL_WITH_DSP
         AP_HAL::DSP*        _dsp,
+#endif
 #if HAL_NUM_CAN_IFACES > 0
         AP_HAL::CANIface* _can_ifaces[HAL_NUM_CAN_IFACES])
 #else
         AP_HAL::CANIface** _can_ifaces)
 #endif
         :
-        uartA(_uartA),
-        uartB(_uartB),
-        uartC(_uartC),
-        uartD(_uartD),
-        uartE(_uartE),
-        uartF(_uartF),
-        uartG(_uartG),
-        uartH(_uartH),
-        uartI(_uartI),
+        serial_array{
+            _serial0,
+            _serial1,
+            _serial2,
+            _serial3,
+            _serial4,
+            _serial5,
+            _serial6,
+            _serial7,
+            _serial8,
+            _serial9},
         i2c_mgr(_i2c_mgr),
         spi(_spi),
-        qspi(_qspi),
+        wspi(_wspi),
         analogin(_analogin),
         storage(_storage),
         console(_console),
@@ -70,8 +78,13 @@ public:
         scheduler(_scheduler),
         util(_util),
         opticalflow(_opticalflow),
-        flash(_flash),
-        dsp(_dsp)
+#if HAL_WITH_DSP
+        dsp(_dsp),
+#endif
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        simstate(_simstate),
+#endif
+        flash(_flash)
     {
 #if HAL_NUM_CAN_IFACES > 0
         if (_can_ifaces == nullptr) {
@@ -104,22 +117,10 @@ public:
 
     virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
-private:
-    // the uartX ports must be contiguous in ram for the serial() method to work
-    AP_HAL::UARTDriver* uartA;
-    AP_HAL::UARTDriver* uartB;
-    AP_HAL::UARTDriver* uartC;
-    AP_HAL::UARTDriver* uartD;
-    AP_HAL::UARTDriver* uartE;
-    AP_HAL::UARTDriver* uartF;
-    AP_HAL::UARTDriver* uartG;
-    AP_HAL::UARTDriver* uartH;
-    AP_HAL::UARTDriver* uartI;
-
 public:
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
-    AP_HAL::QSPIDeviceManager* qspi;
+    AP_HAL::WSPIDeviceManager* wspi;
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
     AP_HAL::UARTDriver* console;
@@ -140,5 +141,30 @@ public:
     // access to serial ports using SERIALn_ numbering
     UARTDriver* serial(uint8_t sernum) const;
 
-    static constexpr uint8_t num_serial = 9;
+    static constexpr uint8_t num_serial = 10;
+
+private:
+    // UART drivers in SERIALn_ order
+    AP_HAL::UARTDriver* serial_array[num_serial];
+
+public:
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    AP_HAL::SIMState *simstate;
+#endif
+
+#ifndef HAL_CONSOLE_DISABLED
+# define DEV_PRINTF(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while(0)
+#else
+# define DEV_PRINTF(fmt, args ...)
+#endif
+
 };
+
+// access serial ports using SERIALn numbering
+inline AP_HAL::UARTDriver* AP_HAL::HAL::serial(uint8_t sernum) const
+{
+    if (sernum >= ARRAY_SIZE(serial_array)) {
+        return nullptr;
+    }
+    return serial_array[sernum];
+}

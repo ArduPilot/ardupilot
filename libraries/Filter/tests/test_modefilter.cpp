@@ -45,6 +45,8 @@ TEST(ModeFilterTest, Int16_Size5)
     EXPECT_EQ(4, filtf_fail.apply(6));
     EXPECT_EQ(4, filtf_fail.apply(7));
     EXPECT_EQ(5, filtf_fail.apply(8));
+
+    EXPECT_EQ(5, filtf_fail.get());
 }
 
 TEST(ModeFilterTest, Float_Size5)
@@ -88,6 +90,8 @@ TEST(ModeFilterTest, Float_Size5)
     EXPECT_FLOAT_EQ(4, filtf_fail.apply(6));
     EXPECT_FLOAT_EQ(4, filtf_fail.apply(7));
     EXPECT_FLOAT_EQ(5, filtf_fail.apply(8));
+
+    EXPECT_FLOAT_EQ(5, filtf_fail.get());
 }
 
 AP_GTEST_MAIN()

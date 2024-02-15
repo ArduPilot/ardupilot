@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_NMEA_ENABLED
+
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_NMEA : public AP_WindVane_Backend
@@ -42,9 +46,6 @@ private:
     // decode each term
     bool decode_latest_term();
 
-    // convert from char to hex value for checksum
-    int16_t char_to_hex(char a);
-
     // latest values read in
     float _speed_ms;
     float _wind_dir_deg;
@@ -57,3 +58,5 @@ private:
     bool _sentence_valid;      // is current sentence valid so far
     bool _sentence_done;       // true if this sentence has already been decoded
 };
+
+#endif  // AP_WINDVANE_NMEA_ENABLED

@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include <AP_Rally/AP_Rally_config.h>
+
+#if HAL_RALLY_ENABLED
+
 #include <AP_Rally/AP_Rally.h>
 #include <AP_AHRS/AP_AHRS.h>
 
@@ -23,9 +27,10 @@ public:
     AP_Rally_Copter() : AP_Rally() { }
 
     /* Do not allow copies */
-    AP_Rally_Copter(const AP_Rally_Copter &other) = delete;
-    AP_Rally_Copter &operator=(const AP_Rally_Copter&) = delete;
+    CLASS_NO_COPY(AP_Rally_Copter);
 
 private:
     bool is_valid(const Location &rally_point) const override;
 };
+
+#endif  // HAL_RALLY_ENABLED

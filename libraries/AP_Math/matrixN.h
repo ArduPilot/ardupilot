@@ -19,12 +19,12 @@ class MatrixN {
 
 public:
     // constructor from zeros
-    MatrixN<T,N>(void) {
+    MatrixN(void) {
         memset(v, 0, sizeof(v));        
     }
 
     // constructor from 4 diagonals
-    MatrixN<T,N>(const float d[N]) {
+    MatrixN(const float d[N]) {
         memset(v, 0, sizeof(v));
         for (uint8_t i = 0; i < N; i++) {
             v[i][i] = d[i];

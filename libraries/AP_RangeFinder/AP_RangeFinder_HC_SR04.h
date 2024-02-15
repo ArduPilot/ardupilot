@@ -1,7 +1,12 @@
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_HC_SR04_ENABLED
+
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
 #include "AP_RangeFinder_Params.h"
 
 class AP_RangeFinder_HC_SR04 : public AP_RangeFinder_Backend
@@ -30,10 +35,12 @@ private:
 
     int8_t trigger_pin;
     uint32_t last_reading_ms;      // system time of last read (used for health reporting)
-    uint32_t last_distance_cm;     // last distance reported (used to prevent glitches in measurement)
-    uint8_t glitch_count;           // glitch counter
+    float last_distance_m;         // last distance reported (used to prevent glitches in measurement)
+    uint8_t glitch_count;          // glitch counter
 
     AP_HAL::PWMSource pwm_source;
 
     uint32_t last_ping_ms;
 };
+
+#endif  // AP_RANGEFINDER_HC_SR04_ENABLED

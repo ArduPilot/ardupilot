@@ -1,6 +1,6 @@
 #include "AP_Baro_ExternalAHRS.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
 
 AP_Baro_ExternalAHRS::AP_Baro_ExternalAHRS(AP_Baro &baro, uint8_t port) :
     AP_Baro_Backend(baro)
@@ -32,4 +32,4 @@ void AP_Baro_ExternalAHRS::handle_external(const AP_ExternalAHRS::baro_data_mess
     count++;
 }
 
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_BARO_EXTERNALAHRS_ENABLED

@@ -1,11 +1,10 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Frsky_config.h"
 
-#ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-#define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
-#endif
+#if AP_FRSKY_TELEM_ENABLED
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Frsky_Backend
 {
@@ -148,3 +147,5 @@ private:
     void loop(void);
 
 };
+
+#endif  // AP_FRSKY_TELEM_ENABLED

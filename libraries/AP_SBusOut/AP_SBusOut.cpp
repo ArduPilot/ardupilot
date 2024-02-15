@@ -37,6 +37,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+#include "AP_SBusOut_config.h"
+
+#if AP_SBUSOUTPUT_ENABLED
+
 #include "AP_SBusOut.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -46,13 +51,9 @@ extern const AP_HAL::HAL& hal;
 
 #define SBUS_DEBUG 0
 
-// SBUS1 constant definitions
-// pulse widths measured using FrSky Sbus/PWM converter
-#define SBUS_BSIZE    25
+#define SBUS_BSIZE 25
 #define SBUS_CHANNELS 16
-#define SBUS_MIN 880.0f
-#define SBUS_MAX 2156.0f
-#define SBUS_SCALE (2048.0f / (SBUS_MAX - SBUS_MIN))
+#define SBUS_MIN 875
 
 const AP_Param::GroupInfo AP_SBusOut::var_info[] = {
     // @Param: RATE
@@ -86,11 +87,12 @@ void AP_SBusOut::sbus_format_frame(uint16_t *channels, uint8_t num_channels, uin
     buffer[0] = 0x0f;
 
     /* construct sbus frame representing channels 1 through 16 (max) */
-    uint8_t nchan = MIN(num_channels, SBUS_CHANNELS);
+    const uint8_t nchan = MIN(num_channels, SBUS_CHANNELS);
     for (unsigned i = 0; i < nchan; ++i) {
         /*protect from out of bounds values and limit to 11 bits*/
-        uint16_t pwmval = MAX(channels[i], SBUS_MIN);
-        uint16_t value = (uint16_t)((pwmval - SBUS_MIN) * SBUS_SCALE);
+        const uint16_t pwmval = MAX(channels[i], SBUS_MIN);
+        const uint32_t v1 = uint32_t(pwmval - SBUS_MIN) * 1600U;
+        uint16_t value = uint16_t(v1 / 1000U) + 1;
         if (value > 0x07ff) {
             value = 0x07ff;
         }
@@ -189,3 +191,4 @@ void AP_SBusOut::init() {
     sbus1_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Sbus1,0);
 }
 
+#endif  // AP_SBUSOUTPUT_ENABLED

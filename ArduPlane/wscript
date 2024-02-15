@@ -15,7 +15,6 @@ def build(bld):
             'AP_L1_Control',
             'AP_Navigation',
             'AP_RCMapper',
-            'AP_SpdHgtControl',
             'AP_TECS',
             'AP_InertialNav',
             'AC_WPNav',
@@ -29,7 +28,7 @@ def build(bld):
             'AP_Devo_Telem',
             'AP_OSD',
             'AC_AutoTune',
-            'AP_KDECAN',
+            'AP_Follow',
         ],
     )
 

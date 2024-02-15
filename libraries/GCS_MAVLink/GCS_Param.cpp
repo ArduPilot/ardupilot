@@ -14,6 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "GCS.h"
@@ -47,11 +52,10 @@ GCS_MAVLINK::queued_param_send()
     const uint32_t tnow = AP_HAL::millis();
     const uint32_t tstart = AP_HAL::micros();
 
-    // use at most 30% of bandwidth on parameters. The constant 26 is
-    // 1/(1000 * 1/8 * 0.001 * 0.3)
-    const uint32_t link_bw = _port->bw_in_kilobytes_per_second();
+    // use at most 30% of bandwidth on parameters
+    const uint32_t link_bw = _port->bw_in_bytes_per_second();
 
-    uint32_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) * 26;
+    uint32_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) / 3333;
     const uint16_t size_for_one_param_value_msg = MAVLINK_MSG_ID_PARAM_VALUE_LEN + packet_overhead();
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
@@ -310,11 +314,13 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
         AP_Param::invalidate_count();
     }
-    
+
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
     }
+#endif
 }
 
 void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
@@ -347,11 +353,13 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     gcs().send_to_active_channels(MAVLINK_MSG_ID_PARAM_VALUE,
                                   (const char *)&packet);
 
+#if HAL_LOGGING_ENABLED
     // also log to AP_Logger
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(param_name, param_value);
     }
+#endif
 }
 
 
@@ -462,3 +470,5 @@ void GCS_MAVLINK::handle_common_param_message(const mavlink_message_t &msg)
         break;
     }
 }
+
+#endif  // HAL_GCS_ENABLED

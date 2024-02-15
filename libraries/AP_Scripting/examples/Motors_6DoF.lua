@@ -9,3 +9,6 @@ Motors_6DoF:add_motor(4, -0.205533, -0.035715,  0.359267, -0.048371,  0.010753, 
 Motors_6DoF:add_motor(5,  0.143881, -0.227449,  0.375220, -0.046098,  0.811593,  0.431718, true, 6)
 
 assert(Motors_6DoF:init(6),'unable to setup 6 motors')
+
+motors:set_frame_string("6DoF example")
+

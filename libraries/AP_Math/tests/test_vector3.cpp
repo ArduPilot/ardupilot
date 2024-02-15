@@ -1,6 +1,7 @@
 #include <AP_gtest.h>
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
 #include <AP_Math/AP_Math.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 TEST(Vector3Test, Operator)
 {

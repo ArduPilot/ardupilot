@@ -1,13 +1,8 @@
 include ../f303-periph/hwdef.inc
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
-
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_universal"
 
 # and support all external compass and baro types
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 # enable all features
 define HAL_PERIPH_ENABLE_GPS
@@ -18,6 +13,9 @@ define HAL_PERIPH_ENABLE_ADSB
 define HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
 define HAL_PERIPH_ENABLE_RANGEFINDER
 
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+
 define HAL_PERIPH_ADSB_PORT_DEFAULT 3
 
 define HAL_AIRSPEED_BUS_DEFAULT 0
@@ -26,3 +24,5 @@ define AIRSPEED_MAX_SENSORS 1
 # default ADSB off by setting 0 baudrate
 define HAL_PERIPH_ADSB_BAUD_DEFAULT 0
 
+# setup for MSP
+define HAL_MSP_ENABLED 1

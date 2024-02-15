@@ -13,22 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Beacon_Pozyx.h"
+
+#if AP_BEACON_POZYX_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
-
-// constructor
-AP_Beacon_Pozyx::AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
-    AP_Beacon_Backend(frontend)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
-    }
-}
 
 // return true if sensor is basically healthy (we are receiving data)
 bool AP_Beacon_Pozyx::healthy()
@@ -123,7 +116,7 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t beacon_x = (uint32_t)linebuf[5] << 24 | (uint32_t)linebuf[4] << 16 | (uint32_t)linebuf[3] << 8 | (uint32_t)linebuf[2];
                 int32_t beacon_y = (uint32_t)linebuf[9] << 24 | (uint32_t)linebuf[8] << 16 | (uint32_t)linebuf[7] << 8 | (uint32_t)linebuf[6];
                 int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
-                Vector3f beacon_pos(beacon_x / 1000.0f, beacon_y / 1000.0f, -beacon_z / 1000.0f);
+                Vector3f beacon_pos(beacon_x * 0.001f, beacon_y * 0.001f, -beacon_z * 0.001f);
                 if (beacon_pos.length() <= AP_BEACON_DISTANCE_MAX) {
                     set_beacon_position(beacon_id, beacon_pos);
                     parsed = true;
@@ -149,7 +142,7 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t vehicle_y = (uint32_t)linebuf[7] << 24 | (uint32_t)linebuf[6] << 16 | (uint32_t)linebuf[5] << 8 | (uint32_t)linebuf[4];
                 int32_t vehicle_z = (uint32_t)linebuf[11] << 24 | (uint32_t)linebuf[10] << 16 | (uint32_t)linebuf[9] << 8 | (uint32_t)linebuf[8];
                 int16_t position_error = (uint32_t)linebuf[13] << 8 | (uint32_t)linebuf[12];
-                Vector3f veh_pos(Vector3f(vehicle_x / 1000.0f, vehicle_y / 1000.0f, -vehicle_z / 1000.0f));
+                Vector3f veh_pos(Vector3f(vehicle_x * 0.001f, vehicle_y * 0.001f, -vehicle_z * 0.001f));
                 if (veh_pos.length() <= AP_BEACON_DISTANCE_MAX) {
                     set_vehicle_position(veh_pos, position_error);
                     parsed = true;
@@ -167,3 +160,5 @@ void AP_Beacon_Pozyx::parse_buffer()
         last_update_ms = AP_HAL::millis();
     }
 }
+
+#endif  // AP_BEACON_POZYX_ENABLED

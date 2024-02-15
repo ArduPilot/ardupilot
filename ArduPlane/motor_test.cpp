@@ -7,8 +7,6 @@
  */
 
 // motor test definitions
-#define MOTOR_TEST_PWM_MIN              800     // min pwm value accepted by the test
-#define MOTOR_TEST_PWM_MAX              2200    // max pwm value accepted by the test
 #define MOTOR_TEST_TIMEOUT_MS_MAX       30000   // max timeout is 30 seconds
 
 // motor_test_output - checks for timeout and sends updates to motors objects
@@ -43,6 +41,9 @@ void QuadPlane::motor_test_output()
     int16_t pwm = 0;   // pwm that will be output to the motors
 
     // calculate pwm based on throttle type
+    const int16_t thr_min_pwm = motors->get_pwm_output_min();
+    const int16_t thr_max_pwm = motors->get_pwm_output_max();
+
     switch (motor_test.throttle_type) {
     case MOTOR_TEST_THROTTLE_PERCENT:
         // sanity check motor_test.throttle value
@@ -56,7 +57,7 @@ void QuadPlane::motor_test_output()
         break;
 
     case MOTOR_TEST_THROTTLE_PILOT:
-        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)plane.get_throttle_input()*0.01f;
+        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * plane.get_throttle_input()*0.01f;
         break;
 
     default:
@@ -65,8 +66,8 @@ void QuadPlane::motor_test_output()
     }
 
     // sanity check throttle values
-    if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX ) {
-        // turn on motor to specified pwm vlaue
+    if (pwm >= RC_Channel::RC_MIN_LIMIT_PWM && pwm <= RC_Channel::RC_MAX_LIMIT_PWM) {
+        // turn on motor to specified pwm value
         motors->output_test_seq(motor_test.seq, pwm);
     } else {
         motor_test_stop();
@@ -86,6 +87,14 @@ MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t m
         gcs().send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
         return MAV_RESULT_FAILED;
     }
+
+    // Check Motor test is allowed
+    char failure_msg[50] {};
+    if (!motors->motor_test_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"Motor Test: %s", failure_msg);
+        return MAV_RESULT_FAILED;
+    }
+
     // if test has not started try to start it
     if (!motor_test.running) {
         // start test

@@ -24,6 +24,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 #include <math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifdef TELEM_DEBUG
 # define debug(fmt, args...)	hal.console->printf("Telem: " fmt "\n", ##args)
@@ -38,7 +39,7 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_RCTelemetry::init(void)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_GCS_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     // make telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
     // add firmware and frame info to message queue
     const char* _frame_string = gcs().frame_string();
@@ -253,23 +254,23 @@ void AP_RCTelemetry::check_ekf_status(void)
         uint32_t now = AP_HAL::millis();
         if ((now - check_ekf_status_timer) >= 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
             // multiple errors can be reported at a time. Same setup as Mission Planner.
-            if (velVar >= 1) {
+            if (velVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error velocity variance");
                 check_ekf_status_timer = now;
             }
-            if (posVar >= 1) {
+            if (posVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error pos horiz variance");
                 check_ekf_status_timer = now;
             }
-            if (hgtVar >= 1) {
+            if (hgtVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error pos vert variance");
                 check_ekf_status_timer = now;
             }
-            if (magVar.length() >= 1) {
+            if (magVar.length() >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error compass variance");
                 check_ekf_status_timer = now;
             }
-            if (tasVar >= 1) {
+            if (tasVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error terrain alt variance");
                 check_ekf_status_timer = now;
             }
@@ -282,7 +283,13 @@ uint32_t AP_RCTelemetry::sensor_status_flags() const
     uint32_t present;
     uint32_t enabled;
     uint32_t health;
+#if HAL_GCS_ENABLED
     gcs().get_sensor_status_flags(present, enabled, health);
+#else
+    present = 0;
+    enabled = 0;
+    health = 0;
+#endif
 
     return ~health & enabled & present;
 }

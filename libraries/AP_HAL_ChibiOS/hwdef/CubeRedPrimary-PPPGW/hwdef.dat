@@ -1,0 +1,43 @@
+include ../CubeRedPrimary/hwdef.dat
+
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef HAL_WITH_IO_MCU_BIDIR_DSHOT
+undef COMPASS
+undef BARO
+undef DEFAULT_SERIAL7_PROTOCOL
+
+define AP_ADVANCEDFAILSAFE_ENABLED 0
+
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_CUBERED_PERIPH
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+define AP_CAN_SLCAN_ENABLED 0
+
+define HAL_PERIPH_ENABLE_NETWORKING
+define HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+
+define AP_NETWORKING_BACKEND_PPP 1
+
+define HAL_NO_MONITOR_THREAD
+define HAL_DISABLE_LOOP_DELAY
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define HAL_NO_RCIN_THREAD
+
+# use amber LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_FMU_LED_AMBER
+
+undef HAL_OS_FATFS_IO
+undef SDMMC1
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+include ../include/network_PPPGW.inc

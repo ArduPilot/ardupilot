@@ -27,7 +27,7 @@ public:
     AnalogSource_IIO(int16_t pin, float initial_value, float voltage_scaling);
     float read_average() override;
     float read_latest() override;
-    void set_pin(uint8_t p) override;
+    bool set_pin(uint8_t p) override;
     float voltage_average() override;
     float voltage_latest() override;
     float voltage_average_ratiometric() override { return voltage_average(); }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install dependencies and configure the environment for CI build testing
 
 set -ex
@@ -97,8 +97,8 @@ fi
 
 . ~/.profile
 
-python -m pip install --user -U argparse pyserial pexpect future lxml
-python -m pip install --user -U intelhex
-python -m pip install --user -U numpy
-python -m pip install --user -U edn_format
-
+python -m pip install --progress-bar off --user -U argparse pyserial pexpect future lxml
+python -m pip install --progress-bar off --user -U intelhex
+python -m pip install --progress-bar off --user -U numpy
+python -m pip install --progress-bar off --user -U edn_format
+python -m pip install --progress-bar off --user -U empy==3.3.4

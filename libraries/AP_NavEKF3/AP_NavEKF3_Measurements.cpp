@@ -4,6 +4,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 /********************************************************
 *              OPT FLOW AND RANGE FINDER                *
@@ -33,7 +34,7 @@ void NavEKF3_core::readRangeFinder(void)
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
 
-        for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
+        for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             const auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
@@ -50,7 +51,7 @@ void NavEKF3_core::readRangeFinder(void)
             }
 
             // check for three fresh samples
-            bool sampleFresh[2][3] = {};
+            bool sampleFresh[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3] = {};
             for (uint8_t index = 0; index <= 2; index++) {
                 sampleFresh[sensorIndex][index] = (imuSampleTime_ms - storedRngMeasTime_ms[sensorIndex][index]) < 500;
             }
@@ -89,7 +90,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // indicate we have updated the measurement
                 rngValidMeaTime_ms = imuSampleTime_ms;
 
-            } else if (!takeOffDetected && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
+            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
@@ -136,9 +137,9 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
-#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
+#if EK3_FEATURE_BODY_ODOM
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
     // It uses the exisiting body frame velocity fusion.
     // TODO implement a dedicated wheel odometry observation model
@@ -161,12 +162,12 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
     storedWheelOdm.push(wheelOdmDataNew);
-}
 #endif // EK3_FEATURE_BODY_ODOM
+}
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
@@ -215,6 +216,8 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         ofDataNew.flowRadXY = - rawFlowRates.toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
         ofDataNew.body_offset = posOffset.toftype();
+        // write the flow sensor height override
+        ofDataNew.heightOverride = heightOverride;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -300,6 +303,7 @@ void NavEKF3_core::readMagData()
         // force a new yaw alignment 1s after learning completes. The
         // delay is to ensure any buffered mag samples are discarded
         yawAlignComplete = false;
+        yawAlignGpsValidCount = 0;
         InitialiseVariablesMag();
     }
 
@@ -642,7 +646,7 @@ void NavEKF3_core::readGpsData()
     calcGpsGoodForFlight();
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
-    const struct Location &gpsloc = gps.location(selected_gps);
+    const Location &gpsloc = gps.location(selected_gps);
 
     // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
     if (gpsGoodToAlign && !validOrigin) {
@@ -692,8 +696,8 @@ void NavEKF3_core::readGpsData()
             gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
         }
         storedGPS.push(gpsDataNew);
-        // declare GPS available for use
-        gpsNotAvailable = false;
+        // declare GPS in use
+        gpsIsInUse = true;
     }
 }
 
@@ -830,13 +834,12 @@ void NavEKF3_core::readAirSpdData()
 
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
-        airspeed->use(selected_airspeed) &&
-        airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
         tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
         tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
+        tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
 
         // Correct for the average intersampling delay due to the filter update rate
         tasDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -855,6 +858,7 @@ void NavEKF3_core::readAirSpdData()
         is_positive(defaultAirSpeed)) {
         tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
         tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
+        tasDataDelayed.allowFusion = true;
         tasDataDelayed.time_ms = 0;
         usingDefaultAirspeed = true;
     } else {
@@ -862,6 +866,7 @@ void NavEKF3_core::readAirSpdData()
     }
 }
 
+#if EK3_FEATURE_BEACON_FUSION
 /********************************************************
 *              Range Beacon Measurements                *
 ********************************************************/
@@ -870,7 +875,7 @@ void NavEKF3_core::readAirSpdData()
 void NavEKF3_core::readRngBcnData()
 {
     // check that arrays are large enough
-    static_assert(ARRAY_SIZE(lastTimeRngBcn_ms) >= AP_BEACON_MAX_BEACONS, "lastTimeRngBcn_ms should have at least AP_BEACON_MAX_BEACONS elements");
+    static_assert(ARRAY_SIZE(rngBcn.lastTime_ms) >= AP_BEACON_MAX_BEACONS, "lastTimeRngBcn_ms should have at least AP_BEACON_MAX_BEACONS elements");
 
     // get the location of the beacon data
     const AP_DAL_Beacon *beacon = dal.beacon();
@@ -881,30 +886,30 @@ void NavEKF3_core::readRngBcnData()
     }
 
     // get the number of beacons in use
-    N_beacons = MIN(beacon->count(), ARRAY_SIZE(lastTimeRngBcn_ms));
+    rngBcn.N = MIN(beacon->count(), ARRAY_SIZE(rngBcn.lastTime_ms));
 
     // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
     bool newDataPushed = false;
     uint8_t numRngBcnsChecked = 0;
     // start the search one index up from where we left it last time
-    uint8_t index = lastRngBcnChecked;
-    while (!newDataPushed && (numRngBcnsChecked < N_beacons)) {
+    uint8_t index = rngBcn.lastChecked;
+    while (!newDataPushed && (numRngBcnsChecked < rngBcn.N)) {
         // track the number of beacons checked
         numRngBcnsChecked++;
 
         // move to next beacon, wrap index if necessary
         index++;
-        if (index >= N_beacons) {
+        if (index >= rngBcn.N) {
             index = 0;
         }
 
         // check that the beacon is healthy and has new data
-        if (beacon->beacon_healthy(index) && beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index]) {
+        if (beacon->beacon_healthy(index) && beacon->beacon_last_update_ms(index) != rngBcn.lastTime_ms[index]) {
             rng_bcn_elements rngBcnDataNew = {};
 
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
-            lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
-            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+            rngBcn.lastTime_ms[index] = beacon->beacon_last_update_ms(index);
+            rngBcnDataNew.time_ms = rngBcn.lastTime_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
@@ -923,10 +928,10 @@ void NavEKF3_core::readRngBcnData()
             newDataPushed = true;
 
             // update the last checked index
-            lastRngBcnChecked = index;
+            rngBcn.lastChecked = index;
 
             // Save data into the buffer to be fused when the fusion time horizon catches up with it
-            storedRangeBeacon.push(rngBcnDataNew);
+            rngBcn.storedRange.push(rngBcnDataNew);
         }
     }
 
@@ -934,18 +939,18 @@ void NavEKF3_core::readRngBcnData()
     Vector3f bp;
     float bperr;
     if (beacon->get_vehicle_position_ned(bp, bperr)) {
-        rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
+        rngBcn.last3DmeasTime_ms = imuSampleTime_ms;
     }
-    beaconVehiclePosNED = bp.toftype();
-    beaconVehiclePosErr = bperr;
+    rngBcn.vehiclePosNED = bp.toftype();
+    rngBcn.vehiclePosErr = bperr;
 
     // Check if the range beacon data can be used to align the vehicle position
-    if ((imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250) && (beaconVehiclePosErr < 1.0f) && rngBcnAlignmentCompleted) {
+    if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (rngBcn.vehiclePosErr < 1.0f) && rngBcn.alignmentCompleted) {
         // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
-        const ftype posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
-        const ftype posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
+        const ftype posDiffSq = sq(rngBcn.receiverPos.x - rngBcn.vehiclePosNED.x) + sq(rngBcn.receiverPos.y - rngBcn.vehiclePosNED.y);
+        const ftype posDiffVar = sq(rngBcn.vehiclePosErr) + rngBcn.receiverPosCov[0][0] + rngBcn.receiverPosCov[1][1];
         if (posDiffSq < 9.0f * posDiffVar) {
-            rngBcnGoodToAlign = true;
+            rngBcn.goodToAlign = true;
             // Set the EKF origin and magnetic field declination if not previously set
             if (!validOrigin && (PV_AidingMode != AID_ABSOLUTE)) {
                 // get origin from beacon system
@@ -958,26 +963,27 @@ void NavEKF3_core::readRngBcnData()
                     alignMagStateDeclination();
 
                     // Set the uncertainty of the origin height
-                    ekfOriginHgtVar = sq(beaconVehiclePosErr);
+                    ekfOriginHgtVar = sq(rngBcn.vehiclePosErr);
                 }
             }
         } else {
-            rngBcnGoodToAlign = false;
+            rngBcn.goodToAlign = false;
         }
     } else {
-        rngBcnGoodToAlign = false;
+        rngBcn.goodToAlign = false;
     }
 
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-    rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed, imuDataDelayed.time_ms);
+    rngBcn.dataToFuse = rngBcn.storedRange.recall(rngBcn.dataDelayed, imuDataDelayed.time_ms);
 
     // Correct the range beacon earth frame origin for estimated offset relative to the EKF earth frame origin
-    if (rngBcnDataToFuse) {
-        rngBcnDataDelayed.beacon_posNED.x += bcnPosOffsetNED.x;
-        rngBcnDataDelayed.beacon_posNED.y += bcnPosOffsetNED.y;
+    if (rngBcn.dataToFuse) {
+        rngBcn.dataDelayed.beacon_posNED.x += rngBcn.posOffsetNED.x;
+        rngBcn.dataDelayed.beacon_posNED.y += rngBcn.posOffsetNED.y;
     }
 
 }
+#endif  // EK3_FEATURE_BEACON_FUSION
 
 /********************************************************
 *              Independant yaw sensor measurements      *
@@ -1388,6 +1394,7 @@ void NavEKF3_core::updateMovementCheck(void)
 
     if (logStatusChange || imuSampleTime_ms - lastMoveCheckLogTime_ms > 200) {
         lastMoveCheckLogTime_ms = imuSampleTime_ms;
+#if HAL_LOGGING_ENABLED
         const struct log_XKFM pkt{
             LOG_PACKET_HEADER_INIT(LOG_XKFM_MSG),
             time_us            : dal.micros64(),
@@ -1399,6 +1406,7 @@ void NavEKF3_core::updateMovementCheck(void)
             accel_diff_ratio   : float(accel_diff_ratio),
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
+#endif
     }
 }
 

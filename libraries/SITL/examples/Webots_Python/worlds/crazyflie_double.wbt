@@ -1,0 +1,76 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/Floor.proto"
+
+WorldInfo {
+  title "Crazyflie Ardupilot"
+  basicTimeStep 2
+  FPS 30
+}
+Viewpoint {
+  orientation -0.0593532354440745 0.9880332410323718 0.14236399845953884 0.798588127989691
+  position -0.5248689288960577 0.1043842791985661 0.5678333324847978
+  follow "Crazyflie 0"
+  followSmoothness 0.01
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Floor {
+}
+Crazyflie {
+  hidden linearVelocity_0 -4.637218965709596e-19 -4.196252875038606e-19 3.352873534367973e-16
+  hidden angularVelocity_0 4.956352788505185e-17 6.199137112878587e-17 -7.59922590549506e-18
+  translation -1.2560172892842563e-17 0.2 0.014998773749999996
+  rotation 0.0006423841504381482 0.0009061380955760532 -0.9999993831279872 3.0862235845634213e-16
+  name "Crazyflie 0"
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--reversed-motors"
+    "1, 2"
+    "--camera"
+    "camera"
+    "--camera-fps"
+    "10"
+    "--motors"
+    "m1_motor, m3_motor, m4_motor, m2_motor"
+    "--motor-cap"
+    "100"
+    "--instance"
+    "0"
+  ]
+  extensionSlot [
+    Accelerometer {
+    }
+  ]
+}
+Crazyflie {
+  hidden linearVelocity_0 1.1290302625479896e-18 -4.326730364482081e-19 3.352873534367973e-16
+  hidden angularVelocity_0 5.546676845014852e-31 2.0628843433230186e-17 -7.9532317962812e-18
+  translation -3.7742147020501796e-18 -1.921003416687696e-17 0.014998773749999996
+  rotation -0.0017125758688741218 0.0002306643848911165 -0.9999985069378028 3.183501628356045e-16
+  name "Crazyflie 1"
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--reversed-motors"
+    "1, 2"
+    "--camera-fps"
+    "10"
+    "--camera"
+    "camera"
+    "--motors"
+    "m1_motor, m3_motor, m4_motor, m2_motor"
+    "--motor-cap"
+    "100"
+    "--instance"
+    "1"
+  ]
+  extensionSlot [
+    Accelerometer {
+    }
+  ]
+}

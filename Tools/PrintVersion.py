@@ -2,6 +2,9 @@
 
 """
 Extract version information for the various vehicle types, print it
+
+AP_FLAKE8_CLEAN
+
 """
 
 import os
@@ -39,8 +42,8 @@ else:
 
 file = open(includefilepath)
 
-firmware_version_regex = re.compile(".*define +FIRMWARE_VERSION.*")
-firmware_version_extract_regex = re.compile(".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*(?P<type>[A-Z_]+)[	 ]*")
+firmware_version_regex = re.compile(r".*define +FIRMWARE_VERSION.*")
+firmware_version_extract_regex = re.compile(r".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*(?P<type>[A-Z_]+)[	 ]*")  # noqa: E501
 
 for line in file:
     if not firmware_version_regex.match(line):

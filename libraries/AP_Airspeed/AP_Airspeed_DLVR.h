@@ -17,6 +17,10 @@
 // backend driver for AllSensors DLVR differential airspeed sensor
 // currently assumes a 5" of water, noise reduced, sensor
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_DLVR_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
@@ -60,3 +64,5 @@ private:
     
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };
+
+#endif  // AP_AIRSPEED_DLVR_ENABLED

@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <cmath>
 
-#define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PI_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
 
 /// @class	AC_PI_2D
@@ -88,8 +87,14 @@ private:
     } _flags;
 
     // internal variables
-    float _dt;              // timestep in seconds
+    float _dt;              // time step in seconds
     Vector2f _integrator;   // integrator value
     Vector2f _input;        // last input for derivative
     float _filt_alpha;      // input filter alpha
+
+    const float default_kp;
+    const float default_ki;
+    const float default_imax;
+    const float default_filt_hz;
+
 };

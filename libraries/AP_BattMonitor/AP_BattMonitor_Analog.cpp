@@ -1,6 +1,11 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ANALOG_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+
 #include "AP_BattMonitor_Analog.h"
 
 extern const AP_HAL::HAL& hal;
@@ -31,17 +36,26 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
 
     // @Param: AMP_PERVLT
     // @DisplayName: Amps per volt
-    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. With a Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.
+    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. With a Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17. For Synthetic Current sensor monitors, this is the maximum, full throttle current draw.
     // @Units: A/V
     // @User: Standard
     AP_GROUPINFO("AMP_PERVLT", 4, AP_BattMonitor_Analog, _curr_amp_per_volt, AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
 
     // @Param: AMP_OFFSET
     // @DisplayName: AMP offset
-    // @Description: Voltage offset at zero current on current sensor
+    // @Description: Voltage offset at zero current on current sensor for Analog Sensors. For Synthetic Current sensor, this offset is the zero throttle system current and is added to the calculated throttle base current.
     // @Units: V
     // @User: Standard
     AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor_Analog, _curr_amp_offset, AP_BATT_CURR_AMP_OFFSET_DEFAULT),
+
+    // @Param: VLT_OFFSET
+    // @DisplayName: Voltage offset
+    // @Description: Voltage offset on voltage pin. This allows for an offset due to a diode. This voltage is subtracted before the scaling is applied.
+    // @Units: V
+    // @User: Advanced
+    AP_GROUPINFO("VLT_OFFSET", 6, AP_BattMonitor_Analog, _volt_offset, 0),
+    
+    // Param indexes must be less than 10 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };
@@ -53,13 +67,29 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
     AP_BattMonitor_Backend(mon, mon_state, params)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // no other good way of setting these defaults
+#if AP_BATT_MONITOR_MAX_INSTANCES > 1
+    if (mon_state.instance == 1) {
+#ifdef HAL_BATT2_VOLT_PIN
+        _volt_pin.set_default(HAL_BATT2_VOLT_PIN);
+#endif
+#ifdef HAL_BATT2_CURR_PIN
+        _curr_pin.set_default(HAL_BATT2_CURR_PIN);
+#endif
+#ifdef HAL_BATT2_VOLT_SCALE
+        _volt_multiplier.set_default(HAL_BATT2_VOLT_SCALE);
+#endif
+#ifdef HAL_BATT2_CURR_SCALE
+        _curr_amp_per_volt.set_default(HAL_BATT2_CURR_SCALE);
+#endif
+    }
+#endif
     _state.var_info = var_info;
     
     _volt_pin_analog_source = hal.analogin->channel(_volt_pin);
     _curr_pin_analog_source = hal.analogin->channel(_curr_pin);
 
-    // always healthy
-    _state.healthy = true;
 }
 
 // read - read the voltage and current
@@ -67,30 +97,24 @@ void
 AP_BattMonitor_Analog::read()
 {
     // this copes with changing the pin at runtime
-    _volt_pin_analog_source->set_pin(_volt_pin);
+    _state.healthy = _volt_pin_analog_source->set_pin(_volt_pin);
 
     // get voltage
-    _state.voltage = _volt_pin_analog_source->voltage_average() * _volt_multiplier;
+    _state.voltage = (_volt_pin_analog_source->voltage_average() - _volt_offset) * _volt_multiplier;
 
     // read current
     if (has_current()) {
         // calculate time since last current read
-        uint32_t tnow = AP_HAL::micros();
-        float dt = tnow - _state.last_time_micros;
+        const uint32_t tnow = AP_HAL::micros();
+        const uint32_t dt_us = tnow - _state.last_time_micros;
 
         // this copes with changing the pin at runtime
-        _curr_pin_analog_source->set_pin(_curr_pin);
+        _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin);
 
         // read current
         _state.current_amps = (_curr_pin_analog_source->voltage_average() - _curr_amp_offset) * _curr_amp_per_volt;
 
-        // update total current drawn since startup
-        if (_state.last_time_micros != 0 && dt < 2000000.0f) {
-            // .0002778 is 1/3600 (conversion to hours)
-            float mah = _state.current_amps * dt * 0.0000002778f;
-            _state.consumed_mah += mah;
-            _state.consumed_wh  += 0.001f * mah * _state.voltage;
-        }
+        update_consumed(_state, dt_us);
 
         // record time
         _state.last_time_micros = tnow;
@@ -102,3 +126,5 @@ bool AP_BattMonitor_Analog::has_current() const
 {
     return ((AP_BattMonitor::Type)_params._type.get() == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT);
 }
+
+#endif  // AP_BATTERY_ANALOG_ENABLED

@@ -13,14 +13,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_OpticalFlow_MAV.h"
+
+#if AP_OPTICALFLOW_MAV_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include "AP_OpticalFlow_MAV.h"
 
 #define OPTFLOW_MAV_TIMEOUT_SEC 0.5f
 
 // detect the device
-AP_OpticalFlow_MAV *AP_OpticalFlow_MAV::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_MAV *AP_OpticalFlow_MAV::detect(AP_OpticalFlow &_frontend)
 {
     // we assume mavlink messages will be sent into this driver
     AP_OpticalFlow_MAV *sensor = new AP_OpticalFlow_MAV(_frontend);
@@ -44,7 +47,7 @@ void AP_OpticalFlow_MAV::update(void)
         return;
     }
 
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     state.surface_quality = quality_sum / count;
 
@@ -104,3 +107,5 @@ void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
     // take sensor id from message
     sensor_id = packet.sensor_id;
 }
+
+#endif  // AP_OPTICALFLOW_MAV_ENABLED

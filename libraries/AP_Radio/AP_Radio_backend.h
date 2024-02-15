@@ -14,12 +14,18 @@
  */
 #pragma once
 
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_ENABLED
+
 /*
  * backend class for direct attached radios
  */
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Radio.h"
+
+#include <AP_Math/AP_Math.h>
 
 class AP_Radio_backend
 {
@@ -154,3 +160,5 @@ protected:
 
     AP_Radio &radio;
 };
+
+#endif  // AP_RADIO_ENABLED

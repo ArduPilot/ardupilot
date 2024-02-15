@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <hal.h>
 #include "I2CDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -29,7 +31,7 @@
 #include "hal.h"
 
 static const struct I2CInfo {
-    struct I2CDriver *i2c;
+    I2CDriver *i2c;
     uint8_t instance;
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
@@ -67,6 +69,28 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #define HAL_I2C_H7_400_TIMINGR 0x00300F38
 #endif
 
+#ifndef HAL_I2C_L4_100_TIMINGR
+#define HAL_I2C_L4_100_TIMINGR 0x10909CEC
+#endif
+#ifndef HAL_I2C_L4_400_TIMINGR
+#define HAL_I2C_L4_400_TIMINGR 0x00702991
+#endif
+
+#ifndef HAL_I2C_L4PLUS_100_TIMINGR
+#define HAL_I2C_L4PLUS_100_TIMINGR 0x307075B1
+#endif
+
+#ifndef HAL_I2C_L4PLUS_400_TIMINGR
+#define HAL_I2C_L4PLUS_400_TIMINGR 0x00501BFF
+#endif
+
+#ifndef HAL_I2C_G4_100_TIMINGR
+#define HAL_I2C_G4_100_TIMINGR 0x60505F8C
+#endif
+#ifndef HAL_I2C_G4_400_TIMINGR
+#define HAL_I2C_G4_400_TIMINGR 0x20501E65
+#endif
+
 /*
   enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low
  */
@@ -90,6 +114,45 @@ void I2CBus::clear_all()
         clear_bus(i);
     }
 }
+
+/*
+  If bus exists, set its data and clock lines to floating
+ */
+void I2CBus::set_bus_to_floating(uint8_t busidx)
+{
+    if (busidx < ARRAY_SIZE(I2CD)) {
+        const struct I2CInfo &info = I2CD[busidx];
+        const ioline_t sda_line = GPIO::resolve_alt_config(info.sda_line, PERIPH_TYPE::I2C_SDA, info.instance);
+        const ioline_t scl_line = GPIO::resolve_alt_config(info.scl_line, PERIPH_TYPE::I2C_SCL, info.instance);
+        palSetLineMode(sda_line, PAL_MODE_INPUT);
+        palSetLineMode(scl_line, PAL_MODE_INPUT);
+    }
+}
+
+
+/*
+  Check enabled I2C/CAN select pins against check_pins bitmask
+ */
+bool I2CBus::check_select_pins(uint8_t check_pins)
+{
+    uint8_t enabled_pins = 0;
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C1_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C1_SEL) << 0;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C2_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C2_SEL) << 1;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C3_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C3_SEL) << 2;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C4_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C4_SEL) << 3;
+#endif
+
+    return (enabled_pins & check_pins) == check_pins;
+}
+
 
 /*
   clear a stuck bus (bus held by a device that is holding SDA low) by
@@ -144,7 +207,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32F3)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -158,6 +221,31 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].busclock = 100000;
         } else {
             businfo[i].i2ccfg.timingr = HAL_I2C_H7_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#elif defined(STM32L4)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#elif defined(STM32L4PLUS)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4PLUS_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4PLUS_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+
+#elif defined(STM32G4)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_G4_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_G4_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
 #else // F1 or F4
@@ -184,7 +272,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -196,7 +284,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
 #endif
-        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
+        DEV_PRINTF("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
 }
 
@@ -227,11 +315,11 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
+        DEV_PRINTF("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
         return false;
     }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {

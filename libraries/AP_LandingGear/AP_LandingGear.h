@@ -2,16 +2,13 @@
 /// @brief  Landing gear control library
 #pragma once
 
+#include "AP_LandingGear_config.h"
+
+#if AP_LANDINGGEAR_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define DEFAULT_PIN_WOW 8
-#define DEFAULT_PIN_WOW_POL 1
-#else
-#define DEFAULT_PIN_WOW -1
-#define DEFAULT_PIN_WOW_POL 0
-#endif
+#include <AP_Logger/AP_Logger_config.h>
 
 /// @class  AP_LandingGear
 /// @brief  Class managing the control of landing gear
@@ -28,8 +25,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_LandingGear(const AP_LandingGear &other) = delete;
-    AP_LandingGear &operator=(const AP_LandingGear&) = delete;
+    CLASS_NO_COPY(AP_LandingGear);
     
     // get singleton instance
     static AP_LandingGear *get_singleton(void) {
@@ -91,6 +87,7 @@ public:
 
 private:
     // Parameters
+    AP_Int8     _enable;
     AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
     
     AP_Int8     _pin_deployed;
@@ -126,8 +123,14 @@ private:
     /// deploy - deploy the landing gear
     void deploy();
 
+#if HAL_LOGGING_ENABLED
     // log weight on wheels state
     void log_wow_state(LG_WOW_State state);
+#else
+    void log_wow_state(LG_WOW_State state) {}
+#endif
 
     static AP_LandingGear *_singleton;
 };
+
+#endif  // AP_LANDINGGEAR_ENABLED

@@ -11,6 +11,7 @@ function update()
       -- deliberately make a bad call to cause a fault, asking for the 6th GPS status
       -- as this is done inside a pcall() the error will be caught instead of stopping the script
       local status = gps:status(5)
+      gcs:send_text(0, "GPS status: " .. tostring(status))
    end
 end
 

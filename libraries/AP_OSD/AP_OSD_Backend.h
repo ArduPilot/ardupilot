@@ -26,7 +26,7 @@ class AP_OSD_Backend
 
 public:
     //constructor
-    AP_OSD_Backend(AP_OSD &osd): _osd(osd) {};
+    AP_OSD_Backend(AP_OSD &osd): _osd(osd) {}
 
     //destructor
     virtual ~AP_OSD_Backend(void) {}
@@ -51,10 +51,15 @@ public:
     virtual void clear()
     {
         blink_phase = (blink_phase+1)%4;
-    };
+    }
 
     // copy the backend specific symbol set to the OSD lookup table
     virtual void init_symbol_set(uint8_t *symbols, const uint8_t size);
+    virtual bool is_compatible_with_backend_type(AP_OSD::osd_types type) const = 0;
+    virtual AP_OSD::osd_types get_backend_type() const = 0;
+
+    // called by the OSD thread once
+    virtual void osd_thread_run_once() { return; }
 
     AP_OSD * get_osd()
     {
@@ -180,6 +185,19 @@ protected:
     static const uint8_t SYM_RNGFD = 0xF7;
     static const uint8_t SYM_LQ = 0xF8;
 
+    static const uint8_t SYM_SIDEBAR_R_ARROW = 0x09;
+    static const uint8_t SYM_SIDEBAR_L_ARROW = 0x0A;
+    static const uint8_t SYM_SIDEBAR_A = 0x13;
+    static const uint8_t SYM_SIDEBAR_B = 0x14;
+    static const uint8_t SYM_SIDEBAR_C = 0x15;
+    static const uint8_t SYM_SIDEBAR_D = 0xDD;
+    static const uint8_t SYM_SIDEBAR_E = 0xDB;
+    static const uint8_t SYM_SIDEBAR_F = 0xDC;
+    static const uint8_t SYM_SIDEBAR_G = 0xDA;
+    static const uint8_t SYM_SIDEBAR_H = 0xDE;
+    static const uint8_t SYM_SIDEBAR_I = 0x11;
+    static const uint8_t SYM_SIDEBAR_J = 0x12;
+
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
         SYM_KM,
@@ -260,5 +278,17 @@ protected:
         SYM_FENCE_DISABLED,
         SYM_RNGFD,
         SYM_LQ,
+        SYM_SIDEBAR_R_ARROW,
+        SYM_SIDEBAR_L_ARROW,
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
     };
 };

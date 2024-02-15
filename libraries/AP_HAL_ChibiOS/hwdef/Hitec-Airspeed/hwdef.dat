@@ -7,7 +7,7 @@ MCU STM32G441 STM32G441xx
 FLASH_RESERVE_START_KB 26
 
 # store parameters in pages 11 and 12
-define STORAGE_FLASH_PAGE 11
+STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
@@ -17,7 +17,6 @@ APJ_BOARD_ID 1046
 env AP_PERIPH 1
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -25,20 +24,27 @@ OSCILLATOR_HZ 24000000
 # assume the 128k flash part
 FLASH_SIZE_KB 128
 
+# UARTs disabled to save flash
 # order of UARTs
-SERIAL_ORDER USART1
+# SERIAL_ORDER USART1
+SERIAL_ORDER
+define HAL_USE_UART FALSE
+define HAL_NO_UARTDRIVER TRUE
 
 define HAL_CAN_POOL_SIZE 6000
 
-STDOUT_SERIAL SD1
-STDOUT_BAUDRATE 57600
+# STDOUT_SERIAL SD1
+# STDOUT_BAUDRATE 57600
 
 # USART1, telemetry
-PB6 USART1_TX USART1 SPEED_HIGH
-PB7 USART1_RX USART1 SPEED_HIGH
+# PB6 USART1_TX USART1 SPEED_HIGH
+# PB7 USART1_RX USART1 SPEED_HIGH
 
 # LEDs
 PA10 LED OUTPUT LOW
+
+# a CAN/I2C selection LED
+PA5 LED_CAN_I2C OUTPUT LOW
 
 # a fault LED
 PA6 LED_FAULT OUTPUT LOW
@@ -53,11 +59,8 @@ PA14 JTCK-SWCLK SWD
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 64
 
-define NO_DATAFLASH TRUE
-
 define DMA_RESERVE_SIZE 512
 
-define PERIPH_FW TRUE
 
 # stack for fast interrupts
 define PORT_INT_REQUIRED_STACK 64
@@ -66,13 +69,16 @@ define PORT_INT_REQUIRED_STACK 64
 MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0x800
+PROCESS_STACK 0xA00
 
 define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
+
+# GPIO for CAN/I2C selection
+PB5 GPIO_CAN_I2C1_SEL INPUT PUSHPULL FLOATING
 
 # only one I2C bus in normal config
 PA15 I2C1_SCL I2C1
@@ -88,12 +94,8 @@ define HAL_USE_ADC FALSE
 define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
 
-define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 0
-
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 0x200
 define STORAGE_THD_WA_SIZE 512
@@ -101,20 +103,14 @@ define IO_THD_WA_SIZE      512
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 128
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
+define HAL_NO_RCIN_THREAD
+define HAL_NO_RCOUT_THREAD
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
-
-define CAN_APP_NODE_NAME "org.ardupilot.Hitec-Airspeed"
 
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *

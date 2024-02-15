@@ -19,74 +19,47 @@
 
 #include <cmath>
 #include <stdarg.h>
+#include <stdint.h>
 
 // Libraries
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AC_PID/AC_P.h>
-#include <AC_PID/AC_PID.h>
-#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
-#include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
-#include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
-#include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
-#include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
-#include <AP_Declination/AP_Declination.h>          // Compass declination library
-#include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
-#include <AP_L1_Control/AP_L1_Control.h>
-#include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Mission/AP_Mission.h>                  // Mission command library
 #include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
-#include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF3/AP_NavEKF3.h>
-#include <AP_Navigation/AP_Navigation.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
+#include <AP_RPM/AP_RPM.h>                          // RPM input library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
-#include <AP_Stats/AP_Stats.h>                      // statistics library
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
-#include <APM_Control/AR_AttitudeControl.h>
-#include <AR_WPNav/AR_WPNav.h>
-#include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Logger/AP_Logger.h>
-#include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
-#include <Filter/Butter.h>                          // Filter library - butterworth filter
-#include <Filter/Filter.h>                          // Filter library
-#include <Filter/LowPassFilter.h>
-#include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
-#include <AC_Fence/AC_Fence.h>
-#include <AP_Proximity/AP_Proximity.h>
-#include <AC_Avoidance/AC_Avoid.h>
-#include <AC_Avoidance/AP_OAPathPlanner.h>
-#include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
-#include <AP_WindVane/AP_WindVane.h>
 #include <AR_Motors/AP_MotorsUGV.h>
-#include <AP_Torqeedo/AP_Torqeedo.h>
-#include <AP_AIS/AP_AIS.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Mission/AP_Mission_ChangeDetector.h>
+#include <AR_WPNav/AR_WPNav_OA.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AC_PrecLand/AC_PrecLand_config.h>
+#include <AP_Follow/AP_Follow_config.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include "AP_ExternalControl_Rover.h"
+#endif
 
-#ifdef ENABLE_SCRIPTING
+// Configuration
+#include "defines.h"
+#include "config.h"
+
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 // Local modules
-#include "mode.h"
 #include "AP_Arming.h"
 #include "sailboat.h"
-// Configuration
-#include "config.h"
-#include "defines.h"
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_rover.h"
 #endif
@@ -94,7 +67,12 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
+#if AC_PRECLAND_ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#endif
 #include "RC_Channel.h"                  // RC Channel Library
+
+#include "mode.h"
 
 class Rover : public AP_Vehicle {
 public:
@@ -106,10 +84,14 @@ public:
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Rover;
 #endif
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Rover;
+#endif
     friend class GCS_Rover;
     friend class Mode;
     friend class ModeAcro;
     friend class ModeAuto;
+    friend class ModeCircle;
     friend class ModeGuided;
     friend class ModeHold;
     friend class ModeLoiter;
@@ -117,8 +99,13 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+#if MODE_FOLLOW_ENABLED == ENABLED
     friend class ModeFollow;
+#endif
     friend class ModeSimple;
+#if MODE_DOCK_ENABLED == ENABLED
+    friend class ModeDock;
+#endif
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -149,30 +136,33 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
-    AP_Logger logger;
-
     // flight modes convenience array
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
 
+#if AP_RPM_ENABLED
     // AP_RPM Module
     AP_RPM rpm_sensor;
+#endif
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 
-    AP_L1_Control L1_controller{ahrs, nullptr};
+    // external control implementation
+#if AP_EXTERNAL_CONTROL_ENABLED
+    AP_ExternalControl_Rover external_control;
+#endif
 
-    OpticalFlow optflow;
+#if AP_OPTICALFLOW_ENABLED
+    AP_OpticalFlow optflow;
+#endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
+#if AC_PRECLAND_ENABLED
+    AC_PrecLand precland;
 #endif
-
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
@@ -181,11 +171,11 @@ private:
     RC_Channels_Rover &rc() { return g2.rc_channels; }
 
     // The rover's current location
-    struct Location current_loc;
+    Location current_loc;
 
     // Camera
-#if CAMERA == ENABLED
-    AP_Camera camera{MASK_LOG_CAMERA, current_loc};
+#if AP_CAMERA_ENABLED
+    AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
@@ -216,8 +206,8 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // range finder last update (used for DPTH logging)
-    uint32_t rangefinder_last_reading_ms;
+    // range finder last update for each instance (used for DPTH logging)
+    uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
@@ -234,7 +224,9 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
 
     static const AP_Param::Info var_info[];
+#if HAL_LOGGING_ENABLED
     static const LogStructure log_structure[];
+#endif
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -259,8 +251,13 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+#if MODE_FOLLOW_ENABLED == ENABLED
     ModeFollow mode_follow;
+#endif
     ModeSimple mode_simple;
+#if MODE_DOCK_ENABLED == ENABLED
+    ModeDock mode_dock;
+#endif
 
     // cruise throttle and speed learning
     typedef struct {
@@ -271,15 +268,20 @@ private:
     } cruise_learn_t;
     cruise_learn_t cruise_learn;
 
-private:
-
     // Rover.cpp
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
+    bool get_steering_and_throttle(float& steering, float& throttle) override;
+    // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
+    bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
+    bool set_desired_speed(float speed) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
-#endif // ENABLE_SCRIPTING
+    bool nav_scripting_enable(uint8_t mode) override;
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
+    void nav_script_time_done(uint16_t id) override;
+#endif // AP_SCRIPTING_ENABLED
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
@@ -287,7 +289,6 @@ private:
     void update_logging2(void);
     void one_second_loop(void);
     void update_current_mode(void);
-    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
@@ -327,19 +328,26 @@ private:
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
+#if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     // Log.cpp
     void Log_Write_Attitude();
     void Log_Write_Depth();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
     void Log_Write_Sail();
-    void Log_Write_Startup(uint8_t type);
     void Log_Write_Steering();
     void Log_Write_Throttle();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
-    void log_init(void);
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(enum Mode::Number num);
@@ -347,21 +355,22 @@ private:
     // Parameters.cpp
     void load_parameters(void) override;
 
+    // precision_landing.cpp
+    void init_precland();
+    void update_precland();
+
     // radio.cpp
     void set_control_channels(void) override;
     void init_rc_in();
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
-    bool trim_radio();
 
     // sensors.cpp
     void update_compass(void);
     void compass_save(void);
     void update_wheel_encoder();
     void read_rangefinders(void);
-    void read_airspeed();
-    void rpm_update(void);
 
     // Steering.cpp
     void set_servos(void);
@@ -375,9 +384,15 @@ private:
     void init_ardupilot() override;
     void startup_ground(void);
     void update_ahrs_flyforward();
+    bool gcs_mode_enabled(const Mode::Number mode_num) const;
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
+    bool set_mode(Mode::Number new_mode, ModeReason reason);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
+    bool current_mode_requires_mission() const override {
+        return control_mode == &mode_auto;
+    }
+
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
@@ -389,13 +404,13 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-    enum Failsafe_Action {
-        Failsafe_Action_None          = 0,
-        Failsafe_Action_RTL           = 1,
-        Failsafe_Action_Hold          = 2,
-        Failsafe_Action_SmartRTL      = 3,
-        Failsafe_Action_SmartRTL_Hold = 4,
-        Failsafe_Action_Terminate     = 5
+    enum class FailsafeAction: int8_t {
+        None          = 0,
+        RTL           = 1,
+        Hold          = 2,
+        SmartRTL      = 3,
+        SmartRTL_Hold = 4,
+        Terminate     = 5
     };
 
     enum class Failsafe_Options : uint32_t {
@@ -403,12 +418,12 @@ private:
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
-                                                       Failsafe_Action_Terminate,
-                                                       Failsafe_Action_Hold,
-                                                       Failsafe_Action_RTL,
-                                                       Failsafe_Action_SmartRTL_Hold,
-                                                       Failsafe_Action_SmartRTL,
-                                                       Failsafe_Action_None,
+                                                       (int8_t)FailsafeAction::Terminate,
+                                                       (int8_t)FailsafeAction::Hold,
+                                                       (int8_t)FailsafeAction::RTL,
+                                                       (int8_t)FailsafeAction::SmartRTL_Hold,
+                                                       (int8_t)FailsafeAction::SmartRTL,
+                                                       (int8_t)FailsafeAction::None,
                                                        -1 // the priority list must end with a sentinel of -1
                                                       };
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,

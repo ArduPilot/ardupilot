@@ -1,8 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if !defined(HAL_BUILD_AP_PERIPH)
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <SITL/SITL.h>
 
 #include "RCOutput.h"
 
@@ -35,7 +36,7 @@ void RCOutput::enable_ch(uint8_t ch)
     if (!(_enable_mask & (1U << ch))) {
         Debug("enable_ch(%u)\n", ch);
     }
-    _enable_mask |= 1U << ch;
+    _enable_mask |= (1U << ch);
 }
 
 void RCOutput::disable_ch(uint8_t ch)
@@ -43,13 +44,23 @@ void RCOutput::disable_ch(uint8_t ch)
     if (_enable_mask & (1U << ch)) {
         Debug("disable_ch(%u)\n", ch);
     }
-    _enable_mask &= ~1U << ch;
+    _enable_mask &= ~(1U << ch);
 }
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
+        const auto *board_config = AP_BoardConfig::get_singleton();
+        const uint32_t safety_mask = board_config != nullptr? board_config->get_safety_mask() : 0;
+        if (!(safety_mask & (1U<<ch))) {
+            // implement safety pwm value
+            period_us = 0;
+        }
+    }
+
     _sitlState->output_ready = true;
-    if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
+    // FIXME: something in sitl is expecting to be able to read and write disabled channels
+    if (ch < SITL_NUM_CHANNELS /*&& (_enable_mask & (1U<<ch))*/) {
         if (_corked) {
             _pending[ch] = period_us;
         } else {
@@ -60,7 +71,8 @@ void RCOutput::write(uint8_t ch, uint16_t period_us)
 
 uint16_t RCOutput::read(uint8_t ch)
 {
-    if (ch < SITL_NUM_CHANNELS) {
+    // FIXME: something in sitl is expecting to be able to read and write disabled channels
+    if (ch < SITL_NUM_CHANNELS /*&& (_enable_mask & (1U<<ch))*/) {
         return _sitlState->pwm_output[ch];
     }
     return 0;
@@ -86,25 +98,21 @@ void RCOutput::push(void)
         _corked = false;
     }
 
-    // do not overwrite FETTec simulation's ESC telemetry data:
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr &&
-        sitl->fetteconewireesc_sim.enabled()) {
-        return;
-    }
-
-    if (esc_telem == nullptr) {
-        esc_telem = new AP_ESC_Telem_SITL;
-    }
-    if (esc_telem != nullptr) {
-        esc_telem->update();
+    if (sitl && sitl->esc_telem) {
+        if (esc_telem == nullptr) {
+            esc_telem = new AP_ESC_Telem_SITL;
+        }
+        if (esc_telem != nullptr) {
+            esc_telem->update();
+        }
     }
 }
 
 /*
   Serial LED emulation
 */
-bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
 {
     if (chan > 15 || num_leds > 64) {
         return false;
@@ -117,54 +125,36 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
     return false;
 }
 
-void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     if (chan > 15) {
-        return;
+        return false;
     }
     SITL::SIM *sitl = AP::sitl();
     if (led == -1) {
         for (uint8_t i=0; i < sitl->led.num_leds[chan]; i++) {
             set_serial_led_rgb_data(chan, i, red, green, blue);
         }
-        return;
+        return true;
     }
     if (led < -1 || led >= sitl->led.num_leds[chan]) {
-        return;
+        return false;
     }
     if (sitl) {
         sitl->led.rgb[chan][led].rgb[0] = red;
         sitl->led.rgb[chan][led].rgb[1] = green;
         sitl->led.rgb[chan][led].rgb[2] = blue;
     }
+    return true;
 }
 
-void RCOutput::serial_led_send(const uint16_t chan)
+bool RCOutput::serial_led_send(const uint16_t chan)
 {
     SITL::SIM *sitl = AP::sitl();
     if (sitl) {
         sitl->led.send_counter++;
     }
+    return true;
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-void RCOutput::force_safety_off(void)
-{
-    SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return;
-    }
-    sitl->force_safety_off();
-}
-
-bool RCOutput::force_safety_on(void)
-{
-    SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return false;
-    }
-    return sitl->force_safety_on();
-}
-
-#endif //!defined(HAL_BUILD_AP_PERIPH)

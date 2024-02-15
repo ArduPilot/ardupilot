@@ -1,11 +1,13 @@
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_BK2425_ENABLED
+
 /*
   driver for Beken_2425 radio
  */
 #include <AP_HAL/AP_HAL.h>
 
 //#pragma GCC optimize("O0")
-
-#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_bk2425.h"
@@ -35,6 +37,18 @@ extern const AP_HAL::HAL& hal;
 // Output debug information on the mavlink to the UART connected to the WiFi, wrapped in MavLink packets
 #define DebugMavlink(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
+
+#if SUPPORT_BK_DEBUG_PINS
+#define DEBUG1_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG1_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG2_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG2))
+#define DEBUG2_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG2))
+#else
+#define DEBUG1_HIGH()       do {} while (0)
+#define DEBUG1_LOW()        do {} while (0)
+#define DEBUG2_HIGH()       do {} while (0)
+#define DEBUG2_LOW()        do {} while (0)
+#endif
 
 // object instance for trampoline
 AP_Radio_beken *AP_Radio_beken::radio_singleton;
@@ -366,7 +380,7 @@ void AP_Radio_beken::trigger_irq_radio_event()
 }
 
 // ----------------------------------------------------------------------------
-void AP_Radio_beken::trigger_timeout_event(void *arg)
+void AP_Radio_beken::trigger_timeout_event(virtual_timer_t* vt, void *arg)
 {
     (void)arg;
     //we are called from ISR context
@@ -1409,7 +1423,4 @@ void SyncAdaptive::Miss(uint8_t channel)
     }
 }
 
-
-
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-
+#endif // AP_RADIO_BK2425_ENABLED

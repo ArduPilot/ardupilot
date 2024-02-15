@@ -38,7 +38,6 @@ class CheckAutoTestSpeedup(object):
         '''run cmd_list, spewing and setting output in self'''
         self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list,
-                             bufsize=1,
                              stdin=None,
                              close_fds=True,
                              stdout=subprocess.PIPE,
@@ -53,7 +52,7 @@ class CheckAutoTestSpeedup(object):
                     # select not available on Windows... probably...
                 time.sleep(0.1)
                 continue
-            if type(x) == bytes:
+            if isinstance(x, bytes):
                 x = x.decode('utf-8')
             self.program_output += x
             x = x.rstrip()

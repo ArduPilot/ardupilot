@@ -95,11 +95,22 @@ bool ModeSystemId::init(bool ignore_checks)
     systemid_state = SystemIDModeState::SYSTEMID_STATE_TESTING;
     log_subsample = 0;
 
+    chirp_input.init(time_record, frequency_start, frequency_stop, time_fade_in, time_fade_out, time_const_freq);
+
     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)axis);
 
+#if HAL_LOGGING_ENABLED
     copter.Log_Write_SysID_Setup(axis, waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
+#endif
 
     return true;
+}
+
+// systemId_exit - clean up systemId controller before exiting
+void ModeSystemId::exit()
+{
+    // reset the feedforward enabled parameter to the initialized state
+    attitude_control->bf_feedforward(att_bf_feedforward);
 }
 
 // systemId_run - runs the systemId controller
@@ -114,7 +125,7 @@ void ModeSystemId::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     if (!motors->armed()) {
         // Motors should be Stopped
@@ -172,13 +183,14 @@ void ModeSystemId::run()
     }
 
     waveform_time += G_Dt;
-    waveform_sample = waveform(waveform_time - SYSTEM_ID_DELAY);
+    waveform_sample = chirp_input.update(waveform_time - SYSTEM_ID_DELAY, waveform_magnitude);
+    waveform_freq_rads = chirp_input.get_frequency_rads();
 
     switch (systemid_state) {
         case SystemIDModeState::SYSTEMID_STATE_STOPPED:
+            attitude_control->bf_feedforward(att_bf_feedforward);
             break;
         case SystemIDModeState::SYSTEMID_STATE_TESTING:
-            attitude_control->bf_feedforward(att_bf_feedforward);
 
             if (copter.ap.land_complete) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
@@ -251,11 +263,7 @@ void ModeSystemId::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle
-    if (copter.is_tradheli()) {
-        attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
-    } else {
-        attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
-    }
+    attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
 
     if (log_subsample <= 0) {
         log_data();
@@ -289,45 +297,7 @@ void ModeSystemId::log_data() const
 
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
-}
-
-// init_test - initialises the test
-float ModeSystemId::waveform(float time)
-{
-    float wMin = 2 * M_PI * frequency_start;
-    float wMax = 2 * M_PI * frequency_stop;
-
-    float window;
-    float output;
-
-    float B = logf(wMax / wMin);
-
-    if (time <= 0.0f) {
-        window = 0.0f;
-    } else if (time <= time_fade_in) {
-        window = 0.5 - 0.5 * cosf(M_PI * time / time_fade_in);
-    } else if (time <= time_record - time_fade_out) {
-        window = 1.0;
-    } else if (time <= time_record) {
-        window = 0.5 - 0.5 * cosf(M_PI * (time - (time_record - time_fade_out)) / time_fade_out + M_PI);
-    } else {
-        window = 0.0;
-    }
-
-    if (time <= 0.0f) {
-        waveform_freq_rads = wMin;
-        output = 0.0f;
-    } else if (time <= time_const_freq) {
-        waveform_freq_rads = wMin;
-        output = window * waveform_magnitude * sinf(wMin * time - wMin * time_const_freq);
-    } else if (time <= time_record) {
-        waveform_freq_rads = wMin * expf(B * (time - time_const_freq) / (time_record - time_const_freq));
-        output = window * waveform_magnitude * sinf((wMin * (time_record - time_const_freq) / B) * (expf(B * (time - time_const_freq) / (time_record - time_const_freq)) - 1));
-    } else {
-        waveform_freq_rads = wMax;
-        output = 0.0f;
-    }
-    return output;
+    copter.Log_Write_PIDS();
 }
 
 #endif

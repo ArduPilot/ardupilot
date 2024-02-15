@@ -18,9 +18,14 @@
 
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include "SIM_config.h"
+
+#if AP_SIM_SHIP_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 namespace SITL {
 
@@ -63,6 +68,7 @@ private:
     AP_Float path_size;
     AP_Float deck_size;
     AP_Int8 sys_id;
+    AP_Vector3f offset;
 
     Location home;
     const char *target_address = "127.0.0.1";
@@ -77,10 +83,13 @@ private:
     uint32_t last_report_ms;
     uint32_t last_heartbeat_ms;
 
-    SocketAPM mav_socket { false };
+    SocketAPM_native mav_socket { false };
     bool mavlink_connected;
+    mavlink_status_t mav_status;
 
     void send_report(void);
 };
 
 }  // namespace SITL
+
+#endif  // AP_SIM_SHIP_ENABLED

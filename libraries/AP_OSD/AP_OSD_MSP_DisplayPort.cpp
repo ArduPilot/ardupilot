@@ -22,6 +22,8 @@
 
 #if HAL_WITH_MSP_DISPLAYPORT
 
+#include <GCS_MAVLink/GCS.h>
+
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     /*
     { "PARAM_NAME",       value_float }
@@ -37,12 +39,12 @@ bool AP_OSD_MSP_DisplayPort::init(void)
     // check if we have a DisplayPort backend to use
     const AP_MSP *msp = AP::msp();
     if (msp == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"MSP backend not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"MSP backend not available");
         return false;
     }
     _displayport = msp->find_protocol(AP_SerialManager::SerialProtocol_MSP_DisplayPort);
     if (_displayport == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
         return false;
     }
     // re-init port here for use in this thread
@@ -50,8 +52,24 @@ bool AP_OSD_MSP_DisplayPort::init(void)
     return true;
 }
 
+// called by the OSD thread once
+void AP_OSD_MSP_DisplayPort::osd_thread_run_once()
+{
+    if (_displayport != nullptr) {
+        _displayport->init_uart();
+    }
+}
+
 void AP_OSD_MSP_DisplayPort::clear(void)
 {
+    // check if we need to enable some options
+    // but only for actual OSD screens
+    if (_osd.get_current_screen() < AP_OSD_NUM_DISPLAY_SCREENS) {
+        const uint8_t txt_resolution = _osd.screen[_osd.get_current_screen()].get_txt_resolution();
+        const uint8_t font_index = _osd.screen[_osd.get_current_screen()].get_font_index();
+        _displayport->msp_displayport_set_options(font_index, txt_resolution);
+    }
+
     // clear remote MSP screen
     _displayport->msp_displayport_clear_screen();
 
@@ -115,4 +133,12 @@ AP_OSD_Backend *AP_OSD_MSP_DisplayPort::probe(AP_OSD &osd)
     }
     return backend;
 }
+ 
+// return a correction factor used to display angles correctly
+float AP_OSD_MSP_DisplayPort::get_aspect_ratio_correction() const
+{
+    return 12.0/18.0;
+}
+
+
 #endif

@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_MMC5XX3_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -29,13 +33,13 @@
 class AP_Compass_MMC5XX3 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
     void read() override;
 
-    static constexpr const char *name = "MMC5883";
+    static constexpr const char *name = "MMC5983";
 
 private:
     AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -68,7 +72,9 @@ private:
     uint32_t refill_start_ms;
     uint32_t last_sample_ms;
     
-    uint16_t data0[3];
+    uint8_t data0[6];
     
     enum Rotation rotation;
 };
+
+#endif  // AP_COMPASS_MMC5XX3_ENABLED

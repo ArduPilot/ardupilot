@@ -12,8 +12,8 @@
 class AP_Motors6DOF : public AP_MotorsMatrix {
 public:
 
-    AP_Motors6DOF(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMatrix(loop_rate, speed_hz) {
+    AP_Motors6DOF(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMatrix(speed_hz) {
         AP_Param::setup_object_defaults(this, var_info);
     };
 
@@ -28,8 +28,6 @@ public:
         SUB_FRAME_SIMPLEROV_5,
         SUB_FRAME_CUSTOM
     } sub_frame_t;
-
-    const char* get_frame_string() const override { return _frame_class_string; };
 
     // Override parent
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;

@@ -1,0 +1,121 @@
+# hw definition file for processing by chibios_pins.py
+# MCU class and specific type
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load
+APJ_BOARD_ID 1085
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+STM32_ST_USE_TIMER 5
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1 EMPTY EMPTY USART2
+
+# a LED to flash
+PB0 LED OUTPUT LOW
+
+# USART1 for debug
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL0_BAUD 57600
+
+# USART2 for GPS
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# one I2C bus
+PA8 I2C3_SCL I2C3
+PB4 I2C3_SDA I2C3
+
+I2C_ORDER I2C3
+
+# compass
+COMPASS RM3100 I2C:0:0x20 false ROTATION_YAW_270
+
+# safety LED, active low
+PB1 SAFE_LED OUTPUT HIGH
+define SAFE_LED_ON 0
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_NO_RCIN_THREAD
+define HAL_USE_RTC FALSE
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+# sensor power enable
+PA12 VDD_SENSOR_EN OUTPUT HIGH
+
+# RTK reset
+PA4 RTK_RESET_N OUTPUT HIGH
+
+# PPS
+PA7 PPS INPUT PULLUP
+
+define HAL_NO_MONITOR_THREAD
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_ENABLE_GPS
+define GPS_MOVING_BASELINE 1
+
+define HAL_PERIPH_ENABLE_MAG
+define HAL_COMPASS_MAX_SENSORS 1
+
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_NMEA_ENABLED 1
+define AP_GPS_NMEA_UNICORE_ENABLED 1
+
+define HAL_GPS_TYPE_DEFAULT 25
+
+# custom config once sensor is found
+define AP_GPS_NMEA_CUSTOM_CONFIG_STRING "CONFIG COM1 230400 8 N 1"
+
+# custom config for GPS probe
+define NMEA_UNICORE_SETUP "CONFIG COM1 230400 8 n 1\r\nGPGGA 0.2\r\n"

@@ -18,7 +18,11 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_VideoTX/AP_VideoTX_config.h>
 
 class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
@@ -63,6 +67,10 @@ public:
         return frontend.rc_protocols_mask;
     }
 
+    bool protocol_enabled(enum AP_RCProtocol::rcprotocol_t protocol) const {
+        return frontend.protocol_enabled(protocol);
+    }
+
     // get RSSI
     int16_t get_RSSI(void) const {
         return rssi;
@@ -85,8 +93,23 @@ public:
     bool have_UART(void) const {
         return frontend.added.uart != nullptr;
     }
-    
+
+    // is the receiver active, used to detect power loss and baudrate changes
+    virtual bool is_rx_active() const {
+        return true;
+    }
+
+    bool is_detected() const {
+        return frontend._detected_protocol != AP_RCProtocol::NONE && frontend.backend[frontend._detected_protocol] == this;
+    }
+
+#if AP_VIDEOTX_ENABLED
+    // called by static methods to confiig video transmitters:
+    static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
+#endif
+
 protected:
+
     struct Channels11Bit_8Chan {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
@@ -107,7 +130,7 @@ protected:
     void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
 
     // decode channels from the standard 11bit format (used by CRSF and SBUS)
-    void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
+    static void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
 
 private:
     uint32_t rc_input_count;
@@ -119,3 +142,5 @@ private:
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
 };
+
+#endif  // AP_RCPROTOCOL_ENABLED

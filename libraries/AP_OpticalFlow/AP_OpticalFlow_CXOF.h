@@ -1,13 +1,16 @@
 #pragma once
 
-#include "OpticalFlow.h"
-#include <AP_HAL/utility/OwnPtr.h>
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_CXOF_ENABLED
+
+#include "AP_OpticalFlow_Backend.h"
 
 class AP_OpticalFlow_CXOF : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_CXOF(OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
+    AP_OpticalFlow_CXOF(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
 
     // initialise the sensor
     void init() override;
@@ -16,7 +19,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_CXOF *detect(OpticalFlow &_frontend);
+    static AP_OpticalFlow_CXOF *detect(AP_OpticalFlow &_frontend);
 
 private:
 
@@ -27,3 +30,5 @@ private:
     Vector2f gyro_sum;                  // sum of gyro sensor values since last frame from flow sensor
     uint16_t gyro_sum_count;            // number of gyro sensor values in sum
 };
+
+#endif  // AP_OPTICALFLOW_CXOF_ENABLED

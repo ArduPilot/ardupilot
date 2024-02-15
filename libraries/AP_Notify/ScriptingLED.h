@@ -17,15 +17,14 @@
 #include "RGBLed.h"
 #include <AP_Common/AP_Common.h>
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 class ScriptingLED: public RGBLed {
 public:
     ScriptingLED();
 
     /* Do not allow copies */
-    ScriptingLED(const AP_Notify &other) = delete;
-    ScriptingLED &operator=(const AP_Notify&) = delete;
+    CLASS_NO_COPY(ScriptingLED);
 
     // get singleton instance
     static ScriptingLED *get_singleton(void) {

@@ -141,6 +141,10 @@ void Sailboat::init()
     // sailboat defaults
     if (sail_enabled()) {
         rover.g2.crash_angle.set_default(0);
+
+        // sailboats without motors may travel faster than WP_SPEED so allow waypoint navigation to
+        // speedup to catch the vehicle instead of asking the vehicle to slow down
+        rover.g2.wp_nav.enable_overspeed(motor_state != UseMotor::USE_MOTOR_ALWAYS);
     }
 
     if (tack_enabled()) {
@@ -293,7 +297,7 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
                 mast_rotation_angle = 90.0f;
                 if (wind_dir_apparent_abs > 135.0f) {
                     // wind is almost directly behind, keep wing on current tack
-                    if (SRV_Channels::get_output_scaled(SRV_Channel::k_mast_rotation) < 0) {
+                    if (is_negative(SRV_Channels::get_output_scaled(SRV_Channel::k_mast_rotation))) {
                         mast_rotation_angle *= -1.0f;
                     }
                 } else {
@@ -325,7 +329,7 @@ float Sailboat::get_VMG() const
         return speed;
     }
 
-    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01f) - rover.ahrs.yaw)));
+    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01f) - rover.ahrs.get_yaw())));
 }
 
 // handle user initiated tack while in acro mode
@@ -336,7 +340,7 @@ void Sailboat::handle_tack_request_acro()
     }
     // set tacking heading target to the current angle relative to the true wind but on the new tack
     currently_tacking = true;
-    tack_heading_rad = wrap_2PI(rover.ahrs.yaw + 2.0f * wrap_PI((rover.g2.windvane.get_true_wind_direction_rad() - rover.ahrs.yaw)));
+    tack_heading_rad = wrap_2PI(rover.ahrs.get_yaw() + 2.0f * wrap_PI((rover.g2.windvane.get_true_wind_direction_rad() - rover.ahrs.get_yaw())));
 
     tack_request_ms = AP_HAL::millis();
 }
@@ -344,7 +348,7 @@ void Sailboat::handle_tack_request_acro()
 // return target heading in radians when tacking (only used in acro)
 float Sailboat::get_tack_heading_rad()
 {
-    if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.yaw)) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
+    if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw())) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
        ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
         clear_tack();
     }
@@ -490,7 +494,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
     // if we are tacking we maintain the target heading until the tack completes or times out
     if (currently_tacking) {
         // check if we have reached target
-        if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.yaw)) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
+        if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw())) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
             clear_tack();
         } else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
             // tack has taken too long

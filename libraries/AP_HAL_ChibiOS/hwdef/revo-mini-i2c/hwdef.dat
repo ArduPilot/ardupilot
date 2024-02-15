@@ -125,7 +125,7 @@ PC9 TIM8_CH4 TIM8 PWM(8) GPIO(57)
 PB7 DRDY_HMC5883 INPUT PULLUP
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
@@ -136,17 +136,22 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 # one baro
 BARO MS56XX I2C:0:0x77
 
-# also allow for probing of external barometers
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-
 # look for internal I2C compass
 COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
+
+# also allow for probing of external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 # SPI devices
 SPIDEV mpu6000   SPI1 DEVID1 MPU_CS   MODE3 1*MHZ 8*MHZ 
 SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+include ../include/minimize_fpv_osd.inc
+

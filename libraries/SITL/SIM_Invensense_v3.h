@@ -25,19 +25,19 @@ class InvensenseV3 : public I2CDevice, protected I2CRegisters_8Bit
 {
 public:
     void init() override {
-        add_register("WHOAMI", InvensenseV3DevReg::WHOAMI, O_RDONLY);
-        add_register("FIFO_CONFIG", InvensenseV3DevReg::FIFO_CONFIG, O_RDWR);
-        add_register("FIFO_CONFIG1", InvensenseV3DevReg::FIFO_CONFIG1, O_RDWR);
-        add_register("INTF_CONFIG0", InvensenseV3DevReg::INTF_CONFIG0, O_RDWR);
-        add_register("SIGNAL_PATH_RESET", InvensenseV3DevReg::SIGNAL_PATH_RESET, O_RDWR);
-        add_register("PWR_MGMT0", InvensenseV3DevReg::PWR_MGMT0, O_RDWR);
-        add_register("GYRO_CONFIG0", InvensenseV3DevReg::GYRO_CONFIG0, O_RDWR);
-        add_register("ACCDEL_CONFIG0", InvensenseV3DevReg::ACCEL_CONFIG0, O_RDWR);
+        add_register("WHOAMI", InvensenseV3DevReg::WHOAMI, I2CRegisters::RegMode::RDONLY);
+        add_register("FIFO_CONFIG", InvensenseV3DevReg::FIFO_CONFIG, I2CRegisters::RegMode::RDWR);
+        add_register("FIFO_CONFIG1", InvensenseV3DevReg::FIFO_CONFIG1, I2CRegisters::RegMode::RDWR);
+        add_register("INTF_CONFIG0", InvensenseV3DevReg::INTF_CONFIG0, I2CRegisters::RegMode::RDWR);
+        add_register("SIGNAL_PATH_RESET", InvensenseV3DevReg::SIGNAL_PATH_RESET, I2CRegisters::RegMode::RDWR);
+        add_register("PWR_MGMT0", InvensenseV3DevReg::PWR_MGMT0, I2CRegisters::RegMode::RDWR);
+        add_register("GYRO_CONFIG0", InvensenseV3DevReg::GYRO_CONFIG0, I2CRegisters::RegMode::RDWR);
+        add_register("ACCDEL_CONFIG0", InvensenseV3DevReg::ACCEL_CONFIG0, I2CRegisters::RegMode::RDWR);
 
         // sample count!
-        add_block("FIFO_COUNTH", InvensenseV3DevReg::FIFO_COUNTH, 2, O_RDONLY);
+        add_block("FIFO_COUNTH", InvensenseV3DevReg::FIFO_COUNTH, 2, I2CRegisters::RegMode::RDONLY);
 
-        add_fifo("FIFO_DATA", InvensenseV3DevReg::FIFO_DATA, O_RDONLY);
+        add_fifo("FIFO_DATA", InvensenseV3DevReg::FIFO_DATA, I2CRegisters::RegMode::RDONLY);
     }
 
     void update(const class Aircraft &aircraft) override;
@@ -54,7 +54,7 @@ private:
 
     void assert_register_values();
 
-    void add_fifo(const char *name, uint8_t reg, int8_t mode);
+    void add_fifo(const char *name, uint8_t reg, I2CRegisters::RegMode mode);
     bool write_to_fifo(uint8_t fifo, uint8_t *value, uint8_t valuelen);
 
     int rdwr_fifo(I2C::i2c_rdwr_ioctl_data *&data);
@@ -79,7 +79,7 @@ private:
     // block support
     // for things that are larger than a register....
     int rdwr_block(I2C::i2c_rdwr_ioctl_data *&data);
-    void add_block(const char *name, uint8_t addr, uint8_t len, int8_t mode);
+    void add_block(const char *name, uint8_t addr, uint8_t len, I2CRegisters::RegMode mode);
     void set_block(uint8_t addr, uint8_t *value, uint8_t valuelen);
 
     const char *blockname[256];

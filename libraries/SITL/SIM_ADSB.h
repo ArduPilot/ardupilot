@@ -18,7 +18,11 @@
 
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include "SIM_config.h"
+
+#if HAL_SIM_ADSB_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -30,52 +34,61 @@ namespace SITL {
 class ADSB_Vehicle {
     friend class ADSB;
 
-private:
-    void update(float delta_t);
-    
-    Vector3f position; // NED from origin
-    Vector3f velocity_ef; // NED
-    char callsign[9];
-    uint32_t ICAO_address;
-    bool initialised = false;
-    ADSB_EMITTER_TYPE type;
-};
-        
-class ADSB {
 public:
-    ADSB(const struct sitl_fdm &_fdm, const Location& _home) : home(_home) {};
-    void update(void);
+    bool initialised = false;
+
+    const Location &get_location() const;  // return vehicle absolute location
+    // return earth-frame vehicle velocity:
+    bool velocity(Vector3F &ret) const { ret = velocity_ef; return true; }
+
+    uint32_t ICAO_address;
+    Vector3F velocity_ef; // NED
+    char callsign[9];
 
 private:
-    const char *target_address = "127.0.0.1";
-    const uint16_t target_port = 5762;
+    void update(const class Aircraft &aircraft, float delta_t);
 
-    const Location& home;
-    uint8_t num_vehicles = 0;
+    Vector3p position; // NED from origin
+    Location location;
+
+    ADSB_EMITTER_TYPE type;
+    uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects
+
+};
+
+class ADSB : public SerialDevice {
+public:
+    ADSB() {};
+    void update(const class Aircraft &aircraft);
+
+    uint8_t num_vehicles;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];
-    
+
+private:
+    void update_simulated_vehicles(const class Aircraft &aircraft);
+
     // reporting period in ms
     const float reporting_period_ms = 1000;
-    uint32_t last_report_us = 0;
-    uint32_t last_update_us = 0;
-    uint32_t last_tx_report_ms = 0;
+    uint32_t last_report_us;
+    uint32_t last_update_us;
+    uint32_t last_tx_report_ms;
     
-    uint32_t last_heartbeat_ms = 0;
+    uint32_t last_heartbeat_ms;
     bool seen_heartbeat = false;
     uint8_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
-    SocketAPM mav_socket { false };
     struct {
         // socket to telem2 on aircraft
-        bool connected;
         mavlink_message_t rxmsg;
         mavlink_status_t status;
         uint8_t seq;
     } mavlink {};
 
-    void send_report(void);
+    void send_report(const SITL::Aircraft&);
 };
 
 }  // namespace SITL
+
+#endif  // HAL_SIM_ADSB_ENABLED

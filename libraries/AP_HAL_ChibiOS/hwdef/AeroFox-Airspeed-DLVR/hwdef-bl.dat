@@ -1,0 +1,6 @@
+include ../f103-periph/hwdef-bl.inc
+
+# board ID for firmware load
+APJ_BOARD_ID 1104
+
+

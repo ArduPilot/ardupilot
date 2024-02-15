@@ -1,0 +1,153 @@
+Release 1.6.0 8th September 2023
+--------------------------------
+
+This is a major release with the following changes:
+
+ - much faster CAN bootloader for faster firmware update
+ - improved handling of peripherals with 2 or more CAN interfaces
+ - support most AP_Periph features in SITL testing
+ - added RC input support
+ - added battery balance plug support
+ - support sending RPM over DroneCAN
+ - support for pitot temperature reporting
+
+Release 1.5.1 23rd July 2023
+---------------------------
+
+This is a major release with the following changes:
+
+- support serial tunnelling over DroneCAN
+- raised CAN priority of MovingBaseline data
+- support APD ESC telemetry
+- support DroneCAN and CAN statistics reporting
+- support KDECAN to DroneCAN translation
+
+The serial tunnelling support allows for uCenter to be used over
+DroneCAN with the serial tunnelling panel in the DroneCAN GUI
+tool. This allows for monitoring of uBlox GPS over a telemetry link,
+and update of F9P firmware over DroneCAN
+
+Release 1.5.0 27th Mar 2023
+---------------------------
+
+This is a major release with the following changes:
+
+- fixed airspeed bus default
+- limit mag to 25Hz by default
+- fixed send rate of GPS yaw
+- fixed HW ESC telem temp units
+- allow set of port for HW telem
+- send GNSS heading message if available
+- stop sending old GNSS Fix message
+
+Release 1.4.1 27th Sep 2022
+---------------------------
+
+This is a minor release with one bug fix:
+
+ - fixed compass diagnonal compensation for AP_Periph compasses
+
+Release 1.4.0 4th Sep 2022
+--------------------------
+
+This is a major release with a significant number of changes:
+
+ - use new AP_CheckFirmware system
+ - fixed passing of WGS84 height from GPS
+ - support CANFD on STM32H7
+ - fixes for moving baseline yaw with DroneCAN GPS
+ - fixed GPS dropout issues on F4 and L4 GPS
+ - added EFI peripheral support
+ - fixed non-contiguous mask for ESC telem
+
+Release 1.3.1 15th Apr 2022
+---------------------------
+
+This is a minor release with a single bug fix:
+
+ - fixed intermittent loss of GPS packets on F4 and L4 GPS nodes which caused loss of GPS lock on the flight controller
+
+Release 1.3.0 18th Mar 2022
+---------------------------
+
+This is a major release with several significant bug fixes and
+improvements:
+
+ - added new peripherals: BirdCANdy, MatekL431, CubeOrange-periph,
+   G4-ESC, HerePro, Hitec-Airspeed, HolybroG4GPS, HolybroGPS,
+   Sierra-F405, Sierra-F421, Sierra-F9P, Sierra-L431,
+   f103-QiotekPeriph, f405-MatekGPS, f405-MatekAirspeed, mRo-M10095,
+   ARK_GPS, HitecMosaic, MatekH743-periph, Pixracer-periph
+
+ - support dshot for CAN ESC outputs
+
+ - support a wider range of notify options
+
+ - numerous small bug fixes
+
+ - support lua scripting in peripherals
+
+ - switched to DroneCAN compiler and libraries
+
+ - support logging in peripherals
+
+ - support dual CAN bus
+
+ - support BLHeli monitoring of ESC telemetry
+
+ - support mavlink in peripherals
+
+ - support moving baseline yaw dual-GPS on dual-CAN GPS
+
+ - support MPPT battery driver
+
+ - fixed MSP GPS yaw
+
+Note that the next major release will add CANFD support.
+
+Release 1.2.0 6th Jan 2020
+--------------------------
+
+This is a major release with several significant bug fixes and
+improvements:
+
+ - support for battery monitor nodes
+
+ - support for testing in SITL
+
+ - improvements in error reporting to the flight controller
+
+ - fixes to stack sizes
+
+ - MSP output support
+
+ - support for BGR NCP5623 LEDs
+
+ - switched to common CAN stack with main ArduPilot vehicle code
+
+ - added several new board types
+
+
+Release 1.1.0 14th May 2020
+---------------------------
+
+This is a major release with several significant bug fixes:
+
+ - fixed initial GPS timestamp which could cause ArduPilot to get bad
+   time sync
+
+ - fixed airspeed pressure wrap
+
+ - fixed rangefinder to send the RNGFND1_ADDR as sensor_id
+
+ - added distinctive LED blink pattern when waiting for UAVCAN node ID
+   allocation
+
+ - added HWESC build targets for HobbyWing ESC telemetry
+
+ - fixed RM3100 compass scaling bug
+
+Release 1.0.0 9th November 2019
+-------------------------------
+
+Initial stable release

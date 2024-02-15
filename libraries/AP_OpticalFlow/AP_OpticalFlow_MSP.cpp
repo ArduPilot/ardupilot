@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 using namespace MSP;
 
 // detect the device
-AP_OpticalFlow_MSP *AP_OpticalFlow_MSP::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_MSP *AP_OpticalFlow_MSP::detect(AP_OpticalFlow &_frontend)
 {
     // we assume msp messages will be sent into this driver
     return new AP_OpticalFlow_MSP(_frontend);
@@ -49,7 +49,7 @@ void AP_OpticalFlow_MSP::update(void)
         return;
     }
 
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     state.surface_quality = quality_sum / count;
 

@@ -1,9 +1,6 @@
 include ../f303-periph/hwdef.inc
 
 # start as DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
-
-define CAN_APP_NODE_NAME "org.ardupilot.mro_m10025"
 
 # added rm3100 mag on SPI
 SPIDEV rm3100 SPI1 DEVID1 MAG_CS MODE0 1*MHZ 1*MHZ

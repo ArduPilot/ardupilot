@@ -14,17 +14,19 @@
  */
 #pragma once
 
-#include "AP_RPM.h"
+#include "AP_RPM_config.h"
+
+#if AP_RPM_PIN_ENABLED
 
 #include "RPM_Backend.h"
+
 #include <Filter/Filter.h>
-#include <AP_Math/AP_Math.h>
 
 class AP_RPM_Pin : public AP_RPM_Backend
 {
 public:
-    // constructor
-    AP_RPM_Pin(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+
+    using AP_RPM_Backend::AP_RPM_Backend;
 
     // update state
     void update(void) override;
@@ -32,7 +34,8 @@ public:
 private:
 
     ModeFilterFloat_Size5 signal_quality_filter {3};
-    uint8_t last_pin = -1;
+    int8_t last_pin = -1;       // last pin number checked vs PIN parameter
+    bool interrupt_attached;    // true if an interrupt has been attached to last_pin
     struct IrqState {
         uint32_t last_pulse_us;
         uint32_t dt_sum;
@@ -45,3 +48,5 @@ private:
                      uint32_t timestamp);
 
 };
+
+#endif  // AP_RPM_PIN_ENABLED

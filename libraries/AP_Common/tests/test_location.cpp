@@ -18,7 +18,7 @@ public:
         FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::verify_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::mission_complete, void)};
-    AP_Terrain terrain{mission};
+    AP_Terrain terrain;
 };
 
 const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
@@ -63,7 +63,7 @@ TEST(Location, LatLngWrapping)
         int32_t expected_lat;
         int32_t expected_lng;
     } tests[] {
-        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860775}
+        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860777}
     };
 
     for (auto &test : tests) {
@@ -98,7 +98,7 @@ TEST(Location, LocOffsetDouble)
                -353632620, 1491652373,
                Vector2d{4682795.4576701336, 5953662.7673837934},
                Vector2d{4682797.1904749088, 5953664.1586009059},
-               Vector2d{1.7365739867091179,1.2050807},
+               Vector2d{1.7365739,1.4261966},
     };
 
     for (auto &test : tests) {
@@ -111,6 +111,19 @@ TEST(Location, LocOffsetDouble)
         EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
         EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
     }
+}
+
+TEST(Location, LocOffset3DDouble)
+{
+    Location loc {
+        -353632620, 1491652373, 60000, Location::AltFrame::ABSOLUTE
+    };
+    // this is ned, so our latitude should change, and our new
+    // location should be above the original:
+    loc.offset(Vector3d{1000, 0, -10});
+    EXPECT_EQ(loc.lat, -353542788);
+    EXPECT_EQ(loc.lng, 1491652373);
+    EXPECT_EQ(loc.alt, 61000);
 }
 
 TEST(Location, Tests)
@@ -282,8 +295,10 @@ TEST(Location, Distance)
     EXPECT_VECTOR2F_EQ(Vector3f(0, 0, 0), test_home.get_distance_NED(test_home));
     EXPECT_VECTOR2F_EQ(Vector3f(-11.131885, 0, 0), test_home.get_distance_NED(test_home2));
     Location test_loc = test_home;
-    test_loc.offset(-11.131885, 0);
+    test_loc.offset(-11.131886, 0);
     EXPECT_TRUE(test_loc.same_latlon_as(test_home2));
+    test_loc = test_home;
+    test_loc.offset(-11.131885, 0);
     test_loc.offset_bearing(0, 11.131885);
     EXPECT_TRUE(test_loc.same_latlon_as(test_home));
 
@@ -311,30 +326,37 @@ TEST(Location, Distance)
     bearing = test_home.get_bearing_to(test_loc);
     EXPECT_EQ(31503, bearing);
     const float bearing_rad = test_home.get_bearing(test_loc);
-    EXPECT_FLOAT_EQ(radians(315.03), bearing_rad);
+    EXPECT_FLOAT_EQ(5.4982867, bearing_rad);
 
 }
 
 TEST(Location, Sanitize)
 {
+    // we will sanitize test_loc with test_default_loc
+    // test_home is just for reference
     const Location test_home{-35362938, 149165085, 100, Location::AltFrame::ABSOLUTE};
+    EXPECT_TRUE(vehicle.ahrs.set_home(test_home));
+    const Location test_default_loc{-35362938, 149165085, 200, Location::AltFrame::ABSOLUTE};
     Location test_loc;
     test_loc.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_EQ(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    int32_t default_loc_alt;
+    // we should compare test_loc alt and test_default_loc alt in same frame , in this case, ABOVE HOME
+    EXPECT_TRUE(test_default_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, default_loc_alt));
+    EXPECT_EQ(test_loc.alt, default_loc_alt);
     test_loc = Location(91*1e7, 0, 0, Location::AltFrame::ABSOLUTE);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
     test_loc = Location(0, 181*1e7, 0, Location::AltFrame::ABSOLUTE);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
     test_loc = Location(42*1e7, 42*1e7, 420, Location::AltFrame::ABSOLUTE);
-    EXPECT_FALSE(test_loc.sanitize(test_home));
-    EXPECT_FALSE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_FALSE(test_loc.sanitize(test_default_loc));
+    EXPECT_FALSE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
 }
 
 TEST(Location, Line)
@@ -349,7 +371,7 @@ TEST(Location, Line)
 }
 
 /*
-  check if we obey basic euclidian geometry rules of position
+  check if we obey basic euclidean geometry rules of position
   addition/subtraction
  */
 TEST(Location, OffsetError)

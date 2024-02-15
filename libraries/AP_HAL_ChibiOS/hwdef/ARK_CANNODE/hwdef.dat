@@ -1,0 +1,132 @@
+# hw definition file for processing by chibios_pins.py
+# hardware repository: https://github.com/ARK-Electronics/ARK_CANNODE
+
+# MCU class and specific type
+# note: the device is STM32F412CG, not all F412 pins are available
+MCU STM32F4xx STM32F412Rx
+
+# board ID for firmware load
+APJ_BOARD_ID 83
+
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# 1Mb flash
+FLASH_SIZE_KB 1024
+
+# order of I2C buses
+I2C_ORDER I2C1
+
+define HAL_I2C_INTERNAL_MASK 0
+
+# order of UARTs
+SERIAL_ORDER USART1 USART2
+
+# pin definitions
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set SERVOx_FUNCTION=-1 to determine which
+# PWM outputs on the primary MCU are set up as GPIOs.
+# To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+PA0  TIM2_CH1 TIM2 PWM(1) GPIO(50) BIDIR
+PA1  TIM2_CH2 TIM2 PWM(2) GPIO(51)
+PB10 TIM2_CH3 TIM2 PWM(3) GPIO(52)
+PB4  TIM3_CH1 TIM3 PWM(4) GPIO(53) BIDIR
+PB5  TIM3_CH2 TIM3 PWM(5) GPIO(54)
+PB0  TIM3_CH3 TIM3 PWM(6) GPIO(55)
+PB1  TIM3_CH4 TIM3 PWM(7) GPIO(56) BIDIR
+PB7  TIM4_CH2 TIM4 PWM(8) GPIO(58) NODMA   # DMA would be shared with I2C
+
+# USART1 GPS
+PA15 USART1_TX USART1
+PB3 USART1_RX USART1
+
+# USART2 in debug connector
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SPI bus for IMU
+PB2 MPU_DRDY INPUT
+PA4 IMU1_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# LEDs
+PA8  LED_R1 OUTPUT HIGH GPIO(0)
+PA9  LED_G1 OUTPUT HIGH GPIO(1)
+PA10 LED_B1 OUTPUT HIGH GPIO(2)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+# use pixracer style 3-LED indicators
+define HAL_HAVE_PIXRACER_LED
+
+# CAN bus
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PC14 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PC15 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
+
+# pins for SWD debugging with a STlink or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# SPI1 FSYNC for ICM42688p
+# PB8 TIM10_CH1 TIM10
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# no ADC pins
+define HAL_USE_ADC FALSE
+
+# External SPI2
+PB12 EXT_CS1 SPI2
+PC13 EXT_CS2 SPI2
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# I2C port
+PB6 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# SPI device table - can't yet use IMU in AP_Periph
+#SPIDEV icm42688 SPI1 DEVID1 IMU1_CS MODE3  2*MHZ  8*MHZ
+#IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+
+define CAN_APP_NODE_NAME "org.ardupilot.ARK_CANNODE"
+
+# enable ESC control
+define HAL_SUPPORT_RCOUT_SERIAL 1
+define HAL_WITH_ESC_TELEM 1
+define AP_SERIALLED_ENABLED 1
+
+# Rangefinder
+define HAL_PERIPH_ENABLE_RANGEFINDER
+# disable rangefinder by default
+define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1

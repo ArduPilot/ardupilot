@@ -1,6 +1,7 @@
 # Bi-directional dshot version of MatekF405
 
 include ../MatekF405/hwdef.dat
+include ../include/minimal_GPS.inc
 
 undef PC6 PC9 PA8
 

@@ -14,9 +14,13 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ENABLED
+
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <Filter/Filter.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #ifndef WINDVANE_DEFAULT_PIN
 #define WINDVANE_DEFAULT_PIN -1                     // default wind vane sensor analog pin
@@ -46,8 +50,7 @@ public:
     AP_WindVane();
 
     /* Do not allow copies */
-    AP_WindVane(const AP_WindVane &other) = delete;
-    AP_WindVane &operator=(const AP_WindVane&) = delete;
+    CLASS_NO_COPY(AP_WindVane);
 
     static AP_WindVane *get_singleton();
 
@@ -58,7 +61,7 @@ public:
     bool wind_speed_enabled() const;
 
     // Initialize the Wind Vane object and prepare it for use
-    void init(const AP_SerialManager& serial_manager);
+    void init(const class AP_SerialManager& serial_manager);
 
     // update wind vane
     void update();
@@ -88,7 +91,7 @@ public:
     Sailboat_Tack get_current_tack() const { return _current_tack; }
 
     // record home heading for use as wind direction if no sensor is fitted
-    void record_home_heading() { _home_heading = AP::ahrs().yaw; }
+    void record_home_heading();
 
     // start calibration routine
     bool start_direction_calibration();
@@ -163,22 +166,38 @@ private:
 
     enum WindVaneType {
         WINDVANE_NONE           = 0,
+#if AP_WINDVANE_HOME_ENABLED
         WINDVANE_HOME_HEADING   = 1,
         WINDVANE_PWM_PIN        = 2,
+#endif
+#if AP_WINDVANE_ANALOG_ENABLED
         WINDVANE_ANALOG_PIN     = 3,
+#endif
+#if AP_WINDVANE_NMEA_ENABLED
         WINDVANE_NMEA           = 4,
+#endif
+#if AP_WINDVANE_SIM_ENABLED
         WINDVANE_SITL_TRUE      = 10,
         WINDVANE_SITL_APPARENT  = 11,
+#endif
     };
 
     enum Speed_type {
         WINDSPEED_NONE               = 0,
+#if AP_WINDVANE_AIRSPEED_ENABLED
         WINDSPEED_AIRSPEED           = 1,
+#endif
         WINDVANE_WIND_SENSOR_REV_P   = 2,
+#if AP_WINDVANE_RPM_ENABLED
         WINDSPEED_RPM                = 3,
+#endif
+#if AP_WINDVANE_NMEA_ENABLED
         WINDSPEED_NMEA               = 4,
+#endif
+#if AP_WINDVANE_SIM_ENABLED
         WINDSPEED_SITL_TRUE          = 10,
         WINDSPEED_SITL_APPARENT      = 11,
+#endif
     };
 
     static AP_WindVane *_singleton;
@@ -187,3 +206,5 @@ private:
 namespace AP {
     AP_WindVane *windvane();
 };
+
+#endif  // AP_WINDVANE_ENABLED

@@ -1,10 +1,12 @@
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_BK2425_ENABLED
+
 // --------------------------------------------------------------------
 //  low level driver for the beken radio on SPI
 // --------------------------------------------------------------------
 
 #include "driver_bk2425.h"
-
-#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 
 #include <utility>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
@@ -13,6 +15,33 @@ using namespace ChibiOS;
 //#pragma GCC optimize("O0")
 
 extern const AP_HAL::HAL& hal;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
+#endif
+
+// This assumes we are using ChiBios instead of the pixhawk o/s for accessing GPIO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#define BEKEN_SELECT()      (dev->set_chip_select(true))
+#define BEKEN_DESELECT()    (dev->set_chip_select(false))
+#define BEKEN_CE_HIGH()     (palSetLine(HAL_GPIO_PIN_RADIO_CE)) // (hal.gpio->write(HAL_CHIBIOS_GPIO_RADIO_CE, 1))
+#define BEKEN_CE_LOW()      (palClearLine(HAL_GPIO_PIN_RADIO_CE)) // (hal.gpio->write(HAL_CHIBIOS_GPIO_RADIO_CE, 0))
+#define BEKEN_PA_HIGH()     (palSetLine(HAL_GPIO_PIN_RADIO_PA_CTL)) // (hal.gpio->write(HAL_CHIBIOS_GPIO_RADIO_PA_CTL, 1))
+#define BEKEN_PA_LOW()      (palClearLine(HAL_GPIO_PIN_RADIO_PA_CTL)) // (hal.gpio->write(HAL_CHIBIOS_GPIO_RADIO_PA_CTL, 0))
+#if SUPPORT_BK_DEBUG_PINS
+#define DEBUG1_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG1_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG2_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG2))
+#define DEBUG2_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG2))
+#else
+#define DEBUG1_HIGH()       do {} while (0)
+#define DEBUG1_LOW()        do {} while (0)
+#define DEBUG2_HIGH()       do {} while (0)
+#define DEBUG2_LOW()        do {} while (0)
+#endif
+#else
+#error This configuration is not supported.
+#endif
 
 // --------------------------------------------------------------------
 // Radio initialisation tables
@@ -695,4 +724,4 @@ void Radio_Beken::DumpRegisters(void)
     SetRBank(0);
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
+#endif // AP_RADIO_BK2425_ENABLED

@@ -41,21 +41,21 @@ bool ModeAutorotate::init(bool ignore_checks)
     g2.arot.init_hs_controller();
     g2.arot.init_fwd_spd_controller();
 
-    // Retrive rpm and start rpm sensor health checks
+    // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
 
     // Display message 
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
 
-     // Set all inial flags to on
-    _flags.entry_initial = 1;
-    _flags.ss_glide_initial = 1;
-    _flags.flare_initial = 1;
-    _flags.touch_down_initial = 1;
-    _flags.level_initial = 1;
-    _flags.break_initial = 1;
-    _flags.straight_ahead_initial = 1;
-    _flags.bail_out_initial = 1;
+     // Set all intial flags to on
+    _flags.entry_initial = true;
+    _flags.ss_glide_initial = true;
+    _flags.flare_initial = true;
+    _flags.touch_down_initial = true;
+    _flags.level_initial = true;
+    _flags.break_initial = true;
+    _flags.straight_ahead_initial = true;
+    _flags.bail_out_initial = true;
     _msg_flags.bad_rpm = true;
 
     // Setting default starting switches
@@ -86,7 +86,7 @@ void ModeAutorotate::run()
     uint32_t now = millis(); //milliseconds
 
     // Initialise internal variables
-    float curr_vel_z = inertial_nav.get_velocity().z;   // Current vertical descent
+    float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
 
     //----------------------------------------------------------------
     //                  State machine logic
@@ -114,7 +114,7 @@ void ModeAutorotate::run()
         case Autorotation_Phase::ENTRY:
         {
             // Entry phase functions to be run only once
-            if (_flags.entry_initial == 1) {
+            if (_flags.entry_initial == true) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                     gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
@@ -130,7 +130,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Prevent running the initial entry functions again
-                _flags.entry_initial = 0;
+                _flags.entry_initial = false;
 
             }
 
@@ -160,7 +160,7 @@ void ModeAutorotate::run()
         case Autorotation_Phase::SS_GLIDE:
         {
             // Steady state glide functions to be run only once
-            if (_flags.ss_glide_initial == 1) {
+            if (_flags.ss_glide_initial == true) {
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                     gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
@@ -173,11 +173,11 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Set target head speed in head speed controller
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs hasent reached target for glide
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs has not reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again
-                _flags.ss_glide_initial = 0;
+                _flags.ss_glide_initial = false;
             }
 
             // Run airspeed/attitude controller
@@ -202,14 +202,14 @@ void ModeAutorotate::run()
 
         case Autorotation_Phase::BAIL_OUT:
         {
-        if (_flags.bail_out_initial == 1) {
+        if (_flags.bail_out_initial == true) {
                 // Functions and settings to be done once are done here.
 
                 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                     gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
                 #endif
 
-                // Set bail out timer remaining equal to the paramter value, bailout time 
+                // Set bail out timer remaining equal to the parameter value, bailout time 
                 // cannot be less than the motor spool-up time: BAILOUT_MOTOR_RAMP_TIME.
                 _bail_time = MAX(g2.arot.get_bail_time(),BAILOUT_MOTOR_RAMP_TIME+0.1f);
 
@@ -243,7 +243,7 @@ void ModeAutorotate::run()
 
                 motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-                _flags.bail_out_initial = 0;
+                _flags.bail_out_initial = false;
             }
 
         if ((now - _bail_time_start_ms)/1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
@@ -282,7 +282,7 @@ void ModeAutorotate::run()
             get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
             // Get pilot's desired yaw rate
-            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
             // Pitch target is calculated in autorotation phase switch above
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pilot_roll, _pitch_target, pilot_yaw_rate);

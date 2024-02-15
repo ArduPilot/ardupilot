@@ -16,6 +16,14 @@
 
 #include "hal.h"
 
+#ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
+#define AP_WATCHDOG_SAVE_FAULT_ENABLED 1
+#endif
+
+#ifndef AP_FASTBOOT_ENABLED
+#define AP_FASTBOOT_ENABLED 1
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,7 +41,9 @@ size_t mem_available(void);
 void *malloc_dma(size_t size);
 void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
+void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
     void *address;
@@ -53,6 +63,11 @@ uint64_t stm32_get_utc_usec(void);
 
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
+
+/*
+  see if we should limit flash to 1M on devices with older revisions of STM32F427
+ */
+bool check_limit_flash_1M(void);
 
 // one-time programmable area
 #if defined(FLASH_OTP_BASE)
@@ -90,7 +105,7 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
 iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
@@ -128,11 +143,53 @@ void stack_overflow(thread_t *tp);
  */
 uint32_t stack_free(void *stack_base);
 
+// returns true is address in memory region
+bool is_address_in_memory(void *addr);
+
+// return the start of memory region that contains the address
+void* get_addr_mem_region_start_addr(void *addr);
+// return the end of memory region that contains the address
+void* get_addr_mem_region_end_addr(void *addr);
+
+// return the size of crash dump
+uint32_t stm32_crash_dump_size(void);
+uint32_t stm32_crash_dump_addr(void);
+uint32_t stm32_crash_dump_max_size(void);
+
+typedef enum  {
+    Reset = 1,
+    NMI = 2,
+    HardFault = 3,
+    MemManage = 4,
+    BusFault = 5,
+    UsageFault = 6,
+} FaultType;
+
+// Record information about a fault
+#if AP_WATCHDOG_SAVE_FAULT_ENABLED
+void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr);
+#endif
+
+/**
+ * Generates a block of random values, returns total values generated
+ * if nonblocking, for blocking returns if successful or not
+ */
+#if HAL_USE_HW_RNG && defined(RNG)
+bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
+unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
+#endif
+
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
+
+void stm32_flash_protect_flash(bool bootloader, bool protect);
+void stm32_flash_unprotect_flash(void);
+
 // allow stack view code to show free ISR stack
-extern uint32_t __main_stack_base__;
-extern uint32_t __main_stack_end__;
-extern uint32_t __main_thread_stack_base__;
-extern uint32_t __main_thread_stack_end__;
+extern stkalign_t __main_stack_base__;
+extern stkalign_t __main_stack_end__;
+extern stkalign_t __main_thread_stack_base__;
+extern stkalign_t __main_thread_stack_end__;
 
 #ifdef __cplusplus
 }

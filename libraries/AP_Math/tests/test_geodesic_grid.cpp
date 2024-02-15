@@ -20,6 +20,8 @@
 #include "math_test.h"
 #include <AP_Math/AP_GeodesicGrid.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 class TestParam {
 public:
     /**

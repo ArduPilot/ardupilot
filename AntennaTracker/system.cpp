@@ -5,14 +5,6 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 void Tracker::init_ardupilot()
 {
-    // initialise stats module
-    stats.init();
-
-    BoardConfig.init();
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
     // initialise notify
     notify.init();
     AP_Notify::flags.pre_arm_check = true;
@@ -27,14 +19,10 @@ void Tracker::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
-
-#if LOGGING_ENABLED == ENABLED
-    log_init();
-#endif
-
-#ifdef ENABLE_SCRIPTING
-    scripting.init();
-#endif // ENABLE_SCRIPTING
+    // update_send so that if the first packet we receive happens to
+    // be an arm message we don't trigger an internal error when we
+    // try to initialise stream rates in the main loop.
+    gcs().update_send();
 
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
@@ -52,11 +40,10 @@ void Tracker::init_ardupilot()
 
     barometer.calibrate();
 
+#if HAL_LOGGING_ENABLED
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
-
-    // set serial ports non-blocking
-    serial_manager.set_blocking_writes_all(false);
+#endif
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -98,7 +85,7 @@ void Tracker::init_ardupilot()
 /*
   fetch HOME from EEPROM
 */
-bool Tracker::get_home_eeprom(struct Location &loc) const
+bool Tracker::get_home_eeprom(Location &loc) const
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
@@ -151,13 +138,17 @@ bool Tracker::set_home(const Location &temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+#if HAL_LOGGING_ENABLED
     logger.set_vehicle_armed(true);
+#endif
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
+#if HAL_LOGGING_ENABLED
     logger.set_vehicle_armed(false);
+#endif
 }
 
 /*
@@ -188,8 +179,10 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
         disarm_servos();
     }
 
+#if HAL_LOGGING_ENABLED
 	// log mode change
 	logger.Write_Mode((uint8_t)mode->number(), reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     nav_status.bearing = ahrs.yaw_sensor * 0.01f;
@@ -227,6 +220,7 @@ bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
@@ -237,15 +231,17 @@ bool Tracker::should_log(uint32_t mask)
     }
     return true;
 }
-
+#endif
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#if AP_ADVANCEDFAILSAFE_ENABLED
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+#endif  // AP_ADVANCEDFAILSAFE_ENABLED
 #if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }

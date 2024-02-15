@@ -17,6 +17,10 @@
 
 #include <AP_Winch/AP_Winch.h>
 
+#if AP_WINCH_ENABLED
+
+#include <AP_Logger/AP_Logger_config.h>
+
 class AP_Winch_Backend {
 public:
     AP_Winch_Backend(struct AP_Winch::Backend_Config &_config) :
@@ -37,8 +41,15 @@ public:
     // send status to ground station
     virtual void send_status(const GCS_MAVLINK &channel) = 0;
 
+#if HAL_LOGGING_ENABLED
     // write log
     virtual void write_log() = 0;
+#endif
+
+    // helper to check if option enabled
+    bool option_enabled(AP_Winch::Options option) const {
+        return (config.options & uint16_t(option)) != 0;
+    }
 
 protected:
 
@@ -58,3 +69,5 @@ protected:
     int16_t previous_radio_in = -1; // previous RC input from pilot, used to ignore small changes
     float previous_rate;            // previous rate used for acceleration limiting
 };
+
+#endif  // AP_WINCH_ENABLED

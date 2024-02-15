@@ -15,6 +15,12 @@
 
 #include "AP_WindVane_RPM.h"
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_RPM_ENABLED
+
+#include <AP_RPM/AP_RPM.h>
+
 void AP_WindVane_RPM::update_speed()
 {
     const AP_RPM* rpm = AP_RPM::get_singleton();
@@ -26,3 +32,5 @@ void AP_WindVane_RPM::update_speed()
         }
     }
 }
+
+#endif  // AP_WINDVANE_RPM_ENABLED

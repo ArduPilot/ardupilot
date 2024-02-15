@@ -16,7 +16,7 @@ bool Plane::auto_takeoff_check(void)
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // reset all takeoff state if disarmed
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         memset(&takeoff_state, 0, sizeof(takeoff_state));
         auto_state.baro_takeoff_alt = barometer.get_altitude();
         return false;
@@ -29,6 +29,24 @@ bool Plane::auto_takeoff_check(void)
     }
 
     takeoff_state.last_check_ms = now;
+    
+    //check if waiting for rudder neutral after rudder arm
+    if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
+        !seen_neutral_rudder) {
+        // we were armed with rudder but have not seen rudder neutral yet
+        takeoff_state.waiting_for_rudder_neutral = true;
+        // warn if we have been waiting a long time
+        if (now - takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+            takeoff_state.rudder_takeoff_warn_ms = now;
+        }
+        // since we are still waiting, dont takeoff
+        return false;
+    } else {
+       // we did not arm by rudder or rudder has returned to neutral
+       // make sure we dont indicate we are in the waiting state with servo position indicator
+       takeoff_state.waiting_for_rudder_neutral = false;
+    }  
 
     // Check for bad GPS
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
@@ -36,7 +54,7 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    bool do_takeoff_attitude_check = !(g2.flight_options & FlightOptions::DISABLE_TOFF_ATTITUDE_CHK);
+    bool do_takeoff_attitude_check = !(flight_option_enabled(FlightOptions::DISABLE_TOFF_ATTITUDE_CHK));
 #if HAL_QUADPLANE_ENABLED
     // disable attitude check on tailsitters
     do_takeoff_attitude_check = !quadplane.tailsitter.enabled();
@@ -44,7 +62,7 @@ bool Plane::auto_takeoff_check(void)
 
     if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
         // we are requiring an X acceleration event to launch
-        float xaccel = SpdHgt_Controller->get_VXdot();
+        float xaccel = TECS_controller.get_VXdot();
         if (g2.takeoff_throttle_accel_count <= 1) {
             if (xaccel < g.takeoff_throttle_min_accel) {
                 goto no_launch;
@@ -72,7 +90,7 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.last_tkoff_arm_time = now;
         if (now - takeoff_state.last_report_ms > 2000) {
             gcs().send_text(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
-                              (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
+                              (double)TECS_controller.get_VXdot(), (double)(wait_time_ms*0.001f));
             takeoff_state.last_report_ms = now;
         }
     }
@@ -133,19 +151,26 @@ void Plane::takeoff_calc_roll(void)
     // during takeoff use the level flight roll limit to prevent large
     // wing strike. Slowly allow for more roll as we get higher above
     // the takeoff altitude
-    float roll_limit = roll_limit_cd*0.01f;
-    float baro_alt = barometer.get_altitude();
-    // below 5m use the LEVEL_ROLL_LIMIT
-    const float lim1 = 5;    
-    // at 15m allow for full roll
-    const float lim2 = 15;
-    if ((baro_alt < auto_state.baro_takeoff_alt+lim1) || (auto_state.highest_airspeed < g.takeoff_rotate_speed)) {
-        roll_limit = g.level_roll_limit;
-    } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {
-        float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
-        roll_limit = (1-proportion) * g.level_roll_limit + proportion * roll_limit;
+    int32_t takeoff_roll_limit_cd = roll_limit_cd;
+
+    if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
+        // before Vrotate (aka, on the ground)
+        takeoff_roll_limit_cd = g.level_roll_limit * 100;
+    } else {
+        // lim1 - below altitude TKOFF_LVL_ALT, restrict roll to LEVEL_ROLL_LIMIT
+        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of ROLL_LIMIT_DEG
+        // In between lim1 and lim2 use a scaled roll limit.
+        // The *3 scheme should scale reasonably with both small and large aircraft
+        const float lim1 = MAX(mode_takeoff.level_alt, 0);
+        const float lim2 = MIN(mode_takeoff.level_alt*3, mode_takeoff.target_alt);
+        const float current_baro_alt = barometer.get_altitude();
+
+        takeoff_roll_limit_cd = linear_interpolate(g.level_roll_limit*100, roll_limit_cd,
+                                        current_baro_alt,
+                                        auto_state.baro_takeoff_alt+lim1, auto_state.baro_takeoff_alt+lim2);
     }
-    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
+
+    nav_roll_cd = constrain_int32(nav_roll_cd, -takeoff_roll_limit_cd, takeoff_roll_limit_cd);
 }
 
         
@@ -155,15 +180,12 @@ void Plane::takeoff_calc_roll(void)
 void Plane::takeoff_calc_pitch(void)
 {
     if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
-        // we have not reached rotate speed, use a target pitch of 5
-        // degrees. This should be enough to get the tail off the
-        // ground, while making it unlikely that overshoot in the
-        // pitch controller will cause a prop strike
-        nav_pitch_cd = 500;
+        // we have not reached rotate speed, use the specified takeoff target pitch angle
+        nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
         return;
     }
 
-    if (ahrs.airspeed_sensor_enabled()) {
+    if (ahrs.using_airspeed_sensor()) {
         int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
         if (nav_pitch_cd < takeoff_pitch_min_cd) {
@@ -172,7 +194,7 @@ void Plane::takeoff_calc_pitch(void)
     } else {
         if (g.takeoff_rotate_speed > 0) {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
-            nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
             nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
         } else {
             // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
@@ -201,7 +223,7 @@ void Plane::takeoff_calc_pitch(void)
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {
-    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {
+    if (flight_stage != AP_FixedWing::FlightStage::TAKEOFF) {
         return auto_state.takeoff_pitch_cd;
     }
 
@@ -216,7 +238,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
             return auto_state.takeoff_pitch_cd * scalar;
         }
 
-        // are we entering the region where we want to start leveling off before we reach takeoff alt?
+        // are we entering the region where we want to start levelling off before we reach takeoff alt?
         if (auto_state.sink_rate < -0.1f) {
             float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
             if (sec_to_target > 0 &&
@@ -240,7 +262,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
  */
 int8_t Plane::takeoff_tail_hold(void)
 {
-    bool in_takeoff = ((control_mode == &mode_auto && !auto_state.takeoff_complete) ||
+    bool in_takeoff = ((plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
                        (control_mode == &mode_fbwa && auto_state.fbwa_tdrag_takeoff_mode));
     if (!in_takeoff) {
         // not in takeoff
@@ -274,7 +296,7 @@ return_zero:
     return 0;
 }
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
 /*
   update landing gear
  */
@@ -283,3 +305,29 @@ void Plane::landing_gear_update(void)
     g2.landing_gear.update(relative_ground_altitude(g.rangefinder_landing));
 }
 #endif
+
+/*
+ check takeoff_timeout; checks time after the takeoff start time; returns true if timeout has occurred and disarms on timeout
+*/
+
+bool Plane::check_takeoff_timeout(void)
+{
+    if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
+        const float ground_speed = AP::gps().ground_speed();
+        const float takeoff_min_ground_speed = 4;
+        if (ground_speed >= takeoff_min_ground_speed) {
+            takeoff_state.start_time_ms = 0;
+            return false;
+        } else {
+            uint32_t now = AP_HAL::millis();
+            if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout: %.1f m/s speed < 4m/s", ground_speed);
+                arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
+                takeoff_state.start_time_ms = 0;
+                return true;
+            }
+        }
+     }
+     return false;
+}
+

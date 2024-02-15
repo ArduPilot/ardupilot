@@ -15,7 +15,8 @@
 #pragma once
 
 #include <AP_Rally/AP_Rally.h>
-#include <AP_AHRS/AP_AHRS.h>
+
+#if HAL_RALLY_ENABLED
 
 class AP_Rally_Rover : public AP_Rally
 {
@@ -23,9 +24,10 @@ public:
     AP_Rally_Rover() : AP_Rally() { }
 
     /* Do not allow copies */
-    AP_Rally_Rover(const AP_Rally_Rover &other) = delete;
-    AP_Rally_Rover &operator=(const AP_Rally_Rover&) = delete;
+    CLASS_NO_COPY(AP_Rally_Rover);
 
 private:
     bool is_valid(const Location &rally_point) const override;
 };
+
+#endif  // HAL_RALLY_ENABLED

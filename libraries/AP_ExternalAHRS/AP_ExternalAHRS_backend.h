@@ -29,20 +29,35 @@ public:
     // get serial port number, -1 for not enabled
     virtual int8_t get_port(void) const { return -1; }
 
-    // accessors for AP_AHRS
+    // Get model/type name
+    virtual const char* get_name() const = 0;
+
+    // Accessors for AP_AHRS
+
+    // If not healthy, none of the other API's can be trusted.
+    // Example: Serial cable is severed.
     virtual bool healthy(void) const = 0;
+    // The communication interface is up and the device has sent valid data.
     virtual bool initialised(void) const = 0;
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
     virtual void get_filter_status(nav_filter_status &status) const {}
-    virtual void send_status_report(mavlink_channel_t chan) const {}
+    virtual void send_status_report(class GCS_MAVLINK &link) const {}
 
-    // check for new data
+    // Check for new data.
+    // This is used when there's not a separate thread for EAHRS.
+    // This can also copy interim state protected by locking.
     virtual void update() = 0;
-    
+
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
+    bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t sensors) {
+        frontend.set_default_sensors(sensors);
+    }
+    
 private:
     AP_ExternalAHRS &frontend;
 };

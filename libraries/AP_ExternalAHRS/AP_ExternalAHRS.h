@@ -13,23 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  suppport for serial connected AHRS systems
+  support for serial connected AHRS systems
  */
 
 #pragma once
+
+#include "AP_ExternalAHRS_config.h"
+
+#if HAL_EXTERNAL_AHRS_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
-
-#ifndef HAL_EXTERNAL_AHRS_ENABLED
-#define HAL_EXTERNAL_AHRS_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH) && BOARD_FLASH_SIZE > 1024
-#endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
-
-#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_ExternalAHRS_backend;
 
@@ -37,6 +33,7 @@ class AP_ExternalAHRS {
 
 public:
     friend class AP_ExternalAHRS_backend;
+    friend class AP_ExternalAHRS_VectorNav;
 
     AP_ExternalAHRS();
 
@@ -46,7 +43,24 @@ public:
 
     enum class DevType : uint8_t {
         None   = 0,
+#if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
         VecNav = 1,
+#endif
+#if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
+        MicroStrain5 = 2,
+#endif
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+        InertialLabs = 5,
+#endif
+        // 3 reserved for AdNav
+        // 4 reserved for CINS
+        // 6 reserved for Trimble
+#if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
+        MicroStrain7 = 7,
+#endif
+        // 8 reserved for SBG
+        // 9 reserved for EulerNav
+        // 10 reserved for Aeron
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -58,8 +72,18 @@ public:
         return rate.get();
     }
 
+    // Get model/type name
+    const char* get_name() const;
+
+    enum class AvailableSensor {
+        GPS = (1U<<0),
+        IMU = (1U<<1),
+        BARO = (1U<<2),
+        COMPASS = (1U<<3),
+    };
+
     // get serial port number, -1 for not enabled
-    int8_t get_port(void) const;
+    int8_t get_port(AvailableSensor sensor) const;
 
     struct state_t {
         HAL_Semaphore sem;
@@ -75,9 +99,12 @@ public:
         bool have_origin;
         bool have_location;
         bool have_velocity;
+
+        uint32_t last_location_update_us;
     } state;
 
     // accessors for AP_AHRS
+    bool enabled() const;
     bool healthy(void) const;
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
@@ -90,7 +117,7 @@ public:
     void get_filter_status(nav_filter_status &status) const;
     Vector3f get_gyro(void);
     Vector3f get_accel(void);
-    void send_status_report(mavlink_channel_t chan) const;
+    void send_status_report(class GCS_MAVLINK &link) const;
 
     // update backend
     void update();
@@ -131,14 +158,38 @@ public:
         Vector3f gyro;
         float temperature;
     } ins_data_message_t;
+
+    typedef struct {
+        float differential_pressure; // Pa
+        float temperature; // degC
+    } airspeed_data_message_t;
     
+protected:
+
+    enum class OPTIONS {
+        VN_UNCOMP_IMU = 1U << 0,
+    };
+    bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
+
 private:
     AP_ExternalAHRS_backend *backend;
 
     AP_Enum<DevType> devtype;
     AP_Int16         rate;
+    AP_Int16         options;
+    AP_Int16         sensors;
 
     static AP_ExternalAHRS *_singleton;
+
+    // check if a sensor type is enabled
+    bool has_sensor(AvailableSensor sensor) const {
+        return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
+    }
+
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t _sensors) {
+        sensors.set_default(_sensors);
+    }
 };
 
 namespace AP {

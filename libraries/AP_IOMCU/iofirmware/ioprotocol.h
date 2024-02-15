@@ -2,13 +2,16 @@
 
 #include <stdint.h>
 #include <AP_Common/AP_Common.h>
+
 /*
   common protocol definitions between AP_IOMCU and iofirmware
  */
 
 // 22 is enough for the rc_input page in one transfer
 #define PKT_MAX_REGS 22
-#define IOMCU_MAX_CHANNELS 16
+#define IOMCU_MAX_RC_CHANNELS 16
+#define IOMCU_MAX_CHANNELS 8
+#define IOMCU_MAX_TELEM_CHANNELS 4
 
 //#define IOMCU_DEBUG
 
@@ -34,6 +37,7 @@ enum iocode {
     // read types
     CODE_READ = 0,
     CODE_WRITE = 1,
+    CODE_NOOP = 2,
 
     // reply codes
     CODE_SUCCESS = 0,
@@ -55,6 +59,13 @@ enum iopage {
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
     PAGE_MIXING = 200,
+    PAGE_GPIO = 201,
+    PAGE_DSHOT = 202,
+    PAGE_RAW_DSHOT_ERPM = 203,
+    PAGE_RAW_DSHOT_TELEM_1_4 = 204,
+    PAGE_RAW_DSHOT_TELEM_5_8 = 205,
+    PAGE_RAW_DSHOT_TELEM_9_12 = 206,
+    PAGE_RAW_DSHOT_TELEM_13_16 = 207,
 };
 
 // setup page registers
@@ -65,6 +76,7 @@ enum iopage {
 #define P_SETUP_FEATURES_ADC_RSSI   8
 #define P_SETUP_FEATURES_ONESHOT   16
 #define P_SETUP_FEATURES_BRUSHED   32
+#define P_SETUP_FEATURES_HEATER    64
 
 #define PAGE_REG_SETUP_ARMING 1
 #define P_SETUP_ARMING_IO_ARM_OK (1<<0)
@@ -76,6 +88,7 @@ enum iopage {
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_OUTPUT_MODE   5
 #define PAGE_REG_SETUP_REBOOT_BL    10
 #define PAGE_REG_SETUP_CRC			11
 #define PAGE_REG_SETUP_SBUS_RATE    19
@@ -83,6 +96,8 @@ enum iopage {
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 #define PAGE_REG_SETUP_DSM_BIND     22
 #define PAGE_REG_SETUP_RC_PROTOCOLS 23 // uses 2 slots, 23 and 24
+#define PAGE_REG_SETUP_DSHOT_PERIOD 25
+#define PAGE_REG_SETUP_CHANNEL_MASK 27
 
 // config page registers
 #define PAGE_CONFIG_PROTOCOL_VERSION  0
@@ -100,21 +115,31 @@ enum iopage {
 struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
+    uint32_t mcuid;
+    uint32_t cpuid;
 };
 
 struct page_reg_status {
     uint16_t freemem;
+    uint16_t freemstack;
+    uint16_t freepstack;
     uint32_t timestamp_ms;
     uint16_t vservo;
     uint16_t vrssi;
     uint32_t num_errors;
     uint32_t total_pkts;
+    uint32_t total_ticks;
+    uint32_t total_events;
     uint8_t flag_safety_off;
+    uint8_t rcout_mask;
+    uint8_t rcout_mode;
     uint8_t err_crc;
     uint8_t err_bad_opcode;
     uint8_t err_read;
     uint8_t err_write;
     uint8_t err_uart;
+    uint8_t err_lock;
+    uint8_t spare;
 };
 
 struct page_rc_input {
@@ -122,7 +147,7 @@ struct page_rc_input {
     uint8_t flags_failsafe:1;
     uint8_t flags_rc_ok:1;
     uint8_t rc_protocol;
-    uint16_t pwm[IOMCU_MAX_CHANNELS];
+    uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     int16_t rssi;
 };
 
@@ -158,5 +183,42 @@ struct page_mixing {
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
 
-    uint8_t pad; // pad to even size
+    uint8_t pad;
+};
+
+static_assert(sizeof(struct page_mixing) % 2 == 0, "page_mixing must be even size");
+
+struct __attribute__((packed, aligned(2))) page_GPIO {
+    uint8_t channel_mask;
+    uint8_t output_mask;
+};
+
+struct page_mode_out {
+    uint16_t mask;
+    uint16_t mode;
+    uint16_t bdmask;
+    uint16_t esc_type;
+};
+
+struct page_dshot {
+    uint16_t telem_mask;
+    uint8_t command;
+    uint8_t chan;
+    uint32_t command_timeout_ms;
+    uint8_t repeat_count;
+    uint8_t priority;
+};
+
+struct page_dshot_erpm {
+    uint16_t erpm[IOMCU_MAX_TELEM_CHANNELS];
+    uint32_t update_mask;
+};
+
+// separate telemetry packet because (a) it's too big otherwise and (b) slower update rate
+struct page_dshot_telem {
+    uint16_t  error_rate[4]; // as a centi-percentage
+    uint16_t  voltage_cvolts[4];
+    uint16_t  current_camps[4];
+    uint16_t  temperature_cdeg[4];
+    uint16_t  types[4];
 };

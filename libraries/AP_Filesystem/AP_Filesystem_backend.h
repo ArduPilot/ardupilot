@@ -20,7 +20,9 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#include "AP_Filesystem_Available.h"
+#include "AP_Filesystem_config.h"
+
+#include <AP_InternalError/AP_InternalError.h>
 
 // returned structure from a load_file() call
 class FileData {
@@ -41,7 +43,7 @@ class AP_Filesystem_Backend {
 
 public:
     // functions that closely match the equivalent posix calls
-    virtual int open(const char *fname, int flags) {
+    virtual int open(const char *fname, int flags, bool allow_absolute_paths = false) {
         return -1;
     }
     virtual int close(int fd) { return -1; }
@@ -55,6 +57,7 @@ public:
     virtual void *opendir(const char *pathname) { return nullptr; }
     virtual struct dirent *readdir(void *dirp) { return nullptr; }
     virtual int closedir(void *dirp) { return -1; }
+    virtual int rename(const char *oldpath, const char *newpath) { return -1; }
 
     // return free disk space in bytes, -1 on error
     virtual int64_t disk_free(const char *path) { return 0; }
@@ -71,6 +74,18 @@ public:
     // unmount filesystem for reboot
     virtual void unmount(void) {}
 
+    enum class FormatStatus {
+        NOT_STARTED,
+        PENDING,
+        IN_PROGRESS,
+        SUCCESS,
+        FAILURE,
+    };
+
+    // format sdcard.  This is async, monitor get_format_status for progress
+    virtual bool format(void) { return false; }
+    virtual AP_Filesystem_Backend::FormatStatus get_format_status() const { return FormatStatus::NOT_STARTED; }
+
     /*
       load a full file. Use delete to free the data
      */
@@ -84,4 +99,9 @@ protected:
     bool file_op_allowed(void) const;
 };
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define FS_CHECK_ALLOWED(retfail) do { if (!file_op_allowed()) { INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); return retfail; } } while(0)
+#else
 #define FS_CHECK_ALLOWED(retfail) do { if (!file_op_allowed()) { return retfail; } } while(0)
+#endif

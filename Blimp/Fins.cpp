@@ -1,5 +1,7 @@
 #include "Blimp.h"
 
+#include <SRV_Channel/SRV_Channel.h>
+
 // This is the scale used for RC inputs so that they can be scaled to the float point values used in the sine wave code.
 #define FIN_SCALE_MAX 1000
 
@@ -78,7 +80,9 @@ void Fins::output()
         yaw_out   = 0;
     }
 
+#if HAL_LOGGING_ENABLED
     blimp.Write_FINI(right_out, front_out, down_out, yaw_out);
+#endif
 
     //Constrain after logging so as to still show when sub-optimal tuning is causing massive overshoots.
     right_out = constrain_float(right_out, -1, 1);
@@ -128,7 +132,9 @@ void Fins::output()
         SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _pos[i] * FIN_SCALE_MAX);
     }
 
+#if HAL_LOGGING_ENABLED
     blimp.Write_FINO(_amp, _off);
+#endif
 }
 
 void Fins::output_min()

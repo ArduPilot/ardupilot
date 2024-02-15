@@ -14,7 +14,15 @@
 */
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_JSON_ENABLED
+#define HAL_SIM_JSON_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_JSON_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -36,11 +44,18 @@ public:
 
 private:
 
-    struct servo_packet {
+    struct servo_packet_16 {
         uint16_t magic = 18458; // constant magic value
         uint16_t frame_rate;
         uint32_t frame_count;
         uint16_t pwm[16];
+    };
+
+    struct servo_packet_32 {
+        uint16_t magic = 29569; // constant magic value
+        uint16_t frame_rate;
+        uint32_t frame_count;
+        uint16_t pwm[32];
     };
 
     // default connection_info_.ip_address
@@ -49,7 +64,7 @@ private:
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
-    SocketAPM sock;
+    SocketAPM_native sock;
 
     uint32_t frame_counter;
     double last_timestamp_s;
@@ -143,3 +158,5 @@ private:
 };
 
 }
+
+#endif  // HAL_SIM_JSON_ENABLED

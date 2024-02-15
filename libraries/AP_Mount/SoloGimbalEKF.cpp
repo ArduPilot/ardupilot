@@ -11,9 +11,9 @@
 #include "SoloGimbalEKF.h"
 #if HAL_SOLO_GIMBAL_ENABLED
 #include <AP_Param/AP_Param.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Compass/AP_Compass.h>
 
 #include <stdio.h>
 
@@ -107,7 +107,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
         FiltInit = true;
-        hal.console->printf("\nSoloGimbalEKF Alignment Started\n");
+        DEV_PRINTF("\nSoloGimbalEKF Alignment Started\n");
 
         // Don't run the filter in this timestep because we have already used the delta velocity data to set an initial orientation
         return;
@@ -142,7 +142,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
-        hal.console->printf("\nSoloGimbalEKF Alignment Completed\n");
+        DEV_PRINTF("\nSoloGimbalEKF Alignment Completed\n");
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
@@ -616,12 +616,12 @@ void SoloGimbalEKF::fuseVelocity()
         // Calculate the velocity measurement innovation using the SoloGimbalEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
         if (YawAligned) {
-            Vector3f measVelNED = Vector3f(0,0,0);
+            Vector3f measVelNED;
             nav_filter_status main_ekf_status;
 
             if (_ahrs.get_filter_status(main_ekf_status)) {
                 if (main_ekf_status.flags.horiz_vel) {
-                    _ahrs.get_velocity_NED(measVelNED);
+                    UNUSED_RESULT(_ahrs.get_velocity_NED(measVelNED));
                 }
             }
 

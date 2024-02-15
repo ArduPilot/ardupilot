@@ -1,3 +1,7 @@
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include <stdlib.h>
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -6,6 +10,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AC_PID/AP_PIDInfo.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -100,13 +107,14 @@ bool AP_Logger_Backend::Write_Format_Units(const struct LogStructure *s)
 /*
   write a parameter to the log
  */
-bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
+bool AP_Logger_Backend::Write_Parameter(const char *name, float value, float default_val)
 {
     struct log_Parameter pkt{
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
         time_us : AP_HAL::micros64(),
         name  : {},
-        value : value
+        value : value,
+        default_value : default_val
     };
     strncpy_noterm(pkt.name, name, sizeof(pkt.name));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -117,13 +125,15 @@ bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
  */
 bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
                                             const AP_Param::ParamToken &token,
-                                            enum ap_var_type type)
+                                            enum ap_var_type type,
+                                            float default_val)
 {
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
-    return Write_Parameter(name, ap->cast_to_float(type));
+    return Write_Parameter(name, ap->cast_to_float(type), default_val);
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
 {
@@ -149,56 +159,96 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-    const uint16_t override_mask = rc().get_override_mask();
-
-    // don't waste logging bandwidth if we haven't seen non-zero
-    // channels 15/16:
-    if (!should_log_rcin2) {
-        if (values[14] || values[15]) {
-            should_log_rcin2 = true;
-        } else if (override_mask != 0) {
-            should_log_rcin2 = true;
-        }
+    uint8_t flags = 0;
+    if (rc().has_valid_input()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::HAS_VALID_INPUT;
+    }
+    if (rc().in_rc_failsafe()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::IN_RC_FAILSAFE;
     }
 
-    if (!should_log_rcin2) {
-        return;
-    }
-
-    const struct log_RCIN2 pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_RCIN2_MSG),
+    const struct log_RCI2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_RCI2_MSG),
         time_us       : AP_HAL::micros64(),
         chan15         : values[14],
         chan16         : values[15],
-        override_mask  : override_mask,
+        override_mask  : rc().get_override_mask(),
+        flags          : flags,
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
 {
-    const struct log_RCOUT pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
-        time_us       : AP_HAL::micros64(),
-        chan1         : hal.rcout->read(0),
-        chan2         : hal.rcout->read(1),
-        chan3         : hal.rcout->read(2),
-        chan4         : hal.rcout->read(3),
-        chan5         : hal.rcout->read(4),
-        chan6         : hal.rcout->read(5),
-        chan7         : hal.rcout->read(6),
-        chan8         : hal.rcout->read(7),
-        chan9         : hal.rcout->read(8),
-        chan10        : hal.rcout->read(9),
-        chan11        : hal.rcout->read(10),
-        chan12        : hal.rcout->read(11),
-        chan13        : hal.rcout->read(12),
-        chan14        : hal.rcout->read(13)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    const uint32_t enabled_mask = ~SRV_Channels::get_output_channel_mask(SRV_Channel::k_GPIO);
+
+    if ((enabled_mask & 0x3FFF) != 0) {
+        uint16_t channels[14] {};
+        hal.rcout->read(channels, ARRAY_SIZE(channels));
+        const struct log_RCOUT pkt{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan1         : channels[0],
+            chan2         : channels[1],
+            chan3         : channels[2],
+            chan4         : channels[3],
+            chan5         : channels[4],
+            chan6         : channels[5],
+            chan7         : channels[6],
+            chan8         : channels[7],
+            chan9         : channels[8],
+            chan10        : channels[9],
+            chan11        : channels[10],
+            chan12        : channels[11],
+            chan13        : channels[12],
+            chan14        : channels[13]
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
+
+#if NUM_SERVO_CHANNELS >= 15
+    if ((enabled_mask & 0x3C000) != 0) {
+        const struct log_RCOUT2 pkt2{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT2_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan15         : hal.rcout->read(14),
+            chan16         : hal.rcout->read(15),
+            chan17         : hal.rcout->read(16),
+            chan18         : hal.rcout->read(17),
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));
+    }
+#endif
+
+#if NUM_SERVO_CHANNELS >= 19
+    if ((enabled_mask & 0xFFFC0000) != 0) {
+        const struct log_RCOUT pkt3{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT3_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan1         : hal.rcout->read(18),
+            chan2         : hal.rcout->read(19),
+            chan3         : hal.rcout->read(20),
+            chan4         : hal.rcout->read(21),
+            chan5         : hal.rcout->read(22),
+            chan6         : hal.rcout->read(23),
+            chan7         : hal.rcout->read(24),
+            chan8         : hal.rcout->read(25),
+            chan9         : hal.rcout->read(26),
+            chan10        : hal.rcout->read(27),
+            chan11        : hal.rcout->read(28),
+            chan12        : hal.rcout->read(29),
+            chan13        : hal.rcout->read(30),
+            chan14        : hal.rcout->read(31)
+        };
+        WriteBlock(&pkt3, sizeof(pkt3));
+    }
+#endif
+
 }
 
+#if AP_RSSI_ENABLED
 // Write an RSSI packet
 void AP_Logger::Write_RSSI()
 {
@@ -215,6 +265,7 @@ void AP_Logger::Write_RSSI()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               uint8_t source_system,
@@ -267,7 +318,7 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
     return WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
 bool AP_Logger_Backend::Write_EntireMission()
 {
     // kick off asynchronous write:
@@ -295,30 +346,38 @@ void AP_Logger::Write_Power(void)
         // encode armed state in bit 3
         safety_and_armed |= 1U<<2;
     }
-    float MCU_temp = 0;
-    float MCU_voltage = 0;
-    float MCU_vmin = 0;
-    float MCU_vmax = 0;
-#if HAL_WITH_MCU_MONITORING
-    MCU_temp = hal.analogin->mcu_temperature();
-    MCU_voltage = hal.analogin->mcu_voltage();
-    MCU_vmin = hal.analogin->mcu_voltage_min();
-    MCU_vmax = hal.analogin->mcu_voltage_max();
-#endif
-    const struct log_POWR pkt{
+    const uint64_t now = AP_HAL::micros64();
+    const struct log_POWR powr_pkt{
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
-        time_us : AP_HAL::micros64(),
+        time_us : now,
+#if HAL_HAVE_BOARD_VOLTAGE
         Vcc     : hal.analogin->board_voltage(),
+#else
+        Vcc     : quiet_nanf(),
+#endif
+#if HAL_HAVE_SERVO_VOLTAGE
         Vservo  : hal.analogin->servorail_voltage(),
+#else
+        Vservo  : quiet_nanf(),
+#endif
         flags   : hal.analogin->power_status_flags(),
         accumulated_flags   : hal.analogin->accumulated_power_status_flags(),
         safety_and_arm : safety_and_armed,
-        MCU_temp : MCU_temp,
-        MCU_voltage : MCU_voltage,
-        MCU_voltage_min : MCU_vmin,
-        MCU_voltage_max : MCU_vmax,
     };
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteBlock(&powr_pkt, sizeof(powr_pkt));
+
+#if HAL_WITH_MCU_MONITORING
+    const struct log_MCU mcu_pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MCU_MSG),
+        time_us : now,
+        MCU_temp : hal.analogin->mcu_temperature(),
+        MCU_voltage : hal.analogin->mcu_voltage(),
+        MCU_voltage_min : hal.analogin->mcu_voltage_min(),
+        MCU_voltage_max : hal.analogin->mcu_voltage_max(),
+    };
+    WriteBlock(&mcu_pkt, sizeof(mcu_pkt));
+#endif
+
 #endif
 }
 
@@ -391,7 +450,8 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 /*
   write servo status from CAN servo
  */
-void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct)
+void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
+                                  float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error)
 {
     const struct log_CSRV pkt {
         LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
@@ -400,15 +460,42 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
         position    : position,
         force       : force,
         speed       : speed,
-        power_pct   : power_pct
+        power_pct   : power_pct,
+        pos_cmd     : pos_cmd,
+        voltage     : voltage,
+        current     : current,
+        mot_temp    : mot_temp,
+        pcb_temp    : pcb_temp,
+        error       : error,
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
 
 // Write a Yaw PID packet
-void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
+void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
+    enum class log_PID_Flags : uint8_t {
+        LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
+        PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
+        RESET = 1U<<2, // true if the controller was reset
+        I_TERM_SET = 1U<<3, // true if the I term has been set externally including reseting to 0
+    };
+
+    uint8_t flags = 0;
+    if (info.limit) {
+        flags |= (uint8_t)log_PID_Flags::LIMIT;
+    }
+    if (info.PD_limit) {
+        flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
+    }
+    if (info.reset) {
+        flags |= (uint8_t)log_PID_Flags::RESET;
+    }
+    if (info.I_term_set) {
+        flags |= (uint8_t)log_PID_Flags::I_TERM_SET;
+    }
+
     const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
@@ -419,120 +506,13 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         I               : info.I,
         D               : info.D,
         FF              : info.FF,
+        DFF             : info.DFF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
-        limit           : info.limit
+        flags           : flags
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
-
-void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
-{
-    float rpm1 = -1, rpm2 = -1;
-
-    rpm_sensor.get_rpm(0, rpm1);
-    rpm_sensor.get_rpm(1, rpm2);
-
-    const struct log_RPM pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
-        time_us     : AP_HAL::micros64(),
-        rpm1        : rpm1,
-        rpm2        : rpm2
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write beacon sensor (position) data
-void AP_Logger::Write_Beacon(AP_Beacon &beacon)
-{
-    if (!beacon.enabled()) {
-        return;
-    }
-    // position
-    Vector3f pos;
-    float accuracy = 0.0f;
-    beacon.get_vehicle_position_ned(pos, accuracy);
-
-    const struct log_Beacon pkt_beacon{
-       LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
-       time_us         : AP_HAL::micros64(),
-       health          : (uint8_t)beacon.healthy(),
-       count           : (uint8_t)beacon.count(),
-       dist0           : beacon.beacon_distance(0),
-       dist1           : beacon.beacon_distance(1),
-       dist2           : beacon.beacon_distance(2),
-       dist3           : beacon.beacon_distance(3),
-       posx            : pos.x,
-       posy            : pos.y,
-       posz            : pos.z
-    };
-    WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
-}
-
-#if HAL_PROXIMITY_ENABLED
-// Write proximity sensor distances
-void AP_Logger::Write_Proximity(AP_Proximity &proximity)
-{
-    // exit immediately if not enabled
-    if (proximity.get_status() == AP_Proximity::Status::NotConnected) {
-        return;
-    }
-
-    AP_Proximity::Proximity_Distance_Array dist_array{}; // raw distances stored here
-    AP_Proximity::Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
-    for (uint8_t i = 0; i < proximity.get_num_layers(); i++) {
-        const bool active = proximity.get_active_layer_distances(i, dist_array, filt_dist_array);
-        if (!active) {
-            // nothing on this layer
-            continue;
-        }
-        float dist_up;
-        if (!proximity.get_upward_distance(dist_up)) {
-            dist_up = 0.0f;
-        }
-
-        float closest_ang = 0.0f;
-        float closest_dist = 0.0f;
-        proximity.get_closest_object(closest_ang, closest_dist);
-
-        const struct log_Proximity pkt_proximity{
-                LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
-                time_us         : AP_HAL::micros64(),
-                instance        : i,
-                health          : (uint8_t)proximity.get_status(),
-                dist0           : filt_dist_array.distance[0],
-                dist45          : filt_dist_array.distance[1],
-                dist90          : filt_dist_array.distance[2],
-                dist135         : filt_dist_array.distance[3],
-                dist180         : filt_dist_array.distance[4],
-                dist225         : filt_dist_array.distance[5],
-                dist270         : filt_dist_array.distance[6],
-                dist315         : filt_dist_array.distance[7],
-                distup          : dist_up,
-                closest_angle   : closest_ang,
-                closest_dist    : closest_dist
-        };
-        WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
-
-        if (proximity.get_raw_log_enable()) {
-            const struct log_Proximity_raw pkt_proximity_raw{
-                LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
-                time_us         : AP_HAL::micros64(),
-                instance        : i,
-                raw_dist0       : dist_array.distance[0],
-                raw_dist45      : dist_array.distance[1],
-                raw_dist90      : dist_array.distance[2],
-                raw_dist135     : dist_array.distance[3],
-                raw_dist180     : dist_array.distance[4],
-                raw_dist225     : dist_array.distance[5],
-                raw_dist270     : dist_array.distance[6],
-                raw_dist315     : dist_array.distance[7],
-            };
-            WriteBlock(&pkt_proximity_raw, sizeof(pkt_proximity_raw));
-        }
-    }
-}
-#endif
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
@@ -570,41 +550,37 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y)
+// a convenience function for writing out the position controller PIDs
+void AP_Logger::Write_PSCx(LogMessages id, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    struct log_PSC pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSC_MSG),
-        time_us         : AP_HAL::micros64(),
-        pos_target_x    : pos_target.x * 0.01f,
-        pos_target_Y    : pos_target.y * 0.01f,
-        position_x      : position.x * 0.01f,
-        position_y      : position.y * 0.01f,
-        vel_target_x    : vel_target.x * 0.01f,
-        vel_target_y    : vel_target.y * 0.01f,
-        velocity_x      : velocity.x * 0.01f,
-        velocity_y      : velocity.y * 0.01f,
-        accel_target_x  : accel_target.x * 0.01f,
-        accel_target_y  : accel_target.y * 0.01f,
-        accel_x         : accel_x * 0.01f,
-        accel_y         : accel_y * 0.01f
+    const struct log_PSCx pkt{
+        LOG_PACKET_HEADER_INIT(id),
+            time_us         : AP_HAL::micros64(),
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out)
+void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    const struct log_PSCZ pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSCZ_MSG),
-        time_us         : AP_HAL::micros64(),
-        pos_target_z    : pos_target_z * 0.01f,
-        pos_z           : pos_z * 0.01f,
-        vel_desired_z   : vel_desired_z * 0.01f,
-        vel_target_z    : vel_target_z * 0.01f,
-        vel_z           : vel_z * 0.01f,
-        accel_desired_z : accel_desired_z * 0.01f,
-        accel_target_z  : accel_target_z * 0.01f,
-        accel_z         : accel_z * 0.01f,
-        throttle_out    : throttle_out
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    Write_PSCx(LOG_PSCN_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
 }
+
+void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    Write_PSCx(LOG_PSCE_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
+}
+
+void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    Write_PSCx(LOG_PSCD_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
+}
+
+#endif  // HAL_LOGGING_ENABLED

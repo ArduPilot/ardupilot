@@ -1,12 +1,8 @@
 # CubeBlack Flight Controller
 
-The Hex CubeBlack flight controller is sold by a range of resellers
+The CubePilot CubeBlack flight controller is sold by a range of resellers
 listed on the
-[ProfiCNC website](http://www.proficnc.com/content/13-pixhawk2)
-
-The full schematics of the board are available here:
-
-  https://github.com/ArduPilot/Schematics/tree/master/ProfiCNC/The-Cube
+[CubePilot website](http://cubepilot.org)
 
 ## Features
 
@@ -25,7 +21,7 @@ The full schematics of the board are available here:
  - builtin RGB LED
  - external safety Switch
  - voltage monitoring for servo rail and Vcc
- - dedicated power input port for external power brick
+ - two dedicated power input ports for external power bricks
  - external USB connectors (micro USB and JST GH)
 
 ## Pinout
@@ -363,6 +359,53 @@ pin closest to the cube (pin 3).
    </tbody>
    </table>
 
+### FMU and IO SWD
+
+When the case is removed there are two SWD connectors, one for FMU and
+the other for IOMCU. The IO SWD connector is the one closer to the
+servo rail. The GND pin of both connectors is the one furthest from
+the servo rail.
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin</th>
+   <th>Signal</th>
+   <th>Volt</th>
+   </tr>
+   <tr>
+   <td>1</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2</td>
+   <td>TX</td>
+   <td>+3.3</td>
+   </tr>
+   <tr>
+   <td>3</td>
+   <td>RX</td>
+   <td>+3.3</td>
+   </tr>
+   <tr>
+   <td>4</td>
+   <td>SWDIO</td>
+   <td>+3.3</td>
+   </tr>
+   <tr>
+   <td>5</td>
+   <td>SWCLK</td>
+   <td>+3.3</td>
+   </tr>
+   <tr>
+   <td>6</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
 
 ### CAN1&2
 
@@ -494,7 +537,7 @@ The CubeBlack supports up to 14 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
 
-The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxillary"
+The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
 outputs. These are directly attached to the STM32F427 and support all
 PWM protocols as well as DShot.
 
@@ -507,7 +550,7 @@ The 8 main PWM outputs are in 3 groups:
  - PWM 3 and 4 in group2
  - PWM 5, 6, 7 and 8 in group3
 
-The 6 auxillary PWM outputs are in 2 groups:
+The 6 auxiliary PWM outputs are in 2 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2
@@ -552,16 +595,16 @@ The CubeBlack has 7 analog inputs
 
  - ADC Pin2 -> Battery Voltage
  - ADC Pin3 -> Battery Current Sensor
+ - ADC Pin13 -> Battery2 Voltage
+ - ADC Pin14 -> Battery2 Current Sensor
  - ADC Pin4 -> Vdd 5V supply sense
- - ADC Pin13 -> ADC 3.3V Port pin1
- - ADC Pin14 -> ADC 3.3V Port pin2
  - ADC Pin15 -> ADC 6.6V port
  - ADC Pin103 -> RSSI voltage monitoring
 
 ## IMU Heater
 
 The IMU heater in the CubeBlack can be controlled with the
-BRD_IMU_TARGTEMP parameter, which is in degrees C.
+BRD_HEAT_TARG parameter, which is in degrees C.
 
 ## Loading Firmware
 
@@ -571,4 +614,4 @@ compatible ground station.
 
 ## Acknowledgements
 
-Thanks to [ProfiCNC](http://proficnc.com) for images
+Thanks to [CubePilot](http://cubepilot.org) for images

@@ -3,6 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
 
+#define SITL_ADC_RESOLUTION 16 // bits of resolution
+#define SITL_ADC_MAX_PIN_VALUE ((1<<SITL_ADC_RESOLUTION)-1)
+#define SITL_ADC_FULL_SCALE_VOLTAGE 5.0f
 #define SITL_INPUT_MAX_CHANNELS 12
 
 class HALSITL::ADCSource : public AP_HAL::AnalogSource {
@@ -14,7 +17,7 @@ public:
     /* implement AnalogSource virtual api: */
     float read_average() override;
     float read_latest() override;
-    void set_pin(uint8_t p) override;
+    bool set_pin(uint8_t p) override;
     float voltage_average() override;
     float voltage_latest() override;
     float voltage_average_ratiometric() override {

@@ -13,12 +13,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "AP_Follow_config.h"
+
+#if AP_FOLLOW_ENABLED
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>
 
@@ -26,6 +30,11 @@ class AP_Follow
 {
 
 public:
+
+    // enum for FOLLOW_OPTIONS parameter
+    enum class Option {
+        MOUNT_FOLLOW_ON_ENTER = 1
+    };
 
     // enum for YAW_BEHAVE parameter
     enum YawBehave {
@@ -38,11 +47,16 @@ public:
     // constructor
     AP_Follow();
 
+    // enable as singleton
+    static AP_Follow *get_singleton(void) {
+        return _singleton;
+    }
+
     // returns true if library is enabled
     bool enabled() const { return _enabled; }
 
     // set which target to follow
-    void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
+    void set_target_sysid(uint8_t sysid) { _sysid.set(sysid); }
 
     // restore offsets to zero if necessary, should be called when vehicle exits follow mode
     void clear_offsets_if_required();
@@ -57,8 +71,14 @@ public:
     // get target's estimated location and velocity (in NED)
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
 
+    // get target's estimated location and velocity (in NED), with offsets added
+    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
+    
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
+
+    // get target sysid
+    uint8_t get_target_sysid() const { return _sysid.get(); }
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
     const AC_P& get_pos_p() const { return _p_pos; }
@@ -86,10 +106,17 @@ public:
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return _bearing_to_target; }
 
+    // get system time of last position update
+    uint32_t get_last_update_ms() const { return _last_location_update_ms; }
+
+    // returns true if a follow option enabled
+    bool option_is_enabled(Option option) const { return (_options.get() & (uint16_t)option) != 0; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static AP_Follow *_singleton;
 
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
@@ -115,9 +142,9 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
+    AP_Int16    _options;           // options for mount behaviour follow mode
 
     // local variables
-    bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
@@ -132,3 +159,9 @@ private:
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
 };
+
+namespace AP {
+    AP_Follow &follow();
+};
+
+#endif

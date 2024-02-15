@@ -28,6 +28,15 @@ void ModeCruise::update()
         lock_timer_ms = 0;
     }
 
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        // while a trick is running unlock heading and zero altitude offset
+        locked_heading = false;
+        lock_timer_ms = 0;
+        plane.set_target_altitude_current();
+    }
+#endif
+    
     if (!locked_heading) {
         plane.nav_roll_cd = plane.channel_roll->norm_input() * plane.roll_limit_cd;
         plane.update_load_factor();
@@ -43,11 +52,23 @@ void ModeCruise::update()
  */
 void ModeCruise::navigate()
 {
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        // don't try to navigate while running trick
+        return;
+    }
+#endif
+
+    // check if we are moving in the direction of the front of the vehicle
+    const int32_t ground_course_cd = plane.gps.ground_course_cd();
+    const bool moving_forwards = fabsf(wrap_PI(radians(ground_course_cd * 0.01) - plane.ahrs.get_yaw())) < M_PI_2;
+
     if (!locked_heading &&
         plane.channel_roll->get_control_in() == 0 &&
         plane.rudder_input() == 0 &&
         plane.gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
         plane.gps.ground_speed() >= 3 &&
+        moving_forwards &&
         lock_timer_ms == 0) {
         // user wants to lock the heading - start the timer
         lock_timer_ms = millis();
@@ -58,7 +79,7 @@ void ModeCruise::navigate()
         // from user
         locked_heading = true;
         lock_timer_ms = 0;
-        locked_heading_cd = plane.gps.ground_course_cd();
+        locked_heading_cd = ground_course_cd;
         plane.prev_WP_loc = plane.current_loc;
     }
     if (locked_heading) {

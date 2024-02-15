@@ -20,6 +20,8 @@
  */
 #include "AP_RangeFinder_VL53L1X.h"
 
+#if AP_RANGEFINDER_VL53L1X_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -84,6 +86,11 @@ bool AP_RangeFinder_VL53L1X::check_id(void)
 }
 
 bool AP_RangeFinder_VL53L1X::reset(void) {
+    if (dev->get_bus_id()!=0x29) {
+        // if sensor is on a different port than the default do not  reset sensor otherwise we will lose the addess.
+        // we assume it is already confirgured.
+        return true;
+    }
     if (!write_register(SOFT_RESET, 0x00)) {
         return false;
     }
@@ -563,7 +570,7 @@ void AP_RangeFinder_VL53L1X::update(void)
 {
     WITH_SEMAPHORE(_sem);
     if (counter > 0) {
-        state.distance_cm = sum_mm / (10*counter);
+        state.distance_m = (sum_mm * 0.001f) / counter;
         state.last_reading_ms = AP_HAL::millis();
         update_status();
         sum_mm = 0;
@@ -573,3 +580,5 @@ void AP_RangeFinder_VL53L1X::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif  // AP_RANGEFINDER_VL53L1X_ENABLED

@@ -18,6 +18,8 @@
  */
 #include "AP_Airspeed_MS4525.h"
 
+#if AP_AIRSPEED_MS4525_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -60,7 +62,7 @@ bool AP_Airspeed_MS4525::probe(uint8_t bus, uint8_t address)
 bool AP_Airspeed_MS4525::init()
 {
     static const uint8_t addresses[] = { MS4525D0_I2C_ADDR1, MS4525D0_I2C_ADDR2, MS4525D0_I2C_ADDR3 };
-    if (bus_is_confgured()) {
+    if (bus_is_configured()) {
         // the user has configured a specific bus
         for (uint8_t addr : addresses) {
             if (probe(get_bus(), addr)) {
@@ -86,7 +88,7 @@ bool AP_Airspeed_MS4525::init()
         }
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS4525[%u]: no sensor found", get_instance());
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MS4525[%u]: no sensor found", get_instance());
     return false;
 
 found_sensor:
@@ -282,3 +284,5 @@ bool AP_Airspeed_MS4525::get_temperature(float &temperature)
     temperature = _temperature;
     return true;
 }
+
+#endif  // AP_AIRSPEED_MS4525_ENABLED

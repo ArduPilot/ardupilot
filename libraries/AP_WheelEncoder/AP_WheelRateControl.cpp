@@ -86,6 +86,30 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Wheel rate control PD sum maximum
+    // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Wheel rate Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the error
+    // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Wheel rate Target notch filter index
+    // @Description: Wheel rate Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Wheel rate Error notch filter index
+    // @Description: Wheel rate Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
 
     // @Param: 2_RATE_FF
@@ -156,6 +180,30 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: 2_RATE_PDMX
+    // @DisplayName: Wheel rate control PD sum maximum
+    // @Description: Wheel rate control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+
+    // @Param: 2_RATE_D_FF
+    // @DisplayName: Wheel rate Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: 2_RATE_NTF
+    // @DisplayName: Wheel rate Target notch filter index
+    // @Description: Wheel rate Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: 2_RATE_NEF
+    // @DisplayName: Wheel rate Error notch filter index
+    // @Description: Wheel rate Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),
 
     AP_GROUPEND
@@ -189,9 +237,6 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     // determine which PID instance to use
     AC_PID& rate_pid = (instance == 0) ? _rate_pid0 : _rate_pid1;
 
-    // set PID's dt
-    rate_pid.set_dt(dt);
-
     // check for timeout
     uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms > AP_WHEEL_RATE_CONTROL_TIMEOUT_MS) {
@@ -203,13 +248,13 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     _last_update_ms = now;
 
     // convert desired rate as a percentage to radians/sec
-    float desired_rate = desired_rate_pct / 100.0f * get_rate_max_rads();
+    float desired_rate = desired_rate_pct * 0.01f * get_rate_max_rads();
 
-    // get actual rate from wheeel encoder
+    // get actual rate from wheel encoder
     float actual_rate = _wheel_encoder.get_rate(instance);
 
     // constrain and set limit flags
-    float output = rate_pid.update_all(desired_rate, actual_rate, (_limit[instance].lower || _limit[instance].upper));
+    float output = rate_pid.update_all(desired_rate, actual_rate, dt, (_limit[instance].lower || _limit[instance].upper));
     output += rate_pid.get_ff();
 
     // set limits for next iteration
@@ -227,4 +272,12 @@ AC_PID& AP_WheelRateControl::get_pid(uint8_t instance)
     } else {
         return _rate_pid1;
     }
+}
+
+void AP_WheelRateControl::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    _rate_pid0.set_notch_sample_rate(sample_rate);
+    _rate_pid1.set_notch_sample_rate(sample_rate);
+#endif
 }

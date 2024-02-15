@@ -38,7 +38,7 @@ void NavEKF3_core::SelectFlowFusion()
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground
-    // is insuffient to achieve acceptable focus. This allows the vehicle to be picked up
+    // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
     if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
@@ -76,7 +76,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
-    || gpsNotAvailable 
+    || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
@@ -86,17 +86,15 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
-        // record the time we last updated the terrain offset state
-        gndHgtValidTime_ms = imuSampleTime_ms;
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
-        // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
+        // limit distance to prevent intialisation after bad gps causing bad numerical conditioning
         ftype distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
         distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = stateStruct.position[0];
         prevPosE = stateStruct.position[1];
 
-        // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
+        // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copter's vertical velocity
         ftype timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
         ftype Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
         Popt += Pincrement;
@@ -104,9 +102,13 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
         // fuse range finder data
         if (rangeDataToFuse) {
+            // reset terrain state if rangefinder data not fused for 5 seconds
+            if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+                terrainState = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
+            }
+
             // predict range
             ftype predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
-
             // Copy required states to local variable names
             ftype q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
             ftype q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
@@ -146,6 +148,8 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
                 // prevent the state variance from becoming negative
                 Popt = MAX(Popt,0.0f);
 
+                // record the time we last updated the terrain offset state
+                gndHgtValidTime_ms = imuSampleTime_ms;
             }
         }
 
@@ -226,6 +230,9 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
                 // prevent the state variances from becoming badly conditioned
                 Popt = MAX(Popt,1E-6f);
+
+                // record the time we last updated the terrain offset state
+                gndHgtValidTime_ms = imuSampleTime_ms;
             }
 
             // fuse X axis data
@@ -270,7 +277,6 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
 {
     Vector24 H_LOS;
-    Vector3F relVelSensor;
     Vector2 losPred;
 
     // Copy required states to local variable names
@@ -286,22 +292,30 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
 
+    // calculate range from ground plain to centre of sensor fov assuming flat earth
+    ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
+
+    // correct range for flow sensor offset body frame position offset
+    // the corrected value is the predicted range from the sensor focal point to the
+    // centre of the image on the ground assuming flat terrain
+    Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
+    if (!posOffsetBody.is_zero()) {
+        Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+        range -= posOffsetEarth.z / prevTnb.c.z;
+    }
+    
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // override with user specified height (if given, for rover)
+    if (ofDataDelayed.heightOverride > 0) {
+        range = ofDataDelayed.heightOverride;
+    }
+#endif
+
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
-        // calculate range from ground plain to centre of sensor fov assuming flat earth
-        ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
-
-        // correct range for flow sensor offset body frame position offset
-        // the corrected value is the predicted range from the sensor focal point to the
-        // centre of the image on the ground assuming flat terrain
-        Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
-        if (!posOffsetBody.is_zero()) {
-            Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-            range -= posOffsetEarth.z / prevTnb.c.z;
-        }
 
         // calculate relative velocity in sensor frame including the relative motion due to rotation
-        relVelSensor = (prevTnb * stateStruct.velocity) + (ofDataDelayed.bodyRadXYZ % posOffsetBody);
+        const Vector3F relVelSensor = (prevTnb * stateStruct.velocity) + (ofDataDelayed.bodyRadXYZ % posOffsetBody);
 
         // divide velocity by range to get predicted angular LOS rates relative to X and Y axes
         losPred[0] =  relVelSensor.y/range;
@@ -605,7 +619,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 
             // calculate innovation for Y observation
             flowInnov[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
-            flowInnovTime_ms = AP_HAL::millis();
+            flowInnovTime_ms = dal.millis();
 
             // calculate Kalman gains for the Y-axis observation
             Kfusion[0] = -t78*(t12+P[0][5]*t2*t8-P[0][6]*t2*t10+P[0][1]*t2*t16-P[0][2]*t2*t19+P[0][3]*t2*t22+P[0][4]*t2*t27);
@@ -737,6 +751,28 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             }
         }
     }
+
+    // store optical flow rates for use in external calibration
+    flowCalSample.timestamp_ms = imuSampleTime_ms;
+    flowCalSample.flowRate.x = ofDataDelayed.flowRadXY.x;
+    flowCalSample.flowRate.y = ofDataDelayed.flowRadXY.y;
+    flowCalSample.bodyRate.x = ofDataDelayed.bodyRadXYZ.x;
+    flowCalSample.bodyRate.y = ofDataDelayed.bodyRadXYZ.y;
+    flowCalSample.losPred.x = losPred[0];
+    flowCalSample.losPred.y = losPred[1];
+}
+
+// retrieve latest corrected optical flow samples (used for calibration)
+bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
+{
+    if (flowCalSample.timestamp_ms != 0) {
+        timestamp_ms = flowCalSample.timestamp_ms;
+        flowRate = flowCalSample.flowRate;
+        bodyRate = flowCalSample.bodyRate;
+        losPred = flowCalSample.losPred;
+        return true;
+    }
+    return false;
 }
 
 /********************************************************

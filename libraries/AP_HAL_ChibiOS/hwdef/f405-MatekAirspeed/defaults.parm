@@ -1,0 +1,4 @@
+# setup for PORT
+#| PORT0  | PORT1  | PORT2  |  GPS  |  MSP  |
+#| USART1 | USART2 | USART3 | UART4 | UART5 |
+GPS_PORT 3

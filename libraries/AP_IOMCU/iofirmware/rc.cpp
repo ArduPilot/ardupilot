@@ -61,6 +61,12 @@ static const SerialConfig dsm_cfg = {
     nullptr,  // ctx
 };
 
+static enum {
+    RC_SEARCHING,
+    RC_DSM_PORT,
+    RC_SBUS_PORT
+} rc_state;
+
 /*
   init rcin on DSM USART1
  */
@@ -74,9 +80,15 @@ void AP_IOMCU_FW::rcin_serial_init(void)
                                SD_PARITY_ERROR);
     // disable input for SBUS with pulses, we will use the UART for
     // SBUS and FPORT
+#if AP_RCPROTOCOL_SBUS_ENABLED
     AP::RC().disable_for_pulses(AP_RCProtocol::SBUS);
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
     AP::RC().disable_for_pulses(AP_RCProtocol::SBUS_NI);
+#endif
+#if AP_RCPROTOCOL_FPORT_ENABLED
     AP::RC().disable_for_pulses(AP_RCProtocol::FPORT);
+#endif
 }
 
 static struct {
@@ -95,16 +107,25 @@ void AP_IOMCU_FW::rcin_serial_update(void)
     uint8_t b[16];
     uint32_t n;
     uint32_t now = AP_HAL::millis();
+    auto &rc = AP::RC();
+
+    if (rc.should_search(now)) {
+        rc_state = RC_SEARCHING;
+    }
 
     // read from DSM port
-    if ((n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+    if ((rc_state == RC_SEARCHING || rc_state == RC_DSM_PORT) &&
+        (n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         n = MIN(n, sizeof(b));
         // don't mix two 115200 uarts
         if (sd3_config == 0) {
             rc_stats.num_dsm_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], 115200)) {
+                if (rc.process_byte(b[i], 115200)) {
                     rc_stats.last_good_ms = now;
+                    if (!rc.should_search(now)) {
+                        rc_state = RC_DSM_PORT;
+                    }
                 }
             }
         }
@@ -112,7 +133,8 @@ void AP_IOMCU_FW::rcin_serial_update(void)
     }
 
     // read from SBUS port
-    if ((n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+    if ((rc_state == RC_SEARCHING || rc_state == RC_SBUS_PORT) &&
+        (n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         eventflags_t flags;
         if (sd3_config == 0 && ((flags = chEvtGetAndClearFlags(&sd3_listener)) & SD_PARITY_ERROR)) {
             rc_stats.sbus_error = flags;
@@ -121,8 +143,11 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             n = MIN(n, sizeof(b));
             rc_stats.num_sbus_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], sd3_config==0?100000:115200)) {
+                if (rc.process_byte(b[i], sd3_config==0?100000:115200)) {
                     rc_stats.last_good_ms = now;
+                    if (!rc.should_search(now)) {
+                        rc_state = RC_SBUS_PORT;
+                    }
                 }
             }
         }
@@ -135,7 +160,8 @@ void AP_IOMCU_FW::rcin_serial_update(void)
       output
      */
     const bool sbus_out_enabled = (reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) != 0;
-    if (now - rc_stats.last_good_ms > 2000 && (sd3_config==1 || !sbus_out_enabled)) {
+    if (rc_state == RC_SEARCHING &&
+        now - rc_stats.last_good_ms > 2000 && (sd3_config==1 || !sbus_out_enabled)) {
         rc_stats.last_good_ms = now;
         sd3_config ^= 1;
         sdStop(&SD3);

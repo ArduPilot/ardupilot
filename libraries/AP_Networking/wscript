@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import pathlib
+import platform
+
+def configure(cfg):
+
+    if not cfg.env.BOARD_CLASS in ['SITL', 'LINUX', 'ChibiOS']:
+        return
+
+    # networking doesn't build with clang unless using macOS
+    if platform.system() != 'Darwin' and 'clang++' in cfg.env.COMPILER_CXX:
+       return
+
+    extra_src = [
+        'modules/lwip/src/core/*c',
+        'modules/lwip/src/core/ipv4/*c',
+        'modules/lwip/src/api/*c',
+        'modules/lwip/src/netif/*c',
+        'modules/lwip/src/netif/ppp/*c',
+    ]
+
+    extra_src_inc = [
+        'modules/lwip/src/include',
+    ]
+
+    extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/*cpp'])
+
+    if cfg.env.BOARD_CLASS == 'ChibiOS':
+        extra_src.extend(['libraries/AP_Networking/lwip_hal/arch/evtimer.c'])
+
+    extra_src_inc.extend(['libraries/AP_Networking/config',
+                          'libraries/AP_Networking/lwip_hal/include'])
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Networking'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_Networking'].append(str(x))
+
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]

@@ -13,12 +13,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Send and receve JSON backend data to alow a second AP instance to ride along
+  Send and receive JSON backend data to alow a second AP instance to ride along
 */
 
 #include "SIM_JSON_Master.h"
+
+#if HAL_SIM_JSON_MASTER_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <errno.h>
+#include <stdio.h>
+#include <SITL/SITL.h>
 
 using namespace SITL;
 
@@ -67,7 +72,7 @@ void JSON_Master::receive(struct sitl_input &input)
             uint16_t frame_rate;
             uint32_t frame_count;
             uint16_t pwm[16];
-        } buffer;
+        } buffer{};
 
         while (true) {
             ssize_t ret = list->sock_in.recv(&buffer, sizeof(buffer), 100);
@@ -94,6 +99,7 @@ void JSON_Master::receive(struct sitl_input &input)
             }
         }
 
+#if HAL_LOGGING_ENABLED
         const bool use_servos = list->instance == master_instance;
 
 // @LoggerMessage: SLV1
@@ -133,8 +139,7 @@ void JSON_Master::receive(struct sitl_input &input)
 // @Field: C12: channel 12 output
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
-// @Field: C15: channel 15 output
-        AP::logger().WriteStreaming("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
+        AP::logger().WriteStreaming("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14",
                        "s#YYYYYYYYYYYYYY",
                        "F?--------------",
                        "QBHHHHHHHHHHHHHH",
@@ -153,12 +158,12 @@ void JSON_Master::receive(struct sitl_input &input)
                        buffer.pwm[10],
                        buffer.pwm[11],
                        buffer.pwm[12],
-                       buffer.pwm[13],
-                       buffer.pwm[14]);
+                       buffer.pwm[13]);
+#endif
 
         if (list->instance == master_instance) {
             // Use the servo outs from this instance
-            memcpy(input.servos,buffer.pwm,sizeof(input.servos));
+            memcpy(input.servos,buffer.pwm,sizeof(buffer.pwm));
         }
     }
 }
@@ -182,4 +187,8 @@ void JSON_Master::send(const struct sitl_fdm &output, const Vector3d &position)
     for (socket_list *list = &_list; list->next; list=list->next) {
         list->sock_out.send(json_out,length);
     }
+    free(json_out);
 }
+
+
+#endif  // HAL_SIM_JSON_MASTER_ENABLED

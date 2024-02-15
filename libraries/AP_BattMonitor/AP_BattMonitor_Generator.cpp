@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_config.h"
 
-#if GENERATOR_ENABLED
+#if AP_BATTERY_GENERATOR_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 
-extern const AP_HAL::HAL& hal;
+#include "AP_BattMonitor_Generator.h"
 
 /*
     Fuel class
@@ -32,7 +32,7 @@ bool AP_BattMonitor_Generator_FuelLevel::has_current(void) const
     return has_consumed_energy();
 }
 
-// This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
+// This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel level remaining
 bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
 {
     // Get pointer to generator singleton
@@ -78,7 +78,7 @@ void AP_BattMonitor_Generator_FuelLevel::read()
     _state.voltage = 1.0f;
 
     // This is a bodge to display tank level as a percentage on GCS.  Users should set _params.pack_capacity == 100 to get a clear percentage in GCS
-    _state.consumed_mah = (1 - generator->get_fuel_remain()) * _params._pack_capacity.get();
+    _state.consumed_mah = (1 - generator->get_fuel_remaining()) * _params._pack_capacity.get();
 
     // If we got this far then must be healthy
     _state.healthy = true;
@@ -149,11 +149,11 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Generator_Elec::update_failsafes()
 
     AP_Generator *generator = AP::generator();
 
-    // Only check for failsafes on the electrical moniter
+    // Only check for failsafes on the electrical monitor
     // no point in having the same failsafe on two battery monitors
     if (generator != nullptr) {
         failsafe = generator->update_failsafes();
     }
     return MAX(AP_BattMonitor_Backend::update_failsafes(), failsafe);
 }
-#endif
+#endif  // AP_BATTERY_GENERATOR_ENABLED

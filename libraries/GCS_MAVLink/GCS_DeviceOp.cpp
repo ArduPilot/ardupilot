@@ -15,6 +15,11 @@
 /*
   handle device operations over MAVLink
  */
+
+#include "GCS_config.h"
+
+#if AP_MAVLINK_MSG_DEVICE_OP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/I2CDevice.h>
@@ -46,6 +51,10 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
     }
     if (!dev) {
         retcode = 2;
+        goto fail;
+    }
+    if (packet.count > sizeof(data)) {
+        retcode = 5;
         goto fail;
     }
     if (!dev->get_semaphore()->take(10)) {
@@ -133,3 +142,5 @@ fail:
         packet.request_id,
         retcode);
 }
+
+#endif  // AP_MAVLINK_MSG_DEVICE_OP_ENABLED

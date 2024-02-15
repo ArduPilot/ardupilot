@@ -14,9 +14,13 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include "AP_BattMonitor.h"
+
+#include <AP_Common/AP_Common.h>
 
 class AP_BattMonitor_Backend
 {
@@ -34,6 +38,9 @@ public:
     // read the latest battery voltage
     virtual void read() = 0;
 
+    /// returns true if battery monitor instance provides time remaining info
+    virtual bool has_time_remaining() const { return false; }
+
     /// returns true if battery monitor instance provides consumed energy info
     virtual bool has_consumed_energy() const { return false; }
 
@@ -46,18 +53,25 @@ public:
     // returns true if battery monitor provides temperature
     virtual bool has_temperature() const { return false; }
 
-    /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+    // returns true if temperature retrieved successfully
+    virtual bool get_temperature(float &temperature) const;
+
+    // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
+    // returns false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
     virtual bool capacity_remaining_pct(uint8_t &percentage) const WARN_IF_UNUSED;
 
     // return true if cycle count can be provided and fills in cycles argument
     virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
+
+    // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
+    bool get_state_of_health_pct(uint8_t &soh_pct) const;
 
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
     float voltage_resting_estimate() const;
 
     // update battery resistance estimate and voltage_resting_estimate
-    void update_resistance_estimate();
+    virtual void update_resistance_estimate();
 
     // updates failsafe timers, and returns what failsafes are active
     virtual AP_BattMonitor::Failsafe update_failsafes(void);
@@ -68,9 +82,31 @@ public:
     // reset remaining percentage to given value
     virtual bool reset_remaining(float percentage);
 
+    // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
+    virtual uint32_t get_mavlink_fault_bitmask() const { return 0; }
+
     // logging functions 
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
+
+    // set desired MPPT powered state (enabled/disabled)
+    virtual void mppt_set_powered_state(bool power_on) {};
+
+    // Update an ESC telemetry channel's power information
+    void update_esc_telem_outbound();
+
+    // amps: current (A)
+    // dt_us: time between samples (micro-seconds)
+    static float calculate_mah(float amps, float dt_us) { return (float) (amps * dt_us * AUS_TO_MAH); }
+
+    // check if a option is set
+    bool option_is_set(const AP_BattMonitor_Params::Options option) const {
+        return (uint16_t(_params._options.get()) & uint16_t(option)) != 0;
+    }
+    
+#if AP_BATTERY_SCRIPTING_ENABLED
+    virtual bool handle_scripting(const BattMonitorScript_State &battmon_state) { return false; }
+#endif
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
@@ -79,6 +115,7 @@ protected:
 
     // checks what failsafes could be triggered
     void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
+    void update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us);
 
 private:
     // resistance estimate
@@ -89,3 +126,25 @@ private:
     float       _resistance_voltage_ref; // voltage used for maximum resistance calculation
     float       _resistance_current_ref; // current used for maximum resistance calculation
 };
+
+#if AP_BATTERY_SCRIPTING_ENABLED
+struct BattMonitorScript_State {
+    float voltage; // Battery voltage in volts
+    bool healthy; // True if communicating properly
+    uint8_t cell_count; // Number of valid cells in state
+    uint8_t capacity_remaining_pct=UINT8_MAX; // Remaining battery capacity in percent, 255 for invalid
+    uint16_t cell_voltages[32]; // allow script to have up to 32 cells, will be limited internally
+    uint16_t cycle_count=UINT16_MAX; // Battery cycle count, 65535 for unavailable
+    /*
+      all of the following float variables should be set to NaN by the
+      script if they are not known.
+      consumed_mah will auto-integrate if set to NaN
+     */
+    float current_amps=nanf(""); // Battery current in amperes
+    float consumed_mah=nanf(""); // Total current drawn since start-up in milliampere hours
+    float consumed_wh=nanf(""); // Total energy drawn since start-up in watt hours
+    float temperature=nanf(""); // Battery temperature in degrees Celsius
+};
+#endif // AP_BATTERY_SCRIPTING_ENABLED
+
+#endif  // AP_BATTERY_ENABLED

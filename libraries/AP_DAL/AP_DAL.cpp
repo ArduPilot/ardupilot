@@ -6,6 +6,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -37,17 +38,23 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _last_imu_time_us = imu_us;
 
     // we force write all msgs when logging starts
+#if HAL_LOGGING_ENABLED
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
     if (logging && !logging_started) {
         force_write = true;
     }
     logging_started = logging;
+#endif
 
     end_frame();
 
     _RFRF.frame_types = uint8_t(frametype);
-    
+
+#if AP_VEHICLE_ENABLED
     _RFRH.time_flying_ms = AP::vehicle()->get_time_flying_ms();
+#else
+    _RFRH.time_flying_ms = 0;
+#endif
     _RFRH.time_us = AP_HAL::micros64();
     WRITE_REPLAY_BLOCK(RFRH, _RFRH);
 
@@ -63,11 +70,14 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
-    _RFRN.ahrs_airspeed_sensor_enabled = AP::ahrs().airspeed_sensor_enabled();
+    _RFRN.ahrs_airspeed_sensor_enabled = ahrs.airspeed_sensor_enabled(ahrs.get_active_airspeed_index());
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
+#if AP_OPTICALFLOW_ENABLED
     _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
+#endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
+    _RFRN.ekf_type = ahrs.get_ekf_type();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
@@ -83,9 +93,11 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     if (_rangefinder) {
         _rangefinder->start_frame();
     }
+#if AP_BEACON_ENABLED
     if (_beacon) {
         _beacon->start_frame();
     }
+#endif
 #if HAL_VISUALODOM_ENABLED
     if (_visualodom) {
         _visualodom->start_frame();
@@ -127,15 +139,19 @@ void AP_DAL::init_sensors(void)
         alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
     }
 
+#if AP_AIRSPEED_ENABLED
     auto *aspeed = AP::airspeed();
     if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
         alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
     }
+#endif
 
+#if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
         alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
     }
+#endif
 
 #if HAL_VISUALODOM_ENABLED
     auto *vodom = AP::visualodom();
@@ -145,7 +161,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
     if (alloc_failed) {
-        AP_BoardConfig::config_error("Unable to allocate DAL backends");
+        AP_BoardConfig::allocation_error("DAL backends");
     }
 }
 
@@ -266,6 +282,7 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // write out a DAL log message. If old_msg is non-null, then
 // only write if the content has changed
 void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
@@ -287,6 +304,7 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
         _end = 0;
     }
 }
+#endif
 
 /*
   check if we are low on CPU for this core. This needs to capture the
@@ -294,7 +312,7 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
 */
 bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 {
-    static_assert(INS_MAX_INSTANCES <= 4, "max 4 IMUs");
+    static_assert(MAX_EKF_CORES <= 4, "max 4 EKF cores supported");
     const uint8_t mask = (1U<<(core+(uint8_t(etype)*4)));
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     /*
@@ -313,7 +331,7 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 }
 
 // log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
     end_frame();
 
@@ -323,6 +341,7 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     _ROFH.rawGyroRates = rawGyroRates;
     _ROFH.msecFlowMeas = msecFlowMeas;
     _ROFH.posOffset = posOffset;
+    _ROFH.heightOverride = heightOverride;
     WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
 }
 
@@ -342,6 +361,17 @@ void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float 
     WRITE_REPLAY_BLOCK_IFCHANGED(REPH, _REPH, old);
 }
 
+void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+{
+    end_frame();
+    const log_RSLL old = _RSLL;
+    _RSLL.lat = loc.lat;
+    _RSLL.lng = loc.lng;
+    _RSLL.posAccSD = posAccuracy;
+    _RSLL.timestamp_ms = timestamp_ms;
+    WRITE_REPLAY_BLOCK_IFCHANGED(RSLL, _RSLL, old);
+}
+
 // log external velocity data
 void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
@@ -356,7 +386,7 @@ void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSta
 
 }
 
-// log wheel odomotry data
+// log wheel odometry data
 void AP_DAL::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     end_frame();
@@ -432,8 +462,8 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
+    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
 }
 
 /*
@@ -457,23 +487,34 @@ void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 }
 
 /*
-  handle wheel odomotry data
+  handle wheel odometry data
  */
 void AP_DAL::handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RWOH = msg;
-    // note that EKF2 does not support wheel odomotry
+    // note that EKF2 does not support wheel odometry
     ekf3.writeWheelOdom(msg.delAng, msg.delTime, msg.timeStamp_ms, msg.posOffset, msg.radius);
 }
 
 /*
-  handle body frame odomotry
+  handle body frame odometry
  */
 void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RBOH = msg;
-    // note that EKF2 does not support body frame odomotry
+    // note that EKF2 does not support body frame odometry
     ekf3.writeBodyFrameOdom(msg.quality, msg.delPos, msg.delAng, msg.delTime, msg.timeStamp_ms, msg.delay_ms, msg.posOffset);
+}
+
+/*
+  handle position reset
+ */
+void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RSLL = msg;
+    // note that EKF2 does not support body frame odometry
+    const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
+    ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
 }
 #endif // APM_BUILD_Replay
 

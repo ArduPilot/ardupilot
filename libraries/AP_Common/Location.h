@@ -15,9 +15,9 @@ public:
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 
     // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
-    int32_t alt;
-    int32_t lat;
-    int32_t lng;
+    int32_t alt; // in cm
+    int32_t lat; // in 1E7 degrees
+    int32_t lng; // in 1E7 degrees
 
     /// enumeration of possible altitude types
     enum class AltFrame {
@@ -37,29 +37,37 @@ public:
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
 
     // get altitude (in cm) in the desired frame
-    // returns false on failure to get altitude in the desired frame which
-    // can only happen if the original frame or desired frame is above-terrain
+    // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
+    // - above-terrain and the terrain database can't supply terrain height amsl
+    // - above-home and home is not set
+    // - above-origin and origin is not set
     bool get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const WARN_IF_UNUSED;
 
     // get altitude frame
     AltFrame get_alt_frame() const;
 
     // converts altitude to new frame
-    // returns false on failure to convert which can only happen if
-    // the original frame or desired frame is above-terrain
+    // returns false on failure to convert which can only happen if the original frame or desired frame is:
+    // - above-terrain and the terrain database can't supply terrain height amsl
+    // - above-home and home is not set
+    // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
-    // get position as a vector from origin (x,y only or x,y,z)
+    // get position as a vector (in cm) from origin (x,y only or x,y,z)
     // return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet
     // x, y and z are in centimetres
     bool get_vector_xy_from_origin_NE(Vector2f &vec_ne) const WARN_IF_UNUSED;
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
-    // return distance in meters between two locations
-    ftype get_distance(const struct Location &loc2) const;
+    // return horizontal distance in meters between two locations
+    ftype get_distance(const Location &loc2) const;
+
+    // return the altitude difference in meters taking into account alt frame.
+    bool get_alt_distance(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+    // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 
@@ -71,6 +79,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
     void offset(ftype ofs_north, ftype ofs_east);
+    // extrapolate latitude/longitude given distances (in meters) north
+    // and east. Note that this is metres, *even for the altitude*.
+    void offset(const Vector3p &ofs_ned);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
@@ -88,18 +99,29 @@ public:
 
     void zero(void);
 
-    // return bearing in centi-degrees from location to loc2
-    int32_t get_bearing_to(const struct Location &loc2) const;
-    // return the bearing in radians
-    ftype get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01); } ;
+    // return the bearing in radians, from 0 to 2*Pi
+    ftype get_bearing(const Location &loc2) const;
+
+    // return bearing in centi-degrees from location to loc2, return is 0 to 35999
+    int32_t get_bearing_to(const Location &loc2) const {
+        return int32_t(get_bearing(loc2) * DEGX100 + 0.5);
+    }
 
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
 
+    // check if altitude matches.
+    bool same_alt_as(const Location &loc2) const;
+
+    // check if lat, lng, and alt match.
+    bool same_loc_as(const Location &loc2) const {
+        return same_latlon_as(loc2) && same_alt_as(loc2);
+    }
+
     /*
      * convert invalid waypoint with useful data. return true if location changed
      */
-    bool sanitize(const struct Location &defaultLoc);
+    bool sanitize(const Location &defaultLoc);
 
     // return true when lat and lng are within range
     bool check_latlng() const;
@@ -129,7 +151,7 @@ public:
     // wrap longitude at -180e7 to 180e7
     static int32_t wrap_longitude(int64_t lon);
 
-    // limit lattitude to -90e7 to 90e7
+    // limit latitude to -90e7 to 90e7
     static int32_t limit_lattitude(int32_t lat);
     
     // get lon1-lon2, wrapping at -180e7 to 180e7

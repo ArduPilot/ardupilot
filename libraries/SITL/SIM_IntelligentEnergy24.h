@@ -15,16 +15,18 @@
 /*
   Simulator for the IntelligentEnergy 2.4kW FuelCell
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:ie24 --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:ie24 --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 30  # Generator
 param set SERIAL5_BAUD 115200
 param set GEN_TYPE 2  # IE24
-param set BATT2_MONITOR 17  # electrical
+param set BATT3_MONITOR 17  # electrical generator
+param set BATT2_MONITOR 18  # fuel-based generator
 param set SIM_IE24_ENABLE 1
 param fetch
 
-graph BATTERY_STATUS.voltages[0]
+graph BATTERY_STATUS[0].voltages[0]/1000.0
+graph BATTERY_STATUS[1].voltages[0]/1000.0
 
 reboot
 
@@ -58,6 +60,8 @@ private:
 
     void update_send();
 
+    const char * get_error_string(const uint32_t code);
+
     AP_Int8 enabled;  // enable sim
     AP_Int8 set_state;
     AP_Int32 err_code;
@@ -65,7 +69,8 @@ private:
     float battery_voltage = 50.4f;
     float bat_capacity_mAh = 3300;
     bool discharge = true; // used to switch between battery charging and discharging
-    uint32_t last_sent_ms;
+    uint32_t last_data_sent_ms;
+    uint32_t last_ver_sent_ms;
 
 };
 

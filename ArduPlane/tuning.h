@@ -1,3 +1,9 @@
+#pragma once
+
+#include <AP_Tuning/AP_Tuning_config.h>
+
+#if AP_TUNING_ENABLED
+
 #include <AP_Tuning/AP_Tuning.h>
 
 /*
@@ -70,6 +76,8 @@ private:
         TUNING_PIT_I =                        55,
         TUNING_PIT_D =                        56,
         TUNING_PIT_FF =                       57,
+
+        TUNING_Q_FWD_THR =                    58,
     };
 
     /*
@@ -83,13 +91,15 @@ private:
         TUNING_SET_ANG_ROLL_PITCH =          5,
         TUNING_SET_VXY =                     6,
         TUNING_SET_AZ =                      7,
+        TUNING_SET_RATE_PITCHDP =            8,
+        TUNING_SET_RATE_ROLLDP =             9,
+        TUNING_SET_RATE_YAWDP =             10,
     };
 
     AP_Float *get_param_pointer(uint8_t parm) override;
     void save_value(uint8_t parm) override;
     void reload_value(uint8_t parm) override;
     void set_value(uint8_t parm, float value) override;
-    float controller_error(uint8_t parm) override;
 
     // tuning set arrays
     static const uint8_t tuning_set_rate_roll_pitch[];
@@ -99,7 +109,12 @@ private:
     static const uint8_t tuning_set_ang_roll_pitch[];
     static const uint8_t tuning_set_vxy[];
     static const uint8_t tuning_set_az[];
+    static const uint8_t tuning_set_rate_pitchDP[];
+    static const uint8_t tuning_set_rate_rollDP[];
+    static const uint8_t tuning_set_rate_yawDP[];
 
     // mask of what params have been set
     uint64_t have_set;
 };
+
+#endif  // AP_TUNING_ENABLED

@@ -59,13 +59,13 @@ void MS5611::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
     // second order temperature compensation when under 20 degrees C
     if (TEMP < 2000) {
         // Solve the quadratic equation for D2 when TEMP < 2000
-        D2 = 128 * (2 * prom[5] - sqrt(sq(prom[6]) - 131072 * (TEMP - 2000)) + prom[6]);
+        D2 = 128 * (2 * int64_t(prom[5]) - sqrt(sq(int64_t(prom[6])) - 131072 * (TEMP - 2000)) + int64_t(prom[6]));
 
         // Must compute the pressure compensation values using D2
-        const float dT = float(D2) - (prom[5] << Q5);
-        float TEMP_forward = 2000 + (dT * prom[6]) / (1L << Q6);
-        float OFF  = prom[2] * (1L << Q2) + (prom[4] * dT) / (1L << Q4);
-        float SENS = prom[1] * (1L << Q1) + (prom[3] * dT) / (1L << Q3);
+        const float dT = float(D2) - (int64_t(prom[5]) << Q5);
+        float TEMP_forward = 2000 + (dT * int64_t(prom[6])) / (1L << Q6);
+        float OFF  = int64_t(prom[2]) * (1L << Q2) + (int64_t(prom[4]) * dT) / (1L << Q4);
+        float SENS = int64_t(prom[1]) * (1L << Q1) + (int64_t(prom[3]) * dT) / (1L << Q3);
 
         const float Aux = sq(TEMP_forward - 2000);
         float OFF2  = 2.5 * Aux;
@@ -81,12 +81,12 @@ void MS5611::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
 
         D1 = ((P_Pa * float(1L << 15) + OFF) * float(1L << 21)) / SENS;
     } else {
-        const float dT = (TEMP - 2000) * (1L << Q6) / prom[6];
-        const float OFF  = prom[2] * (1L << Q2) + (prom[4] * dT) / (1L << Q4);
-        const float SENS = prom[1] * (1L << Q1) + (prom[3] * dT) / (1L << Q3);
+        const float dT = (TEMP - 2000) * (1L << Q6) / int64_t(prom[6]);
+        const float OFF  = int64_t(prom[2]) * (1L << Q2) + (int64_t(prom[4]) * dT) / (1L << Q4);
+        const float SENS = int64_t(prom[1]) * (1L << Q1) + (int64_t(prom[3]) * dT) / (1L << Q3);
 
         D1 = ((P_Pa * float(1L << 15) + OFF) * float(1L << 21)) / SENS;
-        D2 = dT + (prom[5] << Q5);
+        D2 = dT + (int64_t(prom[5]) << Q5);
     }
 }
 
@@ -114,7 +114,7 @@ void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
     P_Pa = SSL_AIR_PRESSURE * delta;
 
-    Temp_C = (SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN) + AP::sitl()->temp_board_offset;
+    Temp_C = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta) + AP::sitl()->temp_board_offset;
 
     // TO DO add in temperature adjustment by inheritting from AP_Baro_SITL_Generic?
     // AP_Baro_SITL::temperature_adjustment(P_Pa, Temp_C);

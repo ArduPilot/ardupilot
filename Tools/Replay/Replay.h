@@ -14,8 +14,11 @@
  */
 
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 
 #include "LogReader.h"
+
+#define AP_PARAM_VEHICLE_NAME replayvehicle
 
 struct user_parameter {
     struct user_parameter *next;
@@ -31,7 +34,7 @@ class ReplayVehicle : public AP_Vehicle {
 public:
     friend class Replay;
 
-    ReplayVehicle() { unused = -1; }
+    ReplayVehicle() { unused_log_bitmask.set(-1); }
     // HAL::Callbacks implementation.
     void load_parameters(void) override;
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -45,17 +48,26 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
 
-    AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed;
-    AP_Int32 unused; // logging is magic for Replay; this is unused
+    AP_FixedWing aparm;
+
+    AP_Int32 unused_log_bitmask; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
-    AP_Logger logger{unused};
 
     NavEKF2 ekf2;
     NavEKF3 ekf3;
 
 protected:
+
+protected:
+
+    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override {
+        return uint8_t(ARRAY_SIZE(log_structure));
+    }
 
     void init_ardupilot() override;
 
@@ -79,7 +91,7 @@ public:
 
     // return true if a user parameter of name is set
     bool check_user_param(const char *name);
-    
+
 private:
     const char *filename;
     ReplayVehicle &_vehicle;

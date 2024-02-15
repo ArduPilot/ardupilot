@@ -138,10 +138,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
 
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
+#if AP_GPS_ENABLED
         // solid green if armed with GPS 3d lock
         if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
             return sequence_armed;
         }
+#endif
         // solid blue if armed with no GPS lock
         return sequence_armed_nogps;
     }
@@ -150,6 +152,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     if (!AP_Notify::flags.pre_arm_check) {
         return sequence_prearm_failing;
     }
+#if AP_GPS_ENABLED
     if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS && AP_Notify::flags.pre_arm_gps_check) {
         return sequence_disarmed_good_dgps;
     }
@@ -157,6 +160,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.pre_arm_gps_check) {
         return sequence_disarmed_good_gps;
     }
+#endif
 
     return sequence_disarmed_bad_gps;
 }
@@ -225,6 +229,7 @@ void RGBLed::update()
     set_rgb(red_des, green_des, blue_des);
 }
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
 /*
   handle LED control, only used when LED_OVERRIDE=1
 */
@@ -241,24 +246,17 @@ void RGBLed::handle_led_control(const mavlink_message_t &msg)
 
     _led_override.start_ms = AP_HAL::millis();
 
+    uint8_t rate_hz = 0;
     switch (packet.custom_len) {
-    case 3:
-        _led_override.rate_hz = 0;
-        _led_override.r = packet.custom_bytes[0];
-        _led_override.g = packet.custom_bytes[1];
-        _led_override.b = packet.custom_bytes[2];
-        break;
     case 4:
-        _led_override.rate_hz = packet.custom_bytes[3];
-        _led_override.r = packet.custom_bytes[0];
-        _led_override.g = packet.custom_bytes[1];
-        _led_override.b = packet.custom_bytes[2];
-        break;
-    default:
-        // not understood
+        rate_hz = packet.custom_bytes[3];
+        FALLTHROUGH;
+    case 3:
+        rgb_control(packet.custom_bytes[0], packet.custom_bytes[1], packet.custom_bytes[2], rate_hz);
         break;
     }
 }
+#endif
 
 /*
   update LED when in override mode

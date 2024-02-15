@@ -27,12 +27,16 @@ void Location::zero(void)
 // Construct location using position (NEU) from ekf_origin for the given altitude frame
 Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame)
 {
+    // make sure we know what size the Location object is:
+    ASSERT_STORAGE_SIZE(Location, 16);
+
     zero();
     lat = latitude;
     lng = longitude;
     set_alt_cm(alt_in_cm, frame);
 }
 
+#if AP_AHRS_ENABLED
 Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
 {
     zero();
@@ -48,22 +52,7 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
         offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
     }
 }
-
-Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
-{
-    zero();
-
-    // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, frame);
-
-    // calculate lat, lon
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        lat = ekf_origin.lat;
-        lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
-    }
-}
+#endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
 {
@@ -140,7 +129,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
         if (terrain == nullptr) {
             return false;
         }
-        if (!terrain->height_amsl(*this, alt_terr_cm, true)) {
+        if (!terrain->height_amsl(*this, alt_terr_cm)) {
             return false;
         }
         // convert terrain alt to cm
@@ -157,12 +146,17 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             alt_abs = alt;
             break;
         case AltFrame::ABOVE_HOME:
+#if AP_AHRS_ENABLED
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             alt_abs = alt + AP::ahrs().get_home().alt;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
             break;
         case AltFrame::ABOVE_ORIGIN:
+#if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -172,6 +166,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 alt_abs = alt + ekf_origin.alt;
             }
             break;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
         case AltFrame::ABOVE_TERRAIN:
             alt_abs = alt + alt_terr_cm;
             break;
@@ -183,12 +180,17 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             ret_alt_cm = alt_abs;
             return true;
         case AltFrame::ABOVE_HOME:
+#if AP_AHRS_ENABLED
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             ret_alt_cm = alt_abs - AP::ahrs().get_home().alt;
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
             return true;
         case AltFrame::ABOVE_ORIGIN:
+#if AP_AHRS_ENABLED
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -198,6 +200,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 ret_alt_cm = alt_abs - ekf_origin.alt;
                 return true;
             }
+#else
+            return false;
+#endif  // AP_AHRS_ENABLED
         case AltFrame::ABOVE_TERRAIN:
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
@@ -205,6 +210,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
 
+#if AP_AHRS_ENABLED
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
     Location ekf_origin;
@@ -219,12 +225,9 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 {
     // convert lat, lon
-    Vector2f vec_ne;
-    if (!get_vector_xy_from_origin_NE(vec_ne)) {
+    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
         return false;
     }
-    vec_neu.x = vec_ne.x;
-    vec_neu.y = vec_ne.y;
 
     // convert altitude
     int32_t alt_above_origin_cm = 0;
@@ -235,15 +238,26 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 
     return true;
 }
+#endif  // AP_AHRS_ENABLED
 
-// return distance in meters between two locations
-ftype Location::get_distance(const struct Location &loc2) const
+// return horizontal distance in meters between two locations
+ftype Location::get_distance(const Location &loc2) const
 {
     ftype dlat = (ftype)(loc2.lat - lat);
     ftype dlng = ((ftype)diff_longitude(loc2.lng,lng)) * longitude_scale((lat+loc2.lat)/2);
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
+// return the altitude difference in meters taking into account alt frame.
+bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
+{
+    int32_t alt1, alt2;
+    if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
+        return false;
+    }
+    distance = (alt1 - alt2) * 0.01;
+    return true;
+}
 
 /*
   return the distance in meters in North/East plane as a N/E vector
@@ -255,7 +269,7 @@ Vector2f Location::get_distance_NE(const Location &loc2) const
                     diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
-// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2, NOT CONSIDERING ALT FRAME!
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
@@ -297,6 +311,14 @@ void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype 
 void Location::offset(ftype ofs_north, ftype ofs_east)
 {
     offset_latlng(lat, lng, ofs_north, ofs_east);
+}
+
+// extrapolate latitude/longitude given distances (in meters) north
+// and east. Note that this is metres, *even for the altitude*.
+void Location::offset(const Vector3p &ofs_ned)
+{
+    offset_latlng(lat, lng, ofs_ned.x, ofs_ned.y);
+    alt += -ofs_ned.z * 100;  // m -> cm
 }
 
 /*
@@ -345,9 +367,11 @@ bool Location::sanitize(const Location &defaultLoc)
 
     // convert relative alt=0 to mean current alt
     if (alt == 0 && relative_alt) {
-        relative_alt = false;
-        alt = defaultLoc.alt;
-        has_changed = true;
+        int32_t defaultLoc_alt;
+        if (defaultLoc.get_alt_cm(get_alt_frame(), defaultLoc_alt)) {
+            alt = defaultLoc_alt;
+            has_changed = true;
+        }
     }
 
     // limit lat/lng to appropriate ranges
@@ -360,18 +384,14 @@ bool Location::sanitize(const Location &defaultLoc)
     return has_changed;
 }
 
-// make sure we know what size the Location object is:
-assert_storage_size<Location, 16> _assert_storage_size_Location;
-
-
-// return bearing in centi-degrees from location to loc2
-int32_t Location::get_bearing_to(const struct Location &loc2) const
+// return bearing in radians from location to loc2, return is 0 to 2*Pi
+ftype Location::get_bearing(const Location &loc2) const
 {
     const int32_t off_x = diff_longitude(loc2.lng,lng);
     const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
-    int32_t bearing = 9000 + atan2F(-off_y, off_x) * DEGX100;
+    ftype bearing = (M_PI*0.5) + atan2F(-off_y, off_x);
     if (bearing < 0) {
-        bearing += 36000;
+        bearing += 2*M_PI;
     }
     return bearing;
 }
@@ -382,6 +402,20 @@ int32_t Location::get_bearing_to(const struct Location &loc2) const
 bool Location::same_latlon_as(const Location &loc2) const
 {
     return (lat == loc2.lat) && (lng == loc2.lng);
+}
+
+bool Location::same_alt_as(const Location &loc2) const
+{
+    // fast path if the altitude frame is the same
+    if (this->get_alt_frame() == loc2.get_alt_frame()) {
+        return this->alt == loc2.alt;
+    }
+
+    ftype alt_diff;
+    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+
+    const ftype tolerance = FLT_EPSILON;
+    return have_diff && (fabsF(alt_diff) < tolerance);
 }
 
 // return true when lat and lng are within range
@@ -450,7 +484,7 @@ int32_t Location::diff_longitude(int32_t lon1, int32_t lon2)
 }
 
 /*
-  limit lattitude to -90e7 to 90e7
+  limit latitude to -90e7 to 90e7
  */
 int32_t Location::limit_lattitude(int32_t lat)
 {

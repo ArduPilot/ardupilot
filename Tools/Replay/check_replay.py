@@ -6,7 +6,7 @@ check that replay produced identical results
 
 from __future__ import print_function
 
-def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False):
+def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
     from pymavlink import mavutil
     progress("Processing log %s" % logfile)
@@ -40,7 +40,7 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
         if not hasattr(m,'C'):
             continue
         mtype = m.get_type()
-        if not mtype in counts:
+        if mtype not in counts:
             counts[mtype] = 0
             base_counts[mtype] = 0
         core = m.C
@@ -56,12 +56,14 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
         for f in m._fieldnames:
             if f == 'C':
                 continue
+            if "%s.%s" % (mtype, f) in ignores:
+                continue
             v1 = getattr(m,f)
             v2 = getattr(mb,f)
             ok = v1 == v2
-            if not ok and args.accuracy > 0:
+            if not ok and accuracy > 0:
                 avg = (v1+v2)*0.5
-                margin = args.accuracy*0.01*avg
+                margin = accuracy*0.01*avg
                 if abs(v1-v2) <= abs(margin):
                     ok = True
             if not ok:
@@ -75,7 +77,9 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
     if verbose:
         for mtype in counts.keys():
             progress("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
-    if count == 0 or abs(count - base_count) > 100:
+    count_delta = abs(count - base_count)
+    if count == 0 or count_delta > 100:
+        progress("count=%u count_delta=%u" % (count, count_delta))
         failure += 1
     if failure != 0 or errors != 0:
         return False
@@ -89,13 +93,14 @@ if __name__ == '__main__':
     parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
     parser.add_argument("--verbose", action='store_true', help="verbose output")
     parser.add_argument("--accuracy", type=float, default=0.0, help="accuracy percentage for match")
+    parser.add_argument("--ignore-field", action='append', default=[], help="ignore message field when comparing")
     parser.add_argument("logs", metavar="LOG", nargs="+")
 
     args = parser.parse_args()
 
     failed = False
     for filename in args.logs:
-        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose):
+        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose, accuracy=args.accuracy, ignores=args.ignore_field):
             failed = True
 
     if failed:

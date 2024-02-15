@@ -43,5 +43,7 @@ assert(Motors_dynamic:init(4), "Failed to init Motors_dynamic")
 -- at any time we can then re-load new factors
 Motors_dynamic:load_factors(factors)
 
+motors:set_frame_string("Dynamic example")
+
 -- if doing changes in flight it is a good idea to us pcall to protect the script from crashing
 -- see 'protected_call.lua' example

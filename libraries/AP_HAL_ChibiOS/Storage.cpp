@@ -330,7 +330,11 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+3);
+#else
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+#endif
 
     if (!_flash.init()) {
         AP_HAL::panic("Unable to init flash storage");
@@ -346,6 +350,7 @@ void Storage::_flash_load(void)
 bool Storage::_flash_write(uint16_t line)
 {
 #ifdef STORAGE_FLASH_PAGE
+    EXPECT_DELAY_MS(1);
     return _flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE);
 #else
     return false;
@@ -358,8 +363,12 @@ bool Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        EXPECT_DELAY_MS(1);
         if (hal.flash->write(base_address+offset, data, length)) {
             return true;
         }
@@ -388,6 +397,9 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
@@ -403,6 +415,9 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
@@ -412,13 +427,16 @@ bool Storage::_flash_erase_sector(uint8_t sector)
           thread.  We can't use EXPECT_DELAY_MS() as it checks we are
           in the main thread
          */
-        ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
-        sched->_expect_delay_ms(1000);
-        if (hal.flash->erasepage(_flash_page+sector)) {
-            sched->_expect_delay_ms(0);
+        EXPECT_DELAY_MS(1000);
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
             return true;
         }
-        sched->_expect_delay_ms(0);
+#else
+        if (hal.flash->erasepage(_flash_page+sector)) {
+            return true;
+        }
+#endif
         hal.scheduler->delay(1);
     }
     return false;
@@ -442,6 +460,12 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
+#ifdef USE_POSIX
+    // SD card storage is really slow
+    if (_initialisedType == StorageBackend::SDCard) {
+        return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
+    }
+#endif
     return ((_initialisedType != StorageBackend::None) &&
             (AP_HAL::millis() - _last_empty_ms < 2000u));
 }
@@ -467,5 +491,19 @@ bool Storage::erase(void)
     return false;
 #endif
 }
+
+/*
+  get storage size and ptr
+ */
+bool Storage::get_storage_ptr(void *&ptr, size_t &size)
+{
+    if (_initialisedType==StorageBackend::None) {
+        return false;
+    }
+    ptr = _buffer;
+    size = sizeof(_buffer);
+    return true;
+}
+
 
 #endif // HAL_USE_EMPTY_STORAGE

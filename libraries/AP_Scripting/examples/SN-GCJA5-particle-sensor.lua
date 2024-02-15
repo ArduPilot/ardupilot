@@ -14,6 +14,9 @@ local file_name
 while true do
   file_name = string.format('Particle %i.csv',index)
   local file = io.open(file_name)
+  if file == nil then
+    break
+  end
   local first_line = file:read(1) -- try and read the first character
   io.close(file)
   if first_line == nil then
@@ -28,7 +31,7 @@ file:write('Lattitude (°), Longitude (°), Absolute Altitude (m), PM 1.0, PM 2.
 file:close()
 
 -- load the i2c driver, bus 0
-local sensor = i2c.get_device(0,0x33)
+local sensor = i2c:get_device(0,0x33)
 sensor:set_retries(10)
 
 -- register names
@@ -160,7 +163,7 @@ function update() -- this is the loop which periodically runs
   local alt = 0
 
   -- try and get true position, but don't fail for no GPS lock
-  local position = ahrs:get_position()
+  local position = ahrs:get_location()
   if position then
     lat = position:lat()*10^-7
     lng = position:lng()*10^-7
@@ -173,7 +176,7 @@ function update() -- this is the loop which periodically runs
   file:close()
 
   -- save to data flash
-  logger.write('PART','PM1,PM2.5,PM10,Cnt0.5,Cnt1,Cnt2.5,Cnt5,Cnt7.5,Cnt10','fffffffff',PM1_0,PM2_5,PM10,PC0_5,PC1_0,PC2_5,PC5_0,PC7_5,PC10)
+  logger:write('PART','PM1,PM2.5,PM10,Cnt0.5,Cnt1,Cnt2.5,Cnt5,Cnt7.5,Cnt10','fffffffff',PM1_0,PM2_5,PM10,PC0_5,PC1_0,PC2_5,PC5_0,PC7_5,PC10)
 
   -- send to GCS
   gcs:send_named_float('PM 1.0',PM1_0)

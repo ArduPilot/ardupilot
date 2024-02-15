@@ -14,12 +14,11 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ANALOG_ENABLED
+
 #include "AP_WindVane_Backend.h"
-
-#include <GCS_MAVLink/GCS.h>
-#include <AP_HAL/AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
 
 class AP_WindVane_Analog : public AP_WindVane_Backend
 {
@@ -33,10 +32,12 @@ public:
 
 private:
     // pin for reading analog voltage
-    AP_HAL::AnalogSource *_dir_analog_source;
+    class AP_HAL::AnalogSource *_dir_analog_source;
 
     float _current_analog_voltage;
     uint32_t  _cal_start_ms = 0;
     float _cal_volt_min;
     float _cal_volt_max;
 };
+
+#endif  // AP_WINDVANE_ANALOG_ENABLED

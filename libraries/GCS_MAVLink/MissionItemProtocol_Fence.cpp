@@ -1,6 +1,13 @@
+#include "GCS_config.h"
+#include <AC_Fence/AC_Fence_config.h>
+
+#if HAL_GCS_ENABLED && AP_FENCE_ENABLED
+
 #include "MissionItemProtocol_Fence.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   public function to format mission item as mavlink_mission_item_int_t
@@ -88,7 +95,7 @@ uint16_t MissionItemProtocol_Fence::item_count() const
     return _fence.polyfence().num_stored_items();
 }
 
-static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
+MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
 {
     if (mission_item_int.frame != MAV_FRAME_GLOBAL &&
         mission_item_int.frame != MAV_FRAME_GLOBAL_INT &&
@@ -226,7 +233,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
 MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
 {
     const uint16_t _item_count = _fence.polyfence().num_stored_items();
-    _updated_mask = new uint8_t[(_item_count+7/8)];
+    _updated_mask = new uint8_t[(_item_count+7)/8];
     if (_updated_mask == nullptr) {
         return MAV_MISSION_ERROR;
     }
@@ -239,3 +246,5 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
     _new_items_count = _item_count;
     return MAV_MISSION_ACCEPTED;
 }
+
+#endif // HAL_GCS_ENABLED && AP_FENCE_ENABLED

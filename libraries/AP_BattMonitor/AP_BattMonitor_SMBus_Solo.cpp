@@ -1,14 +1,21 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_SOLO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
 
+#include "AP_BattMonitor_SMBus_Solo.h"
+
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
+#define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE_EXT     0x29    // cell voltage register up to 6s
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
 #define BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE      6       // button held down for 5 intervals will cause a power off event
 #define BATTMONITOR_SMBUS_SOLO_NUM_CELLS            4       // solo's battery pack is 4S
+#define BATTMONITOR_SMBUS_SOLO_NUM_CELLS_EXT        6       // extended BMS supports up to 6s
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -34,12 +41,12 @@ AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus_Solo::timer()
 {
-    uint8_t buff[8];
+    uint8_t buff[12];
     uint32_t tnow = AP_HAL::micros();
 
 
     // read cell voltages
-    if (read_block(BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE, buff, 8)) {
+    if (!_use_extended && read_block(BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE, buff, 8)) {
         float pack_voltage_mv = 0.0f;
         for (uint8_t i = 0; i < BATTMONITOR_SMBUS_SOLO_NUM_CELLS; i++) {
             uint16_t cell = buff[(i * 2) + 1] << 8 | buff[i * 2];
@@ -50,11 +57,30 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
         // accumulate the pack voltage out of the total of the cells
         // because the Solo's I2C bus is so noisy, it's worth not spending the
-        // time and bus bandwidth to request the pack voltage as a seperate
+        // time and bus bandwidth to request the pack voltage as a separate
         // transaction
         _state.voltage = pack_voltage_mv * 1e-3f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
+    }
+
+
+    // read extended cell voltages
+    if (read_block(BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE_EXT, buff, 12)) {
+        float pack_voltage_mv = 0.0f;
+        for (uint8_t i = 0; i < BATTMONITOR_SMBUS_SOLO_NUM_CELLS_EXT; i++) {
+            uint16_t cell = buff[(i * 2) + 1] << 8 | buff[i * 2];
+            _state.cell_voltages.cells[i] = cell;
+            pack_voltage_mv += (float)cell;
+        }
+        _has_cell_voltages = true;
+
+        // accumulate the pack voltage out of the total of the cells
+        _state.voltage = pack_voltage_mv * 1e-3f;
+        _state.last_time_micros = tnow;
+        _state.healthy = true;
+        // stop requesting 4-cell packets.
+        _use_extended = true;
     }
 
     // timeout after 5 seconds
@@ -66,7 +92,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
     // read current
     if (read_block(BATTMONITOR_SMBUS_SOLO_CURRENT, buff, 4) == 4) {
-        _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
+        _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) * 0.001f;
         _state.last_time_micros = tnow;
     }
 
@@ -96,33 +122,4 @@ void AP_BattMonitor_SMBus_Solo::timer()
     read_cycle_count();
 }
 
-// read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_t max_len) const
-{
-    uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
-
-    // read bytes
-    if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        return 0;
-    }
-
-    // get length
-    uint8_t bufflen = buff[0];
-
-    // sanity check length returned by smbus
-    if (bufflen == 0 || bufflen > max_len) {
-        return 0;
-    }
-
-    // check PEC
-    uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
-    if (pec != buff[bufflen+1]) {
-        return 0;
-    }
-
-    // copy data (excluding PEC)
-    memcpy(data, &buff[1], bufflen);
-
-    // return success
-    return bufflen;
-}
+#endif  // AP_BATTERY_SMBUS_SOLO_ENABLED

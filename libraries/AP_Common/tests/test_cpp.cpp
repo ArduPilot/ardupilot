@@ -10,17 +10,17 @@ public:
 
 TEST(AP_Common, TEST_CPP)
 {
-    DummyDummy * test_new = new DummyDummy[0];
+    DummyDummy * test_new = new DummyDummy[1];
     EXPECT_FALSE(test_new == nullptr);
     EXPECT_TRUE(sizeof(test_new) == 8);
-    EXPECT_EQ(test_new->count, 0);
-    EXPECT_FLOAT_EQ(test_new->d, 0);
+    EXPECT_FLOAT_EQ(test_new->count, 1);
+    EXPECT_FLOAT_EQ(test_new->d, 42.0);
 
-    DummyDummy * test_d = (DummyDummy*) ::operator new (0);
+    DummyDummy * test_d = (DummyDummy*) ::operator new (sizeof(DummyDummy));
     EXPECT_FALSE(test_d == nullptr);
     EXPECT_TRUE(sizeof(test_d) == 8);
-    EXPECT_EQ(test_d->count, 0);
-    EXPECT_FLOAT_EQ(test_d->d, 0);
+    EXPECT_EQ(test_d->count, 0);  // constructor isn't called
+    EXPECT_FLOAT_EQ(test_d->d, 0.0);
 
     DummyDummy * test_d2 = new DummyDummy;
     EXPECT_TRUE(sizeof(test_d2) == 8);
