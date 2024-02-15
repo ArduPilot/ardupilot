@@ -1,12 +1,10 @@
 #pragma once
 
+#include "AC_CustomControl_config.h"
+
+#if AP_CUSTOMCONTROL_EMPTY_ENABLED
+
 #include "AC_CustomControl_Backend.h"
-
-#ifndef CUSTOMCONTROL_EMPTY_ENABLED
-    #define CUSTOMCONTROL_EMPTY_ENABLED AP_CUSTOMCONTROL_ENABLED
-#endif
-
-#if CUSTOMCONTROL_EMPTY_ENABLED
 
 class AC_CustomControl_Empty : public AC_CustomControl_Backend {
 public:
@@ -26,4 +24,4 @@ protected:
     AP_Float param3;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_EMPTY_ENABLED
