@@ -33,15 +33,6 @@
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-
-#define AN_PACKET_ID_PACKET_PERIODS 181
-#define AN_PACKET_ID_SATELLITES 30
-#define AN_PACKET_ID_RAW_GNSS 29
-#define AN_PACKET_ID_RAW_SENSORS 28
-#define AN_PACKET_ID_VELOCITY_STANDARD_DEVIATION 25
-#define AN_PACKET_ID_SYSTEM_STATE 20
-#define AN_PACKET_ID_DEVICE_INFO 3
-#define AN_PACKET_ID_ACKNOWLEDGE 0
 #define AN_TIMEOUT 5000 //ms
 #define AN_MAXIMUM_PACKET_PERIODS 50
 #define AN_GNSS_PACKET_RATE 5
@@ -499,28 +490,28 @@ bool AP_ExternalAHRS_AdvancedNavigation::sendPacketRequest()
     // Update the current rate
     _current_rate = get_rate();
 
-    const AN_PACKETS_PERIOD periods{
+    const AN_PACKET_PERIODS periods{
         permanent: true,
         clear_existing_packet_periods: true,
         periods: {
             AN_PERIOD{
-                id: AN_PACKET_ID_SYSTEM_STATE,
+                id: packet_id_system_state,
                 packet_period: (uint32_t) 1.0e3 / _current_rate
             },
             AN_PERIOD{
-                id: AN_PACKET_ID_VELOCITY_STANDARD_DEVIATION,
+                id: packet_id_velocity_standard_deviation,
                 packet_period: (uint32_t) 1.0e3 / _current_rate
             },
             AN_PERIOD{
-                id: AN_PACKET_ID_RAW_SENSORS,
+                id: packet_id_raw_sensors,
                 packet_period: (uint32_t) 1.0e3 / _current_rate
             },
             AN_PERIOD{
-                id: AN_PACKET_ID_RAW_GNSS,
+                id: packet_id_raw_gnss,
                 packet_period: (uint32_t) 1.0e3 / AN_GNSS_PACKET_RATE
             },
             AN_PERIOD{
-                id: AN_PACKET_ID_SATELLITES,
+                id: packet_id_satellites,
                 packet_period: (uint32_t) 1.0e3 / _current_rate
             }
         }
@@ -528,8 +519,8 @@ bool AP_ExternalAHRS_AdvancedNavigation::sendPacketRequest()
 
     AN_PACKET packet;
     // load the AN_PACKETS_PERIOD Into the payload.
-    packet.payload.packets_period = periods;
-    packet.update_checks(AN_PACKET_ID_PACKET_PERIODS, sizeof(packet.payload.packets_period));
+    packet.payload.packet_periods = periods;
+    packet.update_checks(packet_id_packet_periods, sizeof(packet.payload.packet_periods));
 
     // Check for space in the tx buffer
     if (_uart->txspace() < packet.packet_size()) {
@@ -581,6 +572,40 @@ bool AP_ExternalAHRS_AdvancedNavigation::get_baro_capability(void) const
     return true;
 }
 
+bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(bool gnss_en, vehicle_type_e vehicle_type, bool permanent)
+{
+
+    AN_FILTER_OPTIONS options_packet;
+
+    options_packet.permanent = permanent;
+    options_packet.vehicle_type = vehicle_type;
+    options_packet.internal_gnss_enabled = gnss_en;
+    options_packet.magnetometers_enabled = true;
+    options_packet.atmospheric_altitude_enabled = true;
+    options_packet.velocity_heading_enabled = true;
+    options_packet.reversing_detection_enabled = false;
+    options_packet.motion_analysis_enabled = false;
+    options_packet.automatic_magnetic_calibration_enabled = true;
+
+    return set_filter_options(options_packet);
+}
+
+bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(const AN_FILTER_OPTIONS options_packet)
+{
+    AN_PACKET packet;
+
+    packet.payload.filter_options = options_packet;
+    packet.update_checks(packet_id_filter_options, sizeof(packet.payload.filter_options));
+
+    // Check for space in the tx buffer
+    if (_uart->txspace() < packet.packet_size()) {
+        return false;
+    }
+    _uart->write(packet.raw_pointer(), packet.packet_size());
+
+    return true;
+}
+
 void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
 {
     // get current time
@@ -589,13 +614,13 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
 
     // Update depending on received packet.
     switch (_msg.packet.id) {
-    case AN_PACKET_ID_DEVICE_INFO: {
+    case packet_id_device_information: {
         _last_device_info_pkt_ms = now;
         _device_id = _msg.packet.payload.device_info.device_id;
         _hardware_rev = _msg.packet.payload.device_info.hardware_revision;
         break;
     }
-    case AN_PACKET_ID_SYSTEM_STATE: {
+    case packet_id_system_state: {
         _last_state_pkt_ms = now;
         // Save the status
         _device_status.system.r = _msg.packet.payload.system_state.status.system.r;
@@ -642,13 +667,13 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
         }
         break;
     }
-    case AN_PACKET_ID_VELOCITY_STANDARD_DEVIATION: {
+    case packet_id_velocity_standard_deviation: {
         // save packet to be used for external gps.
         *_last_vel_sd = _msg.packet.payload.velocity_standard_deviation;
         break;
     }
 
-    case AN_PACKET_ID_RAW_SENSORS: {
+    case packet_id_raw_sensors: {
         AP_ExternalAHRS::ins_data_message_t ins{
             accel: Vector3f{
                     _msg.packet.payload.raw_sensors.accelerometers[0],
@@ -689,7 +714,7 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
     }
     break;
 
-    case AN_PACKET_ID_RAW_GNSS: {
+    case packet_id_raw_gnss: {
         // Save the standard deviations for status report
         _gnss_sd = Vector3f{
             _msg.packet.payload.raw_gnss.llh_standard_deviation[0],
@@ -769,7 +794,7 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
     }
     break;
 
-    case AN_PACKET_ID_SATELLITES: {
+    case packet_id_satellites: {
         // save packet to be used for external gps.
         *_last_satellites = _msg.packet.payload.satellites;
     }
