@@ -127,6 +127,10 @@ bool ModeSystemId::init(bool ignore_checks)
         if (!pos_control->is_active_z()) {
             pos_control->init_z_controller();
         }
+        Vector3f curr_pos;
+        curr_pos = inertial_nav.get_position_neu_cm();
+        target_pos.x = curr_pos.x;
+        target_pos.y = curr_pos.y;
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -358,7 +362,12 @@ void ModeSystemId::run()
         }
 
         Vector2f accel;
-        pos_control->input_vel_accel_xy(input_vel, accel);
+        target_pos += input_vel * G_Dt;
+        if (is_positive(G_Dt)) {
+            accel = (input_vel - input_vel_last) / G_Dt;
+            input_vel_last = input_vel;
+        }
+        pos_control->set_pos_vel_accel_xy(target_pos.topostype(), input_vel, accel);
 
         // run pos controller
         pos_control->update_xy_controller();
