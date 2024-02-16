@@ -10,7 +10,7 @@ extern "C" {
 void stm32_watchdog_init(void);
 
 /*
-  pat the dog, to prevent a reset. If not called for 1s
+  pat the dog, to prevent a reset. If not called for STM32_WDG_TIMEOUT_MS
   after stm32_watchdog_init() then MCU will reset
  */
 void stm32_watchdog_pat(void);
