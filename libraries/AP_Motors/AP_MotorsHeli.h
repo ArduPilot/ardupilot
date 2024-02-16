@@ -148,6 +148,9 @@ public:
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
+    //return landing collective position
+    float get_coll_land_min()const { return _collective_land_min_pct;}
+
     //return collective hover
     float get_coll_hover() const { return _collective_hover; }
 
