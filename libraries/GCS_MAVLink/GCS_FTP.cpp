@@ -97,7 +97,7 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
 
 bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
 {
-    if (!last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threashold where we slow down normal streams (<=49)
+    if (!last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
