@@ -383,6 +383,7 @@ void AC_Autorotation::initial_flare_estimate(void)
 
 
     gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/GRAVITY_MSS, _flare_alt_calc*0.01f, _c);
+    gcs().send_text(MAV_SEVERITY_INFO, "est_rod=%f", _est_rod);
 }
 
 
@@ -411,7 +412,6 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
 
     // Estimate altitude to begin collective pull
     _cushion_alt = (-(sink_rate * cosf(radians(AP_ALPHA_TPP))) * _t_tch) * 100.0f;
-    gcs().send_text(MAV_SEVERITY_INFO, "vs_final_est=%f ", sink_rate*cosf(radians(20)));
 
     // Total delta altitude to ground
     _flare_alt_calc = _cushion_alt + delta_h * 100.0f;
@@ -533,7 +533,7 @@ void AC_Autorotation::update_flare_alt(void)
     if (!_flare_update_check) {
         float delta_v_z = fabsf((_inav.get_velocity_z_up_cms()) * 0.01f + _est_rod);
 
-        if ((_speed_forward >= 0.8f * _param_target_speed) && (delta_v_z <= 1) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.005f)) {
+        if ((_speed_forward >= 0.8f * _param_target_speed) && (delta_v_z <= 2) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.5f)) {
             float vel_z = _inav.get_velocity_z_up_cms() * 0.01f;
             float spd_fwd = _speed_forward * 0.01f;
             _c = (_lift_hover / (sq(vel_z) * 0.5f * SSL_AIR_DENSITY * _disc_area)) * 1.15f;
@@ -597,7 +597,7 @@ void AC_Autorotation::flare_controller(void)
     _accel_out_last = _accel_out;
 
     // Estimate flare effectiveness
-    if (_speed_forward <= (0.6 * _flare_entry_speed) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.005f) && (_avg_acc_z>= -1.1 * GRAVITY_MSS)) {
+    if (_speed_forward <= (0.6 * _flare_entry_speed) && (fabsf(_avg_acc_z+GRAVITY_MSS) <= 0.5f)) {
         if (!_flare_complete) {
             _flare_complete = true;
             gcs().send_text(MAV_SEVERITY_INFO, "Flare_complete");
@@ -608,7 +608,7 @@ void AC_Autorotation::flare_controller(void)
         _pitch_target = atanf(-_accel_out / (GRAVITY_MSS * 100.0f)) * (18000.0f/M_PI);
         _pitch_target = constrain_float(_pitch_target, 0.0f, AP_ALPHA_TPP * 100.0f);
     } else {
-        _pitch_target *= 0.95f;
+        _pitch_target *= 0.9995f;
     }
 }
 
@@ -635,7 +635,7 @@ void AC_Autorotation::touchdown_controller(void)
     // driven the collective high to cushion the landing so the landing detector will not trip until we drive the collective back to zero thrust and below.
     if ((_time_on_ground > 0) && ((AP_HAL::millis() - _time_on_ground) > MIN_TIME_ON_GROUND)) {
        // On ground, smoothly lower collective to just bellow zero thrust, to make sure we trip the landing detector
-       float desired_col = _motors_heli->get_coll_mid() * 0.95;
+       float desired_col = _motors_heli->get_coll_land_min() * 0.95;
        _collective_out = _collective_out*0.9 + desired_col*0.1;
 
     } else {
