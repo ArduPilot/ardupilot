@@ -569,7 +569,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-    SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
+    SCHED_TASK(update_dynamic_notches,                      LOOP_RATE,               200, 215),
 #if AP_VIDEOTX_ENABLED
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
 #endif
@@ -854,6 +854,16 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
                 update_dynamic_notch(notch);
             }
         }
+    }
+}
+
+/*
+  update dynamic notches if not using rate thread
+ */
+void AP_Vehicle::update_dynamic_notches()
+{
+    if (!using_rate_thread) {
+        update_dynamic_notch_at_specified_rate();
     }
 }
 
