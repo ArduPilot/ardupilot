@@ -478,6 +478,9 @@ private:
     uint32_t _last_raw_gnss_pkt_ms;
     uint32_t _device_id;
     uint32_t _hardware_rev;
+    
+    bool _gnss_disable;
+    bool _fly_forward;
 
     void update_thread();
     bool get_packets(void);

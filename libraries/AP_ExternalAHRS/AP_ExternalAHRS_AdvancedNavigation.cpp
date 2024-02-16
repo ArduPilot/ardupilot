@@ -236,6 +236,19 @@ bool AP_ExternalAHRS_AdvancedNavigation::request_data(void)
         }
     }
 
+    // check for updates to environment that require INS filter updates
+    if (_fly_forward != in_fly_forward() || _gnss_disable != gnss_is_disabled()){
+        _fly_forward = in_fly_forward();
+        _gnss_disable = gnss_is_disabled();
+
+        // Select AdNav vehicle for current flight mode. 
+        vehicle_type_e vehicle_type = vehicle_type_3d_aircraft;
+        if (_fly_forward == true) {
+            vehicle_type = vehicle_type_fixed_wing_plane;
+        }
+
+        set_filter_options(!_gnss_disable, vehicle_type);
+    }
     return true;
 }
 
