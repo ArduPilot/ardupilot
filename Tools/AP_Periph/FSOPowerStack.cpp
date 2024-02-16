@@ -402,7 +402,7 @@ void FSOPowerStack::update_payload_HV_power()
     auto &batt = AP::battery();
     
     float payload_HV_current;
-    if (batt.current_amps(payload_HV_current, 3)) {
+    if (batt.current_amps(payload_HV_current, 2)) {
         payload_HV_current_filter.apply(payload_HV_current, 0.001 * FSO_LOOP_TIME_MS);
         if (payload_HV_current_filter.get() > MIN(payload_HV_current_max, FSO_PAYLOAD_HV_CURRENT_MAX)) {
             payload_HV_state = ShutDown;
