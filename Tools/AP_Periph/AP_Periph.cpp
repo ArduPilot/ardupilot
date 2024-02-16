@@ -608,7 +608,9 @@ void AP_Periph_FW::prepare_reboot()
 
         // delay to give the ACK a chance to get out, the LEDs to flash,
         // the IO board safety to be forced on, the parameters to flush,
+        hal.scheduler->expect_delay_ms(100);
         hal.scheduler->delay(40);
+        hal.scheduler->expect_delay_ms(0);
 }
 
 /*
