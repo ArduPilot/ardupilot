@@ -21,7 +21,8 @@ void Copter::rate_controller_thread()
 
     while (true) {
         // allow changing option at runtime
-        if (!flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD)) {
+        if (!flight_option_is_set(FlightOptions::USE_RATE_LOOP_THREAD) ||
+            ap.motor_test) {
             using_rate_thread = false;
             if (was_using_rate_thread) {
                 // if we were using the rate thread, we need to
@@ -38,6 +39,10 @@ void Copter::rate_controller_thread()
 
         // wait for an IMU sample
         rate_sem.wait_blocking();
+        if (ap.motor_test) {
+            continue;
+        }
+
         const uint32_t now_us = AP_HAL::micros();
         const uint32_t dt_us = now_us - last_run_us;
         const float dt = dt_us * 1.0e-6;
@@ -82,9 +87,9 @@ void Copter::rate_controller_thread()
             attitude_control->set_notch_sample_rate(1.0 / dt_avg);
         }
         
-        if (now_ms - last_report_ms >= 2000) {
+        if (now_ms - last_report_ms >= 200) {
             last_report_ms = now_ms;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rate: %.2fHz", 1.0/dt_avg);
+            gcs().send_named_float("LRATE", 1.0/dt_avg);
         }
 
         was_using_rate_thread = true;
