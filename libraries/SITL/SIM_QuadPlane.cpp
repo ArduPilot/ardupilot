@@ -65,6 +65,10 @@ QuadPlane::QuadPlane(const char *frame_str) :
         thrust_scale = 0;
         // vtol motors start at 2
         motor_offset = 2;
+    } else if (strstr(frame_str, "-tilt")) {
+        frame_type = "tilt";
+        // fwd motor gives zero thrust
+        thrust_scale = 0;
     } else if (strstr(frame_str, "cl84")) {
         frame_type = "tilttri";
         // fwd motor gives zero thrust
