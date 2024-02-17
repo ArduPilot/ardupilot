@@ -1351,7 +1351,8 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!(plane.control_mode == &plane.mode_guided ||
+              plane.control_mode == &plane.mode_terrain_navigation)) {
             //don't screw up failsafes
             return;
         }
@@ -1394,10 +1395,13 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             }
         } // end if alt_mask
 
+        // terrain_navigation
         //! @todo(srmainwaring) handle mode general control...
         //!                     check the ignore flags
         //!                     check for valid inputs
         if (pos_target.type_mask == 0) {
+            // switch mode to TERRAIN_NAVIGATION
+            plane.set_mode(plane.mode_terrain_navigation, ModeReason::GCS_COMMAND);
 
             cmd.content.location.lat = pos_target.lat_int;
             cmd.content.location.lng = pos_target.lon_int;
@@ -1456,21 +1460,25 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                     // circular motion: a = v^2 / r.
                     Vector2f vel(vx, vy);
                     Vector2f accel(ax, ay);
-                    if (!vel.is_zero() && !accel.is_zero()) {
-                      Vector2f vel_unit = vel.normalized();
-                      Vector2f accel_normal = accel - vel_unit * accel.dot(vel);
-                      Vector2f accel_normal_unit = accel_normal.normalized();
-                      // % is cross product, -1 converts to body frame with z-dn
-                      // See: ModeGuided::set_radius_and_direction
-                      //    plane.loiter.direction = direction_is_ccw ? -1 : 1;
-                      float dir = -1.0 * (vel_unit % accel_normal_unit);
-                      float radius = vel.length_squared() / accel_normal.length();
-                      bool dir_is_ccw = dir < 0.0;
-                      plane.mode_guided.set_radius_and_direction(radius, dir_is_ccw);
+                    if (!vel.is_zero()) {
+                        Vector2f vel_unit = vel.normalized();
+                        plane.mode_terrain_navigation.set_path_tangent(vel_unit);
 
-                      // //! @todo(srmainwaring) remove - used for debugging
-                      // gcs().send_text(MAV_SEVERITY_DEBUG,
-                      //     "radius: %f, dir: %f", radius, dir);
+                        if (!accel.is_zero()) {
+                            Vector2f accel_normal = accel - vel_unit * accel.dot(vel);
+                            Vector2f accel_normal_unit = accel_normal.normalized();
+                            // % is cross product, -1 converts to body frame with z-dn
+                            // See: ModeGuided::set_radius_and_direction
+                            //    plane.loiter.direction = direction_is_ccw ? -1 : 1;
+                            float dir = -1.0 * (vel_unit % accel_normal_unit);
+                            float radius = vel.length_squared() / accel_normal.length();
+                            bool dir_is_ccw = dir < 0.0;
+                            plane.mode_terrain_navigation.set_radius_and_direction(radius, dir_is_ccw);
+
+                            // //! @todo(srmainwaring) remove - used for debugging
+                            // gcs().send_text(MAV_SEVERITY_DEBUG,
+                            //     "radius: %f, dir: %f", radius, dir);
+                        }
                     }
                 }
 

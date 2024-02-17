@@ -330,11 +330,19 @@ public:
 
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
+    void set_path_tangent(Vector2f unit_path_tangent);
+
     void update_target_altitude() override;
 
 protected:
 
     bool _enter() override;
+
+    void _exit() override;
+
+private:
+    float _radius_m;
+    Vector2f _unit_path_tangent;
 };
 
 class ModeCircle: public Mode

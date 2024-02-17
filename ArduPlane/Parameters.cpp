@@ -900,6 +900,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
     GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
+    // @Group: NPFG_
+    // @Path: ../libraries/AP_NPFG/AP_NPFG.cpp
+    GOBJECT(NPFG_controller,         "NPFG_",     AP_NPFG),
+
     // @Group: TECS_
     // @Path: ../libraries/AP_TECS/AP_TECS.cpp
     GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
