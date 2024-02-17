@@ -14,6 +14,7 @@
 #include "AP_Camera_MAVLink.h"
 #include "AP_Camera_MAVLinkCamV2.h"
 #include "AP_Camera_Scripting.h"
+#include "AP_Camera_TopotekGimbal.h"
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -237,6 +238,12 @@ void AP_Camera::init()
         // check for Scripting driver
         case CameraType::SCRIPTING:
             _backends[instance] = new AP_Camera_Scripting(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_TOPOTEKGIMBAL_ENABLED
+        // check for Topotek driver
+        case CameraType::TOPOTEK:
+            _backends[instance] = new AP_Camera_TopotekGimbal(*this, _params[instance], instance);
             break;
 #endif
         case CameraType::NONE:
