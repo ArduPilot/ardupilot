@@ -169,7 +169,7 @@ private:
     bool _is_tracking;                                          // whether to enable the tracking state
     bool _sdcard_status;                                        // memory card status (received from gimbal)
     bool _last_lock;                                            // last lock mode sent to gimbal
-    bool _got_gimbal_basic_info;                                 // whether the gimbal information is obtained
+    bool _got_gimbal_basic_info;                                // whether the gimbal information is obtained
     uint8_t _sent_time_count = 0;                               // send count
     int8_t _model_name[11] = "";                                // gimbal type
     ZoomType _zoom_type;                                        // current zoom type
