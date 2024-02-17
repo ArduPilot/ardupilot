@@ -79,8 +79,15 @@ enum class LogEvent : uint8_t {
     STANDBY_ENABLE = 74,
     STANDBY_DISABLE = 75,
 
-    FENCE_FLOOR_ENABLE = 80,
-    FENCE_FLOOR_DISABLE = 81,
+    // Fence events
+    FENCE_ALT_MAX_ENABLE = 76,
+    FENCE_ALT_MAX_DISABLE = 77,
+    FENCE_CIRCLE_ENABLE = 78,
+    FENCE_CIRCLE_DISABLE = 79,
+    FENCE_ALT_MIN_ENABLE = 80,
+    FENCE_ALT_MIN_DISABLE = 81,
+    FENCE_POLYGON_ENABLE = 82,
+    FENCE_POLYGON_DISABLE = 83,
 
     // if the EKF's source input set is changed (e.g. via a switch or
     // a script), we log an event:
