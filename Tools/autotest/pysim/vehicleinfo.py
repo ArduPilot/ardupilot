@@ -239,11 +239,13 @@ class VehicleInfo(object):
             # PLANE
             "quadplane-tilttri": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tilttri.parm",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/quadplane-tilttri.parm"],
             },
             "quadplane-tilttrivec": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tilttrivec.parm",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/quadplane-tilttrivec.parm"],
             },
             "quadplane-tilthvec": {
                 "waf_target": "bin/arduplane",
@@ -251,11 +253,13 @@ class VehicleInfo(object):
             },
             "quadplane-tri": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tri.parm",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/quadplane-tri.parm"],
             },
             "quadplane-cl84" : {
                 "waf_target" : "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-cl84.parm",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/quadplane-cl84.parm"],
             },
             "quadplane": {
                 "waf_target": "bin/arduplane",
@@ -270,9 +274,15 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/quadplane.parm", "default_params/quadplane-can.parm"],
                 "periph_params_filename": ["default_params/periph.parm", "default_params/quadplane-periph.parm"],
             },
+            "quadplane-tilt": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/quadplane-tilt.parm"],
+            },
             "firefly": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/firefly.parm",
+                "default_params_filename": ["default_params/quadplane.parm",
+                                            "default_params/firefly.parm"]
             },
             "plane-elevon": {
                 "waf_target": "bin/arduplane",

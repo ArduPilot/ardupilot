@@ -3948,11 +3948,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            "firefly": "falls out of sky after transition",
             "plane-tailsitter": "does not take off; immediately emits 'AP: Transition VTOL done' while on ground",
-            "quadplane-cl84": "falls out of sky instead of transitioning",
-            "quadplane-tilttri": "falls out of sky instead of transitioning",
-            "quadplane-tilttrivec": "loses attitude control and crashes",
             "plane-ice" : "needs ICE control channel for ignition",
             "quadplane-ice" : "needs ICE control channel for ignition",
             "quadplane-can" : "needs CAN periph",
