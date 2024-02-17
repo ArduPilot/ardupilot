@@ -2369,8 +2369,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (!AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 /*
   count the number of parameter defaults present in supplied string
  */
@@ -2415,18 +2414,6 @@ bool AP_Param::count_param_defaults(const volatile char *ptr, int32_t length, ui
     }
     return true;
 }
-
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-/*
- * load a default set of parameters from a embedded parameter region
- * @last_pass: if this is the last pass on defaults - unknown parameters are
- *             ignored but if this is set a warning will be emitted
- */
-void AP_Param::load_embedded_param_defaults(bool last_pass)
-{
-    load_param_defaults(param_defaults_data.data, param_defaults_data.length, last_pass);
-}
-#endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
 
 /*
  *  load parameter defaults from supplied string
@@ -2508,7 +2495,21 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
     }
     num_param_overrides = num_defaults;
 }
-#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0
+#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+/*
+ * load a default set of parameters from a embedded parameter region
+ * @last_pass: if this is the last pass on defaults - unknown parameters are
+ *             ignored but if this is set a warning will be emitted
+ */
+void AP_Param::load_embedded_param_defaults(bool last_pass)
+{
+    load_param_defaults(param_defaults_data.data, param_defaults_data.length, last_pass);
+}
+#endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
+
 
 /* 
    find a default value given a pointer to a default value in flash

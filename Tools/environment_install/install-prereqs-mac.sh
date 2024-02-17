@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
 set -x
@@ -42,7 +42,7 @@ echo "Checking homebrew..."
 $(which -s brew) ||
 {
     echo "installing homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 } 
 echo "Homebrew installed"
 

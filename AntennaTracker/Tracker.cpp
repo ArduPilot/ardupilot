@@ -164,13 +164,6 @@ void Tracker::stats_update(void)
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-Tracker::Tracker(void)
-#if HAL_LOGGING_ENABLED
-    : logger(g.log_bitmask)
-#endif
-{
-}
-
 Tracker tracker;
 AP_Vehicle& vehicle = tracker;
 

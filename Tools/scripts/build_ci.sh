@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # useful script to test all the different build types that we support.
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
@@ -215,18 +215,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro peripheral fw"
-        $waf configure --board HerePro
-        $waf clean
-        $waf AP_Periph
         echo "Building CubeOrange-periph peripheral fw"
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro bootloader"
-        $waf configure --board HerePro --bootloader
-        $waf clean
-        $waf bootloader
         echo "Building G4-ESC peripheral fw"
         $waf configure --board G4-ESC
         $waf clean

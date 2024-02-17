@@ -264,6 +264,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 28, AP_Vehicle, AP_Scripting),
 #endif
 
+#if HAL_LOGGING_ENABLED
+    // @Group: LOG
+    // @Path: ../AP_Logger/AP_Logger.cpp
+    AP_SUBGROUPINFO(logger, "LOG",  29, AP_Vehicle, AP_Logger),
+#endif
+
     AP_GROUPEND
 };
 
@@ -370,6 +376,10 @@ void AP_Vehicle::setup()
 
 #if HAL_CANMANAGER_ENABLED
     can_mgr.init();
+#endif
+
+#if HAL_LOGGING_ENABLED
+    logger.init(get_log_bitmask(), get_log_structures(), get_num_log_structures());
 #endif
 
     // init_ardupilot is where the vehicle does most of its initialisation.
@@ -947,11 +957,14 @@ void AP_Vehicle::accel_cal_update()
         return;
     }
     ins.acal_update();
+
+#if AP_AHRS_ENABLED
     // check if new trim values, and set them
     Vector3f trim_rad;
     if (ins.get_new_trim(trim_rad)) {
         ahrs.set_trim(trim_rad);
     }
+#endif
 
 #if HAL_CAL_ALWAYS_REBOOT
     if (ins.accel_cal_requires_reboot() &&

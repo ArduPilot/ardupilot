@@ -22,7 +22,7 @@ void Copter::tuning()
     }
 
     // exit immediately if a function is assigned to channel 6
-    if ((RC_Channel::aux_func_t)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
+    if ((RC_Channel::AUX_FUNC)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
         return;
     }
 

@@ -37,6 +37,8 @@
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -286,6 +288,8 @@ protected:
 
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
+    void load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version);
+
     virtual void set_control_channels() {}
 
     // board specific config
@@ -316,6 +320,15 @@ protected:
     AP_Button button;
 #endif
     RangeFinder rangefinder;
+
+#if HAL_LOGGING_ENABLED
+    AP_Logger logger;
+    AP_Int32 bitmask_unused;
+    // method supplied by vehicle to provide log bitmask:
+    virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
+    virtual const struct LogStructure *get_log_structures() const { return nullptr; }
+    virtual uint8_t get_num_log_structures() const { return 0; }
+#endif
 
 #if AP_RSSI_ENABLED
     AP_RSSI rssi;

@@ -3411,6 +3411,10 @@ function fs:format() end
 ---@return number
 function fs:get_format_status() end
 
+-- Get crc32 checksum of a file with given name
+---@return uint32_t_ud|nil
+function fs:crc32(file_name) end
+
 -- desc
 ---@class networking
 networking = {}

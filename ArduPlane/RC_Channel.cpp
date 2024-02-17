@@ -141,7 +141,7 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 }
 
 
-void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
+void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
@@ -212,7 +212,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:

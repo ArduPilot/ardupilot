@@ -146,10 +146,6 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger logger;
-#endif
-
     AP_LeakDetector leak_detector;
 
     struct {
@@ -403,6 +399,13 @@ private:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void rotate_body_frame_to_NE(float &x, float &y);
 #if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Data(LogDataID id, int32_t value);
