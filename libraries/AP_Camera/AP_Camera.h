@@ -22,6 +22,7 @@ class AP_Camera_Mount;
 class AP_Camera_MAVLink;
 class AP_Camera_MAVLinkCamV2;
 class AP_Camera_Scripting;
+class AP_Camera_TopotekGimbal;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -36,6 +37,7 @@ class AP_Camera {
     friend class AP_Camera_MAVLink;
     friend class AP_Camera_MAVLinkCamV2;
     friend class AP_Camera_Scripting;
+    friend class AP_Camera_TopotekGimbal;
 
 public:
 
@@ -71,6 +73,9 @@ public:
 #endif
 #if AP_CAMERA_SCRIPTING_ENABLED
         SCRIPTING = 7,  // Scripting backend
+#endif
+#if AP_CAMERA_TOPOTEKGIMBAL_ENABLED
+        TOPOTEK = 8,        // Topotek backend
 #endif
     };
 
