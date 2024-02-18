@@ -503,9 +503,9 @@ void AP_ESC_Telem::update()
             if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
                 || _rpm_data[i].last_update_us != _last_rpm_log_us[i]) {
 
-                float rpm = 0.0f;
+                float rpm = AP::logger().quiet_nanf();
                 get_rpm(i, rpm);
-                float raw_rpm = 0.0f;
+                float raw_rpm = AP::logger().quiet_nanf();
                 get_raw_rpm(i, raw_rpm);
 
                 // Write ESC status messages
