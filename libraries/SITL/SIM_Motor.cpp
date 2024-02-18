@@ -106,9 +106,6 @@ void Motor::calculate_forces(const struct sitl_input &input,
         rotor_torque = rotation * rotor_torque;
     }
 
-    // calculate total torque in newton-meters
-    torque = (position % thrust) + rotor_torque;
-
     if (use_drag) {
         // calculate momentum drag per motor
         const float momentum_drag_factor = momentum_drag_coefficient * sqrtf(air_density * true_prop_area);
@@ -123,6 +120,9 @@ void Motor::calculate_forces(const struct sitl_input &input,
 
         thrust -= momentum_drag;
     }
+
+    // calculate total torque in newton-meters
+    torque = (position % thrust) + rotor_torque;
 
     // calculate current
     float power = power_factor * fabsf(motor_thrust);
