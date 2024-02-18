@@ -1134,7 +1134,9 @@ struct PACKED log_VER {
 // @Description: Ardupilot version
 // @Field: TimeUS: Time since system startup
 // @Field: BT: Board type
+// @FieldValueEnum: BT: HAL_BOARD
 // @Field: BST: Board subtype
+// @FieldValueEnum: BST: HAL_BOARD_SUBTYPE
 // @Field: Maj: Major version number
 // @Field: Min: Minor version number
 // @Field: Pat: Patch number
@@ -1143,6 +1145,7 @@ struct PACKED log_VER {
 // @Field: FWS: Firmware version string
 // @Field: APJ: Board ID
 // @Field: BU: Build vehicle type
+// @FieldValueEnum: BU: APM_BUILD
 // @Field: FV: Filter version
 
 // @LoggerMessage: MOTB
