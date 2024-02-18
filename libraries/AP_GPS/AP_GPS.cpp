@@ -999,6 +999,14 @@ void AP_GPS::update_instance(uint8_t instance)
             tnow = state[instance].last_corrected_gps_time_us/1000U;
             state[instance].corrected_timestamp_updated = false;
         }
+
+        // we set delta_time_ms to the timeout value when clearing
+        // state; use it being zero to mark first message
+        if (!state[instance].announced_detection) {
+            state[instance].announced_detection = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
+        }
+
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
