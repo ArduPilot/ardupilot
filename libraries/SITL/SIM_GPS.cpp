@@ -26,6 +26,8 @@
 #include "SIM_GPS_SBP.h"
 #include "SIM_GPS_UBLOX.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 // the number of GPS leap seconds - copied from AP_GPS.h
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
@@ -279,6 +281,9 @@ void GPS::check_backend_allocation()
 #endif
     };
 
+    if (configured_type != Type::NONE && backend == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIM_GPS: No backend for %u", (unsigned)configured_type);
+    }
     allocated_type = configured_type;
 }
 
