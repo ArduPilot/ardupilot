@@ -50,6 +50,9 @@ define HAL_DISABLE_LOOP_DELAY
 define AP_NOTIFY_NEOPIXEL_ENABLED 1
 define AP_SERIALLED_ENABLED 1
 
+# lower the clock on TIM1 to fix an issue with the timing of serial LEDs
+define STM32_PPRE2 STM32_PPRE2_DIV8
+
 # Set Options
 define DMA_RESERVE_SIZE 0
 
