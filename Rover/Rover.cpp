@@ -157,9 +157,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-#if HAL_LOGGING_ENABLED
-    logger{g.log_bitmask},
-#endif
     modes(&g.mode1),
     control_mode(&mode_initializing)
 {

@@ -483,6 +483,11 @@ const struct LogStructure Plane::log_structure[] = {
 #endif
 };
 
+uint8_t Plane::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -496,14 +501,6 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
-}
-
-/*
-  initialise logging subsystem
- */
-void Plane::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
 #endif // HAL_LOGGING_ENABLED

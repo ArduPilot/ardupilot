@@ -913,7 +913,10 @@ local function Client(_sock, _idx)
 
    function self.remove()
       DEBUG(string.format("%u: removing client OFFSET=%u", idx, offset))
-      sock:close()
+      if sock then
+         sock:close()
+         sock = nil
+      end
       self.closed = true
    end
 

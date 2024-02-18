@@ -275,6 +275,11 @@ const struct LogStructure Sub::log_structure[] = {
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
+uint8_t Sub::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -283,10 +288,5 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-
-void Sub::log_init()
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
 
 #endif // HAL_LOGGING_ENABLED

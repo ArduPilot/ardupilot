@@ -8,7 +8,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -39,10 +38,6 @@ const struct AP_Param::Info var_info[] = {
 
 
 static AP_Param param{var_info};
-
-
-AP_Int32 logger_bitmask;
-static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle : public AP_Vehicle {
 public:

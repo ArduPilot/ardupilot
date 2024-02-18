@@ -1,6 +1,8 @@
-#include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_config.h"
 
 #if AP_BATTERY_SCRIPTING_ENABLED
+
+#include "AP_BattMonitor_Scripting.h"
 
 #define AP_BATT_MONITOR_SCRIPTING_TIMEOUT_US 5000000
 
@@ -81,4 +83,3 @@ bool AP_BattMonitor_Scripting::handle_scripting(const BattMonitorScript_State &b
 }
 
 #endif // AP_BATTERY_SCRIPTING_ENABLED
-

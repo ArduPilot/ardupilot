@@ -434,7 +434,10 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
     // Copying the unique ID from the message
     uavcan_protocol_dynamic_node_id_Allocation msg;
 
-    uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg);
+    if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) {
+        // failed decode
+        return;
+    }
 
     // Obtaining the local unique ID
     uint8_t my_unique_id[sizeof(msg.unique_id.data)];

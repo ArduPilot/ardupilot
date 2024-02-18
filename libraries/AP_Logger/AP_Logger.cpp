@@ -193,8 +193,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
 #define streq(x, y) (!strcmp(x, y))
 
-AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
-    : _log_bitmask(log_bitmask)
+AP_Logger::AP_Logger()
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_singleton != nullptr) {
@@ -204,8 +203,10 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     _singleton = this;
 }
 
-void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
+    _log_bitmask = &log_bitmask;
+
     // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
@@ -629,7 +630,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
 {
     bool armed = vehicle_is_armed();
 
-    if (!(mask & _log_bitmask)) {
+    if (!(mask & *_log_bitmask)) {
         return false;
     }
     if (!armed && !log_while_disarmed()) {

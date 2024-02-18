@@ -286,9 +286,6 @@ void Blimp::rotate_NE_to_BF(Vector2f &vec)
  */
 Blimp::Blimp(void)
     :
-#if HAL_LOGGING_ENABLED
-      logger(g.log_bitmask),
-#endif
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
       rc_throttle_control_in_filter(1.0f),

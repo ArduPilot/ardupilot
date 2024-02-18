@@ -123,7 +123,7 @@ bool Copter::ekf_over_threshold()
     }
 
     uint32_t now_us = AP_HAL::micros();
-    float dt = (now_us - last_ekf_check_us) / 1000000.0f;
+    float dt = (now_us - last_ekf_check_us) * 1e-6f;
 
     // always update filtered values as this serves the vibration check as well
     position_var = pos_variance_filt.apply(position_var, dt);

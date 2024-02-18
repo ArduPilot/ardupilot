@@ -547,6 +547,21 @@ float Plane::apply_throttle_limits(float throttle_in)
 void Plane::set_throttle(void)
 {
 
+    // Update voltage scaling
+    g2.fwd_batt_cmp.update();
+
+    if (control_mode->use_battery_compensation()) {
+        // Apply voltage compensation to throttle output from flight mode
+        const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+    }
+
+    if (control_mode->use_throttle_limits()) {
+        // Apply min/max throttle limits
+        const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
+    }
+
     if (!arming.is_armed_and_safety_off()) {
         // Always set 0 scaled even if overriding to zero pwm.
         // This ensures slew limits and other functions using the scaled value pick up in the correct place
@@ -559,10 +574,8 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         }
-        return;
-    }
 
-    if (suppress_throttle()) {
+    } else if (suppress_throttle()) {
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
@@ -576,29 +589,8 @@ void Plane::set_throttle(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
 
         }
-        return;
     }
 
-    // Update voltage scaling
-    g2.fwd_batt_cmp.update();
-
-#if AP_SCRIPTING_ENABLED
-    if (nav_scripting_active()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
-    }
-#endif
-
-    if (control_mode->use_battery_compensation()) {
-        // Apply voltage compensation to throttle output from flight mode
-        const float throttle = g2.fwd_batt_cmp.apply_throttle(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-    }
-
-    if (control_mode->use_throttle_limits()) {
-        // Apply min/max throttle limits
-        const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
-    }
 }
 
 /*
