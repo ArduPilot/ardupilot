@@ -273,6 +273,7 @@ protected:
     float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step-multi only
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t step_time_limit_ms;                    // time limit of current autotune process
+    uint32_t level_start_time_ms;                   // start time of waiting for level
     int8_t   counter;                               // counter for tuning gains
     float    target_rate;                           // target rate-multi only
     float    target_angle;                          // target angle-multi only
@@ -330,8 +331,6 @@ private:
 
     // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls
-    uint32_t level_start_time_ms;                   // start time of waiting for level
-    uint32_t level_fail_warning_time_ms;            // last time level failure warning message was sent to GCS
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
