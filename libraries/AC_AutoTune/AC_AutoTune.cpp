@@ -394,12 +394,14 @@ void AC_AutoTune::control_attitude()
         // Check for failure causing reverse response
         if (lean_angle <= -attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_SCALE) {
             step = WAITING_FOR_LEVEL;
+            positive_direction = twitch_reverse_direction();
         }
 
         // protect from roll over
         const float resultant_angle_cd = 100 * degrees(acosf(ahrs_view->cos_roll() * ahrs_view->cos_pitch()));
         if (resultant_angle_cd > attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_MAX_RLLPIT_SCALE) {
             step = WAITING_FOR_LEVEL;
+            positive_direction = twitch_reverse_direction();
         }
 
 #if HAL_LOGGING_ENABLED
@@ -408,6 +410,10 @@ void AC_AutoTune::control_attitude()
         ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         log_pids();
 #endif
+
+        if (axis == YAW || axis == YAW_D) {
+            desired_yaw_cd = ahrs_view->yaw_sensor;
+        }
         break;
     }
 
@@ -534,9 +540,6 @@ void AC_AutoTune::control_attitude()
             }
         }
 
-        // reverse direction for multicopter twitch test
-        positive_direction = twitch_reverse_direction();
-
         if (axis == YAW || axis == YAW_D) {
             attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
@@ -546,6 +549,7 @@ void AC_AutoTune::control_attitude()
 
         // reset testing step
         step = WAITING_FOR_LEVEL;
+        positive_direction = twitch_reverse_direction();
         step_start_time_ms = now;
         level_start_time_ms = step_start_time_ms;
         step_time_limit_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
