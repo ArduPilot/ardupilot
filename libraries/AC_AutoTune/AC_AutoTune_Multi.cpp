@@ -532,7 +532,7 @@ void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, f
     }
 
     // capture minimum measurement after the measurement has peaked (aka "bounce back")
-    if ((rate < meas_rate_min) && (meas_rate_max > rate_target_max * 0.5f)) {
+    if ((rate < meas_rate_min) && (meas_rate_max > rate_target_max * 0.25)) {
         // the measurement is bouncing back
         meas_rate_min = rate;
     }
@@ -591,7 +591,7 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
     }
 
     // capture minimum angle after we have reached a reasonable maximum angle
-    if ((angle < meas_angle_min) && (meas_angle_max > angle_target_max * 0.5f)) {
+    if ((angle < meas_angle_min) && (meas_angle_max > angle_target_max * 0.25)) {
         // the measurement is bouncing back
         meas_angle_min = angle;
     }
