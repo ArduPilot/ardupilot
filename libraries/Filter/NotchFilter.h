@@ -48,6 +48,11 @@ public:
         initialised = false;
     }
 
+    // return the frequency to log for the notch
+    float logging_frequency(void) const {
+        return initialised?_center_freq_hz:0;
+    }
+
 protected:
 
     bool initialised, need_reset;
