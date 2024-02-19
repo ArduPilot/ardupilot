@@ -972,7 +972,6 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token
 AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token)
 {
     AP_Param *ap;
-    uint16_t count = 0;
     for (ap = AP_Param::first(token, ptype);
          ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
          ap = AP_Param::next_scalar(token, ptype)) {
@@ -984,7 +983,6 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
                 break;
             }
         }
-        count++;
     }
     return ap;
 }
