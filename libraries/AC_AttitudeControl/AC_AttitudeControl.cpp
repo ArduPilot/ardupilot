@@ -174,7 +174,7 @@ void AC_AttitudeControl::relax_attitude_controllers()
 
     // Initialize the angular rate variables to the current rate
     _ang_vel_target = _ahrs.get_gyro();
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
     _ang_vel_body = _ahrs.get_gyro();
 
     // Initialize remaining variables
@@ -253,7 +253,7 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
     _attitude_target.to_euler(_euler_angle_target);
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
 
     // rotate target and normalize
     Quaternion attitude_desired_update;
@@ -281,7 +281,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        const Vector3f euler_accel = euler_accel_limit(_euler_angle_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
@@ -294,11 +294,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         _euler_rate_target.z = input_shaping_ang_vel(_euler_rate_target.z, euler_yaw_rate, euler_accel.z, _dt, _rate_y_tc);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        euler_rate_to_ang_vel(_attitude_target, _euler_rate_target, _ang_vel_target);
         // Limit the angular velocity
         ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
         // Convert body-frame angular velocity into euler angle derivative of desired attitude
-        ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+        ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
     } else {
         // When feedforward is not enabled, the target euler angle is input into the target and the feedforward rate is zeroed.
         _euler_angle_target.x = euler_roll_angle;
@@ -333,7 +333,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     const float slew_yaw_max_rads = get_slew_yaw_max_rads();
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        const Vector3f euler_accel = euler_accel_limit(_euler_angle_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
@@ -346,11 +346,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
         }
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        euler_rate_to_ang_vel(_attitude_target, _euler_rate_target, _ang_vel_target);
         // Limit the angular velocity
         ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
         // Convert body-frame angular velocity into euler angle derivative of desired attitude
-        ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+        ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
     } else {
         // When feedforward is not enabled, the target euler angle is input into the target and the feedforward rate is zeroed.
         _euler_angle_target.x = euler_roll_angle;
@@ -388,7 +388,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
 
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        const Vector3f euler_accel = euler_accel_limit(_euler_angle_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
         // When acceleration limiting is enabled, the input shaper constrains angular acceleration, slewing
         // the output rate towards the input rate.
@@ -397,7 +397,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
         _euler_rate_target.z = input_shaping_ang_vel(_euler_rate_target.z, euler_yaw_rate, euler_accel.z, _dt, _rate_y_tc);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        euler_rate_to_ang_vel(_attitude_target, _euler_rate_target, _ang_vel_target);
     } else {
         // When feedforward is not enabled, the target euler angle is input into the target and the feedforward rate is zeroed.
         // Pitch angle is restricted to +- 85.0 degrees to avoid gimbal lock discontinuities.
@@ -437,7 +437,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
         _ang_vel_target.z = input_shaping_ang_vel(_ang_vel_target.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt, _rate_y_tc);
 
         // Convert body-frame angular velocity into euler angle derivative of desired attitude
-        ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+        ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
     } else {
         // When feedforward is not enabled, the quaternion is calculated and is input into the target and the feedforward rate is zeroed.
         Quaternion attitude_target_update;
@@ -473,7 +473,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _ahrs.get_quat_body_to_ned(_attitude_target);
     _attitude_target.to_euler(_euler_angle_target);
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
     _ang_vel_body = _ang_vel_target;
 }
 
@@ -519,7 +519,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     _attitude_target.to_euler(_euler_angle_target);
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
 
     // Compute the angular velocity target from the integrated rate error
     _attitude_ang_error.to_axis_angle(attitude_error);
@@ -603,7 +603,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
     }
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -651,7 +651,7 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
     }
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -908,24 +908,25 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
 }
 
 // translates body frame acceleration limits to the euler axis
-Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel)
+Vector3f AC_AttitudeControl::euler_accel_limit(const Quaternion &att, const Vector3f &euler_accel)
 {
-    float sin_phi = constrain_float(fabsf(sinf(euler_rad.x)), 0.1f, 1.0f);
-    float cos_phi = constrain_float(fabsf(cosf(euler_rad.x)), 0.1f, 1.0f);
-    float sin_theta = constrain_float(fabsf(sinf(euler_rad.y)), 0.1f, 1.0f);
-    float cos_theta = constrain_float(fabsf(cosf(euler_rad.y)), 0.1f, 1.0f);
-
-    Vector3f rot_accel;
-    if (is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || is_negative(euler_accel.x) || is_negative(euler_accel.y) || is_negative(euler_accel.z)) {
-        rot_accel.x = euler_accel.x;
-        rot_accel.y = euler_accel.y;
-        rot_accel.z = euler_accel.z;
-    } else {
-        rot_accel.x = euler_accel.x;
-        rot_accel.y = MIN(euler_accel.y / cos_phi, euler_accel.z / sin_phi);
-        rot_accel.z = MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / (sin_phi * cos_theta)), euler_accel.z / (cos_phi * cos_theta));
+    if (!is_positive(euler_accel.x) || !is_positive(euler_accel.y) || !is_positive(euler_accel.z)) {
+        return Vector3f { euler_accel };
     }
-    return rot_accel;
+
+    const float phi = att.get_euler_roll();
+    const float theta = att.get_euler_pitch();
+
+    const float sin_phi = constrain_float(fabsf(sinf(phi)), 0.1f, 1.0f);
+    const float cos_phi = constrain_float(fabsf(cosf(phi)), 0.1f, 1.0f);
+    const float sin_theta = constrain_float(fabsf(sinf(theta)), 0.1f, 1.0f);
+    const float cos_theta = constrain_float(fabsf(cosf(theta)), 0.1f, 1.0f);
+
+    return Vector3f {
+        euler_accel.x,
+        MIN(euler_accel.y / cos_phi, euler_accel.z / sin_phi),
+        MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / (sin_phi * cos_theta)), euler_accel.z / (cos_phi * cos_theta))
+    };
 }
 
 // Sets attitude target to vehicle attitude and sets all rates to zero
@@ -957,7 +958,7 @@ void AC_AttitudeControl::reset_yaw_target_and_rate(bool reset_rate)
         _euler_rate_target.z = 0.0f;
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        euler_rate_to_ang_vel(_attitude_target, _euler_rate_target, _ang_vel_target);
     }
 }
 
@@ -976,12 +977,15 @@ void AC_AttitudeControl::inertial_frame_reset()
 }
 
 // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
+void AC_AttitudeControl::euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
 {
-    float sin_theta = sinf(euler_rad.y);
-    float cos_theta = cosf(euler_rad.y);
-    float sin_phi = sinf(euler_rad.x);
-    float cos_phi = cosf(euler_rad.x);
+    const float theta = att.get_euler_pitch();
+    const float phi = att.get_euler_roll();
+
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+    const float sin_phi = sinf(phi);
+    const float cos_phi = cosf(phi);
 
     ang_vel_rads.x = euler_rate_rads.x - sin_theta * euler_rate_rads.z;
     ang_vel_rads.y = cos_phi * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
@@ -990,12 +994,15 @@ void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const 
 
 // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
 // Returns false if the vehicle is pitched 90 degrees up or down
-bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads)
+bool AC_AttitudeControl::ang_vel_to_euler_rate(const Quaternion& att, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads)
 {
-    float sin_theta = sinf(euler_rad.y);
-    float cos_theta = cosf(euler_rad.y);
-    float sin_phi = sinf(euler_rad.x);
-    float cos_phi = cosf(euler_rad.x);
+    const float theta = att.get_euler_pitch();
+    const float phi = att.get_euler_roll();
+
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+    const float sin_phi = sinf(phi);
+    const float cos_phi = cosf(phi);
 
     // When the vehicle pitches all the way up or all the way down, the euler angles become discontinuous. In this case, we just return false.
     if (is_zero(cos_theta)) {
