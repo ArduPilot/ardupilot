@@ -137,7 +137,7 @@ protected:
             .imax      = AC_ATC_MULTI_RATE_YAW_IMAX,
             .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
             .filt_E_hz = AC_ATC_MULTI_RATE_YAW_FILT_HZ,
-            .filt_D_hz = 0.0f,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }
