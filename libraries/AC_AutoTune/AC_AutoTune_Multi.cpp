@@ -819,6 +819,8 @@ void AC_AutoTune_Multi::updating_rate_d_up(float &tune_d, float tune_d_min, floa
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                // This may be mean AGGR should be increased or MIN_D decreased
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -874,6 +876,8 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                // This may be mean AGGR should be increased or MIN_D decreased
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -907,6 +911,8 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                // This may be mean AGGR should be increased or MIN_D decreased
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     }
