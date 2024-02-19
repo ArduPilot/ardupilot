@@ -84,7 +84,7 @@ public:
     int stat(const char *pathname, struct stat *stbuf);
 
     // stat variant for scripting
-    typedef struct {
+    typedef struct Stat {
         uint32_t size;
         int32_t mode;
         uint32_t mtime;
