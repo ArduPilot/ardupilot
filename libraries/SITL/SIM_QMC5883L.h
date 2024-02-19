@@ -41,13 +41,11 @@ private:
     } registers;
 
     // 256 1-byte registers:
-    assert_storage_size<Registers::ByName, 256> assert_storage_size_registers_reg;
+    assert_storage_size<Registers::ByName, 256> assert_storage_size_registers_reg UNUSED_PRIVATE_MEMBER;
 
     Bitmask<256> writable_registers;
 
     void reset();
-
-    uint32_t cmd_take_reading_received_ms;
 };
 
 } // namespace SITL
