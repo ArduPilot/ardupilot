@@ -1442,8 +1442,6 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                     }
                 }
 
-                handle_guided_request(cmd);
-
                 {
                     //! @todo(srmainwaring) add checks that velocity and accel
                     //! are present and valid.
@@ -1476,11 +1474,12 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                             plane.mode_terrain_navigation.set_radius_and_direction(radius, dir_is_ccw);
 
                             // //! @todo(srmainwaring) remove - used for debugging
-                            // gcs().send_text(MAV_SEVERITY_DEBUG,
-                            //     "radius: %f, dir: %f", radius, dir);
+                            // gcs().send_text(MAV_SEVERITY_DEBUG, "radius: %f, dir: %f", radius, dir);
                         }
                     }
                 }
+
+                handle_guided_request(cmd);
 
                 // update adjust_altitude_target immediately rather than wait
                 // for the scheduler. See also: Plane::set_next_WP
