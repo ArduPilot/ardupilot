@@ -54,6 +54,11 @@ public:
     // reset each of the underlying filters
     void reset();
 
+    /*
+      log notch center frequencies and first harmonic
+     */
+    void log_notch_centers(uint8_t instance, uint64_t now_us) const;
+
 private:
     // underlying bank of notch filters
     NotchFilter<T>*  _filters;
