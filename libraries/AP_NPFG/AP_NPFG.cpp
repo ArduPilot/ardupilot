@@ -158,6 +158,12 @@ void AP_NPFG::update_loiter(const class Location &center_WP, float radius, int8_
     // check for parameter updates
     update_parameters();
 
+
+    //! @todo remove hardcoding
+    _npfg.setAirspeedNom(15.0f);
+    _npfg.setAirspeedMax(20.0f);
+
+
     // get current position and velocity
     Location current_loc;
     if (_ahrs.get_location(current_loc) == false) {
@@ -237,22 +243,14 @@ void AP_NPFG::update_parameters() {
     _npfg.enablePeriodUB(_npfg_en_period_ub);
     _npfg.enableMinGroundSpeed(_npfg_en_min_gsp);
     _npfg.enableTrackKeeping(_npfg_en_track_keeping);
-    // _npfg.enableWindExcessRegulation(_npfg_en_wind_reg);
-    _npfg.enableWindExcessRegulation(false);
+    _npfg.enableWindExcessRegulation(false /*_npfg_en_wind_reg*/);
+    _npfg.setMinGroundSpeed(0.0 /*_param_fw_gnd_spd_min*/);
     _npfg.setMaxTrackKeepingMinGroundSpeed(_npfg_track_keeping_gsp_max);
     _npfg.setRollTimeConst(_npfg_roll_time_const);
     _npfg.setSwitchDistanceMultiplier(_npfg_switch_distance_multiplier);
+    _npfg.setRollLimit(radians(30.0 /*_param_fw_r_lim*/));
+    _npfg.setRollSlewRate(radians(0.0 /*_param_fw_pn_r_slew_max*/));
     _npfg.setPeriodSafetyFactor(_npfg_period_safety_factor);
-
-    // _npfg.setMinGroundSpeed(_param_fw_gnd_spd_min);
-    // _npfg.setRollLimit(radians(_param_fw_r_lim));
-    // _npfg.setRollSlewRate(radians(_param_fw_pn_r_slew_max));
-    _npfg.setMinGroundSpeed(13.0f);
-    _npfg.setRollLimit(radians(30.0f));
-    _npfg.setRollSlewRate(radians(0.0f));
-
-    _npfg.setAirspeedNom(25.0f);
-    _npfg.setAirspeedMax(35.0f);
 }
 
 void AP_NPFG::set_path_tangent(Vector2f unit_path_tangent) {
