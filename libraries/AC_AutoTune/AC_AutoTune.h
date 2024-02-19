@@ -44,9 +44,10 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
-#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_ANGLE_YAW_CD        3000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_SCALE  1.0 / 4.0   // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_RLLPIT_SCALE      1.0 / 2.0   // target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_MIN_ANGLE_YAW_SCALE     1.0 / 8.0   // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_YAW_SCALE         2.0 / 3.0   // target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
 
 class AC_AutoTune
 {

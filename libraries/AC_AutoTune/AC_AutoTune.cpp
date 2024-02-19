@@ -22,7 +22,7 @@
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
 #define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS 5000     // level failure warning messages sent at this interval to users
-#define AUTOTUNE_ANGLE_MAX_RLLPIT          30.0f    // maximum allowable angle in degrees during testing
+#define AUTOTUNE_ANGLE_MAX_RLLPIT_SCALE     2.0 / 3.0   // maximum allowable angle during testing, as a fraction of angle_max
 
 AC_AutoTune::AC_AutoTune()
 {
@@ -360,18 +360,19 @@ void AC_AutoTune::control_attitude()
         // Initialize test-specific variables
         switch (axis) {
         case ROLL:
-            abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
+            abort_angle = attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_RLLPIT_SCALE;
             start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
             break;
         case PITCH:
-            abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
+            abort_angle = attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_RLLPIT_SCALE;
             start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
             break;
         case YAW:
         case YAW_D:
-            abort_angle = AUTOTUNE_TARGET_ANGLE_YAW_CD;
+            // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
+            abort_angle = attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_YAW_SCALE;
             start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
             break;
@@ -391,13 +392,13 @@ void AC_AutoTune::control_attitude()
         test_run(axis, direction_sign);
 
         // Check for failure causing reverse response
-        if (lean_angle <= -AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD) {
+        if (lean_angle <= -attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_SCALE) {
             step = WAITING_FOR_LEVEL;
         }
 
         // protect from roll over
-        float resultant_angle = degrees(acosf(ahrs_view->cos_roll() * ahrs_view->cos_pitch()));
-        if (resultant_angle > AUTOTUNE_ANGLE_MAX_RLLPIT) {
+        const float resultant_angle_cd = 100 * degrees(acosf(ahrs_view->cos_roll() * ahrs_view->cos_pitch()));
+        if (resultant_angle_cd > attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_MAX_RLLPIT_SCALE) {
             step = WAITING_FOR_LEVEL;
         }
 
