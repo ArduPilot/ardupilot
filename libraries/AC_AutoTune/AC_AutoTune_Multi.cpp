@@ -44,7 +44,7 @@
  *
  */
 
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U     // timeout for tuning mode's testing step
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   2000U     // timeout for tuning mode's testing step
 
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
