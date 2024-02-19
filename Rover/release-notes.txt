@@ -127,6 +127,17 @@ Changes from 4.4.4
 6) Parameters renamed
     - COMPASS_TYPEMASK renamed to COMPASS_DISBLMSK
 7) ROS2 / DDS support
+    - Added support for EProsima MicroXRCEDDS as a transport in SITL and hardware
+    - Added sensor data topic support such as NavSatStatus and BatteryState
+    - Added a new AP_ExternalControl library for generic control support in SI units
+    - Added support for building ArduPilot with the colcon build system
+    - DDS topics comply with ROS REP-147
+    - Added Gazebo Garden and Gazebo Harmonic simulation with examples
+    - Added support for ROS 2 services such as Arm and Mode control
+    - Added high level goal interface for waypoints
+    - Wiki updated to support ROS 2
+    - Added ROS 2 launch scripts for SITL, MAVProxy and micro-ROS agent
+    - Add pytests for DDS client and ROS 2 launch scripts and integrate into CI
 8) Camera and gimbal enhancements
     - Calculates location where camera gimbal is pointing (see CAMERA_FOV_STATUS)
     - CAMx_MNT_INST allows specifying which mount camera is in
