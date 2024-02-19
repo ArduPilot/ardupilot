@@ -563,6 +563,7 @@ void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, f
 // update min and max and test for end conditions
 void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
 {
+    const uint32_t now = AP_HAL::millis();
     if (angle >= angle_max) {
         if (is_equal(rate, meas_rate_min) && step_scaler > 0.5f) {
             // we have reached the angle limit before completing the measurement of maximum and minimum
@@ -571,6 +572,8 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
             // ignore result and start test again
             step = WAITING_FOR_LEVEL;
             positive_direction = twitch_reverse_direction();
+            step_start_time_ms = now;
+            level_start_time_ms = now;
         } else {
             step = UPDATE_GAINS;
         }
