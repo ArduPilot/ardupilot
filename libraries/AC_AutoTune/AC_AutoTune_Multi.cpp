@@ -570,6 +570,7 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
             step_scaler *= 0.9f;
             // ignore result and start test again
             step = WAITING_FOR_LEVEL;
+            positive_direction = twitch_reverse_direction();
         } else {
             step = UPDATE_GAINS;
         }
@@ -944,8 +945,6 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
         }
-        // cancel change in direction
-        positive_direction = !positive_direction;
     } else {
         if (ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
