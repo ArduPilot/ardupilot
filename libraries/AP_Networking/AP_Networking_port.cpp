@@ -255,7 +255,7 @@ void AP_Networking::Port::tcp_server_loop(void)
             sock = listen_sock->accept(100);
             if (sock != nullptr) {
                 sock->set_blocking(false);
-                char buf[16];
+                char buf[IP4_STR_LEN];
                 uint16_t last_port;
                 const char *last_addr = listen_sock->last_recv_address(buf, sizeof(buf), last_port);
                 if (last_addr != nullptr) {
@@ -351,8 +351,8 @@ bool AP_Networking::Port::send_receive(void)
         uint16_t last_port = 0;
         if (sock->last_recv_address(last_addr, last_port)) {
             if (!connected || (last_addr != last_udp_connect_address) || (last_port != last_udp_connect_port)) {
-                char last_addr_str[16];
-                sock->inet_addr_to_str(last_addr, last_addr_str, 16);
+                char last_addr_str[IP4_STR_LEN];
+                sock->inet_addr_to_str(last_addr, last_addr_str, sizeof(last_addr_str));
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", unsigned(state.idx), last_addr_str, unsigned(last_port));
                 connected = true;
                 last_udp_connect_address = last_addr;
