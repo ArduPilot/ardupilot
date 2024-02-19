@@ -125,6 +125,10 @@ public:
     // store the NPFG_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+
+    //! @todo replace by updating an existing interface
+    void set_path_tangent(Vector2f unit_path_tangent);
+
 private:
     void update_parameters();
 
@@ -149,4 +153,10 @@ private:
     AP_Float _npfg_roll_time_const;
     AP_Float _npfg_switch_distance_multiplier;
     AP_Float _npfg_period_safety_factor;
+
+    // AP_Float _param_fw_gnd_spd_min;
+    // AP_Float _param_fw_r_lim;
+    // AP_Float _param_fw_pn_r_slew_max;
+
+    Vector2f _unit_path_tangent;
 };

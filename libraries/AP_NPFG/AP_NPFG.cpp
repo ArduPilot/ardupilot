@@ -73,6 +73,24 @@ const AP_Param::GroupInfo AP_NPFG::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PERIOD_SF", 10, AP_NPFG, _npfg_period_safety_factor, 1.5f),
 
+    // // @Param: FW_GND_SPD_MIN
+    // // @DisplayName: NPFG forward ground speed minimum (m/s).
+    // // @Description: NPFG forward ground speed minimum (m/s).
+    // // @User: Advanced
+    // AP_GROUPINFO("FW_GND_SPD_MIN", 11, AP_NPFG, _param_fw_gnd_spd_min, 15.0f),
+
+    // // @Param: FW_R_LIM
+    // // @DisplayName: NPFG forward roll limit (deg).
+    // // @Description: NPFG forward roll limit (deg).
+    // // @User: Advanced
+    // AP_GROUPINFO("FW_R_LIM", 12, AP_NPFG, _param_fw_r_lim, 30.0f),
+
+    // // @Param: FW_PN_R_SLEW_MAX
+    // // @DisplayName: NPFG forward roll slew limit (deg/s).
+    // // @Description: NPFG forward roll slew limit (deg/s).
+    // // @User: Advanced
+    // AP_GROUPINFO("FW_PN_R_SLEW_MAX", 13, AP_NPFG, _param_fw_pn_r_slew_max, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -84,18 +102,23 @@ AP_NPFG::AP_NPFG(AP_AHRS &ahrs, const AP_TECS *tecs)
 }
 
 int32_t AP_NPFG::nav_roll_cd(void) const {
-    return 0;
+    float roll_setpoint_rad = _npfg.getRollSetpoint();
+    int32_t roll_setpoint_cd = int32_t(100 * degrees(roll_setpoint_rad));
+    return roll_setpoint_cd;
 }
 
 float AP_NPFG::lateral_acceleration(void) const {
-    return 0.0;
+    return _npfg.getLateralAccel();
 }
 
 int32_t AP_NPFG::nav_bearing_cd(void) const {
-    return 0;
+    float bearing_rad = _npfg.getBearing();
+    int32_t bearing_cd = int32_t(100 * degrees(bearing_rad));
+    return bearing_cd;
 }
 
 int32_t AP_NPFG::bearing_error_cd(void) const {
+    // not implemented
     return 0;
 }
 
@@ -104,73 +127,104 @@ int32_t AP_NPFG::target_bearing_cd(void) const {
 }
 
 float AP_NPFG::crosstrack_error(void) const {
-    return 0.0;
+    return _npfg.getTrackError();
 }
 
 float AP_NPFG::crosstrack_error_integrator(void) const {
+    // not implemented
     return 0.0;
 }
 
 float AP_NPFG::turn_distance(float wp_radius) const {
+    // not implemented
     return 0.0;
 }
 
 float AP_NPFG::turn_distance(float wp_radius, float turn_angle) const {
+    // not implemented
     return 0.0;
 }
 
 float AP_NPFG::loiter_radius(const float radius) const {
+    // not implemented
     return 0.0;
 }
 
 void AP_NPFG::update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min) {
+    // not implemented
 }
 
 void AP_NPFG::update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) {
     // check for parameter updates
     update_parameters();
 
-    //! @todo - obtain current position from _ahrs in local cartesian coords
-    Vector2f curr_pos_local;
+    // get current position and velocity
+    Location current_loc;
+    if (_ahrs.get_location(current_loc) == false) {
+        //! @todo if no GPS loc available, maintain last nav/target_bearing
+        // _data_is_stale = true;
+        // return;
+    }
 
-    //! @todo - obtain ground vel from _ahrs in local cartesian coords
-    Vector2f ground_vel;
+    //! @todo - obtain current position from _ahrs in local cartesian coords (m)
+    Vector2f curr_pos_local_cm;
+    if (current_loc.get_vector_xy_from_origin_NE(curr_pos_local_cm) == false) {
+        //! @todo add error handling
+    }
+    Vector2f curr_pos_local(0.01 * curr_pos_local_cm.x, 0.01 * curr_pos_local_cm.y);
 
-    //! @todo - obtain wind vel from _ahrs in local cartesian coords
-    Vector2f wind_vel;
+    //! @todo - obtain ground vel from _ahrs in local cartesian coords (m/s)
+    Vector2f ground_vel = _ahrs.groundspeed_vector();
 
-    //! @todo - unit path tangent is the normalised setpoint velocity
-    Vector2f unit_path_tangent;
+    //! @todo - obtain wind vel from _ahrs in local cartesian coords (m/s)
+    Vector3f wind_estimate = _ahrs.wind_estimate();
+    Vector2f wind_vel(wind_estimate.x, wind_estimate.y);
 
-    //! @todo - the setpoint position in local cartesian coords
-    Vector2f position_on_path;
+    //! @todo - unit path tangent is the normalised setpoint velocity (m/s)
+    // Vector2f unit_path_tangent(0.0f, 0.0f);
+
+    //! @todo - the setpoint position in local cartesian coords (m)
+    Vector2f position_on_path_cm;
+    if (center_WP.get_vector_xy_from_origin_NE(position_on_path_cm) == false) {
+        //! @todo add error handling
+    }
+    Vector2f position_on_path(0.01 * position_on_path_cm.x, 0.01 * position_on_path_cm.y);
 
     //! @todo calculate from loiter radius and direction
     //! @todo check loiter radius is not zero or infinite
-    float path_curvature = -1.0 * float(loiter_direction) / radius;
+    float path_curvature = 0.0;
+    if (is_positive(radius)) {
+        path_curvature = -1.0 * float(loiter_direction) / radius;
+    }
 
     _npfg.guideToPath(curr_pos_local, ground_vel, wind_vel,
-        unit_path_tangent, position_on_path, path_curvature);
+        _unit_path_tangent, position_on_path, path_curvature);
 }
 
 void AP_NPFG::update_heading_hold(int32_t navigation_heading_cd) {
+    // not implemented
 }
 
 void AP_NPFG::update_level_flight(void) {
+    // not implemented
 }
 
 bool AP_NPFG::reached_loiter_target(void) {
+    // not implemented
     return false;
 }
 
 void AP_NPFG::set_data_is_stale(void) {
+    // not implemented
 }
 
 bool AP_NPFG::data_is_stale(void) const {
+    // not implemented
     return false;
 }
 
 void AP_NPFG::set_reverse(bool reverse) {
+    // not implemented
 }
 
 void AP_NPFG::update_parameters() {
@@ -183,12 +237,24 @@ void AP_NPFG::update_parameters() {
     _npfg.enablePeriodUB(_npfg_en_period_ub);
     _npfg.enableMinGroundSpeed(_npfg_en_min_gsp);
     _npfg.enableTrackKeeping(_npfg_en_track_keeping);
-    _npfg.enableWindExcessRegulation(_npfg_en_wind_reg);
-    // _npfg.setMinGroundSpeed(_param_fw_gnd_spd_min);
+    // _npfg.enableWindExcessRegulation(_npfg_en_wind_reg);
+    _npfg.enableWindExcessRegulation(false);
     _npfg.setMaxTrackKeepingMinGroundSpeed(_npfg_track_keeping_gsp_max);
     _npfg.setRollTimeConst(_npfg_roll_time_const);
     _npfg.setSwitchDistanceMultiplier(_npfg_switch_distance_multiplier);
+    _npfg.setPeriodSafetyFactor(_npfg_period_safety_factor);
+
+    // _npfg.setMinGroundSpeed(_param_fw_gnd_spd_min);
     // _npfg.setRollLimit(radians(_param_fw_r_lim));
     // _npfg.setRollSlewRate(radians(_param_fw_pn_r_slew_max));
-    _npfg.setPeriodSafetyFactor(_npfg_period_safety_factor);
+    _npfg.setMinGroundSpeed(13.0f);
+    _npfg.setRollLimit(radians(30.0f));
+    _npfg.setRollSlewRate(radians(0.0f));
+
+    _npfg.setAirspeedNom(25.0f);
+    _npfg.setAirspeedMax(35.0f);
+}
+
+void AP_NPFG::set_path_tangent(Vector2f unit_path_tangent) {
+    _unit_path_tangent = unit_path_tangent;
 }

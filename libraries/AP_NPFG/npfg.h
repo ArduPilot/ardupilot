@@ -266,7 +266,7 @@ public:
      *
      * @return Roll angle (in NED frame)
      */
-    float getRollSetpoint() { return roll_setpoint_; }
+    float getRollSetpoint() const { return roll_setpoint_; }
 
 private:
 
