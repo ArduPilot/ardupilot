@@ -1163,9 +1163,9 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     // disable rate limits
     attitude_control->use_sqrt_controller(false);
     // hold current attitude
-    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
 
     if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
         // step angle targets on first iteration
         if (twitch_first_iter) {
             twitch_first_iter = false;
@@ -1187,6 +1187,7 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
             }
         }
     } else {
+        attitude_control->input_rate_bf_roll_pitch_yaw_2(0.0f, 0.0f, 0.0f);
         // Testing rate P and D gains so will set body-frame rate targets.
         // Rate controller will use existing body-frame rates and convert to motor outputs
         // for all axes except the one we override here.
