@@ -256,7 +256,7 @@ private:
         uint16_t apeture;                           // cameras' aperture * 100
         uint16_t iso_sensitivity;                   // camera's iso sensitivity
     } _status;                                      // latest status received
-    static_assert(sizeof(_status) == 48);           // status should be 48 bytes
+    static_assert(sizeof(_status) == 48, "status must be 48 bytes");           // status should be 48 bytes
     struct {
         uint32_t last_request_ms;                   // system time that status was last requested
         uint32_t last_error_status;                 // last error status reported to user
