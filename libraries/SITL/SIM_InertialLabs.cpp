@@ -93,7 +93,7 @@ void InertialLabs::send_packet(void)
         pkt.gnss_extended_info.fix_type = 2;
     }
 
-    pkt.differential_pressure = 0.5*sq(fdm.airspeed+fabsf(rand_float()*0.25))*1.0e4;
+    pkt.differential_pressure = 0.5*sq(fdm.airspeed+fabsF(rand_float()*0.25))*1.0e4;
     pkt.supply_voltage = 12.3*100;
     pkt.temperature = 23.4*10;
 
