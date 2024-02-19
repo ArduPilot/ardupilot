@@ -42,7 +42,7 @@ void AC_AttitudeControl_TS::relax_attitude_controllers(bool exclude_pitch)
 
         // Initialize the roll and yaw angular rate variables to the current rate
         _ang_vel_target = _ahrs.get_gyro();
-        ang_vel_to_euler_rate(_euler_angle_target, _ang_vel_target, _euler_rate_target);
+        ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
         _ang_vel_body.x = _ahrs.get_gyro().x;
         _ang_vel_body.z = _ahrs.get_gyro().z;
 
