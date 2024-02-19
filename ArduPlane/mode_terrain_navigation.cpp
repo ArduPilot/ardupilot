@@ -42,7 +42,7 @@ void ModeTerrainNavigation::navigate()
     gcs().send_text(MAV_SEVERITY_DEBUG, "ModeTerrainNavigation::navigate");
     // ModeGuided::navigate();
 
-    plane.NPFG_controller.update_path_tangent(_unit_path_tangent);
+    plane.NPFG_controller.set_path_tangent(_unit_path_tangent);
     plane.nav_controller->update_loiter(plane.next_WP_loc, _radius_m,
         plane.loiter.direction);
 }
