@@ -233,7 +233,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             MAV_FRAME_LOCAL_FRD,
             MAV_FRAME_BODY_FRD,
             0,
-            MAV_ESTIMATOR_TYPE_VIO
+            MAV_ESTIMATOR_TYPE_VIO,
+            50 // quality hardcoded to 50%
         };
         mavlink_msg_odometry_encode_status(
             system_id,
