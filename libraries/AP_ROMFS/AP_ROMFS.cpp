@@ -117,8 +117,7 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
 {
     const size_t dlen = strlen(dirname);
     for ( ; ofs < ARRAY_SIZE(files); ofs++) {
-        if (strncmp(dirname, files[ofs].filename, dlen) == 0 &&
-            files[ofs].filename[dlen] == '/') {
+        if ((dlen == 0) || (strncmp(dirname, files[ofs].filename, dlen) == 0)) {
             // found one
             return files[ofs++].filename;
         }
