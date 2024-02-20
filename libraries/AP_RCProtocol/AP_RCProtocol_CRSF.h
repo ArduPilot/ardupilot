@@ -58,13 +58,13 @@ public:
     bool is_rx_active() const override {
         // later versions of CRSFv3 will send link rate frames every 200ms
         // but only before an initial failsafe
-        return AP_HAL::micros() < _last_rx_frame_time_us + CRSF_RX_TIMEOUT;
+        return _last_rx_frame_time_us != 0 && AP_HAL::micros() - _last_rx_frame_time_us < CRSF_RX_TIMEOUT;
     }
 
     // is the transmitter active, used to adjust telemetry data
     bool is_tx_active() const {
         // this is the same as the Copter failsafe timeout
-        return AP_HAL::micros() < _last_tx_frame_time_us + CRSF_TX_TIMEOUT;
+        return _last_tx_frame_time_us != 0 && AP_HAL::micros() - _last_tx_frame_time_us < CRSF_TX_TIMEOUT;
     }
 
     // get singleton instance
