@@ -93,8 +93,6 @@ class BoardList(object):
             for line in text:
                 if re.match(r"^\s*env AP_PERIPH 1", line):
                     board.is_ap_periph = 1
-                if re.match(r"^\s*env AP_PERIPH_HEAVY 1", line):
-                    board.is_ap_periph = 1
 
                 # a hwdef can specify which vehicles this target is valid for:
                 match = re.match(r"AUTOBUILD_TARGETS\s*(.*)", line)
