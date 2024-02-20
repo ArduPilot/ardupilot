@@ -414,6 +414,9 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 // this function updates _distance_to_destination
 void Mode::navigate_to_waypoint()
 {
+    if ( g2.sailboat.in_irons()){
+       return;
+    }
     // apply speed nudge from pilot
     // calc_speed_nudge's "desired_speed" argument should be negative when vehicle is reversing
     // AR_WPNav nudge_speed_max argu,ent should always be positive even when reversing

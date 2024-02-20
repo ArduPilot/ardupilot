@@ -41,6 +41,8 @@ public:
     // setup servo output ranges
     void setup_servo_output();
 
+    bool set_sailboat_in_irons(float steering);
+    void clear_sailboat_in_irons();
     // get or set steering as a value from -4500 to +4500
     //   apply_scaling should be set to false for manual modes where
     //   no scaling by speed or angle should e performed
@@ -78,6 +80,8 @@ public:
     // set or get mast rotation input as a value from -100 to 100
     void set_mast_rotation(float mast_rotation);
     float get_mast_rotation() const { return _mast_rotation; }
+
+    bool sailboat_in_irons() const { return _sailboat_in_irons;}
 
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
@@ -223,6 +227,7 @@ private:
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
     frame_type _frame_type; // frame type requested at initialisation
+    bool    _sailboat_in_irons = false;
 
     // omni variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];

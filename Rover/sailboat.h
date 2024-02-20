@@ -89,7 +89,14 @@ public:
     // by feathering or sheeting right out
     void relax_sails();
 
+    // state machine. the state is updated at each call
+    // return true if sailboat is stuck "in irons"
+    bool in_irons();
+
 private:
+
+    // change sailboat state to in irons
+    void set_in_irons();
 
     // true if motor is on to assist with slow tack
     bool motor_assist_tack() const;
@@ -116,4 +123,7 @@ private:
     uint32_t tack_clear_ms;         // system time when tack was cleared
     bool tack_assist;               // true if we should use some throttle to assist tack
     UseMotor motor_state;           // current state of motor output
+    uint32_t in_irons_start_ms = 0U; // system time when in_irons started
+    float in_irons_heading_rad;     // target heading in radians when in irons
+
 };
