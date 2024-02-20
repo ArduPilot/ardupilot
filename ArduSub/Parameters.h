@@ -65,7 +65,7 @@ public:
         k_param_serial_manager, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
         k_param_arming = 26, // Arming checks
-        k_param_can_mgr,
+        k_param_can_mgr_old,
 
         // Sensor objects
         k_param_ins = 30, // AP_InertialSensor
