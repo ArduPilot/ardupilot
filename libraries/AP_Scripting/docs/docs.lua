@@ -3428,3 +3428,15 @@ function networking:get_netmask_active() end
 -- desc
 ---@return uint32_t_ud
 function networking:get_ip_active() end
+
+-- visual odometry object
+--@class visual_odom
+visual_odom = {}
+
+-- visual odometry health
+---@return boolean
+function visual_odom:healthy() end
+
+-- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
+---@return integer
+function visual_odom:quality() end
