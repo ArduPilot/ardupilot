@@ -492,12 +492,9 @@ void AP_ESC_Telem::update()
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
-#endif
-
-    const uint32_t now_us = AP_HAL::micros();
+    const uint64_t now_us64 = AP_HAL::micros64();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-#if HAL_LOGGING_ENABLED
         // Push received telemetry data into the logging system
         if (logger && logger->logging_enabled()) {
             if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
@@ -519,7 +516,7 @@ void AP_ESC_Telem::update()
                 //   error_rate is in percentage
                 const struct log_Esc pkt{
                     LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
-                    time_us     : AP_HAL::micros64(),
+                    time_us     : now_us64,
                     instance    : i,
                     rpm         : rpm,
                     raw_rpm     : raw_rpm,
@@ -535,8 +532,12 @@ void AP_ESC_Telem::update()
                 _last_rpm_log_us[i] = _rpm_data[i].last_update_us;
             }
         }
+    }
 #endif  // HAL_LOGGING_ENABLED
 
+    const uint32_t now_us = AP_HAL::micros();
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        // Invalidate RPM data if not received for too long
         if ((now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
             _rpm_data[i].data_valid = false;
         }
