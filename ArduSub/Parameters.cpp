@@ -747,25 +747,25 @@ void Sub::load_parameters()
 
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 19, 4051 },
+        { &airspeed, airspeed.var_info, 19 },
 #endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-        { &stats, stats.var_info, 1, 4033 },
+        { &stats, stats.var_info, 1 },
 #endif
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-        { &scripting, scripting.var_info, 18, 82 },
+        { &scripting, scripting.var_info, 18 },
 #endif
 #if AP_GRIPPER_ENABLED
     // PARAMETER_CONVERSION - Added: Feb-2024
-        { &gripper, gripper.var_info, 3, 4035 },
+        { &gripper, gripper.var_info, 3 },
 #endif
     };
 
@@ -773,7 +773,7 @@ void Sub::load_parameters()
 
     // PARAMETER_CONVERSION - Added: Feb-2024
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 }
 
