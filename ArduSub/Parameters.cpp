@@ -745,68 +745,31 @@ void Sub::load_parameters()
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
-// PARAMETER_CONVERSION - Added: JAN-2022
-#if AP_AIRSPEED_ENABLED
-    // Find G2's Top Level Key
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-        return;
-    }
-
-    const uint16_t old_index = 19;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4051;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
-#endif
-
-
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: Jan-2024
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
+#if AP_AIRSPEED_ENABLED
+    // PARAMETER_CONVERSION - Added: JAN-2022
+        { &airspeed, airspeed.var_info, 19, 4051 },
+#endif
 #if AP_STATS_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo stats_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, stats_info.old_key)) {
-            return;
-        }
-
-        const uint16_t stats_old_index = 1;       // Old parameter index in g2
-        const uint16_t stats_old_top_element = 4033; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(stats_info.old_key, &stats, stats.var_info, stats_old_index, stats_old_top_element, false);
-    }
-#endif
     // PARAMETER_CONVERSION - Added: Jan-2024
+        { &stats, stats.var_info, 1, 4033 },
+#endif
 #if AP_SCRIPTING_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo scripting_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, scripting_info.old_key)) {
-            return;
-        }
-
-        const uint16_t scripting_old_index = 18;       // Old parameter index in g2
-        const uint16_t scripting_old_top_element = 82; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
-    }
+    // PARAMETER_CONVERSION - Added: Jan-2024
+        { &scripting, scripting.var_info, 18, 82 },
 #endif
-
-    // PARAMETER_CONVERSION - Added: Feb-2024
 #if AP_GRIPPER_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo gripper_info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, gripper_info.old_key)) {
-            return;
-        }
-
-        const uint16_t old_gripper_index = 3;       // Old parameter index in g2
-        const uint16_t old_gripper_top_element = 4035; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(gripper_info.old_key, &gripper, gripper.var_info, old_gripper_index, old_gripper_top_element, false);
-    }
+    // PARAMETER_CONVERSION - Added: Feb-2024
+        { &gripper, gripper.var_info, 3, 4035 },
 #endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
 
     // PARAMETER_CONVERSION - Added: Feb-2024
 #if HAL_LOGGING_ENABLED
