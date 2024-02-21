@@ -1386,41 +1386,41 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
     switch (t.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "%sbool data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sbool data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "%sfloat data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sfloat data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT8_T:
-        fprintf(source, "%sint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT16_T:
-        fprintf(source, "%sint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT32_T:
-        fprintf(source, "%sint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT8_T:
-        fprintf(source, "%suint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT16_T:
-        fprintf(source, "%suint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_AP_OBJECT:
       case TYPE_NONE:
       case TYPE_LITERAL:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
       case TYPE_STRING:
-        fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%schar * data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_ENUM:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_USERDATA:
-        fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.ud.name, arg_number);
+        fprintf(source, "%s%s data_%d {};\n", indentation, t.data.ud.name, arg_number);
         break;
     }
   } else {

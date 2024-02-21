@@ -274,6 +274,7 @@ class Board:
             env.CXXFLAGS += [
                 '-fcheck-new',
                 '-fsingle-precision-constant',
+                '-Wno-psabi',
             ]
 
         if cfg.env.DEBUG:
@@ -654,7 +655,6 @@ class sitl(Board):
         cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
-        cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 

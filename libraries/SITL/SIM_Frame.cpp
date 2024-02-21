@@ -89,6 +89,14 @@ static Motor tiltquad_h_vectored_motors[] =
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, 7, 10, -90),
 };
 
+static Motor tiltquad[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1, -1, 0, 0, 7, 10, -90),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4, -1, 0, 0, 8, 10, -90),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
+};
+
 static Motor hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -308,7 +316,8 @@ static Frame supported_frames[] =
     Frame("tilttrivec",3, tilttri_vectored_motors),
     Frame("tilttri",   3, tilttri_motors),
     Frame("y6",        6, y6_motors),
-    Frame("firefly",   6, firefly_motors)
+    Frame("firefly",   6, firefly_motors),
+    Frame("tilt",      4, tiltquad),
 };
 
 // get air density in kg/m^3
@@ -322,7 +331,6 @@ float Frame::get_air_density(float alt_amsl) const
     return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN(model.refTempC)));
 }
 
-#if USE_PICOJSON
 /*
   load frame specific parameters from a json file if available
  */
@@ -341,7 +349,7 @@ void Frame::load_frame_params(const char *model_json)
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    picojson::value *obj = (picojson::value *)load_json(model_json);
+    AP_JSON::value *obj = AP_JSON::load_json(model_json);
     if (obj == nullptr) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
@@ -386,7 +394,7 @@ void Frame::load_frame_params(const char *model_json)
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
         auto v = obj->get(vars[i].label);
-        if (v.is<picojson::null>()) {
+        if (v.is<AP_JSON::null>()) {
             // use default value
             continue;
         }
@@ -409,7 +417,7 @@ void Frame::load_frame_params(const char *model_json)
         for (uint8_t j=0; j<12; j++) {
             snprintf(label_name, 20, "motor%i_%s", j+1, per_motor_vars[i].label);
             auto v = obj->get(label_name);
-            if (v.is<picojson::null>()) {
+            if (v.is<AP_JSON::null>()) {
                 // use default value
                 continue;
             }
@@ -427,23 +435,21 @@ void Frame::load_frame_params(const char *model_json)
     ::printf("Loaded model params from %s\n", model_json);
 }
 
-void Frame::parse_float(picojson::value val, const char* label, float &param) {
+void Frame::parse_float(AP_JSON::value val, const char* label, float &param) {
     if (!val.is<double>()) {
         AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
     }
     param = val.get<double>();
 }
 
-void Frame::parse_vector3(picojson::value val, const char* label, Vector3f &param) {
-    if (!val.is<picojson::array>() || !val.contains(2) || val.contains(3)) {
+void Frame::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param) {
+    if (!val.is<AP_JSON::value::array>() || !val.contains(2) || val.contains(3)) {
         AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
     }
     for (uint8_t j=0; j<3; j++) {
         parse_float(val.get(j), label, param[j]);
     }
 }
-
-#endif
 
 #if AP_SIM_ENABLED
 
@@ -455,13 +461,11 @@ void Frame::init(const char *frame_str, Battery *_battery)
     model = default_model;
     battery = _battery;
 
-#if USE_PICOJSON
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
     if (colon != nullptr && slen > 5 && strcmp(&frame_str[slen-5], ".json") == 0) {
         load_frame_params(colon+1);
     }
-#endif
     mass = model.mass;
 
     const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));

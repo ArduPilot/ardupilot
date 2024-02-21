@@ -398,6 +398,13 @@ public:
     void update() override;
 
     void run() override;
+
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const { return false; }
+
+    // true if voltage correction should be applied to throttle
+    bool use_battery_compensation() const { return false; }
+
 };
 
 

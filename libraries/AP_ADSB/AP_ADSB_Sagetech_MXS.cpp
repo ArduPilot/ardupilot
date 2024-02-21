@@ -633,7 +633,8 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
     uint64_t time_usec = ap_gps.epoch_from_rtc_us;
     if (ap_gps.have_epoch_from_rtc_us) {
         const time_t time_sec = time_usec * 1E-6;
-        struct tm* tm = gmtime(&time_sec);
+        struct tm tmd {};
+        struct tm* tm = gmtime_r(&time_sec, &tmd);
 
         snprintf((char*)&gps.timeOfFix, 11, "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
     } else {
