@@ -588,17 +588,17 @@ void Tracker::load_parameters(void)
 
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, true);
 #endif
 
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-    AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, true);
 #endif
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
 #if HAL_HAVE_SAFETY_SWITCH
