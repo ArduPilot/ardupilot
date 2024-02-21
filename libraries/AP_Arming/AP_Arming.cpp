@@ -1288,6 +1288,13 @@ bool AP_Arming::fence_checks(bool display_failure)
         check_failed(display_failure, "%s", fail_msg);
     }
 
+#if AP_SDCARD_STORAGE_ENABLED
+    if (fence->failed_sdcard_storage() || StorageManager::storage_failed()) {
+        check_failed(display_failure, "Failed to open fence storage");
+        return false;
+    }
+#endif
+    
     return false;
 }
 #endif  // AP_FENCE_ENABLED
