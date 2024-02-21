@@ -1473,8 +1473,7 @@ void Plane::load_parameters(void)
     {
         const uint16_t old_key = g.k_param_airspeed;
         const uint16_t old_index = 0;       // Old parameter index in the tree
-        const uint16_t old_top_element = 0; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, old_top_element, true);
+        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, true);
     }
 #endif
 
@@ -1495,7 +1494,7 @@ void Plane::load_parameters(void)
     
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, true);
 #endif
   
     // PARAMETER_CONVERSION - Added: Dec 2023
@@ -1514,19 +1513,19 @@ void Plane::load_parameters(void)
     static const AP_Param::G2ObjectConversion g2_conversions[] {
     // PARAMETER_CONVERSION - Added: Oct-2021
 #if HAL_EFI_ENABLED
-        { &efi, efi.var_info, 22, 86 },
+        { &efi, efi.var_info, 22 },
 #endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
-        { &stats, stats.var_info, 5, 4037 },
+        { &stats, stats.var_info, 5 },
 #endif
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
-        { &scripting, scripting.var_info, 14, 78 },
+        { &scripting, scripting.var_info, 14 },
 #endif
 #if AP_GRIPPER_ENABLED
     // PARAMETER_CONVERSION - Added: Feb-2024 for Plane-4.6
-        { &gripper, gripper.var_info, 12, 4044 },
+        { &gripper, gripper.var_info, 12 },
 #endif
     };
 
@@ -1534,6 +1533,6 @@ void Plane::load_parameters(void)
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 }
