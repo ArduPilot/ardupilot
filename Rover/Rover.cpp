@@ -35,8 +35,6 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#include "AP_Gripper/AP_Gripper.h"
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros, _priority)
@@ -100,9 +98,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300,  63),
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
-#endif
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
 #endif
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
