@@ -539,6 +539,9 @@ singleton Sub rename sub
 singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
 singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
 singleton Sub method is_button_pressed boolean uint8_t 1 4
+singleton Sub method rangefinder_alt_ok boolean
+singleton Sub method get_rangefinder_target_cm float
+singleton Sub method set_rangefinder_target_cm boolean float'skip_check
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
