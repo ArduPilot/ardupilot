@@ -472,6 +472,14 @@ public:
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
+    struct G2ObjectConversion {
+        void *object_pointer;
+        const struct AP_Param::GroupInfo *var_info;
+        uint16_t old_index;  // Old parameter index in g
+        uint16_t old_top_element;  // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+    };
+    static void         convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions);
+
     /*
       convert width of a parameter, allowing update to wider scalar
       values without changing the parameter indexes. This will return
