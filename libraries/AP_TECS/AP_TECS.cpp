@@ -542,8 +542,10 @@ void AP_TECS::_update_height_demand(void)
             _hgt_dem_rate_ltd = _hgt_dem_rate_ltd - _sink_rate_limit * _DT;
             _sink_fraction = 1.0f;
         } else {
-            if (is_negative(hgt_dem - _hgt_dem_rate_ltd)) {
-                _sink_fraction = (hgt_dem - _hgt_dem_rate_ltd) / (-_sink_rate_limit * _DT);
+            const float numerator = hgt_dem - _hgt_dem_rate_ltd;
+            const float denominator = - _sink_rate_limit * _DT;
+            if (is_negative(numerator) && is_negative(denominator)) {
+                _sink_fraction = numerator / denominator;
             } else {
                 _sink_fraction = 0.0f;
             }
