@@ -504,7 +504,7 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
 
 #if AP_GRIPPER_ENABLED
     if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
-        copter.g2.gripper.release();
+        gripper.release();
     }
 #endif
 }

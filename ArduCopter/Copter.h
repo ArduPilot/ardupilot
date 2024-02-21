@@ -110,10 +110,6 @@
  #include <AC_WPNav/AC_WPNav_OA.h>
  #include <AC_Avoidance/AP_OAPathPlanner.h>
 #endif
-#include <AP_Gripper/AP_Gripper_config.h>
-#if AP_GRIPPER_ENABLED
- # include <AP_Gripper/AP_Gripper.h>
-#endif
 #if AC_PRECLAND_ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
