@@ -3,6 +3,7 @@
 #if AP_FENCE_ENABLED
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
 #define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
@@ -27,10 +28,32 @@
 
 extern const AP_HAL::HAL& hal;
 
-static const StorageAccess fence_storage(StorageManager::StorageFence);
+static StorageAccess fence_storage(StorageManager::StorageFence);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AC_FENCE_SDCARD_FILENAME "APM/fence.stg"
+#else
+#define AC_FENCE_SDCARD_FILENAME "fence.stg"
+#endif
 
 void AC_PolyFence_loader::init()
 {
+#if AP_SDCARD_STORAGE_ENABLED
+    // check for extra storage on microsd
+    const auto *bc = AP::boardConfig();
+    if (bc != nullptr) {
+        const auto size_kb = bc->get_sdcard_fence_kb();
+        if (size_kb > 0) {
+            _failed_sdcard_storage = !fence_storage.attach_file(AC_FENCE_SDCARD_FILENAME, size_kb);
+            if (_failed_sdcard_storage) {
+                // wipe fence if storage not available, but don't
+                // save. This allows sdcard error to be fixed and
+                // reboot
+                _total.set(0);
+            }
+        }
+    }
+#endif
     if (!check_indexed()) {
         // tell the user, perhaps?
     }
