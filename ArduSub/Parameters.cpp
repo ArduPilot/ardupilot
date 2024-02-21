@@ -75,16 +75,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-#if RANGEFINDER_ENABLED == ENABLED
-    // @Param: RNGFND_GAIN
-    // @DisplayName: Rangefinder gain
-    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the sub
-    // @Range: 0.01 2.0
-    // @Increment: 0.01
-    // @User: Standard
-    GSCALAR(rangefinder_gain,     "RNGFND_GAIN",           RANGEFINDER_GAIN_DEFAULT),
-#endif
-
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls what action to take when GCS heartbeat is lost.
@@ -647,6 +637,20 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
+
+    // @Param: RNGFND_SQ_MIN
+    // @DisplayName: Rangefinder signal quality minimum
+    // @Description: Minimum signal quality for good rangefinder readings
+    // @Range: 0 100
+    // @User: Advanced
+    GSCALAR(rangefinder_signal_min, "RNGFND_SQ_MIN", RANGEFINDER_SIGNAL_MIN_DEFAULT),
+
+    // @Param: SURFTRAK_DEPTH
+    // @DisplayName: SURFTRAK minimum depth
+    // @Description: Minimum depth to engage SURFTRAK mode
+    // @Units: cm
+    // @User: Standard
+    GSCALAR(surftrak_depth, "SURFTRAK_DEPTH", SURFTRAK_DEPTH_DEFAULT),
 #endif
 
 #if AP_TERRAIN_AVAILABLE

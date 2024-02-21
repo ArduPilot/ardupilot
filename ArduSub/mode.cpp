@@ -38,6 +38,9 @@ Mode *Sub::mode_from_mode_num(const Mode::Number mode)
     case Mode::Number::ALT_HOLD:
         ret = &mode_althold;
         break;
+    case Mode::Number::SURFTRAK:
+        ret = &mode_surftrak;
+        break;
     case Mode::Number::POSHOLD:
         ret = &mode_poshold;
         break;
