@@ -111,6 +111,10 @@ public:
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
+#if true
+    void set_pre_arm_passed(bool result) {_pre_arm_passed = result;}
+    bool get_pre_arm_passed() {return _pre_arm_passed;}
+#endif    
 
     // rudder arming support
     enum class RudderArming {
@@ -261,6 +265,9 @@ protected:
 private:
 
     static AP_Arming *_singleton;
+#if true
+    bool _pre_arm_passed = false;
+#endif    
 
 #if AP_INERTIALSENSOR_ENABLED
     bool ins_accels_consistent(const class AP_InertialSensor &ins);

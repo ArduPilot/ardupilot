@@ -32,6 +32,7 @@ public:
     bool new_input() override;
     uint8_t num_channels() override;
     uint16_t read(uint8_t ch) override;
+    void set_num_channels(uint8_t num) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
     void _timer_tick(void);
 

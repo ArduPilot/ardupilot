@@ -125,9 +125,21 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
 uint16_t Copter::get_pilot_speed_dn() const
 {
+#if false    // AQUILA
     if (g2.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);
     } else {
         return abs(g2.pilot_speed_dn);
     }
+#else
+    int16_t climb_rate = 0;
+    float alt_above_ground = flightmode->get_alt_above_ground_cm();
+    float half_land_alt_low = 0.5 * g2.land_alt_low;
+    float half_land_alt_high = g2.land_alt_low;
+    float vel_low_dn = g.land_speed;
+    float vel_high_dn = (g2.pilot_speed_dn == 0)? g.pilot_speed_up : g2.pilot_speed_dn;
+    climb_rate = (int16_t)gradual(alt_above_ground,half_land_alt_low,half_land_alt_high,vel_low_dn,vel_high_dn);
+
+    return abs(climb_rate);
+#endif    
 }

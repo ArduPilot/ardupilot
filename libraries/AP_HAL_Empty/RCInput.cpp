@@ -21,6 +21,9 @@ uint16_t RCInput::read(uint8_t chan) {
     else return 1500;
 }
 
+void RCInput::set_num_channels(uint8_t num) {
+}
+
 uint8_t RCInput::read(uint16_t* periods, uint8_t len) {
     for (uint8_t i = 0; i < len; i++){
         if (i == 2) periods[i] = 900;

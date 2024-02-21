@@ -104,6 +104,10 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if HAL_CODEV_ESC_ENABLE
+#include <AP_CodevEsc/AP_CodevEsc.h>
+#endif
+
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -329,11 +333,24 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     float current, consumed_mah, consumed_wh;
     const int8_t percentage = battery_remaining_pct(instance);
     
-    if (battery.current_amps(current, instance)) {
-         current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
-    } else {
+#if HAL_CODEV_ESC_ENABLE
+    current = 0.0f;
+    const AP_CodevEsc *motor_esc = AP::codevesc();
+    for (int i = 0; i < HAL_ESC_NUM; i++) 
+    {
+        uint16_t current_esc = motor_esc->_esc_status[i].current;
+        current +=(float)current_esc;
+    }
+#else
+    if (battery.current_amps(current, instance)) 
+    {
+         current = constrain_float(current * 100, -INT16_MAX, INT16_MAX);
+    } 
+    else 
+    {
         current = -1;
     }
+#endif
     if (!battery.consumed_mah(consumed_mah, instance)) {
         consumed_mah = -1;
     }
@@ -1056,6 +1073,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if HAL_LANDING_DEEPSTALL_ENABLED
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
 #endif
+        { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
         { MAVLINK_MSG_ID_AUTOPILOT_VERSION,     MSG_AUTOPILOT_VERSION},
 #if HAL_EFI_ENABLED
@@ -3767,6 +3785,47 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 #endif
 }
 
+// allow override of RC channel values for HIL or for complete GCS
+// control of switch position and RC PWM values.
+void GCS_MAVLINK::handle_rc_channels(const mavlink_message_t &msg)
+{
+    if(msg.sysid != sysid_my_gcs()) {
+        return; // Only accept control from our gcs
+    }
+
+    const uint32_t tnow = AP_HAL::millis();
+
+    mavlink_rc_channels_t packet;
+    mavlink_msg_rc_channels_decode(&msg, &packet);
+
+    const uint16_t override_data[] = {
+        packet.chan1_raw,
+        packet.chan2_raw,
+        packet.chan3_raw,
+        packet.chan4_raw,
+        packet.chan5_raw,
+        packet.chan6_raw,
+        packet.chan7_raw,
+        packet.chan8_raw,
+        packet.chan9_raw,
+        packet.chan10_raw,
+        packet.chan11_raw,
+        packet.chan12_raw,
+        packet.chan13_raw,
+        packet.chan14_raw,
+        packet.chan15_raw,
+        packet.chan16_raw
+    };
+
+    for (uint8_t i=0; i<ARRAY_SIZE(override_data); i++) {
+        // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
+        if (override_data[i] != UINT16_MAX) {
+            RC_Channels::set_override(i, override_data[i], tnow);
+        }
+    }
+}
+
+
 // allow override of RC channel values for complete GCS
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
@@ -4165,6 +4224,16 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_rc_channels_override(msg);
         break;
 
+    case MAVLINK_MSG_ID_RC_CHANNELS:
+        handle_rc_channels(msg);
+        break;
+
+    case MAVLINK_MSG_ID_MOUNT_ORIENTATION:
+#if false    
+        handle_mount_orientation(msg);
+#endif        
+        break;
+        
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);

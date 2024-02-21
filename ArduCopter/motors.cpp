@@ -31,7 +31,7 @@ void Copter::arm_motors_check()
         arming_counter = 0;
         return;
     }
-
+#if false
     int16_t yaw_in = channel_yaw->get_control_in();
 
     // full right
@@ -80,6 +80,57 @@ void Copter::arm_motors_check()
     } else {
         arming_counter = 0;
     }
+#else
+    int16_t yaw_in = channel_yaw->get_control_in();
+    int16_t roll_in = channel_roll->get_control_in();
+    int16_t pitch_in = channel_pitch->get_control_in();
+
+    // full right
+    // yaw in right, throttle in low, pitch in low, roll in left
+    if (yaw_in > 4000 && roll_in < -4000 && pitch_in > 4000) {
+
+        // increase the arming counter to a maximum of 1 beyond the auto trim counter
+        if (arming_counter <= AUTO_TRIM_DELAY) {
+            arming_counter++;
+        }
+
+        // arm the motors and configure for flight
+        if (arming_counter == ARM_DELAY && !motors->armed()) {
+            // reset arming counter if arming fail
+            if (!arming.arm(AP_Arming::Method::RUDDER)) {
+                arming_counter = 0;
+            }
+        }
+
+        // arm the motors and configure for flight
+        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
+            auto_trim_counter = 250;
+            // ensure auto-disarm doesn't trigger immediately
+            auto_disarm_begin = millis();
+        }
+
+    // full left and rudder disarming is enabled
+    } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::RudderArming::ARMDISARM)) {
+        if (!flightmode->has_manual_throttle() && !ap.land_complete) {
+            arming_counter = 0;
+            return;
+        }
+
+        // increase the counter to a maximum of 1 beyond the disarm delay
+        if (arming_counter <= DISARM_DELAY) {
+            arming_counter++;
+        }
+
+        // disarm the motors
+        if (arming_counter == DISARM_DELAY && motors->armed()) {
+            arming.disarm(AP_Arming::Method::RUDDER);
+        }
+
+    // Yaw is centered so reset arming counter
+    } else {
+        arming_counter = 0;
+    }
+#endif    
 }
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
@@ -181,6 +232,16 @@ void Copter::motors_output()
 
     // push all channels
     SRV_Channels::push();
+
+#if HAL_CODEV_ESC_ENABLE == ENABLED
+    AP_CodevEsc *esc = AP_CodevEsc::get_singleton();
+    if(esc != nullptr && esc->uart_state()) {
+        esc->execute_codev_esc();
+        esc->set_vehicle_control_mode((uint8_t)(flightmode->mode_number()));
+    } else if (!esc->uart_state()) {
+        esc->init();
+    }
+#endif
 }
 
 // check for pilot stick input to trigger lost vehicle alarm

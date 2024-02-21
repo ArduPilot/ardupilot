@@ -25,6 +25,7 @@ public:
      * Return the number of valid channels in the last read
      */
     virtual uint8_t  num_channels() = 0;
+    virtual void set_num_channels(uint8_t num) = 0;
 
     /* Read a single channel at a time */
     virtual uint16_t read(uint8_t ch) = 0;

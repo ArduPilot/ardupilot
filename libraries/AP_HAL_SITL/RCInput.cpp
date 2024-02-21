@@ -68,6 +68,9 @@ uint16_t RCInput::read(uint8_t ch)
 #endif
 }
 
+void RCInput::set_num_channels(uint8_t num)
+{}
+
 uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
     if (len > num_channels()) {

@@ -76,6 +76,7 @@ is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())
 
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
+                 '/dev/serial/by-id/usb-AQUILA*',
                  '/dev/serial/by-id/usb-3D*',
                  '/dev/serial/by-id/usb-APM*',
                  '/dev/serial/by-id/usb-Radio*',

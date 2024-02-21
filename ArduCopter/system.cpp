@@ -51,6 +51,10 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
+#if HAL_CODEV_ESC_ENABLE == ENABLED
+    codev_esc.init();
+#endif
+
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif

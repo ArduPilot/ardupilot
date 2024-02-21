@@ -247,9 +247,11 @@ public:
 
 
     /// Position
-
-    /// set_pos_target_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
+#if true   // argosdyne
     void set_pos_target_xy_cm(float pos_x, float pos_y) { _pos_target.x = pos_x; _pos_target.y = pos_y; }
+#else
+    void set_pos_target_xy_cm(float pos_x, float pos_y, bool is_preland_mode) { _pos_target.x = pos_x; _pos_target.y = pos_y; _is_prlnd_landmode = is_preland_mode;}
+#endif
 
     /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_cm() const { return _pos_target; }
@@ -437,7 +439,9 @@ protected:
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
-
+#if true    // argosdyne    
+    AP_Float    _lean_prlnd_angle_max;  // Maximum autopilot commanded angle (in degrees) in Precision Land Mode. Set to zero for Angle Max
+#endif
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
     uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
@@ -467,6 +471,10 @@ protected:
 
     bool        _fwd_pitch_is_limited;     // true when the forward pitch demand is being limited to meet acceleration limits
 
+#if true    // argosdyne
+    // flag for Precision Land Mode
+    bool        _is_prlnd_landmode;     // flag for precision land mode
+#endif    
     float       _pos_offset_target_z;   // vertical position offset target, frame NEU in cm relative to the EKF origin
     float       _pos_offset_z;          // vertical position offset, frame NEU in cm relative to the EKF origin
     float       _vel_offset_z;          // vertical velocity offset in NEU cm/s calculated by pos_to_rate step

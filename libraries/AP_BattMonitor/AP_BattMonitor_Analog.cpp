@@ -7,6 +7,9 @@
 #include <AP_Math/AP_Math.h>
 
 #include "AP_BattMonitor_Analog.h"
+#if HAL_CODEV_ESC_ENABLE
+#include <AP_CodevEsc/AP_CodevEsc.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -104,6 +107,26 @@ AP_BattMonitor_Analog::read()
 
     // read current
     if (has_current()) {
+#if HAL_CODEV_ESC_ENABLE
+        const AP_CodevEsc *motor_esc = AP::codevesc();
+        if (motor_esc == nullptr) {
+            return;
+        }
+        uint32_t tnow = AP_HAL::micros();
+        const uint32_t dt_us = tnow - _state.last_time_micros;
+
+        uint16_t current = 0;
+        for (int i = 0; i < HAL_ESC_NUM; i++) {
+            current  += motor_esc->_esc_status[i].current;
+        }
+
+        // read current
+        _state.current_amps = current * 0.01f;
+        update_consumed(_state, dt_us);
+
+        // record time
+        _state.last_time_micros = tnow;
+# else
         // calculate time since last current read
         const uint32_t tnow = AP_HAL::micros();
         const uint32_t dt_us = tnow - _state.last_time_micros;
@@ -118,13 +141,18 @@ AP_BattMonitor_Analog::read()
 
         // record time
         _state.last_time_micros = tnow;
+#endif        
     }
 }
 
 /// return true if battery provides current info
 bool AP_BattMonitor_Analog::has_current() const
 {
+    #if HAL_CODEV_ESC_ENABLE
+    return true;
+#else    
     return ((AP_BattMonitor::Type)_params._type.get() == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT);
+#endif
 }
 
 #endif  // AP_BATTERY_ANALOG_ENABLED
