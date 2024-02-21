@@ -90,9 +90,11 @@ void AP_MotorsTri::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
-            _actuator[AP_MOTORS_MOT_1] = 0.0;
-            _actuator[AP_MOTORS_MOT_2] = 0.0;
-            _actuator[AP_MOTORS_MOT_4] = 0.0;
+            for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                if (motor_enabled_mask(i)) {
+                    rc_write(AP_MOTORS_MOT_1+i, output_to_pwm(0));
+                }
+            }
             rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
             break;
         case SpoolState::GROUND_IDLE:
