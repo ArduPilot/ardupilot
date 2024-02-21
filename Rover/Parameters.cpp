@@ -878,27 +878,27 @@ void Rover::load_parameters(void)
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
 // PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 37, 4069 },
+        { &airspeed, airspeed.var_info, 37 },
 #endif
 #if AP_AIS_ENABLED
 // PARAMETER_CONVERSION - Added: MAR-2022
-        { &ais, ais.var_info, 50, 114 },
+        { &ais, ais.var_info, 50 },
 #endif
 #if AP_FENCE_ENABLED
 // PARAMETER_CONVERSION - Added: Mar-2022
-        { &fence, fence.var_info, 17, 4049 },
+        { &fence, fence.var_info, 17 },
 #endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
-        { &stats, stats.var_info, 1, 4033 },
+        { &stats, stats.var_info, 1 },
 #endif
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
-        { &scripting, scripting.var_info, 41, 105 },
+        { &scripting, scripting.var_info, 41 },
 #endif
 #if AP_GRIPPER_ENABLED
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
-        { &gripper, gripper.var_info, 39, 4071 },
+        { &gripper, gripper.var_info, 39 },
 #endif
     };
 
@@ -906,7 +906,7 @@ void Rover::load_parameters(void)
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
 }
