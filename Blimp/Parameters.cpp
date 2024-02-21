@@ -845,18 +845,18 @@ void Blimp::load_parameters(void)
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
-        { &stats, stats.var_info, 12, 4044 },
+        { &stats, stats.var_info, 12 },
 #endif
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
-        { &scripting, scripting.var_info, 30, 94 },
+        { &scripting, scripting.var_info, 30 },
 #endif
     };
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
 
     // PARAMETER_CONVERSION - Added: Feb-2024
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
     // setup AP_Param frame type flags
