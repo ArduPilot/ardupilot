@@ -158,13 +158,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("_AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
 
-    // @Param: _MIN_DGPS
-    // @DisplayName: Minimum Lock Type Accepted for DGPS
-    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
-    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("_MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
+    // 4 was _MIN_GPS, removed Feb 2024
 
     // @Param: _SBAS_MODE
     // @DisplayName: SBAS Mode
