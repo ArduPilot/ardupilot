@@ -1000,8 +1000,7 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].corrected_timestamp_updated = false;
         }
 
-        // we set delta_time_ms to the timeout value when clearing
-        // state; use it being zero to mark first message
+        // announce the GPS type once
         if (!state[instance].announced_detection) {
             state[instance].announced_detection = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
