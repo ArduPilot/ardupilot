@@ -336,8 +336,6 @@ private:
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
 
-        // true when we are allowing the plane to speed up on descent to maintain the target descent rate
-        bool speedup:1;
     };
     union {
         struct flags _flags;
