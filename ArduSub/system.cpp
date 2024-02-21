@@ -14,11 +14,6 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    // init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
-
     // initialise notify system
     notify.init();
 
