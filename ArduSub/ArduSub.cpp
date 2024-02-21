@@ -102,9 +102,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_RPM,              &sub.rpm_sensor,   update,              10, 200,  66),
 #endif
     SCHED_TASK(terrain_update,        10,    100,  72),
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
-#endif
 #if AP_STATS_ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
 #endif

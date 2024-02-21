@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 
-#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Arming/AP_Arming.h>
 
 // Global parameter class.
@@ -352,10 +351,6 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-
-#if AP_GRIPPER_ENABLED
-    AP_Gripper gripper;
-#endif
 
 #if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library

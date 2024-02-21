@@ -88,11 +88,6 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
-#include <AP_Gripper/AP_Gripper_config.h>
-#if AP_GRIPPER_ENABLED
-#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
-#endif
-
 #if AVOIDANCE_ENABLED == ENABLED
 #include <AC_Avoidance/AC_Avoid.h>           // Stop at fence library
 #endif

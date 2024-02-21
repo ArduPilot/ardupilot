@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -693,11 +695,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(proximity, "PRX", 2, ParametersG2, AP_Proximity),
 #endif
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
-#endif
+    // 3 was AP_Gripper
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -788,6 +786,21 @@ void Sub::load_parameters()
         const uint16_t scripting_old_index = 18;       // Old parameter index in g2
         const uint16_t scripting_old_top_element = 82; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
+    }
+#endif
+
+    // PARAMETER_CONVERSION - Added: Feb-2024
+#if AP_GRIPPER_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo gripper_info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, gripper_info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_gripper_index = 3;       // Old parameter index in g2
+        const uint16_t old_gripper_top_element = 4035; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(gripper_info.old_key, &gripper, gripper.var_info, old_gripper_index, old_gripper_top_element, false);
     }
 #endif
 
