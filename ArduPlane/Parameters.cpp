@@ -1527,49 +1527,22 @@ void Plane::load_parameters(void)
 
     landing.convert_parameters();
 
-    // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_STATS_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-            return;
-        }
-
-        const uint16_t old_index = 5;       // Old parameter index in g2
-        const uint16_t old_top_element = 4037; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(info.old_key, &stats, stats.var_info, old_index, old_top_element, false);
-    }
-#endif
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
+        { &stats, stats.var_info, 5, 4037 },
+#endif
 #if AP_SCRIPTING_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-            return;
-        }
-
-        const uint16_t old_index = 14;       // Old parameter index in g2
-        const uint16_t old_top_element = 78; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(info.old_key, &scripting, scripting.var_info, old_index, old_top_element, false);
-    }
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
+        { &scripting, scripting.var_info, 14, 78 },
 #endif
-
-    // PARAMETER_CONVERSION - Added: Feb-2024 for Plane-4.6
 #if AP_GRIPPER_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-            return;
-        }
-
-        const uint16_t old_index = 12;       // Old parameter index in g2
-        const uint16_t old_top_element = 4044; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(info.old_key, &gripper, gripper.var_info, old_index, old_top_element, false);
-    }
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Plane-4.6
+        { &gripper, gripper.var_info, 12, 4044 },
 #endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
 #if HAL_LOGGING_ENABLED
