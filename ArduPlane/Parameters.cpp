@@ -1468,22 +1468,6 @@ void Plane::load_parameters(void)
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
-
-    // PARAMETER_CONVERSION - Added: Oct-2021
-#if HAL_EFI_ENABLED
-    {
-        // Find G2's Top Level Key
-        AP_Param::ConversionInfo info;
-        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
-            return;
-        }
-
-        const uint16_t old_index = 22;       // Old parameter index in g2
-        const uint16_t old_top_element = 86; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
-        AP_Param::convert_class(info.old_key, &efi, efi.var_info, old_index, old_top_element, false);
-    }
-#endif
-
 #if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2022
     {
@@ -1528,6 +1512,10 @@ void Plane::load_parameters(void)
     landing.convert_parameters();
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
+    // PARAMETER_CONVERSION - Added: Oct-2021
+#if HAL_EFI_ENABLED
+        { &efi, efi.var_info, 22, 86 },
+#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &stats, stats.var_info, 5, 4037 },
