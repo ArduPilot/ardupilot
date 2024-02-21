@@ -272,6 +272,8 @@ void AP_MotorsMulticopter::output()
     // check for any external limit flags
     update_external_limits();
 
+    // clear mask of overridden motors
+    _motor_mask_override = 0;
 };
 
 void AP_MotorsMulticopter::update_external_limits()
@@ -727,6 +729,8 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float 
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
+
+    _motor_mask_override = mask;
 
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
