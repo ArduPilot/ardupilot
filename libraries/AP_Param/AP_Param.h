@@ -476,7 +476,6 @@ public:
         void *object_pointer;
         const struct AP_Param::GroupInfo *var_info;
         uint16_t old_index;  // Old parameter index in g
-        uint16_t old_top_element;  // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
     };
     static void         convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions);
 
@@ -501,7 +500,7 @@ public:
     // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
     static void         convert_class(uint16_t param_key, void *object_pointer,
                                         const struct AP_Param::GroupInfo *group_info,
-                                        uint16_t old_index, uint16_t old_top_element, bool is_top_level);
+                                        uint16_t old_index, bool is_top_level);
 
     /*
       fetch a parameter value based on the index within a group. This

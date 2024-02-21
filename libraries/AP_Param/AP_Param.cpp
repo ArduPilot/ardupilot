@@ -2031,7 +2031,7 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
                                     const struct AP_Param::GroupInfo *group_info,
-                                    uint16_t old_index, uint16_t old_top_element, bool is_top_level)
+                                    uint16_t old_index, bool is_top_level)
 {
     const uint8_t group_shift = is_top_level ? 0 : 6;
 
@@ -2081,7 +2081,7 @@ void AP_Param::convert_g2_objects(const void *g2, const G2ObjectConversion g2_co
     }
     for (uint8_t i=0; i<num_conversions; i++) {
         const auto &c { g2_conversions[i] };
-        convert_class(info.old_key, c.object_pointer, c.var_info, c.old_index, c.old_top_element, false);
+        convert_class(info.old_key, c.object_pointer, c.var_info, c.old_index, false);
     }
 }
 
