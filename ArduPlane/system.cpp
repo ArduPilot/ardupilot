@@ -132,11 +132,6 @@ void Plane::init_ardupilot()
         optflow.init(-1);
     }
 #endif
-
-// init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
 }
 
 //********************************************************************************
