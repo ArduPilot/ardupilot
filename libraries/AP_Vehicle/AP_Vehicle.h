@@ -75,6 +75,11 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#include <AP_Gripper/AP_Gripper_config.h>
+#if AP_GRIPPER_ENABLED
+#include <AP_Gripper/AP_Gripper.h>
+#endif
+
 class AP_DDS_Client;
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
@@ -328,6 +333,10 @@ protected:
     virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
     virtual const struct LogStructure *get_log_structures() const { return nullptr; }
     virtual uint8_t get_num_log_structures() const { return 0; }
+#endif
+
+#if AP_GRIPPER_ENABLED
+    AP_Gripper gripper;
 #endif
 
 #if AP_RSSI_ENABLED
