@@ -3976,6 +3976,22 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.usec, PAYLOAD_SIZE(chan, VISION_SPEED_ESTIMATE));
     visual_odom->handle_vision_speed_estimate(m.usec, timestamp_ms, vel, m.reset_counter, 0);
 }
+
+MAV_RESULT GCS_MAVLINK::handle_visualodom_command(const mavlink_command_int_t &packet)
+{
+    // sanity check messages passed in (this should never fail)
+    if (packet.command != MAV_CMD_ALIGN_VISION_POSITION_LOCAL_NED) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+
+    visual_odom->align_position_and_yaw(Vector3f{packet.param1, packet.param2, packet.param3}, packet.y);
+    return MAV_RESULT_ACCEPTED;
+}
 #endif  // HAL_VISUALODOM_ENABLED
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
@@ -5633,6 +5649,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
 
+#if HAL_VISUALODOM_ENABLED
+    case MAV_CMD_ALIGN_VISION_POSITION_LOCAL_NED:
+        return handle_visualodom_command(packet);
+#endif
     }
 
     return MAV_RESULT_UNSUPPORTED;
