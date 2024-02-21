@@ -2072,6 +2072,20 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
     flush();
 }
 
+void AP_Param::convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions)
+{
+    // Find G2's Top Level Key
+    ConversionInfo info;
+    if (!find_top_level_key_by_pointer(g2, info.old_key)) {
+        return;
+    }
+    for (uint8_t i=0; i<num_conversions; i++) {
+        const auto &c { g2_conversions[i] };
+        convert_class(info.old_key, c.object_pointer, c.var_info, c.old_index, c.old_top_element, false);
+    }
+}
+
+
 /*
  convert width of a parameter, allowing update to wider scalar values
  without changing the parameter indexes
