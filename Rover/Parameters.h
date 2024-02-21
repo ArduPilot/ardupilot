@@ -8,7 +8,6 @@
 #include <AP_AIS/AP_AIS.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
-#include "AP_Gripper/AP_Gripper.h"
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
@@ -370,10 +369,6 @@ public:
 #if HAL_SPRAYER_ENABLED
     // Sprayer
     AC_Sprayer sprayer;
-#endif
-
-#if AP_GRIPPER_ENABLED
-    AP_Gripper gripper;
 #endif
 
 #if HAL_RALLY_ENABLED

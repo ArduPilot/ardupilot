@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
   Rover parameter definitions
 */
@@ -580,11 +582,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
-#endif
+    // 39 was AP_Gripper
 
     // @Param: BAL_PITCH_TRIM
     // @DisplayName: Balance Bot pitch trim angle
@@ -920,6 +918,21 @@ void Rover::load_parameters(void)
         const uint16_t scripting_old_index = 41;       // Old parameter index in g2
         const uint16_t scripting_old_top_element = 105; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(scripting_info.old_key, &scripting, scripting.var_info, scripting_old_index, scripting_old_top_element, false);
+    }
+#endif
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+#if AP_GRIPPER_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo gripper_info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, gripper_info.old_key)) {
+            return;
+        }
+
+        const uint16_t gripper_old_index = 39;       // Old parameter index in g2
+        const uint16_t gripper_old_top_element = 4071; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(gripper_info.old_key, &gripper, gripper.var_info, gripper_old_index, gripper_old_top_element, false);
     }
 #endif
 
