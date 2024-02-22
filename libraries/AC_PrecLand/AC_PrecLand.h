@@ -17,6 +17,7 @@ class AC_PrecLand_Companion;
 class AC_PrecLand_IRLock;
 class AC_PrecLand_SITL_Gazebo;
 class AC_PrecLand_SITL;
+class Location;
 
 class AC_PrecLand
 {
@@ -115,6 +116,18 @@ public:
 
     bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
     bool do_fast_descend() const { return _options & PLND_OPTION_FAST_DESCEND; }
+
+    /*
+      get target location lat/lon. Note that altitude in returned
+      location is not reliable
+     */
+    bool get_target_location(Location &loc);
+
+    /*
+      get the absolute velocity of the target in m/s.
+      return false if we cannot estimate target velocity or if the target is not acquired
+    */
+    bool get_target_velocity(Vector2f& ret);
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -215,6 +228,7 @@ private:
 
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
+    Vector3f                    _last_veh_velocity_NED_ms; // AHRS velocity at last estimate
 
     TargetState                 _current_target_state;  // Current status of the landing target
 
