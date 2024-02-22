@@ -520,6 +520,10 @@ public:
     AP_LandingGear landing_gear;
 #endif
 
+#if AC_PRECLAND_ENABLED
+    AC_PrecLand precland;
+#endif
+
     // crow flaps weighting
     AP_Int8 crow_flap_weight_outer;
     AP_Int8 crow_flap_weight_inner;

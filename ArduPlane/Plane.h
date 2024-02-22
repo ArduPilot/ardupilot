@@ -87,6 +87,11 @@
 #include "AP_ExternalControl_Plane.h"
 #endif
 
+#include <AC_PrecLand/AC_PrecLand_config.h>
+#if AC_PRECLAND_ENABLED
+ # include <AC_PrecLand/AC_PrecLand.h>
+#endif
+
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
@@ -249,6 +254,10 @@ private:
 #if HAL_RALLY_ENABLED
     // Rally Points
     AP_Rally rally;
+#endif
+
+#if AC_PRECLAND_ENABLED
+    void precland_update(void);
 #endif
 
     // returns a Location for a rally point or home; if
