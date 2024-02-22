@@ -67,10 +67,12 @@ void AP_ESC_Telem_SITL::update()
 
         // some fake values so that is_telemetry_active() returns true
         TelemetryData t {
-            .temperature_cdeg = 3200,
             .voltage = 16.8f,
             .current = 0.8f,
             .consumption_mah = 1.0f,
+            .usage_s = 0,
+            .last_update_ms = 0,
+            .temperature_cdeg = 3200,
         };
 
         update_telem_data(motor, t,
