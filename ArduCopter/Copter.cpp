@@ -211,6 +211,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update,          50,  75, 111),
 #endif
+#if HAL_CODEV_ESC_ENABLE == ENABLED
+    SCHED_TASK_CLASS(AP_CodevEsc,         &copter.codev_esc,        receive_esc_status, 50,  50, 119),
+#endif
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350, 114),
     SCHED_TASK(twentyfive_hz_logging, 25,    110, 117),
@@ -265,9 +268,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
-#endif
-#if HAL_CODEV_ESC_ENABLE == ENABLED
-    SCHED_TASK_CLASS(AP_CodevEsc,         &copter.codev_esc,        receive_esc_status,         400,  200, 112),
 #endif
 };
 
