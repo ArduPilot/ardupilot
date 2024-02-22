@@ -1,5 +1,11 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 4.5.0 beta1 22-Feb-2024
+Changes from 4.2.0
+1) Innumerable system-level improvements; see Copter and Plane release notes
+2) fix EKF2/EKF3 parameters
+3) improve logging
+------------------------------------------------------------------
 AntennaTracker 4.2.0 beta1 25-May-2022
 Changes from 1.1.0
 1) Many new supported boards
