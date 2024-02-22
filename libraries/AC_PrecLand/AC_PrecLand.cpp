@@ -727,6 +727,9 @@ void AC_PrecLand::run_output_prediction()
     _target_vel_rel_out_NE.x -= vel_ned_rel_imu.x;
     _target_vel_rel_out_NE.y -= vel_ned_rel_imu.y;
 
+    // remember vehicle velocity
+    UNUSED_RESULT(_ahrs.get_velocity_NED(_last_veh_velocity_NED_ms));
+
     // Apply land offset
     Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
@@ -740,6 +743,45 @@ void AC_PrecLand::run_output_prediction()
 
     // record the last time there was a target output
     _last_valid_target_ms = AP_HAL::millis();
+}
+
+/*
+  get target location lat/lon. Note that altitude in returned
+  location is not reliable
+ */
+bool AC_PrecLand::get_target_location(Location &loc)
+{
+    if (!target_acquired()) {
+        return false;
+    }
+    if (!AP::ahrs().get_origin(loc)) {
+        return false;
+    }
+    loc.offset(_last_target_pos_rel_origin_NED.x, _last_target_pos_rel_origin_NED.y);
+    loc.alt -= _last_target_pos_rel_origin_NED.z*100;
+    return true;
+}
+
+/*
+  get the absolute velocity of the target in m/s.
+  return false if we cannot estimate target velocity or if the target is not acquired
+*/
+bool AC_PrecLand::get_target_velocity(Vector2f& target_vel)
+{
+    if (!(_options & PLND_OPTION_MOVING_TARGET)) {
+        // the target should not be moving
+        return false;
+    }
+    if ((EstimatorType)_estimator_type.get() == EstimatorType::RAW_SENSOR) {
+        return false;
+    }
+    Vector2f target_vel_rel_cms;
+    if (!get_target_velocity_relative_cms(target_vel_rel_cms)) {
+        return false;
+    }
+    // return the absolute velocity
+    target_vel = (target_vel_rel_cms*0.01) + _last_veh_velocity_NED_ms.xy();
+    return true;
 }
 
 #if HAL_LOGGING_ENABLED
