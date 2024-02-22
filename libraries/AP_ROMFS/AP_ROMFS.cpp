@@ -66,6 +66,12 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
         return nullptr;
     }
 
+    if (f->decompressed_size == 0) {
+        // empty file
+        size = 0;
+        return decompressed_data;
+    }
+
     // explicitly null-terminate the data
     decompressed_data[f->decompressed_size] = 0;
 
@@ -117,8 +123,23 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
 {
     const size_t dlen = strlen(dirname);
     for ( ; ofs < ARRAY_SIZE(files); ofs++) {
-        if (strncmp(dirname, files[ofs].filename, dlen) == 0 &&
-            files[ofs].filename[dlen] == '/') {
+        if (strncmp(dirname, files[ofs].filename, dlen) == 0) {
+            const char last_char = files[ofs].filename[dlen];
+            if (dlen != 0 && last_char != '/' && last_char != 0) {
+                // only a partial match, skip
+                continue;
+            }
+            /*
+              prevent duplicate directories
+             */
+            const char *start_name = files[ofs].filename + dlen + 1;
+            const char *slash = strchr(start_name, '/');
+            if (ofs > 0 && slash != nullptr) {
+                auto len = slash - start_name;
+                if (memcmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
+                    continue;
+                }
+            }
             // found one
             return files[ofs++].filename;
         }

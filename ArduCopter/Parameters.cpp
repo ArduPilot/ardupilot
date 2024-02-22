@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -817,11 +819,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 12 was AP_Stats
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 13, ParametersG2, AP_Gripper),
-#endif
+    // 13 was AP_Gripper
 
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
@@ -1391,6 +1389,21 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
 #if HAL_LOGGING_ENABLED
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+#endif
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+#if AP_GRIPPER_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 13;       // Old parameter index in g2
+        const uint16_t old_top_element = 4045; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &gripper, gripper.var_info, old_index, old_top_element, false);
+    }
 #endif
 
     // setup AP_Param frame type flags

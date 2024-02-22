@@ -88,7 +88,7 @@ private:
 };
 
 namespace AP {
-    AP_Gripper *gripper();
+    AP_Gripper &gripper();
 };
 
 #endif  // AP_GRIPPER_ENABLED

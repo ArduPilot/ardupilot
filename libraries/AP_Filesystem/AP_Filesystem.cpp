@@ -64,6 +64,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
 #if AP_FILESYSTEM_ROMFS_ENABLED
     { "@ROMFS/", fs_romfs },
+    { "@ROMFS", fs_romfs },
 #endif
 #if AP_FILESYSTEM_PARAM_ENABLED
     { "@PARAM/", fs_param },

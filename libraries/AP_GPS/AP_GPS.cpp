@@ -158,13 +158,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("_AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
 
-    // @Param: _MIN_DGPS
-    // @DisplayName: Minimum Lock Type Accepted for DGPS
-    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
-    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("_MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
+    // 4 was _MIN_GPS, removed Feb 2024
 
     // @Param: _SBAS_MODE
     // @DisplayName: SBAS Mode
@@ -1000,8 +994,7 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].corrected_timestamp_updated = false;
         }
 
-        // we set delta_time_ms to the timeout value when clearing
-        // state; use it being zero to mark first message
+        // announce the GPS type once
         if (!state[instance].announced_detection) {
             state[instance].announced_detection = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());

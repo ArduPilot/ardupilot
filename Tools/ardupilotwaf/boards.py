@@ -510,6 +510,8 @@ class Board:
                         # exclude emacs tmp files
                         continue
                     fname = root[len(custom_dir)+1:]+"/"+f
+                    if fname.startswith("/"):
+                        fname = fname[1:]
                     env.ROMFS_FILES += [(fname,root+"/"+f)]
 
     def pre_build(self, bld):

@@ -1235,8 +1235,7 @@ void PayloadPlace::run()
 
 #if AP_GRIPPER_ENABLED == ENABLED
     // if pilot releases load manually:
-    if (AP::gripper() != nullptr &&
-        AP::gripper()->valid() && AP::gripper()->released()) {
+    if (AP::gripper().valid() && AP::gripper().released()) {
         switch (state) {
         case State::FlyToLocation:
         case State::Descent_Start:
@@ -1334,9 +1333,9 @@ void PayloadPlace::run()
         // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
         pos_control->init_z_controller_no_descent();
 #if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid()) {
+        if (AP::gripper().valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
-            g2.gripper.release();
+            AP::gripper().release();
             state = State::Releasing;
         } else {
             state = State::Delay;
@@ -1347,8 +1346,8 @@ void PayloadPlace::run()
         break;
 
     case State::Releasing:
-#if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid() && !g2.gripper.released()) {
+#if AP_GRIPPER_ENABLED
+        if (AP::gripper().valid() && !AP::gripper().released()) {
             break;
         }
 #endif

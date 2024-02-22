@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
  *  ArduPlane parameter definitions
  *
@@ -1068,11 +1070,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
-#endif
+    // 12 was AP_Gripper
 
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
@@ -1555,6 +1553,21 @@ void Plane::load_parameters(void)
         const uint16_t old_index = 14;       // Old parameter index in g2
         const uint16_t old_top_element = 78; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(info.old_key, &scripting, scripting.var_info, old_index, old_top_element, false);
+    }
+#endif
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Plane-4.6
+#if AP_GRIPPER_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 12;       // Old parameter index in g2
+        const uint16_t old_top_element = 4044; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &gripper, gripper.var_info, old_index, old_top_element, false);
     }
 #endif
 

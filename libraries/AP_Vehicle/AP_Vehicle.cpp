@@ -270,6 +270,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(logger, "LOG",  29, AP_Vehicle, AP_Logger),
 #endif
 
+#if AP_GRIPPER_ENABLED
+    // @Group: GRIP_
+    // @Path: ../AP_Gripper/AP_Gripper.cpp
+    AP_SUBGROUPINFO(gripper, "GRIP_", 30, AP_Vehicle, AP_Gripper),
+#endif
+
     AP_GROUPEND
 };
 
@@ -380,6 +386,11 @@ void AP_Vehicle::setup()
 
 #if HAL_LOGGING_ENABLED
     logger.init(get_log_bitmask(), get_log_structures(), get_num_log_structures());
+#endif
+
+    // init cargo gripper
+#if AP_GRIPPER_ENABLED
+    AP::gripper().init();
 #endif
 
     // init_ardupilot is where the vehicle does most of its initialisation.
@@ -606,6 +617,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   50, 200, 250),
+#endif
+#if AP_GRIPPER_ENABLED
+    SCHED_TASK_CLASS(AP_Gripper,   &vehicle.gripper,        update,                   10,  75, 251),
 #endif
     SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
