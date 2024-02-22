@@ -158,5 +158,6 @@ private:
     // AP_Float _param_fw_r_lim;
     // AP_Float _param_fw_pn_r_slew_max;
 
+    uint32_t _last_update_ms;
     Vector2f _unit_path_tangent;
 };

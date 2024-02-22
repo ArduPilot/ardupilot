@@ -465,7 +465,9 @@ float NPFG::lateralAccel(const Vector2f &air_vel, const Vector2f &air_vel_ref, c
     } else {
         // airspeed/airspeed_ref is used to scale any incremented airspeed reference back to the current airspeed
         // for acceleration commands in a "feedback" sense (i.e. at the current vehicle airspeed)
-        return p_gain_ * cross_air_vel_err / airspeed_ref_;
+        //! @todo(srmainwaring) - reenable gain scaling
+        // return p_gain_ * cross_air_vel_err / airspeed_ref_;
+        return p_gain_;
     }
 } // lateralAccel
 
