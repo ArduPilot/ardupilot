@@ -39,14 +39,4 @@ void AC_PrecLand_SITL::update()
     _have_los_meas = _have_los_meas && AP_HAL::millis() - _los_meas_time_ms <= 1000;
 }
 
-// provides a unit vector towards the target in body frame
-//  returns same as have_los_meas()
-bool AC_PrecLand_SITL::get_los_body(Vector3f& ret) {
-    if (have_los_meas()) {
-        ret = _los_meas_body;
-        return true;
-    }
-    return false;
-}
-
 #endif  // AC_PRECLAND_SITL_ENABLED
