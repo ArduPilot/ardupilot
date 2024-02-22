@@ -1463,18 +1463,21 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                         plane.mode_terrain_navigation.set_path_tangent(vel_unit);
 
                         if (!accel.is_zero()) {
-                            Vector2f accel_normal = accel - vel_unit * accel.dot(vel);
-                            Vector2f accel_normal_unit = accel_normal.normalized();
-                            // % is cross product, -1 converts to body frame with z-dn
-                            // See: ModeGuided::set_radius_and_direction
-                            //    plane.loiter.direction = direction_is_ccw ? -1 : 1;
-                            float dir = -1.0 * (vel_unit % accel_normal_unit);
-                            float radius = vel.length_squared() / accel_normal.length();
+                            //! @note this should be zero for terrain planning,
+                            // as we expect the acceleration to be normal to the
+                            // velocity vector (unit_tangent). 
+                            float accel_proj = accel.dot(vel_unit);
+                            Vector2f accel_lat = accel - vel_unit * accel_proj;
+                            Vector2f accel_lat_unit = accel_lat.normalized();
+                            // % is cross product, direction: cw:= 1, ccw:= -1
+                            float dir = accel_lat_unit % vel_unit;
+                            float radius = vel.length_squared() / accel_lat.length();
+                            // float curvature = accel_lat.length();
+                            // float radius = 1.0 / curvature;
                             bool dir_is_ccw = dir < 0.0;
                             plane.mode_terrain_navigation.set_radius_and_direction(radius, dir_is_ccw);
-
-                            // //! @todo(srmainwaring) remove - used for debugging
-                            // gcs().send_text(MAV_SEVERITY_DEBUG, "radius: %f, dir: %f", radius, dir);
+                        }  else {
+                            plane.mode_terrain_navigation.set_radius_and_direction(0.0, true);
                         }
                     }
                 }
