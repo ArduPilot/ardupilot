@@ -425,10 +425,10 @@ bool AP_RCProtocol::new_input()
 #endif
     };
     for (const auto protocol : pollable) {
-        _new_input = detect_async_protocol(protocol);
-        if (!_new_input) {
+        if (!detect_async_protocol(protocol)) {
             continue;
         }
+        _new_input = true;
         _last_input_ms = AP_HAL::millis();
         break;
     }
