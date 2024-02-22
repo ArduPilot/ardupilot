@@ -719,6 +719,15 @@ singleton AP_Follow method get_target_location_and_velocity boolean Location'Nul
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
 
+include AC_PrecLand/AC_PrecLand.h
+singleton AC_PrecLand depends AC_PRECLAND_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
+singleton AC_PrecLand rename precland
+singleton AC_PrecLand method healthy boolean
+singleton AC_PrecLand method target_acquired boolean
+singleton AC_PrecLand method get_last_valid_target_ms uint32_t
+singleton AC_PrecLand method get_target_velocity boolean Vector2f'Null
+singleton AC_PrecLand method get_target_location boolean Location'Null
+
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
