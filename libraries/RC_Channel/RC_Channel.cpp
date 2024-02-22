@@ -1129,20 +1129,17 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
 #if AP_GRIPPER_ENABLED
 void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
 {
-    AP_Gripper *gripper = AP::gripper();
-    if (gripper == nullptr) {
-        return;
-    }
+    AP_Gripper &gripper = AP::gripper();
 
     switch (ch_flag) {
     case AuxSwitchPos::LOW:
-        gripper->release();
+        gripper.release();
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing
         break;
     case AuxSwitchPos::HIGH:
-        gripper->grab();
+        gripper.grab();
         break;
     }
 }

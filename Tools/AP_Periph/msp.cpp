@@ -110,7 +110,8 @@ void AP_Periph_FW::send_msp_GPS(void)
     }
     uint64_t tepoch_us = gps.time_epoch_usec(0);
     time_t utc_sec = tepoch_us / (1000U * 1000U);
-    struct tm* tm = gmtime(&utc_sec);
+    struct tm tvd {};
+    struct tm* tm = gmtime_r(&utc_sec, &tvd);
 
     p.year = tm->tm_year+1900;
     p.month = tm->tm_mon;

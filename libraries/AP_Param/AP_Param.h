@@ -36,7 +36,9 @@
 #define AP_MAX_NAME_SIZE 16
 
 // optionally enable debug code for dumping keys
+#ifndef AP_PARAM_KEY_DUMP
 #define AP_PARAM_KEY_DUMP 0
+#endif
 
 #if defined(HAL_GCS_ENABLED)
     #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED

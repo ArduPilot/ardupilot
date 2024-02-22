@@ -43,10 +43,6 @@ public:
 
     // allow for backends that need regular polling
     virtual void update(void) {}
-    enum {
-        PARSE_TYPE_SIGREAD,
-        PARSE_TYPE_SERIAL
-    };
 
     // get number of frames, ignoring failsafe
     uint32_t get_rc_frame_count(void) const {

@@ -8,6 +8,7 @@
 
 #define FORCE_VERSION_H_INCLUDE
 #include <AP_Common/AP_FWVersionDefine.h>
+#include <AP_CheckFirmware/AP_CheckFirmwareDefine.h>
 #undef FORCE_VERSION_H_INCLUDE
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};

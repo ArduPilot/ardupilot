@@ -136,7 +136,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
 
     if (dstate.auto_detected_baud) {
         hal.util->snprintf(buffer, buflen,
-                 "GPS %d: detected as %s at %d baud",
+                 "GPS %d: probing for %s at %d baud",
                  instance + 1,
                  name(),
                  int(gps._baudrates[dstate.current_baud]));

@@ -136,10 +136,10 @@ public:
     virtual bool is_taking_off() const;
 
     // true if throttle min/max limits should be applied
-    bool use_throttle_limits() const;
+    virtual bool use_throttle_limits() const;
 
     // true if voltage correction should be applied to throttle
-    bool use_battery_compensation() const;
+    virtual bool use_battery_compensation() const;
 
 protected:
 
@@ -400,10 +400,10 @@ public:
     void run() override;
 
     // true if throttle min/max limits should be applied
-    bool use_throttle_limits() const { return false; }
+    bool use_throttle_limits() const override { return false; }
 
     // true if voltage correction should be applied to throttle
-    bool use_battery_compensation() const { return false; }
+    bool use_battery_compensation() const override { return false; }
 
 };
 

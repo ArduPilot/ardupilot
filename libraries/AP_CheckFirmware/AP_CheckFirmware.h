@@ -57,45 +57,45 @@ enum class check_fw_result_t : uint8_t {
 #define AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 }
 
 struct app_descriptor_unsigned {
-    uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
+    uint8_t sig[8];
     // crc1 is the crc32 from firmware start to start of image_crc1
-    uint32_t image_crc1 = 0;
+    uint32_t image_crc1;
     // crc2 is the crc32 from the start of version_major to the end of the firmware
-    uint32_t image_crc2 = 0;
+    uint32_t image_crc2;
     // total size of firmware image in bytes
-    uint32_t image_size = 0;
-    uint32_t git_hash = 0;
+    uint32_t image_size;
+    uint32_t git_hash;
 
     // software version number
-    uint8_t  version_major = APP_FW_MAJOR;
-    uint8_t version_minor = APP_FW_MINOR;
+    uint8_t  version_major;
+    uint8_t version_minor;
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
-    uint16_t  board_id = APJ_BOARD_ID;
-    uint8_t reserved[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    uint16_t  board_id;
+    uint8_t reserved[8];
 };
 
 struct app_descriptor_signed {
-    uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
+    uint8_t sig[8];
     // crc1 is the crc32 from firmware start to start of image_crc1
-    uint32_t image_crc1 = 0;
+    uint32_t image_crc1;
     // crc2 is the crc32 from the start of version_major to the end of the firmware
-    uint32_t image_crc2 = 0;
+    uint32_t image_crc2;
     // total size of firmware image in bytes
-    uint32_t image_size = 0;
-    uint32_t git_hash = 0;
+    uint32_t image_size;
+    uint32_t git_hash;
 
     // firmware signature
-    uint32_t signature_length = 0;
-    uint8_t signature[72] = {};
+    uint32_t signature_length;
+    uint8_t signature[72];
 
     // software version number
-    uint8_t  version_major = APP_FW_MAJOR;
-    uint8_t version_minor = APP_FW_MINOR;
+    uint8_t  version_major;
+    uint8_t version_minor;
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
-    uint16_t  board_id = APJ_BOARD_ID;
-    uint8_t reserved[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    uint16_t  board_id;
+    uint8_t reserved[8];
 };
 
 #if AP_SIGNED_FIRMWARE
@@ -126,6 +126,7 @@ struct PACKED ap_secure_data {
 
 #ifdef HAL_BOOTLOADER_BUILD
 check_fw_result_t check_good_firmware(void);
+const app_descriptor_t *get_app_descriptor(void);
 #else
 void check_firmware_print(void);
 

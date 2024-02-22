@@ -58,13 +58,13 @@ public:
     bool is_rx_active() const override {
         // later versions of CRSFv3 will send link rate frames every 200ms
         // but only before an initial failsafe
-        return AP_HAL::micros() < _last_rx_frame_time_us + CRSF_RX_TIMEOUT;
+        return _last_rx_frame_time_us != 0 && AP_HAL::micros() - _last_rx_frame_time_us < CRSF_RX_TIMEOUT;
     }
 
     // is the transmitter active, used to adjust telemetry data
     bool is_tx_active() const {
         // this is the same as the Copter failsafe timeout
-        return AP_HAL::micros() < _last_tx_frame_time_us + CRSF_TX_TIMEOUT;
+        return _last_tx_frame_time_us != 0 && AP_HAL::micros() - _last_tx_frame_time_us < CRSF_TX_TIMEOUT;
     }
 
     // get singleton instance
@@ -289,15 +289,17 @@ public:
 
 private:
     struct Frame _frame;
+    uint8_t *_frame_bytes = (uint8_t*)&_frame;
     struct Frame _telemetry_frame;
     uint8_t _frame_ofs;
-    uint8_t _frame_crc;
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)CRSF_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
     static AP_RCProtocol_CRSF* _singleton;
 
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint8_t byte);
+    bool check_frame(uint32_t timestamp_us);
+    void skip_to_next_frame(uint32_t timestamp_us);
     bool decode_crsf_packet();
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
@@ -311,8 +313,6 @@ private:
     AP_HAL::UARTDriver* get_current_UART() { return (_uart ? _uart : get_available_UART()); }
 
     uint16_t _channels[CRSF_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
-
-    void add_to_buffer(uint8_t index, uint8_t b) { ((uint8_t*)&_frame)[index] = b; }
 
     uint32_t _last_frame_time_us;
     uint32_t _last_tx_frame_time_us;
