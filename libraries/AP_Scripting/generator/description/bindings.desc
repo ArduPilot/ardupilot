@@ -65,7 +65,7 @@ singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 include AP_Arming/AP_Arming.h
 
 singleton AP_Arming rename arming
-singleton AP_Arming depends (!defined(HAL_BUILD_AP_PERIPH))
+singleton AP_Arming depends AP_ARMING_ENABLED
 singleton AP_Arming method disarm boolean AP_Arming::Method::SCRIPTING'literal
 singleton AP_Arming method is_armed boolean
 singleton AP_Arming method pre_arm_checks boolean false'literal
@@ -780,7 +780,7 @@ singleton AP_IOMCU method healthy boolean
 
 include AP_Compass/AP_Compass.h
 singleton Compass rename compass
-singleton Compass depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_MAG))
+singleton Compass depends AP_COMPASS_ENABLED
 singleton Compass method healthy boolean uint8_t'skip_check
 
 -- ----EFI Library----
