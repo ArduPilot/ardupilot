@@ -156,7 +156,7 @@ private:
 
     // updating_rate_p_up_d_down - increase P to ensure the target is reached while checking bounce back isn't increasing
     // P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
-    void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+    void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max, bool fail_min_d = true);
 
     // updating_angle_p_down - decrease P until we don't reach the target before time out
     // P is decreased to ensure we are not overshooting the target
