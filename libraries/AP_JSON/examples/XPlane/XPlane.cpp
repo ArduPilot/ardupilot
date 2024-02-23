@@ -12,12 +12,16 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static void test_xplane(void)
+static uint32_t test_count;
+static uint32_t label_count;
+
+static bool test_xplane(void)
 {
     const uint32_t m1 = hal.util->available_memory();
     auto *obj = AP_JSON::load_json("@ROMFS/models/xplane_plane.json");
     if (obj == nullptr) {
-        ::printf("Failed to parse json\n");
+        ::printf("Failed to load or parse json\n");
+        return false;
     }
     const uint32_t m2 = hal.util->available_memory();
     ::printf("Used %u bytes\n", unsigned(m1-m2));
@@ -28,8 +32,10 @@ static void test_xplane(void)
          ++i) {
         const char *label = i->first.c_str();
         ::printf("Label: %s\n", label);
+        label_count++;
     }
     delete obj;
+    return label_count > 10;
 }
 
 /*
@@ -43,7 +49,16 @@ void setup(void)
 void loop(void)
 {
     ::printf("Memory: %u\n", (unsigned)hal.util->available_memory());
-    test_xplane();
+    if (test_xplane()) {
+        test_count++;
+    } else {
+        ::printf("Test FAILED\n");
+        exit(1);
+    }
+    if (test_count > 10) {
+        ::printf("Test PASSED\n");
+        exit(0);
+    }
 }
 
 AP_HAL_MAIN();
