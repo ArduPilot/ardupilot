@@ -72,7 +72,7 @@
 
 // roll and pitch axes
 #define AUTOTUNE_TARGET_RATE_RLLPIT_CDS     18000   // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
-#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target min roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
 
 // yaw axis
 #define AUTOTUNE_TARGET_RATE_YAW_CDS        9000        // target yaw rate during AUTOTUNE_STEP_TWITCHING step
@@ -536,9 +536,9 @@ void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, f
         meas_rate_min = rate;
     }
 
-    // calculate early stopping time based on the time it takes to get to 75%
-    if (meas_rate_max < rate_target_max * 0.75f) {
-        // the measurement not reached the 75% threshold yet
+    // calculate early stopping time based on the time it takes to get to 63.21%
+    if (meas_rate_max < rate_target_max * 0.6321) {
+        // the measurement not reached the 63.21% threshold yet
         step_time_limit_ms = (now - step_start_time_ms) * 3;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
@@ -612,9 +612,9 @@ void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angl
         meas_rate_min = rate;
     }
 
-    // calculate early stopping time based on the time it takes to get to 75%
-    if (meas_angle_max < angle_target_max * 0.75f) {
-        // the measurement not reached the 75% threshold yet
+    // calculate early stopping time based on the time it takes to get to 63.21%
+    if (meas_angle_max < angle_target_max * 0.6321) {
+        // the measurement not reached the 63.21% threshold yet
         step_time_limit_ms = (now - step_start_time_ms) * 3;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }

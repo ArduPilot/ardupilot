@@ -211,8 +211,8 @@ protected:
         RD_DOWN = 1,              // rate D is being tuned down
         RP_UP = 2,                // rate P is being tuned up
         RFF_UP = 3,               // rate FF is being tuned up
-        SP_UP = 4,                // angle P is being tuned up
-        SP_DOWN = 5,              // angle P is being tuned down
+        SP_DOWN = 4,              // angle P is being tuned down
+        SP_UP = 5,                // angle P is being tuned up
         MAX_GAINS = 6,            // max allowable stable gains are determined
         TUNE_CHECK = 7,           // frequency sweep with tuned gains
         TUNE_COMPLETE = 8         // Reached end of tuning
