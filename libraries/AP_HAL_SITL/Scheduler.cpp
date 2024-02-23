@@ -128,6 +128,11 @@ bool Scheduler::semaphore_wait_hack_required() const
 
 void Scheduler::delay_microseconds(uint16_t usec)
 {
+    if (_sitlState->_sitl == nullptr) {
+        // this allows examples to run
+        hal.scheduler->stop_clock(AP_HAL::micros64()+usec);
+        return;
+    }
     uint64_t start = AP_HAL::micros64();
     do {
         uint64_t dtime = AP_HAL::micros64() - start;
