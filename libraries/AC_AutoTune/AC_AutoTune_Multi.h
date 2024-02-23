@@ -139,8 +139,8 @@ private:
     void twitch_test_init();
     void twitch_test_run(AxisType test_axis, const float dir_sign);
 
-    void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
-    void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
+    void twitching_test_rate(float angle, float rate, float rate_target, float &meas_rate_min, float &meas_rate_max, float &meas_angle_min);
+    void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min, float angle_min);
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
 
     // measure acceleration during twitch test
