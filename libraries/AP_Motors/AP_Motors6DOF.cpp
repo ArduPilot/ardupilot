@@ -20,6 +20,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Motors6DOF.h"
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -235,6 +236,18 @@ int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
     int16_t range_up = get_pwm_output_max() - 1500;
     int16_t range_down = 1500 - get_pwm_output_min();
     return 1500 + thrust_in * (thrust_in > 0 ? range_up : range_down);
+}
+
+void AP_Motors6DOF::rc_write(uint8_t chan, uint16_t pwm)
+{
+    // almost exact copy of AP_Motors::rc_write, execpt for the _trimmed part
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    if ((1U<<chan) & _motor_pwm_range_mask) {
+        // note that PWM_MIN/MAX has been forced to 1000/2000
+        SRV_Channels::set_output_pwm_trimmed(function, pwm);
+    } else {
+        SRV_Channels::set_output_pwm(function, pwm);
+    }
 }
 
 void AP_Motors6DOF::output_to_motors()

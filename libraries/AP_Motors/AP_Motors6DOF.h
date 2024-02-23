@@ -49,6 +49,8 @@ public:
 
     bool set_reversed(int motor_number, bool reversed);
 
+    void rc_write(uint8_t chan, uint16_t pwm) override;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
