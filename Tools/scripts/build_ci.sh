@@ -176,7 +176,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "examples" ]; then
-        ./waf configure --board=linux --debug
+        ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
         continue
