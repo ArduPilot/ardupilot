@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
     // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
     // @Range: 0.05 0.10
     // @User: Standard
-    AP_GROUPINFO("AGGR", 2, AC_AutoTune_Multi, aggressiveness, 0.1f),
+    AP_GROUPINFO("AGGR", 2, AC_AutoTune_Multi, aggressiveness, 0.075f),
 
     // @Param: MIN_D
     // @DisplayName: AutoTune minimum D
