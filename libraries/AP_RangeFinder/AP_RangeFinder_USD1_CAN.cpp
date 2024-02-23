@@ -4,30 +4,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-RangeFinder_MultiCAN *AP_RangeFinder_USD1_CAN::multican;
-
-/*
-  constructor
- */
-AP_RangeFinder_USD1_CAN::AP_RangeFinder_USD1_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend_CAN(_state, _params)
-{
-    if (multican == nullptr) {
-        multican = new RangeFinder_MultiCAN(AP_CAN::Protocol::USD1, "USD1 MultiCAN");
-        if (multican == nullptr) {
-            AP_BoardConfig::allocation_error("USD1_CAN");
-        }
-    }
-
-    {
-        // add to linked list of drivers
-        WITH_SEMAPHORE(multican->sem);
-        auto *prev = multican->drivers;
-        next = prev;
-        multican->drivers = this;
-    }
-}
-
 // handler for incoming frames. These come in at 100Hz
 bool AP_RangeFinder_USD1_CAN::handle_frame(AP_HAL::CANFrame &frame)
 {
