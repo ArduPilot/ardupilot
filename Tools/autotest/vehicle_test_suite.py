@@ -7966,7 +7966,7 @@ Also, ignores heartbeats not from our target system'''
         if "STATUSTEXT" not in c.collections:
             raise NotAchievedException("Asked to check context but it isn't collecting!")
         for x in c.collections["STATUSTEXT"]:
-            self.progress("  statustext=%s vs text=%s" % (x.text, text))
+            self.progress("  statustext want=(%s) got=(%s)" % (x.text, text))
             if regex:
                 if re.match(text, x.text):
                     return x
