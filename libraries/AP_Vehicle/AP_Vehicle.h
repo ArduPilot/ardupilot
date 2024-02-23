@@ -317,7 +317,9 @@ protected:
     AP_GPS gps;
 #endif
     AP_Baro barometer;
+#if AP_COMPASS_ENABLED
     Compass compass;
+#endif
 #if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor ins;
 #endif
