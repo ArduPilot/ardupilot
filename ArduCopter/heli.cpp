@@ -74,7 +74,7 @@ void Copter::check_dynamic_flight(void)
 void Copter::update_heli_control_dynamics(void)
 {
 
-    if (!motors->using_leaky_integrator()) {
+    if (!g2.heli_params.using_leaky_integrator()) {
         //turn off leaky_I
         attitude_control->use_leaky_i(false);
         if (ap.land_complete || ap.land_complete_maybe) {

@@ -676,6 +676,11 @@ void Copter::one_hz_loop()
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
+
+#if FRAME_CONFIG == HELI_FRAME
+    // set the leaky integrator flag in the motors library. This is based on the H_G_OPTIONS param.
+    motors->set_leaky_integrator(g2.heli_params.using_leaky_integrator());
+#endif
 }
 
 void Copter::init_simple_bearing()

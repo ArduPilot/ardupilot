@@ -78,6 +78,7 @@
 
 #if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
+ #include "heli_params.h" // Collection of general heli specific parameters and helpers
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
 #endif
@@ -548,9 +549,9 @@ private:
     AC_PrecLand_StateMachine precland_statemachine;
 #endif
 
+#if FRAME_CONFIG == HELI_FRAME
     // Pilot Input Management Library
     // Only used for Helicopter for now
-#if FRAME_CONFIG == HELI_FRAME
     AC_InputManager_Heli input_manager;
 #endif
 

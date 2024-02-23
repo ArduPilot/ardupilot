@@ -1234,6 +1234,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
+#if FRAME_CONFIG == HELI_FRAME
+    // @Group: H_G_
+    // @Path: heli_params.cpp
+    AP_SUBGROUPINFO(heli_params, "H_G_", 9, ParametersG2, Heli_Params),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1851,5 +1857,11 @@ void Copter::convert_tradheli_parameters(void) const
         AP_Param::convert_old_parameter(&collhelipct_conversion_info[i], 0.1f);
     }
 
+    // PARAMETER_CONVERSION - Added: Feb-2024
+    // Move the H_OPTIONS param from the motors lib upto the heli_params object
+    const AP_Param::ConversionInfo h_options_info[] = {
+        { Parameters::k_param_motors, 1792, AP_PARAM_INT8, "H_G_OPTIONS" }
+    };
+    AP_Param::convert_old_parameter(&h_options_info[0], 1.0);
 }
 #endif

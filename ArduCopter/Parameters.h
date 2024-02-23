@@ -685,6 +685,12 @@ public:
     AP_Float pldp_range_finder_minimum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
+
+#if FRAME_CONFIG == HELI_FRAME
+    // General heli-specific parameters
+    Heli_Params heli_params;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
