@@ -798,7 +798,11 @@ LUAMOD_API int luaopen_package (lua_State *L) {
   luaL_newlib(L, pk_funcs);  /* create 'package' table */
   // createsearcherstable(L);
   /* set paths */
+#if defined(ARDUPILOT_BUILD)
+  setpath(L, "path", LUA_PATH_VAR, lua_get_modules_path());
+#else
   setpath(L, "path", LUA_PATH_VAR, LUA_PATH_DEFAULT);
+#endif
   // setpath(L, "cpath", LUA_CPATH_VAR, LUA_CPATH_DEFAULT);
   /* store config information */
   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
