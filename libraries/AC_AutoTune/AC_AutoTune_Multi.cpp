@@ -99,9 +99,9 @@ const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
     // @Param: MIN_D
     // @DisplayName: AutoTune minimum D
     // @Description: Defines the minimum D gain
-    // @Range: 0.001 0.006
+    // @Range: 0.0001 0.005
     // @User: Standard
-    AP_GROUPINFO("MIN_D", 3, AC_AutoTune_Multi, min_d,  0.001f),
+    AP_GROUPINFO("MIN_D", 3, AC_AutoTune_Multi, min_d,  0.0005f),
 
     AP_GROUPEND
 };
