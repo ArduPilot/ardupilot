@@ -519,7 +519,7 @@ void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P,
 
 // twitching_test_rate - twitching tests
 // update min and max and test for end conditions
-void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max)
+void AC_AutoTune_Multi::twitching_test_rate(float angle, float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max, float &meas_angle_min)
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -528,12 +528,14 @@ void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, f
         // the measurement is continuing to increase without stopping
         meas_rate_max = rate;
         meas_rate_min = rate;
+        meas_angle_min = angle;
     }
 
     // capture minimum measurement after the measurement has peaked (aka "bounce back")
     if ((rate < meas_rate_min) && (meas_rate_max > rate_target_max * 0.25)) {
         // the measurement is bouncing back
         meas_rate_min = rate;
+        meas_angle_min = angle;
     }
 
     // calculate early stopping time based on the time it takes to get to 63.21%
@@ -561,14 +563,21 @@ void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, f
 
 // twitching_test_rate - twitching tests
 // update min and max and test for end conditions
-void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
+void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min, float angle_min)
 {
     const uint32_t now = AP_HAL::millis();
     if (angle >= angle_max) {
-        if (is_equal(rate, meas_rate_min) && step_scaler > 0.5f) {
+        if (is_equal(rate, meas_rate_min) || (angle_min > 0.95 * angle_max)) {
             // we have reached the angle limit before completing the measurement of maximum and minimum
             // reduce the maximum target rate
-            step_scaler *= 0.9f;
+            if (step_scaler > 0.2f) {
+                step_scaler *= 0.9f;
+            } else {
+                LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
+                mode = FAILED;
+                LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            }
             // ignore result and start test again
             step = WAITING_FOR_LEVEL;
             positive_direction = twitch_reverse_direction();
@@ -1259,14 +1268,14 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     switch (tune_type) {
     case RD_UP:
     case RD_DOWN:
-        twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
+        twitching_test_rate(lean_angle, rotation_rate, target_rate, test_rate_min, test_rate_max, test_angle_min);
         twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min, test_angle_min);
         break;
     case RP_UP:
-        twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
+        twitching_test_rate(lean_angle, rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max, test_angle_min);
         twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min, test_angle_min);
         break;
     case SP_DOWN:
     case SP_UP:
