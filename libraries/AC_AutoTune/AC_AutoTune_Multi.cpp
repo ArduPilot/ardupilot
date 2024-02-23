@@ -664,7 +664,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_all(AxisType test_axis)
         updating_rate_p_up_d_down(tune_pitch_rd, min_d, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
         break;
     case YAW:
-        updating_rate_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
+        updating_rate_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max, false);
         break;
     case YAW_D:
         updating_rate_p_up_d_down(tune_yaw_rd, min_d, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
@@ -932,7 +932,7 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
 
 // updating_rate_p_up_d_down - increase P to ensure the target is reached while checking bounce back isn't increasing
 // P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
-void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max)
+void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max, bool fail_min_d)
 {
     if (meas_rate_max > rate_target*(1+0.5f*aggressiveness)) {
         // ignore the next result unless it is the same as this one
@@ -950,9 +950,11 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
         if (tune_d <= tune_d_min) {
             tune_d = tune_d_min;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
-            mode = FAILED;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            if (fail_min_d) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
+                mode = FAILED;
+                LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            }
         }
         // decrease P gain to match D gain reduction
         tune_p -= tune_p*tune_p_step_ratio;
