@@ -307,40 +307,39 @@ BL_Network::web_var BL_Network::variables[] = {
 /*
   substitute variables of the form {VARNAME}
  */
-char *BL_Network::substitute_vars(const char *str, uint32_t size)
+char *BL_Network::substitute_vars(const char *msg)
 {
     // assume 1024 is enough room for new variables
-    char *result = (char *)malloc(strlen(str) + 1024);
+    char *result = (char *)malloc(strlen(msg) + 1024);
     if (result == nullptr) {
         return nullptr;
     }
     char *p = result;
-    const char *str0 = str;
-    while (*str && str-str0<size) {
-        if (*str != '{') {
-            *p++ = *str++;
+    while (*msg) {
+        if (*msg != '{') {
+            *p++ = *msg++;
             continue;
         }
-        char *q = strchr(str+1, '}');
+        char *q = strchr(msg+1, '}');
         if (q == nullptr) {
-            *p++ = *str++;
+            *p++ = *msg++;
             continue;
         }
-        const uint32_t len = (q - str)-1;
+        const uint32_t len = (q - msg)-1;
         bool found = false;
         for (auto &v : variables) {
-            if (strlen(v.name) == len && strncmp(v.name, str+1, len) == 0) {
+            if (strlen(v.name) == len && strncmp(v.name, msg+1, len) == 0) {
                 found = true;
                 strcpy(p, v.value);
                 p += strlen(v.value);
-                str = q+1;
+                msg = q+1;
                 break;
             }
         }
         if (found) {
             continue;
         }
-        *p++ = *str++;
+        *p++ = *msg++;
     }
     *p = '\0';
     return result;
@@ -515,19 +514,20 @@ void BL_Network::handle_request(SocketAPM *sock)
         need_reboot = true;
     }
     
-    uint32_t size = 0;
-    const auto *msg = AP_ROMFS::find_decompress("index.html", size);
     if (need_reboot) {
         const char *str = "<html><head><meta http-equiv=\"refresh\" content=\"2; url=/\"></head></html>";
         sock->send(str, strlen(str));
     } else {
-        char *msg2 = substitute_vars((const char *)msg, size);
-        sock->send(msg2, strlen(msg2));
-        delete msg2;
+        uint32_t size;
+        const auto *msg = AP_ROMFS::find_decompress("index.html", size); // guaranteed to be null-terminated
+        char *substituted_msg = substitute_vars((const char *)msg);
+        AP_ROMFS::free(msg);
+
+        sock->send(substituted_msg, strlen(substituted_msg));
+        free(substituted_msg);
     }
     delete headers;
     delete sock;
-    AP_ROMFS::free(msg);
 }
 
 struct req_context {
@@ -643,4 +643,3 @@ void BL_Network::status_printf(const char *fmt, ...)
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
-
