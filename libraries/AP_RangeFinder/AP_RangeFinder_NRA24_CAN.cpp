@@ -6,28 +6,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 
-RangeFinder_MultiCAN *AP_RangeFinder_NRA24_CAN::multican_NRA24;
-
-// constructor
-AP_RangeFinder_NRA24_CAN::AP_RangeFinder_NRA24_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend_CAN(_state, _params)
-{
-    if (multican_NRA24 == nullptr) {
-        multican_NRA24 = new RangeFinder_MultiCAN(AP_CAN::Protocol::NanoRadar_NRA24, "NRA24 MultiCAN");
-        if (multican_NRA24 == nullptr) {
-            AP_BoardConfig::allocation_error("Rangefinder_MultiCAN");
-        }
-    }
-
-    {
-        // add to linked list of drivers
-        WITH_SEMAPHORE(multican_NRA24->sem);
-        auto *prev = multican_NRA24->drivers;
-        next = prev;
-        multican_NRA24->drivers = this;
-    }
-}
-
 // update the state of the sensor
 void AP_RangeFinder_NRA24_CAN::update(void)
 {
