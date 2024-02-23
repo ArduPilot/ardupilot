@@ -1973,6 +1973,13 @@ void AP_InertialSensor::update(void)
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    auto *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        hal.scheduler->delay_microseconds(1000);
+        return;
+    }
+#endif
     if (_have_sample) {
         // the user has called wait_for_sample() again without
         // consuming the sample with update()
