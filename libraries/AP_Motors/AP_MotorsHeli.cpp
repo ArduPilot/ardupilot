@@ -103,12 +103,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 27, AP_MotorsHeli, _collective_hover_learn, HOVER_LEARN_AND_SAVE),
 
-    // @Param: OPTIONS
-    // @DisplayName: Heli_Options
-    // @Description: Bitmask of heli options.  Bit 0 changes how the pitch, roll, and yaw axis integrator term is managed for low speed and takeoff/landing. In AC 4.0 and earlier, scheme uses a leaky integrator for ground speeds less than 5 m/s and won't let the steady state integrator build above ILMI. The integrator is allowed to build to the ILMI value when it is landed.  The other integrator management scheme bases integrator limiting on takeoff and landing.  Whenever the aircraft is landed the integrator is set to zero.  When the aicraft is airborne, the integrator is only limited by IMAX. 
-    // @Bitmask: 0:Use Leaky I
-    // @User: Standard
-    AP_GROUPINFO("OPTIONS", 28, AP_MotorsHeli, _heli_options, (uint8_t)HeliOption::USE_LEAKY_I),
+    // index 28 was OPTIONS and was moved up to copter/heli_params. Do not use this index in the future.
 
     // @Param: COL_ANG_MIN
     // @DisplayName: Collective Blade Pitch Angle Minimum
@@ -341,7 +336,7 @@ void AP_MotorsHeli::output_logic()
             // Servos set to their trim values or in a test condition.
 
             // set limits flags
-            if (!using_leaky_integrator()) {
+            if (!_heliflags._using_leaky_integrator) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -358,7 +353,7 @@ void AP_MotorsHeli::output_logic()
         case SpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if (_heliflags.land_complete && !_heliflags._using_leaky_integrator) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -380,7 +375,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if (_heliflags.land_complete && !_heliflags._using_leaky_integrator) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -402,7 +397,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if (_heliflags.land_complete && !_heliflags._using_leaky_integrator) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -422,7 +417,7 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete && !using_leaky_integrator()) {
+            if (_heliflags.land_complete && !_heliflags._using_leaky_integrator) {
                 set_limit_flag_pitch_roll_yaw(true);
             } else {
                 set_limit_flag_pitch_roll_yaw(false);
@@ -495,12 +490,6 @@ void AP_MotorsHeli::update_takeoff_collective_flag(float coll_out)
     } else {
         _heliflags.takeoff_collective = false;
     }
-}
-
-// Determines if _heli_options bit is set
-bool AP_MotorsHeli::heli_option(HeliOption opt) const
-{
-    return (_heli_options & (uint8_t)opt);
 }
 
 // updates the turbine start flag

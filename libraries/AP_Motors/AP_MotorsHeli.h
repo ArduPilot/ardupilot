@@ -145,14 +145,6 @@ public:
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
-    // enum for heli optional features
-    enum class HeliOption {
-        USE_LEAKY_I                     = (1<<0),   // 1
-    };
-
-    // use leaking integrator management scheme
-    bool using_leaky_integrator() const { return heli_option(HeliOption::USE_LEAKY_I); }
-
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
@@ -164,6 +156,9 @@ public:
 
     // Helper function for param conversions to be done in motors class
     virtual void heli_motors_param_conversions(void) { return; }
+
+    // Helper function to set the _using_leaky_integrator flag
+    void set_leaky_integrator(bool use) { _heliflags._using_leaky_integrator = use; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -226,9 +221,6 @@ protected:
     // save parameters as part of disarming
     void save_params_on_disarm() override;
 
-    // Determines if _heli_options bit is set
-    bool heli_option(HeliOption opt) const;
-
     // updates the takeoff collective flag indicating that current collective is greater than collective required to indicate takeoff.
     void update_takeoff_collective_flag(float coll_out);
 
@@ -257,8 +249,9 @@ protected:
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
-        uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
+        uint8_t rotor_spooldown_complete : 1;   // true if the rotors have spooled down completely
         uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
+        bool _using_leaky_integrator    : 1;    // true if h_options is set to use leaky I term
     } _heliflags;
 
     // parameters
@@ -269,7 +262,6 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
     AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
     AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
-    AP_Int8         _heli_options;              // bitmask for optional features
     AP_Float        _collective_zero_thrust_deg;// Zero thrust blade collective pitch in degrees
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
