@@ -52,7 +52,7 @@ echo "Checking CLI Tools installed..."
     ERROR=$(xcode-select --install 2>&1 > /dev/null)
 } ||
 {
-if [[ $ERROR != *"command line tools are already installed"* ]]; then
+if [[ $ERROR != *"ommand line tools are already installed"* ]]; then
     echo "$ERROR" 1>&2
     exit 1
 fi
