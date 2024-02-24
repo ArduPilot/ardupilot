@@ -108,7 +108,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("ASSIST_SPEED", 24, QuadPlane, assist_speed, 0),
+    AP_GROUPINFO("ASSIST_SPEED", 24, QuadPlane, assist.speed, 0),
 
     // @Param: YAW_RATE_MAX
     // @DisplayName: Maximum yaw rate
@@ -236,7 +236,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist_angle, 30),
+    AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist.angle, 30),
 
     // 47: TILT_TYPE
     // 48: TAILSIT_ANGLE
@@ -405,7 +405,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 120
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist_alt, 0),
+    AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist.alt, 0),
 
     // 17: TAILSIT_GSCMSK
     // 18: TAILSIT_GSCMIN
@@ -417,7 +417,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 2
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("ASSIST_DELAY", 19, QuadPlane, assist_delay, 0.5),
+    AP_GROUPINFO("ASSIST_DELAY", 19, QuadPlane, assist.delay, 0.5),
     
     // @Param: FWD_MANTHR_MAX
     // @DisplayName: VTOL manual forward throttle max percent
@@ -825,7 +825,7 @@ bool QuadPlane::setup(void)
 
     // default QAssist state as set with Q_OPTIONS
     if (option_is_set(QuadPlane::OPTION::Q_ASSIST_FORCE_ENABLE)) {
-        q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
     }
 
     setup_defaults();
@@ -1454,16 +1454,16 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
 /*
   return true if the quadplane should provide stability assistance
  */
-bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
+bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
 {
-    if (!plane.arming.is_armed_and_safety_off() || (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED) || tailsitter.is_control_surface_tailsitter()) {
+    if (!plane.arming.is_armed_and_safety_off() || (state == STATE::ASSIST_DISABLED) || quadplane.tailsitter.is_control_surface_tailsitter()) {
         // disarmed or disabled by aux switch or because a control surface tailsitter
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return false;
     }
 
-    if (!tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
+    if (!quadplane.tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
         // not in a flight mode and condition where it would be safe to turn on vertial lift motors
@@ -1473,14 +1473,14 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
-    if (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE) {
+    if (state == STATE::FORCE_ENABLED) {
         // force enabled, no need to check thresholds
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return true;
     }
 
-    if (assist_speed <= 0) {
+    if (speed <= 0) {
         // disabled via speed threshold
         in_angle_assist = false;
         angle_error_start_ms = 0;
@@ -1489,8 +1489,8 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
 
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
-    if ((have_airspeed && aspeed < assist_speed) && 
-       (!option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || ahrs.using_airspeed_sensor())) {
+    if ((have_airspeed && aspeed < speed) && 
+       (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor())) {
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return true;
@@ -1501,13 +1501,13 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
     /*
       optional assistance when altitude is too close to the ground
      */
-    if (assist_alt > 0) {
+    if (alt > 0) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (height_above_ground < assist_alt) {
+        if (height_above_ground < alt) {
             if (alt_error_start_ms == 0) {
                 alt_error_start_ms = now;
             }
-            if (now - alt_error_start_ms > assist_delay*1000) {
+            if (now - alt_error_start_ms > delay*1000) {
                 // we've been below assistant alt for Q_ASSIST_DELAY seconds
                 if (!in_alt_assist) {
                     in_alt_assist = true;
@@ -1521,7 +1521,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
         }
     }
 
-    if (assist_angle <= 0) {
+    if (angle <= 0) {
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return false;
@@ -1532,18 +1532,18 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
      */
 
     const uint16_t allowed_envelope_error_cd = 500U;
-    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit*100 + allowed_envelope_error_cd &&
-        ahrs.pitch_sensor < plane.aparm.pitch_limit_max*100+allowed_envelope_error_cd &&
-        ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min*100)) {
+    if (labs(plane.ahrs.roll_sensor) <= plane.aparm.roll_limit*100 + allowed_envelope_error_cd &&
+        plane.ahrs.pitch_sensor < plane.aparm.pitch_limit_max*100+allowed_envelope_error_cd &&
+        plane.ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min*100)) {
         // we are inside allowed attitude envelope
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return false;
     }
     
-    int32_t max_angle_cd = 100U*assist_angle;
-    if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
-         labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
+    int32_t max_angle_cd = 100U*angle;
+    if ((labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
+         labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
         // not beyond angle error
         angle_error_start_ms = 0;
         in_angle_assist = false;
@@ -1553,12 +1553,12 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
     if (angle_error_start_ms == 0) {
         angle_error_start_ms = now;
     }
-    bool ret = (now - angle_error_start_ms) >= assist_delay*1000;
+    bool ret = (now - angle_error_start_ms) >= delay*1000;
     if (ret && !in_angle_assist) {
         in_angle_assist = true;
         gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
-                                         (int)(ahrs.roll_sensor/100),
-                                         (int)(ahrs.pitch_sensor/100));
+                                         (int)(plane.ahrs.roll_sensor/100),
+                                         (int)(plane.ahrs.pitch_sensor/100));
     }
     return ret;
 }
@@ -1581,7 +1581,7 @@ void SLT_Transition::update()
     /*
       see if we should provide some assistance
      */
-    if (quadplane.should_assist(aspeed, have_airspeed)) {
+    if (quadplane.assist.should_assist(aspeed, have_airspeed)) {
         // the quad should provide some assistance to the plane
         quadplane.assisted_flight = true;
         // update transition state for vehicles using airspeed wait
@@ -2468,7 +2468,7 @@ void QuadPlane::vtol_position_controller(void)
         }
         
         // speed for crossover to POSITION1 controller
-        const float aspeed_threshold = MAX(plane.aparm.airspeed_min-2, assist_speed);
+        const float aspeed_threshold = MAX(plane.aparm.airspeed_min-2, assist.speed);
 
         // run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.auto_state.crosstrack ? plane.prev_WP_loc : plane.current_loc, loc);

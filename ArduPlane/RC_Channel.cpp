@@ -61,17 +61,17 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
     switch(ch_flag) {
         case AuxSwitchPos::HIGH:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::FORCE_ENABLED);
             break;
 
         case AuxSwitchPos::MIDDLE:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_ENABLED);
             break;
 
         case AuxSwitchPos::LOW:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_DISABLED);
             break;
     }
 }
@@ -122,18 +122,18 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         case AuxSwitchPos::HIGH:
             plane.flare_mode = Plane::FlareMode::ENABLED_PITCH_TARGET;
 #if HAL_QUADPLANE_ENABLED
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_DISABLED);
 #endif
             break;
         case AuxSwitchPos::MIDDLE:
             plane.flare_mode = Plane::FlareMode::ENABLED_NO_PITCH_TARGET;
 #if HAL_QUADPLANE_ENABLED
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_DISABLED);
 #endif
             break;
         case AuxSwitchPos::LOW:
 #if HAL_QUADPLANE_ENABLED
-            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_ENABLED);
 #endif
             plane.flare_mode = Plane::FlareMode::FLARE_DISABLED;
             break;
