@@ -411,7 +411,10 @@ def chibios_firmware(self):
     bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
-            hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+            if int(self.bld.env.FLASH_RESERVE_START_KB) > 0:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_with_bl.hex').name)
+            else:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
             hex_task.set_run_after(cleanup_task)
         else:
