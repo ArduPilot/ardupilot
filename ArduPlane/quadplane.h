@@ -335,6 +335,9 @@ private:
         // check for assistance needed
         bool should_assist(float aspeed, bool have_airspeed);
 
+        // Assistance not needed, reset any state
+        void reset();
+
         // speed below which quad assistance is given
         AP_Float speed;
 
