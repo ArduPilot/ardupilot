@@ -68,6 +68,7 @@
 #endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
+class RTCM3_Parser;
 
 /// @class AP_GPS
 /// GPS driver main class
@@ -245,7 +246,7 @@ public:
     void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(const mavlink_message_t &msg);
+    void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
@@ -624,7 +625,9 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
-        GPSL5HealthOverride = (1U << 5)
+        GPSL5HealthOverride = (1U << 5),
+        AlwaysRTCMDecode = (1U << 6),
+        DisableRTCMDecode = (1U << 7),
     };
 
     // check if an option is set
@@ -728,7 +731,7 @@ private:
     } rtcm_stats;
 
     // re-assemble GPS_RTCM_DATA message
-    void handle_gps_rtcm_data(const mavlink_message_t &msg);
+    void handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
@@ -785,6 +788,20 @@ private:
 
     // logging support
     void Write_GPS(uint8_t instance);
+
+#if AP_GPS_RTCM_DECODE_ENABLED
+    /*
+      per mavlink channel RTCM decoder, enabled with RTCM decode
+       option in GPS_DRV_OPTIONS
+    */
+    struct {
+        RTCM3_Parser *parsers[MAVLINK_COMM_NUM_BUFFERS];
+        uint32_t sent_crc[32];
+        uint8_t sent_idx;
+        uint16_t seen_mav_channels;
+    } rtcm;
+    bool parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt);
+#endif
 
 };
 
