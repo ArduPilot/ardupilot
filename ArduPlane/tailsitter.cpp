@@ -894,6 +894,9 @@ void Tailsitter_Transition::VTOL_update()
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }
+    } else {
+        // Keep assistance reset while not checking
+        quadplane.assist.reset();
     }
     restart();
 }
@@ -1006,6 +1009,8 @@ void Tailsitter_Transition::force_transition_complete()
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
+
+    quadplane.assist.reset();
 }
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const

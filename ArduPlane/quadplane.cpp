@@ -1451,6 +1451,16 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
     return yaw_rate;
 }
 
+// Assistance not needed, reset any state
+void QuadPlane::VTOL_Assist::reset()
+{
+    in_angle_assist = false;
+    angle_error_start_ms = 0;
+
+    in_alt_assist = false;
+    alt_error_start_ms = 0;
+}
+
 /*
   return true if the quadplane should provide stability assistance
  */
@@ -1458,8 +1468,7 @@ bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
 {
     if (!plane.arming.is_armed_and_safety_off() || (state == STATE::ASSIST_DISABLED) || quadplane.tailsitter.is_control_surface_tailsitter()) {
         // disarmed or disabled by aux switch or because a control surface tailsitter
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
+        reset();
         return false;
     }
 
@@ -1468,22 +1477,19 @@ bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
                                                                       || plane.is_flying() ) ) {
         // not in a flight mode and condition where it would be safe to turn on vertial lift motors
         // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
+        reset();
         return false;
     }
 
     if (state == STATE::FORCE_ENABLED) {
         // force enabled, no need to check thresholds
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
+        reset();
         return true;
     }
 
     if (speed <= 0) {
         // disabled via speed threshold
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
+        reset();
         return false;
     }
 
@@ -1790,6 +1796,9 @@ void SLT_Transition::VTOL_update()
         transition_state = TRANSITION_AIRSPEED_WAIT;
     }
     last_throttle = motors->get_throttle();
+
+    // Keep assistance reset while not checking
+    quadplane.assist.reset();
 }
 
 /*
@@ -4567,6 +4576,9 @@ void SLT_Transition::force_transition_complete() {
     transition_start_ms = 0;
     transition_low_airspeed_ms = 0;
     set_last_fw_pitch();
+
+    // Keep assistance reset while not checking
+    quadplane.assist.reset();
 }
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
