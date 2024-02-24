@@ -4081,7 +4081,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_GPS_INPUT:
     case MAVLINK_MSG_ID_HIL_GPS:
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        AP::gps().handle_msg(msg);
+        AP::gps().handle_msg(chan, msg);
         break;
 #endif
 
