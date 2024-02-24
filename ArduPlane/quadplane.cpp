@@ -1481,6 +1481,12 @@ bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
+    if (plane.flare_mode != Plane::FlareMode::FLARE_DISABLED) {
+        // Never active in fixed wing flare
+        reset();
+        return false;
+    }
+
     if (state == STATE::FORCE_ENABLED) {
         // force enabled, no need to check thresholds
         reset();
