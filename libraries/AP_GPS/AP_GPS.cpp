@@ -55,6 +55,10 @@
 #include <AP_Logger/AP_Logger.h>
 #include "AP_GPS_FixType.h"
 
+#if AP_GPS_RTCM_DECODE_ENABLED
+#include "RTCM3_Parser.h"
+#endif
+
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
@@ -347,7 +351,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -1333,12 +1337,12 @@ void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 /*
   pass along a mavlink message (for MAV type)
  */
-void AP_GPS::handle_msg(const mavlink_message_t &msg)
+void AP_GPS::handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         // pass data to de-fragmenter
-        handle_gps_rtcm_data(msg);
+        handle_gps_rtcm_data(chan, msg);
         break;
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg);
@@ -1671,7 +1675,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
 /*
    re-assemble GPS_RTCM_DATA message
  */
-void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t &msg)
+void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     mavlink_gps_rtcm_data_t packet;
     mavlink_msg_gps_rtcm_data_decode(&msg, &packet);
@@ -1681,8 +1685,88 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t &msg)
         return;
     }
 
+#if AP_GPS_RTCM_DECODE_ENABLED
+    if (!option_set(DriverOptions::DisableRTCMDecode)) {
+        const uint16_t mask = (1U << unsigned(chan));
+        rtcm.seen_mav_channels |= mask;
+        if (option_set(DriverOptions::AlwaysRTCMDecode) ||
+            (rtcm.seen_mav_channels & ~mask) != 0) {
+            /*
+              we are seeing RTCM on multiple mavlink channels. We will run
+              the data through a full per-channel RTCM decoder
+            */
+            if (parse_rtcm_injection(chan, packet)) {
+                return;
+            }
+        }
+    }
+#endif
+
     handle_gps_rtcm_fragment(packet.flags, packet.data, packet.len);
 }
+
+#if AP_GPS_RTCM_DECODE_ENABLED
+/*
+  fully parse RTCM data coming in from a MAVLink channel, when we have
+  a full message inject it to the GPS. This approach allows for 2 or
+  more MAVLink channels to be used for the same RTCM data, allowing
+  for redundent transports for maximum reliability at the cost of some
+  extra CPU and a bit of re-assembly lag
+ */
+bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt)
+{
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return false;
+    }
+    if (rtcm.parsers[chan] == nullptr) {
+        rtcm.parsers[chan] = new RTCM3_Parser();
+        if (rtcm.parsers[chan] == nullptr) {
+            return false;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS: RTCM parsing for chan %u", unsigned(chan));
+    }
+    for (uint16_t i=0; i<pkt.len; i++) {
+        if (rtcm.parsers[chan]->read(pkt.data[i])) {
+            // we have a full message, inject it
+            const uint8_t *buf = nullptr;
+            uint16_t len = rtcm.parsers[chan]->get_len(buf);
+
+            // see if we have already sent it. This prevents
+            // duplicates from multiple sources
+            const uint32_t crc = crc_crc32(0, buf, len);
+
+#if HAL_LOGGING_ENABLED
+            AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
+                                        AP_HAL::micros64(),
+                                        uint8_t(chan),
+                                        rtcm.parsers[chan]->get_id(),
+                                        len,
+                                        crc);
+#endif
+            
+            bool already_seen = false;
+            for (uint8_t c=0; c<ARRAY_SIZE(rtcm.sent_crc); c++) {
+                if (rtcm.sent_crc[c] == crc) {
+                    // we have already sent this message
+                    already_seen = true;
+                    break;
+                }
+            }
+            if (already_seen) {
+                continue;
+            }
+            rtcm.sent_crc[rtcm.sent_idx] = crc;
+            rtcm.sent_idx = (rtcm.sent_idx+1) % ARRAY_SIZE(rtcm.sent_crc);
+
+            if (buf != nullptr && len > 0) {
+                inject_data(buf, len);
+            }
+            rtcm.parsers[chan]->reset();
+        }
+    }
+    return true;
+}
+#endif // AP_GPS_RTCM_DECODE_ENABLED
 
 void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
