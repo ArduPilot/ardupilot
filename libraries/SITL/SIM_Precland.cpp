@@ -50,9 +50,9 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     AP_GROUPINFO("LON", 2, SIM_Precland, _device_lon, 0),
 
     // @Param: HEIGHT
-    // @DisplayName: Precland device center's height above sealevel
-    // @Description: Precland device center's height above sealevel assume a 2x2m square as station base
-    // @Units: cm
+    // @DisplayName: Precland device center's height SITL origin
+    // @Description: Precland device center's height above SITL origin. Assumes a 2x2m square as station base
+    // @Units: m
     // @Increment: 1
     // @Range: 0 10000
     // @User: Advanced
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     AP_GROUPEND
 };
 
-void SIM_Precland::update(const Location &loc, const Vector3d &position)
+void SIM_Precland::update(const Location &loc, const Vector3d &position_relhome)
 {
     if (!_enable) {
         _healthy = false;
@@ -127,21 +127,21 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
     }
 
     const Location device_center(static_cast<int32_t>(_device_lat * 1.0e7f),
-            static_cast<int32_t>(_device_lon * 1.0e7f),
-            static_cast<int32_t>(_device_height),
-            Location::AltFrame::ABOVE_HOME);
-    Vector2f centerf;
-    if (!device_center.get_vector_xy_from_origin_NE(centerf)) {
+                                 static_cast<int32_t>(_device_lon * 1.0e7f),
+                                 static_cast<int32_t>(_device_height*100),
+            Location::AltFrame::ABOVE_ORIGIN);
+    Vector3f centerf;
+    if (!device_center.get_vector_from_origin_NEU(centerf)) {
         _healthy = false;
         return;
     }
     centerf = centerf * 0.01f;        // cm to m
-    Vector3d center(centerf.x, centerf.y, -_device_height);   // convert to make the further vector operations easy
+    centerf.z *= -1; // NEU to NED
 
     // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
     Vector3d axis{1, 0, 0};
     axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
-    Vector3d position_wrt_device = position - center;  // position of vehicle with respect to preland device center
+    Vector3d position_wrt_device = position_relhome - centerf.todouble();  // position of vehicle with respect to preland device center
     
     // longitudinal distance of vehicle from the precland device
     // this is the distance of vehicle from the plane which is passing through precland device center and perpendicular to axis of cone/cylinder
