@@ -363,13 +363,24 @@ private:
         // Default to enabled
         STATE state = STATE::ASSIST_ENABLED;
 
-        // true when in angle assist
-        uint32_t angle_error_start_ms;
-        bool in_angle_assist;
+        class Assist_Hysteresis {
+        public:
+            // Reset state
+            void reset();
 
+            // Update state, return true when first triggered
+            bool update(const bool trigger, const uint32_t &now_ms, const uint32_t &trigger_delay_ms, const uint32_t &clear_delay_ms);
 
-        uint32_t alt_error_start_ms;
-        bool in_alt_assist;
+            // Return true if the output is active
+            bool is_active() const { return active; }
+
+        private:
+            uint32_t start_ms;
+            uint32_t last_ms;
+            bool active;
+        };
+        Assist_Hysteresis angle_error;
+        Assist_Hysteresis alt_error;
 
         // Reference to access quadplane
         QuadPlane& quadplane;

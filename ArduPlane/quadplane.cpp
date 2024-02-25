@@ -1454,11 +1454,49 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
 // Assistance not needed, reset any state
 void QuadPlane::VTOL_Assist::reset()
 {
-    in_angle_assist = false;
-    angle_error_start_ms = 0;
+    angle_error.reset();
+    alt_error.reset();
+}
 
-    in_alt_assist = false;
-    alt_error_start_ms = 0;
+// Assistance hysteresis helpers
+
+// Reset state
+void QuadPlane::VTOL_Assist::Assist_Hysteresis::reset()
+{
+    start_ms = 0;
+    last_ms = 0;
+    active = false;
+}
+
+bool QuadPlane::VTOL_Assist::Assist_Hysteresis::update(const bool trigger, const uint32_t &now_ms, const uint32_t &trigger_delay_ms, const uint32_t &clear_delay_ms)
+{
+    bool ret = false;
+
+    if (trigger) {
+        last_ms = now_ms;
+        if (start_ms == 0) {
+            start_ms = now_ms;
+        }
+        if ((now_ms - start_ms) > trigger_delay_ms) {
+            // trigger delay has elapsed
+            if (!active) {
+                // return true on first trigger
+                ret = true;
+            }
+            active = true;
+        }
+
+    } else if (active) {
+        if ((last_ms == 0) || ((now_ms - last_ms) > clear_delay_ms)) {
+            // Clear delay passed
+            reset();
+        }
+
+    } else {
+        reset();
+    }
+
+    return ret;
 }
 
 /*
@@ -1487,92 +1525,63 @@ bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
-    if (state == STATE::FORCE_ENABLED) {
-        // force enabled, no need to check thresholds
-        reset();
-        return true;
-    }
+    const bool force_assist = state == STATE::FORCE_ENABLED;
 
     if (speed <= 0) {
-        // disabled via speed threshold
+        // disabled via speed threshold, still allow force enabled
         reset();
-        return false;
+        return force_assist;
     }
 
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
-    if ((have_airspeed && aspeed < speed) && 
-       (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor())) {
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
-        return true;
-    }
+    const bool speed_assist = (have_airspeed && aspeed < speed) && 
+       (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
 
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t tigger_delay_ms = delay * 1000;
+    const uint32_t clear_delay_ms = tigger_delay_ms * 2;
 
     /*
       optional assistance when altitude is too close to the ground
      */
-    if (alt > 0) {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (height_above_ground < alt) {
-            if (alt_error_start_ms == 0) {
-                alt_error_start_ms = now;
-            }
-            if (now - alt_error_start_ms > delay*1000) {
-                // we've been below assistant alt for Q_ASSIST_DELAY seconds
-                if (!in_alt_assist) {
-                    in_alt_assist = true;
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
-                }
-                return true;
-            }
-        } else {
-            in_alt_assist = false;
-            alt_error_start_ms = 0;
+    if (alt <= 0) {
+        // Alt assist disabled
+        alt_error.reset();
+
+    } else {
+        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        if (alt_error.update(height_above_ground < alt, now_ms, tigger_delay_ms, clear_delay_ms)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt assist %.1fm", height_above_ground);
         }
     }
 
     if (angle <= 0) {
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
-        return false;
-    }
+        // Angle assist disabled
+        angle_error.reset();
 
-    /*
-      now check if we should provide assistance due to attitude error
-     */
+    } else {
 
-    const uint16_t allowed_envelope_error_cd = 500U;
-    if (labs(plane.ahrs.roll_sensor) <= plane.aparm.roll_limit*100 + allowed_envelope_error_cd &&
-        plane.ahrs.pitch_sensor < plane.aparm.pitch_limit_max*100+allowed_envelope_error_cd &&
-        plane.ahrs.pitch_sensor > -(allowed_envelope_error_cd-plane.aparm.pitch_limit_min*100)) {
-        // we are inside allowed attitude envelope
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
-        return false;
-    }
-    
-    int32_t max_angle_cd = 100U*angle;
-    if ((labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
-         labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
-        // not beyond angle error
-        angle_error_start_ms = 0;
-        in_angle_assist = false;
-        return false;
-    }
+        /*
+        now check if we should provide assistance due to attitude error
+        */
+        const uint16_t allowed_envelope_error_cd = 500U;
+        const bool inside_envelope = (labs(plane.ahrs.roll_sensor) <= (plane.aparm.roll_limit*100 + allowed_envelope_error_cd)) &&
+                                     (plane.ahrs.pitch_sensor < (plane.aparm.pitch_limit_max*100 + allowed_envelope_error_cd)) &&
+                                     (plane.ahrs.pitch_sensor > (plane.aparm.pitch_limit_min*100 - allowed_envelope_error_cd));
 
-    if (angle_error_start_ms == 0) {
-        angle_error_start_ms = now;
-    }
-    bool ret = (now - angle_error_start_ms) >= delay*1000;
-    if (ret && !in_angle_assist) {
-        in_angle_assist = true;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
+        const int32_t max_angle_cd = 100U*angle;
+        const bool inside_angle_error = (labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd) &&
+                                        (labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd);
+
+        if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
                                          (int)(plane.ahrs.roll_sensor/100),
                                          (int)(plane.ahrs.pitch_sensor/100));
+        }
     }
-    return ret;
+
+    return force_assist || speed_assist || alt_error.is_active() || angle_error.is_active();
 }
 
 /*
