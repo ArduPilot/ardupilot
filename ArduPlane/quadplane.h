@@ -358,6 +358,12 @@ private:
         };
         void set_state(STATE _state) { state = _state; }
 
+        // Logging getters for assist types
+        bool in_force_assist() const { return force_assist; }
+        bool in_speed_assist() const { return speed_assist; }
+        bool in_alt_assist() const { return alt_error.is_active(); }
+        bool in_angle_assist() const { return angle_error.is_active(); }
+
     private:
 
         // Default to enabled
@@ -381,6 +387,10 @@ private:
         };
         Assist_Hysteresis angle_error;
         Assist_Hysteresis alt_error;
+
+        // Force and speed assist have no hysteresis
+        bool force_assist;
+        bool speed_assist;
 
         // Reference to access quadplane
         QuadPlane& quadplane;
