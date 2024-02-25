@@ -212,7 +212,7 @@ void AC_Fence::auto_enable_fence_after_takeoff(void)
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             enable(true);
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
             break;
         default:
             // fence does not auto-enable in other takeoff conditions
@@ -228,11 +228,11 @@ void AC_Fence::auto_disable_fence_for_landing(void)
     switch (auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
             enable(false);
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             disable_floor();
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             break;
         default:
             // fence does not auto-disable in other landing conditions

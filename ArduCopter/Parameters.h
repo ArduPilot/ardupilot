@@ -6,10 +6,6 @@
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
 
-#include <AP_Gripper/AP_Gripper_config.h>
-#if AP_GRIPPER_ENABLED
- # include <AP_Gripper/AP_Gripper.h>
-#endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
@@ -506,10 +502,6 @@ public:
     // button checking
 #if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
-#endif
-
-#if AP_GRIPPER_ENABLED
-    AP_Gripper gripper;
 #endif
 
 #if MODE_THROW_ENABLED == ENABLED

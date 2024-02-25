@@ -717,6 +717,9 @@ bool AP_GPS_DroneCAN::read(void)
         interim_state.vertical_accuracy = MIN(interim_state.vertical_accuracy, 1000.0);
         interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
 
+        // prevent announcing multiple times
+        interim_state.announced_detection = state.announced_detection;
+
         state = interim_state;
         if (interim_state.last_corrected_gps_time_us) {
             // If we were able to get a valid last_corrected_gps_time_us

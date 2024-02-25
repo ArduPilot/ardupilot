@@ -74,7 +74,7 @@ void AP_GHST_Telem::setup_wfq_scheduler(void)
     // priority[i] = 1/_scheduler.packet_weight[i]
     // rate[i] = LinkRate * ( priority[i] / (sum(priority[1-n])) )
 
-    // CSRF telemetry rate is 150Hz (4ms) max, so these rates must fit
+    // CRSF telemetry rate is 150Hz (4ms) max, so these rates must fit
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz

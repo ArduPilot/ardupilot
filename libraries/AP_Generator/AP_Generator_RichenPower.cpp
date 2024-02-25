@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Generator_RichenPower.h"
+#include "AP_Generator_config.h"
 
 #if AP_GENERATOR_RICHENPOWER_ENABLED
+
+#include "AP_Generator_RichenPower.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>

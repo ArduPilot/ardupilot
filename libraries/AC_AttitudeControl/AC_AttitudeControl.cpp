@@ -934,11 +934,11 @@ void AC_AttitudeControl::reset_target_and_rate(bool reset_rate)
 {
     // move attitude target to current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
+    _attitude_target.to_euler(_euler_angle_target);
 
     if (reset_rate) {
-        // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
         _ang_vel_target.zero();
-        _euler_angle_target.zero();
+        _euler_rate_target.zero();
     }
 }
 

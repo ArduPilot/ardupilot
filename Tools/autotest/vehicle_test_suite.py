@@ -7966,7 +7966,7 @@ Also, ignores heartbeats not from our target system'''
         if "STATUSTEXT" not in c.collections:
             raise NotAchievedException("Asked to check context but it isn't collecting!")
         for x in c.collections["STATUSTEXT"]:
-            self.progress("  statustext=%s vs text=%s" % (x.text, text))
+            self.progress("  statustext want=(%s) got=(%s)" % (x.text, text))
             if regex:
                 if re.match(text, x.text):
                     return x
@@ -13509,11 +13509,11 @@ switch value'''
         # if gps_type is None we auto-detect
         sim_gps = [
             # (0, "NONE"),
-            (1, "UBLOX", None, "u-blox", 5, 'detected'),
-            (5, "NMEA", 5, "NMEA", 5, 'detected'),
-            (6, "SBP", None, "SBP", 5, 'detected'),
+            (1, "UBLOX", None, "u-blox", 5, 'probing'),
+            (5, "NMEA", 5, "NMEA", 5, 'probing'),
+            (6, "SBP", None, "SBP", 5, 'probing'),
             # (7, "SBP2", 9, "SBP2", 5),  # broken, "waiting for config data"
-            (8, "NOVA", 15, "NOVA", 5, 'detected'),  # no attempt to auto-detect this in AP_GPS
+            (8, "NOVA", 15, "NOVA", 5, 'probing'),  # no attempt to auto-detect this in AP_GPS
             (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
@@ -13528,7 +13528,11 @@ switch value'''
             self.set_parameter("GPS_TYPE", gps_type)
             self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
-            self.wait_statustext("%s as %s" % (detect_prefix, detect_name), check_context=True)
+            if detect_prefix == "probing":
+                self.wait_statustext(f"probing for {detect_name}", check_context=True)
+            else:
+                self.wait_statustext(f"specified as {detect_name}", check_context=True)
+            self.wait_statustext(f"detected {detect_name}", check_context=True)
             n = self.poll_home_position(timeout=120)
             distance = self.get_distance_int(orig, n)
             if distance > 1:
@@ -13565,8 +13569,8 @@ switch value'''
         # AP_GPS::init() at boot time, so it will never be detected.
         self.context_collect("STATUSTEXT")
         self.reboot_sitl()
-        self.wait_statustext("GPS 1: detected as u-blox", check_context=True)
-        self.wait_statustext("GPS 2: detected as u-blox", check_context=True)
+        self.wait_statustext("GPS 1: detected u-blox", check_context=True)
+        self.wait_statustext("GPS 2: detected u-blox", check_context=True)
         m = self.assert_receive_message("GPS2_RAW")
         self.progress(self.dump_message_verbose(m))
         # would be nice for it to take some time to get a fix....

@@ -529,6 +529,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWD_THR_USE", 37, QuadPlane, q_fwd_thr_use, uint8_t(FwdThrUse::OFF)),
 
+    // @Param: BCK_PIT_LIM
+    // @DisplayName: Q mode rearward pitch limit
+    // @Description: This sets the maximum number of degrees of back or pitch up in Q modes when the airspeed is at AIRSPEED_MIN, and is used to prevent excessive sutructural loads when pitching up decelerate. If airspeed is above or below AIRSPEED_MIN, the pitch up/back will be adjusted according to the formula pitch_limit = Q_BCK_PIT_LIM * (AIRSPEED_MIN / IAS)^2. The backwards/up pitch limit controlled by this parameter is in addition to limiting applied by PTCH_LIM_MAX_DEG and Q_ANGLE_MAX. The BCK_PIT_LIM limit is only applied when Q_FWD_THR_USE is set to 1 or 2 and the vehicle is flying in a mode that uses forward throttle instead of forward tilt to generate forward speed. Set to a non positive value 0 to deactivate this limit.
+    // @Units: deg
+    // @Range: 0.0 15.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BCK_PIT_LIM", 38, QuadPlane, q_bck_pitch_lim, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -3016,21 +3025,55 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
     q_fwd_throttle = MIN(q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
 
     // Relax forward tilt limit if the position controller is saturating in the forward direction because
-    // the forward thrust motor could be failed
-    const float fwd_tilt_range_cd = (float)aparm.angle_max - 100.0f * q_fwd_pitch_lim;
-    if (is_positive(fwd_tilt_range_cd)) {
-        // rate limit the forward tilt change to slew between the motor good and motor failed
-        // value over 10 seconds
-        const bool fwd_limited = plane.quadplane.pos_control->is_active_xy() and plane.quadplane.pos_control->get_fwd_pitch_is_limited();
-        const float fwd_pitch_lim_cd_tgt = fwd_limited ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
-        const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
-        q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
-        // Don't let the forward pitch limit be more than the forward pitch demand before limiting to
-        // avoid opening up the limit more than necessary
-        q_fwd_pitch_lim_cd = MIN(q_fwd_pitch_lim_cd, MAX(-(float)plane.nav_pitch_cd, 100.0f * q_fwd_pitch_lim));
-    } else {
-        // take the lesser of the two limits
-        q_fwd_pitch_lim_cd = (float)aparm.angle_max;
+    // the forward thrust motor could be failed. Do not do this with tilt rotors because they do not rely on
+    // forward throttle during VTOL flight
+    if (!tiltrotor.enabled()) {
+        const float fwd_tilt_range_cd = (float)aparm.angle_max - 100.0f * q_fwd_pitch_lim;
+        if (is_positive(fwd_tilt_range_cd)) {
+            // rate limit the forward tilt change to slew between the motor good and motor failed
+            // value over 10 seconds
+            const bool fwd_limited = plane.quadplane.pos_control->is_active_xy() and plane.quadplane.pos_control->get_fwd_pitch_is_limited();
+            const float fwd_pitch_lim_cd_tgt = fwd_limited ? (float)aparm.angle_max : 100.0f * q_fwd_pitch_lim;
+            const float delta_max = 0.1f * fwd_tilt_range_cd * plane.G_Dt;
+            q_fwd_pitch_lim_cd += constrain_float((fwd_pitch_lim_cd_tgt - q_fwd_pitch_lim_cd), -delta_max, delta_max);
+            // Don't let the forward pitch limit be more than the forward pitch demand before limiting to
+            // avoid opening up the limit more than necessary
+            q_fwd_pitch_lim_cd = MIN(q_fwd_pitch_lim_cd, MAX(-(float)plane.nav_pitch_cd, 100.0f * q_fwd_pitch_lim));
+        } else {
+            // take the lesser of the two limits
+            q_fwd_pitch_lim_cd = (float)aparm.angle_max;
+        }
+    }
+
+    // Prevent the wing from being overloaded when braking from high speed in a VTOL mode
+    float nav_pitch_upper_limit_cd = 100.0f * q_bck_pitch_lim;
+    float aspeed;
+    if (is_positive(q_bck_pitch_lim) && ahrs.airspeed_estimate(aspeed)) {
+        const float reference_speed = MAX(plane.aparm.airspeed_min, MIN_AIRSPEED_MIN);
+        float speed_scaler = sq(reference_speed / MAX(aspeed, 0.1f));
+        nav_pitch_upper_limit_cd *= speed_scaler;
+        nav_pitch_upper_limit_cd = MIN(nav_pitch_upper_limit_cd, (float)aparm.angle_max);
+
+        const float tconst = 0.5f;
+        const float dt = AP_HAL::millis() - q_pitch_limit_update_ms;
+        q_pitch_limit_update_ms = AP_HAL::millis();
+        if (is_positive(dt)) {
+            const float coef = dt / (dt + tconst);
+            q_bck_pitch_lim_cd = (1.0f - coef) * q_bck_pitch_lim_cd + coef * nav_pitch_upper_limit_cd;
+        }
+
+        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
+
+#if HAL_LOGGING_ENABLED
+        AP::logger().WriteStreaming("QBRK",
+                                "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
+                                "Qffii",    // fmt
+                                AP_HAL::micros64(),
+                                (double)speed_scaler,
+                                (double)nav_pitch_upper_limit_cd,
+                                (int32_t)q_bck_pitch_lim_cd,
+                                (int32_t)plane.nav_pitch_cd);
+#endif
     }
 
     float fwd_thr_scaler;
@@ -3054,14 +3097,15 @@ void QuadPlane::assign_tilt_to_fwd_thr(void) {
 #if HAL_LOGGING_ENABLED
     // Diagnostics logging - remove when feature is fully flight tested.
     AP::logger().WriteStreaming("FWDT",
-                                "TimeUS,fts,qfplcd,npllcd,npcd,qft",  // labels
-                                "Qfffff",    // fmt
+                                "TimeUS,fts,qfplcd,npllcd,npcd,qft,npulcd",  // labels
+                                "Qffffff",    // fmt
                                 AP_HAL::micros64(),
                                 (double)fwd_thr_scaler,
                                 (double)q_fwd_pitch_lim_cd,
                                 (double)nav_pitch_lower_limit_cd,
                                 (double)plane.nav_pitch_cd,
-                                (double)q_fwd_throttle);
+                                (double)q_fwd_throttle,
+                                (float)nav_pitch_upper_limit_cd);
 #endif
 
     plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, (int32_t)nav_pitch_lower_limit_cd);
