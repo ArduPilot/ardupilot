@@ -1454,6 +1454,8 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
 // Assistance not needed, reset any state
 void QuadPlane::VTOL_Assist::reset()
 {
+    force_assist = false;
+    speed_assist = false;
     angle_error.reset();
     alt_error.reset();
 }
@@ -1525,17 +1527,19 @@ bool QuadPlane::VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
-    const bool force_assist = state == STATE::FORCE_ENABLED;
+    force_assist = state == STATE::FORCE_ENABLED;
 
     if (speed <= 0) {
-        // disabled via speed threshold, still allow force enabled
-        reset();
+        // all checks disabled via speed threshold, still allow force enabled
+        speed_assist = false;
+        alt_error.reset();
+        angle_error.reset();
         return force_assist;
     }
 
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
-    const bool speed_assist = (have_airspeed && aspeed < speed) && 
+    speed_assist = (have_airspeed && aspeed < speed) && 
        (!quadplane.option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || plane.ahrs.using_airspeed_sensor());
 
     const uint32_t now_ms = AP_HAL::millis();
@@ -3745,6 +3749,32 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z_cms();
     }
 
+    // Asemble assistance bitmask, defintion here is used to generate log documentation
+    enum class log_assistance_flags {
+        in_assisted_flight = 1U<<0, // true if VTOL assist is active
+        forced             = 1U<<1, // true if assistance is forced
+        speed              = 1U<<2, // true if assistance due to low airspeed
+        alt                = 1U<<3, // true if assistance due to low altitude
+        angle              = 1U<<4, // true if assistance due to attitude error
+    };
+
+    uint8_t assist_flags = 0;
+    if (assisted_flight) {
+        assist_flags |= (uint8_t)log_assistance_flags::in_assisted_flight;
+    }
+    if (assist.in_force_assist()) {
+        assist_flags |= (uint8_t)log_assistance_flags::forced;
+    }
+    if (assist.in_speed_assist()) {
+        assist_flags |= (uint8_t)log_assistance_flags::speed;
+    }
+    if (assist.in_alt_assist()) {
+        assist_flags |= (uint8_t)log_assistance_flags::alt;
+    }
+    if (assist.in_angle_assist()) {
+        assist_flags |= (uint8_t)log_assistance_flags::angle;
+    }
+
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
@@ -3759,7 +3789,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()),
         throttle_mix        : attitude_control->get_throttle_mix(),
         transition_state    : transition->get_log_transition_state(),
-        assist              : assisted_flight,
+        assist              : assist_flags,
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 
