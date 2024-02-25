@@ -31,9 +31,9 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_STORAGE_FILE
-// using SKETCHNAME allows the one microSD to be used
+// using AP_BUILD_TARGET_NAME allows the one microSD to be used
 // for multiple vehicle types
-#define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
+#define HAL_STORAGE_FILE "/APM/" AP_BUILD_TARGET_NAME ".stg"
 #endif
 
 #ifndef HAL_STORAGE_BACKUP_FOLDER
