@@ -345,44 +345,7 @@ void NavEKF3_core::InitialiseVariables()
 
     // range beacon fusion variables
 #if EK3_FEATURE_BEACON_FUSION
-    memset((void *)&rngBcn.dataDelayed, 0, sizeof(rngBcn.dataDelayed));
-    rngBcn.lastPassTime_ms = 0;
-    rngBcn.testRatio = 0.0f;
-    rngBcn.health = false;
-    rngBcn.varInnov = 0.0f;
-    rngBcn.innov = 0.0f;
-    memset(&rngBcn.lastTime_ms, 0, sizeof(rngBcn.lastTime_ms));
-    rngBcn.dataToFuse = false;
-    rngBcn.vehiclePosNED.zero();
-    rngBcn.vehiclePosErr = 1.0f;
-    rngBcn.last3DmeasTime_ms = 0;
-    rngBcn.goodToAlign = false;
-    rngBcn.lastChecked = 0;
-    rngBcn.receiverPos.zero();
-    memset(&rngBcn.receiverPosCov, 0, sizeof(rngBcn.receiverPosCov));
-    rngBcn.alignmentStarted =  false;
-    rngBcn.alignmentCompleted = false;
-    rngBcn.lastIndex = 0;
-    rngBcn.posSum.zero();
-    rngBcn.numMeas = 0;
-    rngBcn.sum = 0.0f;
-    rngBcn.N = 0;
-    rngBcn.maxPosD = 0.0f;
-    rngBcn.minPosD = 0.0f;
-    rngBcn.posDownOffsetMax = 0.0f;
-    rngBcn.posOffsetMaxVar = 0.0f;
-    rngBcn.maxOffsetStateChangeFilt = 0.0f;
-    rngBcn.posDownOffsetMin = 0.0f;
-    rngBcn.posOffsetMinVar = 0.0f;
-    rngBcn.minOffsetStateChangeFilt = 0.0f;
-    rngBcn.fuseDataReportIndex = 0;
-    if (dal.beacon()) {
-        if (rngBcn.fusionReport == nullptr) {
-            rngBcn.fusionReport = new BeaconFusion::FusionReport[dal.beacon()->count()];
-        }
-    }
-    rngBcn.posOffsetNED.zero();
-    rngBcn.originEstInit = false;
+    rngBcn.InitialiseVariables();
 #endif  // EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_BODY_ODOM
