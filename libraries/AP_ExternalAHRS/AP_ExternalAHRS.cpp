@@ -250,16 +250,24 @@ void AP_ExternalAHRS::get_filter_status(nav_filter_status &status) const
     }
 }
 
-Vector3f AP_ExternalAHRS::get_gyro(void)
+bool AP_ExternalAHRS::get_gyro(Vector3f &gyro)
 {
     WITH_SEMAPHORE(state.sem);
-    return state.gyro;
+    if (!has_sensor(AvailableSensor::IMU)) {
+        return false;
+    }
+    gyro = state.gyro;
+    return true;
 }
 
-Vector3f AP_ExternalAHRS::get_accel(void)
+bool AP_ExternalAHRS::get_accel(Vector3f &accel)
 {
     WITH_SEMAPHORE(state.sem);
-    return state.accel;
+    if (!has_sensor(AvailableSensor::IMU)) {
+        return false;
+    }
+    accel = state.accel;
+    return true;
 }
 
 // send an EKF_STATUS message to GCS

@@ -115,8 +115,8 @@ public:
     bool get_speed_down(float &speedD);
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
     void get_filter_status(nav_filter_status &status) const;
-    Vector3f get_gyro(void);
-    Vector3f get_accel(void);
+    bool get_gyro(Vector3f &gyro);
+    bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
 
     // update backend
