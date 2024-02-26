@@ -545,3 +545,31 @@ void AP_L1_Control::update_level_flight(void)
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
+
+// update L1 control for path following
+void AP_L1_Control::update_path(const class Location &position_on_path, Vector2f unit_path_tangent, float path_curvature, int8_t direction) {
+    //! @note initial implementation uses existing functions
+    if (!is_zero(path_curvature)) {
+        // moving along arc of circle - loiter about wp located at
+        // centre of curvature.
+        float radius_m = 1.0 / path_curvature;
+        auto center_wp = position_on_path;
+        Vector3p tangent_ned(unit_path_tangent.x, unit_path_tangent.y, 0.0);
+        Vector3p dn_ned(0.0, 0.0, 1.0); 
+        auto ofs_ned = dn_ned.cross(tangent_ned) * radius_m * direction;
+        center_wp.offset(ofs_ned);
+
+        update_loiter(center_wp, radius_m, direction);
+    } else {
+        // moving along a line segment - navigate to wp ahead of closest point
+        // in direction of path tangent 
+        float ofs_m = 100.0;
+        Vector3p ofs_ned(ofs_m * unit_path_tangent.x,
+            ofs_m * unit_path_tangent.y, 0.0);
+        auto prev_wp = position_on_path;
+        auto next_wp = position_on_path;
+        next_wp.offset(ofs_ned);
+
+        update_waypoint(prev_wp, next_wp);
+    }
+}
