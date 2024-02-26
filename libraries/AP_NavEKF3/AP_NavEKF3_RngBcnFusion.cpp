@@ -37,10 +37,11 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     posOffsetMinVar = 0.0f;
     minOffsetStateChangeFilt = 0.0f;
     fuseDataReportIndex = 0;
-    if (AP::dal().beacon()) {
-        if (fusionReport == nullptr) {
-            fusionReport = new BeaconFusion::FusionReport[AP::dal().beacon()->count()];
-        }
+    delete[] fusionReport;
+    fusionReport = nullptr;
+    auto *beacon = AP::dal().beacon();
+    if (beacon != nullptr) {
+        fusionReport = new BeaconFusion::FusionReport[beacon->count()];
     }
     posOffsetNED.zero();
     originEstInit = false;
