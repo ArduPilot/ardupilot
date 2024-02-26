@@ -8,7 +8,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_Logger_DataFlash.h"
+#include "AP_Logger_Flash_JEDEC.h"
 
 #include <stdio.h>
 
@@ -57,7 +57,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_WINBOND_W25Q128_2     0xEF7018
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 
-void AP_Logger_DataFlash::Init()
+void AP_Logger_Flash_JEDEC::Init()
 {
     dev = hal.spi->get_device("dataflash");
     if (!dev) {
@@ -86,7 +86,7 @@ void AP_Logger_DataFlash::Init()
 /*
   wait for busy flag to be cleared
  */
-void AP_Logger_DataFlash::WaitReady()
+void AP_Logger_Flash_JEDEC::WaitReady()
 {
     if (flash_died) {
         return;
@@ -103,7 +103,7 @@ void AP_Logger_DataFlash::WaitReady()
     }
 }
 
-bool AP_Logger_DataFlash::getSectorCount(void)
+bool AP_Logger_Flash_JEDEC::getSectorCount(void)
 {
     WaitReady();
 
@@ -171,7 +171,7 @@ bool AP_Logger_DataFlash::getSectorCount(void)
 }
 
 // Read the status register
-uint8_t AP_Logger_DataFlash::ReadStatusReg()
+uint8_t AP_Logger_Flash_JEDEC::ReadStatusReg()
 {
     WITH_SEMAPHORE(dev_sem);
     uint8_t cmd = JEDEC_READ_STATUS;
@@ -180,12 +180,12 @@ uint8_t AP_Logger_DataFlash::ReadStatusReg()
     return status;
 }
 
-bool AP_Logger_DataFlash::Busy()
+bool AP_Logger_Flash_JEDEC::Busy()
 {
     return (ReadStatusReg() & (JEDEC_STATUS_BUSY | JEDEC_STATUS_SRP0)) != 0;
 }
 
-void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
+void AP_Logger_Flash_JEDEC::Enter4ByteAddressMode(void)
 {
     WITH_SEMAPHORE(dev_sem);
 
@@ -196,7 +196,7 @@ void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
 /*
   send a command with an address
 */
-void AP_Logger_DataFlash::send_command_addr(uint8_t command, uint32_t PageAdr)
+void AP_Logger_Flash_JEDEC::send_command_addr(uint8_t command, uint32_t PageAdr)
 {
     uint8_t cmd[5];
     cmd[0] = command;
@@ -215,7 +215,7 @@ void AP_Logger_DataFlash::send_command_addr(uint8_t command, uint32_t PageAdr)
 }
 
 
-void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
+void AP_Logger_Flash_JEDEC::PageToBuffer(uint32_t pageNum)
 {
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page read %u\n", pageNum);
@@ -244,7 +244,7 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     read_cache_valid = true;
 }
 
-void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
+void AP_Logger_Flash_JEDEC::BufferToPage(uint32_t pageNum)
 {
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page write %u\n", pageNum);
@@ -271,7 +271,7 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
 /*
   erase one sector (sizes varies with hw)
 */
-void AP_Logger_DataFlash::SectorErase(uint32_t blockNum)
+void AP_Logger_Flash_JEDEC::SectorErase(uint32_t blockNum)
 {
     WriteEnable();
 
@@ -284,7 +284,7 @@ void AP_Logger_DataFlash::SectorErase(uint32_t blockNum)
 /*
   erase one 4k sector
 */
-void AP_Logger_DataFlash::Sector4kErase(uint32_t sectorNum)
+void AP_Logger_Flash_JEDEC::Sector4kErase(uint32_t sectorNum)
 {
     WriteEnable();
 
@@ -293,7 +293,7 @@ void AP_Logger_DataFlash::Sector4kErase(uint32_t sectorNum)
     send_command_addr(JEDEC_SECTOR4_ERASE, SectorAddr);
 }
 
-void AP_Logger_DataFlash::StartErase()
+void AP_Logger_Flash_JEDEC::StartErase()
 {
     WriteEnable();
 
@@ -306,7 +306,7 @@ void AP_Logger_DataFlash::StartErase()
     printf("Dataflash: erase started\n");
 }
 
-bool AP_Logger_DataFlash::InErase()
+bool AP_Logger_Flash_JEDEC::InErase()
 {
     if (erase_start_ms && !Busy()) {
         printf("Dataflash: erase done (%u ms)\n", AP_HAL::millis() - erase_start_ms);
@@ -315,7 +315,7 @@ bool AP_Logger_DataFlash::InErase()
     return erase_start_ms != 0;
 }
 
-void AP_Logger_DataFlash::WriteEnable(void)
+void AP_Logger_Flash_JEDEC::WriteEnable(void)
 {
     WaitReady();
     WITH_SEMAPHORE(dev_sem);
