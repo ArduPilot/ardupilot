@@ -531,9 +531,10 @@ bool AP_ExternalAHRS_AdvancedNavigation::sendPacketRequest()
     };
 
     AN_PACKET packet;
+   
     // load the AN_PACKETS_PERIOD Into the payload.
     packet.payload.packet_periods = periods;
-    packet.update_checks(packet_id_packet_periods, sizeof(packet.payload.packet_periods));
+    packet.update_checks(packet_id_packet_periods, packet.getPeriodsLength(periods));
 
     // Check for space in the tx buffer
     if (_uart->txspace() < packet.packet_size()) {
@@ -599,7 +600,10 @@ bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(bool gnss_en, vehicl
     options_packet.reversing_detection_enabled = false;
     options_packet.motion_analysis_enabled = false;
     options_packet.automatic_magnetic_calibration_enabled = true;
-
+    options_packet.dual_antenna_disabled = false;
+    // set reserved packets to 0
+    memset(options_packet.reserved, 0, sizeof(options_packet.reserved));
+    
     return set_filter_options(options_packet);
 }
 
