@@ -666,12 +666,17 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
 
             if (get_gnss_capability()) {
                 state.have_location = true;
+                const double latlon_scale = degrees(1) * 1.0e7;
                 state.location = Location{
-                    (int32_t) (degrees(_msg.packet.payload.system_state.llh[0]) * 1.0e7),
-                    (int32_t) (degrees(_msg.packet.payload.system_state.llh[1]) * 1.0e7),
+                    (int32_t) (_msg.packet.payload.system_state.llh[0] * latlon_scale),
+                    (int32_t) (_msg.packet.payload.system_state.llh[1] * latlon_scale),
                     (int32_t) (_msg.packet.payload.system_state.llh[2] *1.0e2),
                     Location::AltFrame::ABSOLUTE
                 };
+                if (!state.have_origin) {
+                    state.origin = state.location;
+                    state.have_origin = true;
+                }
                 state.last_location_update_us = AP_HAL::micros();
             }
 
