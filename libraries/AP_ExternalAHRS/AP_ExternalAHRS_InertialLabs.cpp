@@ -99,7 +99,7 @@ AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_fro
                         uint16_t(AP_ExternalAHRS::AvailableSensor::IMU) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
-    
+
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_InertialLabs::update_thread, void), "ILabs", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
         AP_HAL::panic("InertialLabs Failed to start ExternalAHRS update thread");
     }
@@ -268,7 +268,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::ACCEL_DATA_HR: {
             CHECK_SIZE(u.accel_data_hr);
-            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6;      
+            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6;
             break;
         }
         case MessageType::GYRO_DATA_HR: {
@@ -377,7 +377,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::DIFFERENTIAL_PRESSURE: {
             CHECK_SIZE(u.differential_pressure);
-            airspeed_data.differential_pressure = u.differential_pressure*1.0e-2; //  Pa
+            airspeed_data.differential_pressure = u.differential_pressure*1.0e-4*1.0e2; // 1.0e2: mbar to Pa
             break;
         }
         case MessageType::TRUE_AIRSPEED: {
@@ -430,11 +430,11 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::GNSS_DOP: {
             CHECK_SIZE(u.gnss_dop);
-            state2.gnss_gdop = u.gnss_dop.gnss_gdop * 1.0e-1;
-            state2.gnss_pdop = u.gnss_dop.gnss_pdop * 1.0e-1;
-            gps_data.hdop = u.gnss_dop.gnss_hdop * 1.0e-1;
-            gps_data.vdop = u.gnss_dop.gnss_vdop * 1.0e-1;
-            state2.gnss_tdop = u.gnss_dop.gnss_tdop * 1.0e-1;
+            state2.gnss_gdop = u.gnss_dop.gnss_gdop * 1.0e-1; // in cm
+            state2.gnss_pdop = u.gnss_dop.gnss_pdop * 1.0e-1; // in cm
+            gps_data.hdop = u.gnss_dop.gnss_hdop * 1.0e-1; // in cm
+            gps_data.vdop = u.gnss_dop.gnss_vdop * 1.0e-1; // in cm
+            state2.gnss_tdop = u.gnss_dop.gnss_tdop * 1.0e-1; // in cm
             break;
         }
         }
@@ -490,17 +490,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             last_gps_ms = now_ms;
         }
     }
-#if AP_BARO_EXTERNALAHRS_ENABLED
     if (GOT_MSG(BARO_DATA) &&
         GOT_MSG(TEMPERATURE)) {
         AP::baro().handle_external(baro_data);
     }
-#endif
-#if AP_COMPASS_EXTERNALAHRS_ENABLED
     if (GOT_MSG(MAG_DATA)) {
         AP::compass().handle_external(mag_data);
     }
-#endif
 #if AP_AIRSPEED_EXTERNAL_ENABLED && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
     // only on plane and copter as others do not link AP_Airspeed
     if (GOT_MSG(DIFFERENTIAL_PRESSURE) &&
@@ -598,7 +594,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: TimeUS: Time since system startup
         // @Field: GpsYaw: GNSS Heading
         // @Field: GpsPitch: GNSS Pitch
-        // @Field: GpsHTS: GNSS Heading timestamp        
+        // @Field: GpsHTS: GNSS Heading timestamp
         // @Field: GpsAType: GNSS Angles position type
         // @Field: GDOP: GNSS GDOP
         // @Field: PDOP: GNSS PDOP
@@ -616,7 +612,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     state2.gnss_gdop * 1.0e-2, state2.gnss_pdop * 1.0e-2, gps_data.hdop * 1.0e-2,
                                     gps_data.vdop * 1.0e-2, state2.gnss_tdop * 1.0e-2);
     }
-        
+
     return true;
 }
 
@@ -753,16 +749,17 @@ void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
     }
 
     // send message
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
+    // const float vel_gate = 5;
+    // const float pos_gate = 5;
+    // const float hgt_gate = 5;
+    // const float mag_var = 0;
+    // mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
+    //                                    state2.kf_vel_covariance.length()/vel_gate,
+    //                                    state2.kf_pos_covariance.xy().length()/pos_gate,
+    //                                    state2.kf_pos_covariance.z/hgt_gate,
+    //                                    mag_var, 0, 0);
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       state2.kf_vel_covariance.length()/vel_gate,
-                                       state2.kf_pos_covariance.xy().length()/pos_gate,
-                                       state2.kf_pos_covariance.z/hgt_gate,
-                                       mag_var, 0, 0);
+                                       0, 0, 0, 0, 0, 0);
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
-

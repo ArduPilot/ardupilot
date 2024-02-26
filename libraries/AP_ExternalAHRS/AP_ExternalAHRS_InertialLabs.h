@@ -131,7 +131,7 @@ public:
         uint8_t info1;
         uint8_t info2;
     };
-    
+
     union PACKED ILabsData {
         uint32_t gps_time_ms; // ms since start of GPS week
         uint16_t gps_week;
@@ -186,7 +186,7 @@ public:
             uint16_t gnss_hdop;
             uint16_t gnss_vdop;
             uint16_t gnss_tdop;
-        } gnss_dop; // *10e3
+        } gnss_dop; // 10e3
     };
 
     AP_ExternalAHRS::gps_data_message_t gps_data;
@@ -247,4 +247,3 @@ private:
 };
 
 #endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
-
