@@ -412,6 +412,8 @@ private:
         uint8_t reversing_detection_enabled;
         uint8_t motion_analysis_enabled;
         uint8_t automatic_magnetic_calibration_enabled;
+        uint8_t dual_antenna_disabled;
+        uint8_t reserved[7];
     };
 
     class PACKED AN_PACKET
@@ -434,15 +436,29 @@ private:
             AN_FILTER_OPTIONS filter_options;
         } payload;
 
-        void update_checks(uint8_t header_id, uint8_t header_length)
+        void update_checks(uint8_t header_id, uint8_t payload_length)
         {
+            length = payload_length;
+            
             // Update the packet check and header id
-            crc = crc16_ccitt(payload.raw_packet, header_length, 0xFFFF);
+            crc = crc16_ccitt(payload.raw_packet, payload_length, 0xFFFF);
             id = header_id;
 
             // Update the header LRC
             uint8_t* id_ptr = &id;
             lrc = ((id_ptr[0] + id_ptr[1] + id_ptr[2] + id_ptr[3]) ^ 0xFF) + 1;
+        }
+
+        uint8_t getPeriodsLength(AN_PACKET_PERIODS packet_periods)
+        {            
+            // Find the utilized size of the packet and make it the payload length.
+            for (uint32_t idx = 0; idx < (AN_MAXIMUM_PACKET_SIZE - 2)/sizeof(AN_PERIOD); idx++)
+            {
+                if (packet_periods.periods[idx].id == 0 && packet_periods.periods[idx].packet_period == 0) {
+                    return 2 + (sizeof(AN_PERIOD)*idx);
+                }
+            }
+            return (AN_MAXIMUM_PACKET_SIZE - 2)/sizeof(AN_PERIOD);
         }
 
         uint8_t* raw_pointer()
