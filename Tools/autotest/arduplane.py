@@ -9,6 +9,7 @@ import math
 import os
 import signal
 import time
+import re
 
 from pymavlink import quaternion
 from pymavlink import mavextra
@@ -1028,6 +1029,58 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         #        tend to miss the final waypoint by a fair bit, and
         #        this is probably too noisy anyway?
         self.wait_disarmed(timeout=timeout)
+
+    def Rewind_On_Resume(self):
+        '''test mission Rewind_On_Resume'''
+        self.start_subtest("Rewind on resume mission")
+        # Loading a mission that has both a MAV_CMD_DO_SET_RESUME_REPEAT_DIST and another Do command. A bug previously
+        # came up where the rewind history was reset when re-loading the do command on mission resume, hence why this
+        # test also has a DO_CHANGE_SPEED command in it.
+        self.load_mission("mission.txt")
+
+        self.progress("Start Auto Mission")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_statustext("Resume repeat dist set to 1 m", timeout=120)
+
+        # self.wait_current_waypoint(4, timeout=150)
+        # self.wait_airspeed(want_airspeed-1, want_airspeed+1, minimum_duration=5, timeout=120)
+
+        # Switch to loiter to exit the mission once we are approx. 1/2 way along the mission leg.
+        self.wait_distance_to_waypoint(5, distance_min=250, distance_max=550, timeout=120)
+        self.change_mode('LOITER')
+        self.wait_mode('LOITER')
+
+        # Do mode change to auto without waiting for response so that we can catch the rewind message
+        self.send_cmd_do_set_mode('AUTO')
+
+        # On a succesful rewind there should be a print to GCS with the intended rewind location
+        # Grab that location and check that it is close to what we expect
+        # Rewind to lat=-35.35986 lng=149.1586
+        stat_txt = self.wait_statustext(r"Mission: Rewind to lat=(-?\d+\.\d+) lng=(-?\d+\.\d+)", timeout=120, regex=True)
+        pattern = re.compile(r'lat=(-?\d+\.\d+) lng=(-?\d+\.\d+)')
+        match = pattern.search(stat_txt.text)
+
+        # Check that the position we got is in tolerance
+        def check_pos(recieved, expected):
+            try:
+                recieved = float(recieved)
+                return abs(recieved - expected) < 1e-4
+            except Exception:
+                raise PreconditionFailedException("Did not revice a valid lat, Lng")
+
+        lat_in_tol = check_pos(match.group(1), -35.35986)
+        lng_in_tol = check_pos(match.group(2), 149.15860)
+
+        if (not lat_in_tol) or (not lng_in_tol):
+            msg = "Rewind position out of tolerance, Expected: Lat=-35.35986, Lng=149.1586 Got: Lat=%.5f, Lng=%.5f"
+            raise PreconditionFailedException(msg, (match.group(1), match.group(2)))
+        else:
+            self.progress('Success: Mission rewound to the location we expected')
+
+        self.fly_home_land_and_disarm()
 
     def TestFlaps(self):
         """Test flaps functionality."""
@@ -5419,6 +5472,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.Rewind_On_Resume,
         ])
         return ret
 
