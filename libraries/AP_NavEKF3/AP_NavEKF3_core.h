@@ -1372,6 +1372,7 @@ private:
             ftype testRatio;    // innovation consistency test ratio
             Vector3F beaconPosNED; // beacon NED position
         } *fusionReport;
+        uint8_t numFusionReports;
     } rngBcn;
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
