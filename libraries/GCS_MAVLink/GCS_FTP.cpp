@@ -97,12 +97,8 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
 
 bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
 {
-    /*
-      provide same banner we would give with old param download
-    */
-    if (ftp.need_banner_send_mask & (1U<<reply.chan)) {
-        ftp.need_banner_send_mask &= ~(1U<<reply.chan);
-        send_banner();
+    if (!last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
+        return false;
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
     if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
@@ -121,11 +117,6 @@ bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
         reply.chan,
         0, reply.sysid, reply.compid,
         payload);
-    if (reply.req_opcode == FTP_OP::TerminateSession) {
-        ftp.last_send_ms = 0;
-    } else {
-        ftp.last_send_ms = AP_HAL::millis();
-    }
     return true;
 }
 
@@ -155,8 +146,24 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
 // send our response back out to the system
 void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
 {
+    ftp.last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
+
     while (!send_ftp_reply(reply)) {
         hal.scheduler->delay(2);
+    }
+
+    if (reply.req_opcode == FTP_OP::TerminateSession) {
+        ftp.last_send_ms = 0;
+    }
+    /*
+      provide same banner we would give with old param download
+      Do this after send_ftp_reply() to get the first FTP response out sooner
+      on slow links to avoid GCS timeout.  The slowdown of normal streams in
+      get_reschedule_interval_ms() should help for subsequent responses.
+    */
+    if (ftp.need_banner_send_mask & (1U<<reply.chan)) {
+        ftp.need_banner_send_mask &= ~(1U<<reply.chan);
+        send_banner();
     }
 }
 

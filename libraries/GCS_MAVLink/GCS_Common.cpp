@@ -828,6 +828,15 @@ float GCS_MAVLINK::telemetry_radio_rssi()
     return last_radio_status.rssi/254.0f;
 }
 
+bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
+{
+    if (AP_HAL::millis() - last_radio_status.received_ms > 5000) {
+        // stale report
+        return true;
+    }
+    return last_radio_status.txbuf > txbuf_limit;
+}
+
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
     mavlink_radio_t packet;
@@ -844,7 +853,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
         last_radio_status.remrssi_ms = now;
     }
 
-    last_txbuf = packet.txbuf;
+    last_radio_status.txbuf = packet.txbuf;
 
     // use the state of the transmit buffer in the radio to
     // control the stream rate, giving us adaptive software
@@ -1156,7 +1165,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
-    if (AP_HAL::millis() - ftp.last_send_ms < 500) {
+    if (AP_HAL::millis() - ftp.last_send_ms < 1000) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
