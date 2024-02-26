@@ -341,9 +341,8 @@ protected:
     void _exit() override;
 
 private:
-    float _radius_m;
+    float _curvature;
     Vector2f _unit_path_tangent;
-    enum { NAV_LOITER=0, NAV_WAYPOINT=1 } _nav_mode{NAV_LOITER};
 };
 
 class ModeCircle: public Mode
