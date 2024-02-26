@@ -1362,8 +1362,11 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
-        const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
+        const uint16_t alt_mask  = 0b1111111111111011; // (z mask at bit 3)
+
+        // bit mask for path following: ignore force_set, yaw, yaw_rate
+        const uint16_t path_mask = 0b1111111000000000;
+
         bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
 
@@ -1395,11 +1398,8 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             }
         } // end if alt_mask
 
-        // terrain_navigation
-        //! @todo(srmainwaring) handle mode general control...
-        //!                     check the ignore flags
-        //!                     check for valid inputs
-        if (pos_target.type_mask == 0) {
+        // terrain_navigation / path following
+        if (pos_target.type_mask & path_mask) {
             // switch mode to TERRAIN_NAVIGATION
             plane.set_mode(plane.mode_terrain_navigation, ModeReason::GCS_COMMAND);
 
