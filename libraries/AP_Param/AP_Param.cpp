@@ -2072,6 +2072,8 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
     flush();
 }
 
+// convert an object which was stored in a vehicle's G2 into a new
+// object in AP_Vehicle.cpp:
 void AP_Param::convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions)
 {
     // Find G2's Top Level Key
