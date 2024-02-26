@@ -362,7 +362,7 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlS
     }
 
     // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
-    _heliflags.rotor_runup_complete = ( _main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete() );
+    set_rotor_runup_complete(_main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete());
 
     // Check if both rotors are spooled down, tail rotor controller always returns true if not enabled
     _heliflags.rotor_spooldown_complete = ( _main_rotor.is_spooldown_complete() );
