@@ -5,7 +5,7 @@
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
-#include "AP_Logger_DataFlash.h"
+#include "AP_Logger_Flash_JEDEC.h"
 #include "AP_Logger_W25N01GV.h"
 #include "AP_Logger_MAVLink.h"
 
@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_DATAFLASH_DRIVER
-#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_DataFlash
+#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_Flash_JEDEC
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
