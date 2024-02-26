@@ -37,6 +37,8 @@
 #include <stdio.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 
+#include <span>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
 #endif
@@ -2021,6 +2023,23 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
 {
     for (uint8_t i=0; i<table_size; i++) {
         convert_old_parameter(&conversion_table[i], scaler, flags);
+    }
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
+}
+
+// convert old vehicle parameters to new object parameters
+void AP_Param::convert_old_parameters(const std::span<ConversionInfo> &conversion_table, uint8_t flags)
+{
+    convert_old_parameters_scaled(conversion_table, 1.0f, flags);
+}
+
+// convert old vehicle parameters to new object parameters with scaling - assumes all parameters will have the same scaling factor
+void AP_Param::convert_old_parameters_scaled(const std::span<ConversionInfo> &conversion_table, float scaler, uint8_t flags)
+{
+    for (auto &entry : conversion_table) {
+        convert_old_parameter(&entry, scaler, flags);
     }
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter

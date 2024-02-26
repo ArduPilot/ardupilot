@@ -17,7 +17,6 @@
 #pragma once
 
 #include <inttypes.h>
-#include <vector>
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"
