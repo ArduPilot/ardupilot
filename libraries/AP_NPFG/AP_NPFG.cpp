@@ -155,7 +155,18 @@ void AP_NPFG::update_waypoint(const class Location &prev_WP, const class Locatio
 }
 
 void AP_NPFG::update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) {
-    // check for parameter updates
+    // not implemented
+}
+
+void AP_NPFG::update_heading_hold(int32_t navigation_heading_cd) {
+    // not implemented
+}
+
+void AP_NPFG::update_level_flight(void) {
+    // not implemented
+}
+
+void AP_NPFG::update_path(const class Location &position_on_path, Vector2f unit_path_tangent, float path_curvature, int8_t direction) {
     update_parameters();
 
     // calculate control interval
@@ -168,69 +179,42 @@ void AP_NPFG::update_loiter(const class Location &center_WP, float radius, int8_
     // update control time step for slew rates  
     _npfg.setDt(control_interval_s);
 
-    //! @todo remove hardcoding
-    _npfg.setAirspeedNom(15.0f);
-    _npfg.setAirspeedMax(20.0f);
+    //! @todo(srmainwaring) remove hardcoding
+    _npfg.setAirspeedNom(25.0f);
+    _npfg.setAirspeedMax(35.0f);
 
     // get current position and velocity
     Location current_loc;
     if (_ahrs.get_location(current_loc) == false) {
-        //! @todo if no GPS loc available, maintain last nav/target_bearing
+        //! @todo(srmainwaring) if no GPS loc available, maintain last nav/target_bearing
         // _data_is_stale = true;
         // return;
     }
 
-    //! @todo - obtain current position from _ahrs in local cartesian coords (m)
+    // current position from _ahrs in local cartesian coords (m)
     Vector2f curr_pos_local_cm;
     if (current_loc.get_vector_xy_from_origin_NE(curr_pos_local_cm) == false) {
-        //! @todo add error handling
+        //! @todo(srmainwaring) add error handling
     }
     Vector2f curr_pos_local(0.01 * curr_pos_local_cm.x, 0.01 * curr_pos_local_cm.y);
 
-    //! @todo - obtain ground vel from _ahrs in local cartesian coords (m/s)
+    // ground vel from _ahrs in local cartesian coords (m/s)
     Vector2f ground_vel = _ahrs.groundspeed_vector();
 
-    //! @todo - obtain wind vel from _ahrs in local cartesian coords (m/s)
+    // wind estimate from _ahrs in local cartesian coords (m/s)
     Vector3f wind_estimate = _ahrs.wind_estimate();
     Vector2f wind_vel(wind_estimate.x, wind_estimate.y);
 
-    //! @todo - unit path tangent is the normalised setpoint velocity (m/s)
-    // Vector2f unit_path_tangent(0.0f, 0.0f);
-
-    //! @todo - the setpoint position in local cartesian coords (m)
-    Vector2f position_on_path_cm;
-    if (center_WP.get_vector_xy_from_origin_NE(position_on_path_cm) == false) {
-        //! @todo add error handling
+    // setpoint position in local cartesian coords (m)
+    Vector2f position_on_path_ned_cm;
+    if (position_on_path.get_vector_xy_from_origin_NE(position_on_path_ned_cm) == false) {
+        //! @todo(srmainwaring) add error handling
     }
-    Vector2f position_on_path(0.01 * position_on_path_cm.x, 0.01 * position_on_path_cm.y);
-
-    //! @todo calculate from loiter radius and direction
-    //! @todo check loiter radius is not zero or infinite
-    float path_curvature = 0.0;
-    if (is_positive(radius)) {
-        path_curvature = -1.0 * float(loiter_direction) / radius;
-    }
+    Vector2f position_on_path_ned(0.01 * position_on_path_ned_cm.x, 0.01 * position_on_path_ned_cm.y);
 
     _npfg.guideToPath(curr_pos_local, ground_vel, wind_vel,
-        _unit_path_tangent, position_on_path, path_curvature);
-}
-
-void AP_NPFG::update_heading_hold(int32_t navigation_heading_cd) {
-    // not implemented
-}
-
-void AP_NPFG::update_level_flight(void) {
-    // not implemented
-}
-
-void AP_NPFG::update_path(const class Location &position_on_path, Vector2f unit_path_tangent, float path_curvature, int8_t direction) {
-    //! @note initial implementation uses existing functions
-    float radius_m = 0.0;
-    if (!is_zero(path_curvature)) {
-        radius_m = 1.0 / path_curvature;
-    }
-    set_path_tangent(_unit_path_tangent);
-    update_loiter(position_on_path, radius_m, direction);
+        unit_path_tangent, position_on_path_ned,
+        path_curvature * float(direction));
 }
 
 bool AP_NPFG::reached_loiter_target(void) {
@@ -269,8 +253,4 @@ void AP_NPFG::update_parameters() {
     _npfg.setRollLimit(radians(30.0 /*_param_fw_r_lim*/));
     _npfg.setRollSlewRate(radians(90.0 /*_param_fw_pn_r_slew_max*/));
     _npfg.setPeriodSafetyFactor(_npfg_period_safety_factor);
-}
-
-void AP_NPFG::set_path_tangent(Vector2f unit_path_tangent) {
-    _unit_path_tangent = unit_path_tangent;
 }
