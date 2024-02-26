@@ -223,6 +223,16 @@ void AP_NPFG::update_level_flight(void) {
     // not implemented
 }
 
+void AP_NPFG::update_path(const class Location &position_on_path, Vector2f unit_path_tangent, float path_curvature, int8_t direction) {
+    //! @note initial implementation uses existing functions
+    float radius_m = 0.0;
+    if (!is_zero(path_curvature)) {
+        radius_m = 1.0 / path_curvature;
+    }
+    set_path_tangent(_unit_path_tangent);
+    update_loiter(position_on_path, radius_m, direction);
+}
+
 bool AP_NPFG::reached_loiter_target(void) {
     // not implemented
     return false;
