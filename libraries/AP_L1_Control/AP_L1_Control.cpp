@@ -147,6 +147,10 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
 
 float AP_L1_Control::loiter_radius(const float radius) const
 {
+    if (_disable_loiter_radius_scaling) {
+        return radius;
+    }
+
     // prevent an insane loiter bank limit
     float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
     float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
@@ -559,7 +563,10 @@ void AP_L1_Control::update_path(const class Location &position_on_path, Vector2f
         auto ofs_ned = dn_ned.cross(tangent_ned) * radius_m * direction;
         center_wp.offset(ofs_ned);
 
+        // disable loiter radius scaling while updating loiter
+        _disable_loiter_radius_scaling = true;
         update_loiter(center_wp, radius_m, direction);
+        _disable_loiter_radius_scaling = false;
     } else {
         // moving along a line segment - navigate to wp ahead of closest point
         // in direction of path tangent 
