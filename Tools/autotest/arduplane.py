@@ -5312,6 +5312,38 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         home = self.home_position_as_mav_location()
         self.assert_distance(home, adsb_vehicle_loc, 0, 10000)
 
+    def MinThrottle(self):
+        '''Make sure min throttle does not apply in manual mode and does in FBWA'''
+
+        servo_min = self.get_parameter("RC3_MIN")
+        servo_max = self.get_parameter("RC3_MAX")
+        min_throttle = 10
+        servo_min_throttle = servo_min + (servo_max - servo_min) * (min_throttle / 100)
+
+        # Set min throttle
+        self.set_parameter('THR_MIN', min_throttle)
+
+        # Should be 0 throttle while disarmed
+        self.change_mode("MANUAL")
+        self.drain_mav() # make sure we have the latest data before checking throttle output
+        self.assert_servo_channel_value(3, servo_min)
+
+        # Arm and check throttle is still 0 in manual
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.drain_mav()
+        self.assert_servo_channel_value(3, servo_min)
+
+        # FBWA should apply throttle min
+        self.change_mode("FBWA")
+        self.drain_mav()
+        self.assert_servo_channel_value(3, servo_min_throttle)
+
+        # But not when disarmed
+        self.disarm_vehicle()
+        self.drain_mav()
+        self.assert_servo_channel_value(3, servo_min)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5419,6 +5451,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainRally,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.MinThrottle,
         ])
         return ret
 
