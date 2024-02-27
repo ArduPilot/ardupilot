@@ -39,6 +39,10 @@
 #define HAL_NUM_SERIAL_PORTS SERIALMANAGER_NUM_PORTS
 #endif
 
+#ifndef AP_SERIALMANAGER_ENABLED
+#define AP_SERIALMANAGER_ENABLED 1
+#endif
+
 /*
   array size for state[]. This needs to be at least
   SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
