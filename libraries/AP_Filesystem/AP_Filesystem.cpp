@@ -242,6 +242,14 @@ struct dirent *AP_Filesystem::readdir(DirHandle *dirp)
         if (prefix[0] != '@') {
             continue;
         }
+
+        // only return @ entries in root if we can successfully opendir them:
+        auto *d = backends[virtual_dirent.backend_ofs].fs.opendir("");
+        if (d == nullptr) {
+            continue;
+        }
+        backends[virtual_dirent.backend_ofs].fs.closedir(d);
+
         // found a virtual directory we haven't returned yet
         strncpy_noterm(virtual_dirent.de.d_name, prefix, sizeof(virtual_dirent.de.d_name));
         virtual_dirent.d_off++;
