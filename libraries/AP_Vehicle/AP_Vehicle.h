@@ -354,7 +354,10 @@ protected:
 #if AP_VIDEOTX_ENABLED
     AP_VideoTX vtx;
 #endif
+
+#if AP_SERIALMANAGER_ENABLED
     AP_SerialManager serial_manager;
+#endif
 
 #if AP_RELAY_ENABLED
     AP_Relay relay;

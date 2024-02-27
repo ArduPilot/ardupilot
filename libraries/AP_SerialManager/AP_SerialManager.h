@@ -22,6 +22,9 @@
 #pragma once
 
 #include "AP_SerialManager_config.h"
+
+#if AP_SERIALMANAGER_ENABLED
+
 #include <AP_Param/AP_Param.h>
 
 class AP_SerialManager {
@@ -207,3 +210,5 @@ private:
 namespace AP {
     AP_SerialManager &serialmanager();
 };
+
+#endif  // AP_SERIALMANAGER_ENABLED
