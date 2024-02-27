@@ -201,6 +201,7 @@ void AP_MSP_Telem_Backend::update_home_pos(home_state_t &home_state)
     home_state.home_is_set = _ahrs.home_is_set();
 }
 
+#if AP_GPS_ENABLED
 void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
 {
     AP_GPS& gps = AP::gps();
@@ -220,6 +221,7 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
         gps_state.ground_course_cd = gps.ground_course_cd();
     }
 }
+#endif
 
 #if AP_BATTERY_ENABLED
 void AP_MSP_Telem_Backend::update_battery_state(battery_state_t &battery_state)
@@ -645,8 +647,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
         return MSP_RESULT_ERROR;
     }
 #endif
-    gps_state_t gps_state;
+    gps_state_t gps_state {};
+#if AP_GPS_ENABLED
     update_gps_state(gps_state);
+#endif
 
     // handle airspeed override
     bool airspeed_en = false;

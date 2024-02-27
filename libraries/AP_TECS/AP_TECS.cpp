@@ -246,7 +246,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Extra TECS options
     // @Description: This allows the enabling of special features in the speed/height controller.
-    // @Bitmask: 0:GliderOnly
+    // @Bitmask: 0:GliderOnly,1:AllowDescentSpeedup
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
@@ -458,6 +458,11 @@ void AP_TECS::_update_speed(float DT)
 
 void AP_TECS::_update_speed_demand(void)
 {
+    if (_options & OPTION_DESCENT_SPEEDUP) {
+        // Allow demanded speed to  go to maximum when descending at maximum descent rate
+        _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
+    }
+
     // Set the airspeed demand to the minimum value if an underspeed condition exists
     // or a bad descent condition exists
     // This will minimise the rate of descent resulting from an engine failure,
@@ -532,9 +537,18 @@ void AP_TECS::_update_height_demand(void)
         // Limit height rate of change
         if ((hgt_dem - _hgt_dem_rate_ltd) > (_climb_rate_limit * _DT)) {
             _hgt_dem_rate_ltd = _hgt_dem_rate_ltd + _climb_rate_limit * _DT;
+            _sink_fraction = 0.0f;
         } else if ((hgt_dem - _hgt_dem_rate_ltd) < (-_sink_rate_limit * _DT)) {
             _hgt_dem_rate_ltd = _hgt_dem_rate_ltd - _sink_rate_limit * _DT;
+            _sink_fraction = 1.0f;
         } else {
+            const float numerator = hgt_dem - _hgt_dem_rate_ltd;
+            const float denominator = - _sink_rate_limit * _DT;
+            if (is_negative(numerator) && is_negative(denominator)) {
+                _sink_fraction = numerator / denominator;
+            } else {
+                _sink_fraction = 0.0f;
+            }
             _hgt_dem_rate_ltd = hgt_dem;
         }
 

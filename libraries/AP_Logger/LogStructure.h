@@ -1195,6 +1195,13 @@ struct PACKED log_VER {
 // @Field: Free: free stack
 // @Field: Name: thread name
 
+// @LoggerMessage: FILE
+// @Description: File data
+// @Field: FileName: File name
+// @Field: Offset: Offset into the file of this block
+// @Field: Length: Length of this data block
+// @Field: Data: File data of this block
+
 // @LoggerMessage: SCR
 // @Description: Scripting runtime stats
 // @Field: TimeUS: Time since system startup
@@ -1202,6 +1209,20 @@ struct PACKED log_VER {
 // @Field: Runtime: run time
 // @Field: Total_mem: total memory usage of all scripts
 // @Field: Run_mem: run memory usage
+
+// @LoggerMessage: VER
+// @Description: Ardupilot version
+// @Field: TimeUS: Time since system startup
+// @Field: BT: Board type
+// @Field: BST: Board subtype
+// @Field: Maj: Major version number
+// @Field: Min: Minor version number
+// @Field: Pat: Patch number
+// @Field: FWT: Firmware type
+// @Field: GH: Github commit
+// @Field: FWS: Firmware version string
+// @Field: APJ: Board ID
+// @Field: BU: Build vehicle type
 
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
