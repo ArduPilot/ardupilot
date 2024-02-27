@@ -477,9 +477,18 @@ public:
     struct G2ObjectConversion {
         void *object_pointer;
         const struct AP_Param::GroupInfo *var_info;
-        uint16_t old_index;  // Old parameter index in g
+        uint16_t old_index;  // Old parameter index in g2
     };
     static void         convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions);
+
+    // convert an object which was stored in a vehicle's top-level
+    // Parameters object into a new object in AP_Vehicle.cpp:
+    struct TopLevelObjectConversion {
+        void *object_pointer;
+        const struct AP_Param::GroupInfo *var_info;
+        uint16_t old_index;  // Old parameter index in g
+    };
+    static void         convert_toplevel_objects(const TopLevelObjectConversion g2_conversions[], uint8_t num_conversions);
 
     /*
       convert width of a parameter, allowing update to wider scalar
