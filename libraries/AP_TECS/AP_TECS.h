@@ -197,7 +197,8 @@ private:
     AP_Float _hgt_dem_tconst;
 
     enum {
-        OPTION_GLIDER_ONLY=(1<<0)
+        OPTION_GLIDER_ONLY=(1<<0),
+        OPTION_DESCENT_SPEEDUP=(1<<1)
     };
 
     AP_Float _pitch_ff_v0;
@@ -334,6 +335,7 @@ private:
 
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
+
     };
     union {
         struct flags _flags;
@@ -389,6 +391,7 @@ private:
     // used to scale max climb and sink limits to match vehicle ability
     float _max_climb_scaler;
     float _max_sink_scaler;
+    float _sink_fraction;
 
     // Specific energy error quantities
     float _STE_error;

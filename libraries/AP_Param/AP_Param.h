@@ -472,6 +472,13 @@ public:
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
+    struct G2ObjectConversion {
+        void *object_pointer;
+        const struct AP_Param::GroupInfo *var_info;
+        uint16_t old_index;  // Old parameter index in g
+    };
+    static void         convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions);
+
     /*
       convert width of a parameter, allowing update to wider scalar
       values without changing the parameter indexes. This will return
@@ -493,7 +500,7 @@ public:
     // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
     static void         convert_class(uint16_t param_key, void *object_pointer,
                                         const struct AP_Param::GroupInfo *group_info,
-                                        uint16_t old_index, uint16_t old_top_element, bool is_top_level);
+                                        uint16_t old_index, bool is_top_level);
 
     /*
       fetch a parameter value based on the index within a group. This

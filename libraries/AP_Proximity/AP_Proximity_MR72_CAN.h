@@ -45,24 +45,7 @@ private:
 
     AP_Int32 receive_id;                // ID of the sensor
 
-    static MR72_MultiCAN *multican;     // linked list
-    AP_Proximity_MR72_CAN *next;
-};
-
-// a class to allow for multiple MR_72 backends with one
-// CANSensor driver
-class MR72_MultiCAN : public CANSensor {
-public:
-    MR72_MultiCAN() : CANSensor("MR72") {
-        register_driver(AP_CAN::Protocol::MR72);
-    }
-
-    // handler for incoming frames
-    void handle_frame(AP_HAL::CANFrame &frame) override;
-
-    HAL_Semaphore sem;
-    AP_Proximity_MR72_CAN *drivers;
-
+    MultiCAN* multican_MR72;            // Allows for multiple CAN rangefinders on a single bus
 };
 
 #endif // HAL_PROXIMITY_ENABLED

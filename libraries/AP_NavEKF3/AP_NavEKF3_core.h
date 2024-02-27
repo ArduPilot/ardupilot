@@ -1323,6 +1323,8 @@ private:
 #if EK3_FEATURE_BEACON_FUSION
     class BeaconFusion {
     public:
+        void InitialiseVariables();
+
         EKF_obs_buffer_t<rng_bcn_elements> storedRange; // Beacon range buffer
         rng_bcn_elements dataDelayed; // Range beacon data at the fusion time horizon
         uint32_t lastPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)

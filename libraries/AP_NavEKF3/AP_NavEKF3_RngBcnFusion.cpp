@@ -3,6 +3,49 @@
 
 #if EK3_FEATURE_BEACON_FUSION
 
+// initialise state:
+void NavEKF3_core::BeaconFusion::InitialiseVariables()
+{
+    memset((void *)&dataDelayed, 0, sizeof(dataDelayed));
+    lastPassTime_ms = 0;
+    testRatio = 0.0f;
+    health = false;
+    varInnov = 0.0f;
+    innov = 0.0f;
+    memset(&lastTime_ms, 0, sizeof(lastTime_ms));
+    dataToFuse = false;
+    vehiclePosNED.zero();
+    vehiclePosErr = 1.0f;
+    last3DmeasTime_ms = 0;
+    goodToAlign = false;
+    lastChecked = 0;
+    receiverPos.zero();
+    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
+    alignmentStarted =  false;
+    alignmentCompleted = false;
+    lastIndex = 0;
+    posSum.zero();
+    numMeas = 0;
+    sum = 0.0f;
+    N = 0;
+    maxPosD = 0.0f;
+    minPosD = 0.0f;
+    posDownOffsetMax = 0.0f;
+    posOffsetMaxVar = 0.0f;
+    maxOffsetStateChangeFilt = 0.0f;
+    posDownOffsetMin = 0.0f;
+    posOffsetMinVar = 0.0f;
+    minOffsetStateChangeFilt = 0.0f;
+    fuseDataReportIndex = 0;
+    if (AP::dal().beacon()) {
+        if (fusionReport == nullptr) {
+            fusionReport = new BeaconFusion::FusionReport[AP::dal().beacon()->count()];
+        }
+    }
+    posOffsetNED.zero();
+    originEstInit = false;
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -268,11 +311,12 @@ void NavEKF3_core::FuseRngBcn()
 
         // Update the fusion report
         if (rngBcn.fusionReport && rngBcn.dataDelayed.beacon_ID < dal.beacon()->count()) {
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innov = rngBcn.innov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innovVar = rngBcn.varInnov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].rng = rngBcn.dataDelayed.rng;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].testRatio = rngBcn.testRatio;
+            auto &report = rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID];
+            report.beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
+            report.innov = rngBcn.innov;
+            report.innovVar = rngBcn.varInnov;
+            report.rng = rngBcn.dataDelayed.rng;
+            report.testRatio = rngBcn.testRatio;
         }
     }
 }
@@ -506,11 +550,12 @@ void NavEKF3_core::FuseRngBcnStatic()
         }
         // Update the fusion report
         if (rngBcn.fusionReport && rngBcn.dataDelayed.beacon_ID < dal.beacon()->count()) {
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innov = rngBcn.innov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innovVar = rngBcn.varInnov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].rng = rngBcn.dataDelayed.rng;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].testRatio = rngBcn.testRatio;
+            auto &report = rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID];
+            report.beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
+            report.innov = rngBcn.innov;
+            report.innovVar = rngBcn.varInnov;
+            report.rng = rngBcn.dataDelayed.rng;
+            report.testRatio = rngBcn.testRatio;
         }
     }
 }

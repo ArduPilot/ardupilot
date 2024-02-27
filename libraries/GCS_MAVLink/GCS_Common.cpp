@@ -4530,14 +4530,16 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         AP::ins().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
     }
-#endif
+#endif  // AP_INERTIALSENSOR_ENABLED
 
+#if AP_COMPASS_ENABLED
     if (is_equal(packet.param2,76.0f)) {
         // force existing compass calibration to be accepted as valid
         AP::compass().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
     }
-    
+#endif
+
     return ret;
 }
 
@@ -5747,6 +5749,7 @@ bool GCS_MAVLINK::send_relay_status() const
 
 void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 {
+#if AP_AHRS_ENABLED
     // get attitude
     const AP_AHRS &ahrs = AP::ahrs();
     Quaternion quat;
@@ -5792,6 +5795,7 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         est_status_flags,   // estimator status
         0,      // landed_state (see MAV_LANDED_STATE)
         AP::ahrs().get_yaw_rate_earth());   // [rad/s] Z component of angular velocity in NED (North, East, Down). NaN if unknown
+#endif  // AP_AHRS_ENABLED
 }
 
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)

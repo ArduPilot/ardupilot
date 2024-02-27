@@ -125,14 +125,12 @@ def get_legacy_defines(sketch_name, bld):
     if bld.cmd == 'heli' or 'heli' in bld.targets:
         return [
         'APM_BUILD_DIRECTORY=APM_BUILD_Heli',
-        'SKETCH="' + sketch_name + '"',
-        'SKETCHNAME="' + sketch_name + '"',
+        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
         ]
 
     return [
         'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
-        'SKETCH="' + sketch_name + '"',
-        'SKETCHNAME="' + sketch_name + '"',
+        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
 IGNORED_AP_LIBRARIES = [

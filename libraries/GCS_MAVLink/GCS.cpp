@@ -331,7 +331,7 @@ void GCS::update_sensor_status_flags()
 
     // give GCS status of prearm checks. This is enabled if any arming checks are enabled.
     // it is healthy if armed or checks are passing
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_ARMING_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_PREARM_CHECK;
     if (AP::arming().get_enabled_checks()) {
         control_sensors_enabled |= MAV_SYS_STATUS_PREARM_CHECK;
