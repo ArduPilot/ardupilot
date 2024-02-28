@@ -1,0 +1,152 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include "AP_EFI_config.h"
+
+#if HAL_EFI_ENABLED
+
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_EFI_ThrottleLinearisation.h"
+
+#include "AP_EFI_Backend.h"
+#include "AP_EFI_State.h"
+
+
+/*
+ * This library aims to read data from Electronic Fuel Injection 
+ * or Engine Control units. It is focused around the generic
+ * internal combustion engine state message provided by the 
+ * UAVCAN protocol due to its comprehensiveness, but is extensible
+ * to use other forms of data transfer besides UAVCAN. 
+ * 
+ *
+ *
+ * Authors: Sriram Sami and David Ingraham
+ * With direction from Andrew Tridgell, Robert Lefebvre, Francisco Ferreira and
+ * Pavel Kirienko.
+ * Thanks to Yonah, SpektreWorks Inc, and HFE International.
+ */
+
+class AP_EFI {
+public:
+    friend class AP_EFI_Backend;
+
+    // For parameter initialization
+    AP_EFI();
+
+    // Initializes backend
+    void init(void);
+
+    // Requests backend to update the frontend. Should be called at 10Hz.
+    void update();
+    
+    // Returns the RPM
+    uint32_t get_rpm() const { return state.engine_speed_rpm; }
+
+    // returns enabled state of EFI
+    bool enabled() const { return type != Type::NONE; }
+
+    bool is_healthy() const;
+
+    // return timestamp of last update
+    uint32_t get_last_update_ms(void) const {
+        return state.last_updated_ms;
+    }
+
+    // get a copy of state structure
+    void get_state(EFI_State &state);
+
+    // Parameter info
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // Backend driver types
+    enum class Type : uint8_t {
+        NONE       = 0,
+#if AP_EFI_SERIAL_MS_ENABLED
+        MegaSquirt = 1,
+#endif
+#if AP_EFI_NWPWU_ENABLED
+        NWPMU      = 2,
+#endif
+#if AP_EFI_SERIAL_LUTAN_ENABLED
+        Lutan      = 3,
+#endif
+        // LOWEHEISER = 4,
+#if AP_EFI_DRONECAN_ENABLED
+        DroneCAN = 5,
+#endif
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+        CurrawongECU = 6,
+#endif
+#if AP_EFI_SCRIPTING_ENABLED
+        SCRIPTING  = 7,
+#endif
+#if AP_EFI_SERIAL_HIRTH_ENABLED
+        Hirth      = 8, 
+#endif
+		MAV = 9,
+    };
+
+    static AP_EFI *get_singleton(void) {
+        return singleton;
+    }
+
+    // send EFI_STATUS
+    void send_mavlink_status(mavlink_channel_t chan);
+
+#if AP_SCRIPTING_ENABLED
+    AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
+#endif
+
+    void handle_EFI_message(const mavlink_message_t &msg);
+
+protected:
+
+    // Back end Parameters
+    AP_Float coef1;
+    AP_Float coef2;
+
+    AP_Float ecu_fuel_density;
+
+    EFI_State state;
+
+#if AP_EFI_THROTTLE_LINEARISATION_ENABLED
+    AP_EFI_ThrLin throttle_linearisation;
+#endif
+
+private:
+    // Front End Parameters
+    AP_Enum<Type> type;
+
+    // Tracking backends
+    AP_EFI_Backend *backend;
+    static AP_EFI *singleton;
+
+    // Semaphore for access to shared frontend data
+    HAL_Semaphore sem;
+
+    // write to log
+    void log_status();
+};
+
+namespace AP {
+    AP_EFI *EFI();
+};
+
+#endif // HAL_EFI_ENABLED

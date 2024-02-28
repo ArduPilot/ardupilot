@@ -1,0 +1,15 @@
+# Bi-directional dshot version of CUAVv5Nano
+
+include ../CUAVv5Nano/hwdef.dat
+
+undef PA10 PE11 PA5 PB3 PB11
+
+# This gives bi-dir dshot on the first four channels and regular dshot on the next two
+PA10 TIM1_CH3 TIM1 PWM(2) GPIO(51) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
+
+PA5  TIM2_CH1 TIM2 PWM(9)  GPIO(58) NODMA
+PB3  TIM2_CH2 TIM2 PWM(10) GPIO(59) NODMA
+PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60) NODMA
+
+DMA_PRIORITY TIM1_CH3 TIM1_CH2 TIM1_UP SDMMC* UART8* ADC* SPI* TIM*

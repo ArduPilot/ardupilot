@@ -50,7 +50,7 @@ void splinterp5(const float x[5], float out[4][4])
         } else if (p > -0.01f && p < 0.0f) {
             p = -0.01f;
         }
-        float p_inv = 1.0f / p;
+        const float p_inv = 1.0f / p;
         z[i] = -0.5f * p_inv;
         u[i] = x[i+1] + x[i-1] - 2.0f * x[i];
         u[i] = (3.0f * u[i] - 0.5f * u[i-1]) * p_inv;

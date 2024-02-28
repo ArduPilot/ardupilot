@@ -12,12 +12,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_RangeFinder_Bebop.h"
+
+#if AP_RANGEFINDER_BEBOP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
-
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
-    defined(HAVE_LIBIIO)
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,7 +33,6 @@
 #include <math.h>
 #include <time.h>
 #include <iio.h>
-#include "AP_RangeFinder_Bebop.h"
 #include <AP_HAL_Linux/Thread.h>
 #include <AP_HAL_Linux/GPIO.h>
 
@@ -62,8 +62,8 @@ static const uint16_t waveform_mode1[32] = {
     1675, 1540, 1492, 1374, 1292
 };
 
-AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_ULTRASOUND),
+AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params),
     _thread(new Linux::Thread(FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Bebop::_loop, void)))
 {
     _init();
@@ -121,23 +121,25 @@ unsigned short AP_RangeFinder_Bebop::get_threshold_at(int i_capture)
      *  */
     switch (_mode) {
     case 0:
-        if (i_capture < 139)
+        if (i_capture < 139) {
             threshold_value = 4195;
-        else if (i_capture < 153)
+        } else if (i_capture < 153) {
             threshold_value = waveform_mode0[i_capture - 139];
-        else
+        } else {
             threshold_value = 1200;
+        }
         break;
 
     case 1:
-        if (i_capture < 73)
+        if (i_capture < 73) {
             threshold_value = 4195;
-        else if (i_capture < 105)
+        } else if (i_capture < 105) {
             threshold_value = waveform_mode1[i_capture - 73];
-        else if (i_capture < 617)
+        } else if (i_capture < 617) {
             threshold_value = 1200;
-        else
+        } else {
             threshold_value = 4195;
+        }
         break;
 
     default:
@@ -171,10 +173,11 @@ int AP_RangeFinder_Bebop::_apply_averaging_filter(void)
 
         /* We keep on advancing in the captured buffer without registering the
          * filtered data until the signal first exceeds a given value */
-        if (!first_echo && current_value < threshold_echo_init)
+        if (!first_echo && current_value < threshold_echo_init) {
             continue;
-        else
+        } else {
             first_echo = true;
+        }
 
         filtered_value += current_value;
         if (i_capture % _filter_average == 0) {
@@ -202,8 +205,9 @@ int AP_RangeFinder_Bebop::_search_local_maxima(void)
                         get_threshold_at(i_capture - 1))) {
                 _echoes[i_echo].max_index = i_capture;
                 i_echo++;
-                if (i_echo >= RNFD_BEBOP_MAX_ECHOES)
+                if (i_echo >= RNFD_BEBOP_MAX_ECHOES) {
                     break;
+                }
             }
         }
     }
@@ -224,10 +228,11 @@ int AP_RangeFinder_Bebop::_search_maximum_with_max_amplitude(void)
         }
     }
 
-    if (max_idx >= 0)
+    if (max_idx >= 0) {
         return _echoes[max_idx].max_index;
-    else
+    } else {
         return -1;
+    }
 }
 
 void AP_RangeFinder_Bebop::_loop(void)
@@ -240,12 +245,12 @@ void AP_RangeFinder_Bebop::_loop(void)
         _capture();
 
         if (_apply_averaging_filter() < 0) {
-            hal.console->printf(
+            DEV_PRINTF(
                     "AR_RangeFinder_Bebop: could not apply averaging filter");
         }
 
         if (_search_local_maxima() < 0) {
-            hal.console->printf("Did not find any local maximum");
+            DEV_PRINTF("Did not find any local maximum");
         }
 
         max_index = _search_maximum_with_max_amplitude();
@@ -266,7 +271,8 @@ void AP_RangeFinder_Bebop::update(void)
         first_call = false;
     }
 
-    state.distance_cm = (uint16_t) (_altitude * 100);
+    state.distance_m = _altitude;
+    state.last_reading_ms = AP_HAL::millis();
     update_status();
 }
 
@@ -290,7 +296,7 @@ void AP_RangeFinder_Bebop::_configure_gpio(int value)
         _gpio->write(LINUX_GPIO_ULTRASOUND_VOLTAGE, 0);
         break;
     default:
-        hal.console->printf("bad gpio value (%d)", value);
+        DEV_PRINTF("bad gpio value (%d)", value);
         break;
     }
 }
@@ -303,10 +309,12 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
 {
     /* configure the output buffer for a purge */
     /* perform a purge */
-    if (_launch_purge() < 0)
-        hal.console->printf("purge could not send data overspi");
-    if (_capture() < 0)
-        hal.console->printf("purge could not capture data");
+    if (_launch_purge() < 0) {
+        DEV_PRINTF("purge could not send data overspi");
+    }
+    if (_capture() < 0) {
+        DEV_PRINTF("purge could not capture data");
+    }
 
     _tx_buf = _tx[_mode];
     switch (_mode) {
@@ -317,13 +325,13 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
         _configure_gpio(1);
         break;
     default:
-        hal.console->printf("WARNING, invalid value to configure gpio\n");
+        DEV_PRINTF("WARNING, invalid value to configure gpio\n");
         break;
     }
 }
 
 /*
- * First configuration of the the pulse that will be send over spi
+ * First configuration of the pulse that will be send over spi
  */
 int AP_RangeFinder_Bebop::_configure_wave()
 {
@@ -341,18 +349,19 @@ int AP_RangeFinder_Bebop::_configure_capture()
     const char *adcchannel = "voltage2";
     /* configure adc interface using libiio */
     _iio = iio_create_local_context();
-    if (!_iio)
+    if (!_iio) {
         return -1;
+    }
     _adc.device = iio_context_find_device(_iio, adcname);
 
     if (!_adc.device) {
-        hal.console->printf("Unable to find %s", adcname);
+        DEV_PRINTF("Unable to find %s", adcname);
         goto error_destroy_context;
     }
     _adc.channel = iio_device_find_channel(_adc.device, adcchannel,
             false);
     if (!_adc.channel) {
-        hal.console->printf("Fail to init adc channel %s", adcchannel);
+        DEV_PRINTF("Fail to init adc channel %s", adcchannel);
         goto error_destroy_context;
     }
 
@@ -365,13 +374,13 @@ int AP_RangeFinder_Bebop::_configure_capture()
     /* Create input buffer */
     _adc.buffer_size = RNFD_BEBOP_P7_COUNT;
     if (iio_device_set_kernel_buffers_count(_adc.device, 1)) {
-        hal.console->printf("cannot set buffer count");
+        DEV_PRINTF("cannot set buffer count");
         goto error_destroy_context;
     }
     _adc.buffer = iio_device_create_buffer(_adc.device,
             _adc.buffer_size, false);
     if (!_adc.buffer) {
-        hal.console->printf("Fail to create buffer : %s", strerror(errno));
+        DEV_PRINTF("Fail to create buffer : %s", strerror(errno));
         goto error_destroy_context;
     }
 
@@ -465,4 +474,5 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     }
     return _mode;
 }
-#endif
+
+#endif  // AP_RANGEFINDER_BEBOP_ENABLED

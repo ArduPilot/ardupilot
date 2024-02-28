@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # Copyright (c) 2008,2010,2011,2012,2013 Alexander Belchenko
 # All rights reserved.
@@ -89,7 +89,7 @@ Options:
         if len(args) > 2:
             raise getopt.GetoptError('Too many arguments')
 
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         txt = 'ERROR: '+str(msg)    # that's required to get not-so-dumb result from 2to3 tool
         print(txt)
         print(usage)

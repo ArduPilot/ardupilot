@@ -1,0 +1,140 @@
+
+BATT_MONITOR 4
+BATT_VOLT_MULT 6.52
+BATT_AMP_PERVLT 15.7
+BATT_CAPACITY  5500
+
+Q_ENABLE 1
+Q_FRAME_CLASS 1
+Q_TAILSIT_ENABLE 2
+
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+Q_OPTIONS 128
+
+#Second IMU seems to give better results on this board
+EK3_PRIMARY 1
+
+# RC input is SBUS on serial4 TX pin
+SERIAL4_PROTOCOL 23
+SERIAL4_OPTIONS 8
+
+RC1_MIN 1050
+RC1_MAX 1950
+RC2_MIN 1050
+RC2_MAX 1950
+RC3_MIN 1050
+RC3_MAX 1950
+RC3_TRIM 1500
+RC4_MIN 1125
+RC4_MAX 1875
+
+THR_MIN 5
+
+ARMING_RUDDER 2
+
+ARSPD_TUBE_ORDR 0
+ARSPD_USE 1
+
+RTL_ALTITUDE 30.00
+AIRSPEED_MAX  25
+AIRSPEED_MIN  8
+ARSPD_RATIO    1.9
+ROLL_LIMIT_DEG 40.00
+
+# the HWing can become unstable at high speeds. Limit pitch angle
+# to prevent overspeed
+PTCH_LIM_MAX_DEG 45.00
+PTCH_LIM_MIN_DEG -15.00
+
+# setup left 3-pos switch for QHOVER, QLOITER and FBWA
+FLTMODE1 18
+FLTMODE4 19
+FLTMODE6 5
+FLTMODE_CH 5
+
+# setup a harmonic notch filter to reduce noise
+INS_GYRO_FILTER 30
+INS_HNTCH_ATT         40
+INS_HNTCH_BW          49
+INS_HNTCH_ENABLE       1
+INS_HNTCH_FREQ        99
+INS_HNTCH_HMNCS       7
+INS_HNTCH_MODE         1
+INS_HNTCH_OPTS         1
+INS_HNTCH_REF          0.4560
+
+# no rudder mixing
+KFF_RDDRMIX 0
+
+# reasonable attitude limits
+PTCH_LIM_MAX_DEG 40.00
+LOG_FILE_DSRMROT 1
+
+# lower logging rate a bit to make logs faster to fetch
+# using a USB cable
+LOG_FILE_RATEMAX 50
+
+# tuning
+RLL2SRV_TCONST 0.25
+PTCH2SRV_TCONST 0.5
+Q_A_ACCEL_P_MAX    40000
+Q_A_ACCEL_R_MAX    20000
+Q_A_ANG_PIT_P          8
+Q_A_ANG_RLL_P          8
+Q_A_RAT_PIT_D          0.01
+Q_A_RAT_PIT_FLTD      15
+Q_A_RAT_PIT_P          0.3
+Q_A_RAT_PIT_SMAX      15
+Q_A_RAT_RLL_D          0.015
+Q_A_RAT_RLL_FLTD      15
+Q_A_RAT_RLL_P          0.35
+Q_A_RAT_RLL_SMAX      15
+Q_A_RAT_YAW_FF         0.2
+Q_A_RAT_YAW_D          0.1
+Q_A_RAT_YAW_FLTD      15
+Q_A_RAT_YAW_I          0.07
+Q_A_RAT_YAW_P          0.7
+Q_A_RAT_YAW_SMAX      15
+Q_A_ACCEL_P_MAX    40000
+Q_A_ACCEL_R_MAX    20000
+Q_A_ACCEL_Y_MAX    27000
+Q_P_ACCZ_P            0.8
+Q_P_POSZ_P            1.5
+Q_P_VELZ_P            8.0
+Q_M_THST_HOVER        0.45
+Q_M_BAT_VOLT_MAX   16.8
+Q_M_BAT_VOLT_MIN   13.2
+Q_TAILSIT_RAT_VT 30
+Q_A_RATE_Y_MAX 100
+Q_A_RATE_R_MAX 100
+Q_A_RATE_P_MAX 100
+
+Q_WP_ACCEL 250
+Q_WP_ACCEL_Z 300
+Q_WP_JERK  2
+Q_WP_SPEED 900
+Q_A_THR_MIX_MAN  2
+Q_A_THR_MIX_MAX  2
+Q_A_THR_MIX_MIN  0.3
+
+# Q flight options
+Q_RTL_MODE 3
+Q_TRANS_DECEL 2.5
+
+# QRTL on 'B' button
+RC8_OPTION 4
+
+RC_OPTIONS 32
+
+# slow down for landing approach
+TECS_LAND_ARSPD 8
+
+# 16 m/s target airspeed in auto modes
+AIRSPEED_CRUISE 16.00
+TRIM_THROTTLE 29
+
+# 2nd lane tends to be better
+EK3_PRIMARY 1

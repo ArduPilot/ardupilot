@@ -1,41 +1,43 @@
-#include "GCS.h"
+#include "GCS_config.h"
 
-const AP_FWVersion AP_FWVersion::fwver
-{
-    major: 3,
-    minor: 1,
-    patch: 4,
-    fw_type: FIRMWARE_VERSION_TYPE_DEV,
-    fw_string: "Dummy GCS"
-};
+#if HAL_GCS_ENABLED
+
+#include "GCS.h"
+#include <AP_Common/AP_FWVersion.h>
+
+#define THISFIRMWARE "GCSDummy V3.1.4-dev"
+
+#define FW_MAJOR 3
+#define FW_MINOR 1
+#define FW_PATCH 4
+#define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
 
 /*
  *  GCS backend used for many examples and tools
  */
 class GCS_MAVLINK_Dummy : public GCS_MAVLINK
 {
+public:
+
+    using GCS_MAVLINK::GCS_MAVLINK;
+
+private:
+
     uint32_t telem_delay() const override { return 0; }
-    void handleMessage(mavlink_message_t * msg) override {}
-    bool try_send_message(enum ap_message id) { return true; }
-    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}
+    bool try_send_message(enum ap_message id) override { return true; }
+    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
 
-    Compass *get_compass() const override { return nullptr; };
-    AP_Mission *get_mission() override { return nullptr; }
-    AP_Rally *get_rally() const override { return nullptr; };
-    AP_Camera *get_camera() const override { return nullptr; };
-
-    uint8_t sysid_my_gcs() const override { return 1; }
-    bool set_mode(uint8_t mode) override { return false; };
-
     // dummy information:
-    MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
-    uint32_t custom_mode() const override { return 3; } // magic number
-    MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
+    MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
 
+    bool set_home_to_current_location(bool _lock) override { return false; }
+    bool set_home(const Location& loc, bool _lock) override { return false; }
+
+    void send_nav_controller_output() const override {};
+    void send_pid_tuning() override {};
 };
 
 /*
@@ -46,10 +48,31 @@ extern const AP_HAL::HAL& hal;
 
 class GCS_Dummy : public GCS
 {
-    GCS_MAVLINK_Dummy dummy_backend;
-    uint8_t num_gcs() const override { return 1; }
-    GCS_MAVLINK_Dummy &chan(const uint8_t ofs) override { return dummy_backend; }
-    const GCS_MAVLINK_Dummy &chan(const uint8_t ofs) const override { return dummy_backend; };
+public:
 
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) { hal.console->printf("TOGCS: %s\n", text); }
+    using GCS::GCS;
+
+protected:
+
+    uint8_t sysid_this_mav() const override { return 1; }
+
+    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                               AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Dummy(params, uart);
+    }
+
+private:
+    // the following define expands to a pair of methods to retrieve a
+    // pointer to an object of the correct subclass for the link at
+    // offset ofs.  These are of the form:
+    // GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override;
+    // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
+    GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Dummy);
+
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override;
+
+    MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
+    uint32_t custom_mode() const override { return 3; } // magic number
 };
+
+#endif  // HAL_GCS_ENABLED

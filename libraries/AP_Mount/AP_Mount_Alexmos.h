@@ -3,14 +3,12 @@
 */
 #pragma once
 
-#include "AP_Mount.h"
+#include "AP_Mount_Backend.h"
+
+#if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include "AP_Mount_Backend.h"
-
 
 //definition of the commands id for the Alexmos Serial Protocol
 #define CMD_READ_PARAMS 'R'
@@ -56,7 +54,7 @@
 #define AP_MOUNT_ALEXMOS_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_ALEXMOS_MODE_RC 4
 
-#define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
+#define AP_MOUNT_ALEXMOS_SPEED 30 // deg/s
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
@@ -66,39 +64,21 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 {
 public:
     //constructor
-    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance),
-        _port(nullptr),
-        _initialised(false),
-        _board_version(0),
-        _current_firmware_version(0.0f),
-        _firmware_beta_version(0),
-        _gimbal_3axis(false),
-        _gimbal_bat_monitoring(false),
-        _current_angle(0,0,0),
-        _param_read_once(false),
-        _checksum(0),
-        _step(0),
-        _command_id(0),
-        _payload_length(0),
-        _payload_counter(0),
-        _last_command_confirmed(false)
-    {}
+    using AP_Mount_Backend::AP_Mount_Backend;
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    void init() override;
 
     // update mount position - should be called periodically
-    virtual void update();
+    void update() override;
 
-    // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const;
+    // has_pan_control - returns true if this mount can control its pan (required for multicopters)
+    bool has_pan_control() const override;
 
-    // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) ;
+protected:
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) ;
+    // get attitude as a quaternion.  returns true on success
+    bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
 
@@ -111,8 +91,8 @@ private:
     // get_boardinfo - get board version and firmware version
     void get_boardinfo();
 
-    // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const Vector3f& angle , bool targets_in_degrees);
+    // send new angles to the gimbal at a fixed speed of 30 deg/s
+    void control_axis(const MountTarget& angle_target_rad);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
@@ -120,7 +100,7 @@ private:
     // write_params - write new parameters to the gimbal settings
     void write_params();
 
-    bool get_realtimedata( Vector3f& angle);
+    bool get_realtimedata(Vector3f& angle);
 
     // Alexmos Serial Protocol reading part implementation
     // send_command - send a command to the Alemox Serial API
@@ -315,3 +295,4 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
+#endif // HAL_MOUNT_ALEXMOS_ENABLED

@@ -1,0 +1,50 @@
+/*
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#pragma once
+
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_IBUS_ENABLED
+
+#define IBUS_FRAME_SIZE		32
+#define IBUS_INPUT_CHANNELS	14
+
+#include "AP_RCProtocol_Backend.h"
+
+#include "SoftSerial.h"
+
+class AP_RCProtocol_IBUS : public AP_RCProtocol_Backend
+{
+public:
+    using AP_RCProtocol_Backend::AP_RCProtocol_Backend;
+
+    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_byte(uint8_t byte, uint32_t baudrate) override;
+private:
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    bool ibus_decode(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
+
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
+
+    struct {
+        uint8_t buf[IBUS_FRAME_SIZE];
+        uint8_t ofs;
+        uint32_t last_byte_us;
+    } byte_input;
+};
+
+#endif  // AP_RCPROTOCOL_IBUS_ENABLED

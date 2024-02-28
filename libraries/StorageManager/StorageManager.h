@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,25 +21,32 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 /*
   use just one area per storage type for boards with 4k of
   storage. Use larger areas for other boards
  */
-#if HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 14
+#if HAL_STORAGE_SIZE >= 32768
+#define STORAGE_NUM_AREAS 18
+#elif HAL_STORAGE_SIZE >= 16384
+#define STORAGE_NUM_AREAS 15
+#elif HAL_STORAGE_SIZE >= 15360 && defined(HAL_NUM_CAN_IFACES)
+#define STORAGE_NUM_AREAS 12
 #elif HAL_STORAGE_SIZE >= 15360
 #define STORAGE_NUM_AREAS 11
 #elif HAL_STORAGE_SIZE >= 8192
 #define STORAGE_NUM_AREAS 10
 #elif HAL_STORAGE_SIZE >= 4096
 #define STORAGE_NUM_AREAS 4
+#elif HAL_STORAGE_SIZE > 0
+#define STORAGE_NUM_AREAS 1
 #else
 #error "Unsupported storage size"
 #endif
 
 /*
-  The StorageManager holds the layout of non-volatile storeage
+  The StorageManager holds the layout of non-volatile storage
  */
 class StorageManager {
     friend class StorageAccess;
@@ -50,16 +57,21 @@ public:
         StorageRally   = 2,
         StorageMission = 3,
         StorageKeys    = 4,
-        StorageBindInfo= 5
+        StorageBindInfo= 5,
+        StorageCANDNA  = 6,
+        StorageParamBak = 7
     };
 
     // erase whole of storage
     static void erase(void);
 
-    // setup for copter layout of storage
-    static void set_layout_copter(void) { layout = layout_copter; }
+    static bool storage_failed(void) {
+        return last_io_failed;
+    }
 
 private:
+    static bool last_io_failed;
+
     struct StorageArea {
         StorageType type;
         uint16_t    offset;
@@ -67,13 +79,14 @@ private:
     };
 
     // available layouts
-    static const StorageArea layout_copter[STORAGE_NUM_AREAS];
-    static const StorageArea layout_default[STORAGE_NUM_AREAS];
-    static const StorageArea *layout;
+    static const StorageArea layout[STORAGE_NUM_AREAS];
 };
 
 /*
   A StorageAccess object allows access to one type of storage
+
+  NOTE: this object may be declared on the stack, so it will not be
+  zero initialised
  */
 class StorageAccess {
 public:
@@ -89,14 +102,43 @@ public:
 
     // helper functions
     uint8_t  read_byte(uint16_t loc) const;
+    uint8_t  read_uint8(uint16_t loc) const { return read_byte(loc); }
     uint16_t read_uint16(uint16_t loc) const;
     uint32_t read_uint32(uint16_t loc) const;
+    float read_float(uint16_t loc) const;
 
     void write_byte(uint16_t loc, uint8_t value) const;
+    void write_uint8(uint16_t loc, uint8_t value) const { return write_byte(loc, value); }
     void write_uint16(uint16_t loc, uint16_t value) const;
     void write_uint32(uint16_t loc, uint32_t value) const;
+    void write_float(uint16_t loc, float value) const;
+
+    // copy from one storage area to another
+    bool copy_area(const StorageAccess &source) const;
+
+    // attach a storage file from microSD
+    bool attach_file(const char *fname, uint16_t size_kbyte);
 
 private:
     const StorageManager::StorageType type;
     uint16_t total_size;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    /*
+      support for storage regions on microSD. Only the StorageMission
+      for now
+     */
+    struct FileStorage {
+        HAL_Semaphore sem;
+        int fd;
+        uint8_t *buffer;
+        uint32_t bufsize;
+        uint32_t last_clean_ms;
+        uint32_t last_io_fail_ms;
+        // each bit of the dirty mask covers 1k of data
+        uint64_t dirty_mask;
+    } *file;
+
+    void flush_file(void);
+#endif
 };

@@ -90,7 +90,7 @@ const extern AP_HAL::HAL &hal;
 #define ACCEL_DEFAULT_RANGE_G               8
 #define ACCEL_DEFAULT_RATE                  1000
 #define ACCEL_DEFAULT_ONCHIP_FILTER_FREQ    780
-#define ACCEL_ONE_G                         9.80665f
+#define ACCEL_ONE_G                         GRAVITY_MSS
 
 /************************************i3g4250d register addresses *******************************************/
 #define GYRO_WHO_AM_I             0x0F
@@ -222,9 +222,7 @@ bool AP_InertialSensor_RST::_init_gyro(void)
 {
     uint8_t whoami;
 
-    if (!_dev_gyro->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_gyro->get_semaphore()->take_blocking();
 
     // set flag for reading registers
     _dev_gyro->set_read_flag(0x80);
@@ -285,9 +283,7 @@ bool AP_InertialSensor_RST::_init_accel(void)
 {
     uint8_t whoami;
 
-    if (!_dev_accel->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_accel->get_semaphore()->take_blocking();
 
     _dev_accel->set_speed(AP_HAL::Device::SPEED_HIGH);
 
@@ -295,7 +291,7 @@ bool AP_InertialSensor_RST::_init_accel(void)
 
     _dev_accel->read_registers(ACCEL_WHO_AM_I, &whoami, sizeof(whoami));
     if (whoami != ACCEL_WHO_I_AM) {
-        hal.console->printf("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
+        DEV_PRINTF("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
         printf("RST: unexpected accel WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
@@ -340,8 +336,10 @@ bool AP_InertialSensor_RST::_init_sensor(void)
  */
 void AP_InertialSensor_RST::start(void)
 {
-    _gyro_instance = _imu.register_gyro(800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D));
-    _accel_instance = _imu.register_accel(1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ));
+    if (!_imu.register_gyro(_gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D)) ||
+        !_imu.register_accel(_accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ))) {
+        return;
+    }
 
     set_gyro_orientation(_gyro_instance, _rotation_g);
     set_accel_orientation(_accel_instance, _rotation_a);

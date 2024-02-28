@@ -33,11 +33,16 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_Param/AP_Param.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
-//#include <GCS_MAVLink/GCS.h>
+#ifndef AP_VOLZ_ENABLED
+#define AP_VOLZ_ENABLED BOARD_FLASH_SIZE > 1024
+#endif
+
+#if AP_VOLZ_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
 
 #define VOLZ_SCALE_VALUE 					(uint16_t)(VOLZ_EXTENDED_POSITION_MAX - VOLZ_EXTENDED_POSITION_MIN)	// Extended Position Data Format defines 100 as 0x0F80, which results in 1920 steps for +100 deg and 1920 steps for -100 degs meaning if you take movement a scaled between -1 ... 1 and multiply by 1920 you get the travel from center
 #define VOLZ_SET_EXTENDED_POSITION_CMD 		0xDC
@@ -48,13 +53,15 @@
 #define VOLZ_EXTENDED_POSITION_CENTER 		0x0800	// Extended Position Data Format defines 0 as 0x0800 - decimal 2048
 #define VOLZ_EXTENDED_POSITION_MAX 			0x0F80	// Extended Position Data Format defines +100 as 0x0F80 decimal 3968 -> full range decimal 3840
 
+#define VOLZ_PWM_POSITION_MIN				1000
+#define VOLZ_PWM_POSITION_MAX				2000
+
 class AP_Volz_Protocol {
 public:
     AP_Volz_Protocol();
 
     /* Do not allow copies */
-    AP_Volz_Protocol(const AP_Volz_Protocol &other) = delete;
-    AP_Volz_Protocol &operator=(const AP_Volz_Protocol&) = delete;
+    CLASS_NO_COPY(AP_Volz_Protocol);
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -74,3 +81,5 @@ private:
     AP_Int32 bitmask;
     bool initialised;
 };
+
+#endif  // AP_VOLZ_PROTOCOL

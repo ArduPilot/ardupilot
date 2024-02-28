@@ -6,20 +6,24 @@ class Empty::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver();
     /* Empty implementations of UARTDriver virtual methods */
-    void begin(uint32_t b);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized();
-    void set_blocking_writes(bool blocking);
-    bool tx_pending();
+    bool is_initialized() override;
+    bool tx_pending() override;
 
     /* Empty implementations of Stream virtual methods */
-    uint32_t available() override;
     uint32_t txspace() override;
-    int16_t read() override;
 
-    /* Empty implementations of Print virtual methods */
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O for one uart
+    void uart_info(ExpandingString &str) override;
+#endif
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t size) override WARN_IF_UNUSED;
+    void _end() override;
+    void _flush() override;
+    uint32_t _available() override;
+    bool _discard_input() override;
 };

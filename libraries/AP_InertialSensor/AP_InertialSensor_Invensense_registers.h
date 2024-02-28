@@ -113,6 +113,11 @@
 #       define BIT_I2C_SLV1_DLY_EN              0x02
 #       define BIT_I2C_SLV2_DLY_EN              0x04
 #       define BIT_I2C_SLV3_DLY_EN              0x08
+#define MPUREG_SIGNAL_PATH_RESET                0x68
+// bit definitions for MPUREG_SIGNAL_PATH_RESET
+#       define BIT_SIGNAL_PATH_RESET_TEMP_RESET     0x01 // resets temp signal path
+#       define BIT_SIGNAL_PATH_RESET_ACCEL_RESET    0x02 // resets accel signal path
+#       define BIT_SIGNAL_PATH_RESET_GYRO_RESET     0x04 // resets gyro signal path
 #define MPUREG_USER_CTRL                        0x6A
 // bit definitions for MPUREG_USER_CTRL
 #       define BIT_USER_CTRL_SIG_COND_RESET         0x01 // resets signal paths and results registers for all sensors (gyros, accel, temp)
@@ -146,6 +151,17 @@
 #define MPUREG_FIFO_R_W                             0x74
 #define MPUREG_WHOAMI                               0x75
 
+// accelerometer offsets, valid on ICM-2xxxx and MPU-9250. These hold
+// factory calibrated offsets. We need to ensure these do not change
+// in flight. There is a bug in at least the ICM-26002 that can cause
+// these to change value in flight.
+#define MPUREG_ACC_OFF_X_H            0x77
+#define MPUREG_ACC_OFF_X_L            0x78
+#define MPUREG_ACC_OFF_Y_H            0x7a
+#define MPUREG_ACC_OFF_Y_L            0x7b
+#define MPUREG_ACC_OFF_Z_H            0x7d
+#define MPUREG_ACC_OFF_Z_L            0x7e
+
 // ICM20608 specific registers
 #define ICMREG_ACCEL_CONFIG2          0x1D
 #define ICM_ACC_DLPF_CFG_1046HZ_NOLPF 0x00
@@ -167,8 +183,10 @@
 
 // WHOAMI values
 #define MPU_WHOAMI_6000			0x68
-#define MPU_WHOAMI_20608		0xaf
+#define MPU_WHOAMI_20608D		0xae
+#define MPU_WHOAMI_20608G		0xaf
 #define MPU_WHOAMI_20602		0x12
+#define MPU_WHOAMI_20601		0xac
 #define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73

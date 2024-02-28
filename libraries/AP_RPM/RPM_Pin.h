@@ -14,38 +14,39 @@
  */
 #pragma once
 
-#include "AP_RPM.h"
+#include "AP_RPM_config.h"
+
+#if AP_RPM_PIN_ENABLED
 
 #include "RPM_Backend.h"
+
 #include <Filter/Filter.h>
-#include <AP_Math/AP_Math.h>
 
 class AP_RPM_Pin : public AP_RPM_Backend
 {
 public:
-    // constructor
-    AP_RPM_Pin(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+
+    using AP_RPM_Backend::AP_RPM_Backend;
 
     // update state
-    void update(void);
+    void update(void) override;
 
 private:
-    static void irq_handler(uint8_t instance);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    static int irq_handler0(int irq, void *context);
-    static int irq_handler1(int irq, void *context);
-#else
-    static void irq_handler0(void);
-    static void irq_handler1(void);
-#endif
-    
+
     ModeFilterFloat_Size5 signal_quality_filter {3};
-    uint8_t last_pin = -1;
-    uint32_t last_gpio;
+    int8_t last_pin = -1;       // last pin number checked vs PIN parameter
+    bool interrupt_attached;    // true if an interrupt has been attached to last_pin
     struct IrqState {
         uint32_t last_pulse_us;
         uint32_t dt_sum;
         uint32_t dt_count;
     };
     static struct IrqState irq_state[RPM_MAX_INSTANCES];
+
+    void irq_handler(uint8_t pin,
+                     bool pin_state,
+                     uint32_t timestamp);
+
 };
+
+#endif  // AP_RPM_PIN_ENABLED

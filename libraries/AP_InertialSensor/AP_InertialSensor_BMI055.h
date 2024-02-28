@@ -28,7 +28,7 @@ public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     /**
      * Configure the sensors and start reading routine.
@@ -40,7 +40,7 @@ private:
     AP_InertialSensor_BMI055(AP_InertialSensor &imu,
                              AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                              AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                             enum Rotation rotation = ROTATION_NONE);
+                             enum Rotation rotation);
 
     /*
      initialise hardware layer

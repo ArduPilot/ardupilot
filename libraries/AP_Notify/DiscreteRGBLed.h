@@ -18,14 +18,18 @@
 
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+
 #include "RGBLed.h"
 
 class DiscreteRGBLed: public RGBLed {
 public:
     DiscreteRGBLed(uint16_t red, uint16_t green, uint16_t blue, bool polarity);
+    bool init(void) override;
 
 protected:
-    bool hw_init(void) override;
     bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
 
 private:
@@ -35,3 +39,5 @@ private:
 
     uint16_t red_pin_number, green_pin_number, blue_pin_number;
 };
+
+#endif  // AP_NOTIFY_DISCRETE_RGB_ENABLED

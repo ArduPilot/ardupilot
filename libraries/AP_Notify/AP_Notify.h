@@ -16,7 +16,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Notify_config.h"
 
 #include "NotifyDevice.h"
 
@@ -34,6 +34,7 @@
 #define DISPLAY_OFF     0
 #define DISPLAY_SSD1306 1
 #define DISPLAY_SH1106  2
+#define DISPLAY_SITL 10
 
 class AP_Notify
 {
@@ -43,51 +44,103 @@ public:
     AP_Notify();
 
     /* Do not allow copies */
-    AP_Notify(const AP_Notify &other) = delete;
-    AP_Notify &operator=(const AP_Notify&) = delete;
+    CLASS_NO_COPY(AP_Notify);
 
     // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
+    static AP_Notify *get_singleton(void) {
+        return _singleton;
     }
-    
-    // Oreo LED Themes
-    enum Oreo_LED_Theme {
-        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
-        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
-        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
+
+    enum Notify_LED_Type {
+        Notify_LED_None                     = 0,        // not enabled
+        Notify_LED_Board                    = (1 << 0), // Built in board LED's
+#if AP_NOTIFY_TOSHIBALED_ENABLED
+        Notify_LED_ToshibaLED_I2C_Internal  = (1 << 1), // Internal ToshibaLED_I2C
+        Notify_LED_ToshibaLED_I2C_External  = (1 << 2), // External ToshibaLED_I2C
+#endif
+#if AP_NOTIFY_PCA9685_ENABLED
+        Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
+#endif
+#if AP_NOTIFY_OREOLED_ENABLED
+        Notify_LED_OreoLED                  = (1 << 4), // Oreo
+#endif
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
+        Notify_LED_DroneCAN                   = (1 << 5), // UAVCAN RGB LED
+#endif
+#if AP_NOTIFY_NCP5623_ENABLED
+        Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
+        Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
+#endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
+        Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
+#endif
+#if AP_NOTIFY_PROFILED_ENABLED
+        Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
+#endif
+#if AP_NOTIFY_SCRIPTING_LED_ENABLED
+        Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
+#endif
+#if AP_NOTIFY_DSHOT_LED_ENABLED
+        Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
+#endif
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
+        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED (SPI)
+#endif
+#if AP_NOTIFY_LP5562_ENABLED
+        Notify_LED_LP5562_I2C_External      = (1 << 13), // LP5562
+        Notify_LED_LP5562_I2C_Internal      = (1 << 14), // LP5562
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+        Notify_LED_IS31FL3195_I2C_External  = (1 << 15), // IS31FL3195
+        Notify_LED_IS31FL3195_I2C_Internal  = (1 << 16), // IS31FL3195
+#endif
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+        Notify_LED_DiscreteRGB              = (1 << 17), // DiscreteRGB
+#endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
+        Notify_LED_NeoPixelRGB              = (1 << 18), // NeoPixel AdaFruit 4544 Worldsemi WS2811
+#endif
+        Notify_LED_MAX
+    };
+
+    enum Notify_Buzz_Type {
+        Notify_Buzz_None                    = 0,
+        Notify_Buzz_Builtin                 = (1 << 0), // Built in default Alarm Out
+        Notify_Buzz_DShot                   = (1 << 1), // DShot Alarm
+        Notify_Buzz_UAVCAN                  = (1 << 2), // UAVCAN Alarm
     };
 
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_and_values_type {
-        uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
-        uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
-        uint32_t gps_num_sats       : 6;    // number of sats
-        uint32_t flight_mode        : 8;    // flight mode
-        uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
-        uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
-        uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
-        uint32_t save_trim          : 1;    // 1 if gathering trim data
-        uint32_t esc_calibration    : 1;    // 1 if calibrating escs
-        uint32_t failsafe_radio     : 1;    // 1 if radio failsafe
-        uint32_t failsafe_battery   : 1;    // 1 if battery failsafe
-        uint32_t parachute_release  : 1;    // 1 if parachute is being released
-        uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
-        uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
-        uint32_t firmware_update    : 1;    // 1 just before vehicle firmware is updated
-        uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
-        uint32_t leak_detected      : 1;    // 1 if leak detected
-        float    battery_voltage       ;    // battery voltage
-        uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
-        uint32_t gps_glitching      : 1;    // 1 if GPS glitching is affecting navigation accuracy
-        uint32_t have_pos_abs       : 1;    // 0 = no absolute position available, 1 = absolute position available
-
-        // additional flags
-        uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
-        uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
-        uint32_t waiting_for_throw  : 1;    // 1 when copter is in THROW mode and waiting to detect the user hand launch
-        uint32_t powering_off       : 1;    // 1 when the vehicle is powering off
-        uint32_t video_recording    : 1;    // 1 when the vehicle is recording video
+        bool initialising;        // true if initialising and the vehicle should not be moved
+        uint8_t gps_status;       // see the GPS_0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
+        uint8_t gps_num_sats;     // number of sats
+        uint8_t flight_mode;      // flight mode
+        bool armed;               // 0 = disarmed, 1 = armed
+        bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
+        bool pre_arm_check;       // true if passing pre arm checks
+        bool pre_arm_gps_check;   // true if passing pre arm gps checks
+        bool save_trim;           // true if gathering trim data
+        bool esc_calibration;     // true if calibrating escs
+        bool failsafe_radio;      // true if radio failsafe
+        bool failsafe_battery;    // true if battery failsafe
+        bool failsafe_gcs;        // true if GCS failsafe
+        bool failsafe_ekf;        // true if ekf failsafe
+        bool parachute_release;   // true if parachute is being released
+        bool ekf_bad;             // true if ekf is reporting problems
+        bool autopilot_mode;      // true if vehicle is in an autopilot flight mode (only used by OreoLEDs)
+        bool firmware_update;     // true just before vehicle firmware is updated
+        bool compass_cal_running; // true if a compass calibration is running
+        bool leak_detected;       // true if leak detected
+        bool gps_fusion;          // true if the GPS is in use by EKF, usable for flight
+        bool gps_glitching;       // true f the GPS is believed to be glitching is affecting navigation accuracy
+        bool have_pos_abs;        // true if absolute position is available
+        bool vehicle_lost;        // true when lost copter tone is requested (normally only used for copter)
+        bool waiting_for_throw;   // true when copter is in THROW mode and waiting to detect the user hand launch
+        bool powering_off;        // true when the vehicle is powering off
+        bool video_recording;     // true when the vehicle is recording video
+        bool temp_cal_running;    // true if a temperature calibration is running
+        bool gyro_calibrated;     // true if calibrated gyro/acc
     };
 
     /// notify_events_type - bitmask of active events.
@@ -110,6 +163,9 @@ public:
         uint32_t tune_next              : 3;    // tuning switched to next parameter
         uint32_t tune_save              : 1;    // tuning saved parameters
         uint32_t tune_error             : 1;    // tuning controller error
+        uint32_t initiated_temp_cal     : 1;    // 1 when temperature calibration starts
+        uint32_t temp_cal_saved         : 1;    // 1 when temperature calibration was just saved
+        uint32_t temp_cal_failed        : 1;    // 1 when temperature calibration has just failed
     };
 
     // The notify flags and values are static to allow direct class access
@@ -118,21 +174,33 @@ public:
     static struct notify_events_type events;
 
     // initialisation
-    void init(bool enable_external_leds);
-
-    // add all backends
-    void add_backends(void);
+    void init(void);
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message
-    static void handle_led_control(mavlink_message_t* msg);
+    static void handle_led_control(const mavlink_message_t &msg);
+#endif
 
+    // handle RGB from Scripting or AP_Periph
+    static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
+
+    // handle RGB from Scripting
+    static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
+
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     // handle a PLAY_TUNE message
-    static void handle_play_tune(mavlink_message_t* msg);
+    static void handle_play_tune(const mavlink_message_t &msg);
+#endif
 
-    bool buzzer_enabled() const { return _buzzer_enable; }
+    // play a tune string
+    static void play_tune(const char *tune);
+
+    bool buzzer_enabled() const { return _buzzer_type != 0; }
+
+    uint8_t get_buzzer_types() const { return _buzzer_type; }
 
     // set flight mode string
     void set_flight_mode_str(const char *str);
@@ -142,23 +210,45 @@ public:
     void send_text(const char *str);
     const char* get_text() const { return _send_text; }
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
+ 
+#if AP_SCRIPTING_ENABLED
+    // send text to the display using scripting
+    void send_text_scripting(const char *str, uint8_t r);
+    void release_text_scripting(uint8_t r);
+#endif
 
     static const struct AP_Param::GroupInfo var_info[];
-    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
+    int8_t get_buzz_pin() const  { return _buzzer_pin; }
+    uint8_t get_buzz_level() const  { return _buzzer_level; }
+    uint8_t get_buzz_volume() const  { return _buzzer_volume; }
+    uint8_t get_led_len() const { return _led_len; }
+    uint32_t get_led_type() const { return _led_type; }
+    int8_t get_rgb_led_brightness_percent() const;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    HAL_Semaphore sf_window_mutex;
+#endif
 
 private:
 
-    static AP_Notify *_instance;
+    static AP_Notify *_singleton;
 
     void add_backend_helper(NotifyDevice *backend);
+
+    // add all backends
+    void add_backends(void);
 
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
-    AP_Int8 _buzzer_enable;
+    AP_Int8 _buzzer_type;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
+    AP_Int32 _led_type;
+    AP_Int8 _buzzer_level;
+    AP_Int8 _buzzer_volume;
+    AP_Int8 _led_len;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
@@ -166,4 +256,8 @@ private:
 
     static NotifyDevice* _devices[];
     static uint8_t _num_devices;
+};
+
+namespace AP {
+    AP_Notify &notify();
 };

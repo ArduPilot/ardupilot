@@ -2,6 +2,8 @@
 
 #include "AP_Baro_Backend.h"
 
+#if AP_BARO_MS56XX_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
@@ -10,14 +12,26 @@
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #endif
 
+#ifndef HAL_BARO_MS5611_I2C_ADDR2
+#define HAL_BARO_MS5611_I2C_ADDR2 0x76
+#endif
+
+#ifndef HAL_BARO_MS5607_I2C_ADDR
+#define HAL_BARO_MS5607_I2C_ADDR 0x77
+#endif
+
 #ifndef HAL_BARO_MS5837_I2C_ADDR
 #define HAL_BARO_MS5837_I2C_ADDR 0x76
+#endif
+
+#ifndef HAL_BARO_MS5637_I2C_ADDR
+#define HAL_BARO_MS5637_I2C_ADDR 0x76
 #endif
 
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
-    void update();
+    void update() override;
 
     enum MS56XX_TYPE {
         BARO_MS5611 = 0,
@@ -26,9 +40,23 @@ public:
         BARO_MS5837 = 3
     };
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
-    
+    static AP_Baro_Backend *probe_5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), BARO_MS5611);
+    }
+    static AP_Baro_Backend *probe_5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), BARO_MS5607);
+    }
+    static AP_Baro_Backend *probe_5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), BARO_MS5637);
+    }
+    static AP_Baro_Backend *probe_5837(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), BARO_MS5837);
+    }
+
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type=BARO_MS5611);
+
 private:
+
     /*
      * Update @accum and @count with the new sample in @val, taking into
      * account a maximum number of samples given by @max_count; in case
@@ -78,3 +106,5 @@ private:
 
     enum MS56XX_TYPE _ms56xx_type;
 };
+
+#endif  // AP_BARO_MS56XX_ENABLED

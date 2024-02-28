@@ -12,7 +12,6 @@ fgfs ^
     --airport=KSFO ^
     --geometry=650x550 ^
     --bpp=32 ^
-    --disable-anti-alias-hud ^
     --disable-hud-3d ^
     --disable-horizon-effect ^
     --timeofday=noon ^

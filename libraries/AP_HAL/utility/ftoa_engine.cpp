@@ -131,7 +131,7 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
     int64_t prod = (int64_t)frac * (int64_t)factorTable[idx];
 
     // The expConvFactorTable are factor are correct iff the lower 3 exponent
-    // bits are 1 (=7). Else we need to compensate by divding frac.
+    // bits are 1 (=7). Else we need to compensate by dividing frac.
     // If the lower 3 bits are 7 we are right.
     // If the lower 3 bits are 6 we right-shift once
     // ..

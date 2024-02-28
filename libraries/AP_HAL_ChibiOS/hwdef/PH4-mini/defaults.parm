@@ -2,3 +2,7 @@
 # Pixhawk4 does not have hw flow control on radios
 BRD_SER1_RTSCTS 0
 BRD_SER2_RTSCTS 0
+
+# setup SERIAL4 for RCIN
+SERIAL4_OPTIONS 8
+SERIAL4_PROTOCOL 23

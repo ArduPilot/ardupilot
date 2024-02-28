@@ -1,0 +1,65 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# USB setup
+USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
+USB_PRODUCT 0x004B
+USB_STRING_MANUFACTURER "Holybro"
+
+# board ID for firmware load
+APJ_BOARD_ID 139
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+PB1 LED_RED OUTPUT LOW # red
+PC6 LED_ACTIVITY OUTPUT LOW # green
+PC7 LED_BOOTLOADER OUTPUT LOW # blue
+
+define HAL_LED_ON 0
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# pullup buzzer for no sound in bootloader
+PE5 BUZZER OUTPUT LOW PULLDOWN
+
+# Add CS pins to ensure they are high in bootloader
+PF10 MS5611_CS CS
+PF2  ICM20689_CS CS SPEED_VERYLOW
+PF3  ICM20602_CS CS SPEED_VERYLOW
+PF4  BMI055_G_CS CS
+PG10 BMI055_A_CS CS
+PF5  FRAM_CS CS SPEED_VERYLOW
+PI4  EXT1_CS1 CS
+PI10 EXT1_CS2 CS
+PI6 EXT2_CS1 CS
+PI7 EXT2_CS2 CS
+PI8 EXT2_CS3 CS
+PH5 TSENSE_CS CS
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1

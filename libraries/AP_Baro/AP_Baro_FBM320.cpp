@@ -18,8 +18,11 @@
 
 #include "AP_Baro_FBM320.h"
 
+#if AP_BARO_FBM320_ENABLED
+
 #include <utility>
 #include <stdio.h>
+#include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -100,9 +103,10 @@ bool AP_Baro_FBM320::read_calibration(void)
 
 bool AP_Baro_FBM320::init()
 {
-    if (!dev || !dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev) {
         return false;
     }
+    dev->get_semaphore()->take_blocking();
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
@@ -124,6 +128,9 @@ bool AP_Baro_FBM320::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_FBM320);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     // request 50Hz update
@@ -172,7 +179,7 @@ void AP_Baro_FBM320::calculate_PT(int32_t UT, int32_t UP, int32_t &pressure, int
     pressure = ((X31 + X32) >> 15) + PP4 + 99880;
 }
 
-//  acumulate a new sensor reading
+//  accumulate a new sensor reading
 void AP_Baro_FBM320::timer(void)
 {
     uint8_t buf[3];
@@ -187,12 +194,12 @@ void AP_Baro_FBM320::timer(void)
     } else {
         int32_t pressure, temperature;
         calculate_PT(value_T, value, pressure, temperature);
-        if (pressure_ok(pressure) && _sem->take_nonblocking()) {
+        if (pressure_ok(pressure)) {
+            WITH_SEMAPHORE(_sem);
             pressure_sum += pressure;
             // sum and convert to degrees
             temperature_sum += temperature*0.01;
             count++;
-            _sem->give();
         }
     }
 
@@ -207,17 +214,15 @@ void AP_Baro_FBM320::timer(void)
 // transfer data to the frontend
 void AP_Baro_FBM320::update(void)
 {
-    if (count != 0 && _sem->take_nonblocking()) {
-        if (count == 0) {
-            _sem->give();
-            return;
-        }
-
-        _copy_to_frontend(instance, pressure_sum/count, temperature_sum/count);
-        pressure_sum = 0;
-        temperature_sum = 0;
-        count=0;
-
-        _sem->give();
+    if (count == 0) {
+        return;
     }
+    WITH_SEMAPHORE(_sem);
+
+    _copy_to_frontend(instance, pressure_sum/count, temperature_sum/count);
+    pressure_sum = 0;
+    temperature_sum = 0;
+    count=0;
 }
+
+#endif  // AP_BARO_FBM320_ENABLED

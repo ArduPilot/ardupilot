@@ -14,11 +14,17 @@
  */
 #pragma once
 
+#include "AP_VisualOdom_config.h"
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_VisualOdom_Backend;
 
@@ -27,23 +33,24 @@ class AP_VisualOdom_Backend;
 class AP_VisualOdom
 {
 public:
-    friend class AP_VisualOdom_Backend;
 
     AP_VisualOdom();
 
-    // external position backend types (used by _TYPE parameter)
-    enum AP_VisualOdom_Type {
-        AP_VisualOdom_Type_None   = 0,
-        AP_VisualOdom_Type_MAV    = 1
-    };
+    // get singleton instance
+    static AP_VisualOdom *get_singleton() {
+        return _singleton;
+    }
 
-    // The VisualOdomState structure is filled in by the backend driver
-    struct VisualOdomState {
-        Vector3f angle_delta;       // attitude delta (in radians) of most recent update
-        Vector3f position_delta;    // position delta (in meters) of most recent update
-        uint64_t time_delta_usec;   // time delta (in usec) between previous and most recent update
-        float confidence;           // confidence expressed as a value from 0 (no confidence) to 100 (very confident)
-        uint32_t last_update_ms;    // system time (in milliseconds) of last update from sensor
+    // external position backend types (used by _TYPE parameter)
+    enum class VisualOdom_Type {
+        None         = 0,
+#if AP_VISUALODOM_MAV_ENABLED
+        MAV          = 1,
+#endif
+#if AP_VISUALODOM_INTELT265_ENABLED
+        IntelT265    = 2,
+        VOXL         = 3,
+#endif
     };
 
     // detect and initialise any sensors
@@ -55,31 +62,87 @@ public:
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
-    // state accessors
-    const Vector3f &get_angle_delta() const { return _state.angle_delta; }
-    const Vector3f &get_position_delta() const { return _state.position_delta; }
-    uint64_t get_time_delta_usec() const { return _state.time_delta_usec; }
-    float get_confidence() const { return _state.confidence; }
-    uint32_t get_last_update_ms() const { return _state.last_update_ms; }
+    // get user defined orientation
+    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
+
+    // get user defined scaling applied to position estimates
+    float get_pos_scale() const { return _pos_scale; }
 
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
-    // consume VISUAL_POSITION_DELTA data from MAVLink messages
-    void handle_msg(mavlink_message_t *msg);
+    // return the sensor delay in milliseconds (see _DELAY_MS parameter)
+    uint16_t get_delay_ms() const { return MAX(0, _delay_ms); }
+
+    // return velocity measurement noise in m/s
+    float get_vel_noise() const { return _vel_noise; }
+    
+    // return position measurement noise in m
+    float get_pos_noise() const { return _pos_noise; }
+
+    // return yaw measurement noise in rad
+    float get_yaw_noise() const { return _yaw_noise; }
+
+    // return quality threshold
+    int8_t get_quality_min() const { return _quality_min; }
+
+    // return quality as a measure from -1 ~ 100
+    // -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    int8_t quality() const;
+
+#if HAL_GCS_ENABLED
+    // consume vision_position_delta mavlink messages
+    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+#endif
+
+    // general purpose methods to consume position estimate data and send to EKF
+    // distances in meters, roll, pitch and yaw are in radians
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter, int8_t quality);
+    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter, int8_t quality);
+    
+    // general purpose methods to consume velocity estimate data and send to EKF
+    // velocity in NED meters per second
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality);
+
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    void request_align_yaw_to_ahrs();
+
+    // update position offsets to align to AHRS position
+    // should only be called when this library is not being used as the position source
+    void align_position_to_ahrs(bool align_xy, bool align_z);
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    VisualOdom_Type get_type(void) const {
+        return _type;
+    }
+
 private:
 
+    static AP_VisualOdom *_singleton;
+
     // parameters
-    AP_Int8 _type;
+    AP_Enum<VisualOdom_Type> _type; // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
+    AP_Float _pos_scale;        // position scale factor applied to sensor values
+    AP_Int16 _delay_ms;         // average delay relative to inertial measurements
+    AP_Float _vel_noise;        // velocity measurement noise in m/s
+    AP_Float _pos_noise;        // position measurement noise in meters
+    AP_Float _yaw_noise;        // yaw measurement noise in radians
+    AP_Int8 _quality_min;       // positions and velocities will only be sent to EKF if over this value.  if 0 all values sent to EKF
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
-
-    // state of backend
-    VisualOdomState _state;
 };
+
+namespace AP {
+    AP_VisualOdom *visualodom();
+};
+
+#endif // HAL_VISUALODOM_ENABLED

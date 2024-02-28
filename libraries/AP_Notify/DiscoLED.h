@@ -16,7 +16,7 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Led_Sysfs.h>
@@ -28,9 +28,9 @@ class DiscoLED: public RGBLed
 {
 public:
     DiscoLED();
+    bool init(void) override;
 
 protected:
-    bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:

@@ -18,7 +18,15 @@
 
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_FLIGHTAXIS_ENABLED
+#define HAL_SIM_FLIGHTAXIS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_FLIGHTAXIS_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -29,18 +37,18 @@ namespace SITL {
  */
 class FlightAxis : public Aircraft {
 public:
-    FlightAxis(const char *home_str, const char *frame_str);
+    FlightAxis(const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new FlightAxis(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new FlightAxis(frame_str);
     }
 
     struct state {
-        double rcin[8];
+        double rcin[12];
         double m_airspeed_MPS;
         double m_altitudeASL_MTR;
         double m_altitudeAGL_MTR;
@@ -103,6 +111,10 @@ public:
         { "item", state.rcin[5] },
         { "item", state.rcin[6] },
         { "item", state.rcin[7] },
+        { "item", state.rcin[8] },
+        { "item", state.rcin[9] },
+        { "item", state.rcin[10] },
+        { "item", state.rcin[11] },
         { "m-airspeed-MPS", state.m_airspeed_MPS },
         { "m-altitudeASL-MTR", state.m_altitudeASL_MTR },
         { "m-altitudeAGL-MTR", state.m_altitudeAGL_MTR },
@@ -152,13 +164,14 @@ public:
     };
 
 private:
-    char *soap_request(const char *action, const char *fmt, ...);
+    bool soap_request_start(const char *action, const char *fmt, ...);
+    char *soap_request_end(uint32_t timeout_ms);
     void exchange_data(const struct sitl_input &input);
     void parse_reply(const char *reply);
 
-    static void *update_thread(void *arg);
     void update_loop(void);
     void report_FPS(void);
+    void socket_creator(void);
 
     struct sitl_input last_input;
 
@@ -169,20 +182,26 @@ private:
     bool heli_demix;
     bool rev4_servos;
     bool controller_started;
+    uint32_t glitch_count;
     uint64_t frame_counter;
     uint64_t activation_frame_counter;
     uint64_t socket_frame_counter;
     uint64_t last_socket_frame_counter;
     double last_frame_count_s;
-    Vector3f position_offset;
+    Vector3d position_offset;
     Vector3f last_velocity_ef;
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-
-    pthread_t thread;
-    AP_HAL::Semaphore *mutex;
+    SocketAPM_native *socknext;
+    SocketAPM_native *sock;
+    char replybuf[10000];
+    pid_t socket_pid;
+    uint32_t sock_error_count;
+    double last_recv_sec;
 };
 
 
 } // namespace SITL
+
+#endif // HAL_SIM_FLIGHTAXIS_ENABLED

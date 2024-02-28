@@ -6,16 +6,19 @@ void Copter::read_barometer(void)
     barometer.update();
 
     baro_alt = barometer.get_altitude() * 100.0f;
-
-    motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
 void Copter::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-   rangefinder.init();
-   rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
+   rangefinder.init(ROTATION_PITCH_270);
+   rangefinder_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
+
+   // upward facing range finder
+   rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
+   rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
 #endif
 }
 
@@ -25,457 +28,147 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
-    if (rangefinder.num_sensors() > 0 &&
-        should_log(MASK_LOG_CTUN)) {
-        DataFlash.Log_Write_RFND(rangefinder);
-    }
+#if RANGEFINDER_TILT_CORRECTION == ENABLED
+    const float tilt_correction = MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
+#else
+    const float tilt_correction = 1.0f;
+#endif
 
-    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
+    // iterate through downward and upward facing lidar
+    struct {
+        RangeFinderState &state;
+        enum Rotation orientation;
+    } rngfnd[2] = {{rangefinder_state, ROTATION_PITCH_270}, {rangefinder_up_state, ROTATION_PITCH_90}};
 
-    int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+    for (uint8_t i=0; i < ARRAY_SIZE(rngfnd); i++) {
+        // local variables to make accessing simpler
+        RangeFinderState &rf_state = rngfnd[i].state;
+        enum Rotation rf_orient = rngfnd[i].orientation;
 
- #if RANGEFINDER_TILT_CORRECTION == ENABLED
-    // correct alt for angle of the rangefinder
-    temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
- #endif
+        // update health
+        rf_state.alt_healthy = ((rangefinder.status_orient(rf_orient) == RangeFinder::Status::Good) &&
+                                (rangefinder.range_valid_count_orient(rf_orient) >= RANGEFINDER_HEALTH_MAX));
 
-    rangefinder_state.alt_cm = temp_alt;
+        // tilt corrected but unfiltered, not glitch protected alt
+        rf_state.alt_cm = tilt_correction * rangefinder.distance_cm_orient(rf_orient);
 
-    // filter rangefinder for use by AC_WPNav
-    uint32_t now = AP_HAL::millis();
+        // remember inertial alt to allow us to interpolate rangefinder
+        rf_state.inertial_alt_cm = inertial_nav.get_position_z_up_cm();
 
-    if (rangefinder_state.alt_healthy) {
-        if (now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS) {
-            // reset filter if we haven't used it within the last second
-            rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
+        // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
+        // are considered a glitch and glitch_count becomes non-zero
+        // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
+        // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
+        const int32_t glitch_cm = rf_state.alt_cm - rf_state.alt_cm_glitch_protected;
+        bool reset_terrain_offset = false;
+        if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
+            rf_state.glitch_count = MAX(rf_state.glitch_count+1, 1);
+        } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
+            rf_state.glitch_count = MIN(rf_state.glitch_count-1, -1);
         } else {
-            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.05f);
+            rf_state.glitch_count = 0;
+            rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
         }
-        rangefinder_state.last_healthy_ms = now;
-    }
+        if (abs(rf_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+            // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
+            rf_state.glitch_count = 0;
+            rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
+            rf_state.glitch_cleared_ms = AP_HAL::millis();
+            reset_terrain_offset = true;
+        }
 
-    // send rangefinder altitude and health to waypoint navigation library
-    wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+        // filter rangefinder altitude
+        uint32_t now = AP_HAL::millis();
+        const bool timed_out = now - rf_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
+        if (rf_state.alt_healthy) {
+            if (timed_out) {
+                // reset filter if we haven't used it within the last second
+                rf_state.alt_cm_filt.reset(rf_state.alt_cm);
+                reset_terrain_offset = true;
+
+            } else {
+                rf_state.alt_cm_filt.apply(rf_state.alt_cm, 0.05f);
+            }
+            rf_state.last_healthy_ms = now;
+        }
+
+        // handle reset of terrain offset
+        if (reset_terrain_offset) {
+            if (rf_orient == ROTATION_PITCH_90) {
+                // upward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm + rf_state.alt_cm;
+            } else {
+                // assume downward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
+            }
+        }
+
+        // send downward facing lidar altitude and health to the libraries that require it
+#if HAL_PROXIMITY_ENABLED
+        if (rf_orient == ROTATION_PITCH_270) {
+            if (rangefinder_state.alt_healthy || timed_out) {
+                g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+            }
+        }
+#endif
+    }
 
 #else
+    // downward facing rangefinder
     rangefinder_state.enabled = false;
     rangefinder_state.alt_healthy = false;
     rangefinder_state.alt_cm = 0;
+
+    // upward facing rangefinder
+    rangefinder_up_state.enabled = false;
+    rangefinder_up_state.alt_healthy = false;
+    rangefinder_up_state.alt_cm = 0;
 #endif
 }
 
 // return true if rangefinder_alt can be used
-bool Copter::rangefinder_alt_ok()
+bool Copter::rangefinder_alt_ok() const
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
 }
 
-/*
-  update RPM sensors
- */
-void Copter::rpm_update(void)
+// return true if rangefinder_alt can be used
+bool Copter::rangefinder_up_ok() const
 {
-#if RPM_ENABLED == ENABLED
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        if (should_log(MASK_LOG_RCIN)) {
-            DataFlash.Log_Write_RPM(rpm_sensor);
-        }
-    }
-#endif
+    return (rangefinder_up_state.enabled && rangefinder_up_state.alt_healthy);
 }
 
-// initialise compass
-void Copter::init_compass()
+// update rangefinder based terrain offset
+// terrain offset is the terrain's height above the EKF origin
+void Copter::update_rangefinder_terrain_offset()
 {
-    if (!g.compass_enabled) {
-        return;
-    }
+    float terrain_offset_cm = rangefinder_state.inertial_alt_cm - rangefinder_state.alt_cm_glitch_protected;
+    rangefinder_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
 
-    if (!compass.init() || !compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        hal.console->printf("COMPASS INIT ERROR\n");
-        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
-        return;
+    terrain_offset_cm = rangefinder_up_state.inertial_alt_cm + rangefinder_up_state.alt_cm_glitch_protected;
+    rangefinder_up_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_up_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+
+    if (rangefinder_state.alt_healthy || (AP_HAL::millis() - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS)) {
+        wp_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#if MODE_CIRCLE_ENABLED
+        circle_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#endif
     }
-    ahrs.set_compass(&compass);
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
-  also update initial location used for declination
+  get inertially interpolated rangefinder height. Inertial height is
+  recorded whenever we update the rangefinder height, then we use the
+  difference between the inertial height at that time and the current
+  inertial height to give us interpolation of height from rangefinder
  */
-void Copter::compass_accumulate(void)
+bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
 {
-    if (!g.compass_enabled) {
-        return;
+    if (!rangefinder_alt_ok()) {
+        return false;
     }
-
-    compass.accumulate();
-
-    // update initial location used for declination
-    if (!ap.compass_init_location) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            compass.set_initial_location(loc.lat, loc.lng);
-            ap.compass_init_location = true;
-        }
-    }
-}
-
-// initialise optical flow sensor
-void Copter::init_optflow()
-{
-#if OPTFLOW == ENABLED
-    // initialise optical flow sensor
-    optflow.init();
-#endif      // OPTFLOW == ENABLED
-}
-
-// called at 200hz
-#if OPTFLOW == ENABLED
-void Copter::update_optical_flow(void)
-{
-    static uint32_t last_of_update = 0;
-
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
-    // read from sensor
-    optflow.update();
-
-    // write to log and send to EKF if new data has arrived
-    if (optflow.last_update() != last_of_update) {
-        last_of_update = optflow.last_update();
-        uint8_t flowQuality = optflow.quality();
-        Vector2f flowRate = optflow.flowRate();
-        Vector2f bodyRate = optflow.bodyRate();
-        const Vector3f &posOffset = optflow.get_pos_offset();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
-        }
-    }
-}
-#endif  // OPTFLOW == ENABLED
-
-void Copter::compass_cal_update()
-{
-    static uint32_t compass_cal_stick_gesture_begin = 0;
-
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-
-    if (compass.is_calibrating()) {
-        if (channel_yaw->get_control_in() < -4000 && channel_throttle->get_control_in() > 900) {
-            compass.cancel_calibration_all();
-        }
-    } else {
-        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors->armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
-        uint32_t tnow = millis();
-
-        if (!stick_gesture_detected) {
-            compass_cal_stick_gesture_begin = tnow;
-        } else if (tnow-compass_cal_stick_gesture_begin > 1000*COMPASS_CAL_STICK_GESTURE_TIME) {
-#ifdef CAL_ALWAYS_REBOOT
-            compass.start_calibration_all(true,true,COMPASS_CAL_STICK_DELAY,true);
-#else
-            compass.start_calibration_all(true,true,COMPASS_CAL_STICK_DELAY,false);
-#endif
-        }
-    }
-}
-
-void Copter::accel_cal_update()
-{
-    if (hal.util->get_soft_armed()) {
-        return;
-    }
-    ins.acal_update();
-    // check if new trim values, and set them
-    float trim_roll, trim_pitch;
-    if(ins.get_new_trim(trim_roll, trim_pitch)) {
-        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-    }
-
-#ifdef CAL_ALWAYS_REBOOT
-    if (ins.accel_cal_requires_reboot()) {
-        hal.scheduler->delay(1000);
-        hal.scheduler->reboot(false);
-    }
-#endif
-}
-
-// initialise proximity sensor
-void Copter::init_proximity(void)
-{
-#if PROXIMITY_ENABLED == ENABLED
-    g2.proximity.init();
-    g2.proximity.set_rangefinder(&rangefinder);
-#endif
-}
-
-// update error mask of sensors and subsystems. The mask
-// uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
-// then it indicates that the sensor or subsystem is present but
-// not functioning correctly.
-void Copter::update_sensor_status_flags(void)
-{
-    // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
-
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
-    }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-#if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-#if PRECISION_LANDING == ENABLED
-    if (precland.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-    if (ap.rc_receiver_present) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
-    if (copter.DataFlash.logging_present()) { // primary logging only (usually File)
-        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
-    }
-#if PROXIMITY_ENABLED == ENABLED
-    if (copter.g2.proximity.sensor_present()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
-    }
-#endif
-#if AC_FENCE == ENABLED
-    if (copter.fence.sys_status_present()) {
-        control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
-#if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-    }
-#endif
-
-    // all sensors are present except these, which may be set as enabled below:
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
-                                                         ~MAV_SYS_STATUS_LOGGING &
-                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY &
-                                                         ~MAV_SYS_STATUS_GEOFENCE &
-                                                         ~MAV_SYS_STATUS_SENSOR_LASER_POSITION &
-                                                         ~MAV_SYS_STATUS_SENSOR_PROXIMITY);
-
-    switch (control_mode) {
-    case AUTO:
-    case AVOID_ADSB:
-    case GUIDED:
-    case LOITER:
-    case RTL:
-    case CIRCLE:
-    case LAND:
-    case POSHOLD:
-    case BRAKE:
-    case THROW:
-    case SMART_RTL:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
-        break;
-    case ALT_HOLD:
-    case GUIDED_NOGPS:
-    case SPORT:
-    case AUTOTUNE:
-    case FLOWHOLD:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
-        break;
-    default:
-        // stabilize, acro, drift, and flip have no automatic x,y or z control (i.e. all manual)
-        break;
-    }
-
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
-
-    if (copter.DataFlash.logging_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    if (battery.num_instances() > 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-#if AC_FENCE == ENABLED
-    if (copter.fence.sys_status_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
-#if PROXIMITY_ENABLED == ENABLED
-    if (copter.g2.proximity.sensor_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
-    }
-#endif
-
-
-    // default to all healthy
-    control_sensors_health = control_sensors_present;
-
-    if (!barometer.all_healthy()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (!gps.is_healthy()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
-    }
-    if (!ap.rc_receiver_present || failsafe.radio) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
-#if OPTFLOW == ENABLED
-    if (!optflow.healthy()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-#if PRECISION_LANDING == ENABLED
-    if (precland.enabled() && !precland.healthy()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-
-    if (copter.DataFlash.logging_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
-    }
-
-#if PROXIMITY_ENABLED == ENABLED
-    if (copter.g2.proximity.sensor_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_PROXIMITY;
-    }
-#endif
-
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    switch (terrain.status()) {
-    case AP_Terrain::TerrainStatusDisabled:
-        break;
-    case AP_Terrain::TerrainStatusUnhealthy:
-        // To-Do: restore unhealthy terrain status reporting once terrain is used in copter
-        //control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
-        //control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
-        //break;
-    case AP_Terrain::TerrainStatusOK:
-        control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
-        control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
-        control_sensors_health  |= MAV_SYS_STATUS_TERRAIN;
-        break;
-    }
-#endif
-
-#if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder_state.enabled) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (!rangefinder_state.alt_healthy) {
-            control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
-    }
-#endif
-
-    if (!ap.initialised || ins.calibrating()) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
-
-    if (!copter.battery.healthy() || copter.battery.has_failsafed()) {
-         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-#if AC_FENCE == ENABLED
-    if (copter.fence.sys_status_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // give mask of error flags to Frsky_Telemetry
-    frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
-#endif
-}
-
-// init visual odometry sensor
-void Copter::init_visual_odom()
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    g2.visual_odom.init();
-#endif
-}
-
-// update visual odometry sensor
-void Copter::update_visual_odom()
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // check for updates
-    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
-        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
-        float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
-        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
-                                g2.visual_odom.get_position_delta(),
-                                g2.visual_odom.get_angle_delta(),
-                                time_delta_sec,
-                                visual_odom_last_update_ms,
-                                g2.visual_odom.get_pos_offset());
-        // log sensor data
-        DataFlash.Log_Write_VisualOdom(time_delta_sec,
-                                       g2.visual_odom.get_angle_delta(),
-                                       g2.visual_odom.get_position_delta(),
-                                       g2.visual_odom.get_confidence());
-    }
-#endif
-}
-
-// winch and wheel encoder initialisation
-void Copter::winch_init()
-{
-#if WINCH_ENABLED == ENABLED
-    g2.wheel_encoder.init();
-    g2.winch.init(&g2.wheel_encoder);
-#endif
-}
-
-// winch and wheel encoder update
-void Copter::winch_update()
-{
-#if WINCH_ENABLED == ENABLED
-    g2.wheel_encoder.update();
-    g2.winch.update();
-#endif
+    ret = rangefinder_state.alt_cm_filt.get();
+    float inertial_alt_cm = inertial_nav.get_position_z_up_cm();
+    ret += inertial_alt_cm - rangefinder_state.inertial_alt_cm;
+    return true;
 }

@@ -18,6 +18,8 @@
  */
 #include "AP_Airspeed_MS5525.h"
 
+#if AP_AIRSPEED_MS5525_ENABLED
+
 #include <stdio.h>
 #include <utility>
 
@@ -26,6 +28,8 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -70,9 +74,7 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            continue;
-        }
+        WITH_SEMAPHORE(dev->get_semaphore());
 
         // lots of retries during probe
         dev->set_retries(5);
@@ -80,26 +82,27 @@ bool AP_Airspeed_MS5525::init()
         found = read_prom();
         
         if (found) {
-            printf("MS5525: Found sensor on bus %u address 0x%02x\n", get_bus(), addresses[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: Found on bus %u addr 0x%02x", get_instance(), get_bus(), addresses[i]);
             break;
         }
-        dev->get_semaphore()->give();
     }
     if (!found) {
-        printf("MS5525: no sensor found\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MS5525[%u]: no sensor found", get_instance());
         return false;
     }
 
     // Send a command to read temperature first
+    WITH_SEMAPHORE(dev->get_semaphore());
     uint8_t reg = REG_CONVERT_TEMPERATURE;
     dev->transfer(&reg, 1, nullptr, 0);
     state = 0;
     command_send_us = AP_HAL::micros();
 
+    dev->set_device_type(uint8_t(DevType::MS5525));
+    set_bus_id(dev->get_bus_id());
+
     // drop to 2 retries for runtime
     dev->set_retries(2);
-
-    dev->get_semaphore()->give();
 
     // read at 80Hz
     dev->register_periodic_callback(1000000UL/80U,
@@ -113,27 +116,7 @@ bool AP_Airspeed_MS5525::init()
  */
 uint16_t AP_Airspeed_MS5525::crc4_prom(void)
 {
-    uint16_t n_rem = 0;
-    uint8_t n_bit;
-
-    for (uint8_t cnt = 0; cnt < sizeof(prom); cnt++) {
-        /* uneven bytes */
-        if (cnt & 1) {
-            n_rem ^= (uint8_t)((prom[cnt >> 1]) & 0x00FF);
-        } else {
-            n_rem ^= (uint8_t)(prom[cnt >> 1] >> 8);
-        }
-
-        for (n_bit = 8; n_bit > 0; n_bit--) {
-            if (n_rem & 0x8000) {
-                n_rem = (n_rem << 1) ^ 0x3000;
-            } else {
-                n_rem = (n_rem << 1);
-            }
-        }
-    }
-
-    return (n_rem >> 12) & 0xF;
+    return crc_crc4(prom);
 }
 
 bool AP_Airspeed_MS5525::read_prom(void)
@@ -201,11 +184,11 @@ void AP_Airspeed_MS5525::calculate(void)
     const uint8_t Q5 = 7;
     const uint8_t Q6 = 21;
 
-    int64_t dT = D2 - int64_t(prom[5]) * (1UL<<Q5);
-    int64_t TEMP = 2000 + (dT*int64_t(prom[6]))/(1UL<<Q6);
-    int64_t OFF =  int64_t(prom[2])*(1UL<<Q2) + (int64_t(prom[4])*dT)/(1UL<<Q4);
-    int64_t SENS = int64_t(prom[1])*(1UL<<Q1) + (int64_t(prom[3])*dT)/(1UL<<Q3);
-    int64_t P = (D1*SENS/(1UL<<21)-OFF)/(1UL<<15);
+    float dT = float(D2) - int64_t(prom[5]) * (1L<<Q5);
+    float TEMP = 2000 + (dT*int64_t(prom[6]))/(1L<<Q6);
+    float OFF  = int64_t(prom[2])*(1L<<Q2) + (int64_t(prom[4])*dT)/(1L<<Q4);
+    float SENS = int64_t(prom[1])*(1L<<Q1) + (int64_t(prom[3])*dT)/(1L<<Q3);
+    float P = (float(D1)*SENS/(1L<<21)-OFF)/(1L<<15);
     const float PSI_to_Pa = 6894.757f;
     float P_Pa = PSI_to_Pa * 1.0e-4 * P;
     float Temp_C = TEMP * 0.01;
@@ -218,17 +201,16 @@ void AP_Airspeed_MS5525::calculate(void)
     }
 #endif
     
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        pressure_sum += P_Pa;
-        temperature_sum += Temp_C;
-        press_count++;
-        temp_count++;
-        last_sample_time_ms = AP_HAL::millis();
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    pressure_sum += P_Pa;
+    temperature_sum += Temp_C;
+    press_count++;
+    temp_count++;
+    last_sample_time_ms = AP_HAL::millis();
 }
 
-// 50Hz timer
+// 80Hz timer
 void AP_Airspeed_MS5525::timer()
 {
     if (AP_HAL::micros() - command_send_us < 10000) {
@@ -284,35 +266,39 @@ void AP_Airspeed_MS5525::timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (press_count > 0) {
-            pressure = pressure_sum / press_count;
-            press_count = 0;
-            pressure_sum = 0;
-        }
-        sem->give();
+
+    if (press_count > 0) {
+        pressure = pressure_sum / press_count;
+        press_count = 0;
+        pressure_sum = 0;
     }
     _pressure = pressure;
+
     return true;
 }
 
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_MS5525::get_temperature(float &_temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (temp_count > 0) {
-            temperature = temperature_sum / temp_count;
-            temp_count = 0;
-            temperature_sum = 0;
-        }
-        sem->give();
+
+    if (temp_count > 0) {
+        temperature = temperature_sum / temp_count;
+        temp_count = 0;
+        temperature_sum = 0;
     }
+
     _temperature = temperature;
     return true;
 }
+
+#endif  // AP_AIRSPEED_MS5525_ENABLED

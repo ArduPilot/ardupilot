@@ -7,8 +7,11 @@
 
 #pragma once
 
+#include "AP_SBusOut_config.h"
+
+#if AP_SBUSOUTPUT_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Param/AP_Param.h>
 
 class AP_SBusOut {
@@ -16,14 +19,17 @@ public:
     AP_SBusOut();
 
     /* Do not allow copies */
-    AP_SBusOut(const AP_SBusOut &other) = delete;
-    AP_SBusOut &operator=(const AP_SBusOut&) = delete;
+    CLASS_NO_COPY(AP_SBusOut);
 
     static const struct AP_Param::GroupInfo var_info[];
 
     void update();
 
+    // public format function for use by IOMCU
+    static void sbus_format_frame(uint16_t *channels, uint8_t num_channels, uint8_t buffer[25]);
+
 private:
+
     AP_HAL::UARTDriver *sbus1_uart;
 
     void init(void);
@@ -33,3 +39,5 @@ private:
     AP_Int16 sbus_rate;
     bool initialised;
 };
+
+#endif  // AP_SBUSOUTPUT_ENABLED

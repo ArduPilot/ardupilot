@@ -1,0 +1,156 @@
+# hw definition file for processing by chibios_pins.py
+# MCU class and specific type
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load
+APJ_BOARD_ID 1001
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+STM32_ST_USE_TIMER 5
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1 EMPTY EMPTY USART2
+
+# a LED to flash
+PB12 LED OUTPUT LOW
+
+# USART1 for debug
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL0_BAUD 57600
+
+# USART2 for GPS
+PA2 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# only one I2C bus in normal config
+PB4 I2C3_SDA I2C3
+PA8 I2C3_SCL I2C3
+
+define HAL_USE_I2C TRUE
+define STM32_I2C_USE_I2C3 TRUE
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+
+define HAL_I2C_INTERNAL_MASK 0
+
+# only one I2C bus
+I2C_ORDER I2C3
+
+# only one SPI bus in normal config
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI CS
+PA4 MAG_CS CS
+PA10 MS5611_CS CS
+
+# SPI devices
+SPIDEV rm3100 SPI1 DEVID1    MAG_CS MODE0  1*MHZ  1*MHZ
+SPIDEV ms5611 SPI1 DEVID2 MS5611_CS MODE3 20*MHZ 20*MHZ
+
+# compass
+COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_90
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+
+# baro
+BARO BMP388 I2C:0:0x76
+BARO MS56XX SPI:ms5611
+BARO ICP101XX I2C:0:0x63
+BARO ICP101XX I2C:0:0x64
+BARO ICP201XX I2C:0:0x64
+
+# PWM output for buzzer
+PB10 TIM2_CH3 TIM2 GPIO(77) LOW ALARM
+
+# safety LED, active low
+PB1 SAFE_LED OUTPUT HIGH
+define SAFE_LED_ON 0
+
+# safety button
+PB3 SAFE_BUTTON INPUT PULLDOWN
+
+# WS2812 LED
+PB0 TIM3_CH3 TIM3 PWM(1)
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_NO_RCIN_THREAD
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define DMA_RESERVE_SIZE 0
+
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB5 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+
+define HAL_NO_MONITOR_THREAD
+
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# disable dual GPS and GPS blending to save flash space
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+# GPS+MAG+BARO+Buzzer+NeoPixels
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+
+# do direct neopixel LED output to enable the 'rainbow' effect on
+# startup
+define HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY 0
+define HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY 8
+
+# also enable buzzer
+define HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY 1
+
+define DEFAULT_NTF_LED_TYPES 455

@@ -1,0 +1,294 @@
+<?xml version="1.0"?>
+<profiles>
+  <participant profile_name="participant_profile">
+    <rtps>
+      <name>ardupilot_dds</name>
+    </rtps>
+  </participant>
+  <topic profile_name="time__t">
+    <name>rt/ap/time</name>
+    <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="time__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/time</name>
+      <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>20</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="navsatfix0__t">
+    <name>rt/ap/navsat/navsat0</name>
+    <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="navsatfix0__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/navsat/navsat0</name>
+      <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="statictransforms__t">
+    <name>rt/ap/tf_static</name>
+    <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>1</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="statictransforms__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+      <durability>
+        <kind>TRANSIENT_LOCAL</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/tf_static</name>
+      <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>1</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="batterystate0__t">
+    <name>rt/ap/battery/battery0</name>
+    <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="batterystate0__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/battery/battery0</name>
+      <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="localpose__t">
+    <name>rt/ap/pose/filtered</name>
+    <dataType>geometry_msgs::msg::dds_::PoseStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="localpose__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/pose/filtered</name>
+      <dataType>geometry_msgs::msg::dds_::PoseStamped_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="localvelocity__t">
+    <name>rt/ap/twist/filtered</name>
+    <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="localvelocity__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/twist/filtered</name>
+      <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="geopose__t">
+    <name>rt/ap/geopose/filtered</name>
+    <dataType>geographic_msgs::msg::dds_::GeoPoseStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="geopose__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/geopose/filtered</name>
+      <dataType>geographic_msgs::msg::dds_::GeoPoseStamped_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="clock__t">
+    <name>rt/ap/clock</name>
+    <dataType>rosgraph_msgs::msg::dds_::Clock_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="clock__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/clock</name>
+      <dataType>rosgraph_msgs::msg::dds_::Clock_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>20</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+  <topic profile_name="joy__t">
+    <name>rt/ap/joy</name>
+    <dataType>sensor_msgs::msg::dds_::Joy_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="joy__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/joy</name>
+      <dataType>sensor_msgs::msg::dds_::Joy_</dataType>
+    </topic>
+  </data_reader>
+  <topic profile_name="dynamictf__t">
+    <name>rt/ap/tf</name>
+    <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="dynamictf__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/tf</name>
+      <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    </topic>
+  </data_reader>
+  <topic profile_name="velocitycontrol__t">
+    <name>rt/ap/cmd_vel</name>
+    <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="velocitycontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_vel</name>
+      <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
+    </topic>
+  </data_reader>
+  <replier profile_name="arm_motors__replier" service_name="rs/ap/arm_motorsService" request_type="ardupilot_msgs::srv::dds_::ArmMotors_Request_" reply_type="ardupilot_msgs::srv::dds_::ArmMotors_Response_">
+    <request_topic_name>rq/ap/arm_motorsRequest</request_topic_name>
+    <reply_topic_name>rr/ap/arm_motorsReply</reply_topic_name>
+  </replier>
+  <replier profile_name="mode_switch__replier" service_name="rs/ap/mode_switchService" request_type="ardupilot_msgs::srv::dds_::ModeSwitch_Request_" reply_type="ardupilot_msgs::srv::dds_::ModeSwitch_Response_">
+    <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
+    <reply_topic_name>rr/ap/mode_switchReply</reply_topic_name>
+  </replier>
+  <topic profile_name="globalposcontrol__t">
+    <name>rt/ap/cmd_gps_pose</name>
+    <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="globalposcontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_gps_pose</name>
+      <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    </topic>
+  </data_reader>
+</profiles>

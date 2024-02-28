@@ -7,7 +7,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-void Plane::set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const Location &loc)
 {
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
@@ -34,14 +34,14 @@ void Plane::set_next_WP(const struct Location &loc)
         // additionally treat zero altitude as current altitude
         if (next_WP_loc.alt == 0) {
             next_WP_loc.alt = current_loc.alt;
-            next_WP_loc.flags.relative_alt = false;
-            next_WP_loc.flags.terrain_alt = false;
+            next_WP_loc.relative_alt = false;
+            next_WP_loc.terrain_alt = false;
         }
     }
 
     // convert relative alt to absolute alt
-    if (next_WP_loc.flags.relative_alt) {
-        next_WP_loc.flags.relative_alt = false;
+    if (next_WP_loc.relative_alt) {
+        next_WP_loc.relative_alt = false;
         next_WP_loc.alt += home.alt;
     }
 
@@ -50,14 +50,9 @@ void Plane::set_next_WP(const struct Location &loc)
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous waypoint");
+    if (current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
         prev_WP_loc = current_loc;
     }
-
-    // used to control FBW and limit the rate of climb
-    // -----------------------------------------------
-    set_target_altitude_location(next_WP_loc);
 
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();
@@ -65,12 +60,18 @@ void Plane::set_next_WP(const struct Location &loc)
     setup_glide_slope();
     setup_turn_angle();
 
-    loiter_angle_reset();
+    // update plane.target_altitude straight away, or if we are too
+    // close to out loiter point we may decide we are at the correct
+    // altitude before updating it (this is based on scheduler table
+    // ordering, where we navigate() before we
+    // adjust_altitude_target(), and navigate() uses values updated in
+    // adjust_altitude_target()
+    adjust_altitude_target();
 }
 
-void Plane::set_guided_WP(void)
+void Plane::set_guided_WP(const Location &loc)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -82,7 +83,7 @@ void Plane::set_guided_WP(void)
 
     // Load the next_WP slot
     // ---------------------
-    next_WP_loc = guided_WP_loc;
+    next_WP_loc = loc;
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
@@ -101,15 +102,25 @@ void Plane::set_guided_WP(void)
     auto_state.vtol_loiter = false;
     
     loiter_angle_reset();
+
+#if HAL_QUADPLANE_ENABLED
+    // cancel pending takeoff
+    quadplane.guided_takeoff = false;
+#endif
 }
 
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
   not pushed
+
+  returns true if home is changed
 */
-void Plane::update_home()
+bool Plane::update_home()
 {
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
     if ((g2.home_reset_threshold == -1) ||
         ((g2.home_reset_threshold > 0) &&
          (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
@@ -117,28 +128,43 @@ void Plane::update_home()
         // significantly. This allows us to cope with slow baro drift
         // but not re-do home and the baro if we have changed height
         // significantly
-        return;
+        return false;
     }
-    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+    bool ret = false;
+    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         Location loc;
-        if(ahrs.get_position(loc)) {
-            plane.set_home(loc);
+        if (ahrs.get_location(loc)) {
+            // we take the altitude directly from the GPS as we are
+            // about to reset the baro calibration. We can't use AHRS
+            // altitude or we can end up perpetuating a bias in
+            // altitude, as AHRS alt depends on home alt, which means
+            // we would have a circular dependency
+            loc.alt = gps.location().alt;
+            ret = AP::ahrs().set_home(loc);
         }
     }
+
+    // even if home is not updated we do a baro reset to stop baro
+    // drift errors while disarmed
     barometer.update_calibration();
+    ahrs.resetHeightDatum();
+
+    update_current_loc();
+
+    return ret;
 }
 
-void Plane::set_home_persistently(const Location &loc)
+bool Plane::set_home_persistently(const Location &loc)
 {
-    set_home(loc);
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
+    if (!AP::ahrs().set_home(loc)) {
+        return false;
+    }
 
     // Save Home to EEPROM
     mission.write_home_to_storage();
-}
 
-void Plane::set_home(const Location &loc)
-{
-    ahrs.set_home(loc);
-    ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home();
+    return true;
 }

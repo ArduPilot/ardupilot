@@ -3,4 +3,6 @@
 
 include ../fmuv3/hwdef.dat
 
+env OPTIMIZE -O2
+
 define BOARD_TYPE_DEFAULT 20

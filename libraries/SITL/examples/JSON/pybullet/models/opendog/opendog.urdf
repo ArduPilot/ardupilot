@@ -1,0 +1,660 @@
+<?xml version="1.0" ?>
+<robot name="opendog">
+
+<gazebo>
+  <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+   <robotNamespace>/opendog</robotNamespace>
+  </plugin>
+</gazebo>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.0146925753707255 -2.32783997689001E-07 -0.0620003566767632" rpy="0 0 0" />
+      <mass value="7.50050303907628" />
+      <inertia
+        ixx="0.0329067626307138"
+        ixy="0.0145256752484318"
+        ixz="-0.00262898937356677"
+        iyy="0.324694201481025"
+        iyz="8.6440436464913E-08"
+        izz="0.3401479131296" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/base_link.STL" />
+      </geometry>
+      <material name="base">
+        <color rgba="0.79 0.2 0.93 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="lf_hip">
+    <inertial>
+      <origin xyz="0.206139391007352 0.0113727026365967 -0.0186282798260052" rpy="0 0 0" />
+      <mass value="1.29407279885193" />
+      <inertia
+        ixx="0.00300672363695354"
+        ixy="0.000279956457563162"
+        ixz="0.00219380954236559"
+        iyy="0.00473624583525706"
+        iyz="-0.000278492304960671"
+        izz="0.00444577132964834" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_hip.STL" />
+      </geometry>
+      <material name="dred">
+        <color rgba="0.2 0.0 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_hip.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="lf_hip_joint" type="revolute">
+    <origin
+      xyz="0.12725 0.11015 -0.0402500002980233"
+      rpy="-0.0312716864214877 -2.31194431024223E-16 0" />
+    <parent link="base_link" />
+    <child link="lf_hip" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="lf_upperleg">
+    <inertial>
+      <origin xyz="-0.14026071186531 -0.145897350328308 -0.0866287296834724" rpy="0 0 0" />
+      <mass value="1.99709298869724" />
+      <inertia
+        ixx="0.0178522819140482"
+        ixy="-0.000417486136867743"
+        ixz="-0.000174817808114832"
+        iyy="0.00725617205054363"
+        iyz="0.000753747543548694"
+        izz="0.0140200357809471" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_upperleg.STL" />
+      </geometry>
+      <material name="dgreen">
+        <color rgba="0.0 0.4 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_upperleg.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="lf_upperleg_joint" type="revolute">
+    <origin xyz="0.1875 -0.0067843 0" rpy="0.53639 5.5511E-16 -1.5708" />
+    <parent link="lf_hip" />
+    <child link="lf_upperleg" />
+    <axis xyz="-1 0 0" />
+    <dynamics damping="1.0" friction="1.0"/>
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="lf_lowerleg">
+    <inertial>
+      <origin xyz="-0.0841961666836097 -0.111586779603519 -0.103991209798406" rpy="0 0 0" />
+      <mass value="0.517872437395086" />
+      <inertia
+        ixx="0.00480929241655381"
+        ixy="3.22137831183176E-05"
+        ixz="2.82581039098233E-05"
+        iyy="0.00230896942537742"
+        iyz="-0.00238100033014549"
+        izz="0.00250151457928357" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_lowerleg.STL" />
+      </geometry>
+      <material name="dblue">
+        <color rgba="0.0 0.0 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lf_lowerleg.STL" />
+      </geometry>
+       <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </link>
+
+  <joint name="lf_lowerleg_joint" type="revolute">
+    <origin xyz="-0.036327 -0.31067 -0.17972" rpy="1.2469 -6.6613E-16 1.36E-15" />
+    <parent link="lf_upperleg" />
+    <child link="lf_lowerleg" />
+    <axis xyz="-1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rf_hip">
+    <inertial>
+      <origin xyz="0.147048151306843 -0.0117894282365432 -0.0186949790750277" rpy="0 0 0" />
+      <mass value="1.31260778257106" />
+      <inertia
+        ixx="0.00297889838902065"
+        ixy="0.000632756157402181"
+        ixz="-0.00237042295251855"
+        iyy="0.00528682887814262"
+        iyz="0.00027007218401832"
+        izz="0.00504189542831131" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_hip.STL" />
+      </geometry>
+      <material name="dred">
+        <color rgba="0.2 0.0 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_hip.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rf_hip_joint" type="revolute">
+    <origin xyz="0.12725 -0.11015 -0.04025" rpy="-0.0024962 -2.3119E-16 0" />
+    <parent link="base_link" />
+    <child link="rf_hip" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rf_upperleg">
+    <inertial>
+      <origin xyz="-0.133628467398785 -0.162488031463387 0.0486169366921988" rpy="0 0 0" />
+      <mass value="1.97849427273776" />
+      <inertia
+        ixx="0.0177862556152254"
+        ixy="-0.000449816128990764"
+        ixz="6.84609806285059E-05"
+        iyy="0.0079887226695027"
+        iyz="-0.00227974326372488"
+        izz="0.0131967613985927" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_upperleg.STL" />
+      </geometry>
+      <material name="dgreen">
+        <color rgba="0.0 0.4 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_upperleg.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rf_upperleg_joint" type="revolute">
+    <origin xyz="0.1875 0 0" rpy="2.37324114934713 1.94289029309402E-16 1.5707963267949" />
+    <parent link="rf_hip" />
+    <child link="rf_upperleg" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rf_lowerleg">
+    <inertial>
+      <origin xyz="-0.0942678335224335 -0.11438115082609 0.100958934418855" rpy="0 0 0" />
+      <mass value="0.517767036542794" />
+      <inertia
+        ixx="0.00480685472285392"
+        ixy="3.29278427633523E-05"
+        ixz="-2.73356037554584E-05"
+        iyy="0.00217881170361675"
+        iyz="0.00237102005421024"
+        izz="0.00262923241964085" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_lowerleg.STL" />
+      </geometry>
+      <material name="dblue">
+        <color rgba="0.0 0.0 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rf_lowerleg.STL" />
+      </geometry>
+       <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </link>
+
+  <joint name="rf_lowerleg_joint" type="revolute">
+    <origin xyz="-0.0194699194772098 -0.3449998 0.0989375976332662" rpy="-1.05391222064566 1.11022302462516E-16 4.44089209850063E-16" />
+    <parent link="rf_upperleg" />
+    <child link="rf_lowerleg" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="lb_hip">
+    <inertial>
+      <origin xyz="-0.1388606089949 0.0113727026302812 -0.0186282798249506" rpy="0 0 0" />
+      <mass value="1.2940727989479" />
+      <inertia
+        ixx="0.00300672363731876"
+        ixy="0.000279956457431885"
+        ixz="0.00219380954241839"
+        iyy="0.00473624583534201"
+        iyz="-0.000278492304808429"
+        izz="0.00444577133007972" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_hip.STL" />
+      </geometry>
+      <material name="dred">
+        <color rgba="0.2 0.0 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_hip.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="lb_hip_joint" type="revolute">
+    <origin xyz="-0.09275 0.11015 -0.04025" rpy="-0.013144 -2.3119E-16 0" />
+    <parent link="base_link" />
+    <child link="lb_hip" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="lb_upperleg">
+    <inertial>
+      <origin xyz="-0.155362482214265 -0.162561779303306 -0.0486234661189762" rpy="0 0 0" />
+      <mass value="1.99709298565448" />
+      <inertia
+        ixx="0.0178522818686579"
+        ixy="-0.000447434633476266"
+        ixz="-6.8250948714299E-05"
+        iyy="0.00800967976641392"
+        iyz="0.00225765032495757"
+        izz="0.0132665280240321" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_upperleg.STL" />
+      </geometry>
+      <material name="dgreen">
+        <color rgba="0.0 0.4 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_upperleg.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="lb_upperleg_joint" type="revolute">
+    <origin xyz="-0.1575 -0.0218860343925495 0" rpy="0.853532347704987 1.69309011255336E-15 -1.5707963267949" />
+    <parent link="lb_hip" />
+    <child link="lb_upperleg" />
+    <axis xyz="-1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+  
+  <link name="lb_lowerleg">
+    <inertial>
+      <origin xyz="-0.0929078835580175 -0.122424353782922 -0.0909838234681657" rpy="0 0 0" />
+      <mass value="0.51787240839959" />
+      <inertia
+        ixx="0.00480929178404235"
+        ixy="3.51469446486784E-05"
+        ixz="2.45137702500061E-05"
+        iyy="0.00178682948739438"
+        iyz="-0.00230130305704765"
+        izz="0.00302365388096736" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_lowerleg.STL" />
+      </geometry>
+      <material name="dblue">
+        <color rgba="0.0 0.0 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/lb_lowerleg.STL" />
+      </geometry>
+       <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </link>
+
+  <joint name="lb_lowerleg_joint" type="revolute">
+    <origin xyz="-0.0427168001472368 -0.3449998 -0.0989375976332639" rpy="1.02808696809058 1.17961196366423E-15 0" />
+    <parent link="lb_upperleg" />
+    <child link="lb_lowerleg" />
+    <axis xyz="-1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rb_hip">
+    <inertial>
+      <origin xyz="-0.197951848727426 -0.011789428219475 -0.0186949790745794" rpy="0 0 0" />
+      <mass value="1.31260778161674" />
+      <inertia
+        ixx="0.00297889838847175"
+        ixy="0.000632756156394369"
+        ixz="-0.00237042295242676"
+        iyy="0.0052868288763741"
+        iyz="0.000270072183992474"
+        izz="0.00504189542537898" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="meshes/rb_hip.STL" />
+      </geometry>
+      <material name="dred">
+        <color rgba="0.2 0.0 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rb_hip.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rb_hip_joint" type="revolute">
+    <origin xyz="-0.09275 -0.11015 -0.0402500002980231" rpy="0.0264641395628229 -2.31194431024223E-16 0" />
+    <parent link="base_link" />
+    <child link="rb_hip" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rb_upperleg">
+    <inertial>
+      <origin xyz="-0.133628467244866 -0.162488031755644 0.0486169350227676" rpy="0 0 0" />
+      <mass value="1.97849425051924" />
+      <inertia
+        ixx="0.0177862553816508"
+        ixy="-0.000449816152751435"
+        ixz="6.84610936050734E-05"
+        iyy="0.00798872258305596"
+        iyz="-0.00227974318574354"
+        izz="0.0131967612321745" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rb_upperleg.STL" />
+      </geometry>
+      <material name="dgreen">
+        <color rgba="0.0 0.4 0.0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rb_upperleg.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rb_upperleg_joint" type="revolute">
+    <origin xyz="-0.1575 0 0" rpy="2.21660126749357 1.97064586870965E-15 1.5707963267949" />
+    <parent link="rb_hip" />
+    <child link="rb_upperleg" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+  <link name="rb_lowerleg">
+    <inertial>
+      <origin xyz="-0.106105013771209 -0.121605431885754 0.092129655679019" rpy="0 0 0" />
+      <mass value="0.517767043602124" />
+      <inertia
+        ixx="0.00480685478586608"
+        ixy="3.48785418068089E-05"
+        ixz="-2.47987883971276E-05"
+        iyy="0.00182797294270112"
+        iyz="0.00231097886469285"
+        izz="0.00298007124712522" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rb_lowerleg.STL" />
+      </geometry>
+      <material name="dblue">
+        <color rgba="0.0 0.0 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/rb_lowerleg.STL" />
+      </geometry>
+       <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+  </link>
+
+  <joint name="rb_lowerleg_joint" type="revolute">
+    <origin xyz="-0.00763273689589838 -0.344999799999999 0.0989375976332641" rpy="-0.978531986560699 -1.70696790036118E-15 -1.22124532708767E-15" />
+    <parent link="rb_upperleg" />
+    <child link="rb_lowerleg" />
+    <axis xyz="1 0 0" />
+    <limit effort="30" velocity="1.0" lower="-0.2" upper="0.2" />
+    <dynamics damping="0.7" friction="1.0" />
+  </joint>
+
+<!-- Transmissions for gazebo implementation -->
+<transmission name="lb_hip_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lb_hip_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lb_hip_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="lb_upperleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lb_upperleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lb_upperleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="lb_lowerleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lb_lowerleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lb_lowerleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+
+<transmission name="lf_hip_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lf_hip_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lf_hip_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="lf_upperleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lf_upperleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lf_upperleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="lf_lowerleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="lf_lowerleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="lf_lowerleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+
+<transmission name="rb_hip_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rb_hip_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rb_hip_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="rb_upperleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rb_upperleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rb_upperleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="rb_lowerleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rb_lowerleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rb_lowerleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+
+<transmission name="rf_hip_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rf_hip_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rf_hip_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="rf_upperleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rf_upperleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rf_upperleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+<transmission name="rf_lowerleg_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="rf_lowerleg_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="rf_lowerleg_motor">
+    <mechanicalReduction>1</mechanicalReduction>
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </actuator>
+</transmission>
+
+
+
+</robot>

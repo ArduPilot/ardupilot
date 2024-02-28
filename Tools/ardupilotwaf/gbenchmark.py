@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 
 """
@@ -47,6 +46,8 @@ def libbenchmark(bld):
         cmake_vars=dict(
             CMAKE_BUILD_TYPE='Release',
             CMAKE_INSTALL_PREFIX=prefix_node.abspath(),
+            BENCHMARK_ENABLE_GTEST_TESTS='OFF',
+            BENCHMARK_ENABLE_TESTING='OFF',
         ),
     )
 
@@ -54,9 +55,6 @@ def libbenchmark(bld):
     output_paths = (
         'lib/libbenchmark.a',
         'include/benchmark/benchmark.h',
-        'include/benchmark/macros.h',
-        'include/benchmark/benchmark_api.h',
-        'include/benchmark/reporter.h',
     )
     outputs = [prefix_node.make_node(path) for path in output_paths]
     gbenchmark.build('install', target=outputs)

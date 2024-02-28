@@ -1,0 +1,225 @@
+# hw definition file for f405 Matek CAN GPS
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 15360
+
+# board ID for firmware load
+APJ_BOARD_ID 1014
+
+env AP_PERIPH 1
+
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# blue LED0 marked as ACT
+PA14 LED OUTPUT HIGH
+define HAL_LED_ON 1
+
+define HAL_NO_GPIO_IRQ
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
+
+# debug (disabled to allow for PA14 LED above), to enable debugging disable the use of PA14 above
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
+
+# avoid timer and RCIN threads to save memory
+define HAL_NO_RCIN_THREAD
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DISABLE_LOOP_DELAY
+
+define HAL_NO_MONITOR_THREAD
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+
+# --------------------- SPI1 IMU -----------------------
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 MPU_CS CS
+
+# SPIDEV icm20602 SPI1 DEVID1  MPU_CS MODE3  1*MHZ  4*MHZ
+# IMU Invensense SPI:icm20602 ROTATION_ROLL_180_YAW_90
+
+
+# --------------------- SPI2 RM3100 --------------------
+PB13  SPI2_SCK SPI2
+PB14  SPI2_MISO SPI2
+PB15  SPI2_MOSI SPI2
+PB12  MAG_CS CS
+
+
+# ---------------------- SPI3 SD ------------------------
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+PC14 SDCARD_CS CS
+
+
+# ---------------------- I2C bus ------------------------
+I2C_ORDER I2C2
+
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 1
+
+
+# ---------------------- CAN bus -------------------------
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# ---------------------- UARTs ---------------------------
+#           | sr0  | sr1  | sr2  | GPS | MSP |
+SERIAL_ORDER USART1 USART2 USART3 UART4 UART5
+
+# USART1, for debug
+PA9  USART1_TX USART1 SPEED_HIGH NODMA
+PA10 USART1_RX USART1 SPEED_HIGH NODMA
+
+# USART2
+PA2 USART2_TX USART2 SPEED_HIGH NODMA
+PA3 USART2_RX USART2 SPEED_HIGH NODMA
+
+# USART3
+PC10  USART3_TX USART3 SPEED_HIGH NODMA
+PC11  USART3_RX USART3 SPEED_HIGH NODMA
+
+# UART4, for GPS
+PA0 UART4_TX UART4 SPEED_HIGH NODMA
+PA1 UART4_RX UART4 SPEED_HIGH NODMA
+
+# USART5, for MSP
+PC12 UART5_TX UART5 SPEED_HIGH
+PD2  UART5_RX UART5 SPEED_HIGH
+
+
+# --------------------- PWM -----------------------
+PC6  TIM8_CH1  TIM8 PWM(1) GPIO(50)
+PC7  TIM8_CH2  TIM8 PWM(2) GPIO(51)
+PC8  TIM8_CH3  TIM8 PWM(3) GPIO(52)
+PC9  TIM8_CH4  TIM8 PWM(4) GPIO(53)
+PB0  TIM3_CH3  TIM3 PWM(5) GPIO(54)
+PB1  TIM3_CH4  TIM3 PWM(6) GPIO(55)
+# PB6  TIM4_CH1  TIM4 PWM(7) GPIO(56)
+# PB7  TIM4_CH2  TIM4 PWM(8) GPIO(57)
+
+# WS2812 LED pin
+PA15 TIM2_CH1 TIM2 PWM(7) GPIO(58)
+
+# Beeper
+PA8  TIM1_CH1  TIM1 GPIO(32) ALARM   
+
+# ----------------------- GPS ----------------------------
+define HAL_PERIPH_ENABLE_GPS
+define GPS_MAX_RATE_MS 200
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+
+# ---------------------- COMPASS ---------------------------
+define HAL_PERIPH_ENABLE_MAG
+
+SPIDEV  rm3100 SPI2 DEVID1   MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+# added QMC5883L for different board varients
+COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
+
+
+# --------------------- DPS310 ---------------------------
+define HAL_PERIPH_ENABLE_BARO
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+BARO DPS310 I2C:0:0x76
+
+
+# ------------------ I2C airspeed -------------------------
+define HAL_PERIPH_ENABLE_AIRSPEED
+
+# MS4525 sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 1   
+define AIRSPEED_MAX_SENSORS 1
+
+# -------------------- MSP --------------------------------
+define HAL_PERIPH_ENABLE_MSP
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 4
+
+# ----------------- rangefinder,ADSB ----------------------
+define HAL_PERIPH_ENABLE_RANGEFINDER
+
+# disable rangefinder by default
+define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
+
+# ------------------ BATTERY Monitor -----------------------
+define HAL_PERIPH_ENABLE_BATTERY
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+
+# define HAL_DISABLE_ADC_DRIVER TRUE
+
+PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+# PC2 RSSI_ADC_PIN ADC1 SCALE(1)
+# PC3 PRESSURE_SENS ADC1 SCALE(1)
+PC5 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+
+# define BOARD_RSSI_ANA_PIN 12
+# define HAL_DEFAULT_AIRSPEED_PIN 13
+
+# Set the Default Battery Monitor Type to be Off
+define HAL_BATT_MONITOR_DEFAULT 0
+
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_VOLT_SCALE 21.0
+
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_CURR_SCALE 40.0
+
+define HAL_BATT2_VOLT_PIN 15
+define HAL_BATT2_VOLT_SCALE 11.0
+
+
+# -------------------- Buzzer+NeoPixels --------------d------
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+
+define DEFAULT_NTF_LED_TYPES 455

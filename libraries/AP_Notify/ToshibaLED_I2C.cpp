@@ -20,6 +20,8 @@
 
 #include "ToshibaLED_I2C.h"
 
+#if AP_NOTIFY_TOSHIBALED_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -44,20 +46,20 @@ ToshibaLED_I2C::ToshibaLED_I2C(uint8_t bus)
 {
 }
 
-bool ToshibaLED_I2C::hw_init(void)
+bool ToshibaLED_I2C::init(void)
 {
     // first look for led on external bus
     _dev = std::move(hal.i2c_mgr->get_device(_bus, TOSHIBA_LED_I2C_ADDR));
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     _dev->set_retries(10);
 
     // enable the led
     bool ret = _dev->write_register(TOSHIBA_LED_ENABLE, 0x03);
     if (!ret) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -66,9 +68,6 @@ bool ToshibaLED_I2C::hw_init(void)
     ret = _dev->transfer(val, sizeof(val), nullptr, 0);
 
     _dev->set_retries(1);
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
 
     if (ret) {
         _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&ToshibaLED_I2C::_timer, void));
@@ -98,3 +97,5 @@ void ToshibaLED_I2C::_timer(void)
 
     _dev->transfer(val, sizeof(val), nullptr, 0);
 }
+
+#endif  // AP_NOTIFY_TOSHIBALED_ENABLED

@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Modified for use in AP_HAL_ChibiOS by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -24,11 +24,13 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_I2C == TRUE
+
 #include "Semaphores.h"
 #include "Device.h"
 #include "shared_dma.h"
-
-#if HAL_USE_I2C == TRUE
 
 namespace ChibiOS {
 
@@ -37,22 +39,23 @@ public:
     I2CConfig i2ccfg;
     uint8_t busnum;
     uint32_t busclock;
-    bool i2c_started;
-    bool i2c_active;
 
     // we need an additional lock in the dma_allocate and
     // dma_deallocate functions to cope with 3-way contention as we
     // have two DMA channels that we are handling with the shared_dma
     // code
     mutex_t dma_lock;
-    
+
     void dma_allocate(Shared_DMA *);
     void dma_deallocate(Shared_DMA *);
     void dma_init(void);
     static void clear_all(void);
-    static void clear_bus(ioline_t scl_line, uint8_t scl_af);
+    static void clear_bus(uint8_t busidx);
+    static uint8_t read_sda(uint8_t busidx);
+    static bool check_select_pins(uint8_t check_pins);
+    static void set_bus_to_floating(uint8_t busidx);
 };
-    
+
 class I2CDevice : public AP_HAL::I2CDevice {
 public:
     static I2CDevice *from(AP_HAL::I2CDevice *dev)
@@ -94,7 +97,7 @@ public:
     void set_split_transfers(bool set) override {
         _split_transfers = set;
     }
-    
+
 private:
     I2CBus &bus;
     bool _transfer(const uint8_t *send, uint32_t send_len,
@@ -114,10 +117,10 @@ public:
     friend class I2CDevice;
 
     static I2CBus businfo[];
-    
+
     // constructor
     I2CDeviceManager();
-    
+
     static I2CDeviceManager *from(AP_HAL::I2CDeviceManager *i2c_mgr)
     {
         return static_cast<I2CDeviceManager*>(i2c_mgr);
@@ -146,4 +149,3 @@ public:
 }
 
 #endif // HAL_USE_I2C
-

@@ -7,7 +7,7 @@
 
 #include "AnalogIn_Navio2.h"
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 #define ADC_BASE_PATH "/sys/kernel/rcio/adc"
 
@@ -42,15 +42,16 @@ AnalogSource_Navio2::AnalogSource_Navio2(uint8_t pin)
     set_channel(pin);
 }
 
-void AnalogSource_Navio2::set_pin(uint8_t pin)
+bool AnalogSource_Navio2::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
-        return;
+        return true;
     }
 
     set_channel(pin);
 
     _pin = pin;
+    return true;
 }
 
 float AnalogSource_Navio2::read_average()
@@ -107,6 +108,7 @@ float AnalogIn_Navio2::servorail_voltage(void)
 
 AP_HAL::AnalogSource *AnalogIn_Navio2::channel(int16_t pin)
 {
+    WITH_SEMAPHORE(_semaphore);
     for (uint8_t j = 0; j < _channels_number; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new AnalogSource_Navio2(pin);

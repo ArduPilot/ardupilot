@@ -16,14 +16,16 @@
   handle checking mission points for terrain data
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Rally/AP_Rally.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,12 +34,18 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::update_mission_data(void)
 {
-    if (last_mission_change_ms != mission.last_change_time_ms() ||
+#if AP_MISSION_ENABLED
+    const AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return;
+    }
+
+    if (last_mission_change_ms != mission->last_change_time_ms() ||
         last_mission_spacing != grid_spacing) {
         // the mission has changed - start again
         next_mission_index = 1;
         next_mission_pos = 0;
-        last_mission_change_ms = mission.last_change_time_ms();
+        last_mission_change_ms = mission->last_change_time_ms();
         last_mission_spacing = grid_spacing;
     }
     if (next_mission_index == 0) {
@@ -57,7 +65,7 @@ void AP_Terrain::update_mission_data(void)
     for (uint8_t i=0; i<20; i++) {
         // get next mission command
         AP_Mission::Mission_Command cmd;
-        if (!mission.read_cmd_from_storage(next_mission_index, cmd)) {
+        if (!mission->read_cmd_from_storage(next_mission_index, cmd)) {
             // nothing more to do
             next_mission_index = 0;
             return;
@@ -69,7 +77,7 @@ void AP_Terrain::update_mission_data(void)
                 cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) ||
                (cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
             next_mission_index++;
-            if (!mission.read_cmd_from_storage(next_mission_index, cmd)) {
+            if (!mission->read_cmd_from_storage(next_mission_index, cmd)) {
                 // nothing more to do
                 next_mission_index = 0;
                 next_mission_pos = 0;
@@ -81,12 +89,12 @@ void AP_Terrain::update_mission_data(void)
         // spacings away at 45, 135, 225 and 315 degrees, and the
         // point itself
         if (next_mission_pos != 4) {
-            location_update(cmd.content.location, 45+90*next_mission_pos, grid_spacing.get() * 10);
+            cmd.content.location.offset_bearing(45+90*next_mission_pos, grid_spacing.get() * 10);
         }
 
         // we have a mission command to check
         float height;
-        if (!height_amsl(cmd.content.location, height, false)) {
+        if (!height_amsl(cmd.content.location, height)) {
             // if we can't get data for a mission item then return and
             // check again next time
             return;
@@ -103,18 +111,25 @@ void AP_Terrain::update_mission_data(void)
             next_mission_pos = 0;
         }
     }
+#endif  // AP_MISSION_ENABLED
 }
 
+#if HAL_RALLY_ENABLED
 /*
   check that we have fetched all rally terrain data
  */
 void AP_Terrain::update_rally_data(void)
 {
-    if (last_rally_change_ms != rally.last_change_time_ms() ||
+    const AP_Rally *rally = AP::rally();
+    if (rally == nullptr) {
+        return;
+    }
+
+    if (last_rally_change_ms != rally->last_change_time_ms() ||
         last_rally_spacing != grid_spacing) {
         // a rally point has changed - start again
         next_rally_index = 1;
-        last_rally_change_ms = rally.last_change_time_ms();
+        last_rally_change_ms = rally->last_change_time_ms();
         last_rally_spacing = grid_spacing;
     }
     if (next_rally_index == 0) {
@@ -132,7 +147,7 @@ void AP_Terrain::update_rally_data(void)
     while (true) {
         // get next rally point
         struct RallyLocation rp;
-        if (!rally.get_rally_point_with_index(next_rally_index, rp)) {
+        if (!rally->get_rally_point_with_index(next_rally_index, rp)) {
             // nothing more to do
             next_rally_index = 0;
             return;
@@ -142,7 +157,7 @@ void AP_Terrain::update_rally_data(void)
         loc.lat = rp.lat;
         loc.lng = rp.lng;
         float height;
-        if (!height_amsl(loc, height, false)) {
+        if (!height_amsl(loc, height)) {
             // if we can't get data for a rally item then return and
             // check again next time
             return;
@@ -156,5 +171,6 @@ void AP_Terrain::update_rally_data(void)
         next_rally_index++;
     }
 }
+#endif
 
 #endif // AP_TERRAIN_AVAILABLE

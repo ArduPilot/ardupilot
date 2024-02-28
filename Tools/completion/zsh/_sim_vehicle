@@ -1,0 +1,100 @@
+#compdef sim_vehicle.py
+#autoload
+
+local -a vehicles
+
+_sim_vehicle() {
+  typeset -A opt_args
+  local context state state_descr line curcontext="$curcontext"
+
+  _arguments -C \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+    '(-N --no-rebuild)'{-N,--no-rebuild}'[do not rebuild before starting ardupilot]' \
+    '(-D --debug)'{-D,--debug}'[build with debugging]' \
+    '(-c --clean)'{-c,--clean}'[do a make clean before building]' \
+    '(-I --instance=)'{-I,--instance=}'[instance of simulator]:int:' \
+    '(-V --valgrind)'{-V,--valgrind}'[enable valgrind for memory access checking (slow!)]' \
+    '--callgrind[enable valgrind for performance analysis (slow!!)]' \
+    '(-T --tracker)'{-T,--tracker}'[start an antenna tracker instance]' \
+    '(-A --sitl-instance-args)'{-A,--sitl-instance-args}'[pass arguments to SITL instance]:SITL_INSTANCE_ARGS:' \
+    '(-G --gdb)'{-G,--gdb}'[use gdb for debugging ardupilot]' \
+    '(-g --gdb-stopped)'{-g,--gdb-stopped}'[use gdb for debugging ardupilot (no auto-start)]' \
+    '--lldb[use lldb for debugging ardupilot]' \
+    '--lldb-stopped[use ldb for debugging ardupilot (no auto-start)]' \
+    '(-d --delay-start=)'{-d,--delay-start=}'[delay start of mavproxy by this number of seconds]:int:' \
+    '(-B --breakpoint=)'{-B,--breakpoint=}'[add a breakpoint at given location in debugger]:LOCATION:' \
+    '(-M --mavlink-gimbal)'{-M,--mavlink-gimbal}'[enable MAVLink gimbal]' \
+    '(-L --location=)'{-L,--location=}'[use start location from Tools/autotest/locations.txt]:LOCATION:' \
+    '(-l --custom-location=)'{-l,--custom-location=}'[set custom start location (lat,lon,alt,heading)]:LOCATION:' \
+    '(-S --speedup=)'{-S,--speedup=}'[set simulation speedup (1 for wall clock time)]:SPEEDUP:' \
+    '(-t --tracker-location=)'{-t,--tracker-location=}'[set antenna tracker start location]:TRACKER_LOCATION:' \
+    '(-w --wipe-eeprom)'{-w,--wipe-eeprom}'[wipe EEPROM and reload parameters]' \
+    '(-m --mavproxy-args=)'{-m,--mavproxy-args=}'[additional arguments to pass to mavproxy.py]:MAVPROXY_ARGS:' \
+    '--strace[strace the ArduPilot binary]' \
+    '--model=[Override simulation model to use]:MODEL:' \
+    '--use-dir=[Store SITL state and output in named directory]:DIR:' \
+    '--no-mavproxy[Do notlaunch MAVProxy]' \
+    '--fresh-params[Generate and use local parameter help XML]' \
+    '--mcast[Use multicasting at default 239.255.145.50:14550]' \
+    '--osd[Enable SITL OSD]' \
+    '--tonealarm[Enable SITL ToneAlarm]' \
+    '--rgbled[Enable SITL RGBLed]' \
+    '--add-param-file=[Add a parameters file to use]:ADD_PARAM_FILE:' \
+    '--no-extra-ports[Disable setup of UDP 14550 and 14551 output]' \
+    '(-Z --swarm=)'{-Z,--swarm=}'[Specify path of swarminit.txt for shifting spawn
+                        location]:SWARM:' \
+    '--flash-storage[enable use of flash storage emulation]' \
+    '--out=[create an additional mavlink output]:OUT:' \
+    '--map[load map module on startup]' \
+    '--console[load console module on startup]' \
+    '--aircraft=[store state and logs in named directory]:AIRCRAFT:' \
+    '--moddebug=[mavproxy module debug]:int:' \
+    '(-v --vehicle)'{-v,--vehicle}'[vehicle type]:vehicle:_sim_vehicle_vehicles' \
+    '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_vehicle_frames' \
+  && ret=0
+
+
+}
+
+_get_vehicle_type() {
+  vehicles=( $($caller --list-vehicle) )
+}
+
+(( $+functions[_sim_vehicle_vehicles] )) ||
+_sim_vehicle_vehicles() {
+  _get_vehicle_type
+  _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
+}
+
+(( $+functions[_vehicle_frames] )) ||
+_vehicle_frames() {
+search_vehicle=true
+local_current=$CURRENT
+vehicle=''
+_get_vehicle_type
+# search the vehicle type used with -v on previous arguements
+# Todo: handle failure
+while ( $search_vehicle || $local_current -eq 0 )
+do
+    for w in $vehicles
+    do
+      if [ "$w" = "$words[$local_current]" ] 
+      then
+          vehicle=$words[$local_current]
+          search_vehicle=false
+          break
+      fi
+    done;
+    local_current=$(( $local_current - 1 ))
+done
+
+
+  frames=( $($caller --list-frame $vehicle) )
+
+  _describe -t frames 'frame' frames "$@" && ret=0
+}
+
+# get the calling program, remove anything after the space == all commands arguments
+caller=$(echo ${words[@]} | sed 's/ .*//g');
+_sim_vehicle "$@"

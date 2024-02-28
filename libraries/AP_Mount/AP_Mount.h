@@ -14,22 +14,26 @@
 * Usage:	Use in main code to control	mounts attached to	*
 *			vehicle.										*
 *															*
-* Comments: All angles in degrees * 100, distances in meters*
+* Comments: All angles in degrees, distances in meters      *
 *			unless otherwise stated.						*
 ************************************************************/
 #pragma once
 
+#include "AP_Mount_config.h"
+
+#if HAL_MOUNT_ENABLED
+
+#include <GCS_MAVLink/GCS_config.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <RC_Channel/RC_Channel.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Camera/AP_Camera_shareddefs.h>
+#include "AP_Mount_Params.h"
 
 // maximum number of mounts
-#define AP_MOUNT_MAX_INSTANCES          1
+#define AP_MOUNT_MAX_INSTANCES          2
 
 // declare backend classes
 class AP_Mount_Backend;
@@ -38,6 +42,11 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_Gremsy;
+class AP_Mount_Siyi;
+class AP_Mount_Scripting;
+class AP_Mount_Xacti;
+class AP_Mount_Viewpro;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -53,27 +62,63 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_Gremsy;
+    friend class AP_Mount_Siyi;
+    friend class AP_Mount_Scripting;
+    friend class AP_Mount_Xacti;
+    friend class AP_Mount_Viewpro;
 
 public:
-    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
+    AP_Mount();
 
     /* Do not allow copies */
-    AP_Mount(const AP_Mount &other) = delete;
-    AP_Mount &operator=(const AP_Mount&) = delete;
+    CLASS_NO_COPY(AP_Mount);
 
+    // get singleton instance
+    static AP_Mount *get_singleton() {
+        return _singleton;
+    }
 
     // Enums
-    enum MountType {
-        Mount_Type_None = 0,            /// no mount
-        Mount_Type_Servo = 1,           /// servo controlled mount
-        Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
-        Mount_Type_Alexmos = 3,         /// Alexmos mount
-        Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+    enum class Type {
+        None = 0,            /// no mount
+#if HAL_MOUNT_SERVO_ENABLED
+        Servo = 1,           /// servo controlled mount
+#endif
+#if HAL_SOLO_GIMBAL_ENABLED
+        SoloGimbal = 2,      /// Solo's gimbal
+#endif
+#if HAL_MOUNT_ALEXMOS_ENABLED
+        Alexmos = 3,         /// Alexmos mount
+#endif
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
+        SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+#endif
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
+        SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+#endif
+#if HAL_MOUNT_GREMSY_ENABLED
+        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#endif
+#if HAL_MOUNT_SERVO_ENABLED
+        BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+#endif
+#if HAL_MOUNT_SIYI_ENABLED
+        Siyi = 8,            /// Siyi gimbal using custom serial protocol
+#endif
+#if HAL_MOUNT_SCRIPTING_ENABLED
+        Scripting = 9,       /// Scripting gimbal driver
+#endif
+#if HAL_MOUNT_XACTI_ENABLED
+        Xacti = 10,          /// Xacti DroneCAN gimbal driver
+#endif
+#if HAL_MOUNT_VIEWPRO_ENABLED
+        Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
+#endif
     };
 
     // init - detect and initialise all mounts
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
@@ -81,9 +126,12 @@ public:
     // used for gimbals that need to read INS data at full rate
     void update_fast();
 
+    // return primary instance ID
+    uint8_t get_primary_instance() const { return _primary; }
+
     // get_mount_type - returns the type of mount
-    AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
-    AP_Mount::MountType get_mount_type(uint8_t instance) const;
+    Type get_mount_type() const { return get_mount_type(_primary); }
+    Type get_mount_type(uint8_t instance) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
@@ -98,88 +146,170 @@ public:
     void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
     void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
 
-    // set_mode_to_default - restores the mode to it's default mode held in the MNT_DEFLT_MODE parameter
+    // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
-    // set_angle_targets - sets angle targets in degrees
-    void set_angle_targets(float roll, float tilt, float pan) { set_angle_targets(_primary, roll, tilt, pan); }
-    void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
+    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
+    void set_yaw_lock(uint8_t instance, bool yaw_lock);
+
+    // set angle target in degrees
+    // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
+    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(_primary, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
+    void set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+
+    // sets rate target in deg/s
+    // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
+    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock) { set_rate_target(_primary, roll_degs, pitch_degs, yaw_degs, yaw_lock); }
+    void set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const struct Location &target_loc);
+    void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
+    void set_roi_target(uint8_t instance, const Location &target_loc);
 
-    // control - control the mount
-    void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode) { control(_primary, pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode); }
-    void control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode);
+    // clear_roi_target - clears target location that mount should attempt to point towards
+    void clear_roi_target() { clear_roi_target(_primary); }
+    void clear_roi_target(uint8_t instance);
 
-    // configure_msg - process MOUNT_CONFIGURE messages received from GCS
-    void configure_msg(mavlink_message_t* msg) { configure_msg(_primary, msg); }
-    void configure_msg(uint8_t instance, mavlink_message_t* msg);
+    // point at system ID sysid
+    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint8_t sysid);
 
-    // control_msg - process MOUNT_CONTROL messages received from GCS
-    void control_msg(mavlink_message_t* msg) { control_msg(_primary, msg); }
-    void control_msg(uint8_t instance, mavlink_message_t* msg);
+    // handling of set_roi_sysid message
+    MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
 
-    // handle a PARAM_VALUE message
-    void handle_param_value(mavlink_message_t *msg);
+    // mavlink message handling:
+    MAV_RESULT handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    void handle_param_value(const mavlink_message_t &msg);
+    void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // handle a GIMBAL_REPORT message
-    void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
+    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
-    // send a GIMBAL_REPORT message to GCS
-    void send_gimbal_report(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS
+    void send_gimbal_manager_information(mavlink_channel_t chan);
 
-    // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    void status_msg(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
+
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
+    // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
+    bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc) const;
+#endif
+
+    // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
+    // returns true on success
+    bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
+
+    // run pre-arm check.  returns false on failure and fills in failure_msg
+    // any failure_msg returned will not include a prefix
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
+
+    // get target rate in deg/sec. returns true on success
+    bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+
+    // get target angle in deg. returns true on success
+    bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+
+    // accessors for scripting backends and logging
+    bool get_location_target(uint8_t instance, Location& target_loc);
+    void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+
+    // write mount log packet for all backends
+    void write_log();
+
+    // write mount log packet for a single backend (called by camera library)
+    void write_log(uint8_t instance, uint64_t timestamp_us);
+
+    //
+    // camera controls for gimbals that include a camera
+    //
+
+    // take a picture
+    bool take_picture(uint8_t instance);
+
+    // start or stop video recording
+    // set start_recording = true to start record, false to stop recording
+    bool record_video(uint8_t instance, bool start_recording);
+
+    // set zoom specified as a rate or percentage
+    bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
+
+    // set focus specified as rate, percentage or auto
+    // focus in = -1, focus hold = 0, focus out = 1
+    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+
+    // set camera lens as a value from 0 to 5
+    bool set_lens(uint8_t instance, uint8_t lens);
+
+    // send camera information message to GCS
+    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
+
+    // send camera capture status message to GCS
+    void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
+
+    //
+    // rangefinder
+    //
+
+    // get rangefinder distance.  Returns true on success
+    bool get_rangefinder_distance(uint8_t instance, float& distance_m) const;
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-    // private members
-    const AP_AHRS_TYPE     &_ahrs;
-    const struct Location   &_current_loc;  // reference to the vehicle's current location
 
-    // frontend parameters
-    AP_Int8             _joystick_speed;    // joystick gain
+    static AP_Mount *_singleton;
+
+    // parameters for backends
+    AP_Mount_Params _params[AP_MOUNT_MAX_INSTANCES];
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated
     uint8_t             _primary;           // primary mount
     AP_Mount_Backend    *_backends[AP_MOUNT_MAX_INSTANCES];         // pointers to instantiated mounts
 
-    // backend state including parameters
-    struct mount_state {
-        // Parameters
-        AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
-        AP_Int8         _default_mode;      // default mode on startup and when control is returned from autopilot
-        AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
-        AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
-        AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
+private:
+    // Check if instance backend is ok
+    AP_Mount_Backend *get_primary() const;
+    AP_Mount_Backend *get_instance(uint8_t instance) const;
 
-        // RC input channels from receiver used for direct angular input from pilot
-        AP_Int8         _roll_rc_in;        // pilot provides roll input on this channel
-        AP_Int8         _tilt_rc_in;        // pilot provides tilt input on this channel
-        AP_Int8         _pan_rc_in;         // pilot provides pan input on this channel
+    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
+    void handle_mount_configure(const mavlink_message_t &msg);
+#endif
+#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
+    void handle_mount_control(const mavlink_message_t &msg);
+#endif
 
-        // Mount's physical limits
-        AP_Int16        _roll_angle_min;    // min roll in 0.01 degree units
-        AP_Int16        _roll_angle_max;    // max roll in 0.01 degree units
-        AP_Int16        _tilt_angle_min;    // min tilt in 0.01 degree units
-        AP_Int16        _tilt_angle_max;    // max tilt in 0.01 degree units
-        AP_Int16        _pan_angle_min;     // min pan in 0.01 degree units
-        AP_Int16        _pan_angle_max;     // max pan in 0.01 degree units
+    MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
+    void handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
+    void handle_global_position_int(const mavlink_message_t &msg);
+    void handle_gimbal_device_information(const mavlink_message_t &msg);
+    void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
 
-        AP_Vector3f     _retract_angles;    // retracted position for mount, vector.x = roll vector.y = tilt, vector.z=pan
-        AP_Vector3f     _neutral_angles;    // neutral position for mount, vector.x = roll vector.y = tilt, vector.z=pan
-
-        AP_Float        _roll_stb_lead;     // roll lead control gain
-        AP_Float        _pitch_stb_lead;    // pitch lead control gain
-
-        MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
-        struct Location _roi_target;        // roi target location
-    } state[AP_MOUNT_MAX_INSTANCES];
+    // perform any required parameter conversion
+    void convert_params();
 };
+
+namespace AP {
+    AP_Mount *mount();
+};
+
+#endif // HAL_MOUNT_ENABLED

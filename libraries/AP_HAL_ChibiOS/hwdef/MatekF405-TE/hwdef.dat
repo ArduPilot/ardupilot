@@ -1,0 +1,190 @@
+# hw definition file for MATEK M9N-F405
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# store parameters in pages 11 and 12
+STORAGE_FLASH_PAGE 1
+define HAL_STORAGE_SIZE 15360
+
+# board ID for firmware load
+APJ_BOARD_ID 1054
+
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+
+# --------------------- LED -----------------------
+PA14 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
+PA13 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
+define HAL_GPIO_A_LED_PIN 91
+define HAL_GPIO_B_LED_PIN 90
+define HAL_GPIO_LED_OFF 1
+
+
+# --------------------- PWM -----------------------
+PC9  TIM8_CH4   TIM8  PWM(1)  GPIO(50)
+PC8  TIM8_CH3   TIM8  PWM(2)  GPIO(51)
+PB15 TIM1_CH3N  TIM1  PWM(3)  GPIO(52)
+PA8  TIM1_CH1   TIM1  PWM(4)  GPIO(53)
+PB11 TIM2_CH4   TIM2  PWM(5)  GPIO(54)
+PB10 TIM2_CH3   TIM2  PWM(6)  GPIO(55)
+PB3  TIM2_CH2   TIM2  PWM(7)  GPIO(56)
+PA15 TIM2_CH1   TIM2  PWM(8)  GPIO(57)
+
+PB14 TIM12_CH1  TIM12 PWM(9)  GPIO(58) NODMA
+PA6  TIM13_CH1  TIM13 PWM(10) GPIO(59) NODMA
+PB6  TIM4_CH1   TIM4  PWM(11) GPIO(60) NODMA
+PB1  TIM3_CH4   TIM3  PWM(12) GPIO(61)  # LED pad
+
+define STM32_PWM_USE_ADVANCED TRUE
+
+# Beeper
+PB9 TIM11_CH1  TIM11 GPIO(32) ALARM
+
+# GPIOs
+PA4  PINIO1 OUTPUT GPIO(81) LOW
+PB5  PINIO2 OUTPUT GPIO(82) LOW
+
+# --------------------- SPI1 -----------------------
+PA5  SPI1_SCK SPI1
+PB4  SPI1_MISO SPI1
+PA7  SPI1_MOSI SPI1
+
+PC14 IMU_CS CS
+PB12 OSD_CS CS
+
+
+# --------------------- SPI2 -----------------------
+PB13 SPI2_SCK SPI2
+PC2  SPI2_MISO SPI2
+PC3  SPI2_MOSI SPI2
+
+PC13 FLASH_CS  CS
+PC1  SDCARD_CS CS
+
+
+# -------------------- I2C bus --------------------
+I2C_ORDER I2C1
+
+PB8 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+define HAL_I2C_INTERNAL_MASK 0
+
+# --------------------- UARTs ---------------------------
+SERIAL_ORDER OTG1 USART1 USART3 UART5 UART4 USART6 USART2
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1
+PA9  USART1_TX USART1 
+PA10 USART1_RX USART1
+
+# USART2, RC input
+# alternative using USART2
+PA2 USART2_TX USART2 
+PA3 USART2_RX USART2  ALT(1)
+
+# default to timer for RC input
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN LOW
+
+# USART3
+PC10  USART3_TX USART3 NODMA
+PC11  USART3_RX USART3 NODMA
+
+# UART4
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+
+# UART5, for GPS
+PC12 UART5_TX UART5 NODMA
+PD2  UART5_RX UART5 NODMA
+
+# USART6
+PC6  USART6_TX USART6
+PC7  USART6_RX USART6 NODMA
+
+# ------------------- DMA assignment -------------------
+DMA_PRIORITY ADC1 SPI1* SPI2* TIM1* TIM8* TIM3* UART2*
+
+
+# ------------------- IMU ICM42605 ---------------------
+SPIDEV icm42605  SPI1  DEVID1  IMU_CS  MODE3  2*MHZ  8*MHZ
+IMU Invensensev3 SPI:icm42605 ROTATION_YAW_90
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+
+# ------------------ OSD AT7456E ----------------------
+SPIDEV osd       SPI1  DEVID2  OSD_CS  MODE0 10*MHZ 10*MHZ
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+
+# --------------------- SD & FLASH ----------------------
+SPIDEV sdcard    SPI2 DEVID3 SDCARD_CS  MODE0 400*KHZ 25*MHZ
+SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ  32*MHZ
+
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+define HAL_OS_FATFS_IO 1
+
+# ----------------- I2C compass & Baro -----------------
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# built-in barometer
+BARO SPL06  I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_SPL06_ENABLED 1
+
+
+# --------------------- ADC ---------------------------
+PC4 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC5 BATT_CURRENT_SENS ADC1 SCALE(1)
+PB0 RSSI_ADC_PIN      ADC1 SCALE(1)
+PC0 PRESSURE_SENS     ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT 4
+
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_VOLT_SCALE 21.0
+
+define HAL_BATT_CURR_PIN 15
+define HAL_BATT_CURR_SCALE 66.7
+
+define BOARD_RSSI_ANA_PIN 8
+define HAL_DEFAULT_AIRSPEED_PIN 10
+
+define HAL_GYROFFT_ENABLED 0
+
+# --------------------- save flash ----------------------
+# save some flash
+include ../include/minimize_fpv_osd.inc
+include ../include/save_some_flash.inc
+include ../include/no_bootloader_DFU.inc
+
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+define AP_GRIPPER_ENABLED 0
+define HAL_RUNCAM_ENABLED 0
+define HAL_HOTT_TELEM_ENABLED 0
+define HAL_NMEA_OUTPUT_ENABLED 0
+define HAL_BUTTON_ENABLED 0
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_PICCOLO_CAN_ENABLE 0
+

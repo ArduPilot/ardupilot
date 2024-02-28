@@ -21,36 +21,35 @@
 #include <stdio.h>
 #include "bouncebuffer.h"
 
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-// on F7 we check we are in the DTCM region, and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xFFFE0001) == 0x20000000)
-#else
-// this checks an address is in main memory and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)
-#endif
+// Enable when trying to check if you are not just listening yourself
+#define ENABLE_ECHO_SAFE 0
 
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes)
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool axi_sram)
 {
     (*bouncebuffer) = calloc(1, sizeof(struct bouncebuffer_t));
     osalDbgAssert(((*bouncebuffer) != NULL), "bouncebuffer init");
+    (*bouncebuffer)->on_axi_sram = axi_sram;
     if (prealloc_bytes) {
-        (*bouncebuffer)->dma_buf = malloc_dma(prealloc_bytes);
-        osalDbgAssert(((*bouncebuffer)->dma_buf != NULL), "bouncebuffer preallocate");
-        (*bouncebuffer)->size = prealloc_bytes;
+        (*bouncebuffer)->dma_buf = axi_sram?malloc_axi_sram(prealloc_bytes):malloc_dma(prealloc_bytes);
+        if ((*bouncebuffer)->dma_buf) {
+            (*bouncebuffer)->size = prealloc_bytes;
+        }
     }
 }
 
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed
+  Note that *buf can be NULL, in which case we allocate DMA capable memory, but don't
+  copy to it in bouncebuffer_finish_read(). This avoids DMA failures in dummyrx in the SPI LLD
  */
-void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
+bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
 {
-    if (!bouncebuffer || IS_DMA_SAFE(*buf)) {
+    if (!bouncebuffer || mem_is_dma_safe(*buf, size, bouncebuffer->on_axi_sram)) {
         // nothing needs to be done
-        return;
+        return true;
     }
     osalDbgAssert((bouncebuffer->busy == false), "bouncebuffer read");        
     bouncebuffer->orig_buf = *buf;
@@ -58,12 +57,23 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
-        osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer read allocate");
+        bouncebuffer->dma_buf = bouncebuffer->on_axi_sram?malloc_axi_sram(size):malloc_dma(size);
+        if (!bouncebuffer->dma_buf) {
+            bouncebuffer->size = 0;
+            return false;
+        }
         bouncebuffer->size = size;
     }
     *buf = bouncebuffer->dma_buf;
+#if ENABLE_ECHO_SAFE
+    memset(bouncebuffer->dma_buf, 0xBB, bouncebuffer->size);
+#endif
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
+    stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
+    return true;
 }
 
 /*
@@ -72,8 +82,10 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf, uint32_t size)
 {
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
-        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");        
-        memcpy(bouncebuffer->orig_buf, buf, size);
+        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");
+        if (bouncebuffer->orig_buf) {
+            memcpy(bouncebuffer->orig_buf, buf, size);
+        }
         bouncebuffer->busy = false;
     }
 }
@@ -82,24 +94,34 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
 /*
   setup for reading from memory to a device, allocating a bouncebuffer if needed
  */
-void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size)
+bool bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size)
 {
-    if (!bouncebuffer || IS_DMA_SAFE(*buf)) {
+    if (!bouncebuffer || mem_is_dma_safe(*buf, size, bouncebuffer->on_axi_sram)) {
         // nothing needs to be done
-        return;
+        return true;
     }
     osalDbgAssert((bouncebuffer->busy == false), "bouncebuffer write");        
     if (bouncebuffer->size < size) {
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
-        osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer write allocate");
+        bouncebuffer->dma_buf = bouncebuffer->on_axi_sram?malloc_axi_sram(size):malloc_dma(size);
+        if (!bouncebuffer->dma_buf) {
+            bouncebuffer->size = 0;
+            return false;
+        }
         bouncebuffer->size = size;
     }
-    memcpy(bouncebuffer->dma_buf, *buf, size);
+    if (*buf) {
+        memcpy(bouncebuffer->dma_buf, *buf, size);
+    }
     *buf = bouncebuffer->dma_buf;
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer write align");
+    stm32_cacheBufferFlush(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
+    return true;
 }
 
 
@@ -110,6 +132,16 @@ void bouncebuffer_finish_write(struct bouncebuffer_t *bouncebuffer, const uint8_
 {
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_wite");        
+        bouncebuffer->busy = false;
+    }
+}
+
+/*
+  abort an operation
+ */
+void bouncebuffer_abort(struct bouncebuffer_t *bouncebuffer)
+{
+    if (bouncebuffer) {
         bouncebuffer->busy = false;
     }
 }

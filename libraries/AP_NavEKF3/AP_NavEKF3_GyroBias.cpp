@@ -1,13 +1,4 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
-#include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-
-extern const AP_HAL::HAL& hal;
 
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
 // Assume that the calibration is performed to an accuracy of 0.5 deg/sec which will require averaging under static conditions
@@ -26,10 +17,8 @@ void NavEKF3_core::resetGyroBias(void)
 /*
    vehicle specific initial gyro bias uncertainty in deg/sec
  */
-float NavEKF3_core::InitialGyroBiasUncertainty(void) const
+ftype NavEKF3_core::InitialGyroBiasUncertainty(void) const
 {
     return 2.5f;
 }
 
-
-#endif // HAL_CPU_CLASS

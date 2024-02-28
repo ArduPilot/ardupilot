@@ -13,50 +13,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_LightWareSerial.h"
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <ctype.h>
 #include "AP_RangeFinder_NMEA.h"
+
+#if AP_RANGEFINDER_NMEA_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
+#include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
-// constructor initialises the rangefinder
-// Note this is called after detect() returns true, so we
-// already know that we should setup the rangefinder
-AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
-                                         AP_SerialManager &serial_manager,
-                                         uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state),
-    _distance_m(-1.0f)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-// detect if a NMEA rangefinder by looking to see if the user has configured it
-bool AP_RangeFinder_NMEA::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
-{
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
-
-// update the state of the sensor
-void AP_RangeFinder_NMEA::update(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        _last_reading_ms = now;
-        update_status();
-    } else if ((now - _last_reading_ms) > 3000) {
-        set_status(RangeFinder::RangeFinder_NoData);
-    }
-}
-
 // return last value measured by sensor
-bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_NMEA::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -65,9 +32,11 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
     // read any available lines from the lidar
     float sum = 0.0f;
     uint16_t count = 0;
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        char c = uart->read();
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
         if (decode(c)) {
             sum += _distance_m;
             count++;
@@ -80,12 +49,23 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
     }
 
     // return average of all measurements
-    reading_cm = 100.0f * sum / count;
+    reading_m = sum / count;
+    return true;
+}
+
+// get temperature reading
+bool AP_RangeFinder_NMEA::get_temp(float &temp) const
+{
+    uint32_t now_ms = AP_HAL::millis();
+    if ((_temp_readtime_ms == 0) || ((now_ms - _temp_readtime_ms) > read_timeout_ms())) {
+        return false;
+    }
+    temp = _temp;
     return true;
 }
 
 // add a single character to the buffer and attempt to decode
-// returns true if a complete sentence was successfully decoded
+// returns true if a distance was successfully decoded
 bool AP_RangeFinder_NMEA::decode(char c)
 {
     switch (c) {
@@ -97,6 +77,10 @@ bool AP_RangeFinder_NMEA::decode(char c)
     case '\n':
     case '*':
     {
+        if (_sentence_done) {
+            return false;
+        }
+
         // null terminate and decode latest term
         _term[_term_offset] = 0;
         bool valid_sentence = decode_latest_term();
@@ -115,28 +99,48 @@ bool AP_RangeFinder_NMEA::decode(char c)
         _checksum = 0;
         _term_is_checksum = false;
         _distance_m = -1.0f;
+        _sentence_done = false;
         return false;
     }
 
     // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1)
+    if (_term_offset < sizeof(_term) - 1) {
         _term[_term_offset++] = c;
-    if (!_term_is_checksum)
+    }
+    if (!_term_is_checksum) {
         _checksum ^= c;
+    }
 
     return false;
 }
 
 // decode the most recently consumed term
-// returns true if new sentence has just passed checksum test and is validated
+// returns true if new distance sentence has just passed checksum test and is validated
 bool AP_RangeFinder_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
-        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
-        return ((checksum == _checksum) &&
-                !is_negative(_distance_m) &&
-                (_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT));
+        _sentence_done = true;
+        uint8_t nibble_high = 0;
+        uint8_t nibble_low  = 0;
+        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+            return false;
+        }
+        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
+        if (checksum == _checksum) {
+            if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT || _sentence_type == SONAR_HDED) && !is_negative(_distance_m)) {
+                // return true if distance is valid
+                return true;
+            }
+            if (_sentence_type == SONAR_MTW) {
+                _temp = _temp_unvalidated;
+                _temp_readtime_ms = AP_HAL::millis();
+                // return false because this is not a distance
+                // temperature is accessed via separate accessor
+                return false;
+            }
+        }
+        return false;
     }
 
     // the first term determines the sentence type
@@ -153,6 +157,10 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
             _sentence_type = SONAR_DBT;
         } else if (strcmp(term_type, "DPT") == 0) {
             _sentence_type = SONAR_DPT;
+        } else if (strcmp(term_type, "MTW") == 0) {
+            _sentence_type = SONAR_MTW;
+        } else if (strcmp(term_type, "ED") == 0) {
+            _sentence_type = SONAR_HDED;
         } else {
             _sentence_type = SONAR_UNKNOWN;
         }
@@ -162,25 +170,26 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     if (_sentence_type == SONAR_DBT) {
         // parse DBT messages
         if (_term_number == 3) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
         }
     } else if (_sentence_type == SONAR_DPT) {
         // parse DPT messages
         if (_term_number == 1) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
+        }
+    } else if (_sentence_type == SONAR_MTW) {
+        // parse MTW (mean water temperature) messages
+        if (_term_number == 1) {
+            _temp_unvalidated = strtof(_term, NULL);
+        }
+    } else if (_sentence_type == SONAR_HDED) {
+        // parse HDED (Hondex custom message)
+        if (_term_number == 4) {
+            _distance_m = strtof(_term, NULL);
         }
     }
 
     return false;
 }
 
-// return the numeric value of an ascii hex character
-int16_t AP_RangeFinder_NMEA::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
-}
+#endif  // AP_RANGEFINDER_NMEA_ENABLED

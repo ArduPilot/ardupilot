@@ -1,0 +1,121 @@
+# hw definition file for processing by chibios_pins.py
+# hardware repository: https://github.com/FlyfocusUAV/Bird-CANdy
+
+# MCU class and specific type
+# note: the device is STM32F412CE, not all F412 pins are available
+MCU STM32F4xx STM32F412Rx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load
+APJ_BOARD_ID 1044
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+STM32_ST_USE_TIMER 5
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+FLASH_SIZE_KB 512
+
+# order of UARTs
+SERIAL_ORDER EMPTY EMPTY EMPTY EMPTY EMPTY USART6
+
+# ------ RCOUT pins ------
+
+PA15 TIM2_CH1  TIM2 PWM(1) GPIO(50)
+PB3  TIM2_CH2  TIM2 PWM(2) GPIO(51)
+PB4  TIM3_CH1  TIM3 PWM(3) GPIO(52)
+PB5  TIM3_CH2  TIM3 PWM(4) GPIO(53)
+
+# ------ alternate functions for RCOUT pins ------
+
+# CANdy pins 10, 11
+# USART1 for debug
+# PA15 USART1_TX USART1
+# PB3 USART1_RX USART1
+# define DEFAULT_SERIAL0_BAUD 57600
+
+# ------ end RCOUT pins ------
+
+# CANdy pins 15, 16
+# USART6 for GPS
+PA11 USART6_TX USART6
+PA12 USART6_RX USART6
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CANdy pins 21, 22
+PB7 I2C1_SDA I2C1
+PB6 I2C1_SCL I2C1
+
+define HAL_USE_I2C TRUE
+define STM32_I2C_USE_I2C1 TRUE
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+
+define HAL_I2C_INTERNAL_MASK 0
+
+# only one I2C bus
+I2C_ORDER I2C1
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_NO_RCIN_THREAD
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define DMA_RESERVE_SIZE 0
+
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB2 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+define HAL_NO_MONITOR_THREAD
+
+
+define HAL_DEVICE_THREAD_STACK 768
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 0
+
+# disable dual GPS and GPS blending to save flash space
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+# RCOU+GPS+MAG+BARO+Buzzer+NeoPixels
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_BUZZER
+define HAL_PERIPH_NEOPIXEL_COUNT 8
+define HAL_PERIPH_NEOPIXEL_CHAN 0
+define AP_PERIPH_LED_BRIGHT_DEFAULT 50
+
+

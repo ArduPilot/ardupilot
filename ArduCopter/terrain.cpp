@@ -3,7 +3,7 @@
 // update terrain data
 void Copter::terrain_update()
 {
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     terrain.update();
 
     // tell the rangefinder our height, so it can go into power saving
@@ -17,22 +17,14 @@ void Copter::terrain_update()
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // log terrain data - should be called at 1hz
 void Copter::terrain_logging()
 {
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
-        terrain.log_terrain_data(DataFlash);
+        terrain.log_terrain_data();
     }
 #endif
 }
-
-// should we use terrain data for things including the home altitude
-bool Copter::terrain_use()
-{
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    return (g.terrain_follow > 0);
-#else
-    return false;
 #endif
-}

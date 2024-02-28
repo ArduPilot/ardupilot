@@ -22,7 +22,6 @@
  */
 #include "RCOutput_Disco.h"
 
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 
@@ -108,10 +107,4 @@ void RCOutput_Disco::push(void)
     bebop_out.push();
 }
 
-void RCOutput_Disco::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
-{
-    sysfs_out.set_esc_scaling(min_pwm, max_pwm);
-    bebop_out.set_esc_scaling(min_pwm, max_pwm);
-}
-    
 }

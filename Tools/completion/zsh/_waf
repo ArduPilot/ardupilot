@@ -1,0 +1,99 @@
+#compdef waf waf-light
+#autoload
+
+_waf() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext" update_policy _waf_caching_policy
+
+  # This style defines the function that will be used to determine whether a cache needs rebuilding
+  zstyle -s ":completion:${curcontext}:" cache-policy update_policy
+  if [[ -z "$update_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy _waf_caching_policy
+  fi
+  _arguments -C \
+    '(- 1 *)--version[show version and exit]' \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '1:first arg:_waf_cmds' \
+    '*:: :->args' \
+  && ret=0
+
+    case "$state" in
+      (args)
+        _arguments -C -A -s -S \
+          '(- 1 *)--version[show version and exit]' \
+          '(- 1 *)'{-h,--help}'[show help options and exit]' \
+          '(-j --jobs)'{-j,--jobs}'[amount of parallel jobs]:int:' \
+          '--verbose[verbosity level -v -vv or -vvv]' \
+          '*-v[verbosity level -v -vv or -vvv]' \
+          '--debug[Configure as debug variant.]' \
+          '--bootloader[Configure for building a bootloader.]' \
+          '--default-parameters[set default parameters to embed in the firmware]' \
+          '--enable-sfml[Enable SFML graphics library]' \
+          '--enable-sfml-audio[Enable SFML audio library]' \
+          '--sitl-osd[Enable SITL OSD]' \
+          '--sitl-rgbled[Enable SITL RGBLed]' \
+          '--build-dates[Include build date in binaries]' \
+          '--sitl-flash-storage[Use flash storage emulation.]' \
+          '--upload[Upload applicable targets to a connected device]' \
+          '--board[Board name]:board:_waf_boards' \
+          '--target=[Target name]:target:_waf_targets' \
+          '*:: :->args' \
+        && ret=0
+      ;;
+    esac
+}
+
+_waf_caching_policy () {
+  # rebuild if cache is more than 3 days old
+  local -a oldp
+  oldp=( "$1"(Nm+3) )
+  (( $#oldp ))
+}
+
+(( $+functions[_waf_boards] )) ||
+_waf_boards() {
+  local boards; boards=( $(./waf list_boards | sed -e '$d'))
+  _describe -t boards 'board' boards "$@" && ret=0
+}
+
+(( $+functions[_waf_targets] )) ||
+_waf_targets() {
+  # Cache the list of targets available
+  if ( [[ ${+_waf_comp_targets} -eq 0 ]] || _cache_invalid WAF_TARGETS ) &&
+      ! _retrieve_cache WAF_TARGETS;
+  then
+    # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+    _waf_comp_targets=( $(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' '))
+    _store_cache WAF_TARGETS _waf_comp_targets
+  fi
+  _describe -t targets 'targets' _waf_comp_targets "$@" && ret=0
+}
+
+# TODO generate with regex from waf help
+(( $+functions[_waf_cmds] )) ||
+_waf_cmds() {
+  local commands; commands=(
+    'AP_Periph:builds AP_Periph programs' \
+    'copter:builds copter programs' \
+    'heli:builds heli programs' \
+    'plane:builds plane programs' \
+    'rover:builds rover programs' \
+    'sub:builds sub programs' \
+    'antennatracker:builds antennatracker programs' \
+    'tools:builds all programs of tools group' \
+    'examples:builds all programs of examples group' \
+    'bootloader:builds bootloader programs' \
+    'iofirmware:builds iofirmware programs' \
+    'list:lists the targets to execute' \
+    'all:builds all programs of all group' \
+    'build:executes the build' \
+    'configure:configures the project' \
+    'clean:cleans the project' \
+    'distclean:removes build folders and data' \
+    'submodule_force_clean:removes all submodules, then checkouts all current submodules and synchronizes them' \
+    'submodulesync:checkouts all current submodules and synchronizes them'
+  )
+  _describe -t commands 'command' commands "$@" && ret=0
+}
+
+_waf "$@"

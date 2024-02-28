@@ -4,10 +4,11 @@
 
 class Empty::Semaphore : public AP_HAL::Semaphore {
 public:
-    Semaphore() : _taken(false) {}
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
+
+    bool give() override;
+    bool take(uint32_t timeout_ms) override;
+    bool take_nonblocking() override;
+    bool check_owner() { return true; }
 private:
     bool _taken;
 };

@@ -1,7 +1,15 @@
 /*
  * Simple tool to dump the AP_Param contents from an EEPROM dump
  * Andrew Tridgell February 2012
- */
+ *
+ * Build Command (Assuming starting directory is ardupilot)
+ *    gcc -o eedump_ap_param libraries/AP_Param/tools/eedump_apparam.c
+ *    gcc -g -o eedump_ap_param libraries/AP_Param/tools/eedump_apparam.c   // With Debugging symbols
+ *
+ * How to Use?
+ *    ./eedump_ap_param eeprom.bin
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,15 +43,16 @@ static const char *type_names[8] = {
 };
 
 struct Param_header {
-    uint32_t key : 8;
-    uint32_t type : 6;
+    // to get 9 bits for key we needed to split it into two parts to keep binary compatibility
+    uint32_t key_low : 8;
+    uint32_t type : 5;
+    uint32_t key_high : 1;
     uint32_t group_element : 18;
 };
 
-
-static const uint8_t _sentinal_key   = 0xFF;
-static const uint8_t _sentinal_type  = 0xFF;
-static const uint8_t _sentinal_group = 0xFF;
+static const uint16_t       _sentinal_key   = 0x1FF;
+static const uint8_t        _sentinal_type  = 0x1F;
+static const uint8_t        _sentinal_group = 0xFF;
 
 static uint8_t type_size(enum ap_var_type type)
 {
@@ -111,15 +120,15 @@ main(int argc, char *argv[])
     for (;; ) {
         uint8_t size;
         var = (struct Param_header *)&eeprom[index];
-        if (var->key == _sentinal_key ||
-            var->group_element == _sentinal_group ||
+        const uint16_t key = ((uint16_t)var->key_high)<<8 | var->key_low;
+        if (key == _sentinal_key ||
             var->type == _sentinal_type) {
             printf("end sentinel at %u\n", index);
             break;
         }
         size = type_size(var->type);
         printf("%04x: type %u (%s) key %u group_element %u size %d value ",
-               index, var->type, type_names[var->type], var->key, var->group_element, size);
+               index, var->type, type_names[var->type], key, var->group_element, size);
         index += sizeof(*var);
         switch (var->type) {
         case AP_PARAM_INT8:

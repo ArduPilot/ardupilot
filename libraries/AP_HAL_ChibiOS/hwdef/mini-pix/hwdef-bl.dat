@@ -1,0 +1,41 @@
+# hw definition file for processing by chibios_pins.py
+# for bootloader for mini-pix hardware from RadioLink
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 3
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# flash size
+FLASH_SIZE_KB 1024
+
+# don't allow bootloader to use more than 16k
+FLASH_USE_MAX_KB 16
+
+# bootloader loads at start of flash
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PB1 LED_BOOTLOADER OUTPUT LOW
+PE12 LED_ACTIVITY  OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 16
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# USB pins
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# Add CS pins to ensure they are high in bootloader
+PC2 LPS22HB_CS CS
+PC15 MPU6500_CS CS
+PD10 FRAM_CS CS

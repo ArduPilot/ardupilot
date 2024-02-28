@@ -1,0 +1,23 @@
+include ../f103-periph/hwdef.inc
+
+
+# and support all external compass types
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+# .... except BMM150:
+define AP_COMPASS_BMM150_ENABLED 0
+
+# increase TX size for RTCM
+undef HAL_UART_MIN_TX_SIZE
+define HAL_UART_MIN_TX_SIZE 256
+
+# GPS
+define HAL_PERIPH_ENABLE_GPS
+# restrict backends available on f103:
+define AP_GPS_NOVA_ENABLED 0
+define AP_GPS_SBF_ENABLED 0
+define AP_GPS_GSOF_ENABLED 0
+
+# MAG
+define HAL_PERIPH_ENABLE_MAG
+#define HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+define HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY

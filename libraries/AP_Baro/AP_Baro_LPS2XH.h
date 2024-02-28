@@ -1,13 +1,19 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#if AP_BARO_LPS2XH_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
-
-#include "AP_Baro_Backend.h"
+#include <AP_Math/AP_Math.h>
 
 #define HAL_BARO_LPS25H_I2C_BUS 0
-#define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+
+#ifndef HAL_BARO_LPS25H_I2C_ADDR
+# define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+#endif
 
 
 class AP_Baro_LPS2XH : public AP_Baro_Backend
@@ -21,7 +27,7 @@ public:
     AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
     static AP_Baro_Backend *probe_InvensenseIMU(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint8_t imu_address);
@@ -39,12 +45,14 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    bool _has_sample;
     uint8_t _instance;
-    float _pressure;
+    float _pressure_sum;
+    uint32_t _pressure_count;
     float _temperature;
 
     uint32_t CallTime = 0;
 
     enum LPS2XH_TYPE _lps2xh_type;
 };
+
+#endif  // AP_BARO_LPS2XH_ENABLED

@@ -18,62 +18,84 @@
  */
 #include "AP_Airspeed_MS4525.h"
 
+#if AP_AIRSPEED_MS4525_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 #include <utility>
 
 extern const AP_HAL::HAL &hal;
 
-#define MS4525D0_I2C_ADDR 0x28
+#define MS4525D0_I2C_ADDR1 0x28
+#define MS4525D0_I2C_ADDR2 0x36
+#define MS4525D0_I2C_ADDR3 0x46
 
 AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance) :
     AP_Airspeed_Backend(_frontend, _instance)
 {
 }
 
+// probe for a sensor
+bool AP_Airspeed_MS4525::probe(uint8_t bus, uint8_t address)
+{
+    _dev = hal.i2c_mgr->get_device(bus, address);
+    if (!_dev) {
+        return false;
+    }
+    WITH_SEMAPHORE(_dev->get_semaphore());
+
+    // lots of retries during probe
+    _dev->set_retries(10);
+    
+    _measure();
+    hal.scheduler->delay(10);
+    _collect();
+
+    return _last_sample_time_ms != 0;
+}
+
 // probe and initialise the sensor
 bool AP_Airspeed_MS4525::init()
 {
-    const struct {
-        uint8_t bus;
-        uint8_t addr;
-    } addresses[] = {
-        { 1, MS4525D0_I2C_ADDR },
-        { 0, MS4525D0_I2C_ADDR },
-        { 2, MS4525D0_I2C_ADDR },
-    };
-    bool found = false;
-    for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
-        _dev = hal.i2c_mgr->get_device(addresses[i].bus, addresses[i].addr);
-        if (!_dev) {
-            continue;
+    static const uint8_t addresses[] = { MS4525D0_I2C_ADDR1, MS4525D0_I2C_ADDR2, MS4525D0_I2C_ADDR3 };
+    if (bus_is_configured()) {
+        // the user has configured a specific bus
+        for (uint8_t addr : addresses) {
+            if (probe(get_bus(), addr)) {
+                goto found_sensor;
+            }
         }
-        if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            continue;
+    } else {
+        // if bus is not configured then fall back to the old
+        // behaviour of probing all buses, external first
+        FOREACH_I2C_EXTERNAL(bus) {
+            for (uint8_t addr : addresses) {
+                if (probe(bus, addr)) {
+                    goto found_sensor;
+                }
+            }
         }
-
-        // lots of retries during probe
-        _dev->set_retries(10);
-    
-        _measure();
-        hal.scheduler->delay(10);
-        _collect();
-
-        _dev->get_semaphore()->give();
-
-        found = (_last_sample_time_ms != 0);
-        if (found) {
-            printf("MS4525: Found sensor on bus %u address 0x%02x\n", addresses[i].bus, addresses[i].addr);
-            break;
+        FOREACH_I2C_INTERNAL(bus) {
+            for (uint8_t addr : addresses) {
+                if (probe(bus, addr)) {
+                    goto found_sensor;
+                }
+            }
         }
     }
-    if (!found) {
-        printf("MS4525: no sensor found\n");
-        return false;
-    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MS4525[%u]: no sensor found", get_instance());
+    return false;
+
+found_sensor:
+    _dev->set_device_type(uint8_t(DevType::MS4525));
+    set_bus_id(_dev->get_bus_id());
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS4525[%u]: Found bus %u addr 0x%02x", get_instance(), _dev->bus_num(), _dev->get_bus_address());
 
     // drop to 2 retries for runtime
     _dev->set_retries(2);
@@ -173,17 +195,18 @@ void AP_Airspeed_MS4525::_collect()
     float temp  = _get_temperature(dT_raw);
     float temp2 = _get_temperature(dT_raw2);
     
-    _voltage_correction(press, temp);
-    _voltage_correction(press2, temp2);
-
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _press_sum += press + press2;
-        _temp_sum += temp + temp2;
-        _press_count += 2;
-        _temp_count += 2;
-        sem->give();
+    if (!disable_voltage_correction()) {
+        _voltage_correction(press, temp);
+        _voltage_correction(press2, temp2);
     }
-    
+
+    WITH_SEMAPHORE(sem);
+
+    _press_sum += press + press2;
+    _temp_sum += temp + temp2;
+    _press_count += 2;
+    _temp_count += 2;
+
     _last_sample_time_ms = AP_HAL::millis();
 }
 
@@ -227,17 +250,18 @@ void AP_Airspeed_MS4525::_timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (_press_count > 0) {
-            _pressure = _press_sum / _press_count;
-            _press_count = 0;
-            _press_sum = 0;
-        }
-        sem->give();
+
+    if (_press_count > 0) {
+        _pressure = _press_sum / _press_count;
+        _press_count = 0;
+        _press_sum = 0;
     }
+
     pressure = _pressure;
     return true;
 }
@@ -245,17 +269,20 @@ bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_MS4525::get_temperature(float &temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (_temp_count > 0) {
-            _temperature = _temp_sum / _temp_count;
-            _temp_count = 0;
-            _temp_sum = 0;
-        }
-        sem->give();
+
+    if (_temp_count > 0) {
+        _temperature = _temp_sum / _temp_count;
+        _temp_count = 0;
+        _temp_sum = 0;
     }
+
     temperature = _temperature;
     return true;
 }
+
+#endif  // AP_AIRSPEED_MS4525_ENABLED

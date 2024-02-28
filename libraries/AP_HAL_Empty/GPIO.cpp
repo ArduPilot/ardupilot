@@ -27,12 +27,6 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
     return new DigitalSource(0);
 }
 
-/* Interrupt interface: */
-bool GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-        uint8_t mode) {
-    return true;
-}
-
 bool GPIO::usb_connected(void)
 {
     return false;

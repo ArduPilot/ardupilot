@@ -11,11 +11,13 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
 #include "AP_RCProtocol_PPMSum.h"
+
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
 
 /*
   process a PPM-sum pulse of the given width
@@ -63,3 +65,5 @@ void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
         ppm_state._channel_counter = -1;
     }
 }
+
+#endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

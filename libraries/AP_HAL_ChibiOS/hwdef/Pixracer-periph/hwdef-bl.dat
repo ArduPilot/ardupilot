@@ -1,0 +1,53 @@
+# hw definition file for processing by chibios_hwdef.py for the
+# mRo Pixracer board as a CANBUS Node AP_Periph.
+
+# MCU class and specific type
+MCU STM32F4xx STM32F427xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1402
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2
+
+PB1 LED_BOOTLOADER OUTPUT
+PB3 LED_ACTIVITY OUTPUT
+define HAL_LED_ON 1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# USART2 serial2 telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# location of application code
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# bootloader loads at start of flash
+FLASH_RESERVE_START_KB 0
+
+# Add CS pins to ensure they are high in bootloader
+PC2 MPU9250_CS CS
+PC15 20608_CS CS
+PD7 BARO_CS CS
+PD10 FRAM_CS CS
+PE15 MAG_CS CS
+
+# enable CAN support
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+PB8 STAY_IN_BOOTLOADER INPUT FLOATING # if pulled low stay in bootloader

@@ -43,7 +43,7 @@ void Copter::failsafe_check()
         failsafe_last_timestamp = tnow;
         if (in_failsafe) {
             in_failsafe = false;
-            Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_RESOLVED);
         }
         return;
     }
@@ -57,8 +57,8 @@ void Copter::failsafe_check()
         if (motors->armed()) {
             motors->output_min();
         }
-        // log an error
-        Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
+
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
     }
 
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
@@ -79,11 +79,6 @@ void Copter::failsafe_check()
 void Copter::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-#if AC_FENCE
-    const bool fence_breached = fence.get_breaches() != 0;
-#else
-    const bool fence_breached = false;
-#endif
-    g2.afs.check(failsafe.last_heartbeat_ms, fence_breached, last_radio_update_ms);
+    g2.afs.check(last_radio_update_ms);
 }
 #endif

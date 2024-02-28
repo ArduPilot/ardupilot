@@ -21,24 +21,18 @@
 
 #include "AP_Notify.h"
 
-#ifndef HAL_BUZZER_ON
- #define HAL_BUZZER_ON 1
- #define HAL_BUZZER_OFF 0 
-#endif
-
-
-
 extern const AP_HAL::HAL& hal;
-
 
 bool Buzzer::init()
 {
-#if defined(HAL_BUZZER_PIN)
-    _pin = HAL_BUZZER_PIN;
-#else
+    if (pNotify->buzzer_enabled() == false) {
+        return false;
+    }
     _pin = pNotify->get_buzz_pin();
-#endif
-    if(!_pin) return false;
+    if (_pin <= 0) {
+        // no buzzer
+        return false;
+    }
 
     // setup the pin and ensure it's off
     hal.gpio->pinMode(_pin, HAL_GPIO_OUTPUT);
@@ -54,122 +48,34 @@ bool Buzzer::init()
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void Buzzer::update()
 {
-    // return immediately if disabled
-    if (!AP_Notify::flags.external_leds) {
-        return;
-    }
+    update_pattern_to_play();
+    update_playing_pattern();
+}
 
+void Buzzer::update_pattern_to_play()
+{
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz
         play_pattern(SINGLE_BUZZ);
-    }
-
-    // reduce 50hz call down to 10hz
-    _counter++;
-    if (_counter < 5) {
         return;
     }
-    _counter = 0;
 
-    // complete currently played pattern
-    if (_pattern != NONE) {
-        _pattern_counter++;
-        switch (_pattern) {
-            case SINGLE_BUZZ:
-                // buzz for 10th of a second
-                if (_pattern_counter == 1) {
-                    on(true);
-                }else{
-                    on(false);
-                    _pattern = NONE;
-                }
-                return;
-            case DOUBLE_BUZZ:
-                // buzz for 10th of a second
-                switch (_pattern_counter) {
-                    case 1:
-                        on(true);
-                        break;
-                    case 2:
-                        on(false);
-                        break;
-                    case 3:
-                        on(true);
-                        break;
-                    case 4:
-                    default:
-                        on(false);
-                        _pattern = NONE;
-                        break;
-                }
-                return;
-            case ARMING_BUZZ:
-                // record start time
-                if (_pattern_counter == 1) {
-                    _arming_buzz_start_ms = AP_HAL::millis();
-                    on(true);
-                } else {
-                    // turn off buzzer after 3 seconds
-                    if (AP_HAL::millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
-                        _arming_buzz_start_ms = 0;
-                        on(false);
-                        _pattern = NONE;
-                    }
-                }
-                return;
-            case BARO_GLITCH:
-                // four fast tones
-                switch (_pattern_counter) {
-                    case 1:
-                    case 3:
-                    case 5:
-                    case 7:
-                    case 9:
-                        on(true);
-                        break;
-                    case 2:
-                    case 4:
-                    case 6:
-                    case 8:
-                        on(false);
-                        break;
-                    case 10:
-                        on(false);
-                        _pattern = NONE;
-                        break;
-                    default:
-                        // do nothing
-                        break;
-                }
-                return;
-            case EKF_BAD:
-                // four tones getting shorter)
-                switch (_pattern_counter) {
-                    case 1:
-                    case 5:
-                    case 8:
-                    case 10:
-                        on(true);
-                        break;
-                    case 4:
-                    case 7:
-                    case 9:
-                        on(false);
-                        break;
-                    case 11:
-                        on(false);
-                        _pattern = NONE;
-                        break;
-                    default:
-                        // do nothing
-                        break;
-                }
-                return;
-            default:
-                // do nothing
-                break;
-        }
+    if (AP_HAL::millis() - _pattern_start_time < _pattern_start_interval_time_ms) {
+        // do not interrupt playing patterns / enforce minumum separation
+        return;
+    }
+
+    // initializing?
+    if (_flags.gyro_calibrated != AP_Notify::flags.gyro_calibrated) {
+        _flags.gyro_calibrated = AP_Notify::flags.gyro_calibrated;
+        play_pattern(INIT_GYRO);
+    }
+
+    // check if prearm check are good
+    if (AP_Notify::flags.pre_arm_check  && !_flags.pre_arm_check) {
+        _flags.pre_arm_check = true;
+        play_pattern(PRE_ARM_GOOD);
     }
 
     // check if armed status has changed
@@ -178,7 +84,7 @@ void Buzzer::update()
         if (_flags.armed) {
             // double buzz when armed
             play_pattern(ARMING_BUZZ);
-        }else{
+        } else {
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);
         }
@@ -198,12 +104,32 @@ void Buzzer::update()
     // if vehicle lost was enabled, starting beep
     if (AP_Notify::flags.vehicle_lost) {
         play_pattern(DOUBLE_BUZZ);
+        return;
     }
 
     // if battery failsafe constantly single buzz
     if (AP_Notify::flags.failsafe_battery) {
         play_pattern(SINGLE_BUZZ);
+        return;
     }
+}
+
+
+void Buzzer::update_playing_pattern()
+{
+    if (_pattern == 0UL) {
+        return;
+    }
+
+    const uint32_t delta = AP_HAL::millis() - _pattern_start_time;
+    if (delta >= 3200) {
+        // finished playing pattern
+        on(false);
+        _pattern = 0UL;
+        return;
+    }
+    const uint32_t bit = delta / 100UL; // each bit is 100ms
+    on(_pattern & (1U<<(31-bit)));
 }
 
 // on - turns the buzzer on or off
@@ -218,13 +144,14 @@ void Buzzer::on(bool turn_on)
     _flags.on = turn_on;
 
     // pull pin high or low
-    hal.gpio->write(_pin, _flags.on? HAL_BUZZER_ON : HAL_BUZZER_OFF);
+    const uint8_t buzz_on = pNotify->get_buzz_level();
+    hal.gpio->write(_pin, _flags.on? buzz_on : !buzz_on);
 }
 
 /// play_pattern - plays the defined buzzer pattern
-void Buzzer::play_pattern(BuzzerPattern pattern_id)
+void Buzzer::play_pattern(const uint32_t pattern)
 {
-    _pattern = pattern_id;
-    _pattern_counter = 0;
+    _pattern = pattern;
+    _pattern_start_time = AP_HAL::millis();
 }
 

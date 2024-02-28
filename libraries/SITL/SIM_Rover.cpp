@@ -23,14 +23,8 @@
 
 namespace SITL {
 
-SimRover::SimRover(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    max_speed(20),
-    max_accel(10),
-    max_wheel_turn(35),
-    turning_circle(1.8),
-    skid_turn_rate(140), // degrees/sec
-    skid_steering(false)
+SimRover::SimRover(const char *frame_str) :
+    Aircraft(frame_str)
 {
     skid_steering = strstr(frame_str, "skid") != nullptr;
 
@@ -40,7 +34,14 @@ SimRover::SimRover(const char *home_str, const char *frame_str) :
         // with a sabertooth controller
         max_accel = 14;
         max_speed = 4;
+        return;
     }
+
+    vectored_thrust = strstr(frame_str, "vector") != nullptr;
+    if (vectored_thrust) {
+        printf("Vectored Thrust Rover Simulation Started\n");
+    }
+    lock_step_scheduled = true;
 }
 
 
@@ -48,7 +49,7 @@ SimRover::SimRover(const char *home_str, const char *frame_str) :
 /*
   return turning circle (diameter) in meters for steering angle proportion in degrees
 */
-float SimRover::turn_circle(float steering)
+float SimRover::turn_circle(float steering) const
 {
     if (fabsf(steering) < 1.0e-6) {
         return 0;
@@ -62,7 +63,10 @@ float SimRover::turn_circle(float steering)
 float SimRover::calc_yaw_rate(float steering, float speed)
 {
     if (skid_steering) {
-        return steering * skid_turn_rate;
+        return constrain_float(steering * skid_turn_rate, -MAX_YAW_RATE, MAX_YAW_RATE);
+    }
+    if (vectored_thrust) {
+        return constrain_float(steering * vectored_turn_rate_max, -MAX_YAW_RATE, MAX_YAW_RATE);
     }
     if (fabsf(steering) < 1.0e-6 or fabsf(speed) < 1.0e-6) {
         return 0;
@@ -70,7 +74,7 @@ float SimRover::calc_yaw_rate(float steering, float speed)
     float d = turn_circle(steering);
     float c = M_PI * d;
     float t = c / speed;
-    float rate = 360.0f / t;
+    float rate = constrain_float(360.0f / t, -MAX_YAW_RATE, MAX_YAW_RATE);
     return rate;
 }
 
@@ -100,6 +104,13 @@ void SimRover::update(const struct sitl_input &input)
     } else {
         steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
         throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+
+        // vectored thrust conversion
+        if (vectored_thrust) {
+            const float steering_angle_rad = radians(steering * vectored_angle_max);
+            steering = sinf(steering_angle_rad) * throttle;
+            throttle *= cosf(steering_angle_rad);
+        }
     }
 
     // how much time has passed?
@@ -147,7 +158,9 @@ void SimRover::update(const struct sitl_input &input)
     velocity_ef += accel_earth * delta_time;
 
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
+
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

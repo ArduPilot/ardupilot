@@ -16,8 +16,13 @@
   temperature calibration library
  */
 
+#include "AP_TempCalibration_config.h"
+
+#if AP_TEMPCALIBRATION_ENABLED
+
 #include "AP_TempCalibration.h"
 #include <stdio.h>
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,15 +37,15 @@ extern const AP_HAL::HAL& hal;
 // table of user settable and learned parameters
 const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
 
-    // @Param: ENABLED
+    // @Param: _ENABLED
     // @DisplayName: Temperature calibration enable
     // @Description: Enable temperature calibration. Set to 0 to disable. Set to 1 to use learned values. Set to 2 to learn new values and use the values
     // @Values: 0:Disabled,1:Enabled,2:EnableAndLearn
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_ENABLED", 1, AP_TempCalibration, enabled, TC_DISABLED, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: TEMP_MIN
-    // @DisplayName: Min learned temperature
+    // @Param: _TEMP_MIN
+    // @DisplayName: Temperature calibration min learned temperature
     // @Description: Minimum learned temperature. This is automatically set by the learning process
     // @Units: degC
     // @ReadOnly: True
@@ -50,8 +55,8 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
 
     // 3 was used by a duplicated temp_min entry (do not use in the future!)
 
-    // @Param: TEMP_MAX
-    // @DisplayName: Max learned temperature
+    // @Param: _TEMP_MAX
+    // @DisplayName: Temperature calibration max learned temperature
     // @Description: Maximum learned temperature. This is automatically set by the learning process
     // @Units: degC
     // @ReadOnly: True
@@ -59,8 +64,8 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TEMP_MAX", 4, AP_TempCalibration, temp_max, 0),
 
-    // @Param: BARO_EXP
-    // @DisplayName: Barometer exponent
+    // @Param: _BARO_EXP
+    // @DisplayName: Temperature Calibration barometer exponent
     // @Description: Learned exponent for barometer temperature correction
     // @ReadOnly: True
     // @Volatile: True
@@ -92,9 +97,7 @@ void AP_TempCalibration::setup_learning(void)
     learn_temp_step = 0.25;
     learn_count = 200;
     learn_i = 0;
-    if (learn_values != nullptr) {
-        delete [] learn_values;
-    }
+    delete [] learn_values;
     learn_values = new float[learn_count];
     if (learn_values == nullptr) {
         return;
@@ -232,3 +235,5 @@ void AP_TempCalibration::update(void)
         break;
     }
 }
+
+#endif  // AP_TEMPCALIBRATION_ENABLED

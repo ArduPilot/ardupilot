@@ -1,0 +1,10 @@
+include ../f103-periph/hwdef.inc
+
+
+define HAL_AIRSPEED_BUS_DEFAULT 0
+
+# 10" DLVR sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 9
+define AIRSPEED_MAX_SENSORS 1
+
+define HAL_PERIPH_ENABLE_AIRSPEED

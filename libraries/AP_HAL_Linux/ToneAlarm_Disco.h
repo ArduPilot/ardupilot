@@ -13,8 +13,7 @@ class ToneAlarm_Disco : public ToneAlarm {
 public:
     ToneAlarm_Disco();
     bool init() override;
-    void stop() override;
-    bool play() override;
+    void set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 
 private:
     RCOutput_Bebop *bebop_out;

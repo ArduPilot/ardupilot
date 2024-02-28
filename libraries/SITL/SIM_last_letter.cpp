@@ -18,6 +18,8 @@
 
 #include "SIM_last_letter.h"
 
+#if HAL_SIM_LAST_LETTER_ENABLED
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -29,8 +31,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-last_letter::last_letter(const char *home_str, const char *_frame_str) :
-    Aircraft(home_str, _frame_str),
+last_letter::last_letter(const char *_frame_str) :
+    Aircraft(_frame_str),
     last_timestamp_us(0),
     sock(true)
 {
@@ -135,3 +137,5 @@ void last_letter::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
+
+#endif  // HAL_SIM_LAST_LETTER_ENABLED

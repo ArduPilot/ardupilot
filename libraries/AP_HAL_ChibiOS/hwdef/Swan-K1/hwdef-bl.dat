@@ -1,0 +1,4 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Swan-K1 bootloader
+
+include ../fmuv5/hwdef-bl.dat

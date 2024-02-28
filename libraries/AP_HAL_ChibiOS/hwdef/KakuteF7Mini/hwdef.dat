@@ -1,0 +1,163 @@
+# hw definition file for processing by chibios_pins.py
+# for Holybro KakuteF7 Mini hardware.
+@ thanks to betaflight for pin information
+
+# MCU class and specific type
+MCU STM32F7xx STM32F745xx
+
+# board ID for firmware load
+APJ_BOARD_ID 145
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# leave 2 sectors free
+FLASH_RESERVE_START_KB 96
+
+
+# only one I2C bus
+I2C_ORDER I2C1
+
+# order of UARTs (and USB), USART3 should be in second place to map order with the board's silk screen
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7
+
+# buzzer
+PD15 TIM4_CH4 TIM4 GPIO(77) ALARM
+#PD15 BUZZER OUTPUT GPIO(80) LOW
+#define HAL_BUZZER_PIN 80
+#
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# SPI1 for M25P16 dataflash
+PA4 FLASH_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI2 for MAX7456 OSD
+PB12 MAX7456_CS CS
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# SPI4 for ICM20689
+PE4 ICM20689_CS CS
+PE2 SPI4_SCK SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# I2C1 for baro
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 13
+define HAL_BATT_CURR_PIN 12
+define HAL_BATT_VOLT_SCALE 10.9
+define HAL_BATT_CURR_SCALE 28.5
+
+PC5 RSSI_ADC ADC1
+define BOARD_RSSI_ANA_PIN 15
+
+PA2 LED0 OUTPUT LOW
+
+# In order to accommodate bi-directional dshot certain devices cannot be DMA enabled
+# NODMA indicates these devices, if you remove it they will still not be resolved for DMA
+
+# USART1
+PA10 USART1_RX USART1 NODMA
+PA9  USART1_TX USART1 NODMA
+
+# USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 (GPS)
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+# UART4 (GPS2)
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+
+# RC input defaults to UART to allow for bi-dir dshot
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL6_BAUD 115
+
+# UART7, RX only for ESC Telemetry
+# No DMA because SPI2 requires the DMA slot
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA LOW
+
+# Motors, bi-directional dshot capable
+PB1  TIM3_CH4 TIM3 PWM(1) GPIO(50)          # M1
+PE9  TIM1_CH1 TIM1 PWM(2) GPIO(51)          # M2 CH1 and CH2 can share ICU Channel for BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)  BIDIR   # M4
+PB0  TIM3_CH3 TIM3 PWM(4) GPIO(53)  BIDIR   # M3
+# These are not DMA enabled so not dshot capable
+# To get dshot (but not bi-dir dshot) remove the NODMA and add NODMA to USART6
+PC9  TIM8_CH4 TIM8 PWM(5) GPIO(54)  NODMA   # M5
+PA3  TIM5_CH4 TIM5 PWM(6) GPIO(55)          # M6
+
+# extra PWM outs
+#PD12  TIM4_CH1 TIM4 PWM(7) GPIO(56) # led pin
+#PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57) # buzzer pin (need to comment out buzzer)
+
+DMA_PRIORITY ADC* USART6* TIM1* TIM3* SPI4* SPI1*
+DMA_NOSHARE SPI4_RX
+
+define HAL_STORAGE_SIZE 16384
+STORAGE_FLASH_PAGE 1
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# spi devices
+SPIDEV mpu6000  SPI4 DEVID1 ICM20689_CS MODE3  1*MHZ  4*MHZ
+SPIDEV dataflash SPI1 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
+SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+
+# one BARO
+BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
+
+# setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+define STM32_PWM_USE_ADVANCED TRUE
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
+define HAL_MOUNT_ENABLED 0
+
+# save some flash
+include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc

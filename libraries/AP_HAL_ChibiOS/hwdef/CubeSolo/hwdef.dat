@@ -1,0 +1,59 @@
+# hw definition file for processing by chibios_hwdef.py
+# for stock Pixhawk 2 cube, or the hex CUBE Black in a 3DR Solo
+# this is based on the FMUv3 hwdef, with Solo's required parameter defaults
+# do not use this hwdef for any other vehicle or configuration
+
+include ../fmuv3/hwdef.dat
+
+define HAL_CHIBIOS_ARCH_CUBE 1
+
+env OPTIMIZE -O2
+
+SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20602_ext   SPI4 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+
+# three IMUs, but allow for different variants. First two IMUs are
+# isolated, 3rd isn't
+IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
+
+# the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
+# and the H variant of the gyro
+IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+
+# 3rd non-isolated IMU
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+
+# alternative IMU set for newer cubes
+IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# two baros
+BARO MS56XX SPI:ms5611_ext
+BARO MS56XX SPI:ms5611
+
+# two compasses. First is in the LSM303D
+COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+# 2nd compass is part of the 2nd invensense IMU
+COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
+
+# compass as part of ICM20948 on newer cubes
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+undef AP_NOTIFY_OREOLED_ENABLED
+define AP_NOTIFY_OREOLED_ENABLED 1
+
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+undef HAL_SOLO_GIMBAL_ENABLED
+define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED AP_BATTERY_SMBUS_ENABLED
+
+AUTOBUILD_TARGETS Copter

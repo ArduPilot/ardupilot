@@ -36,7 +36,7 @@ _sample_buffer(nullptr)
 /*
     Select options, initialise variables and initiate accel calibration
     Options:
-    Fit Type:       Will assume that if accelerometer static samples around all possible orientatio
+    Fit Type:       Will assume that if accelerometer static samples around all possible orientation
                     are spread in space will cover a surface of AXIS_ALIGNED_ELLIPSOID or any general 
                     ELLIPSOID as chosen
 
@@ -173,7 +173,7 @@ bool AccelCalibrator::get_sample(uint8_t i, Vector3f& s) const {
     return true;
 }
 
-// returns truen and sample corrected with diag offdiag parameters as calculated by LSq estimation procedure
+// returns true and sample corrected with diag offdiag parameters as calculated by LSq estimation procedure
 // returns false if no correct parameter exists to be applied along with existing sample without corrections
 bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
     if (_status != ACCEL_CAL_SUCCESS || !get_sample(i,s)) {
@@ -199,7 +199,7 @@ void AccelCalibrator::check_for_timeout() {
     }
 }
 
-// returns spherical fit paramteters
+// returns spherical fit parameters
 void AccelCalibrator::get_calibration(Vector3f& offset) const {
     offset = -_param.s.offset;
 }
@@ -288,7 +288,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             break;
 
         case ACCEL_CAL_COLLECTING_SAMPLE:
-            // Calibrator is waiting on collecting samples from acceleromter for amount of 
+            // Calibrator is waiting on collecting samples from accelerometer for amount of 
             // time as requested by user/GCS
             if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
                 break;
@@ -309,7 +309,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
 
         case ACCEL_CAL_FAILED:
             // Calibration has failed with reasons that can range from 
-            // bad sample data leading to faillure in tolerance test to lack of distinct samples
+            // bad sample data leading to failure in tolerance test to lack of distinct samples
             if (_status == ACCEL_CAL_NOT_STARTED) {
                 break;
             }
@@ -355,7 +355,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
             }
         }
 
-        if (!inverse(JTJ, JTJ, get_num_params())) {
+        if (!mat_inverse(JTJ, JTJ, get_num_params())) {
             return;
         }
 
@@ -389,13 +389,6 @@ float AccelCalibrator::calc_residual(const Vector3f& sample, const struct param_
         params.offdiag.y , params.offdiag.z , params.diag.z
     );
     return GRAVITY_MSS - (M*(sample+params.offset)).length();
-}
-
-// calculated the total mean squared fitness of all the collected samples using parameters
-// converged to LSq estimator so far
-float AccelCalibrator::calc_mean_squared_residuals() const
-{
-    return calc_mean_squared_residuals(_param.s);
 }
 
 // calculated the total mean squared fitness of all the collected samples using parameters
@@ -450,7 +443,7 @@ void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& p
             ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
             return;
         }
-    };
+    }
 }
 
 // returns number of parameters are required for selected Fit type

@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    bld.ap_stlib(
+        name= 'iofirmware_libs',
+        ap_vehicle='iofirmware',
+        ap_libraries= [
+        'AP_Common',
+        'AP_HAL',
+        'AP_HAL_Empty',
+        'AP_Math',
+        'AP_RCProtocol',
+        'AP_BoardConfig',
+        'AP_ESC_Telem',
+        'AP_SBusOut'
+        ],
+        exclude_src=[
+            'libraries/AP_HAL_ChibiOS/Storage.cpp'
+        ]
+    )
+
+    bld.ap_program(
+        program_name='iofirmware_lowpolh',
+        use='iofirmware_libs',
+        program_groups=['bin','iofirmware'],
+        defines=['IOMCU_IMU_HEATER_POLARITY=0']
+    )
+
+    bld.ap_program(
+        program_name='iofirmware_highpolh',
+        use='iofirmware_libs',
+        program_groups=['bin','iofirmware'],
+        defines=['IOMCU_IMU_HEATER_POLARITY=1']
+    )

@@ -27,44 +27,50 @@
 
 
 template <class T>
+class HarmonicNotchFilter;
+
+template <class T>
 class NotchFilter {
 public:
+    friend class HarmonicNotchFilter<T>;
     // set parameters
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
+    void init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q);
     T apply(const T &sample);
+    void reset();
+    float center_freq_hz() const { return _center_freq_hz; }
+    float sample_freq_hz() const { return _sample_freq_hz; }
 
-private:
-    bool initialised;
-    float b0, b1, b2, a1, a2, a0_inv;
-    T ntchsig, ntchsig1, ntchsig2, signal2, signal1;
+    // calculate attenuation and quality from provided center frequency and bandwidth
+    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
+
+protected:
+
+    bool initialised, need_reset;
+    float b0, b1, b2, a1, a2;
+    float _center_freq_hz, _sample_freq_hz;
+    T ntchsig1, ntchsig2, signal2, signal1;
 };
 
 /*
-  a notch filter with enable and filter parameters
+  notch filter enable and filter parameters
  */
-class NotchFilterVector3fParam {
+class NotchFilterParams {
 public:
-    NotchFilterVector3fParam(void);
-    void init(float sample_freq_hz);
-    Vector3f apply(const Vector3f &sample);
-
-    static const struct AP_Param::GroupInfo var_info[];
+    float center_freq_hz(void) const { return _center_freq_hz; }
+    float bandwidth_hz(void) const { return _bandwidth_hz; }
+    float attenuation_dB(void) const { return _attenuation_dB; }
+    uint8_t enabled(void) const { return _enable; }
+    void enable() { _enable.set(true); }
     
-private:
-    AP_Int8 enable;
-    AP_Float center_freq_hz;
-    AP_Float bandwidth_hz;
-    AP_Float attenuation_dB;
-
-    float sample_freq_hz;
-
-    float last_center_freq;
-    float last_bandwidth;
-    float last_attenuation;
-    
-    NotchFilter<Vector3f> filter;
+protected:
+    AP_Int8 _enable;
+    AP_Float _center_freq_hz;
+    AP_Float _bandwidth_hz;
+    AP_Float _attenuation_dB;
 };
 
 typedef NotchFilter<float> NotchFilterFloat;
+typedef NotchFilter<Vector2f> NotchFilterVector2f;
 typedef NotchFilter<Vector3f> NotchFilterVector3f;
 

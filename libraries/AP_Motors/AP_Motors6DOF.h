@@ -12,8 +12,8 @@
 class AP_Motors6DOF : public AP_MotorsMatrix {
 public:
 
-    AP_Motors6DOF(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMatrix(loop_rate, speed_hz) {
+    AP_Motors6DOF(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMatrix(speed_hz) {
         AP_Param::setup_object_defaults(this, var_info);
     };
 
@@ -41,6 +41,14 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
+    // returns a vector with roll, pitch, and yaw contributions
+    Vector3f get_motor_angular_factors(int motor_number);
+
+    // returns true if motor is enabled
+    bool motor_is_enabled(int motor_number);
+
+    bool set_reversed(int motor_number, bool reversed);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -59,7 +67,6 @@ protected:
     AP_Int8             _motor_reverse[AP_MOTORS_MAX_NUM_MOTORS];
     AP_Float            _forwardVerticalCouplingFactor;
 
-    float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
     float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 

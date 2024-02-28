@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_RCMapper_config.h"
+
+#if AP_RCMAPPER_ENABLED
+
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -9,8 +13,13 @@ public:
     RCMapper();
 
     /* Do not allow copies */
-    RCMapper(const RCMapper &other) = delete;
-    RCMapper &operator=(const RCMapper&) = delete;
+    CLASS_NO_COPY(RCMapper);
+
+    // get singleton instance
+    static RCMapper *get_singleton()
+    {
+        return _singleton;
+    }
 
     /// roll - return input channel number for roll / aileron input
     uint8_t roll() const { return _ch_roll; }
@@ -40,4 +49,12 @@ private:
     AP_Int8 _ch_throttle;
     AP_Int8 _ch_forward;
     AP_Int8 _ch_lateral;
+    static RCMapper *_singleton;
 };
+
+namespace AP
+{
+RCMapper *rcmap();
+};
+
+#endif  // AP_RCMAPPER_ENABLED

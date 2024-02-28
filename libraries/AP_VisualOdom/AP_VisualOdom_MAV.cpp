@@ -13,26 +13,69 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_VisualOdom_config.h"
+
+#if AP_VISUALODOM_MAV_ENABLED
+
 #include "AP_VisualOdom_MAV.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
-// constructor
-AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
-    AP_VisualOdom_Backend(frontend)
+// consume vision pose estimate data and send to EKF. distances in meters
+// quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter, int8_t quality)
 {
+    const float scale_factor =  _frontend.get_pos_scale();
+    Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
+
+    posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
+    angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
+
+    // record quality
+    _quality = quality;
+
+    // send attitude and position to EKF if quality OK
+    bool consume = (_quality >= _frontend.get_quality_min());
+    if (consume) {
+        AP::ahrs().writeExtNavData(pos, attitude, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
+    }
+
+    // calculate euler orientation for logging
+    float roll;
+    float pitch;
+    float yaw;
+    attitude.to_euler(roll, pitch, yaw);
+
+#if HAL_LOGGING_ENABLED
+    // log sensor data
+    Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), posErr, angErr, reset_counter, !consume, _quality);
+#endif
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
 }
 
-// consume VISIOIN_POSITION_DELTA MAVLink message
-void AP_VisualOdom_MAV::handle_msg(mavlink_message_t *msg)
+// consume vision velocity estimate data and send to EKF, velocity in NED meters per second
+// quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
 {
-    // decode message
-    mavlink_vision_position_delta_t packet;
-    mavlink_msg_vision_position_delta_decode(msg, &packet);
+    // record quality
+    _quality = quality;
 
-    const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
-    set_deltas(angle_delta, position_delta, packet.time_delta_usec, packet.confidence);
+    // send velocity to EKF if quality OK
+    bool consume = (_quality >= _frontend.get_quality_min());
+    if (consume) {
+        AP::ahrs().writeExtNavVelData(vel, _frontend.get_vel_noise(), time_ms, _frontend.get_delay_ms());
+    }
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
+
+#if HAL_LOGGING_ENABLED
+    Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter, !consume, _quality);
+#endif
 }
+
+#endif  // AP_VISUALODOM_MAV_ENABLED

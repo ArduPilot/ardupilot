@@ -14,11 +14,14 @@
  */
 #pragma once
 
+#include "AP_Beacon_config.h"
+
+#if AP_BEACON_ENABLED
+
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Common/Location.h>
 
 class AP_Beacon_Backend;
 
@@ -31,13 +34,17 @@ class AP_Beacon
 public:
     friend class AP_Beacon_Backend;
 
-    AP_Beacon(AP_SerialManager &_serial_manager);
+    AP_Beacon();
+
+    // get singleton instance
+    static AP_Beacon *get_singleton() { return _singleton; }
 
     // external position backend types (used by _TYPE parameter)
     enum AP_BeaconType {
         AP_BeaconType_None   = 0,
         AP_BeaconType_Pozyx  = 1,
         AP_BeaconType_Marvelmind = 2,
+        AP_BeaconType_Nooploop  = 3,
         AP_BeaconType_SITL   = 10
     };
 
@@ -54,10 +61,10 @@ public:
     void init(void);
 
     // return true if beacon feature is enabled
-    bool enabled(void);
+    bool enabled(void) const;
 
     // return true if sensor is basically healthy (we are receiving data)
-    bool healthy(void);
+    bool healthy(void) const;
 
     // update state of all beacons
     void update(void);
@@ -99,7 +106,12 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // a method for vehicles to call to make onboard log messages:
+    void log();
+
 private:
+
+    static AP_Beacon *_singleton;
 
     // check if device is ready
     bool device_ready(void) const;
@@ -121,7 +133,6 @@ private:
 
     // external references
     AP_Beacon_Backend *_driver;
-    AP_SerialManager &serial_manager;
 
     // last known position
     Vector3f veh_pos_ned;
@@ -137,3 +148,9 @@ private:
     uint8_t boundary_num_points;                // number of points in boundary
     uint8_t boundary_num_beacons;               // total number of beacon points consumed while building boundary
 };
+
+namespace AP {
+    AP_Beacon *beacon();
+};
+
+#endif  // AP_BEACON_ENABLED

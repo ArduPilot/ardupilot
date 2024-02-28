@@ -1,0 +1,156 @@
+# hw definition file for processing by chibios_pins.py
+# Omnibus F4 V6 
+# with F405 mcu, mpu6000 imu, bmp280 barometer, 7456 series osd, no flash log storage
+
+ 
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 137
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 1024
+FLASH_RESERVE_START_KB 64
+
+# order of I2C buses
+I2C_ORDER I2C1
+
+# order of UARTs     
+
+SERIAL_ORDER OTG1 USART1 UART4 USART6 USART3 USART2
+
+
+#PINS 
+
+PA10 USART1_RX USART1
+PA9 USART1_TX USART1
+
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# UART4 (only RX) #"TX" pin PA0 is used for RSSI_ADC_CHANNEL
+PA1 UART4_RX UART4 
+
+# transmit only usart2, for telemetry output (eg. Hott telem)
+PA2 USART2_TX USART2
+
+#adc
+PC1 BAT_CURR_SENS ADC1 SCALE(1)
+PC2 BAT_VOLT_SENS ADC1 SCALE(1)
+PA0 RSSI_IN ADC1
+
+#pwm output # PWM out pins. Channel order (GPIOs) follows the ArduPilot motor
+# order conventions
+PB0 TIM1_CH2N TIM1 PWM(1) GPIO(50)
+PB1 TIM1_CH3N TIM1 PWM(2) GPIO(51)
+PA3 TIM2_CH4 TIM2 PWM(3) GPIO(52)
+PB5 TIM3_CH2 TIM3 PWM(4) GPIO(53)
+
+PC9 TIM8_CH4 TIM8 PWM(5) GPIO(54)
+PC8 TIM8_CH3 TIM8 PWM(6) GPIO(55)
+
+
+# spi bus for IMU
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+
+PC12 SPI3_MOSI SPI3
+PC11 SPI3_MISO SPI3
+PC10 SPI3_SCK SPI3
+
+# SPI2 for flash
+PB15 SPI2_MOSI SPI2
+PB14 SPI2_MISO SPI2
+PB13 SPI2_SCK SPI2
+PB12 FLASH_CS CS
+
+PA4 MPU6000_CS CS #SPI1_NSS
+PA15 OSD_CS CS    #SPI3_NSS 
+PB3 BMP280_CS CS  #SPI3_NSS
+
+
+# note that this board needs PULLUP on I2C pins 
+PB8 I2C1_SCL I2C1 PULLUP
+PB9 I2C1_SDA I2C1 PULLUP
+
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PA8 LED OUTPUT HIGH GPIO(41)
+#PB4 TIM3_CH1 TIM3 GPIO(70) ALARM
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PC5 VBUS INPUT OPENDRAIN
+
+# LED strip output pad used for RC input
+# timer 4 is free (not used for pwm)
+PB6 TIM4_CH1 TIM4 RCININT PULLDOWN LOW
+
+#Omnibus F4 V3 and later had hw inverter on UART6 
+#Overide it to use as GPS UART port
+#PC8 SBUS_INVERT_RX OUTPUT LOW
+#PC9 SBUS_INVERT_TX OUTPUT LOW
+
+########### SPI Devices 
+SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ
+SPIDEV bmp280     SPI3 DEVID3 BMP280_CS MODE3 1*MHZ 8*MHZ
+SPIDEV osd        SPI3 DEVID4 OSD_CS MODE0 10*MHZ 10*MHZ
+SPIDEV dataflash  SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
+
+# one baro
+BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+
+STORAGE_FLASH_PAGE 1
+define HAL_STORAGE_SIZE 15360
+
+
+# define default battery setup 
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 18.2
+
+#analog rssi pin (also could be used as analog airspeed input)
+#PA0 - ADC123_CH0
+define BOARD_RSSI_ANA_PIN 0
+
+define HAL_GPIO_A_LED_PIN 41
+
+
+#To have complementary channels work we define this
+define STM32_PWM_USE_ADVANCED TRUE
+
+define OSD_ENABLED 1
+#font for the osd
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimize_fpv_osd.inc

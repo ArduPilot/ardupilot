@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SerialDevice.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 class UARTDevice: public SerialDevice {
 public:
@@ -19,6 +19,7 @@ public:
     {
         return _flow_control;
     }
+    virtual void set_parity(int v) override;
 
 private:
     void _disable_crlf();

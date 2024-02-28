@@ -22,6 +22,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+/* assert that const vals are float, not double. so 100.0 means 100.0f */
+static_assert(sizeof(1e6) == sizeof(float), "Compilation needs to use single-precision constants");
+
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.
@@ -35,4 +38,69 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound)
 
     return false;
 
+}
+
+/**
+ * return the numeric value of an ascii hex character
+ *
+ * @param [in]  a   Hexa character
+ * @param [out] res uint8 value
+ * @retval true  Conversion OK
+ * @retval false Input value error
+ * @Note Input character is 0-9, A-F, a-f
+ *  A 0x41, a 0x61, 0 0x30
+ */
+bool hex_to_uint8(uint8_t a, uint8_t &res)
+{
+    uint8_t nibble_low  = a & 0xf;
+
+    switch (a & 0xf0) {
+    case 0x30:  // 0-
+        if (nibble_low > 9) {
+            return false;
+        }
+        res = nibble_low;
+        break;
+    case 0x40:  // uppercase A-
+    case 0x60:  // lowercase a-
+        if (nibble_low == 0 || nibble_low > 6) {
+            return false;
+        }
+        res = nibble_low + 9;
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+/*
+  strncpy without the warning for not leaving room for nul termination
+ */
+size_t strncpy_noterm(char *dest, const char *src, size_t n)
+{
+    size_t len = strnlen(src, n);
+    size_t ret = len; // return value is length of src
+    if (len < n) {
+        // include nul term if it fits
+        len++;
+    }
+    memcpy(dest, src, len);
+    return ret;
+}
+
+/**
+ * return the numeric value of an ascii hex character
+ * 
+ * @param[in] a Hexadecimal character 
+ * @return  Returns a binary value
+ */
+int16_t char_to_hex(char a)
+{
+    if (a >= 'A' && a <= 'F')
+        return a - 'A' + 10;
+    else if (a >= 'a' && a <= 'f')
+        return a - 'a' + 10;
+    else
+        return a - '0';
 }

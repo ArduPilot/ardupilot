@@ -11,7 +11,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISCRETE_RGB_ENABLED
+
 #include "DiscreteRGBLed.h"
+
+#include <AP_HAL/HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,7 +33,7 @@ DiscreteRGBLed::DiscreteRGBLed(uint16_t red, uint16_t green, uint16_t blue, bool
 
 }
 
-bool DiscreteRGBLed::hw_init(void)
+bool DiscreteRGBLed::init(void)
 {
     red_pin = hal.gpio->channel(red_pin_number);
     green_pin = hal.gpio->channel(green_pin_number);
@@ -53,3 +59,5 @@ bool DiscreteRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 
     return true;
 }
+
+#endif  // AP_NOTIFY_DISCRETE_RGB_ENABLED

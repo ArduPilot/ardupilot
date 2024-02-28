@@ -26,6 +26,7 @@
 #ifdef USE_TERMIOS
 #include <termios.h>
 #else
+#include <asm/ioctls.h>
 #include <asm/termbits.h>
 #endif
 
@@ -34,7 +35,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-bool HALSITL::UARTDriver::set_speed(int speed)
+bool HALSITL::UARTDriver::set_speed(int speed) const
 {
     if (_fd < 0) {
         return false;

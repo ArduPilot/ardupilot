@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import fnmatch
+import sys
+
+try:
+    import em
+except ImportError:
+    print("you need to install empy with 'python -m pip install empy==3.3.4'")
+    sys.exit(1)
+
+try:
+    import pexpect
+except ImportError:
+    print("you need to install pexpect with 'python -m pip install pexpect'")
+    sys.exit(1)
+    
+
+def build(bld):
+    targets = bld.ap_periph_boards()
+    valid_target = False
+    for t in targets:
+        if fnmatch.fnmatch(bld.env.BOARD, t):
+            valid_target = True
+    if not valid_target:
+        return
+
+    if bld.env.AP_PERIPH_HEAVY:
+        libraries = bld.ap_get_all_libraries()
+        libraries.extend(['AP_ADSB/sagetech-sdk'])
+        bld.env.DEFINES += ['HAL_BOARD_AP_PERIPH_HEAVY']
+    else:
+        libraries = ['AP_Common',
+                     'AP_HAL',
+                     'AP_HAL_Empty',
+                     'AP_Math',
+                     'AP_BoardConfig',
+                     'AP_BattMonitor',
+                     'AP_CANManager',
+                     'AP_KDECAN',
+                     'AP_Param',
+                     'StorageManager',
+                     'AP_FlashStorage',
+                     'AP_RAMTRON',
+                     'AP_GPS',
+                     'AP_Networking',
+                     'AP_SerialManager',
+                     'AP_RTC',
+                     'AP_Compass',
+                     'AP_NMEA_Output',
+                     'AP_Baro',
+                     'Filter',
+                     'AP_InternalError',
+                     'AP_Airspeed',
+                     'AP_RangeFinder',
+                     'AP_ROMFS',
+                     'AP_TemperatureSensor',
+                     'AP_MSP',
+                     'SRV_Channel',
+                     'AP_Notify',
+                     'AP_SerialLED',
+                     'AP_Filesystem',
+                     'AP_InertialSensor',
+                     'AP_AccelCal',
+                     'AP_Logger',
+                     'AC_PID',
+                     'AP_BLHeli',
+                     'AP_ESC_Telem',
+                     'AP_Stats',
+                     'AP_EFI',
+                     'AP_CheckFirmware',
+                     'AP_RPM',
+                     'AP_Proximity',
+                     'AP_RCProtocol',
+                     'AP_AHRS',
+                     'AP_Terrain',
+                     'AP_Torqeedo',
+                     'AP_Volz_Protocol',
+                     'AP_SBusOut',
+                     'AP_RobotisServo',
+                     'AP_FETtecOneWire',
+                     'GCS_MAVLink',
+                     'AP_Relay'
+                     ]
+
+    bld.ap_stlib(
+        name= 'AP_Periph_libs',
+        dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
+        ap_vehicle='AP_Periph',
+        ap_libraries= libraries,
+        use='dronecan',
+        exclude_src=[
+            'libraries/AP_HAL_ChibiOS/Storage.cpp'
+        ]
+    )
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
+              use='dronecan',
+              target='libcanard')
+
+    bld.ap_program(
+        program_name='AP_Periph',
+        use=['AP_Periph_libs', 'libcanard', 'dronecan'],
+        program_groups=['bin','AP_Periph'],
+    )

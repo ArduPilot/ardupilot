@@ -9,7 +9,7 @@ Questions and user problems should be directed at the forum (http://discuss.ardu
 _**Please be very sure you have found a bug when opening this issue**_
 If there was a previous discussion in the forum, link to it
 
-### Bug report
+## Bug report
 
 **Issue details**
 

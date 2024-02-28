@@ -1,0 +1,19 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geometry_msgs/msg/PoseStamped.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Pose.idl"
+#include "std_msgs/msg/Header.idl"
+
+module geometry_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "A Pose with reference coordinate frame and timestamp")
+    struct PoseStamped {
+      std_msgs::msg::Header header;
+
+      geometry_msgs::msg::Pose pose;
+    };
+  };
+};
+

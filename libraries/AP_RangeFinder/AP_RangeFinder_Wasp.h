@@ -1,19 +1,24 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_WASP_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 // WASP 200 LRF
 // http://www.attolloengineering.com/wasp-200-lrf.html
 
-class AP_RangeFinder_Wasp : public AP_RangeFinder_Backend {
+class AP_RangeFinder_Wasp : public AP_RangeFinder_Backend_Serial {
 
 public:
-    AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                        AP_SerialManager &serial_manager,
-                        uint8_t serial_instance);
 
-    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_Wasp(_state, _params);
+    }
 
     void update(void) override;
 
@@ -21,11 +26,19 @@ public:
 
 protected:
 
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+    // Wasp is always 115200
+    uint32_t initial_baudrate(uint8_t serial_instance) const override {
+        return 115200;
+    }
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
 private:
+
+    AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
+                        AP_RangeFinder_Params &_params);
 
     enum wasp_configuration_stage {
         WASP_CFG_RATE,     // set the baudrate
@@ -42,14 +55,12 @@ private:
         WASP_CFG_DONE      // done configuring
     };
 
-    wasp_configuration_stage configuration_state;
+    wasp_configuration_stage configuration_state = WASP_CFG_PROTOCOL;
 
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(float &reading_m) override;
 
     void parse_response(void);
 
-    AP_HAL::UARTDriver *uart;
-    uint32_t last_reading_ms;
     char linebuf[10];
     uint8_t linebuf_len;
     AP_Int16 mavg;
@@ -59,3 +70,5 @@ private:
     AP_Int16 thr;
     AP_Int8  baud;
 };
+
+#endif

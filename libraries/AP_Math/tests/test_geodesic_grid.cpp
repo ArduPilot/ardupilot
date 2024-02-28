@@ -20,6 +20,8 @@
 #include "math_test.h"
 #include <AP_Math/AP_GeodesicGrid.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 class TestParam {
 public:
     /**
@@ -100,7 +102,7 @@ static bool section_triangle(unsigned int section_index,
                              Vector3f &b,
                              Vector3f &c) {
     if (section_index >= 80) {
-        return false;
+        return false;  // LCOV_EXCL_LINE
     }
 
     unsigned int i = section_index / 4;
@@ -153,7 +155,7 @@ TEST_P(GeodesicGridTest, Sections)
             }
         }
         if (p.inclusive_sections[i] < 0) {
-            ADD_FAILURE() << "section " << s << " with inclusive=true not found in inclusive_sections";
+            ADD_FAILURE() << "section " << s << " with inclusive=true not found in inclusive_sections";  // LCOV_EXCL_LINE
         }
     }
 }

@@ -1,0 +1,4 @@
+include ../f103-periph/hwdef.inc
+
+
+define HAL_PERIPH_ENABLE_HWESC

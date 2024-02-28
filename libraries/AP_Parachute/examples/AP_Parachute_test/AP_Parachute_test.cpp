@@ -21,8 +21,10 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // Relay
 static AP_Relay relay;
 
+#if HAL_PARACHUTE_ENABLED
 // Parachute
-static AP_Parachute parachute{relay};
+static AP_Parachute parachute;
+#endif
 
 void setup()
 {

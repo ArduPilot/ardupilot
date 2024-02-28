@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+_sim_vehicle() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
+  # don't complet =
+  _init_completion -n = || return
+
+  # TODO: generate for waf help
+  opts="--help -h"
+  opts+=" -j --jobs"
+  opts+=" -N --no-rebuild"
+  opts+=" -D --debug"
+  opts+=" -c --clean"
+  opts+=" -I --instance"
+  opts+=" -V --valgrind"
+  opts+=" --callgrind"
+  opts+=" -T --tracker"
+  opts+=" -A --sitl-instance-args"
+  opts+=" -G --gdb"
+  opts+=" -g --gdb-stopped"
+  opts+=" --lldb"
+  opts+=" --lldb-stopped"
+  opts+=" -d --delay-start"
+  opts+=" -B --breakpoint"
+  opts+=" -M --mavlink-gimbal"
+  opts+=" -L --location"
+  opts+=" -l --custom-location"
+  opts+=" -S --speedup"
+  opts+=" -t --tracker-location"
+  opts+=" -w --wipe-eeprom"
+  opts+=" -m --mavproxy-args"
+  opts+=" --strace"
+  opts+=" --model"
+  opts+=" --use-dir"
+  opts+=" --no-mavproxy"
+  opts+=" --fresh-params"
+  opts+=" --mcast"
+  opts+=" --osd"
+  opts+=" --tonealarm"
+  opts+=" --rgbled"
+  opts+=" --add-param-file"
+  opts+=" --no-extra-ports"
+  opts+=" -Z --swarm"
+  opts+=" --flash-storage"
+  opts+=" --out"
+  opts+=" --map"
+  opts+=" --console"
+  opts+=" --aircraft"
+  opts+=" --moddebug"
+  opts+=" -v --vehicle"
+  opts+=" -f --frame"
+
+  # Prevent word reuse TODO: add -vvv case
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
+    fi
+  done
+
+  case $prev in
+  -v | --vehicle)
+    # get the calling program, remove anything after the space == all commands arguments
+    local caller; caller=$(echo $@ | sed 's/ .*//g');
+    opts=$($caller --list-vehicle)
+    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    return 0
+    ;;
+  -f | --frame)
+    # get the calling program, remove anything after the space == all commands arguments
+    local caller; caller=$(echo $@ | sed 's/ .*//g');
+    local supported_vehicle_list=$($caller --list-vehicle)
+    local frames;
+    for v in $supported_vehicle_list
+    do
+      if [[ ${COMP_WORDS[@]} == *"$v"* ]]
+      then
+          frames=$($caller --list-frame "$v")
+          break
+      fi
+    done
+    COMPREPLY=($(compgen -W "${frames}" -- ${cur}))
+    return 0
+    
+    ;;
+  esac
+
+  COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+  [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
+}
+
+complete -F _sim_vehicle sim_vehicle.py
+

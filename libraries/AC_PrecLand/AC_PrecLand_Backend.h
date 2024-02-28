@@ -1,9 +1,13 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_ENABLED
+
+#include "AC_PrecLand.h"
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
-#include "AC_PrecLand.h"
+
 
 class AC_PrecLand_Backend
 {
@@ -36,7 +40,7 @@ public:
     virtual float distance_to_target() { return 0.0f; };
 
     // parses a mavlink message from the companion computer
-    virtual void handle_msg(mavlink_message_t* msg) {};
+    virtual void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) {};
 
     // get bus parameter
     int8_t get_bus(void) const { return _frontend._bus.get(); }
@@ -45,3 +49,5 @@ protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
 };
+
+#endif // AC_PRECLAND_ENABLED

@@ -7,51 +7,88 @@ Andrew Tridgell
 May 2017
 '''
 
-import os, sys, tempfile, gzip
+import os, sys, zlib
 
 def write_encode(out, s):
     out.write(s.encode())
 
-def embed_file(out, f, idx):
+def embed_file(out, f, idx, embedded_name, uncompressed):
     '''embed one file'''
     try:
         contents = open(f,'rb').read()
     except Exception:
-        print("Failed to embed %s" % f)
-        return False
-    write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
+        raise Exception("Failed to embed %s" % f)
 
-    # compress it
-    compressed = tempfile.NamedTemporaryFile()
-    with gzip.open(compressed.name, mode='wb', compresslevel=9) as g:
-        g.write(contents)
+    if embedded_name.endswith("bootloader.bin"):
+        # round size to a multiple of 32 bytes for bootloader, this ensures
+        # it can be flashed on a STM32H7 chip
+        blen = len(contents)
+        pad = (32 - (blen % 32)) % 32
+        if pad != 0:
+            contents += bytes([0xff]*pad)
+            print("Padded %u bytes for %s to %u" % (pad, embedded_name, len(contents)))
 
-    compressed.seek(0)
-    b = bytearray(compressed.read())
-    compressed.close()
-    
-    for c in b:
-        write_encode(out, '%u,' % c)
+    crc = crc32(contents)
+    write_encode(out, '__EXTFLASHFUNC__ static const uint8_t ap_romfs_%u[] = {' % idx)
+
+    if uncompressed:
+        # terminate if there's not already an existing null. we don't add it to
+        # the contents to avoid storing the wrong length
+        null_terminate = 0 not in contents
+        b = contents
+    else:
+        # compress it (max level, max window size, raw stream, max mem usage)
+        z = zlib.compressobj(level=9, method=zlib.DEFLATED, wbits=-15, memLevel=9)
+        b = z.compress(contents)
+        b += z.flush()
+        # decompressed data will be null terminated at runtime, nothing to do here
+        null_terminate = False
+
+    write_encode(out, ",".join(str(c) for c in b))
+    if null_terminate:
+        write_encode(out, ",0")
     write_encode(out, '};\n\n');
-    return True
+    return crc, len(contents)
 
-def create_embedded_h(filename, files):
+def crc32(bytes, crc=0):
+    '''crc32 equivalent to crc32_small() from AP_Math/crc.cpp'''
+    for byte in bytes:
+        crc ^= byte
+        for i in range(8):
+            mask = (-(crc & 1)) & 0xFFFFFFFF
+            crc >>= 1
+            crc ^= (0xEDB88320 & mask)
+    return crc
+
+def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
 
     out = open(filename, "wb")
     write_encode(out, '''// generated embedded files for AP_ROMFS\n\n''')
 
+    # remove duplicates and sort
+    files = sorted(list(set(files)))
+    crc = {}
+    decompressed_size = {}
     for i in range(len(files)):
         (name, filename) = files[i]
-        if not embed_file(out, filename, i):
+        try:
+            crc[filename], decompressed_size[filename] = embed_file(out, filename, i, name, uncompressed)
+        except Exception as e:
+            print(e)
             return False
 
     write_encode(out, '''const AP_ROMFS::embedded_file AP_ROMFS::files[] = {\n''')
 
     for i in range(len(files)):
         (name, filename) = files[i]
-        print(("Embedding file %s:%s" % (name, filename)).encode())
-        write_encode(out, '{ "%s", sizeof(ap_romfs_%u), ap_romfs_%u },\n' % (name, i, i))
+        if uncompressed:
+            ustr = ' (uncompressed)'
+        else:
+            ustr = ''
+        print("Embedding file %s:%s%s" % (name, filename, ustr))
+        write_encode(out, '{ "%s", sizeof(ap_romfs_%u), %d, 0x%08x, ap_romfs_%u },\n' % (
+            name, i, decompressed_size[filename], crc[filename], i))
     write_encode(out, '};\n')
     out.close()
     return True

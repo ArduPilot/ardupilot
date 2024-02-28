@@ -1,0 +1,101 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+define CORE_CM7
+define SMPS_PWR
+
+include ../CubeOrange/hwdef.inc
+
+undef USB_STRING_PRODUCT
+undef USB_STRING_MANUFACTURER
+undef APJ_BOARD_ID
+undef USB_PRODUCT
+
+# USB setup
+USB_PRODUCT 0x1058
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "CubeOrange+"
+
+APJ_BOARD_ID 1063
+
+undef CHECK_ICM20602_EXT
+undef CHECK_IMU0_PRESENT
+undef CHECK_IMU1_PRESENT
+undef CHECK_IMU2_PRESENT
+undef CHECK_ICM20649
+undef BOARD_VALIDATE
+undef IMU
+undef I2C_ORDER
+
+PF14 I2C4_SCL I2C4
+PF15 I2C4_SDA I2C4
+
+define HAL_SKIP_AUTO_INTERNAL_I2C_PROBE
+define HAL_I2C_INTERNAL_MASK 4
+
+I2C_ORDER I2C2 I2C1 I2C4
+
+COMPASS AK09916 I2C:2:0x0C false ROTATION_ROLL_180_YAW_225
+
+PG1 ICM45686_CS CS
+
+#IMU 0
+SPIDEV icm42688_ext   SPI4 DEVID4  ACCEL_EXT_CS  MODE3  2*MHZ  8*MHZ
+
+#IMU 1
+SPIDEV icm42688_ext2  SPI4 DEVID5  GYRO_EXT_CS   MODE3  2*MHZ  8*MHZ
+
+#IMU 2
+SPIDEV icm45686       SPI1 DEVID4  ICM45686_CS   MODE0  2*MHZ  8*MHZ
+SPIDEV icm20649       SPI1 DEVID4  MPU_CS        MODE3  4*MHZ  8*MHZ
+SPIDEV icm45686_aux   SPI1 DEVID4  ICM45686_CS   MODE0  2*MHZ  8*MHZ
+SPIDEV icm20948_aux   SPI4 DEVID1  MPU_EXT_CS    MODE3  4*MHZ  8*MHZ
+
+# INSTANCE:<num> keyword is used to denote the instance number of the sensor
+# while probing. Probing is skipped if the instance number doesn't match the
+# backend count. Its important the IMUs are listed in order of precedence globally
+# (i.e. INSTANCE:0 IMUs are listed before INSTANCE:1 IMUs) and locally (i.e. IMUs
+# on the same bus are listed in order of detection precedence)
+
+IMU Invensensev3 SPI:icm42688_ext ROTATION_YAW_90 INSTANCE:0
+
+IMU Invensensev3 SPI:icm42688_ext2 ROTATION_PITCH_180_YAW_90 INSTANCE:1
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180 INSTANCE:1 
+
+IMU Invensensev2 SPI:icm20649 ROTATION_YAW_270 INSTANCE:2
+IMU Invensensev3 SPI:icm45686 ROTATION_ROLL_180_YAW_135 INSTANCE:2
+
+define ICM45686_CLKIN 1
+
+# AUX:<devid> keyword is used to check for the presence of the sensor
+# in the detected IMUs list. If the IMU with the given devid is found
+# then we skip the probe for the sensor the second time. This is useful
+# if you have multiple choices for IMU over same instance number, and still 
+# want to instantiate the sensor after main IMUs are detected.
+
+IMU Invensensev2 SPI:icm20948_aux ROTATION_PITCH_180 AUX:2883874
+
+IMU Invensensev3 SPI:icm45686_aux ROTATION_ROLL_180_YAW_135 AUX:3867658
+
+define INS_AUX_INSTANCES 2
+
+CHECK_ICM20649          spi_check_register_inv2("icm20649", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649)
+CHECK_ICM45686          spi_check_register_inv2("icm45686", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)
+
+CHECK_ICM42688_EXT2      spi_check_register("icm42688_ext2", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688)
+CHECK_ICM45686_EXT2      spi_check_register("icm42688_ext2", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)
+
+CHECK_ICM45686_EXT       spi_check_register("icm42688_ext", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)
+CHECK_ICM42688_EXT       spi_check_register("icm42688_ext", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688)
+
+CHECK_IMU0_PRESENT      $CHECK_ICM45686 || $CHECK_ICM20649
+CHECK_IMU1_PRESENT      $CHECK_ICM20948_EXT || $CHECK_ICM42688_EXT2 || $CHECK_ICM45686_EXT2
+CHECK_IMU2_PRESENT      $CHECK_ICM42688_EXT || $CHECK_ICM45686_EXT
+
+BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+define HAL_INS_HIGHRES_SAMPLE 6

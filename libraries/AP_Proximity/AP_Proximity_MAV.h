@@ -1,41 +1,51 @@
 #pragma once
 
-#include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
+#include "AP_Proximity_config.h"
 
-#define PROXIMITY_MAV_TIMEOUT_MS    200 // requests timeout after 0.2 seconds
+#if AP_PROXIMITY_MAV_ENABLED
+
+#include "AP_Proximity_Backend.h"
 
 class AP_Proximity_MAV : public AP_Proximity_Backend
 {
 
 public:
     // constructor
-    AP_Proximity_MAV(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+    using AP_Proximity_Backend::AP_Proximity_Backend;
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const { return _distance_max; }
-    float distance_min() const { return _distance_min; };
+    float distance_max() const override { return _distance_max; }
+    float distance_min() const override { return _distance_min; };
 
     // get distance upwards in meters. returns true on success
-    bool get_upward_distance(float &distance) const;
+    bool get_upward_distance(float &distance) const override;
 
-    // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg) override;
+    // handle mavlink messages
+    void handle_msg(const mavlink_message_t &msg) override;
 
 private:
 
-    // initialise sensor (returns true if sensor is succesfully initialised)
-    bool initialise();
+    // handle mavlink DISTANCE_SENSOR messages
+    void handle_distance_sensor_msg(const mavlink_message_t &msg);
+    // handle mavlink OBSTACLE_DISTANCE messages
+    void handle_obstacle_distance_msg(const mavlink_message_t &msg);
+    // handle mavlink OBSTACLE_DISTANCE_3D messages
+    void handle_obstacle_distance_3d_msg(const mavlink_message_t &msg);
+
+   AP_Proximity_Temp_Boundary temp_boundary;
 
     // horizontal distance support
-    uint32_t _last_update_ms;   // system time of last DISTANCE_SENSOR message received
+    uint32_t _last_update_ms;   // system time of last mavlink message received
+    uint32_t _last_msg_update_timestamp_ms;   // last stored mavlink message timestamp
     float _distance_max;        // max range of sensor in meters
     float _distance_min;        // min range of sensor in meters
 
     // upward distance support
-    uint32_t _last_upward_update_ms;    // system time of last update distance
+    uint32_t _last_upward_update_ms;    // system time of last update of upward distance
     float _distance_upward;             // upward distance in meters
 };
+
+#endif // AP_PROXIMITY_MAV_ENABLED

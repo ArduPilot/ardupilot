@@ -56,9 +56,9 @@
 #define I2C_RDRW_IOCTL_MAX_MSGS 42
 #endif
 
-namespace Linux {
+extern const AP_HAL::HAL& hal;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+namespace Linux {
 
 /*
  * TODO: move to Util or other upper class to be used by others
@@ -105,7 +105,7 @@ I2CBus::~I2CBus()
 
 void I2CBus::start_cb()
 {
-    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    sem.take_blocking();
 }
 
 void I2CBus::end_cb()
@@ -161,8 +161,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
-
-    assert(_bus.fd >= 0);
 
     if (send && send_len != 0) {
         msgs[nmsgs].addr = _address;
@@ -389,8 +387,6 @@ I2CDeviceManager::_create_device(I2CBus &b, uint8_t address) const
 
 void I2CDeviceManager::_unregister(I2CBus &b)
 {
-    assert(b.ref > 0);
-
     if (--b.ref > 0) {
         return;
     }

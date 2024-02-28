@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 
 # Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
@@ -24,7 +23,7 @@ You can use CMAKE_MIN_VERSION environment variable before loading this tool in
 the configuration to set a minimum version required for cmake. Example::
 
     def configure(cfg):
-        cfg.CMAKE_MIN_VERSION = '3.5.2'
+        cfg.env.CMAKE_MIN_VERSION = '3.5.2'
         cfg.load('cmake')
 
 Usage example::
@@ -199,10 +198,6 @@ class cmake_build_task(Task.Task):
 
     def keyword(self):
         return 'CMake Build'
-
-# allow tasks to depend on possible headers or other resources if the user
-# declares outputs for the cmake build
-cmake_build_task = Task.update_outputs(cmake_build_task)
 
 cmake_build_task.original_post_run = cmake_build_task.post_run
 def _cmake_build_task_post_run(self):

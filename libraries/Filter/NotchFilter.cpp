@@ -13,7 +13,30 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef HAL_DEBUG_BUILD
+#define AP_INLINE_VECTOR_OPS
+#pragma GCC optimize("O2")
+#endif
+
 #include "NotchFilter.h"
+
+const static float NOTCH_MAX_SLEW       = 0.05f;
+const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
+const static float NOTCH_MAX_SLEW_UPPER = 1.0f / NOTCH_MAX_SLEW_LOWER;
+
+/*
+   calculate the attenuation and quality factors of the filter
+ */
+template <class T>
+void NotchFilter<T>::calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q) {
+    A = powf(10, -attenuation_dB / 40.0f);
+    if (center_freq_hz > 0.5 * bandwidth_hz) {
+        const float octaves = log2f(center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0f)) * 2.0f;
+        Q = sqrtf(powf(2, octaves)) / (powf(2, octaves) - 1.0f);
+    } else {
+        Q = 0.0;
+    }
+}
 
 /*
   initialise filter
@@ -21,18 +44,58 @@
 template <class T>
 void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB)
 {
-    float omega = 2.0 * M_PI * center_freq_hz / sample_freq_hz;
-    float octaves = log2f(center_freq_hz  / (center_freq_hz - bandwidth_hz/2)) * 2;
-    float A = powf(10, -attenuation_dB/40);
-    float Q = sqrtf(powf(2, octaves)) / (powf(2,octaves) - 1);
-    float alpha = sinf(omega) / (2 * Q/A);
-    b0 =  1.0 + alpha*A;
-    b1 = -2.0 * cosf(omega);
-    b2 =  1.0 - alpha*A;
-    a0_inv =  1.0/(1.0 + alpha/A);
-    a1 = -2.0 * cosf(omega);
-    a2 =  1.0 - alpha/A;
-    initialised = true;
+    // check center frequency is in the allowable range
+    if ((center_freq_hz > 0.5 * bandwidth_hz) && (center_freq_hz < 0.5 * sample_freq_hz)) {
+        float A, Q;
+        initialised = false;    // force center frequency change
+        calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
+        init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
+    } else {
+        initialised = false;
+    }
+}
+
+template <class T>
+void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q)
+{
+    // don't update if no updates required
+    if (initialised && is_equal(center_freq_hz, _center_freq_hz) && is_equal(sample_freq_hz, _sample_freq_hz)) {
+        return;
+    }
+
+    float new_center_freq = center_freq_hz;
+
+    // constrain the new center frequency by a percentage of the old frequency
+    if (initialised && !need_reset && !is_zero(_center_freq_hz)) {
+        new_center_freq = constrain_float(new_center_freq, _center_freq_hz * NOTCH_MAX_SLEW_LOWER,
+                                          _center_freq_hz * NOTCH_MAX_SLEW_UPPER);
+    }
+
+    if (is_positive(new_center_freq) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
+        float omega = 2.0 * M_PI * new_center_freq / sample_freq_hz;
+        float alpha = sinf(omega) / (2 * Q);
+        b0 =  1.0 + alpha*sq(A);
+        b1 = -2.0 * cosf(omega);
+        b2 =  1.0 - alpha*sq(A);
+        a1 = b1;
+        a2 =  1.0 - alpha;
+
+        const float a0_inv =  1.0/(1.0 + alpha);
+
+        // Pre-multiply to save runtime calc
+        b0 *= a0_inv;
+        b1 *= a0_inv;
+        b2 *= a0_inv;
+        a1 *= a0_inv;
+        a2 *= a0_inv;
+
+        _center_freq_hz = new_center_freq;
+        _sample_freq_hz = sample_freq_hz;
+        initialised = true;
+    } else {
+        // leave center_freq_hz at last value
+        initialised = false;
+    }
 }
 
 /*
@@ -41,102 +104,36 @@ void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float band
 template <class T>
 T NotchFilter<T>::apply(const T &sample)
 {
-    if (!initialised) {
+    if (!initialised || need_reset) {
         // if we have not been initialised when return the input
-        // sample as output
+        // sample as output and update delayed samples
+        signal1 = sample;
+        signal2 = sample;
+        ntchsig1 = sample;
+        ntchsig2 = sample;
+        need_reset = false;
         return sample;
     }
+
+    T output = sample*b0 + ntchsig1*b1 + ntchsig2*b2 - signal1*a1 - signal2*a2;
+
     ntchsig2 = ntchsig1;
-    ntchsig1 = ntchsig;
-    ntchsig = sample;
-    T output = (ntchsig*b0 + ntchsig1*b1 + ntchsig2*b2 - signal1*a1 - signal2*a2) * a0_inv;
+    ntchsig1 = sample;
+
     signal2 = signal1;
     signal1 = output;
     return output;
 }
 
-// table of user settable parameters
-const AP_Param::GroupInfo NotchFilterVector3fParam::var_info[] = {
-
-    // @Param: ENABLE
-    // @DisplayName: Enable
-    // @Description: Enable notch filter
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterVector3fParam, enable, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: FREQ
-    // @DisplayName: Frequency
-    // @Description: Notch center frequency in Hz
-    // @Range: 10 200
-    // @Units: Hz
-    // @User: Advanced
-    AP_GROUPINFO("FREQ", 2, NotchFilterVector3fParam, center_freq_hz, 80),
-
-    // @Param: BW
-    // @DisplayName: Bandwidth
-    // @Description: Notch bandwidth in Hz
-    // @Range: 5 50
-    // @Units: Hz
-    // @User: Advanced
-    AP_GROUPINFO("BW", 3, NotchFilterVector3fParam, bandwidth_hz, 20),
-
-    // @Param: ATT
-    // @DisplayName: Attenuation
-    // @Description: Notch attenuation in dB
-    // @Range: 5 30
-    // @Units: dB
-    // @User: Advanced
-    AP_GROUPINFO("ATT", 4, NotchFilterVector3fParam, attenuation_dB, 15),
-    
-    AP_GROUPEND
-};
-
-/*
-  a notch filter with enable and filter parameters - constructor
- */
-NotchFilterVector3fParam::NotchFilterVector3fParam(void)
+template <class T>
+void NotchFilter<T>::reset()
 {
-    AP_Param::setup_object_defaults(this, var_info);    
+    need_reset = true;
 }
 
 /*
-  initialise filter
- */
-void NotchFilterVector3fParam::init(float _sample_freq_hz)
-{
-    filter.init(_sample_freq_hz, center_freq_hz, bandwidth_hz, attenuation_dB);
-
-    sample_freq_hz = _sample_freq_hz;
-    last_center_freq = center_freq_hz;
-    last_bandwidth = bandwidth_hz;
-    last_attenuation = attenuation_dB;
-}
-
-/*
-  apply a filter sample
- */
-Vector3f NotchFilterVector3fParam::apply(const Vector3f &sample)
-{
-    if (!enable) {
-        // when not enabled it is a simple pass-through
-        return sample;
-    }
-
-    // check for changed parameters
-    if (!is_equal(center_freq_hz.get(), last_center_freq) ||
-        !is_equal(bandwidth_hz.get(), last_bandwidth) ||
-        !is_equal(attenuation_dB.get(), last_attenuation)) {
-        if (!is_zero(sample_freq_hz)) {
-            init(sample_freq_hz);
-        }
-    }
-    
-    return filter.apply(sample);
-}
-
-/* 
    instantiate template classes
  */
 template class NotchFilter<float>;
+template class NotchFilter<Vector2f>;
 template class NotchFilter<Vector3f>;

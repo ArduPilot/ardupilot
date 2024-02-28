@@ -1,17 +1,24 @@
 # Building ArduPilot #
 
-Ardupilot is gradually moving from the make-based build system to
-[Waf](https://waf.io/). The instructions below should be enough for you to
-build Ardupilot, but you can also read more about the build system in the
+## Get the Source
+
+Clone the project from GitHub:
+```sh
+git clone --recursive https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+```
+
+You can also read more about the build system in the
 [Waf Book](https://waf.io/book/).
 
-Waf should always be called from the ardupilot's root directory. Differently
-from the make-based build, with Waf there's a configure step to choose the
-board to be used (default is `sitl`).
+waf should always be called from the locally cloned ardupilot root directory for the local branch you are trying to build from.
+
+**Note**
+Do not run `waf` with `sudo`!  This leads to permission and environment problems.
 
 ## Basic usage ##
 
-There are several commands in the build system for advanced usages, but here we
+There are several commands in the build system for advanced usage, but here we
 list some basic and more used commands as example.
 
 * **Build ArduCopter**
@@ -20,7 +27,7 @@ list some basic and more used commands as example.
     supported and the next section shows how to get a full list of them.
 
     ```sh
-    ./waf configure --board px4-v3
+    ./waf configure --board CubeBlack
     ./waf copter
     ```
 
@@ -41,7 +48,7 @@ list some basic and more used commands as example.
     ./waf copter
     ```    
 
-    The "arducopter" and "arducopter-heli" binaries should appear in the `build/<board-name>/bin` directory.
+    The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
 
 * **List available boards**
 
@@ -59,17 +66,30 @@ list some basic and more used commands as example.
     ```sh
     ./waf configure --board bebop --static # Bebop or Bebop2
     ./waf configure --board edge           # emlid edge
+    ./waf configure --board fmuv3          # 3DR Pixhawk 2 boards
     ./waf configure --board navio2         # emlid navio2
-    ./waf configure --board px4-v1         # the very old two layer Pixhawk (almost none exist)
-    ./waf configure --board px4-v2         # older Pixhawks that suffer from the 1MB flash limit issue
-    ./waf configure --board px4-v3         # Pixhawk2/Cube and newer Pixhawks with no 1MB flash limit issue
-    ./waf configure --board fmuv3          # Pixhawk2/Cube using ChibiOS
-    ./waf configure --board px4-v4         # Pixracer
-    ./waf configure --board fmuv4          # Pixracer using ChibiOS
+    ./waf configure --board Pixhawk1       # Pixhawk1
+    ./waf configure --board CubeBlack      # Hex/ProfiCNC Cube Black (formerly known as Pixhawk 2.1)
+    ./waf configure --board Pixracer       # Pixracer
     ./waf configure --board skyviper-v2450 # SkyRocket's SkyViper GPS drone using ChibiOS
     ./waf configure --board sitl           # software-in-the-loop simulator
     ./waf configure --board sitl --debug   # software-in-the-loop simulator with debug symbols
 
+    ```
+
+* **List of available vehicle types**
+
+    Here is a list of the most common vehicle build targets:
+
+    ```sh
+    ./waf copter                            # All multirotor types
+    ./waf heli                              # Helicopter types
+    ./waf plane                             # Fixed wing airplanes including VTOL
+    ./waf rover                             # Ground-based rovers and surface boats
+    ./waf sub                               # ROV and other submarines
+    ./waf antennatracker                    # Antenna trackers
+    ./waf AP_Periph                         # AP Peripheral
+    
     ```
 
 * **Clean the build**
@@ -82,6 +102,11 @@ list some basic and more used commands as example.
     Cleaning the build is very often not necessary and discouraged. We do
     incremental builds reducing the build time by orders of magnitude.
 
+    If submodules are failing to be synchronized, `submodulesync` may be used
+    to resync the submodules. This is usually necessary when shifting development
+    between stable releases or a stable release and the master branch.
+
+    In some some cases `submodule_force_clean` may be necessary. This removes all submodules and then performs a `submodulesync`. (Note whitelisted modules like esp_idf is not removed.)
 
 * **Upload or install**
 
@@ -143,6 +168,18 @@ list some basic and more used commands as example.
     # unit test of our math functions
     ./waf --targets tests/test_math
     ```
+
+* **Use clang instead of gcc**
+
+    Currently, gcc is the default on linux, and clang is used for MacOS.
+    Building with clang on linux can be accomplished by setting the CXX
+    environment variables during the configure step, e.g.:
+
+    ```
+    CXX=clang++ CC=clang ./waf configure --board=sitl
+    ```
+
+    Note: Your clang binary names may differ.
 
 * **Other options**
 

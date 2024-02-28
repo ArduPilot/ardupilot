@@ -215,7 +215,7 @@ Tmn = Tsn*Tms;
 
 save 'symeqns.mat';
 
-% rotate magentic field measured at top plate into nav axes
+% rotate magnetic field measured at top plate into nav axes
 magMeasNED = Tmn*[magX;magY;magZ]; 
 % the predicted measurement is the angle wrt magnetic north of the horizontal
 % component of the measured field

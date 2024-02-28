@@ -20,6 +20,8 @@
  */
 #include "AP_RangeFinder_VL53L0X.h"
 
+#if AP_RANGEFINDER_VL53L0X_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -211,13 +213,8 @@ const AP_RangeFinder_VL53L0X::RegData AP_RangeFinder_VL53L0X::tuning_data[] =
     { 0x80, 0x00 },
 };
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state)
+AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
+    : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(_dev)) {}
 
 
@@ -226,30 +223,29 @@ AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
-	if(!dev){
+	if (!dev) {
 		return nullptr;
 	}
     AP_RangeFinder_VL53L0X *sensor
-        = new AP_RangeFinder_VL53L0X(_state, std::move(dev));
+        = new AP_RangeFinder_VL53L0X(_state, _params, std::move(dev));
 
     if (!sensor) {
         delete sensor;
         return nullptr;
     }
 
-    if (sensor->dev->get_semaphore()->take(0)) {
-        if (!sensor->check_id()) {
-            sensor->dev->get_semaphore()->give();
-            delete sensor;
-            return nullptr;
-        }
+    sensor->dev->get_semaphore()->take_blocking();
+    
+    if (!sensor->check_id() || !sensor->init()) {
         sensor->dev->get_semaphore()->give();
+        delete sensor;
+        return nullptr;
     }
 
-    sensor->init();
-
+    sensor->dev->get_semaphore()->give();
+    
     return sensor;
 }
 
@@ -556,7 +552,7 @@ bool AP_RangeFinder_VL53L0X::setMeasurementTimingBudget(uint32_t budget_us)
     return true;
 }
 
-void AP_RangeFinder_VL53L0X::init()
+bool AP_RangeFinder_VL53L0X::init()
 {
     // setup for 2.8V operation
     write_register(VHV_CONFIG_PAD_SCL_SDA__EXTSUP_HV,
@@ -584,8 +580,8 @@ void AP_RangeFinder_VL53L0X::init()
     uint8_t spad_count;
     bool spad_type_is_aperture;
     if (!get_SPAD_info(&spad_count, &spad_type_is_aperture)) {
-        printf("Failed to get SPAD info\n");
-        return;
+        printf("VL53L0X: Failed to get SPAD info\n");
+        return false;
     }
 
     // The SPAD map (RefGoodSpadMap) is read by VL53L0X_get_info_from_device() in
@@ -593,8 +589,8 @@ void AP_RangeFinder_VL53L0X::init()
     // GLOBAL_CONFIG_SPAD_ENABLES_REF_0 through _6, so read it from there
     uint8_t ref_spad_map[6];
     if (!dev->read_registers(GLOBAL_CONFIG_SPAD_ENABLES_REF_0, ref_spad_map, 6)) {
-        printf("Failed to read SPAD map\n");
-        return;
+        printf("VL53L0X: Failed to read SPAD map\n");
+        return false;
     }
 
     // -- VL53L0X_set_reference_spads() begin (assume NVM values are valid)
@@ -653,8 +649,8 @@ void AP_RangeFinder_VL53L0X::init()
 
     write_register(SYSTEM_SEQUENCE_CONFIG, 0x01);
     if (!performSingleRefCalibration(0x40)) {
-        printf("Failed SingleRefCalibration1\n");
-        return;
+        printf("VL53L0X: Failed SingleRefCalibration1\n");
+        return false;
     }
 
     // -- VL53L0X_perform_vhv_calibration() end
@@ -663,8 +659,8 @@ void AP_RangeFinder_VL53L0X::init()
 
     write_register(SYSTEM_SEQUENCE_CONFIG, 0x02);
     if (!performSingleRefCalibration(0x00)) {
-        printf("Failed SingleRefCalibration2\n");
-        return;
+        printf("VL53L0X: Failed SingleRefCalibration2\n");
+        return false;
     }
 
     // -- VL53L0X_perform_phase_calibration() end
@@ -677,6 +673,7 @@ void AP_RangeFinder_VL53L0X::init()
     // call timer() every 33ms. We expect new data to be available every 33ms
     dev->register_periodic_callback(33000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_VL53L0X::timer, void));
+    return true;
 }
 
 
@@ -767,12 +764,13 @@ uint16_t AP_RangeFinder_VL53L0X::read_register16(uint8_t reg)
 void AP_RangeFinder_VL53L0X::update(void)
 {
     if (counter > 0) {
-        state.distance_cm = sum_mm / (10*counter);
+        state.distance_m = (sum_mm * 0.001f) / counter;
+        state.last_reading_ms = AP_HAL::millis();
         sum_mm = 0;
         counter = 0;
         update_status();
     } else {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }
 
@@ -784,3 +782,5 @@ void AP_RangeFinder_VL53L0X::timer(void)
         counter++;
     }
 }
+
+#endif  // AP_RANGEFINDER_VL53L0X_ENABLED

@@ -18,23 +18,18 @@
 
 #include "SIM_Gazebo.h"
 
+#if HAL_SIM_GAZEBO_ENABLED
+
 #include <stdio.h>
 #include <errno.h>
 
-#include <AP_HAL/AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
-
 namespace SITL {
 
-Gazebo::Gazebo(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+Gazebo::Gazebo(const char *frame_str) :
+    Aircraft(frame_str),
     last_timestamp(0),
     socket_sitl{true}
 {
-    // try to bind to a specific port so that if we restart ArduPilot
-    // Gazebo keeps sending us packets. Not strictly necessary but
-    // useful for debugging
     fprintf(stdout, "Starting SITL Gazebo\n");
 }
 
@@ -43,9 +38,12 @@ Gazebo::Gazebo(const char *home_str, const char *frame_str) :
 */
 void Gazebo::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
+    // try to bind to a specific port so that if we restart ArduPilot
+    // Gazebo keeps sending us packets. Not strictly necessary but
+    // useful for debugging
     if (!socket_sitl.bind("0.0.0.0", port_in)) {
         fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
-        fprintf(stderr, "Abording launch...\n");
+        fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
     printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
@@ -93,7 +91,7 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     }
 
     const double deltat = pkt.timestamp - last_timestamp;  // in seconds
-    if (deltat < 0) {  // don't use old paquet
+    if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }
@@ -117,10 +115,10 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
                            static_cast<float>(pkt.velocity_xyz[1]),
                            static_cast<float>(pkt.velocity_xyz[2]));
 
-    position = Vector3f(static_cast<float>(pkt.position_xyz[0]),
-                        static_cast<float>(pkt.position_xyz[1]),
-                        static_cast<float>(pkt.position_xyz[2]));
-
+    position = Vector3d(pkt.position_xyz[0],
+                        pkt.position_xyz[1],
+                        pkt.position_xyz[2]);
+    position.xy() += origin.get_distance_NE_double(home);
 
     // auto-adjust to simulation frame rate
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
@@ -171,3 +169,6 @@ void Gazebo::update(const struct sitl_input &input)
 }
 
 }  // namespace SITL
+
+
+#endif  // HAL_SIM_GAZEBO_ENABLED

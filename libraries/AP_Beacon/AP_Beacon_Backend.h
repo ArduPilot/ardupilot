@@ -14,31 +14,36 @@
  */
 #pragma once
 
+#include "AP_Beacon.h"
+
+#if AP_BEACON_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Beacon.h"
 
 class AP_Beacon_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_Beacon_Backend(AP_Beacon &frontend);
+    AP_Beacon_Backend(AP_Beacon &frontend);
 
-	// return true if sensor is basically healthy (we are receiving data)
+    // return true if sensor is basically healthy (we are receiving data)
     virtual bool healthy() = 0;
 
     // update
     virtual void update() = 0;
 
-    // set vehicle position, pos should be in the beacon's local frame
+    // set vehicle position
+    // pos should be in meters in NED frame from the beacon's local origin
+    // accuracy_estimate is also in meters
     void set_vehicle_position(const Vector3f& pos, float accuracy_estimate);
 
-    // set individual beacon distance in meters
+    // set individual beacon distance from vehicle in meters in NED frame
     void set_beacon_distance(uint8_t beacon_instance, float distance);
 
-    // configure beacon's position in meters from origin
-    // pos should be in the beacon's local frame
+    // set beacon's position
+    // pos should be in meters in NED from the beacon's local origin
     void set_beacon_position(uint8_t beacon_instance, const Vector3f& pos);
 
     float get_beacon_origin_lat(void) const { return _frontend.origin_lat; }
@@ -57,4 +62,8 @@ protected:
 
     // yaw correction methods
     Vector3f correct_for_orient_yaw(const Vector3f &vector);
+
+    AP_HAL::UARTDriver *uart;
 };
+
+#endif  // AP_BEACON_ENABLED

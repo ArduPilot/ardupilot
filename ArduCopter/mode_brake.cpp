@@ -1,81 +1,88 @@
 #include "Copter.h"
 
+#if MODE_BRAKE_ENABLED == ENABLED
+
 /*
  * Init and run calls for brake flight mode
  */
 
 // brake_init - initialise brake controller
-bool Copter::ModeBrake::init(bool ignore_checks)
+bool ModeBrake::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
+    // initialise pos controller speed and acceleration
+    pos_control->set_max_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_xy(inertial_nav.get_velocity_neu_cms().length(), BRAKE_MODE_DECEL_RATE);
 
-        // set target to current position
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+    // initialise position controller
+    pos_control->init_xy_controller();
 
-        // initialize vertical speed and acceleration
-        pos_control->set_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_accel_z(BRAKE_MODE_DECEL_RATE);
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
 
-        // initialise position and desired velocity
-        if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-        }
-
-        _timeout_ms = 0;
-
-        return true;
-    }else{
-        return false;
+    // initialise the vertical position controller
+    if (!pos_control->is_active_z()) {
+        pos_control->init_z_controller();
     }
+
+    _timeout_ms = 0;
+
+    return true;
 }
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::ModeBrake::run()
+void ModeBrake::run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_ground_handling();
+        pos_control->relax_z_controller(0.0f);
         return;
     }
 
-    // relax stop target if we might be landed
-    if (ap.land_complete_maybe) {
-        loiter_nav->soften_for_landing();
-    }
-
-    // if landed immediately disarm
-    if (ap.land_complete) {
-        copter.init_disarm_motors();
-    }
-
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // run brake controller
-    wp_nav->update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
+    // relax stop target if we might be landed
+    if (copter.ap.land_complete_maybe) {
+        pos_control->soften_for_landing_xy();
+    }
+
+    // use position controller to stop
+    Vector2f vel;
+    Vector2f accel;
+    pos_control->input_vel_accel_xy(vel, accel);
+    pos_control->update_xy_controller();
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
 
-    // body-frame rate controller is run directly from 100hz loop
-
-    // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
+    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
+    // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
-        if (!copter.set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
-            copter.set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
+        if (!copter.set_mode(Mode::Number::LOITER, ModeReason::BRAKE_TIMEOUT)) {
+            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::BRAKE_TIMEOUT);
         }
     }
 }
 
-void Copter::ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
+/**
+ * Set a timeout for the brake mode
+ * 
+ * @param timeout_ms [in] timeout in milliseconds
+ * 
+ * @note MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
+ * If the timeout is reached, the mode will switch to loiter or alt hold depending on the current mode.
+ * If timeout_ms is 0, the timeout is disabled.
+ * 
+*/
+void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();
     _timeout_ms = timeout_ms;
 }
+
+#endif

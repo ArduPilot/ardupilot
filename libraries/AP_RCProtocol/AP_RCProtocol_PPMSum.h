@@ -11,14 +11,16 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
 
-#include "AP_RCProtocol.h"
+#include "AP_RCProtocol_config.h"
 
-#define MAX_PPM_CHANNELS 16
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+
+#include "AP_RCProtocol_Backend.h"
 
 class AP_RCProtocol_PPMSum : public AP_RCProtocol_Backend {
 public:
@@ -31,3 +33,5 @@ private:
         uint16_t _pulse_capt[MAX_RCIN_CHANNELS];
     } ppm_state;
 };
+
+#endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

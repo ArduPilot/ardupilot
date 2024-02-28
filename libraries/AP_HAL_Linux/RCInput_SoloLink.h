@@ -18,10 +18,14 @@
 
 #include <unistd.h>
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
 #include "RCInput.h"
+
+#ifndef AP_SOCKET_NATIVE_ENABLED
+#error "need native"
+#endif
 
 namespace Linux {
 
@@ -30,8 +34,8 @@ class RCInput_SoloLink : public RCInput
 public:
     RCInput_SoloLink();
 
-    void init();
-    void _timer_tick();
+    void init() override;
+    void _timer_tick() override;
 
 private:
     static const unsigned int PACKET_LEN = 26;
@@ -48,7 +52,7 @@ private:
 
     bool _check_hdr(ssize_t len);
 
-    SocketAPM _socket{true};
+    SocketAPM_native _socket{true};
     uint64_t _last_usec = 0;
     uint16_t _last_seq = 0;
     union packet _packet;

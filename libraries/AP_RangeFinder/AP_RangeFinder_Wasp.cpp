@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Wasp.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+
+#if AP_RANGEFINDER_WASP_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -67,29 +69,16 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 };
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                                         AP_SerialManager &serial_manager,
-                                         uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state) {
+                                         AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend_Serial(_state, _params)
+{
     AP_Param::setup_object_defaults(this, var_info);
 
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(115200);
-
-        // register Wasp specific parameters
-        state.var_info = var_info;
-
-        configuration_state = WASP_CFG_PROTOCOL;
-    }
-}
-
-// detection is considered as locating a serial port
-bool AP_RangeFinder_Wasp::detect(AP_SerialManager &serial_manager, uint8_t serial_instance) {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    state.var_info = var_info;
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
+bool AP_RangeFinder_Wasp::get_reading(float &reading_m) {
     if (uart == nullptr) {
         return false;
     }
@@ -97,17 +86,19 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
     // read any available lines from the lidar
     float sum = 0;
     uint16_t count = 0;
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        char c = uart->read();
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
         if (c == '\n') {
             linebuf[linebuf_len] = 0;
             linebuf_len = 0;
-            last_reading_ms = AP_HAL::millis();
+            state.last_reading_ms = AP_HAL::millis();
             if (isalpha(linebuf[0])) {
                 parse_response();
             } else {
-                float read_value = (float)atof(linebuf);
+                float read_value = strtof(linebuf, NULL);
                 if (read_value > 0) {
                     sum += read_value;
                     count++;
@@ -131,8 +122,8 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
         return false;
     }
 
-    reading_cm = 100 * sum / count;
-    set_status(RangeFinder::RangeFinder_Good);
+    reading_m = sum / count;
+    set_status(RangeFinder::Status::Good);
 
     return true;
 }
@@ -140,11 +131,11 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
 #define COMMAND_BUFFER_LEN 15
 
 void AP_RangeFinder_Wasp::update(void) {
-    if (!get_reading(state.distance_cm)) {
-        set_status(RangeFinder::RangeFinder_NoData);
+    if (!get_reading(state.distance_m)) {
+        set_status(RangeFinder::Status::NoData);
     }
 
-    if (AP_HAL::millis() - last_reading_ms > 500) {
+    if (AP_HAL::millis() - state.last_reading_ms > 500) {
         // attempt to reconfigure on the assumption this was a bad baud setting
         configuration_state = WASP_CFG_RATE;
     }
@@ -260,3 +251,4 @@ void AP_RangeFinder_Wasp::parse_response(void) {
     }
 }
 
+#endif  // AP_RANGEFINDER_WASP_ENABLED

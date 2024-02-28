@@ -19,24 +19,32 @@
 //
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include "AP_GPS_config.h"
+
+#if AP_GPS_MAV_ENABLED
+
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
 class AP_GPS_MAV : public AP_GPS_Backend {
 public:
-    AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read();
+    using AP_GPS_Backend::AP_GPS_Backend;
+
+    bool read() override;
 
     static bool _detect(struct MAV_detect_state &state, uint8_t data);
 
-    void handle_msg(const mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg) override;
 
     const char *name() const override { return "MAV"; }
 
 private:
     bool _new_data;
+    uint32_t first_week;
+    JitterCorrection jitter{2000};
 };
+
+#endif  // AP_GPS_MAV_ENABLED

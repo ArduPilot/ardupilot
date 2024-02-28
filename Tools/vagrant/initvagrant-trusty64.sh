@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # this script is run by the root user in the virtual machine
 
@@ -8,7 +8,7 @@ set -u
 
 echo "Initial setup of SITL-vagrant instance."
 
-/vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+/vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 
 # extra packages we desire on the VM but aren't prereqs for AP compilation:
 sudo apt-get install -y valgrind gdb
@@ -20,13 +20,19 @@ source /vagrant/Tools/vagrant/shellinit.sh
 # This allows the PX4NuttX build to proceed when the underlying fs is on windows
 # It is only marginally less efficient on Linux
 export PX4_WINTOOL=y
-export PATH=\$PATH:\$HOME/jsbsim/src
+export PATH=\$PATH:\$HOME/jsbsim/build/src
 export BUILDLOGS=/tmp/buildlogs
 "
 
 DOT_PROFILE=/home/$VAGRANT_USER/.profile
 
 echo "$PROFILE_TEXT" | sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
+# adjust environment for every login shell:
+BASHRC_GIT="/vagrant/Tools/vagrant/bashrc_git"
+echo "source $BASHRC_GIT" |
+    sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim

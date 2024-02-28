@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PD.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @brief	Generic P controller with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -20,11 +20,13 @@ public:
     ///
     /// @param  initial_p       Initial value for the P term.
     ///
-    AC_P(const float &initial_p = 0.0f)
+    AC_P(const float &initial_p = 0.0f) :
+        default_kp(initial_p)
     {
-		AP_Param::setup_object_defaults(this, var_info);
-        _kp = initial_p;
+        AP_Param::setup_object_defaults(this, var_info);
     }
+
+    CLASS_NO_COPY(AC_P);
 
     /// Iterate the P controller, return the new control value
     ///
@@ -52,7 +54,7 @@ public:
     //@{
 
     /// Overload the function call operator to permit relatively easy initialisation
-    void operator() (const float p) { _kp = p; }
+    void operator() (const float p) { _kp.set(p); }
 
     // accessors
     AP_Float    &kP() { return _kp; }
@@ -63,4 +65,6 @@ public:
 
 private:
     AP_Float        _kp;
+
+    const float default_kp;
 };

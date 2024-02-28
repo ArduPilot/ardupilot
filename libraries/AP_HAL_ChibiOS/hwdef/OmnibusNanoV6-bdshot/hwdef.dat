@@ -1,0 +1,13 @@
+# Bi-directional dshot version of OmnibusNanoV6
+
+include ../OmnibusNanoV6/hwdef.dat
+
+undef PB0 PB1 PA3 PB5
+undef STM32_PWM_USE_ADVANCED
+
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(50)
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(51) BIDIR
+PA3 TIM2_CH4 TIM2 PWM(3) GPIO(52) BIDIR
+PB5 TIM3_CH2 TIM3 PWM(4) GPIO(53) BIDIR
+
+DMA_NOSHARE SPI2*

@@ -1,5 +1,7 @@
 #include "AP_Gripper.h"
 
+#if AP_GRIPPER_ENABLED
+
 #include "AP_Gripper_Servo.h"
 #include "AP_Gripper_EPM.h"
 
@@ -9,7 +11,8 @@ extern const AP_HAL::HAL& hal;
 #define GRIPPER_RELEASE_PWM_DEFAULT     1100
 // EPM PWM definitions
 #define GRIPPER_NEUTRAL_PWM_DEFAULT     1500
-#define GRIPPER_REGRAB_DEFAULT          0           // default re-grab interval (in seconds) to ensure cargo is securely held
+#define GRIPPER_REGRAB_DEFAULT          0           // default EPM re-grab interval (in seconds) to ensure cargo is securely held
+#define GRIPPER_AUTOCLOSE_DEFAULT       0.0         // default automatic close time (in seconds)
 
 const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Param: ENABLE
@@ -51,32 +54,40 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     AP_GROUPINFO("NEUTRAL", 4, AP_Gripper, config.neutral_pwm, GRIPPER_NEUTRAL_PWM_DEFAULT),
 
     // @Param: REGRAB
-    // @DisplayName: Gripper Regrab interval
-    // @Description: Time in seconds that gripper will regrab the cargo to ensure grip has not weakened; 0 to disable
+    // @DisplayName: EPM Gripper Regrab interval
+    // @Description: Time in seconds that EPM gripper will regrab the cargo to ensure grip has not weakened; 0 to disable
     // @User: Advanced
     // @Range: 0 255
     // @Units: s
     AP_GROUPINFO("REGRAB",  5, AP_Gripper, config.regrab_interval, GRIPPER_REGRAB_DEFAULT),
 
-    // @Param: UAVCAN_ID
+    // @Param: CAN_ID
     // @DisplayName: EPM UAVCAN Hardpoint ID
     // @Description: Refer to https://docs.zubax.com/opengrab_epm_v3#UAVCAN_interface
     // @User: Standard
     // @Range: 0 255
-    AP_GROUPINFO("UAVCAN_ID", 6, AP_Gripper, config.uavcan_hardpoint_id, 0),
+    AP_GROUPINFO("CAN_ID", 6, AP_Gripper, config.uavcan_hardpoint_id, 0),
+
+    // @Param: AUTOCLOSE
+    // @DisplayName: Gripper Autoclose time
+    // @Description: Time in seconds that gripper close the gripper after opening; 0 to disable
+    // @User: Advanced
+    // @Range: 0.25 255
+    // @Units: s
+    AP_GROUPINFO("AUTOCLOSE",  7, AP_Gripper, config.autoclose_time, GRIPPER_AUTOCLOSE_DEFAULT),
 
     AP_GROUPEND
 };
 
 AP_Gripper::AP_Gripper()
 {
-    if (_s_instance) {
+    if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Too many grippers");
 #endif
         return;
     }
-    _s_instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -84,10 +95,10 @@ AP_Gripper::AP_Gripper()
 /*
  * Get the AP_Gripper singleton
  */
-AP_Gripper *AP_Gripper::_s_instance = nullptr;
-AP_Gripper *AP_Gripper::get_instance()
+AP_Gripper *AP_Gripper::_singleton = nullptr;
+AP_Gripper *AP_Gripper::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 void AP_Gripper::init()
@@ -100,12 +111,16 @@ void AP_Gripper::init()
     switch(config.type.get()) {
     case 0:
         break;
+#if AP_GRIPPER_SERVO_ENABLED
     case 1:
         backend = new AP_Gripper_Servo(config);
         break;
+#endif
+#if AP_GRIPPER_EPM_ENABLED
     case 2:
         backend = new AP_Gripper_EPM(config);
         break;
+#endif
     default:
         break;
     }
@@ -153,9 +168,11 @@ PASS_TO_BACKEND(grabbed)
 
 namespace AP {
 
-AP_Gripper *gripper()
+AP_Gripper &gripper()
 {
-    return AP_Gripper::get_instance();
+    return *AP_Gripper::get_singleton();
 }
 
 };
+
+#endif  // AP_GRIPPER_ENABLED

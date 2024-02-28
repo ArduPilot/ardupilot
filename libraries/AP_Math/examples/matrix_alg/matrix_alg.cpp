@@ -5,9 +5,15 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
+
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define MAT_ALG_ACCURACY    1e-4f
+
+typedef float Ftype;
 
 static uint16_t get_random(void)
 {
@@ -19,7 +25,7 @@ static uint16_t get_random(void)
 }
 
 
-static void show_matrix(float *A, int n) {
+static void show_matrix(Ftype *A, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++)
             printf("%.10f  ", A[i * n + j]);
@@ -27,7 +33,7 @@ static void show_matrix(float *A, int n) {
     }
 }
 
-static bool compare_mat(const float *A, const float *B, const uint8_t n)
+static bool compare_mat(const Ftype *A, const Ftype *B, const uint8_t n)
 {
     for(uint8_t i = 0; i < n; i++) {
         for(uint8_t j = 0; j < n; j++) {
@@ -42,22 +48,17 @@ static bool compare_mat(const float *A, const float *B, const uint8_t n)
 static void test_matrix_inverse(void)
 {
     //fast inverses
-    float test_mat[25],ident_mat[25];
-    float *out_mat;
+    Ftype test_mat[25],ident_mat[25];
+    Ftype out_mat[25], out_mat2[25], mat[25];
     for(uint8_t i = 0;i<25;i++) {
-        test_mat[i] = pow(-1,i)*get_random()/0.7f;
+        test_mat[i] = powf(-1,i)*get_random()/0.7f;
     }
-    float mat[25];
 
 
     //Test for 3x3 matrix
-    memset(ident_mat,0,sizeof(ident_mat));
-    for(uint8_t i=0; i<3; i++) {
-        ident_mat[i*3+i] = 1.0f;
-    }
-    if(inverse(test_mat,mat,3)){
-        out_mat = mat_mul(test_mat,mat,3);
-        inverse(mat,mat,3);
+    mat_identity(ident_mat, 3);
+    if (mat_inverse(test_mat,mat,3) && mat_inverse(mat, out_mat2, 3)) {
+        mat_mul(test_mat, mat, out_mat, 3);
     } else {
         hal.console->printf("3x3 Matrix is Singular!\n");
         return;
@@ -70,25 +71,22 @@ static void test_matrix_inverse(void)
     printf("\nInv(A) * A\n");
     show_matrix(out_mat,3);
     printf("\n");
-    //compare matrix
-    if(!compare_mat(test_mat,mat,3)) {
+
+    // compare matrix
+    if (!compare_mat(test_mat, out_mat2, 3)) {
         printf("Test Failed!!\n");
         return;
     }
-    if(!compare_mat(ident_mat,out_mat,3)) {
+    if (!compare_mat(ident_mat, out_mat, 3)) {
         printf("Identity output Test Failed!!\n");
         return;
     }
 
 
     //Test for 4x4 matrix
-    memset(ident_mat,0,sizeof(ident_mat));
-    for(uint8_t i=0; i<4; i++) {
-        ident_mat[i*4+i] = 1.0f;
-    }
-    if(inverse(test_mat,mat,4)){
-        out_mat = mat_mul(test_mat,mat,4);
-        inverse(mat,mat,4);
+    mat_identity(ident_mat, 4);
+    if (mat_inverse(test_mat, mat, 4) && mat_inverse(mat, out_mat2, 4)){
+        mat_mul(test_mat, mat, out_mat, 4);
     } else {
         hal.console->printf("4x4 Matrix is Singular!\n");
         return;
@@ -100,29 +98,22 @@ static void test_matrix_inverse(void)
     printf("\nInv(A) * A\n");
     show_matrix(out_mat,4);
     printf("\n");
-    if(!compare_mat(test_mat,mat,4)) {
+    if (!compare_mat(test_mat, out_mat2, 4)) {
         printf("Test Failed!!\n");
         return;
     }
-    if(!compare_mat(ident_mat,out_mat,4)) {
+    if (!compare_mat(ident_mat,out_mat,4)) {
         printf("Identity output Test Failed!!\n");
         return;
     }
 
-
-
     //Test for 5x5 matrix
-    memset(ident_mat,0,sizeof(ident_mat));
-    for(uint8_t i=0; i<5; i++) {
-        ident_mat[i*5+i] = 1.0f;
-    }
-    if(inverse(test_mat,mat,5)) {
-        out_mat = mat_mul(test_mat,mat,5);
-        inverse(mat,mat,5);
+    mat_identity(ident_mat, 5);
+    if (mat_inverse(test_mat,mat,5) && mat_inverse(mat, out_mat2, 5)) {
+        mat_mul(test_mat, mat, out_mat, 5);
     } else {
         hal.console->printf("5x5 Matrix is Singular!\n");
         return;
-
     }
 
     printf("\n\n5x5 Test Matrix:\n");
@@ -132,11 +123,11 @@ static void test_matrix_inverse(void)
     printf("\nInv(A) * A\n");
     show_matrix(out_mat,5);
     printf("\n");
-    if(!compare_mat(test_mat,mat,5)) {
+    if (!compare_mat(test_mat, out_mat2, 5)) {
         printf("Test Failed!!\n");
         return;
     }
-    if(!compare_mat(ident_mat,out_mat,5)) {
+    if (!compare_mat(ident_mat, out_mat, 5)) {
         printf("Identity output Test Failed!!\n");
         return;
     }

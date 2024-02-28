@@ -1,14 +1,14 @@
-#include <AP_HAL/AP_HAL.h>
-#include "AC_PrecLand_IRLock.h"
+#include "AC_PrecLand_config.h"
 
-extern const AP_HAL::HAL& hal;
+#if AC_PRECLAND_IRLOCK_ENABLED
+
+#include "AC_PrecLand_IRLock.h"
+#include <AP_HAL/AP_HAL.h>
 
 // Constructor
 AC_PrecLand_IRLock::AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
     : AC_PrecLand_Backend(frontend, state),
-      irlock(),
-      _have_los_meas(false),
-      _los_meas_time_ms(0)
+      irlock()
 {
 }
 
@@ -54,3 +54,5 @@ uint32_t AC_PrecLand_IRLock::los_meas_time_ms() {
 bool AC_PrecLand_IRLock::have_los_meas() {
     return _have_los_meas;
 }
+
+#endif // AC_PRECLAND_IRLOCK_ENABLED

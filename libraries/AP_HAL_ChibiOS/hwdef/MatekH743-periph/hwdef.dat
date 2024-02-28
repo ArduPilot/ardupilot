@@ -1,0 +1,65 @@
+include ../MatekH743/hwdef.dat
+
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef IMU
+undef BOOTLOADER_DEV_LIST
+undef HAL_OS_FATFS_IO
+undef OSD_ENABLED
+undef SDMMC1
+
+# board ID for firmware load
+APJ_BOARD_ID 1013
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+
+
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_AIRSPEED
+define HAL_PERIPH_ENABLE_ADSB
+define HAL_PERIPH_ENABLE_RANGEFINDER
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_BATTERY
+
+
+# single GPS, compass and RF for peripherals
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+# set up for sensors
+define HAL_BARO_ALLOW_INIT_NO_BARO
+define HAL_AIRSPEED_BUS_DEFAULT 0
+define AIRSPEED_MAX_SENSORS 1
+
+define HAL_PERIPH_ADSB_PORT_DEFAULT 3
+# default ADSB off by setting 0 baudrate
+define HAL_PERIPH_ADSB_BAUD_DEFAULT 0
+
+define HAL_NO_MONITOR_THREAD
+define HAL_DISABLE_LOOP_DELAY
+define HAL_USE_RTC FALSE
+#define DISABLE_SERIAL_ESC_COMM TRUE
+define HAL_NO_RCIN_THREAD
+
+
+define AP_SCRIPTING_ENABLED 0
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# listen for reboot command from uploader.py script
+# undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# setup for MSP
+define HAL_MSP_ENABLED 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

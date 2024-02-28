@@ -132,6 +132,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
     switch ((sub_frame_t)frame_class) {
         //                 Motor #              Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor  Testing Order
     case SUB_FRAME_BLUEROV1:
+        _frame_class_string = "BLUEROV1";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              -1.0f,          0,                  1.0f,               0,              1);
         add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              1.0f,           0,                  1.0f,               0,              2);
         add_motor_raw_6dof(AP_MOTORS_MOT_3,     -0.5f,          0.5f,           0,              0.45f,              0,                  0,              3);
@@ -141,6 +142,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         break;
 
     case SUB_FRAME_VECTORED_6DOF_90DEG:
+        _frame_class_string = "VECTORED_6DOF_90DEG";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     1.0f,           1.0f,           0,              1.0f,               0,                  0,              1);
         add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              1.0f,           0,                  1.0f,               0,              2);
         add_motor_raw_6dof(AP_MOTORS_MOT_3,     1.0f,           -1.0f,          0,              1.0f,               0,                  0,              3);
@@ -152,6 +154,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         break;
 
     case SUB_FRAME_VECTORED_6DOF:
+        _frame_class_string = "VECTORED_6DOF";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              1.0f,           0,                  -1.0f,              1.0f,           1);
         add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              -1.0f,          0,                  -1.0f,              -1.0f,          2);
         add_motor_raw_6dof(AP_MOTORS_MOT_3,     0,              0,              -1.0f,          0,                  1.0f,               1.0f,           3);
@@ -163,6 +166,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         break;
 
     case SUB_FRAME_VECTORED:
+        _frame_class_string = "VECTORED";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              1.0f,           0,                  -1.0f,              1.0f,           1);
         add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              -1.0f,          0,                  -1.0f,              -1.0f,          2);
         add_motor_raw_6dof(AP_MOTORS_MOT_3,     0,              0,              -1.0f,          0,                  1.0f,               1.0f,           3);
@@ -176,13 +180,19 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         //break;
 
     case SUB_FRAME_SIMPLEROV_3:
-    case SUB_FRAME_SIMPLEROV_4:
-    case SUB_FRAME_SIMPLEROV_5:
-    default:
+        _frame_class_string = "SIMPLEROV_3";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              -1.0f,          0,                  1.0f,               0,              1);
         add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              1.0f,           0,                  1.0f,               0,              2);
         add_motor_raw_6dof(AP_MOTORS_MOT_3,     0,              0,              0,              -1.0f,              0,                  0,              3);
-        add_motor_raw_6dof(AP_MOTORS_MOT_4,     0,              0,              0,              -1.0f,              0,                  0,              4);
+        break;
+    case SUB_FRAME_SIMPLEROV_4:
+    case SUB_FRAME_SIMPLEROV_5:
+    default:
+        _frame_class_string = "DEFAULT";
+        add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              -1.0f,          0,                  1.0f,               0,              1);
+        add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              0,              1.0f,           0,                  1.0f,               0,              2);
+        add_motor_raw_6dof(AP_MOTORS_MOT_3,     1.0f,           0,              0,              -1.0f,              0,                  0,              3);
+        add_motor_raw_6dof(AP_MOTORS_MOT_4,     -1.0f,          0,              0,              -1.0f,              0,                  0,              4);
         add_motor_raw_6dof(AP_MOTORS_MOT_5,     0,              0,              0,              0,                  0,                  1.0f,           5);
         break;
     }
@@ -205,7 +215,8 @@ void AP_Motors6DOF::output_min()
     int8_t i;
 
     // set limits flags
-    limit.roll_pitch = true;
+    limit.roll = true;
+    limit.pitch = true;
     limit.yaw = true;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -221,7 +232,9 @@ void AP_Motors6DOF::output_min()
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16(1500 + thrust_in * 400, _throttle_radio_min, _throttle_radio_max);
+    int16_t range_up = get_pwm_output_max() - 1500;
+    int16_t range_down = 1500 - get_pwm_output_min();
+    return 1500 + thrust_in * (thrust_in > 0 ? range_up : range_down);
 }
 
 void AP_Motors6DOF::output_to_motors()
@@ -229,8 +242,8 @@ void AP_Motors6DOF::output_to_motors()
     int8_t i;
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
-    switch (_spool_mode) {
-    case SHUT_DOWN:
+    switch (_spool_state) {
+    case SpoolState::SHUT_DOWN:
         // sends minimum values out to the motors
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -239,7 +252,7 @@ void AP_Motors6DOF::output_to_motors()
             }
         }
         break;
-    case SPIN_WHEN_ARMED:
+    case SpoolState::GROUND_IDLE:
         // sends output to motors when armed but not flying
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
@@ -247,9 +260,9 @@ void AP_Motors6DOF::output_to_motors()
             }
         }
         break;
-    case SPOOL_UP:
-    case THROTTLE_UNLIMITED:
-    case SPOOL_DOWN:
+    case SpoolState::SPOOLING_UP:
+    case SpoolState::THROTTLE_UNLIMITED:
+    case SpoolState::SPOOLING_DOWN:
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
@@ -278,9 +291,9 @@ float AP_Motors6DOF::get_current_limit_max_throttle()
 // ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/lateral commands
 void AP_Motors6DOF::output_armed_stabilizing()
 {
-    if ((sub_frame_t)_last_frame_class == SUB_FRAME_VECTORED) {
+    if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED) {
         output_armed_stabilizing_vectored();
-    } else if ((sub_frame_t)_last_frame_class == SUB_FRAME_VECTORED_6DOF) {
+    } else if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED_6DOF) {
         output_armed_stabilizing_vectored_6dof();
     } else {
         uint8_t i;                          // general purpose counter
@@ -291,9 +304,9 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float   forward_thrust;             // forward thrust input value, +/- 1.0
         float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-        roll_thrust = _roll_in;
-        pitch_thrust = _pitch_in;
-        yaw_thrust = _yaw_in;
+        roll_thrust = (_roll_in + _roll_in_ff);
+        pitch_thrust = (_pitch_in + _pitch_in_ff);
+        yaw_thrust = (_yaw_in + _yaw_in_ff);
         throttle_thrust = get_throttle_bidirectional();
         forward_thrust = _forward_in;
         lateral_thrust = _lateral_in;
@@ -302,7 +315,8 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
         // initialize limits flags
-        limit.roll_pitch = false;
+        limit.roll = false;
+        limit.pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
@@ -345,26 +359,24 @@ void AP_Motors6DOF::output_armed_stabilizing()
         }
     }
 
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
 
 	// Current limiting
-    if (_batt_current_max <= 0.0f || !battery.has_current()) {
+    float _batt_current;
+    if (_batt_current_max <= 0.0f || !battery.current_amps(_batt_current)) {
         return;
     }
 
-    float _batt_current = battery.current_amps();
-
     float _batt_current_delta = _batt_current - _batt_current_last;
 
-    float loop_interval = 1.0f/_loop_rate;
+    float _current_change_rate = _batt_current_delta / _dt;
 
-    float _current_change_rate = _batt_current_delta / loop_interval;
+    float predicted_current = _batt_current + (_current_change_rate * _dt * 5);
 
-    float predicted_current = _batt_current + (_current_change_rate * loop_interval * 5);
+    float batt_current_ratio = _batt_current / _batt_current_max;
 
-    float batt_current_ratio = _batt_current/_batt_current_max;
-
-    float predicted_current_ratio = predicted_current/_batt_current_max;
+    float predicted_current_ratio = predicted_current / _batt_current_max;
     _batt_current_last = _batt_current;
 
     if (predicted_current > _batt_current_max * 1.5f) {
@@ -372,7 +384,8 @@ void AP_Motors6DOF::output_armed_stabilizing()
     } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
         batt_current_ratio = predicted_current_ratio;
     }
-    _output_limited += (loop_interval/(loop_interval+_batt_current_time_constant)) * (1 - batt_current_ratio);
+    _output_limited += (_dt / (_dt + _batt_current_time_constant)) * (1 - batt_current_ratio);
+#endif
 
     _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
 
@@ -397,9 +410,9 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-    roll_thrust = _roll_in;
-    pitch_thrust = _pitch_in;
-    yaw_thrust = _yaw_in;
+    roll_thrust = (_roll_in + _roll_in_ff);
+    pitch_thrust = (_pitch_in + _pitch_in_ff);
+    yaw_thrust = (_yaw_in + _yaw_in_ff);
     throttle_thrust = get_throttle_bidirectional();
     forward_thrust = _forward_in;
     lateral_thrust = _lateral_in;
@@ -408,7 +421,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
-    limit.roll_pitch = false;
+    limit.roll= false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -481,9 +495,9 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-    roll_thrust = _roll_in;
-    pitch_thrust = _pitch_in;
-    yaw_thrust = _yaw_in;
+    roll_thrust = (_roll_in + _roll_in_ff);
+    pitch_thrust = (_pitch_in + _pitch_in_ff);
+    yaw_thrust = (_yaw_in + _yaw_in_ff);
     throttle_thrust = get_throttle_bidirectional();
     forward_thrust = _forward_in;
     lateral_thrust = _lateral_in;
@@ -494,7 +508,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float yfl_max;
 
     // initialize limits flags
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -543,4 +558,30 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
             _thrust_rpyt_out[i] = constrain_float(_motor_reverse[i]*(rpt_out[i]/rpt_max + yfl_out[i]/yfl_max),-1.0f,1.0f);
         }
     }
+}
+
+Vector3f AP_Motors6DOF::get_motor_angular_factors(int motor_number) {
+     if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return Vector3f(0,0,0);
+    }
+    return Vector3f(_roll_factor[motor_number], _pitch_factor[motor_number], _yaw_factor[motor_number]);
+}
+
+bool AP_Motors6DOF::motor_is_enabled(int motor_number) {
+    if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+    return motor_enabled[motor_number];
+}
+
+bool AP_Motors6DOF::set_reversed(int motor_number, bool reversed) {
+    if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+    if (reversed) {
+        _motor_reverse[motor_number].set_and_save(-1);
+    } else {
+        _motor_reverse[motor_number].set_and_save(1);
+    }
+    return true;
 }

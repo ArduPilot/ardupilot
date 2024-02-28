@@ -16,35 +16,45 @@
   ADSB simulator class for MAVLink ADSB peripheral
 */
 
+#include "SIM_config.h"
+
+#if HAL_SIM_ADSB_ENABLED
+
 #include "SIM_ADSB.h"
+
 #include "SITL.h"
 
 #include <stdio.h>
 
 #include "SIM_Aircraft.h"
+#include <AP_HAL_SITL/SITL_State.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 namespace SITL {
-
-SITL *_sitl;
-
-ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str)
-{
-    float yaw_degrees;
-    Aircraft::parse_home(_home_str, home, yaw_degrees);
-}
-
 
 /*
   update a simulated vehicle
  */
-void ADSB_Vehicle::update(float delta_t)
+void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
 {
+    const SIM *_sitl = AP::sitl();
+    if (_sitl == nullptr) {
+        return;
+    }
+
+    const Location &origin { aircraft.get_origin() };
+
     if (!initialised) {
+        // spawn another aircraft
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
         snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
-        position.x = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
-        position.y = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        Location aircraft_location = aircraft.get_location();
+        const Vector2f aircraft_offset_ne = aircraft_location.get_distance_NE(origin);
+        position.x = aircraft_offset_ne[1];
+        position.y = aircraft_offset_ne[0];
+        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
         position.z = -fabsf(_sitl->adsb_altitude_m);
 
         double vel_min = 5, vel_max = 20;
@@ -55,9 +65,22 @@ void ADSB_Vehicle::update(float delta_t)
             vel_min *= 10;
             vel_max *= 10;
         }
-        velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
-        velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
-        velocity_ef.z = Aircraft::rand_normal(0, 3);
+        type = (ADSB_EMITTER_TYPE)(rand() % (ADSB_EMITTER_TYPE_POINT_OBSTACLE + 1));
+        // don't allow surface emitters to move
+        if (type == ADSB_EMITTER_TYPE_POINT_OBSTACLE) {
+            stationary_object_created_ms = AP_HAL::millis64();
+            velocity_ef.zero();
+        } else {
+            stationary_object_created_ms = 0;
+            velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
+            velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
+            if (type < ADSB_EMITTER_TYPE_EMERGENCY_SURFACE) {
+                velocity_ef.z = Aircraft::rand_normal(-3, 3);
+            }
+        }
+    } else if (stationary_object_created_ms > 0 && AP_HAL::millis64() - stationary_object_created_ms > AP_MSEC_PER_HOUR) {
+        // regenerate stationary objects so we don't randomly fill up the screen with them over time
+        initialised = false;
     }
 
     position += velocity_ef * delta_t;
@@ -65,12 +88,22 @@ void ADSB_Vehicle::update(float delta_t)
         // it has crashed! reset
         initialised = false;
     }
+
+    Location ret = origin;
+    ret.offset(position.x, position.y);
+
+    location = ret;
+}
+
+const Location &ADSB_Vehicle::get_location() const
+{
+    return location;
 }
 
 /*
   update the ADSB peripheral state
 */
-void ADSB::update(void)
+void ADSB::update_simulated_vehicles(const class Aircraft &aircraft)
 {
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
@@ -94,29 +127,44 @@ void ADSB::update(void)
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
 
+    // prune any aircraft which get too far away from our simulated vehicle:
+    const Location &aircraft_loc = aircraft.get_location();
+
     for (uint8_t i=0; i<num_vehicles; i++) {
-        vehicles[i].update(delta_t);
+        auto &vehicle = vehicles[i];
+        vehicle.update(aircraft, delta_t);
+
+        // re-init when exceeding radius range
+        if (aircraft_loc.get_distance(vehicle.get_location()) > _sitl->adsb_radius_m) {
+            vehicle.initialised = false;
+        }
     }
-    
-    // see if we should do a report
-    send_report();
+}
+
+void ADSB::update(const class Aircraft &aircraft)
+{
+    update_simulated_vehicles(aircraft);
+
+    // see if we should do a report.
+    if ((_sitl->adsb_types & (1U << (uint8_t)SIM::ADSBType::Shortcut)) == 0) {
+        // some other simulated device is in use (e.g. MXS)
+        return;
+    }
+
+    // bakwards compatability; the parameters specify ADSB simulation,
+    // but we are not configured to use a simulated ADSB driver.
+    // Pretend to be a uAvionix mavlink device:
+    send_report(aircraft);
 }
 
 /*
   send a report to the vehicle control code over MAVLink
 */
-void ADSB::send_report(void)
+void ADSB::send_report(const class Aircraft &aircraft)
 {
     if (AP_HAL::millis() < 10000) {
         // simulated aircraft don't appear until 10s after startup. This avoids a windows
-        // threading issue with non-blocking sockets and the initial wait on uartA
-        return;
-    }
-    if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port);
-        mavlink.connected = true;
-    }
-    if (!mavlink.connected) {
+        // threading issue with non-blocking sockets and the initial wait on SERIAL0
         return;
     }
 
@@ -124,7 +172,7 @@ void ADSB::send_report(void)
     uint8_t buf[100];
     ssize_t ret;
 
-    while ((ret=mav_socket.recv(buf, sizeof(buf), 0)) > 0) {
+    while ((ret=read_from_autopilot((char*)buf, sizeof(buf))) > 0) {
         for (uint8_t i=0; i<ret; i++) {
             mavlink_message_t msg;
             mavlink_status_t status;
@@ -163,19 +211,12 @@ void ADSB::send_report(void)
         heartbeat.mavlink_version = 0;
         heartbeat.custom_mode = 0;
 
-        /*
-          save and restore sequence number for chan0, as it is used by
-          generated encode functions
-         */
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        chan0_status->current_tx_seq = mavlink.seq;
-        len = mavlink_msg_heartbeat_encode(vehicle_system_id,
-                                           vehicle_component_id,
-                                           &msg, &heartbeat);
-        chan0_status->current_tx_seq = saved_seq;
+        len = mavlink_msg_heartbeat_encode_status(vehicle_system_id,
+                                                  vehicle_component_id,
+                                                  &mavlink.status,
+                                                  &msg, &heartbeat);
 
-        mav_socket.send(&msg.magic, len);
+        write_to_autopilot((char*)&msg.magic, len);
 
         last_heartbeat_ms = now;
     }
@@ -187,16 +228,13 @@ void ADSB::send_report(void)
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
-            ADSB_Vehicle &vehicle = vehicles[i];
-            Location loc = home;
-
-            location_offset(loc, vehicle.position.x, vehicle.position.y);
-
-            // re-init when exceeding radius range
-            if (get_distance(home, loc) > _sitl->adsb_radius_m) {
-                vehicle.initialised = false;
+            const ADSB_Vehicle &vehicle = vehicles[i];
+            if (!vehicle.initialised) {
+                continue;
             }
-            
+
+            const Location &loc { vehicle.get_location() };
+
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;
 
@@ -209,7 +247,7 @@ void ADSB::send_report(void)
             adsb_vehicle.hor_velocity = norm(vehicle.velocity_ef.x, vehicle.velocity_ef.y) * 100;
             adsb_vehicle.ver_velocity = -vehicle.velocity_ef.z * 100;
             memcpy(adsb_vehicle.callsign, vehicle.callsign, sizeof(adsb_vehicle.callsign));
-            adsb_vehicle.emitter_type = ADSB_EMITTER_TYPE_LARGE;
+            adsb_vehicle.emitter_type = vehicle.type;
             adsb_vehicle.tslc = 1;
             adsb_vehicle.flags =
                 ADSB_FLAGS_VALID_COORDS |
@@ -217,21 +255,23 @@ void ADSB::send_report(void)
                 ADSB_FLAGS_VALID_HEADING |
                 ADSB_FLAGS_VALID_VELOCITY |
                 ADSB_FLAGS_VALID_CALLSIGN |
-                ADSB_FLAGS_SIMULATED;
-            adsb_vehicle.squawk = 0; // NOTE: ADSB_FLAGS_VALID_SQUAWK bit is not set
+                ADSB_FLAGS_VALID_SQUAWK |
+                ADSB_FLAGS_SIMULATED |
+                ADSB_FLAGS_VERTICAL_VELOCITY_VALID |
+                ADSB_FLAGS_BARO_VALID;
+            // all flags set except ADSB_FLAGS_SOURCE_UAT
 
-            mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-            uint8_t saved_seq = chan0_status->current_tx_seq;
-            chan0_status->current_tx_seq = mavlink.seq;
-            len = mavlink_msg_adsb_vehicle_encode(vehicle_system_id,
+            adsb_vehicle.squawk = 1200;
+
+            len = mavlink_msg_adsb_vehicle_encode_status(vehicle_system_id,
                                                   MAV_COMP_ID_ADSB,
+                                                  &mavlink.status,
                                                   &msg, &adsb_vehicle);
-            chan0_status->current_tx_seq = saved_seq;
-            
+
             uint8_t msgbuf[len];
             len = mavlink_msg_to_send_buffer(msgbuf, &msg);
             if (len > 0) {
-                mav_socket.send(msgbuf, len);
+                write_to_autopilot((char*)msgbuf, len);
             }
         }
     }
@@ -240,22 +280,16 @@ void ADSB::send_report(void)
     if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
         last_tx_report_ms = now;
 
-        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        uint8_t saved_seq = chan0_status->current_tx_seq;
-        uint8_t saved_flags = chan0_status->flags;
-        chan0_status->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-        chan0_status->current_tx_seq = mavlink.seq;
         const mavlink_uavionix_adsb_transceiver_health_report_t health_report = {UAVIONIX_ADSB_RF_HEALTH_OK};
-        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode(vehicle_system_id,
-                                              MAV_COMP_ID_ADSB,
-                                              &msg, &health_report);
-        chan0_status->current_tx_seq = saved_seq;
-        chan0_status->flags = saved_flags;
+        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode_status(vehicle_system_id,
+                                                                                MAV_COMP_ID_ADSB,
+                                                                                &mavlink.status,
+                                                                                &msg, &health_report);
 
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);
         if (len > 0) {
-            mav_socket.send(msgbuf, len);
+            write_to_autopilot((char*)msgbuf, len);
             ::printf("ADSBsim send tx health packet\n");
         }
     }
@@ -263,3 +297,5 @@ void ADSB::send_report(void)
 }
 
 } // namespace SITL
+
+#endif // HAL_SIM_ADSB_ENABLED

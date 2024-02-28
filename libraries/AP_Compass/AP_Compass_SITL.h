@@ -1,25 +1,28 @@
 #pragma once
 
 #include "AP_Compass.h"
+
+#if AP_COMPASS_SITL_ENABLED
+
 #include "AP_Compass_Backend.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
 #include <AP_Math/vectorN.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h>
+#include <SITL/SITL.h>
 
-#define SITL_NUM_COMPASSES 2
+#define MAX_SITL_COMPASSES 3
 
 class AP_Compass_SITL : public AP_Compass_Backend {
 public:
-    AP_Compass_SITL(Compass &);
+    AP_Compass_SITL();
 
-    void read(void);
+    void read(void) override;
 
 private:
-    uint8_t _compass_instance[SITL_NUM_COMPASSES];
-    SITL::SITL *_sitl;
+    uint8_t _compass_instance[MAX_SITL_COMPASSES];
+    uint8_t _num_compass;
+    SITL::SIM *_sitl;
 
     // delay buffer variables
     struct readings_compass {
@@ -32,12 +35,13 @@ private:
     VectorN<readings_compass,buffer_length> buffer;
 
     void _timer();
-    bool _has_sample;
     uint32_t _last_sample_time;
 
-    Vector3f _mag_accum;
-    uint32_t _accum_count;
-
-
+    void _setup_eliptical_correcion(uint8_t i);
+    
+    Matrix3f _eliptical_corr;
+    Vector3f _last_dia;
+    Vector3f _last_odi;
+    Vector3f _last_data[MAX_SITL_COMPASSES];
 };
-#endif // CONFIG_HAL_BOARD
+#endif // AP_COMPASS_SITL_ENABLED

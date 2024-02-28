@@ -1,0 +1,149 @@
+# hw definition file for processing by chibios_pins.py
+# MCU class and specific type
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+FLASH_RESERVE_START_KB 36
+
+STORAGE_FLASH_PAGE 16
+define HAL_STORAGE_SIZE 800
+
+# board ID for firmware load
+APJ_BOARD_ID 1053
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# ensure NRST_MODE is set to "Reset input only". This fixes
+# an issue with resetting the CAN node and firmware update
+define HAL_FLASH_SET_NRST_MODE 0x01
+
+# debug on USART2
+STDOUT_SERIAL SD2
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART2 USART3
+
+# sensor power control
+PC11 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# LEDs
+PC10 LED OUTPUT HIGH GPIO(2) # blue
+PB15 LED_R OUTPUT HIGH GPIO(0)
+PC6  LED_G OUTPUT HIGH GPIO(1)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+define HAL_HAVE_PIXRACER_LED
+
+# USART3, GPS
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# USART2, debug
+PA2 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# I2C1 bus
+PB7 I2C1_SDA I2C1
+PB8 I2C1_SCL I2C1
+
+# I2C2 bus (LED Driver)
+PA8 I2C2_SDA I2C2
+PA9 I2C2_SCL I2C2
+
+define HAL_I2C_INTERNAL_MASK 3
+
+# I2C buses
+I2C_ORDER I2C1 I2C2
+
+# one SPI bus (for IMU, unused)
+#PA5 SPI1_SCK SPI1
+#PA6 SPI1_MISO SPI1
+#PA7 SPI1_MOSI SPI1
+
+# SPI CS
+PC4  GYR_CS CS
+PB1  ACC_CS CS
+PC14 ICM_CS CS
+
+# GPS PPS
+PA15 GPS_PPS_IN INPUT
+
+# compass
+COMPASS BMM150 I2C:0:0x10 false ROTATION_YAW_90
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_NO_RCIN_THREAD
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB14 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+define HAL_NO_MONITOR_THREAD
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# disable dual GPS and GPS blending to save flash space
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+DMA_NOSHARE USART3*
+
+# add support for moving baseline yaw
+define GPS_MOVING_BASELINE 1
+
+# GPS+MAG+LEDs
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_NOTIFY
+define HAL_PERIPH_ENABLE_RC_OUT
+
+# GPS on 2nd port
+define HAL_PERIPH_GPS_PORT_DEFAULT 1
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True

@@ -22,27 +22,57 @@
 using namespace SITL;
 
 // calculate rotational accel and thrust for a motor
-void Motor::calculate_forces(const Aircraft::sitl_input &input,
-                             const float thrust_scale,
+void Motor::calculate_forces(const struct sitl_input &input,
                              uint8_t motor_offset,
-                             Vector3f &rot_accel,
-                             Vector3f &thrust)
+                             Vector3f &torque,
+                             Vector3f &thrust,
+                             const Vector3f &velocity_air_bf,
+                             const Vector3f &gyro,
+                             float air_density,
+                             float voltage,
+                             bool use_drag)
 {
-    // fudge factors
-    const float arm_scale = radians(5000);
-    const float yaw_scale = radians(400);
 
-    // get motor speed from 0 to 1
-    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+    const float pwm = input.servos[motor_offset+servo];
+    float command = pwm_to_command(pwm);
+    float voltage_scale = voltage / voltage_max;
 
-    // the yaw torque of the motor
-    Vector3f rotor_torque(0, 0, yaw_factor * motor_speed * yaw_scale);
+    if (voltage_scale < 0.1) {
+        // battery is dead
+        torque.zero();
+        thrust.zero();
+        current = 0;
+        return;
+    }
+
+    // apply slew limiter to command
+    uint64_t now_us = AP_HAL::micros64();
+    if (last_calc_us != 0 && slew_max > 0) {
+        float dt = (now_us - last_calc_us)*1.0e-6;
+        float slew_max_change = slew_max * dt;
+        command = constrain_float(command, last_command-slew_max_change, last_command+slew_max_change);
+    }
+    last_calc_us = now_us;
+    last_command = command;
+
+    // velocity of motor through air
+    Vector3f motor_vel = velocity_air_bf;
+
+    // add velocity of motor about center due to vehicle rotation
+    motor_vel += -(position % gyro);
+
+    // calculate velocity into prop, clipping at zero
+    float velocity_in = MAX(0, -motor_vel.projected(thrust_vector).z);
 
     // get thrust for untilted motor
-    thrust(0, 0, -motor_speed);
+    float motor_thrust = calc_thrust(command, air_density, velocity_in, voltage_scale);
 
-    // define the arm position relative to center of mass
-    Vector3f arm(arm_scale * cosf(radians(angle)), arm_scale * sinf(radians(angle)), 0);
+    // the yaw torque of the motor
+    const float yaw_scale = 0.05 * diagonal_size * motor_thrust;
+    Vector3f rotor_torque = thrust_vector * yaw_factor * command * yaw_scale * -1.0;
+
+    // thrust in bodyframe NED
+    thrust = thrust_vector * motor_thrust;
 
     // work out roll and pitch of motor relative to it pointing straight up
     float roll = 0, pitch = 0;
@@ -76,17 +106,33 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
         rotor_torque = rotation * rotor_torque;
     }
 
-    // calculate total rotational acceleration
-    rot_accel = (arm % thrust) + rotor_torque;
+    if (use_drag) {
+        // calculate momentum drag per motor
+        const float momentum_drag_factor = momentum_drag_coefficient * sqrtf(air_density * true_prop_area);
+        Vector3f momentum_drag;
+        momentum_drag.x = momentum_drag_factor * motor_vel.x * (sqrtf(fabsf(thrust.y)) + sqrtf(fabsf(thrust.z)));
+        momentum_drag.y = momentum_drag_factor * motor_vel.y * (sqrtf(fabsf(thrust.x)) + sqrtf(fabsf(thrust.z)));
+        // The application of momentum drag to the Z axis is a 'hack' to compensate for incorrect modelling
+        // of the variation of thust with inflow velocity. If not applied, the vehicle will
+        // climb at an unrealistic rate during operation in STABILIZE. TODO replace prop and motor model in
+        // with one based on DC motor, momentum disc and blade element theory.
+        momentum_drag.z = momentum_drag_factor * motor_vel.z * (sqrtf(fabsf(thrust.x)) + sqrtf(fabsf(thrust.y)) + sqrtf(fabsf(thrust.z)));
 
-    // scale the thrust
-    thrust = thrust * thrust_scale;
+        thrust -= momentum_drag;
+    }
+
+    // calculate total torque in newton-meters
+    torque = (position % thrust) + rotor_torque;
+
+    // calculate current
+    float power = power_factor * fabsf(motor_thrust);
+    current = power / MAX(voltage, 0.1);
 }
 
 /*
   update and return current value of a servo. Calculated as 1000..2000
  */
-uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_value)
+uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_value) const
 {
     if (servo_rate <= 0) {
         return demand;
@@ -107,4 +153,75 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
     float max_change = 1000 * (dt / servo_rate) * 60.0f / 90.0f;
     last_value = constrain_float(demand, last_value-max_change, last_value+max_change);
     return uint16_t(last_value+0.5);
+}
+
+
+// calculate current and voltage
+float Motor::get_current(void) const
+{
+    return current;
+}
+
+// setup PWM ranges for this motor
+void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
+                         float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
+                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor, 
+                         float _true_prop_area, float _momentum_drag_coefficient)
+{
+    mot_pwm_min = _pwm_min;
+    mot_pwm_max = _pwm_max;
+    mot_spin_min = _spin_min;
+    mot_spin_max = _spin_max;
+    mot_expo = _expo;
+    slew_max = _slew_max;
+    power_factor = _power_factor;
+    voltage_max = _voltage_max;
+    effective_prop_area = _effective_prop_area;
+    max_outflow_velocity = _velocity_max;
+    true_prop_area = _true_prop_area;
+    momentum_drag_coefficient = _momentum_drag_coefficient;
+    diagonal_size = _diagonal_size;
+
+    if (!_position.is_zero()) {
+        position = _position;
+    } else {
+        position.x = cosf(radians(angle)) * _diagonal_size;
+        position.y =  sinf(radians(angle)) * _diagonal_size;
+        position.z = 0;
+    }
+
+    if (!_thrust_vector.is_zero()) {
+        thrust_vector = _thrust_vector;
+    }
+    if (!is_zero(_yaw_factor)) {
+        yaw_factor = _yaw_factor;
+    }
+}
+
+/*
+  convert a PWM value to a command value from 0 to 1
+*/
+float Motor::pwm_to_command(float pwm) const
+{
+    const float pwm_thrust_max = mot_pwm_min + mot_spin_max * (mot_pwm_max - mot_pwm_min);
+    const float pwm_thrust_min = mot_pwm_min + mot_spin_min * (mot_pwm_max - mot_pwm_min);
+    const float pwm_thrust_range = pwm_thrust_max - pwm_thrust_min;
+    return constrain_float((pwm-pwm_thrust_min)/pwm_thrust_range, 0, 1);
+}
+
+/*
+  calculate thrust given a command value
+*/
+float Motor::calc_thrust(float command, float air_density, float velocity_in, float voltage_scale) const
+{
+    float velocity_out = voltage_scale * max_outflow_velocity * sqrtf((1-mot_expo)*command + mot_expo*sq(command));
+    float ret = 0.5 * air_density * effective_prop_area * (sq(velocity_out) - sq(velocity_in));
+#if 0
+    if (command > 0) {
+        ::printf("air_density=%f effective_prop_area=%f velocity_in=%f velocity_max=%f\n",
+                 air_density, effective_prop_area, velocity_in, voltage_scale * max_outflow_velocity);
+        ::printf("calc_thrust %.3f %.3f\n", command, ret);
+    }
+#endif
+    return ret;
 }

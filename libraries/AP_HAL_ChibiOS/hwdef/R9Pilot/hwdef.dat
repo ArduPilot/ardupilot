@@ -1,0 +1,178 @@
+# hw definition file for processing by chibios_pins.py
+# for FrSky R9Pilot
+
+# MCU class and specific type
+MCU STM32F7xx STM32F767xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1008
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# leave 2 sectors free
+FLASH_RESERVE_START_KB 96
+
+
+# one I2C bus (I2C2 can be used with loss of USART3)
+I2C_ORDER I2C3
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2 USART3 USART1 UART5 USART6 UART7 UART8
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PC4  VBUS INPUT OPENDRAIN
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# SPI1 for baro
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 BARO_CS CS
+PA1 BARO_CS2 CS
+
+# SPI2 external (gyro box, 7 pin ribbon cable)
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+PB12 EXT_CS CS
+
+# SPI3 for on-board IMU
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PA15 IMU_CS CS
+PE8 MPU3_INT INPUT
+
+# SPI4 for microSD
+PE4 SDCARD_CS CS
+PE2 SPI4_SCK SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# I2C3
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+# I2C2 (if not USART3)
+# PB10 I2C2_SCL I2C2
+# PB11 I2C2_SDA I2C2
+
+# USART1 for GPS
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1
+
+# USART2 for telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 for telem2
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+# UART5 spare uart
+PB5 UART5_RX UART5
+PB6 UART5_TX UART5
+
+# USART6, Pixel OSD
+PC7 USART6_RX USART6
+PC6 USART6_TX USART6
+
+# UART7, used for SBUS input
+PB3 UART7_RX UART7
+PB4 UART7_TX UART7
+
+# alternatively use UART7 RX for RCInput using timer
+PB3 TIM2_CH2 TIM2 RCININT PULLDOWN LOW ALT(1)
+
+# UART8, marked "RX RFD", connected to RXSR receiver via
+# 7-pin ribbon cable
+PE1 UART8_TX UART8 NODMA
+
+PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 13
+define HAL_BATT_CURR_PIN 12
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# analog RSSI
+PC5 RSSI_ADC ADC1
+define BOARD_RSSI_ANA_PIN 15
+
+# analog pitot option (not on prototype boards)
+PC0 PRESSURE_SENS ADC1 SCALE(2)
+define HAL_DEFAULT_AIRSPEED_PIN 10
+
+PE0 LED0 OUTPUT LOW GPIO(90) # blue
+PA3 LED1 OUTPUT LOW GPIO(91) # green
+define HAL_GPIO_A_LED_PIN 91
+define HAL_GPIO_B_LED_PIN 90
+define HAL_GPIO_LED_OFF 1
+
+# PWM outputs
+PB0  TIM3_CH3 TIM3 PWM(1) GPIO(50)
+PB1  TIM3_CH4 TIM3 PWM(2) GPIO(51)
+PE9  TIM1_CH1 TIM1 PWM(3) GPIO(52)
+PE11 TIM1_CH2 TIM1 PWM(4) GPIO(53)
+PE14 TIM1_CH4 TIM1 PWM(5) GPIO(54)
+PB7  TIM4_CH2 TIM4 PWM(6) GPIO(55)
+PB8  TIM4_CH3 TIM4 PWM(7) GPIO(56)
+PB9  TIM4_CH4 TIM4 PWM(8) GPIO(57)
+
+# tonealarm support
+PA0  TIM5_CH1 TIM5 GPIO(32) ALARM
+
+# GPIOs
+PE3  SD_DETECT INPUT
+
+# switch1
+PC8  SW1 INPUT GPIO(70)
+
+DMA_PRIORITY SPI* ADC*
+
+define HAL_STORAGE_SIZE 16384
+STORAGE_FLASH_PAGE 1
+
+# spi devices
+SPIDEV icm20602 SPI3 DEVID1 IMU_CS  MODE3  1*MHZ  8*MHZ
+SPIDEV spl06    SPI1 DEVID1 BARO_CS MODE3  1*MHZ  1*MHZ
+SPIDEV imu2     SPI2 DEVID1 EXT_CS  MODE3  1*MHZ  8*MHZ
+SPIDEV sdcard   SPI4 DEVID1 SDCARD_CS MODE0 400*KHZ 25*MHZ
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+
+# one main IMU
+IMU Invensense SPI:icm20602 ROTATION_PITCH_180_YAW_90
+
+# optional 2nd IMU, support any invensense part, board
+# may come with a ICM20601 IMU in a plastic case, called
+# "gyro box"
+IMU Invensense SPI:imu2 ROTATION_YAW_90
+
+# also support newer Invensense IMUs
+IMU Invensensev2 SPI:imu2 ROTATION_YAW_90
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# one BARO, multiple possible choices for different
+# board variants
+BARO SPL06 SPI:spl06
+
+# dummy for testing
+# BARO Dummy
+
+# FAT filesystem on microSD
+define HAL_OS_FATFS_IO 1

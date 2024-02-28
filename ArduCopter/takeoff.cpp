@@ -1,25 +1,26 @@
 #include "Copter.h"
 
-Copter::Mode::_TakeOff Copter::Mode::takeoff;
+Mode::_TakeOff Mode::takeoff;
+_AutoTakeoff Mode::auto_takeoff;
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
-bool Copter::Mode::do_user_takeoff_start(float takeoff_alt_cm)
+bool Mode::do_user_takeoff_start(float takeoff_alt_cm)
 {
     copter.flightmode->takeoff.start(takeoff_alt_cm);
     return true;
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
+bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
     if (!copter.motors->armed()) {
         return false;
     }
-    if (!ap.land_complete) {
+    if (!copter.ap.land_complete) {
         // can't takeoff again!
         return false;
     }
@@ -32,12 +33,11 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         return false;
     }
 
-#if FRAME_CONFIG == HELI_FRAME
-    // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-    if (!copter.motors->rotor_runup_complete()) {
+    // Vehicles using motor interlock should return false if motor interlock is disabled.
+    // Interlock must be enabled to allow the controller to spool up the motor(s) for takeoff.
+    if (!motors->get_interlock() && copter.ap.using_interlock) {
         return false;
     }
-#endif
 
     if (!do_user_takeoff_start(takeoff_alt_cm)) {
         return false;
@@ -48,128 +48,213 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 }
 
 // start takeoff to specified altitude above home in centimeters
-void Copter::Mode::_TakeOff::start(float alt_cm)
+void Mode::_TakeOff::start(float alt_cm)
 {
-    // calculate climb rate
-    const float speed = MIN(copter.wp_nav->get_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
-
-    // sanity check speed and target
-    if (running() || speed <= 0.0f || alt_cm <= 0.0f) {
-        return;
-    }
-
     // initialise takeoff state
     _running = true;
-    max_speed = speed;
-    start_ms = millis();
-    alt_delta = alt_cm;
+    take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
+    take_off_complete_alt  = take_off_start_alt + alt_cm;
 }
 
 // stop takeoff
-void Copter::Mode::_TakeOff::stop()
+void Mode::_TakeOff::stop()
 {
     _running = false;
-    start_ms = 0;
+    // Check if we have progressed far enough through the takeoff process that the
+    // aircraft may have left the ground but not yet detected the climb.
+    if (copter.attitude_control->get_throttle_in() > copter.get_non_takeoff_throttle()) {
+        copter.set_land_complete(false);
+    }
 }
 
-// returns pilot and takeoff climb rates
-//  pilot_climb_rate is both an input and an output
-//  takeoff_climb_rate is only an output
-//  has side-effect of turning takeoff off when timeout as expired
-void Copter::Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
-                                                  float& takeoff_climb_rate)
+// do_pilot_takeoff - controls the vertical position controller during the process of taking off
+//  take off is complete when the vertical target reaches the take off altitude.
+//  climb is cancelled if pilot_climb_rate_cm becomes negative
+//  sets take off to complete when target altitude is within 1% of the take off altitude
+void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
-        takeoff_climb_rate = 0.0f;
         return;
     }
 
-    // acceleration of 50cm/s/s
-    static constexpr float TAKEOFF_ACCEL = 50.0f;
-    const float takeoff_minspeed = MIN(50.0f, max_speed);
-    const float time_elapsed = (millis() - start_ms) * 1.0e-3f;
-    const float speed = MIN(time_elapsed * TAKEOFF_ACCEL + takeoff_minspeed, max_speed);
-
-    const float time_to_max_speed = (max_speed - takeoff_minspeed) / TAKEOFF_ACCEL;
-    float height_gained;
-    if (time_elapsed <= time_to_max_speed) {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_elapsed) + takeoff_minspeed * time_elapsed;
-    } else {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_to_max_speed) + takeoff_minspeed * time_to_max_speed +
-                        (time_elapsed - time_to_max_speed) * max_speed;
-    }
-
-    // check if the takeoff is over
-    if (height_gained >= alt_delta) {
-        stop();
-    }
-
-    // if takeoff climb rate is zero return
-    if (speed <= 0.0f) {
-        takeoff_climb_rate = 0.0f;
-        return;
-    }
-
-    // default take-off climb rate to maximum speed
-    takeoff_climb_rate = speed;
-
-    // if pilot's commands descent
-    if (pilot_climb_rate < 0.0f) {
-        // if overall climb rate is still positive, move to take-off climb rate
-        if (takeoff_climb_rate + pilot_climb_rate > 0.0f) {
-            takeoff_climb_rate = takeoff_climb_rate + pilot_climb_rate;
-            pilot_climb_rate = 0.0f;
-        } else {
-            // if overall is negative, move to pilot climb rate
-            pilot_climb_rate = pilot_climb_rate + takeoff_climb_rate;
-            takeoff_climb_rate = 0.0f;
+    if (copter.ap.land_complete) {
+        // send throttle to attitude controller with angle boost
+        float throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
+        copter.attitude_control->set_throttle_out(throttle, true, 0.0);
+        // tell position controller to reset alt target and reset I terms
+        copter.pos_control->init_z_controller();
+        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
+            (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
+            (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
+            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
+            // throttle > 90%
+            // acceleration > 50% maximum acceleration
+            // velocity > 10% maximum velocity && commanded climb rate
+            // velocity > 50% maximum velocity
+            // altitude change greater than half complete alt from start off alt
+            copter.set_land_complete(false);
         }
-    } else { // pilot commands climb
-        // pilot climb rate is zero until it surpasses the take-off climb rate
-        if (pilot_climb_rate > takeoff_climb_rate) {
-            pilot_climb_rate = pilot_climb_rate - takeoff_climb_rate;
-        } else {
-            pilot_climb_rate = 0.0f;
+    } else {
+        float pos_z = take_off_complete_alt;
+        float vel_z = pilot_climb_rate_cm;
+
+        // command the aircraft to the take off altitude and current pilot climb rate
+        copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
+
+        // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
+        if (is_negative(pilot_climb_rate_cm) ||
+            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+            stop();
         }
     }
 }
 
-void Copter::auto_takeoff_set_start_alt(void)
+// auto_takeoff_run - controls the vertical position controller during the process of taking off in auto modes
+// auto_takeoff_complete set to true when target altitude is within 10% of the take off altitude and less than 50% max climb rate
+void _AutoTakeoff::run()
 {
-    // start with our current altitude
-    auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
+    const auto &g2 = copter.g2;
+    const auto &inertial_nav = copter.inertial_nav;
+    const auto &wp_nav = copter.wp_nav;
+    auto *motors = copter.motors;
+    auto *pos_control = copter.pos_control;
+    auto *attitude_control = copter.attitude_control;
+
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !copter.ap.auto_armed) {
+        // do not spool down tradheli when on the ground with motor interlock enabled
+        copter.flightmode->make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
+        // update auto_takeoff_no_nav_alt_cm
+        no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+        return;
+    }
+
+    // get terrain offset
+    float terr_offset = 0.0f;
+    if (terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
+        // trigger terrain failsafe
+        copter.failsafe_terrain_on_event();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // aircraft stays in landed state until rotor speed run up has finished
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        // motors have not completed spool up yet so relax navigation and position controllers
+        pos_control->relax_velocity_controller_xy();
+        pos_control->update_xy_controller();
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->update_z_controller();
+        attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        // update auto_takeoff_no_nav_alt_cm
+        no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+        return;
+    }
     
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        // we are not flying, add the wp_navalt_min
-        auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
+    // aircraft stays in landed state until vertical movement is detected or 90% throttle is reached
+    if (copter.ap.land_complete) {
+        // send throttle to attitude controller with angle boost
+        float throttle = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
+        copter.attitude_control->set_throttle_out(throttle, true, 0.0);
+        // tell position controller to reset alt target and reset I terms
+        copter.pos_control->init_z_controller();
+        pos_control->relax_velocity_controller_xy();
+        pos_control->update_xy_controller();
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
+            (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
+            (copter.pos_control->get_vel_desired_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
+            ( no_nav_active && (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm))) {
+            // throttle > 90%
+            // acceleration > 50% maximum acceleration
+            // velocity > 10% maximum velocity
+            // altitude change greater than half auto_takeoff_no_nav_alt_cm
+            copter.set_land_complete(false);
+        }
+        return;
+    }
+
+    // check if we are not navigating because of low altitude
+    if (no_nav_active) {
+        // check if vehicle has reached no_nav_alt threshold
+        if (inertial_nav.get_position_z_up_cm() >= no_nav_alt_cm) {
+            no_nav_active = false;
+        }
+        pos_control->relax_velocity_controller_xy();
+    } else {
+        Vector2f vel;
+        Vector2f accel;
+        pos_control->input_vel_accel_xy(vel, accel);
+    }
+    pos_control->update_xy_controller();
+
+    // command the aircraft to the take off altitude
+    float pos_z = complete_alt_cm + terr_offset;
+    float vel_z = 0.0;
+    copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0.0);
+    
+    // run the vertical position controller and set output throttle
+    pos_control->update_z_controller();
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
+
+    // takeoff complete when we are less than 1% of the stopping distance from the target altitude
+    // and 10% our maximum climb rate
+    const float vel_threshold_fraction = 0.1;
+    // stopping distance from vel_threshold_fraction * max velocity
+    const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
+    bool reached_altitude = copter.pos_control->get_pos_target_z_cm() >= pos_z - stop_distance;
+    bool reached_climb_rate = copter.pos_control->get_vel_desired_cms().z < copter.pos_control->get_max_speed_up_cms() * vel_threshold_fraction;
+    complete = reached_altitude && reached_climb_rate;
+
+    // calculate completion for location in case it is needed for a smooth transition to wp_nav
+    if (complete) {
+        const Vector3p& _complete_pos = copter.pos_control->get_pos_target_cm();
+        complete_pos = Vector3p{_complete_pos.x, _complete_pos.y, pos_z};
     }
 }
 
-
-/*
-  call attitude controller for automatic takeoff, limiting roll/pitch
-  if below wp_navalt_min
- */
-void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
+void _AutoTakeoff::start(float _complete_alt_cm, bool _terrain_alt)
 {
-    float nav_roll, nav_pitch;
-    
-    if (g2.wp_navalt_min > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
-        // we haven't reached the takeoff navigation altitude yet
-        nav_roll = 0;
-        nav_pitch = 0;
-#if FRAME_CONFIG == HELI_FRAME
-        // prevent hover roll starting till past specified altitude
-        hover_roll_trim_scalar_slew = 0;        
-#endif
-        // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control->set_limit_accel_xy();
+    // auto_takeoff_complete_alt_cm is a problem if equal to auto_takeoff_start_alt_cm
+    complete_alt_cm = _complete_alt_cm;
+    terrain_alt = _terrain_alt;
+    complete = false;
+    // initialise auto_takeoff_no_nav_alt_cm
+    const auto &g2 = copter.g2;
+    const auto &inertial_nav = copter.inertial_nav;
+    no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
+    if ((g2.wp_navalt_min > 0) && (copter.flightmode->is_disarmed_or_landed() || !copter.motors->get_interlock())) {
+        // we are not flying, climb with no navigation to current alt-above-ekf-origin + wp_navalt_min
+        no_nav_active = true;
     } else {
-        nav_roll = wp_nav->get_roll();
-        nav_pitch = wp_nav->get_pitch();
+        no_nav_active = false;
     }
-    
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+}
+
+// return takeoff final position if takeoff has completed successfully
+bool _AutoTakeoff::get_position(Vector3p& _complete_pos)
+{
+    // only provide location if takeoff has completed
+    if (!complete) {
+        return false;
+    }
+
+    complete_pos = _complete_pos;
+    return true;
+}
+
+bool Mode::is_taking_off() const
+{
+    if (!has_user_takeoff(false)) {
+        return false;
+    }
+    return takeoff.running();
 }

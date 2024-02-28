@@ -27,6 +27,11 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
+#include "hwdef.h"
+
+#ifndef HAL_HAVE_DUAL_USB_CDC
+#define HAL_HAVE_DUAL_USB_CDC 0
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -34,11 +39,18 @@ extern "C" {
 
 #if HAL_USE_SERIAL_USB
 extern const USBConfig usbcfg;
-extern SerialUSBConfig serusbcfg;
+extern const SerialUSBConfig serusbcfg1;
 extern SerialUSBDriver SDU1;
+#if HAL_HAVE_DUAL_USB_CDC
+extern SerialUSBDriver SDU2;
+extern const SerialUSBConfig serusbcfg2;
+#endif //HAL_HAVE_DUAL_USB_CDC
+uint32_t get_usb_baud(uint16_t endpoint_id);
 #endif
-
+#define USB_DESC_MAX_STRLEN 100
 void setup_usb_strings(void);
+void string_substitute(const char *str, char *str2);
+bool string_contains(const char *haystack, const char *needle);
 
 #if defined(__cplusplus)
 }

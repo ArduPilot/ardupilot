@@ -15,14 +15,7 @@
 
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
-
 #include "NotifyDevice.h"
-
-#define HIGH 1
-#define LOW 0
 
 class ExternalLED: public NotifyDevice
 {
@@ -31,10 +24,10 @@ public:
     ExternalLED() : _pattern(NONE) {}
 
     // initialise the LED driver
-    bool init(void);
+    bool init(void) override;
 
     // should be called at 50Hz
-    void update(void);
+    void update(void) override;
 
 private:
 

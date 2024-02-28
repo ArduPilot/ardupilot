@@ -51,6 +51,7 @@ def kt2mps(x):
 def mps2kt(x):
     return x / 0.514444444
 
+
 udp = udp_out("127.0.0.1:5501")
 
 latitude = -35
@@ -60,14 +61,8 @@ heading = 0.0
 speedN = 0
 speedE = 0.0
 speedD = 0.0
-xAccel = 0.0
-yAccel = 0.0
-zAccel = 0.0
 rollRate = 0.0
-pitchRate = 0.0
 yawRate = 0.0
-rollDeg = 0.0
-pitchDeg = 0.0
 yawDeg = 0.0
 airspeed = 0
 magic = 0x4c56414f

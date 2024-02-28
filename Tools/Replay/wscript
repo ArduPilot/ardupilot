@@ -3,8 +3,12 @@
 
 import boards
 
+def configure(cfg):
+    cfg.env.HAL_GCS_ENABLED = 0
+
 def build(bld):
-    if not isinstance(bld.get_board(), boards.linux):
+    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1':
+        # we need a filesystem for replay
         return
 
     vehicle = bld.path.name
@@ -14,10 +18,14 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_Beacon',
+            'AP_Arming',
+            'AP_RCMapper',
+            'AP_OSD',
+            'AP_Avoidance',
         ],
     )
 
     bld.ap_program(
-        program_groups='tools',
+        program_groups=['tool','replay'],
         use=vehicle + '_libs',
     )

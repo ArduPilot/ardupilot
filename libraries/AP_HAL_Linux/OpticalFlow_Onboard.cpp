@@ -171,6 +171,11 @@ void OpticalFlow_Onboard::init()
     }
 
     _gyro_ring_buffer = new ObjectBuffer<GyroSample>(OPTICAL_FLOW_GYRO_BUFFER_LEN);
+    if (_gyro_ring_buffer != nullptr && _gyro_ring_buffer->get_size() == 0) {
+        // allocation failed
+        delete _gyro_ring_buffer;
+        _gyro_ring_buffer = nullptr;
+    }
 
     _initialized = true;
 }
@@ -215,7 +220,7 @@ void OpticalFlow_Onboard::push_gyro(float gyro_x, float gyro_y, float dt)
     _integrated_gyro.x += (gyro_x - _gyro_bias.x) * dt;
     _integrated_gyro.y += (gyro_y - _gyro_bias.y) * dt;
     sample.gyro = _integrated_gyro;
-    sample.time_us = 1.0e6 * (ts.tv_sec + (ts.tv_nsec*1.0e-9));
+    sample.time_us = ts.tv_sec*1000000ULL + ts.tv_nsec/1000ULL;
 
     _gyro_ring_buffer->push(sample);
 }

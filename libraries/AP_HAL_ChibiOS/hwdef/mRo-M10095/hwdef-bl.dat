@@ -1,0 +1,62 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G491 STM32G491xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 26
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# board ID for firmware load
+APJ_BOARD_ID 1041
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# assume 256k flash part
+FLASH_SIZE_KB 256
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# a fault LED
+PA4 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+# USART1
+PA9  USART1_TX USART1 SPEED_HIGH NODMA
+PA10 USART1_RX USART1 SPEED_HIGH NODMA
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+
+define HAL_NO_GPIO_IRQ
+
+define HAL_USE_EMPTY_IO TRUE
+
+
+define DMA_RESERVE_SIZE 0
+
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+

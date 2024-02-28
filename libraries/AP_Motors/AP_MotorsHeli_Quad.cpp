@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
-
+#include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsHeli_Quad.h"
 
 extern const AP_HAL::HAL& hal;
@@ -27,6 +27,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
 
     AP_GROUPEND
 };
+
+#define QUAD_SERVO_MAX_ANGLE 4500
 
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
@@ -44,70 +46,48 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Quad::init_outputs()
+void AP_MotorsHeli_Quad::init_outputs()
 {
-    if (_flags.initialised_ok) {
-        return true;
-    }
-
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        _servo[i] = SRV_Channels::get_channel_for(SRV_Channels::get_motor_function(i), CH_1+i);
-        if (!_servo[i]) {
-            return false;
-        }
-    }
-
-    // set rotor servo range
-    _rotor.init_servo();
-
-    _flags.initialised_ok = true;
-
-    return true;
-}
-
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // exit immediately if not armed
-    if (!armed()) {
+    if (initialised_ok()) {
         return;
     }
 
-    // output to motors and servos
-    switch (motor_seq) {
-    case 1 ... AP_MOTORS_HELI_QUAD_NUM_MOTORS:
-        rc_write(AP_MOTORS_MOT_1 + (motor_seq-1), pwm);
-        break;
-    case AP_MOTORS_HELI_QUAD_NUM_MOTORS+1:
-        // main rotor
-        rc_write(AP_MOTORS_HELI_QUAD_RSC, pwm);
-        break;
-    default:
-        // do nothing
-        break;
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        add_motor_num(CH_1+i);
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), QUAD_SERVO_MAX_ANGLE);
     }
-}
 
-// set_desired_rotor_speed
-void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
-{
-    _rotor.set_desired_speed(desired_speed);
+    // set rotor servo range
+    _main_rotor.init_servo();
+
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
 }
 
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
-    float thrcrv[5];
-    for (uint8_t i = 0; i < 5; i++) {
-        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    // Set rsc mode specific parameters
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+        _main_rotor.set_throttle_curve();
     }
-    _rotor.set_ramp_time(_rsc_ramp_time);
-    _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical*0.001f);
-    _rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
+    // keeps user from changing RSC mode while armed
+    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
+        _main_rotor.reset_rsc_mode_param();
+        _heliflags.save_rsc_mode = true;
+    }
+    // saves rsc mode parameter when disarmed if it had been reset while armed
+    if (_heliflags.save_rsc_mode && !armed()) {
+        _main_rotor._rsc_mode.save();
+        _heliflags.save_rsc_mode = false;
+    }
+
+    if (_heliflags.in_autorotation) {
+        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+        // set bailout ramp time
+        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+    }else {
+        _main_rotor.set_autorotation_flag(false);
+    }
 }
 
 // calculate_scalars
@@ -115,20 +95,30 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 {
     // range check collective min, max and mid
     if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+        _collective_min.set(AP_MOTORS_HELI_COLLECTIVE_MIN);
+        _collective_max.set(AP_MOTORS_HELI_COLLECTIVE_MAX);
     }
 
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
+    _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
+
+    if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
+        // calculate collective zero thrust point as a number from 0 to 1
+        _collective_zero_thrust_pct = (_collective_zero_thrust_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+
+        // calculate collective land min point as a number from 0 to 1
+        _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+    } else {
+        _collective_zero_thrust_pct = 0.0f;
+        _collective_land_min_pct = 0.0f;
+    }
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
 
     // set mode of main rotor controller and trigger recalculation of scalars
-    _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
+    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
     calculate_armed_scalars();
 }
 
@@ -147,41 +137,31 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
             // reverse yaw for H frame
             clockwise = !clockwise;
         }
-        _rollFactor[CH_1+i]       = -0.5*sinf(radians(angles[i]))/cos45;
-        _pitchFactor[CH_1+i]      =  0.5*cosf(radians(angles[i]))/cos45;
-        _yawFactor[CH_1+i]        = clockwise?-0.5:0.5;
+        _rollFactor[CH_1+i]       = -0.25*sinf(radians(angles[i]))/cos45;
+        _pitchFactor[CH_1+i]      =  0.25*cosf(radians(angles[i]))/cos45;
+        _yawFactor[CH_1+i]        = clockwise?-0.25:0.25;
         _collectiveFactor[CH_1+i] = 1;
     }
 }
 
-// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsHeli_Quad::get_motor_mask()
-{
-    uint16_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    mask |= 1U << AP_MOTORS_HELI_QUAD_RSC;
-    return mask;
-}
-
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
+void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
 {
     // Send state update to motors
-    _rotor.output(state);
+    _main_rotor.output(state);
 
-    if (state == ROTOR_CONTROL_STOP) {
+    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
         // else if armed, set engine run enable output to run position
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _rotor.is_runup_complete();
+    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    // Check if rotors are spooled down
+    _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
 
 //
@@ -195,8 +175,6 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll_pitch = false;
-    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -212,30 +190,38 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
-        collective_out = _land_collective_min*0.001f;
+    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct) {
+        collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
     }
 
-    float collective_range = (_collective_max - _collective_min)*0.001f;
+    // updates below land min collective flag
+    if (collective_out <= _collective_land_min_pct) {
+        _heliflags.below_land_min_coll = true;
+    } else {
+        _heliflags.below_land_min_coll = false;
+    }
+
+    // updates takeoff collective flag based on 50% hover collective
+    update_takeoff_collective_flag(collective_out);
+
+    float collective_range = (_collective_max - _collective_min) * 0.001f;
 
     if (_heliflags.inverted_flight) {
-        collective_out = 1 - collective_out;
+        collective_out = 1.0f - collective_out;
     }
 
     // feed power estimate into main rotor controller
-    _rotor.set_collective(fabsf(collective_out));
+    _main_rotor.set_collective(fabsf(collective_out));
 
-    // scale collective to -1 to 1
-    collective_out = collective_out*2-1;
+    // rescale collective for overhead calc
+    collective_out -= _collective_zero_thrust_pct;
 
     // reserve some collective for attitude control
     collective_out *= collective_range;
 
-    float out[AP_MOTORS_HELI_QUAD_NUM_MOTORS] {};
-
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        out[i] =
+        _out[i] =
             _rollFactor[CH_1+i] * roll_out +
             _pitchFactor[CH_1+i] * pitch_out +
             _collectiveFactor[CH_1+i] * collective_out;
@@ -244,16 +230,16 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // see if we need to scale down yaw_out
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        if (out[i] * (out[i] + y) < 0) {
+        if (_out[i] * (_out[i] + y) < 0.0f) {
             // applying this yaw demand would change the sign of the
             // collective, which means the yaw would not be applied
             // evenly. We scale down the overall yaw demand to prevent
             // it crossing over zero
-            float s = -(out[i] / y);
+            float s = -(_out[i] / y);
             yaw_out *= s;
         }
     }
@@ -261,19 +247,35 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // now apply the yaw correction
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        out[i] += y;
+        _out[i] += y;
+    }
+
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        // scale output to 0 to 1
+        _out[i] += _collective_zero_thrust_pct;
+        // scale output to -1 to 1 for servo output
+        _out[i] = _out[i] * 2.0f - 1.0f;
+    }
+}
+
+void AP_MotorsHeli_Quad::output_to_motors()
+{
+    if (!initialised_ok()) {
+        return;
     }
 
     // move the servos
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        rc_write(AP_MOTORS_MOT_1+i, calc_pwm_output_1to1(out[i], _servo[i]));
+        rc_write_angle(AP_MOTORS_MOT_1+i, _out[i] * QUAD_SERVO_MAX_ANGLE);
     }
-}
 
+    update_motor_control(get_rotor_control_state());
+
+}
 
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Quad::servo_test()

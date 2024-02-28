@@ -5,17 +5,31 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -g -fomit-frame-pointer -falign-functions=16  -DCHPRINTF_USE_FLOAT=1
+  USE_OPT = -fomit-frame-pointer -falign-functions=16
+endif
+
+ifeq ($(ENABLE_DEBUG_SYMBOLS), yes)
+  USE_OPT += -g
 endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT =
+  USE_COPT = -Os
 endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti
+  USE_CPPOPT = -fno-rtti -std=gnu++11
+endif
+
+# Assembly specific options here (added to USE_OPT).
+ifeq ($(USE_ASOPT),)
+  USE_ASOPT = 
+endif
+
+# Assembly specific options here (added to USE_ASXOPT).
+ifeq ($(USE_ASXOPT),)
+  USE_ASXOPT =
 endif
 
 # Enable this if you want the linker to remove unused code and data
@@ -96,10 +110,10 @@ include $(CHIBIOS)/$(CHIBIOS_STARTUP_MK)
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/$(CHIBIOS_PLATFORM_MK)
-include $(CHIBIOS)/os/hal/osal/rt/osal.mk
+include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
@@ -109,40 +123,40 @@ include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
-VARIOUSSRC = $(STREAMSSRC)
-
-VARIOUSINC = $(STREAMSINC)
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(STARTUPSRC) \
-       $(KERNSRC) \
-       $(PORTSRC) \
-       $(OSALSRC) \
-       $(HALSRC) \
-       $(PLATFORMSRC) \
-       $(VARIOUSSRC) \
-       $(FATFSSRC) \
-	   $(HWDEF)/common/stubs.c \
+
+CSRC = $(sort $(ALLCSRC))
+
+CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/board.c \
 	   $(HWDEF)/common/usbcfg.c \
+	   $(HWDEF)/common/usbcfg_dualcdc.c \
+	   $(HWDEF)/common/usbcfg_common.c \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
-	   $(HWDEF)/common/stdio.c \
 	   $(HWDEF)/common/hrt.c \
-	   $(HWDEF)/common/stm32_util.c \
-	   $(HWDEF)/common/bouncebuffer.c
+       $(HWDEF)/common/stm32_util.c \
+       $(HWDEF)/common/bouncebuffer.c \
+       $(HWDEF)/common/watchdog.c
 
-ifeq ($(USE_FATFS),yes)
-CSRC += $(HWDEF)/common/posix.c
+ifeq ($(USE_USB_MSD),yes)
+CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
+        $(CHIBIOS)/os/hal/src/hal_usb_msd.c
 endif
-
 
 #	   $(TESTSRC) \
 #	   test.c
+ifneq ($(CRASHCATCHER),)
+LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
+             $(HWDEF)/common/crashdump.c
+
+LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
+endif
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(CHCPPSRC)
+CPPSRC = $(sort $(ALLCPPSRC))
 
 # C sources to be compiled in ARM mode regardless of the global setting.
 # NOTE: Mixing ARM and THUMB mode enables the -mthumb-interwork compiler
@@ -165,13 +179,19 @@ TCSRC =
 TCPPSRC =
 
 # List ASM source files here
-ASMSRC =
-ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
+ASMSRC = $(ALLASMSRC)
+ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
-         $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(FATFSINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(VARIOUSINC) $(CHCPPINC) \
-		 $(HWDEF)/common
+         $(ALLINC) $(HWDEF)/common
+
+ifneq ($(CRASHCATCHER),)
+INCDIR += $(CRASHCATCHER)/include
+endif
+
+ifeq ($(USE_USB_MSD),yes)
+INCDIR += $(CHIBIOS)/os/various/scsi_bindings
+endif
 
 #
 # Project, sources and paths
@@ -180,8 +200,6 @@ INCDIR = $(CHIBIOS)/os/license \
 ##############################################################################
 # Compiler settings
 #
-
-MCU  = cortex-m4
 
 #TRGT = arm-elf-
 TRGT = arm-none-eabi-
@@ -207,10 +225,10 @@ AOPT =
 TOPT = -mthumb -DTHUMB
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes -Werror
 
 # Define C++ warning options here
-CPPWARN = -Wall -Wextra -Wundef
+CPPWARN = -Wall -Wextra -Wundef -Werror
 
 #
 # Compiler settings
@@ -221,10 +239,34 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
+UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\" \
+        -DHAL_MAX_STACK_FRAME_SIZE=$(HAL_MAX_STACK_FRAME_SIZE)
+
+ifeq ($(ENABLE_ASSERTS),yes)
+ UDEFS += -DHAL_CHIBIOS_ENABLE_ASSERTS
+ ASXFLAGS += -DHAL_CHIBIOS_ENABLE_ASSERTS
+endif
+
+ifeq ($(ENABLE_MALLOC_GUARD),yes)
+ UDEFS += -DHAL_CHIBIOS_ENABLE_MALLOC_GUARD
+ ASXFLAGS += -DHAL_CHIBIOS_ENABLE_MALLOC_GUARD
+endif
+
+ifeq ($(ENABLE_STATS),yes)
+ UDEFS += -DHAL_ENABLE_THREAD_STATISTICS
+ ASXFLAGS += -DHAL_ENABLE_THREAD_STATISTICS
+endif
+
+ifneq ($(AP_BOARD_START_TIME),)
+ UDEFS += -DAP_BOARD_START_TIME=$(AP_BOARD_START_TIME)
+endif
 
 # Define ASM defines here
 UADEFS =
+
+ifeq ($(COPY_VECTORS_TO_RAM),yes)
+ UADEFS += -DCRT0_INIT_VECTORS=1
+endif
 
 # List all user directories here
 UINCDIR =

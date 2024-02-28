@@ -22,17 +22,25 @@ namespace AP_HAL {
     class AnalogIn;
     class Storage;
     class DigitalSource;
+    class PWMSource;
     class GPIO;
     class RCInput;
     class RCOutput;
     class Scheduler;
     class Semaphore;
+    class BinarySemaphore;
     class OpticalFlow;
+    class DSP;
 
-    class CANManager;
-    class CAN;
+    class WSPIDevice;
+    class WSPIDeviceDriver;
+    class WSPIDeviceManager;
+
+    class CANIface;
+    class CANFrame;
 
     class Util;
+    class Flash;
 
     /* Utility Classes */
     class Print;
@@ -42,7 +50,7 @@ namespace AP_HAL {
     /* Typdefs for function pointers (Procedure, Member Procedure)
 
        For member functions we use the FastDelegate delegates class
-       which allows us to encapculate a member function as a type
+       which allows us to encapsulate a member function as a type
      */
     typedef void(*Proc)(void);
     FUNCTOR_TYPEDEF(MemberProc, void);
@@ -56,6 +64,9 @@ namespace AP_HAL {
         SPIDevice_Type              = -1,
     };
 
-    // Must be implemented by the concrete HALs.
+    class SIMState;
+
+    // Must be implemented by the concrete HALs and return the same reference.
     const HAL& get_HAL();
+    HAL& get_HAL_mutable();
 }

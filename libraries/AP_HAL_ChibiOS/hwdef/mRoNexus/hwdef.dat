@@ -1,0 +1,182 @@
+# hw definition file for processing by chibios_hwdef.py
+# mRo Nexus CAN flight controller
+# A Dual CAN based flight controller / CAN IMU
+# 36mm x 36mm, 31.5mm x 31.5mm grommeted mounting holes
+# M10084
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1015
+
+# crystal frequency
+OSCILLATOR_HZ 25000000
+
+
+FLASH_SIZE_KB 2048
+
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O2
+
+# start on 2th sector (1st sector for bootloader)
+FLASH_RESERVE_START_KB 128
+
+# use FRAM for storage
+define HAL_STORAGE_SIZE 32768
+define HAL_WITH_RAMTRON 1
+
+# USB setup
+USB_STRING_MANUFACTURER "mRo"
+
+# Order of I2C buses
+I2C_ORDER I2C4
+
+# order of UARTs (and USB)
+# OTG1 	SERIAL0
+# UART4 SERIAL3
+# UART7 SERIAL1
+# OTG2 	SERIAL2
+
+SERIAL_ORDER OTG1 UART7 OTG2 UART4
+
+# UART4 SERIAL0 (GPS)
+PD0 UART4_RX UART4
+PD1 UART4_TX UART4
+
+# UART7 SERIAL1 (SPARE UART)
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# VDD sense pin for the External 5v Supply
+PA4 BATT_VOLTAGE_SENS ADC1 SCALE(1.65)
+
+# VDD sense pin for the CAN supplied 5v Supply
+PA3 VDD_5V_SENS ADC1 SCALE(1.65)
+
+#SPI2 SPIBus0 (1 device ADIS16470 6DOF)
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+#SPI3 SPIBus1 (2 devices ICM-40609 6DOF / RM3100 MAG
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PD6 SPI3_MOSI SPI3
+
+#SPI4 SPIBus2 (2 devices DPS310 BARO / FM25V02 FRAM)
+PE2 SPI4_SCK SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# This input pin is used to detect that power is valid on USB.
+PA9 VBUS_VALID INPUT
+
+# Now we define the pins that USB is connected on.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Now the first I2C bus. The pin speeds are automatically setup
+# correctly, but can be overridden here if needed.
+PD12 I2C4_SCL I2C4
+PD13 I2C4_SDA I2C4
+
+# this board only has a single I2C bus so make it external
+define HAL_I2C_INTERNAL_MASK 0
+
+# Now setup the pins for the microSD card, if available.
+PC8  SDMMC1_D0 SDMMC1
+PC9  SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+
+# More CS pins for more sensors. The labels for all CS pins need to
+# match the SPI device table later in this file.
+PB12 CS_ADIS16470 CS
+PA15 CS_ICM40609D CS
+PE3  CS_DPS310 CS
+PB11 CS_RM3100 CS
+
+# The CS pin for FRAM (ramtron). This one is marked as using
+# SPEED_VERYLOW, which matches the HAL_PX4 setup.
+PE4 CS_FRAM CS SPEED_VERYLOW
+
+# the first CAN bus
+PB9 CAN1_TX CAN1
+PB8 CAN1_RX CAN1
+
+PE0 GPIO_CAN1_SILENT OUTPUT PUSHPULL LOW GPIO(72)
+
+# This defines the pins for the 2nd CAN interface.
+PB6 CAN2_TX CAN2
+PB5 CAN2_RX CAN2
+
+PB7 GPIO_CAN2_SILENT OUTPUT PUSHPULL LOW GPIO(73)
+
+# This is the invensense data-ready pin. We don't use it in the
+# default driver.
+PD8  DRDY_ADIS16470 INPUT GPIO(93)
+PE13 DRDY_ICM40609D INPUT 
+PC13 DRDY_RM3100 INPUT
+
+define HAL_DRDY_ADIS16470_PIN 93
+
+# This is the reset line for the adis16470
+PB1 nRST_ADIS OUTPUT HIGH GPIO(74)
+
+# This is the pin to enable the sensors rail. It can be used to power
+# cycle sensors to recover them in case there are problems with power on
+# timing affecting sensor stability. We pull it high by default.
+
+#SPI3 Devices ICM40609 and RM3100
+PC6 SENSORS_SPI3_EN OUTPUT HIGH 
+
+#SPI4 Devices DPS310 and FRAM
+PC7 SENSORS_SPI4_EN OUTPUT HIGH 
+
+SPIDEV adis16470  SPI2 DEVID1  CS_ADIS16470      MODE3  1*MHZ  2*MHZ 
+SPIDEV icm40609d  SPI3 DEVID2  CS_ICM40609D      MODE3  16*MHZ 16*MHZ
+SPIDEV rm3100      SPI3 DEVID4  CS_RM3100        MODE3  2*MHZ  8*MHZ
+SPIDEV dps310      SPI4 DEVID3  CS_DPS310        MODE3  5*MHZ  5*MHZ
+SPIDEV ramtron     SPI4 DEVID10 CS_FRAM          MODE3  8*MHZ  8*MHZ
+
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 0
+
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
+
+# Nexus has a TriColor LED like the Pixracer, Red, Green, Blue
+define HAL_HAVE_PIXRACER_LED
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+# LED setup for PixracerLED driver
+PA6 LED_R OUTPUT HIGH GPIO(0)
+PA7 LED_G OUTPUT HIGH GPIO(1)
+PB0 LED_B OUTPUT HIGH GPIO(2)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+# 2 IMUs (Analog Devices ADIS16470 and Invensense / TDK ICM40609D)
+IMU ADIS1647x      SPI:adis16470 ROTATION_ROLL_180 HAL_DRDY_ADIS16470_PIN
+IMU Invensensev3   SPI:icm40609d ROTATION_NONE
+
+# 1 Absolute Pressure Sensor (Infineon DPS310)
+BARO DPS310        SPI:dps310
+
+# 1 compass (PNI RM3100)
+COMPASS RM3100     SPI:rm3100 false ROTATION_YAW_180 
+
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+

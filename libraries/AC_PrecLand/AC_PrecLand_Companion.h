@@ -1,19 +1,24 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_COMPANION_ENABLED
+
 #include "AC_PrecLand_Backend.h"
+#include <AP_Math/AP_Math.h>
 
 /*
  * AC_PrecLand_Companion - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
+ *                         The companion computer must provide "Line-Of-Sight" measurements
+ *                         in the form of LANDING_TARGET mavlink messages.
  */
 
 class AC_PrecLand_Companion : public AC_PrecLand_Backend
 {
 public:
     // Constructor
-    AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
+    using AC_PrecLand_Backend::AC_PrecLand_Backend;
 
     // perform any required initialisation of backend
     void init() override;
@@ -35,13 +40,16 @@ public:
     float distance_to_target() override;
 
     // parses a mavlink message from the companion computer
-    void handle_msg(mavlink_message_t* msg) override;
+    void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
 private:
-    uint64_t            _timestamp_us;          // timestamp from message
     float               _distance_to_target;    // distance from the camera to target in meters
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
+    bool                _wrong_frame_msg_sent;
 };
+
+
+#endif // AC_PRECLAND_COMPANION_ENABLED

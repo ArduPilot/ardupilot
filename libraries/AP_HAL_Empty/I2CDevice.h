@@ -51,7 +51,7 @@ public:
     }
 
     bool read_registers_multiple(uint8_t first_reg, uint8_t *recv,
-                                 uint32_t recv_len, uint8_t times)
+                                 uint32_t recv_len, uint8_t times) override
     {
         return true;
     }
@@ -61,7 +61,7 @@ public:
     bool set_speed(enum AP_HAL::Device::Speed speed) override { return true; }
 
     /* See AP_HAL::Device::get_semaphore() */
-    AP_HAL::Semaphore *get_semaphore() { return nullptr; }
+    AP_HAL::Semaphore *get_semaphore() override { return nullptr; }
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(

@@ -1,0 +1,8 @@
+{
+   <linux-stack-poisoning>
+   Memcheck:Addr4
+   fun:_ZN5Linux6Thread13_poison_stackEv
+   fun:_ZN5Linux6Thread15_run_trampolineEPv
+   fun:start_thread
+   fun:clone
+}

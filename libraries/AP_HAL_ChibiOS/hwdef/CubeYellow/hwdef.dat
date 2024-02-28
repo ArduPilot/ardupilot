@@ -1,5 +1,7 @@
-# The CUBE Yellow is a varient of The CUBE Black from ProfiCNC/Hex
+# The CUBE Yellow is a variant of The CUBE Black from ProfiCNC/Hex
 # with a STM32F777 MCU
+
+define HAL_CHIBIOS_ARCH_CUBE 1
 
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
@@ -21,16 +23,11 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-define STM32_LSECLK 32768U
-define STM32_LSEDRV (3U << 3U)
-define STM32_PLLSRC STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 24
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
 # board ID for firmware load
 APJ_BOARD_ID 120
+
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O2
 
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism
@@ -40,9 +37,6 @@ APJ_BOARD_ID 120
 
 # now define the voltage the MCU runs at. This is needed for ChibiOS
 # to set various internal driver limits. It is in 0.01 volt units
-
-# board voltage
-STM32_VDD 330U
 
 # this is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support
@@ -61,9 +55,9 @@ FLASH_SIZE_KB 2048
 # in drivers.
 
 # serial port for stdout. This is optional. If you leave it out then
-# output from printf() lines will be thrown away (you can stil use
+# output from printf() lines will be sent to
 # hal.console->printf() for the ArduPilot console, which is the first
-# UART in the UART_ORDER list). The value for STDOUT_SERIAL is a
+# UART in the SERIAL_ORDER list. The value for STDOUT_SERIAL is a
 # serial device name, and must be for a serial device for which pins
 # are defined in this file. For example, SD7 is for UART7 (SD7 ==
 # "serial device 7" in ChibiOS).
@@ -80,8 +74,6 @@ FLASH_SIZE_KB 2048
 USB_VENDOR 0x2DAE # ONLY FOR USE BY ProfiCNC / HEX! NOBODY ELSE
 USB_PRODUCT 0x1012
 USB_STRING_MANUFACTURER "Hex/ProfiCNC"
-USB_STRING_PRODUCT "CubeYellow"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the
@@ -94,21 +86,18 @@ USB_STRING_SERIAL  "%SERIAL%"
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
-# now the UART order. These map to the hal.uartA to hal.uartF
-# objects. If you use a shorter list then HAL_Empty::UARTDriver
-# objects are substituted for later UARTs, or you can leave a gap by
-# listing one or more of the uarts as EMPTY
-
-# the normal usage of this ordering is:
+# now the SERIALn order. These map to the hal.serial(n) objects. If you use a
+# shorter list then HAL_Empty::UARTDriver objects are substituted for later
+# UARTs, or you can leave a gap by listing one or more of the uarts as EMPTY
 # 1) SERIAL0: console (primary mavlink, usually USB)
-# 2) SERIAL3: primary GPS
-# 3) SERIAL1: telem1
-# 4) SERIAL2: telem2
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
 # 5) SERIAL4: GPS2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
-# order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
+# order of SERIALn (incl. USB)
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
 # if the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU
@@ -180,7 +169,7 @@ PA7 SPI1_MOSI SPI1
 # this defines an output pin which will default to output LOW. It is a
 # pin that enables peripheral power on this board
 
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -234,7 +223,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # this input pin is used to detect that power is valid on USB
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # this defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -307,6 +296,9 @@ PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
+
 # this is the invensense data-ready pin. We don't use it in the
 # default driver
 PD15 MPU_DRDY INPUT
@@ -326,7 +318,7 @@ PE6 SPI4_MOSI SPI4
 # timing affecting sensor stability. We pull it high by default
 PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters)
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
@@ -336,10 +328,10 @@ PE12 FMU_LED_AMBER OUTPUT GPIO(0)
 # power flag pins. These tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 # now the SPI device table. This table creates all accessible SPI
 # devices, giving the name of the device (which is used by device
@@ -357,18 +349,21 @@ PE15 VDD_5V_PERIPH_OC INPUT PULLUP
 # of ArduPilot so users don't need to re-do their accel and compass
 # calibrations when moving to ChibiOS
 
-SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE0 20*MHZ 20*MHZ
+SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
-SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE0  2*MHZ  8*MHZ
-SPIDEV icm20608-am    SPI1 DEVID4  MPU_CS       MODE0  4*MHZ  8*MHZ
-SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE0  4*MHZ  8*MHZ
+SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
+SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
 SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20948       SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE0 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE0 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ 
-SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ 
+SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV icm20602_ext   SPI4 DEVID4  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
 SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
 SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
@@ -387,18 +382,50 @@ SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 #SPIDEV clock8   SPI4 DEVID5  MPU_EXT_CS   MODE0  8*MHZ 8*MHZ     # gives 5.5MHz
 #SPIDEV clock16  SPI4 DEVID5  MPU_EXT_CS   MODE0  16*MHZ 16*MHZ   # gives 10.6MHz
 
+# three IMUs, but allow for different variants. First two IMUs are
+# isolated, 3rd isn't
+IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
+
+# the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
+# and the H variant of the gyro
+IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+
+# 3rd non-isolated IMU
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+
+# alternative IMU set for newer cubes
+IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 5
+
+# two baros
+BARO MS56XX SPI:ms5611_ext
+BARO MS56XX SPI:ms5611
+
+# two compasses. First is in the LSM303D
+COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+# 2nd compass is part of the 2nd invensense IMU
+COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
+
+# compass as part of ICM20948 on newer cubes
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
 # this adds a C define which sets up the ArduPilot architecture
 # define. Any line starting with 'define' is copied literally as
 # a #define in the hwdef.h header
 define HAL_CHIBIOS_ARCH_FMUV3 1
 
-# now some defines for logging and terrain data files
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
+
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
 
 # this enables the use of a ramtron device for storage, if one is
 # found on SPI. You must have a ramtron entry in the SPI device table
@@ -409,16 +436,13 @@ define HAL_WITH_RAMTRON 1
 # setup for the possibility of an IMU heater as the The CUBE has
 # an IMU header
 define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# Enable all IMUs to be used and therefore three active EKF Lanes
+define HAL_EKF_IMU_MASK_DEFAULT 7
 
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
-
-# enable RTSCTS support. You should define this if you have any UARTs
-with RTS/CTS pins
-define AP_FEATURE_RTSCTS 1
-
-# enable SBUS_OUT on IOMCU (if you have an IOMCU)
-define AP_FEATURE_SBUS_OUT 1
 
 # now setup the default battery pins driver analog pins and default
 # scaling for the power brick
@@ -426,16 +450,11 @@ define HAL_BATT_VOLT_PIN 2
 define HAL_BATT_CURR_PIN 3
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
+define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 1
 
 # this defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
-
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # we can't share IO UART (USART6)
 DMA_NOSHARE USART6_TX USART6_RX ADC1
@@ -445,10 +464,15 @@ DMA_PRIORITY USART6*
 FLASH_RESERVE_START_KB 96
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
+

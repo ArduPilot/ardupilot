@@ -18,10 +18,12 @@
 
 #include <AP_OSD/AP_OSD_MAX7456.h>
 
+#if HAL_WITH_OSD_BITMAP
 #include <AP_HAL/Util.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
-#include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <utility>
 
@@ -129,7 +131,6 @@
 #endif
 #define BWBRIGHTNESS ((BLACKBRIGHTNESS << 2) | WHITEBRIGHTNESS)
 
-
 extern const AP_HAL::HAL &hal;
 
 AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
@@ -156,13 +157,19 @@ bool AP_OSD_MAX7456::init()
 
 bool AP_OSD_MAX7456::update_font()
 {
-    uint32_t font_size;
     uint8_t updated_chars = 0;
-    char fontname[] = "font0.bin";
     last_font = get_font_num();
-    fontname[4] = last_font + '0';
-    uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
-    if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
+    FileData *fd = load_font_data(last_font);
+
+    if (fd == nullptr) {
+        return false;
+    }
+
+    const uint8_t *font_data = fd->data;
+    uint32_t font_size = fd->length;
+    if (font_size != NVM_RAM_SIZE * 256) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AP_OSD: bad font size %u\n", unsigned(font_size));
+        delete fd;
         return false;
     }
 
@@ -172,18 +179,13 @@ bool AP_OSD_MAX7456::update_font()
         if (!check_font_char(chr, chr_font_data)) {
             //update char inside max7456 NVM
             if (!update_font_char(chr, chr_font_data)) {
-                hal.console->printf("AP_OSD: error during font char update\n");
-                free(font_data);
+                delete fd;
                 return false;
             }
             updated_chars++;
         }
     }
-    if (updated_chars > 0) {
-        hal.console->printf("AP_OSD: updated %d symbols.\n", updated_chars);
-    }
-    hal.console->printf("AP_OSD: osd font is up to date.\n");
-    free(font_data);
+    delete fd;
     return true;
 }
 
@@ -322,9 +324,11 @@ void AP_OSD_MAX7456::reinit()
     if (VIN_IS_PAL(sense)) {
         video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
         video_lines = video_lines_pal;
+        _format = FORMAT_PAL;
     } else {
         video_signal_reg = VIDEO_MODE_NTSC | OSD_ENABLE;
         video_lines = video_lines_ntsc;
+        _format = FORMAT_NTSC;
     }
 
     // set all rows to same character black/white level
@@ -461,3 +465,19 @@ void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text)
         ++x;
     }
 }
+
+// return a correction factor used to display angles correctly
+float AP_OSD_MAX7456::get_aspect_ratio_correction() const
+{
+    switch (_format) {
+    case FORMAT_NTSC:
+        return 12.0f/18.46f;
+
+    case FORMAT_PAL:
+        return 12.0f/15.0f;
+
+    default:
+        return 1.0f;
+    };
+}
+#endif // HAL_WITH_OSD_BITMAP

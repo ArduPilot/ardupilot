@@ -1,0 +1,61 @@
+###########################################################################################################################################################
+# hw definition file for processing by chibios_hwdef.py
+# STM32H743ZIT6
+# mRo Control Zero Classic flight controller
+# 12x PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
+# A Dual CAN based flight controller
+# 3x IMUs (BMI088 6DOF, ICM20602 6DOF, ICM20948 9DOF)
+# Baro, FRAM (256kb), SDCARD Socket, JTAG
+# 5x UARTs (2x with hardware flow control), 2x CAN, 1x SPI, 2x I2C
+# Onboard 3 color LED and buzzer
+# Identical case and connector layout to the original 3DR / mRo Pixhawk
+# M10048B - Initial Release
+###########################################################################################################################################################
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# USB setup
+USB_STRING_MANUFACTURER "mRo"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1022
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+PB4 LED_BOOTLOADER OUTPUT
+
+# define all 3 to make LED output White.
+PB1 LED_ACTIVITY OUTPUT
+PB3 LED_ACTIVITY2 OUTPUT
+# PB11 LED_ACTIVITY3 OUTPUT
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PD7 BARO_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW
+PE15 ICM_20948_CS CS
+PF0 BMI088_ACCEL_CS CS
+PF10 BMI088_GYRO_CS CS
+PG3 ICM_20602_CS CS
+PG9 EXT_SPI_CS CS
+#PG10 EXT_SPI_CS CS

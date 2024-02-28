@@ -23,17 +23,22 @@
 #define AC_ATC_SUB_RATE_YAW_IMAX       0.222f
 #define AC_ATC_SUB_RATE_YAW_FILT_HZ    5.0f
 
+#define MAX_YAW_ERROR                  radians(5)
+
 class AC_AttitudeControl_Sub : public AC_AttitudeControl {
 public:
-    AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+    AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors);
 
     // empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl_Sub() {}
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
+    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
+    const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
+    const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -49,16 +54,22 @@ public:
     //  has no effect when throttle is above hover throttle
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
-    void set_throttle_mix_max() override { _throttle_rpy_mix_desired = _thr_mix_max; }
+    void set_throttle_mix_max(float ratio) override { _throttle_rpy_mix_desired = _thr_mix_max; }
 
     // are we producing min throttle?
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
-    void rate_controller_run();
+    void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off
-    void parameter_sanity_check();
+    void parameter_sanity_check() override;
+
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) override;
+
+    // This function ensures that the ROV reaches the target orientation with the desired yaw rate
+    void input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

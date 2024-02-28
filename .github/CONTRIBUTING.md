@@ -1,4 +1,4 @@
-# How to contribute to the APM project?
+# How to contribute to the ArduPilot project?
 
 If you are reading this page, you are possibly interested in contributing to our project.  We have a very active (and friendly) developer group and would love to have the help!  Possible ways you can help:
 
@@ -10,7 +10,7 @@ If you are reading this page, you are possibly interested in contributing to our
 
 # How to make a good bug report...
 
-* Make sure your bug is not a support issue. Support issues should go to [the APM forums](http://discuss.ardupilot.org). Support issues with logs attached should generally go to the "Log files, Tuning, and Analysis of Log files" section. If you're not sure you have a bug, you should seek support first.
+* Make sure your bug is not a support issue. Support issues should go to [the support forums](http://discuss.ardupilot.org) and include a .bin log file if possible. If you're not sure you have a bug, you should seek support first.
 * Search for your bug, make sure it is not already reported. If it is already reported, make a comment on that issue.
 * Only report one bug per issue report.
 * Write a clear and concise summary. Be specific about what component of the software you are writing about, and follow the convention: "Copter: blah blah blah"
@@ -19,14 +19,20 @@ If you are reading this page, you are possibly interested in contributing to our
 
 # Submitting patches
 
-Please see our [wiki article](http://dev.ardupilot.org/wiki/submitting-patches-back-to-master/).
+Please see our [wiki article](https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html).
 
 # Development Team
 
 The ArduPilot project is open source and [maintained](https://github.com/ArduPilot/ardupilot#maintainers) by a team of volunteers.
 
-To contribute, you can send a pull request on Github. You can also
-join the [development discussion on Google
-Groups](https://groups.google.com/forum/?fromgroups#!forum/drones-discuss). Note
-that the Google Groups mailing lists are NOT for user tech support,
-and are moderated for new users to prevent off-topic discussion.
+To contribute, you can send a pull request on GitHub.
+
+New developers are recommended to join the `#general` channel on
+[Discord](https://ardupilot.org/discord).
+
+You can also join the
+[development discussion on Discourse](https://discuss.ardupilot.org/c/development-team),
+or [Gitter](https://gitter.im/ArduPilot/ardupilot).
+
+Note that these are NOT for user tech support, and are moderated
+for new users to prevent off-topic discussion.

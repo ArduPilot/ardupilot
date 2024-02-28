@@ -18,7 +18,15 @@
 
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_GIMBAL_ENABLED
+#define HAL_SIM_GIMBAL_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && !defined(HAL_BUILD_AP_PERIPH)
+#endif
+
+#if HAL_SIM_GIMBAL_ENABLED
+
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -93,7 +101,7 @@ private:
     uint8_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
-    SocketAPM mav_socket;
+    SocketAPM_native mav_socket;
     struct {
         // socket to telem2 on aircraft
         bool connected;
@@ -102,7 +110,14 @@ private:
         uint8_t seq;
     } mavlink;
 
+    uint32_t param_send_last_ms;
+    uint8_t param_send_idx;
+
     void send_report(void);
+    void param_send(const struct gimbal_param *p);
+    struct gimbal_param *param_find(const char *name);
 };
 
 }  // namespace SITL
+
+#endif  // HAL_SIM_GIMBAL_ENABLED

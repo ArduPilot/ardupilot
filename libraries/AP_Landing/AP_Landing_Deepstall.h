@@ -15,12 +15,14 @@
 
 #pragma once
 
+#include "AP_Landing_config.h"
+
+#if HAL_LANDING_DEEPSTALL_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <GCS_MAVLink/GCS.h>
 #include <PID/PID.h>
 
 class AP_Landing;
@@ -43,17 +45,6 @@ private:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // deepstall members
-    enum deepstall_stage {
-        DEEPSTALL_STAGE_FLY_TO_LANDING,    // fly to the deepstall landing point
-        DEEPSTALL_STAGE_ESTIMATE_WIND,     // loiter until we have a decent estimate of the wind for the target altitude
-        DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT, // wait until the aircraft is aligned for the optimal breakout
-        DEEPSTALL_STAGE_FLY_TO_ARC,        // fly to the start of the arc
-        DEEPSTALL_STAGE_ARC,               // fly the arc
-        DEEPSTALL_STAGE_APPROACH,          // fly the approach in, and prepare to deepstall when close 
-        DEEPSTALL_STAGE_LAND,              // the aircraft will stall torwards the ground while targeting a given point
-    };
-
     AP_Float forward_speed;
     AP_Float slope_a;
     AP_Float slope_b;
@@ -70,7 +61,7 @@ private:
     AP_Float min_abort_alt;
     AP_Float aileron_scalar;
     int32_t loiter_sum_cd;         // used for tracking the progress on loitering
-    deepstall_stage stage;
+    DEEPSTALL_STAGE stage;
     Location landing_point;
     Location extended_approach;
     Location breakout_location;
@@ -109,7 +100,7 @@ private:
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 
-    const DataFlash_Class::PID_Info& get_pid_info(void) const;
+    const AP_PIDInfo& get_pid_info(void) const;
 
     //private helpers
     void build_approach_path(bool use_current_heading);
@@ -119,3 +110,5 @@ private:
 
     #define DEEPSTALL_LOITER_ALT_TOLERANCE 5.0f
 };
+
+#endif  // HAL_LANDING_DEEPSTALL_ENABLED

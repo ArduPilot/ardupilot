@@ -1,0 +1,8 @@
+# hw definition file for the f405 Matek DLVR Airspeed Sensor
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+include ../f405-MatekGPS/hwdef-bl.dat
+
+

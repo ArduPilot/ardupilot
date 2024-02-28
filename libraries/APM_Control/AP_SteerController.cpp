@@ -17,6 +17,7 @@
 //  Based upon the roll controller by Paul Riseborough and Jon Challinger
 //
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_SteerController.h"
@@ -38,7 +39,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: The proportional gain for steering. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum steering angle
 	// @Range: 0.1 10.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("P",      1, AP_SteerController, _K_P,        1.8f),
 
 	// @Param: I
@@ -46,7 +47,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This is the gain from the integral of steering angle. Increasing this gain causes the controller to trim out steady offsets due to an out of trim vehicle.
 	// @Range: 0 1.0
 	// @Increment: 0.05
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("I",        3, AP_SteerController, _K_I,        0.2f),
 
 	// @Param: D
@@ -54,14 +55,14 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This adjusts the damping of the steering control loop. This gain helps to reduce steering jitter with vibration. It should be increased in 0.01 increments as too high a value can lead to a high frequency steering oscillation that could overstress the vehicle.
 	// @Range: 0 0.1
 	// @Increment: 0.01
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("D",        4, AP_SteerController, _K_D,        0.005f),
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
 	// @Description: This limits the number of degrees of steering in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the vehicle is severely out of trim.
 	// @Range: 0 4500
-	// @Increment: 1
+	// @Increment: 10
 	// @Units: cdeg
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
@@ -72,7 +73,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Range: 0 5
 	// @Increment: 0.1
 	// @Units: m/s
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
 
@@ -81,7 +82,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: The feed forward gain for steering this is the ratio of the achieved turn rate to applied steering. A value of 1 means that the vehicle would yaw at a rate of 45 degrees per second with full steering deflection at 1m/s ground speed.
 	// @Range: 0.0 10.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        0),
 
 
@@ -106,8 +107,8 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Param: DRTMIN
     // @DisplayName: Minimum angle of wheel
     // @Description: The angle that limits smallest angle of steering wheel at maximum speed. Even if it should derate below, it will stop derating at this angle.
-    // @Range: 0.0 4500.0
-    // @Increment: 0.1
+    // @Range: 0 4500
+    // @Increment: 10
     // @Units: cdeg
     // @User: Advanced
     AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree,        4500),
@@ -129,6 +130,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 	}
 	_last_t = tnow;
 
+    AP_AHRS &_ahrs = AP::ahrs();
+
     float speed = _ahrs.groundspeed();
     if (speed < _minspeed) {
         // assume a minimum speed. This stops oscillations when first starting to move
@@ -139,7 +142,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // equation for a ground vehicle. It returns steering as an angle from -45 to 45
     float scaler = 1.0f / speed;
 
-    _pid_info.desired = desired_rate;
+    _pid_info.target = desired_rate;
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
     // We do this in earth frame to allow for rover leaning over in hard corners
@@ -147,6 +150,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     if (_reverse) {
         yaw_rate_earth *= -1.0f;
     }
+    _pid_info.actual = yaw_rate_earth;
+
     float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
@@ -209,7 +214,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 */
 int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 {
-    float speed = _ahrs.groundspeed();
+    float speed = AP::ahrs().groundspeed();
     if (speed < _minspeed) {
         // assume a minimum speed. This reduces osciallations when first starting to move
         speed = _minspeed;
@@ -230,7 +235,7 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 {
     if (_tau < 0.1f) {
-        _tau = 0.1f;
+        _tau.set(0.1f);
     }
 	
 	// Calculate the desired steering rate (deg/sec) from the angle error
@@ -242,5 +247,11 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 void AP_SteerController::reset_I()
 {
 	_pid_info.I = 0;
+}
+
+// Returns true if controller has been run recently
+bool AP_SteerController::active() const
+{
+    return (AP_HAL::millis() - _last_t) < 1000;
 }
 

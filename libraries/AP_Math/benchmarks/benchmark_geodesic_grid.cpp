@@ -18,6 +18,8 @@
 
 #include <AP_Math/AP_GeodesicGrid.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 static const Vector3f triangles[20][3] = {
     {{-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}},
     {{-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN,-1}},
@@ -84,7 +86,7 @@ static bool section_triangle(unsigned int section_index,
 static void BM_GeodesicGridSections(benchmark::State& state)
 {
     Vector3f v, a, b, c;
-    int section = state.range_x();
+    int section = state.range(0);
 
     section_triangle(section, a, b, c);
     v = (a + b + c) / 3.0f;
@@ -98,4 +100,4 @@ static void BM_GeodesicGridSections(benchmark::State& state)
 /* Benchmark each section */
 BENCHMARK(BM_GeodesicGridSections)->DenseRange(0, 79);
 
-BENCHMARK_MAIN()
+BENCHMARK_MAIN();

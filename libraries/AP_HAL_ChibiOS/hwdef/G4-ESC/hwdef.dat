@@ -1,0 +1,153 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G474 STM32G474xx
+
+# bootloader starts firmware at 26k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 30
+
+# store parameters in pages 13 and 14
+STORAGE_FLASH_PAGE 13
+define HAL_STORAGE_SIZE 800
+
+# board ID for firmware load
+APJ_BOARD_ID 1027
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# use TIM5 to leave TIM2 for LED
+STM32_ST_USE_TIMER 5
+
+# assume the 512k flash part
+FLASH_SIZE_KB 512
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+define HAL_CAN_POOL_SIZE 6000
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# USART1, telemetry
+PA9 USART1_TX USART1 SPEED_HIGH
+PA10 USART1_RX USART1 SPEED_HIGH
+
+# LEDs
+PB10 LED OUTPUT LOW
+#PB9 LED_R OUTPUT LOW
+PB7 LED_G OUTPUT LOW
+PA12 LED_B OUTPUT LOW
+
+# a fault LED
+PA1 LED_FAULT OUTPUT LOW
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# spi bus for IMU
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+PB12 IMU_CS CS
+
+# accel interrupts
+PB1 ACCEL_INT1 INPUT GPIO(70)
+PB2 ACCEL_INT2 INPUT GPIO(71)
+
+SPIDEV adxl327 SPI2 DEVID2 IMU_CS  MODE3  2*MHZ  8*MHZ
+
+# sensing motor position
+PC11 HALL_A INPUT GPIO(90)
+PC10 HALL_B INPUT GPIO(91)
+PA2  HALL_C INPUT GPIO(92)
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+# define STM32_ADC_USE_ADC2 TRUE
+
+#PA4 VSENSE50  ADC2 SCALE(18.39416)
+#PA5 VSENSE3v3 ADC2 SCALE(1)
+
+PB11 BAT_CURR_SENS ADC1 SCALE(1)
+
+# ESC interrupt
+PC6 ESC_INT INPUT
+
+define HAL_NO_GPIO_IRQ
+define SERIAL_BUFFERS_SIZE 512
+
+define DMA_RESERVE_SIZE 2048
+
+
+# stack for fast interrupts
+define PORT_INT_REQUIRED_STACK 64
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PB5 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+PB0 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PA7 GPIO_CAN2_SHUTDOWN OUTPUT PUSHPULL SPEED_LOW LOW
+
+# 2nd CAN interface
+PB3 CAN3_RX CAN3
+PB4 CAN3_TX CAN3
+PC4 GPIO_CAN3_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PA6 GPIO_CAN3_SHUTDOWN OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+CAN_ORDER 2 3
+
+# DShot output
+PA8 TIM1_CH1 TIM1 PWM(1) GPIO(50)
+
+# LED on timer
+PA15 TIM2_CH1 TIM2 PWM(2) GPIO(51)
+
+define HAL_PERIPH_ENABLE_RC_OUT
+
+define HAL_UART_MIN_TX_SIZE 256
+define HAL_UART_MIN_RX_SIZE 128
+
+define HAL_UART_STACK_SIZE 0x200
+
+
+define HAL_NO_MONITOR_THREAD
+
+
+define HAL_DEVICE_THREAD_STACK 0x200
+define STORAGE_THD_WA_SIZE 512
+define IO_THD_WA_SIZE      512
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+
+# don't share any DMA channels (there are enough for everyone)
+DMA_NOSHARE *

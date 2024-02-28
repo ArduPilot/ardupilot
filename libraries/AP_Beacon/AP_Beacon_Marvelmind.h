@@ -22,6 +22,8 @@
 
 #include "AP_Beacon_Backend.h"
 
+#if AP_BEACON_MARVELMIND_ENABLED
+
 #define AP_BEACON_MARVELMIND_BUF_SIZE 255
 
 class AP_Beacon_Marvelmind : public AP_Beacon_Backend
@@ -29,13 +31,13 @@ class AP_Beacon_Marvelmind : public AP_Beacon_Backend
 public:
 
     // constructor
-    AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager);
+    using AP_Beacon_Backend::AP_Beacon_Backend;
 
     // return true if sensor is basically healthy (we are receiving data)
-    bool healthy();
+    bool healthy() override;
 
     // update
-    void update();
+    void update() override;
 
 private:
     // Variables for Marvelmind
@@ -72,14 +74,13 @@ private:
     enum {
         RECV_HDR,
         RECV_DGRAM
-    } parse_state; // current state of receive data
+    } parse_state = RECV_HDR; // current state of receive data
 
     MarvelmindHedge hedge;
     uint8_t input_buffer[AP_BEACON_MARVELMIND_BUF_SIZE];
     uint16_t num_bytes_in_block_received;
     uint16_t data_id;
 
-    uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
     StationaryBeaconPosition* get_or_alloc_beacon(uint8_t address);
     void process_beacons_positions_datagram();
     void process_beacons_positions_highres_datagram();
@@ -91,7 +92,6 @@ private:
     int8_t find_beacon_instance(uint8_t address) const;
 
     // Variables for Ardupilot
-    AP_HAL::UARTDriver *uart;
     uint32_t last_update_ms;
 
     // cache the vehicle position in NED coordinates [m]
@@ -103,3 +103,4 @@ private:
     bool beacon_position_initialized;
 };
 
+#endif  // AP_BEACON_MARVELMIND_ENABLED

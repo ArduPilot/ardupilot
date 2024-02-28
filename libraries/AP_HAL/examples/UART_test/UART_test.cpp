@@ -4,9 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
 #include <stdio.h>
-#endif
 
 void setup();
 void loop();
@@ -32,13 +30,13 @@ void setup(void)
       start all UARTs at 57600 with default buffer sizes
     */
 
-    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+    hal.scheduler->delay(1000); //Ensure that hal.serial(n) can be initialized
 
-    setup_uart(hal.uartA, "uartA");  // console
-    setup_uart(hal.uartB, "uartB");  // 1st GPS
-    setup_uart(hal.uartC, "uartC");  // telemetry 1
-    setup_uart(hal.uartD, "uartD");  // telemetry 2
-    setup_uart(hal.uartE, "uartE");  // 2nd GPS
+    setup_uart(hal.serial(0), "SERIAL0");  // console
+    setup_uart(hal.serial(1), "SERIAL1");  // telemetry 1
+    setup_uart(hal.serial(2), "SERIAL2");  // telemetry 2
+    setup_uart(hal.serial(3), "SERIAL3");  // 1st GPS
+    setup_uart(hal.serial(4), "SERIAL4");  // 2nd GPS
 }
 
 static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
@@ -53,17 +51,15 @@ static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
 
 void loop(void)
 {
-    test_uart(hal.uartA, "uartA");
-    test_uart(hal.uartB, "uartB");
-    test_uart(hal.uartC, "uartC");
-    test_uart(hal.uartD, "uartD");
-    test_uart(hal.uartE, "uartE");
+    test_uart(hal.serial(0), "SERIAL0");
+    test_uart(hal.serial(1), "SERIAL1");
+    test_uart(hal.serial(2), "SERIAL2");
+    test_uart(hal.serial(3), "SERIAL3");
+    test_uart(hal.serial(4), "SERIAL4");
 
     // also do a raw printf() on some platforms, which prints to the
     // debug console
-#if HAL_OS_POSIX_IO
     ::printf("Hello on debug console at %.3f seconds\n", (double)(AP_HAL::millis() * 0.001f));
-#endif
 
     hal.scheduler->delay(1000);
 }

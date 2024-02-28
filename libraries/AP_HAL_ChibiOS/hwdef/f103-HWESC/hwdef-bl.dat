@@ -1,0 +1,4 @@
+include ../f103-periph/hwdef-bl.inc
+
+# start with a fixed node ID so the board is usable without DNA
+

@@ -1,10 +1,20 @@
 /*
   Simple test of RC output interface with Menu
+  Attention: If your board has safety switch,
+  don't forget to push it to enable the PWM output.
 */
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
+
+// we need a boardconfig created so that the io processor's enable
+// parameter is available
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_IOMCU/AP_IOMCU.h>
+AP_BoardConfig BoardConfig;
+#endif
 
 void setup();
 void loop();
@@ -18,12 +28,12 @@ void drive(uint16_t hz_speed);
 class Menu_Commands {
 public:
     /* Menu commands to drive a SERVO type with
-     * repective PWM output freq defined by SERVO_HZ
+     * respective PWM output freq defined by SERVO_HZ
      */
     int8_t menu_servo(uint8_t argc, const Menu::arg *argv);
 
     /* Menu commands to drive a ESC type with
-     * repective PWM output freq defined by ESC_HZ
+     * respective PWM output freq defined by ESC_HZ
      */
     int8_t menu_esc(uint8_t argc, const Menu::arg *argv);
 };
@@ -35,7 +45,7 @@ Menu_Commands commands;
 static uint16_t pwm = 1500;
 static int8_t delta = 1;
 
-/* Function to drive a RC output TYPE especified */
+/* Function to drive a RC output TYPE specified */
 void drive(uint16_t hz_speed) {
     hal.rcout->set_freq(0xFF, hz_speed);
 
@@ -78,6 +88,9 @@ MENU(menu, "Menu: ", rcoutput_menu_commands);
 void setup(void) {
     hal.console->printf("Starting AP_HAL::RCOutput test\n");
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    BoardConfig.init();
+#endif
     for (uint8_t i = 0; i < 14; i++) {
         hal.rcout->enable_ch(i);
     }

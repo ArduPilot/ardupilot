@@ -14,6 +14,8 @@
  */
 #include "AP_Baro_BMP085.h"
 
+#if AP_BARO_BMP085_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
@@ -57,6 +59,9 @@ AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::De
 
 bool AP_Baro_BMP085::_init()
 {
+    if (!_dev) {
+        return false;
+    }
     union {
         uint8_t buff[22];
         uint16_t wb[11];
@@ -65,10 +70,8 @@ bool AP_Baro_BMP085::_init()
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *sem = _dev->get_semaphore();
 
-    // take i2c bus sempahore
-    if (!sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("BMP085: unable to get semaphore");
-    }
+    // take i2c bus semaphore
+    WITH_SEMAPHORE(sem);
 
     if (BMP085_EOC >= 0) {
         _eoc = hal.gpio->channel(BMP085_EOC);
@@ -79,7 +82,6 @@ bool AP_Baro_BMP085::_init()
     uint8_t id;
 
     if (!_dev->read_registers(0xD0, &id, 1)) {
-        sem->give();
         return false;
     }
 
@@ -106,7 +108,6 @@ bool AP_Baro_BMP085::_init()
         }
     }
     if (!prom_ok) {
-        sem->give();
         return false;
     }
 
@@ -141,8 +142,9 @@ bool AP_Baro_BMP085::_init()
 
     _instance = _frontend.register_sensor();
 
-    sem->give();
-
+    _dev->set_device_type(DEVTYPE_BARO_BMP085);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP085::_timer, void));
     return true;
 }
@@ -175,7 +177,7 @@ bool AP_Baro_BMP085::_read_prom(uint16_t *prom)
 }
 
 /*
-  This is a state machine. Acumulate a new sensor reading.
+  This is a state machine. Accumulate a new sensor reading.
  */
 void AP_Baro_BMP085::_timer(void)
 {
@@ -203,18 +205,16 @@ void AP_Baro_BMP085::_timer(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_sem->take_nonblocking()) {
-        if (!_has_sample) {
-            _sem->give();
-            return;
-        }
+    WITH_SEMAPHORE(_sem);
 
-        float temperature = 0.1f * _temp;
-        float pressure = _pressure_filter.getf();
-
-        _copy_to_frontend(_instance, pressure, temperature);
-        _sem->give();
+    if (!_has_sample) {
+        return;
     }
+
+    float temperature = 0.1f * _temp;
+    float pressure = _pressure_filter.getf();
+
+    _copy_to_frontend(_instance, pressure, temperature);
 }
 
 // Send command to Read Pressure
@@ -312,11 +312,10 @@ void AP_Baro_BMP085::_calculate()
         return;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure_filter.apply(p);
-        _has_sample = true;
-        _sem->give();
-    }
+    WITH_SEMAPHORE(_sem);
+
+    _pressure_filter.apply(p);
+    _has_sample = true;
 }
 
 bool AP_Baro_BMP085::_data_ready()
@@ -327,7 +326,7 @@ bool AP_Baro_BMP085::_data_ready()
 
     // No EOC pin: use time from last read instead.
     if (_state == 0) {
-        return AP_HAL::millis() > _last_temp_read_command_time + 5;
+        return AP_HAL::millis() - _last_temp_read_command_time > 5u;
     }
 
     uint32_t conversion_time_msec;
@@ -344,9 +343,12 @@ bool AP_Baro_BMP085::_data_ready()
         break;
     case BMP085_OVERSAMPLING_ULTRAHIGHRES:
         conversion_time_msec = 26;
+        break;
     default:
         break;
     }
 
-    return AP_HAL::millis() > _last_press_read_command_time + conversion_time_msec;
+    return AP_HAL::millis() - _last_press_read_command_time > conversion_time_msec;
 }
+
+#endif // AP_BARO_BMP085_ENABLED

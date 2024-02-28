@@ -37,8 +37,8 @@ for obsIndex = 1:3
     % Store tilt error estimate for external monitoring
     angErrVec = angErrVec + states(1:3);
     
-    % the first 3 states represent the angular misalignment vector. This is
-    % is used to correct the estimated quaternion
+    % the first 3 states represent the angular misalignment vector.
+    % This is used to correct the estimated quaternion
     % Convert the error rotation vector to its equivalent quaternion
     % truth = estimate + error
     rotationMag = sqrt(states(1)^2 + states(2)^2 + states(3)^2);

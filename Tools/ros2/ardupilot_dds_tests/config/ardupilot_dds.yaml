@@ -1,0 +1,13 @@
+/micro_ros_agent:
+    transport: serial
+    middleware: dds
+    serial_baud: 115200
+    serial_device: ./dev/ttyROS0
+    refs_file: ./src/ardupilot/libraries/AP_DDS/dds_xrce_profile.xml
+
+/ardupilot:
+    sim_vehicle_cmd: ./src/ardupilot/Tools/autotest/sim_vehicle.py
+    vehicle: ArduCopter
+    frame: quad
+    serial_baud: 115200
+    serial_device: ./dev/ttyROS1

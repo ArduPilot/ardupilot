@@ -10,7 +10,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #define NUM_CHANNELS 4
 #define ESC_MAGIC 0xF7
 #define RC_SPEED 490
-#define UART uartE
+#define UART serial(4)
 
 class RC_UART : public AP_HAL::HAL::Callbacks {
 public:
@@ -110,7 +110,9 @@ void RC_UART::loop()
             uint16_t rcin[8];
             uint16_t crc;
         } rcin;
-        if (hal.rcin->new_input() && hal.rcin->read(rcin.rcin, 8) == 8) {
+        uint16_t rcval[8];
+        if (hal.rcin->new_input() && hal.rcin->read(rcval, 8) == 8) {
+            memcpy(rcin.rcin, rcval, sizeof(rcval));
             rcin.crc = crc_calculate((uint8_t*)&rcin.rcin[0], 16);
             hal.UART->write((uint8_t*)&rcin, sizeof(rcin));
         }

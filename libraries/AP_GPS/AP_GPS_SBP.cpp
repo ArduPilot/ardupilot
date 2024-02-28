@@ -20,14 +20,17 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBP.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
+
+#if AP_GPS_SBP_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
 #define SBP_DEBUGGING 1
-#define SBP_HW_LOGGING 1
+#define SBP_HW_LOGGING HAL_LOGGING_ENABLED
 
 #define SBP_TIMEOUT_HEATBEAT  4000
 #define SBP_TIMEOUT_PVT       500
@@ -97,6 +100,9 @@ AP_GPS_SBP::_sbp_process()
 
     while (port->available() > 0) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
 
@@ -182,14 +188,17 @@ AP_GPS_SBP::_sbp_process_message() {
 
         case SBP_GPS_TIME_MSGTYPE:
             memcpy(&last_gps_time, parser_state.msg_buff, sizeof(last_gps_time));
+            check_new_itow(last_gps_time.tow, parser_state.msg_len);
             break;
 
         case SBP_VEL_NED_MSGTYPE:
             memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(last_vel_ned));
+            check_new_itow(last_vel_ned.tow, parser_state.msg_len);
             break;
 
         case SBP_POS_LLH_MSGTYPE: {
             struct sbp_pos_llh_t *pos_llh = (struct sbp_pos_llh_t*)parser_state.msg_buff;
+            check_new_itow(pos_llh->tow, parser_state.msg_len);
             // Check if this is a single point or RTK solution
             // flags = 0 -> single point
             if (pos_llh->flags == 0) {
@@ -202,6 +211,7 @@ AP_GPS_SBP::_sbp_process_message() {
 
         case SBP_DOPS_MSGTYPE:
             memcpy(&last_dops, parser_state.msg_buff, sizeof(last_dops));
+            check_new_itow(last_dops.tow, parser_state.msg_len);
             break;
 
         case SBP_TRACKING_STATE_MSGTYPE:
@@ -221,7 +231,9 @@ AP_GPS_SBP::_sbp_process_message() {
             break;
     }
 
+#if SBP_HW_LOGGING
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
+#endif
 }
 
 bool
@@ -261,10 +273,7 @@ AP_GPS_SBP::_attempt_state_update()
         state.velocity[2]       = (float)(last_vel_ned.d * 1.0e-3);
         state.have_vertical_velocity = true;
 
-        float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
-        state.ground_speed = safe_sqrt(ground_vector_sq);
-
-        state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+        velocity_to_speed_course(state);
 
         // Update position state
 
@@ -285,7 +294,9 @@ AP_GPS_SBP::_attempt_state_update()
         last_full_update_cpu_ms = now;
         state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
+#if SBP_HW_LOGGING
         logging_log_full_update();
+#endif
         ret = true;
 
     } else if (now - last_full_update_cpu_ms > SBP_TIMEOUT_PVT) {
@@ -388,7 +399,7 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -400,7 +411,7 @@ AP_GPS_SBP::logging_log_full_update()
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
 
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -408,7 +419,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -434,7 +445,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         msg_len         : msg_len,
     };
     memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
     for (uint8_t i = 0; i < pages - 1; i++) {
         struct log_SbpRAWM pkt2 = {
@@ -447,8 +458,9 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
             msg_len         : msg_len,
         };
         memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
-        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
+        AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
     }
 };
 
 #endif // SBP_HW_LOGGING
+#endif // AP_GPS_SBP_ENABLED

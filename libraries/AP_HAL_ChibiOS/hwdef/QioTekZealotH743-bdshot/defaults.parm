@@ -1,0 +1,20 @@
+# setup the heater temperature to 45 degree
+BRD_HEAT_TARG 45
+
+# setup serial2 port defaults for ESP8266
+SERIAL2_BAUD 921600
+
+# setup the parameter for the ADC power module
+BATT_MONITOR 4
+BATT_VOLT_PIN 16
+BATT_CURR_PIN 17
+BATT_VOLT_MULT 20.000
+BATT_AMP_PERVLT 17.000
+BATT2_VOLT_PIN 10
+BATT2_CURR_PIN 11
+BATT2_VOLT_MULT 20.000
+BATT2_AMP_PERVLT 17.000
+
+# setup the parameter for the two Relays GPIO others for reserve
+RELAY_PIN 1
+RELAY_PIN2 2

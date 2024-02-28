@@ -61,6 +61,9 @@ public:
     /* See Device::adjust_periodic_callback() */
     virtual bool adjust_periodic_callback(
         PeriodicHandle h, uint32_t period_usec) override { return false; }
+
+    // setup a bus clock slowdown factor (optional interface)
+    virtual void set_slowdown(uint8_t slowdown) {}
 };
 
 class SPIDeviceManager {
@@ -75,6 +78,8 @@ public:
 
     /* Get spi device name at @idx */
     virtual const char *get_device_name(uint8_t idx) { return nullptr; }
+
+    virtual void set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb) {}
 };
 
 }

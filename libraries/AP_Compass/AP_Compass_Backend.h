@@ -19,13 +19,23 @@
  */
 #pragma once
 
-#include "AP_Compass.h"
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#endif
+
+#if AP_COMPASS_MSP_ENABLED
+#include <AP_MSP/msp.h>
+#endif
+
+#include <AP_Math/AP_Math.h>
 
 class Compass;  // forward declaration
 class AP_Compass_Backend
 {
 public:
-    AP_Compass_Backend(Compass &compass);
+    AP_Compass_Backend();
 
     // we declare a virtual destructor so that drivers can
     // override with a custom destructor if need be.
@@ -33,13 +43,6 @@ public:
 
     // read sensor data
     virtual void read(void) = 0;
-
-    // accumulate a reading from the magnetometer. Optional in
-    // backends
-    virtual void accumulate(void) {};
-
-    // callback for UAVCAN messages
-    virtual void handle_mag_msg(Vector3f &mag) {};
 
     /*
       device driver IDs. These are used to fill in the devtype field
@@ -64,9 +67,23 @@ public:
         DEVTYPE_QMC5883L = 0x0D,
         DEVTYPE_MAG3110  = 0x0E,
         DEVTYPE_SITL  = 0x0F,
+        DEVTYPE_IST8308 = 0x10,
+        DEVTYPE_RM3100 = 0x11,
+        DEVTYPE_RM3100_2 = 0x12, // unused, past mistake
+        DEVTYPE_MMC5983 = 0x13,
+        DEVTYPE_AK09918 = 0x14,
+        DEVTYPE_AK09915 = 0x15,
+    	DEVTYPE_QMC5883P = 0x16,
     };
 
+#if AP_COMPASS_MSP_ENABLED
+    virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
+#endif
 
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}
+#endif
+    
 protected:
 
     /*
@@ -76,7 +93,7 @@ protected:
      * 2. publish_raw_field - this provides an uncorrected point-sample for
      *      calibration libraries
      * 3. correct_field - this corrects the measurement in-place for hard iron,
-     *      soft iron, motor interference, and non-orthagonality errors
+     *      soft iron, motor interference, and non-orthogonality errors
      * 4. publish_filtered_field - legacy filtered magnetic field
      *
      * All those functions expect the mag field to be in milligauss.
@@ -88,8 +105,12 @@ protected:
     void publish_filtered_field(const Vector3f &mag, uint8_t instance);
     void set_last_update_usec(uint32_t last_update, uint8_t instance);
 
+    void accumulate_sample(Vector3f &field, uint8_t instance,
+                           uint32_t max_samples = 10);
+    void drain_accumulated_samples(uint8_t instance, const Vector3f *scale = NULL);
+
     // register a new compass instance with the frontend
-    uint8_t register_compass(void) const;
+    bool register_compass(int32_t dev_id, uint8_t& instance) const;
 
     // set dev_id for an instance
     void set_dev_id(uint8_t instance, uint32_t dev_id);
@@ -106,11 +127,14 @@ protected:
     // set rotation of an instance
     void set_rotation(uint8_t instance, enum Rotation rotation);
 
+    // get board orientation (for SITL)
+    enum Rotation get_board_orientation(void) const;
+    
     // access to frontend
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;
+    HAL_Semaphore _sem;
 
     // Check that the compass field is valid by using a mean filter on the vector length
     bool field_ok(const Vector3f &field);

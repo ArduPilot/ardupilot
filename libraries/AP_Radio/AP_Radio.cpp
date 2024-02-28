@@ -1,11 +1,14 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Radio_config.h"
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#if AP_RADIO_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_Radio.h"
 #include "AP_Radio_backend.h"
 #include "AP_Radio_cypress.h"
 #include "AP_Radio_cc2500.h"
+#include "AP_Radio_bk2425.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -15,9 +18,10 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Set type of direct attached radio
     // @Description: This enables support for direct attached radio receivers
-    // @Values: 0:None,1:CYRF6936
+    // @Values: 0:None,1:CYRF6936,2:CC2500,3:BK2425
+
     // @User: Advanced
-    AP_GROUPINFO("_TYPE",  1, AP_Radio, radio_type, 0),
+    AP_GROUPINFO_FLAGS("_TYPE",  1, AP_Radio, radio_type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _PROT
     // @DisplayName: protocol
@@ -87,7 +91,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Description: This sets the radio to a fixed test channel for factory testing. Using a fixed channel avoids the need for binding in factory testing.
     // @Values: 0:Disabled,1:TestChan1,2:TestChan2,3:TestChan3,4:TestChan4,5:TestChan5,6:TestChan6,7:TestChan7,8:TestChan8
     // @User: Advanced
-    AP_GROUPINFO("_TESTCH", 11, AP_Radio, factory_test, 0),    
+    AP_GROUPINFO("_TESTCH", 11, AP_Radio, factory_test, 0),
 
     // @Param: _TSIGCH
     // @DisplayName: RSSI value channel for telemetry data on transmitter
@@ -108,7 +112,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Description: Set transmitter maximum transmit power (from 1 to 8)
     // @Range: 1 8
     // @User: Advanced
-    AP_GROUPINFO("_TXMAX",  14, AP_Radio, tx_max_power, 4),
+    AP_GROUPINFO("_TXMAX",  14, AP_Radio, tx_max_power, 8),
 
     // @Param: _BZOFS
     // @DisplayName: Transmitter buzzer adjustment
@@ -130,33 +134,55 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Range: 0 31
     // @User: Advanced
     AP_GROUPINFO("_ABLVL",  17, AP_Radio, auto_bind_rssi, 0),
-    
+
     AP_GROUPEND
 };
 
-AP_Radio *AP_Radio::_instance;
+AP_Radio *AP_Radio::_singleton;
 
 // constructor
 AP_Radio::AP_Radio(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("Multiple AP_Radio declarations");
     }
-    _instance = this;
+    _singleton = this;
 }
 
 bool AP_Radio::init(void)
 {
     switch (radio_type) {
+#if AP_RADIO_CYRF6936_ENABLED
     case RADIO_TYPE_CYRF6936:
         driver = new AP_Radio_cypress(*this);
         break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif
+#if AP_RADIO_CC2500_ENABLED
     case RADIO_TYPE_CC2500:
         driver = new AP_Radio_cc2500(*this);
         break;
 #endif
+#if AP_RADIO_BK2425_ENABLED
+    case RADIO_TYPE_BK2425:
+        driver = new AP_Radio_beken(*this);
+        break;
+#endif
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+    case RADIO_TYPE_AUTO:
+        // auto-detect between cc2500 and beken radios
+#if AP_RADIO_CC2500_ENABLED
+        if (AP_Radio_cc2500::probe()) {
+            driver = new AP_Radio_cc2500(*this);
+        }
+#endif
+#if AP_RADIO_BK2425_ENABLED
+        if (driver == nullptr) {
+            driver = new AP_Radio_beken(*this);
+        }
+#endif
+        break;
+#endif  // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
     default:
         break;
     }
@@ -227,6 +253,17 @@ void AP_Radio::handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t
     }
 }
 
+// play a tune on the TX
+void AP_Radio::play_tune(const char *tune_str)
+{
+    mavlink_data96_t pkt {};
+    uint8_t len = MIN(strlen(tune_str), 92);
+    pkt.len = len;
+    pkt.type = 43;
+    memcpy(&pkt.data[0], tune_str, len);
+    handle_data_packet(MAVLINK_COMM_0, pkt);
+}
+
 // update status, should be called from main thread
 void AP_Radio::update(void)
 {
@@ -252,5 +289,14 @@ void AP_Radio::set_wifi_channel(uint8_t channel)
     }
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
+// change TX mode, toggling between mode1 and mode2
+void AP_Radio::change_txmode(void)
+{
+    if (stick_mode == 2) {
+        stick_mode.set_and_save_ifchanged(1);
+    } else {
+        stick_mode.set_and_save_ifchanged(2);
+    }
+}
 
+#endif  // AP_RADIO_ENABLED

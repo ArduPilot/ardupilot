@@ -1,0 +1,64 @@
+include ../CubeOrange/hwdef.dat
+
+undef IOMCU_UART
+undef USART6
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef HAL_CHIBIOS_ARCH_FMUV3
+undef BOOTLOADER_DEV_LIST
+
+# board ID for firmware load
+APJ_BOARD_ID 1400
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+
+
+define AP_CAN_SLCAN_ENABLED 1
+define HAL_PERIPH_ENABLE_BATTERY
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+
+define AP_INERTIALSENSOR_ENABLED 1
+define AP_KDECAN_ENABLED 1
+
+# single GPS and compass for peripherals
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+define HAL_NO_MONITOR_THREAD
+
+define HAL_DISABLE_LOOP_DELAY
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+define HAL_NO_RCIN_THREAD
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+
+define AP_SCRIPTING_ENABLED 0
+
+# use blue LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_FMU_LED_AMBER
+
+undef HAL_OS_FATFS_IO
+
+undef SDMMC1
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# listen for reboot command from uploader.py script
+# undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+ 
+

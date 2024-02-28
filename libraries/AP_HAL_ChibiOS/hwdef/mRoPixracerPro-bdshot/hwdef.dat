@@ -1,0 +1,11 @@
+# Bi-directional dshot version of mRoPixracerPro
+
+include ../mRoPixracerPro/hwdef.dat
+
+undef PE14 PE9
+
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50) BIDIR
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53) BIDIR
+
+DMA_PRIORITY TIM1_UP TIM1_CH4 TIM1_CH1
+DMA_NOSHARE SPI1* SPI5* TIM1_UP

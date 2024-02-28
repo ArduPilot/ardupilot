@@ -14,17 +14,14 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-
 #include "RGBLed.h"
 
 class PixRacerLED: public RGBLed
 {
 public:
     PixRacerLED();
+    bool init(void) override;
 
 protected:
-    bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 };

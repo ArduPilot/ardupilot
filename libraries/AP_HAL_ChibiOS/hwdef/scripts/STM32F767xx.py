@@ -27,20 +27,26 @@ pincount = {
 
 # MCU parameters
 mcu = {
-    # location of MCU serial number
-    'UDID_START' : 0x1FF0F420,
+    # ram map, as list of (address, size-kb, flags)
+    # flags of 1 means DMA-capable
+    # flags of 2 means faster memory for CPU intensive work
+    'RAM_MAP' : [
+        (0x20020000, 384, 0), # SRAM1/SRAM2
+        # split DTCM in two to allow for fast checking of IS_DMA_SAFE in bouncebuffer code
+        (0x20000000,  64, 1), # DTCM, DMA safe
+        (0x20010000,  64, 2), # DTCM, 2nd half, used as fast memory. This lowers memory contention in the EKF code
+    ],
 
-    # base address of main memory. We use SRAM1/SRAM2 as main memory
-    # for maximum speed (using the dcache). DMA will be done from DTCM
-    # memory
-    'RAM_BASE_ADDRESS' : 0x20020000,
+    'EXPECTED_CLOCK' : 216000000,
 
-    # size of main memory
-    'RAM_SIZE_KB' : 384,
+    # this MCU has M7 instructions and hardware double precision
+    'CORTEX'    : 'cortex-m7',
+    'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 
-    # DTCM ram address and size
-    'DTCM_BASE_ADDRESS' : 0x20000000,
-    'DTCM_RAM_SIZE_KB' : 128,
+    'DEFINES' : {
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1',
+        'STM32F7' : '1',
+    }
 }
 
 DMA_Map = {
@@ -289,7 +295,6 @@ AltFunction_map = {
 	"PB0:EVENTOUT"      	:	15,
 	"PB0:LCD_R3"        	:	9,
 	"PB0:OTG_HS_ULPI_D1"	:	10,
-	"PB0:TIM1_CH2N"     	:	1,
 	"PB0:TIM3_CH3"      	:	2,
 	"PB0:TIM8_CH2N"     	:	3,
 	"PB0:DFSDM1_CKOUT"     	:	6,
@@ -367,7 +372,6 @@ AltFunction_map = {
 	"PB1:EVENTOUT"      	:	15,
 	"PB1:LCD_R6"        	:	9,
 	"PB1:OTG_HS_ULPI_D2"	:	10,
-	"PB1:TIM1_CH3N"     	:	1,
 	"PB1:TIM3_CH4"      	:	2,
 	"PB1:TIM8_CH3N"     	:	3,
 	"PB1:DFSDM1_DATIN1"    	:	6,
@@ -546,7 +550,7 @@ AltFunction_map = {
 	"PC6:USART6_TX"     	:	8,
 	"PC6:DFSDM1_CKIN3"     	:	7,
 	"PC6:FMC_NWAIT"      	:	9,
-	"PC6:SDMMC_D6"     	:	10,
+    "PC6:SDMMC2_D6"     	:	10,
 	"PC7:DCMI_D1"       	:	13,
 	"PC7:EVENTOUT"      	:	15,
 	"PC7:I2S3_MCK"      	:	6,
@@ -1019,7 +1023,7 @@ AltFunction_map = {
 	"PH9:I2C3_SMBA"     	:	4,
 	"PH9:LCD_R3"        	:	14,
 	"PH9:TIM12_CH2"     	:	9,
-	"PI0:TIMTIM5_CH4"     	:	2,
+	"PI0:TIM5_CH4"     	:	2,
 	"PI0:SPI2_NSS"     	:	5,
 	"PI0:I2S2_WS"     	:	5,
 	"PI0:FMC_D24"     	:	12,

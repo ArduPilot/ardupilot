@@ -1,0 +1,62 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/released/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/road/protos/StraightRoadSegment.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/appearances/protos/Grass.proto"
+
+WorldInfo {
+  title "Pioneer3at Ardupilot"
+  basicTimeStep 2
+  FPS 20
+}
+Viewpoint {
+  orientation 0.12905547789670888 -0.9264705889754452 -0.353549050894418 5.532540449151996
+  position -2.921033113316591 -0.8540816786630955 2.693602881281485
+  follow "Pioneer 3-AT"
+  followSmoothness 0.01
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Floor {
+  size 300 100
+  appearance Grass {
+  }
+}
+StraightRoadSegment {
+  translation -15 0.3 0.02
+  rotation 0 0 1 0.105
+  width 16.5
+  rightBorder FALSE
+  leftBorder FALSE
+  length 140
+}
+Pioneer3at {
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--motors"
+    "front left wheel, back left wheel, front right wheel, back right wheel"
+    "--camera-fps"
+    "10"
+    "--motor-cap"
+    "100"
+    "--bidirectional-motors"
+    "true"
+    "--uses-propellers"
+    "false"
+  ]
+  extensionSlot [
+    Accelerometer {
+    }
+    InertialUnit {
+    }
+    Gyro {
+    }
+    GPS {
+    }
+  ]
+}

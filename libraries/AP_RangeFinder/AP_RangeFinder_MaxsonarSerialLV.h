@@ -1,22 +1,22 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_config.h"
 
-class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
+
+class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager,
-                                   uint8_t serial_instance);
 
-    // static detection function
-    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
-
-    // update state
-    void update(void);
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_MaxsonarSerialLV(_state, _params);
+    }
 
 protected:
 
@@ -25,11 +25,16 @@ protected:
     }
 
 private:
-    // get a reading
-    bool get_reading(uint16_t &reading_cm);
 
-    AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms = 0;
+    AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
+
+    // get a reading
+    bool get_reading(float &reading_m) override;
+
+    uint16_t read_timeout_ms() const override { return 500; }
+
     char linebuf[10];
     uint8_t linebuf_len = 0;
 };
+
+#endif  // AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED

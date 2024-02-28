@@ -20,7 +20,7 @@
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 #define LED_OFF 0
 #define LED_FULL_BRIGHT 255
@@ -44,7 +44,7 @@ RCOutputRGBLed::RCOutputRGBLed(uint8_t red_channel, uint8_t green_channel,
 {
 }
 
-bool RCOutputRGBLed::hw_init()
+bool RCOutputRGBLed::init()
 {
     hal.rcout->enable_ch(_red_channel);
     hal.rcout->enable_ch(_green_channel);

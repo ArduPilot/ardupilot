@@ -1,0 +1,20 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Pixhawk1-1M, based on Pixhawk1
+
+include ../Pixhawk1/hwdef.dat
+
+# only include UBLOX and NMEA GPS drivers
+define AP_GPS_NMEA_ENABLED 1
+include ../include/minimal_GPS.inc
+
+FLASH_SIZE_KB 1024
+include ../include/minimize_features.inc
+undef STORAGE_FLASH_PAGE
+
+# produce this error if we are on a 2M board and using 1M firmware
+define BOARD_CHECK_F427_USE_2M "2M flash - use Pixhawk1 firmware"
+
+# enable support for dshot on iomcu
+undef ROMFS
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+undef HAL_WITH_IO_MCU_DSHOT

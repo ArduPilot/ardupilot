@@ -23,34 +23,31 @@
 
 using namespace SITL;
 
-MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    frame(nullptr)
+MultiCopter::MultiCopter(const char *frame_str) :
+    Aircraft(frame_str)
 {
-    mass = 1.5f;
-
-    gripper.set_aircraft(this);
-
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }
-    // initial mass is passed through to Frame for it to calculate a
-    // hover thrust requirement.
-    if (strstr(frame_str, "-fast")) {
-        frame->init(gross_mass(), 0.5, 85, 4*radians(360));
-    } else {
-        frame->init(gross_mass(), 0.51, 15, 4*radians(360));
-    }
+
+    frame->init(frame_str, &battery);
+
+    mass = frame->get_mass();
     frame_height = 0.1;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
+    lock_step_scheduled = true;
 }
 
 // calculate rotational and linear accelerations
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    frame->calculate_forces(*this, input, rot_accel, body_accel);
+    motor_mask |= ((1U<<frame->num_motors)-1U) << frame->motor_offset;
+    frame->calculate_forces(*this, input, rot_accel, body_accel, rpm);
+
+    add_shove_forces(rot_accel, body_accel);
+    add_twist_forces(rot_accel);
 }
     
 /*
@@ -65,7 +62,13 @@ void MultiCopter::update(const struct sitl_input &input)
 
     calculate_forces(input, rot_accel, accel_body);
 
+    // estimate voltage and current
+    frame->current_and_voltage(battery_voltage, battery_current);
+
+    battery.set_current(battery_current);
+
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();
@@ -73,16 +76,5 @@ void MultiCopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-
-    // update sprayer
-    sprayer.update(input);
-
-    // update gripper
-    gripper.update(input);
-    gripper_epm.update(input);
 }
 
-float MultiCopter::gross_mass() const
-{
-    return Aircraft::gross_mass() + sprayer.payload_mass() + gripper.payload_mass();
-}

@@ -9,9 +9,9 @@ public:
                    uint8_t led_medium, uint8_t led_dim);
     RCOutputRGBLed(uint8_t red_channel, uint8_t green_channel,
                    uint8_t blue_channel);
+    bool init() override;
 
 protected:
-    bool hw_init() override;
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
     virtual uint16_t get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const;
 

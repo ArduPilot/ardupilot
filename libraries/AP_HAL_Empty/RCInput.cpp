@@ -16,8 +16,8 @@ uint8_t RCInput::num_channels() {
     return 0;
 }
 
-uint16_t RCInput::read(uint8_t ch) {
-    if (ch == 2) return 900; /* throttle should be low, for safety */
+uint16_t RCInput::read(uint8_t chan) {
+    if (chan == 2) return 900; /* throttle should be low, for safety */
     else return 1500;
 }
 
