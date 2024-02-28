@@ -13,6 +13,8 @@
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include "AC_AttitudeControl.h"     // Attitude control library
 
+#include <AP_Logger/LogStructure.h>
+
 // position controller default definitions
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_JERK_XY                      5.0f    // default horizontal jerk m/s/s/s
@@ -484,4 +486,14 @@ protected:
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;
+
+    void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    void Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    void Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
+private:
+    // convenience method for writing out the identical PSCE, PSCN, PSCD - and
+    // to save bytes
+    void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
 };
