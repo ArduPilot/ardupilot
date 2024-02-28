@@ -780,11 +780,15 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         // try the next baud rate
         // incrementing like this will skip the first element in array of bauds
         // this is okay, and relied upon
-        dstate->current_baud++;
-        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-            dstate->current_baud = 0;
+        if (dstate->probe_baud == 0) {
+            dstate->probe_baud = _port[instance]->get_baud_rate();
+        } else {
+            dstate->current_baud++;
+            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                dstate->current_baud = 0;
+            }
+            dstate->probe_baud = _baudrates[dstate->current_baud];
         }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
         uint16_t rx_size=0, tx_size=0;
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
             tx_size = 2048;
@@ -792,7 +796,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        _port[instance]->begin(baudrate, rx_size, tx_size);
+        _port[instance]->begin(dstate->probe_baud, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
