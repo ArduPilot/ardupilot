@@ -9024,41 +9024,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SMART_RTL(self):
         '''Check SMART_RTL'''
-        self.context_push()
-        ex = None
-        try:
-            self.progress("arm the vehicle and takeoff in Guided")
-            self.takeoff(20, mode='GUIDED')
-            self.progress("fly around a bit (or whatever)")
-            locs = [
-                (50, 0, 20),
-                (-50, 50, 20),
-                (-50, 0, 20),
-            ]
-            for (lat, lng, alt) in locs:
-                self.fly_guided_move_local(lat, lng, alt)
+        self.progress("arm the vehicle and takeoff in Guided")
+        self.takeoff(20, mode='GUIDED')
+        self.progress("fly around a bit (or whatever)")
+        locs = [
+            (50, 0, 20),
+            (-50, 50, 20),
+            (-50, 0, 20),
+        ]
+        for (lat, lng, alt) in locs:
+            self.fly_guided_move_local(lat, lng, alt)
 
-            self.change_mode('SMART_RTL')
-            for (lat, lng, alt) in reversed(locs):
-                self.wait_distance_to_local_position(
-                    (lat, lng, -alt),
-                    0,
-                    10,
-                    timeout=60
-                )
-            self.wait_disarmed()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-            self.disarm_vehicle(force=True)
-
-        self.context_pop()
-
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
+        self.change_mode('SMART_RTL')
+        for (lat, lng, alt) in reversed(locs):
+            self.wait_distance_to_local_position(
+                (lat, lng, -alt),
+                0,
+                10,
+                timeout=60
+            )
+        self.wait_disarmed()
 
     def get_ground_effect_duration_from_current_onboard_log(self, bit, ignore_multi=False):
         '''returns a duration in seconds we were expecting to interact with
