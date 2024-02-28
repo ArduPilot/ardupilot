@@ -91,10 +91,7 @@ public:
         k_param_can_mgr,
         k_param_battery,
 
-        //
-        // 150: Telemetry control
-        //
-        k_param_serial_manager,     // serial manager library
+        k_param_serial_manager_old = 144,     // serial manager library
         k_param_servo_yaw_type,
         k_param_alt_source,
         k_param_mavlink_update_rate,
