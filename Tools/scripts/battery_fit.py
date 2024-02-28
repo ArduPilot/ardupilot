@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 fit coefficients for battery percentate from resting voltage
 

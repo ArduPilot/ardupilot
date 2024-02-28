@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 run Replay over a set of logs to check for code regressions
 '''

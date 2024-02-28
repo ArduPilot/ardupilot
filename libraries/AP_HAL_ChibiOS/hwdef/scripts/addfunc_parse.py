@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 create additional functions ADC table, used for mapping analog pins to ADC channel numbers
 

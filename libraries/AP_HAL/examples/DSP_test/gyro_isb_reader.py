@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 extract ISBH and ISBD messages from AP_Logging files and produce C++ arrays for consumption by the DSP subsystem

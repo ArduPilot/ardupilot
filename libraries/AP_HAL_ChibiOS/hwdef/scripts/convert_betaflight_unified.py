@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 convert a betaflight unified configuration file into a hwdef.dat
 currently very approximate, file requires cleanup afterwards

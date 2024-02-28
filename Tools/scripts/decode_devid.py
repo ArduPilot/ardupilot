@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 decode a device ID, such as used for COMPASS_DEV_ID, INS_ACC_ID etc
 

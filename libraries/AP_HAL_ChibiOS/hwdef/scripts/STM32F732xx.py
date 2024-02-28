@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 these tables are generated from the STM32 datasheets for the
 STM32F732
