@@ -680,6 +680,7 @@ private:
     struct detect_state {
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
+        uint32_t probe_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct SIRF_detect_state sirf_detect_state;
