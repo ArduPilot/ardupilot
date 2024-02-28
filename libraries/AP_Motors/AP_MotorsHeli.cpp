@@ -211,11 +211,7 @@ void AP_MotorsHeli::output()
         // block servo_test from happening at disarm
         _servo_test_cycle_counter = 0;
         calculate_armed_scalars();
-        if (!get_interlock()) {
-            output_armed_zero_throttle();
-        } else {
-            output_armed_stabilizing();
-        }
+        output_armed_stabilizing();
     } else {
         output_disarmed();
     }
@@ -228,17 +224,6 @@ void AP_MotorsHeli::output()
 
 // sends commands to the motors
 void AP_MotorsHeli::output_armed_stabilizing()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
-        reset_flight_controls();
-    }
-
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-}
-
-// output_armed_zero_throttle - sends commands to the motors
-void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
     if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
