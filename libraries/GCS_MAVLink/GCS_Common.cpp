@@ -2989,6 +2989,29 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_inertiallabs_message(const mavlink_command_int_t &packet)
+{
+    switch ((uint32_t)packet.param1) {
+        case INERTIALLABS_AHRS_COMMAND_TYPE::DISABLE_GNSS:
+            send_text(MAV_SEVERITY_INFO, "DISABLE_GNSS command sent to the Inertial Labs AHRS");
+            return MAV_RESULT_ACCEPTED;
+
+        case INERTIALLABS_AHRS_COMMAND_TYPE::ENABLE_GNSS:
+            send_text(MAV_SEVERITY_INFO, "ENABLE_GNSS command sent to the Inertial Labs AHRS");
+            return MAV_RESULT_ACCEPTED;
+
+        case INERTIALLABS_AHRS_COMMAND_TYPE::START_VG3D_CALIBRATION_IN_FLIGHT:
+            send_text(MAV_SEVERITY_INFO, "START_VG3DCLB_FLIGHT command sent to the Inertial Labs AHRS");
+            return MAV_RESULT_ACCEPTED;
+
+        case INERTIALLABS_AHRS_COMMAND_TYPE::STOP_VG3D_CALIBRATION_IN_FLIGHT:
+            send_text(MAV_SEVERITY_INFO, "STOP_VG3DCLB_FLIGHT command sent to the Inertial Labs AHRS");
+            return MAV_RESULT_ACCEPTED;
+        default:
+            return MAV_RESULT_FAILED;
+    }
+}
+
 bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) const
 {
     // check if it's a specially-handled message:
@@ -4261,7 +4284,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
     }
 #endif
-    }
+    } // switch (msg.msgid)
 
 }
 
@@ -5316,6 +5339,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
+
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+    case MAV_CMD_INERTIALLABS_AHRS_SEND:
+        return handle_inertiallabs_message(packet);
+#endif
 
     }
 
