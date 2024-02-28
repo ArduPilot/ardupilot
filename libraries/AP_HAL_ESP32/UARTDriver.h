@@ -71,6 +71,9 @@ public:
       A return value of zero means the HAL does not support this API */
      
     uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
+
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
