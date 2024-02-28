@@ -5133,6 +5133,25 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 }
 #endif
 
+MAV_RESULT GCS_MAVLINK::handle_do_set_safety_switch_state(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    switch ((SAFETY_SWITCH_STATE)packet.param1) {
+    case SAFETY_SWITCH_STATE_DANGEROUS:
+        // turn safety off (pwm outputs flow to the motors)
+        hal.rcout->force_safety_off();
+        return MAV_RESULT_ACCEPTED;
+    case SAFETY_SWITCH_STATE_SAFE:
+        // turn safety on (no pwm outputs to the motors)
+        if (hal.rcout->force_safety_on()) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+    default:
+        return MAV_RESULT_DENIED;
+    }
+}
+
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -5289,6 +5308,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
         return handle_preflight_reboot(packet, msg);
+
+    case MAV_CMD_DO_SET_SAFETY_SWITCH_STATE:
+        return handle_do_set_safety_switch_state(packet, msg);
 
 #if AP_MAVLINK_SERVO_RELAY_ENABLED
     case MAV_CMD_DO_SET_SERVO:

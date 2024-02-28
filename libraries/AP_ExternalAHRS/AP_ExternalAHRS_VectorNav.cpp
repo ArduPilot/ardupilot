@@ -511,38 +511,6 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
 
         AP::ins().handle_external(ins);
     }
-
-
-#if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAH1
-    // @Description: External AHRS data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Roll: euler roll
-    // @Field: Pitch: euler pitch
-    // @Field: Yaw: euler yaw
-    // @Field: VN: velocity north
-    // @Field: VE: velocity east
-    // @Field: VD: velocity down
-    // @Field: Lat: latitude
-    // @Field: Lon: longitude
-    // @Field: Alt: altitude AMSL
-    // @Field: UXY: uncertainty in XY position
-    // @Field: UV: uncertainty in velocity
-    // @Field: UR: uncertainty in roll
-    // @Field: UP: uncertainty in pitch
-    // @Field: UY: uncertainty in yaw
-
-    AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
-                       "sdddnnnDUmmnddd", "F000000GG000000",
-                       "QffffffLLffffff",
-                       AP_HAL::micros64(),
-                       pkt1.ypr[2], pkt1.ypr[1], pkt1.ypr[0],
-                       pkt1.velNED[0], pkt1.velNED[1], pkt1.velNED[2],
-                       int32_t(pkt1.positionLLA[0]*1.0e7), int32_t(pkt1.positionLLA[1]*1.0e7),
-                       float(pkt1.positionLLA[2]),
-                       pkt1.posU, pkt1.velU,
-                       pkt1.yprU[2], pkt1.yprU[1], pkt1.yprU[0]);
-#endif  // HAL_LOGGING_ENABLED
 }
 
 /*

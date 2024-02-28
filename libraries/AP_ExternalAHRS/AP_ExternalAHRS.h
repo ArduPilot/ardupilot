@@ -115,8 +115,8 @@ public:
     bool get_speed_down(float &speedD);
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
     void get_filter_status(nav_filter_status &status) const;
-    Vector3f get_gyro(void);
-    Vector3f get_accel(void);
+    bool get_gyro(Vector3f &gyro);
+    bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
 
     // update backend
@@ -163,7 +163,12 @@ public:
         float differential_pressure; // Pa
         float temperature; // degC
     } airspeed_data_message_t;
-    
+
+    // set GNSS disable for auxillary function GPS_DISABLE
+    void set_gnss_disable(bool disable) {
+        gnss_is_disabled = disable;
+    }
+
 protected:
 
     enum class OPTIONS {
@@ -176,6 +181,7 @@ private:
 
     AP_Enum<DevType> devtype;
     AP_Int16         rate;
+    AP_Int16         log_rate;
     AP_Int16         options;
     AP_Int16         sensors;
 
@@ -190,6 +196,11 @@ private:
     void set_default_sensors(uint16_t _sensors) {
         sensors.set_default(_sensors);
     }
+
+    uint32_t last_log_ms;
+
+    // true when user has disabled the GNSS
+    bool gnss_is_disabled;
 };
 
 namespace AP {

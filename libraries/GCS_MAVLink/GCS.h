@@ -595,6 +595,8 @@ protected:
     void deadlock_sem(void);
 #endif
 
+    MAV_RESULT handle_do_set_safety_switch_state(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_get_message_interval(const mavlink_command_int_t &packet);

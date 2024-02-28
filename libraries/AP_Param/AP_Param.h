@@ -472,6 +472,8 @@ public:
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
+    // convert an object which was stored in a vehicle's G2 into a new
+    // object in AP_Vehicle.cpp:
     struct G2ObjectConversion {
         void *object_pointer;
         const struct AP_Param::GroupInfo *var_info;

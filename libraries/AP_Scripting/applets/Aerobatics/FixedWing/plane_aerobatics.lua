@@ -2130,8 +2130,10 @@ function log_pose(logname, pos, quat)
                 math.deg(quat:get_euler_yaw()))
 end
 
-
-function log_position(logname, loc, quat)
+--[[
+   get GPS week and MS, coping with crossing a week boundary
+--]]
+function get_gps_times()
    local gps_last_fix_ms1 = gps:last_fix_time_ms(0)
    local gps_week = gps:time_week(0)
    local gps_week_ms = gps:time_week_ms(0)
@@ -2144,6 +2146,11 @@ function log_position(logname, loc, quat)
       gps_week_ms = gps:time_week_ms(0)
    end
    gps_week_ms = gps_week_ms + (now_ms - gps_last_fix_ms2)
+   return gps_week, gps_week_ms
+end
+
+function log_position(logname, loc, quat)
+   local gps_week, gps_week_ms = get_gps_times()
 
    logger.write(logname, 'I,GWk,GMS,Lat,Lon,Alt,R,P,Y',
                 'BHILLffff',
@@ -2359,8 +2366,15 @@ function handle_speed_adjustment()
          path_var.speed_adjustment = 0.0
       end
 
-      logger.write("PTHT",'SysID,RemT,LocT,TS,RemTS,PathT,RemPathT,Dt,ARPT,DE,SA','Bffffffffff',
-                   sysid, remote_t, local_t,
+      local gps_week, gps_week_ms = get_gps_times()
+      logger.write("PTHT",
+                   'SysID,GWk,GMS,RemT,LocT,TS,RTS,PT,RPT,Dt,ARPT,DE,SA',
+                   'BHIffffffffff',
+                   '#------------',
+                   '-------------',
+                   sysid,
+                   gps_week, gps_week_ms,
+                   remote_t, local_t,
                    loc_timestamp,
                    remote_timestamp,
                    path_var.path_t, rem_patht,
