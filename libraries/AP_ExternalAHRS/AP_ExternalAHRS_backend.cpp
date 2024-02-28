@@ -38,4 +38,3 @@ bool AP_ExternalAHRS_backend::option_is_set(AP_ExternalAHRS::OPTIONS option) con
 }
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
-

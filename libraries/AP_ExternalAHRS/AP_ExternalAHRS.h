@@ -163,7 +163,7 @@ public:
         float differential_pressure; // Pa
         float temperature; // degC
     } airspeed_data_message_t;
-    
+
 protected:
 
     enum class OPTIONS {
@@ -197,4 +197,3 @@ namespace AP {
 };
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
-

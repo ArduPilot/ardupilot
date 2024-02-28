@@ -57,10 +57,9 @@ protected:
     void set_default_sensors(uint16_t sensors) {
         frontend.set_default_sensors(sensors);
     }
-    
+
 private:
     AP_ExternalAHRS &frontend;
 };
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
-
