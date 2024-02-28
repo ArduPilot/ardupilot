@@ -842,6 +842,122 @@ class AutoTestHelicopter(AutoTestCopter):
         if ex is not None:
             raise ex
 
+    def AutoTune(self):
+        """Test autotune mode"""
+        # test roll and pitch FF tuning
+        self.set_parameters({
+            "ATC_ANG_RLL_P": 4.5,
+            "ATC_RAT_RLL_P": 0,
+            "ATC_RAT_RLL_I": 0.1,
+            "ATC_RAT_RLL_D": 0,
+            "ATC_RAT_RLL_FF": 0.15,
+            "ATC_ANG_PIT_P": 4.5,
+            "ATC_RAT_PIT_P": 0,
+            "ATC_RAT_PIT_I": 0.1,
+            "ATC_RAT_PIT_D": 0,
+            "ATC_RAT_PIT_FF": 0.15,
+            "ATC_ANG_YAW_P": 4.5,
+            "ATC_RAT_YAW_P": 0.18,
+            "ATC_RAT_YAW_I": 0.024,
+            "ATC_RAT_YAW_D": 0.003,
+            "ATC_RAT_YAW_FF": 0.024,
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 1,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
+        # test pitch rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 2,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
+        # test Roll rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 1,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 1.8,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
+        # test Roll and pitch angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 4,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
+        # test yaw FF, rate P and Rate D, and angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 4,
+            "AUTOTUNE_SEQ": 7,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
@@ -859,6 +975,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.TurbineStart,
             self.NastyMission,
             self.PIDNotches,
+            self.AutoTune,
         ])
         return ret
 
