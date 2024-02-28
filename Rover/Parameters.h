@@ -89,7 +89,7 @@ public:
         k_param_gcs2,               // stream rates for SERIAL2
         k_param_serial2_baud_old,   // unused
         k_param_serial2_protocol,   // deprecated, can be deleted
-        k_param_serial_manager,     // serial manager library
+        k_param_serial_manager_old,     // serial manager library
         k_param_cli_enabled_old,    // unused
         k_param_gcs3,
         k_param_gcs_pid_mask,
