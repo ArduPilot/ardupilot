@@ -101,6 +101,9 @@ private:
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
 
+    // true in inverted flight mode
+    bool _inverted_flight;
+
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();
 
