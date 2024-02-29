@@ -457,6 +457,11 @@ void Copter::exit_mode(Mode *&old_flightmode,
             input_manager.set_stab_col_ramp(0.0);
         }
     }
+
+    // Make sure inverted flight is disabled if not supported in the new mode
+    if (!new_flightmode->allows_inverted()) {
+        attitude_control->set_inverted_flight(false);
+    }
 #endif //HELI_FRAME
 }
 
