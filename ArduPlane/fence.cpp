@@ -60,6 +60,7 @@ void Plane::fence_check()
         case AC_FENCE_ACTION_GUIDED:
         case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
         case AC_FENCE_ACTION_RTL_AND_LAND:
+            fence.disable_floor();
             if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
                 if (control_mode == &mode_auto &&
                     mission.get_in_landing_sequence_flag() &&

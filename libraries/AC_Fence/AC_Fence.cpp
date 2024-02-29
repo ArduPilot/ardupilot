@@ -452,8 +452,8 @@ bool AC_Fence::check_fence_alt_min()
         _alt_min_breach_distance = _alt_min - _curr_alt;
 
         // check for a new breach or a breach of the backup fence
-        if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
-            (!is_zero(_alt_min_backup) && _curr_alt <= _alt_min_backup)) {
+        if (_floor_enabled && (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
+            (!is_zero(_alt_min_backup) && _curr_alt <= _alt_min_backup))) {
 
             // new breach
             record_breach(AC_FENCE_TYPE_ALT_MIN);
