@@ -244,6 +244,7 @@ class ExtractFeatures(object):
             ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
             ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'AP_Compass::mag_cal_fixed_yaw'),
             ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
+            ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotation::init'),
         ]
 
     def progress(self, msg):
