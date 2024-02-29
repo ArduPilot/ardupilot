@@ -538,6 +538,11 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
 {
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
+
+    if (_inverted_flight) {
+        throttle_in = 1.0 - throttle_in;
+    }
+
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_throttle(throttle_in);
     // Clear angle_boost for logging purposes
