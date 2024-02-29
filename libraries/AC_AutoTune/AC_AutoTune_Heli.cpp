@@ -60,6 +60,14 @@
 #define AUTOTUNE_SEQ_BITMASK_MAX_GAIN        8
 #define AUTOTUNE_SEQ_BITMASK_TUNE_CHECK      16
 
+// angle limits preserved from previous behaviour as Multi changed:
+#define AUTOTUNE_ANGLE_TARGET_MAX_RP_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_ANGLE_TARGET_MIN_RP_CD     1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_ANGLE_TARGET_MAX_Y_CD      3000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_ANGLE_TARGET_MIN_Y_CD      500     // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_ANGLE_MAX_RP_CD            3000    // maximum allowable angle in degrees during testing
+#define AUTOTUNE_ANGLE_NEG_RPY_CD           1000    // maximum allowable angle in degrees during testing
+
 const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
 
     // @Param: AXES
@@ -1722,6 +1730,36 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f rate_d=%f", (double)(max_rate_d.phase), (double)(max_rate_d.max_allowed));
     }
 
+}
+
+float AC_AutoTune_Heli::target_angle_max_rp_cd() const
+{
+    return AUTOTUNE_ANGLE_TARGET_MAX_RP_CD;
+}
+
+float AC_AutoTune_Heli::target_angle_max_y_cd() const
+{
+    return AUTOTUNE_ANGLE_TARGET_MAX_Y_CD;
+}
+
+float AC_AutoTune_Heli::target_angle_min_rp_cd() const
+{
+    return AUTOTUNE_ANGLE_TARGET_MIN_RP_CD;
+}
+
+float AC_AutoTune_Heli::target_angle_min_y_cd() const
+{
+    return AUTOTUNE_ANGLE_TARGET_MIN_Y_CD;
+}
+
+float AC_AutoTune_Heli::angle_lim_max_rp_cd() const
+{
+    return AUTOTUNE_ANGLE_MAX_RP_CD;
+}
+
+float AC_AutoTune_Heli::angle_lim_neg_rpy_cd() const
+{
+    return AUTOTUNE_ANGLE_NEG_RPY_CD;
 }
 
 #if HAL_LOGGING_ENABLED
