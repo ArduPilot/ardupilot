@@ -154,10 +154,15 @@ public:
             int32_t alt; // m*100, AMSL
         } position;
         vec3_u8_t kf_vel_covariance; // mm/s
-        vec3_u16_t kf_pos_covariance;
+        vec3_u16_t kf_pos_covariance; // mm
         uint16_t unit_status; // set ILABS_UNIT_STATUS_*
         gnss_extended_info_t gnss_extended_info;
         uint8_t num_sats;
+        struct PACKED {
+            int32_t gps_lat; // deg*1e7
+            int32_t gps_lon; // deg*1e7
+            int32_t gps_alt; // m*100, AMSL
+        } gps_position;
         struct PACKED {
             int32_t hor_speed; // m/s*100
             uint16_t track_over_ground; // deg*100
@@ -189,7 +194,7 @@ public:
         } gnss_dop; // 10e3
     };
 
-    AP_ExternalAHRS::gps_data_message_t gps_data;
+    AP_ExternalAHRS::gps_data_message_t gps_ins_data;
     AP_ExternalAHRS::mag_data_message_t mag_data;
     AP_ExternalAHRS::baro_data_message_t baro_data;
     AP_ExternalAHRS::ins_data_message_t ins_data;
@@ -219,18 +224,27 @@ private:
     struct {
         Vector3f kf_vel_covariance;
         Vector3f kf_pos_covariance;
-        uint32_t gnss_ins_time_ms;
         uint16_t unit_status;
         uint16_t unit_status2;
-        gnss_extended_info_t gnss_extended_info;
-        gnss_info_short_t gnss_info_short;
-        uint8_t gnss_new_data;
-        uint8_t gnss_jam_status;
         float differential_pressure;
         float true_airspeed;
         Vector3f wind_speed;
         uint16_t air_data_status;
         float supply_voltage;
+    } state2;
+
+    struct {
+        float gps_lat;
+        float gps_lon;
+        float gps_alt;
+        float ned_vel_north;
+        float ned_vel_east;
+        float ned_vel_down;
+        uint32_t gnss_pos_timestamp;
+        gnss_extended_info_t gnss_extended_info;
+        gnss_info_short_t gnss_info_short;
+        uint8_t gnss_new_data;
+        uint8_t gnss_jam_status;        
         float gnss_heading;
         float gnss_pitch;
         uint8_t gnss_angle_pos_type;
@@ -238,7 +252,7 @@ private:
         float gnss_gdop;
         float gnss_pdop;
         float gnss_tdop;
-    } state2;
+    } gps_data;
 
     uint32_t last_att_ms;
     uint32_t last_vel_ms;
