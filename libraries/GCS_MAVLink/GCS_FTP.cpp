@@ -17,7 +17,7 @@
 
 #include "GCS_config.h"
 
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_FTP_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -694,4 +694,4 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     AP::FS().closedir(dir);
 }
 
-#endif  // HAL_GCS_ENABLED
+#endif  // AP_MAVLINK_FTP_ENABLED
