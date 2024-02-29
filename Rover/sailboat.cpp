@@ -105,16 +105,15 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Sailboat options
-    // @Description: Sailboat setup options, Only available for separate mainsail RC channel.
-    // @Bitmask: 0: TODO Mainsail works as traditional RC sail in manual. Range 1000 usec to 2000 usec. 1000 usec is fully sheeted in, 2000 usec is fully sheeted out
-    // @Bitmask: 1: reserved
-    // @Bitmask: 2: reserved
-    // @Bitmask: 3: reserved
-    // @Bitmask: 4: TODO mainsail channel modifies angle of attack in auto, acro. MainSailRCIn range {1000 to 1900} usec: Sail angle of attack = (1.0f - (MainsailChannelIn - 1000.0f)/900.0f) * SAIL_ANGLE_IDEAL. MainSailRCIn range {1900 +}  usec: Sail relaxed.
-    // @Bitmask: 5: reserved
-    // @Bitmask: 6: reserved
+    // @Description: Sailboat setup option bits only available for separate mainsail RC channel.
+    // @Bitmask: 0: TODO Mainsail works as traditional RC sail in manual. Range 1000 usec to 2000 usec. 1000 usec is fully sheeted in. 2000 usec is fully sheeted out
+    // @Bitmask: 1: reserved 1
+    // @Bitmask: 2: reserved 2
+    // @Bitmask: 3: reserved 3
+    // @Bitmask: 4: TODO mainsail channel modifies angle of attack in auto or acro. MainSailRCIn range {1000 to 1900} usec. Sail angle of attack = (1.0f - (MainsailChannelIn - 1000.0f)/900.0f) * SAIL_ANGLE_IDEAL. MainSailRCIn range {1900 +}  usec. Sail relaxed.
+    // @Bitmask: 5: reserved 4
+    // @Bitmask: 6: reserved 5
     // @Bitmask: 7: Detect and get out of "in Irons" in AUTO mode
-    // @User: Advanced
      AP_GROUPINFO("OPTIONS", 10, Sailboat, options, 0),
 
     AP_GROUPEND
