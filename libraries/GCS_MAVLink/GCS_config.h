@@ -84,6 +84,10 @@
 #define AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED HAL_ADSB_ENABLED
 #endif
 
+#ifndef AP_MAVLINK_FTP_ENABLED
+#define AP_MAVLINK_FTP_ENABLED HAL_GCS_ENABLED
+#endif
+
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
 // sending warnings to the GCS in Sep 2022 if this command was used.
