@@ -731,7 +731,7 @@ void Compass::init()
 
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_CUSTOMROTATIONS_ENABLED
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
             continue;
@@ -751,7 +751,7 @@ void Compass::init()
         }
         break;
     }
-#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif  // AP_CUSTOMROTATIONS_ENABLED
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
