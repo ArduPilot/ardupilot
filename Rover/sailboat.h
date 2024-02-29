@@ -92,11 +92,19 @@ public:
     // state machine. the state is updated at each call
     // return true if sailboat is stuck "in irons"
     bool in_irons();
+    // return the rudder to set to get out of irons
+    // between -1 and 1
+    float get_in_irons_rudder() const { return in_irons_rudder;}
 
+    // call this function only when changing modes to reset the in_irons
+    // Usually in_irons will clear itself by getting out of irons
+    // Can be called whether sailboat is in_irons or not
+    void clear_in_irons();
+    // is get out of in irons in auto mode enabled?
+    bool get_out_of_in_irons_in_auto_enabled() const;
+    // is mainsail on a separate rc in channel?
+    bool separate_mainsail_rcin_channel() const;
 private:
-
-    // change sailboat state to in irons
-    void set_in_irons();
 
     // true if motor is on to assist with slow tack
     bool motor_assist_tack() const;
@@ -114,6 +122,7 @@ private:
     AP_Float sail_windspeed_min;
     AP_Float xtrack_max;
     AP_Float loit_radius;
+    AP_Int32 options;
 
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
@@ -123,7 +132,18 @@ private:
     uint32_t tack_clear_ms;         // system time when tack was cleared
     bool tack_assist;               // true if we should use some throttle to assist tack
     UseMotor motor_state;           // current state of motor output
-    uint32_t in_irons_start_ms = 0U; // system time when in_irons started
-    float in_irons_heading_rad;     // target heading in radians when in irons
-
+    // in irons variables ---
+    static constexpr int rotate_clockwise = -1;
+    static constexpr int rotate_anticlockwise = 1;
+    // the percentage of full rudder to apply in irons
+    // too much can stall the rudder and delay getting out of irons
+    static constexpr float in_irons_rudder_percent = 2.0f/3.0f;
+    // system time when in_irons started
+    uint32_t in_irons_start_ms = 0U;
+    // in irons state flag. Dont set directly
+    bool is_in_irons           = false;
+    // value between -1 and 1 to send to steering when in irons
+    float in_irons_rudder = 0.0f;
+     // target heading in radians when in irons
+    float in_irons_heading_rad;
 };

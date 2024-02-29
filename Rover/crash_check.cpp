@@ -31,7 +31,7 @@ void Rover::crash_check()
         if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
             (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
             (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN) ||
-             g2.motors.sailboat_in_irons())) {
+             g2.sailboat.in_irons())) {
             crash_counter = 0;
             return;
         }
