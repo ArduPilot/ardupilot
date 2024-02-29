@@ -256,7 +256,7 @@ void AP_AHRS::init()
     external.init();
 #endif
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_CUSTOMROTATIONS_ENABLED
     // convert to new custom rotation
     // PARAMETER_CONVERSION - Added: Nov-2021
     if (_board_orientation == ROTATION_CUSTOM_OLD) {
@@ -274,7 +274,7 @@ void AP_AHRS::init()
             AP::custom_rotations().convert(ROTATION_CUSTOM_1, rpy[0], rpy[1], rpy[2]);
         }
     }
-#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif  // AP_CUSTOMROTATIONS_ENABLED
 }
 
 // updates matrices responsible for rotating vectors from vehicle body
