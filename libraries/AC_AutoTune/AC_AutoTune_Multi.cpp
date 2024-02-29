@@ -78,6 +78,14 @@
 #define AUTOTUNE_TARGET_RATE_YAW_CDS        9000        // target yaw rate during AUTOTUNE_STEP_TWITCHING step
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500        // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
 
+#define AUTOTUNE_TARGET_ANGLE_MAX_RP_SCALE  1.0 / 2.0   // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_MAX_Y_SCALE   1.0         // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_MIN_RP_SCALE  1.0 / 3.0   // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_MIN_Y_SCALE   1.0 / 6.0   // minimum target angle, as a fraction of angle_max, during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_ANGLE_ABORT_RP_SCALE       2.5 / 3.0   // maximum allowable angle during testing, as a fraction of angle_max
+#define AUTOTUNE_ANGLE_MAX_Y_SCALE          1.0         // maximum allowable angle during testing, as a fraction of angle_max
+#define AUTOTUNE_ANGLE_NEG_RP_SCALE         1.0 / 5.0   // maximum allowable angle during testing, as a fraction of angle_max
+
 // second table of user settable parameters for quadplanes, this
 // allows us to go beyond the 64 parameter limit
 const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
@@ -1089,6 +1097,38 @@ void AC_AutoTune_Multi::Log_AutoTuneDetails()
     Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
 }
 
+float AC_AutoTune_Multi::target_angle_max_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_max_y_cd() const
+{
+    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_Y_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_min_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_min_y_cd() const
+{
+    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_Y_SCALE;
+}
+
+float AC_AutoTune_Multi::angle_lim_max_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_ABORT_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::angle_lim_neg_rpy_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_NEG_RP_SCALE;
+}
+
 // @LoggerMessage: ATUN
 // @Description: Copter/QuadPlane AutoTune
 // @Vehicles: Copter, Plane
@@ -1151,14 +1191,14 @@ void AC_AutoTune_Multi::twitch_test_init()
     case ROLL: {
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
         target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_SCALE, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_RLLPIT_SCALE);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, target_angle_min_rp_cd(), target_angle_max_rp_cd());
         rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz()*2.0f);
         break;
     }
     case PITCH: {
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
         target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_SCALE, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_RLLPIT_SCALE);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, target_angle_min_rp_cd(), target_angle_max_rp_cd());
         rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz()*2.0f);
         break;
     }
@@ -1166,7 +1206,7 @@ void AC_AutoTune_Multi::twitch_test_init()
     case YAW_D: {
         target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
         target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_MIN_ANGLE_YAW_SCALE, attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_YAW_SCALE);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, target_angle_min_y_cd(), target_angle_max_y_cd());
         if (axis == YAW_D) {
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_yaw_pid().filt_D_hz()*2.0f);
         } else {
@@ -1272,12 +1312,12 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     case RD_DOWN:
         twitching_test_rate(lean_angle, rotation_rate, target_rate, test_rate_min, test_rate_max, test_angle_min);
         twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min, test_angle_min);
+        twitching_abort_rate(lean_angle, rotation_rate, angle_finish, test_rate_min, test_angle_min);
         break;
     case RP_UP:
         twitching_test_rate(lean_angle, rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max, test_angle_min);
         twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min, test_angle_min);
+        twitching_abort_rate(lean_angle, rotation_rate, angle_finish, test_rate_min, test_angle_min);
         break;
     case SP_DOWN:
     case SP_UP:
