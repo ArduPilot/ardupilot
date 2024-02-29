@@ -7090,22 +7090,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def check_avoidance_corners(self):
         self.takeoff(10, mode="LOITER")
+        here = self.mav.location()
         self.set_rc(2, 1400)
         west_loc = mavutil.location(-35.363007,
                                     149.164911,
-                                    0,
+                                    here.alt,
                                     0)
         self.wait_location(west_loc, accuracy=6)
         north_loc = mavutil.location(-35.362908,
                                      149.165051,
-                                     0,
+                                     here.alt,
                                      0)
         self.reach_heading_manual(0)
         self.wait_location(north_loc, accuracy=6, timeout=200)
         self.reach_heading_manual(90)
         east_loc = mavutil.location(-35.363013,
                                     149.165194,
-                                    0,
+                                    here.alt,
                                     0)
         self.wait_location(east_loc, accuracy=6)
         self.reach_heading_manual(225)
@@ -7556,18 +7557,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.takeoff(10, mode="LOITER")
             self.set_rc(2, 1400)
-            west_loc = mavutil.location(-35.362919, 149.165055, 0, 0)
+            here = self.mav.location()
+            west_loc = mavutil.location(-35.362919, 149.165055, here.alt, 0)
             self.wait_location(west_loc, accuracy=1)
             self.reach_heading_manual(0)
-            north_loc = mavutil.location(-35.362881, 149.165103, 0, 0)
+            north_loc = mavutil.location(-35.362881, 149.165103, here.alt, 0)
             self.wait_location(north_loc, accuracy=1)
             self.set_rc(2, 1500)
             self.set_rc(1, 1600)
-            east_loc = mavutil.location(-35.362986, 149.165227, 0, 0)
+            east_loc = mavutil.location(-35.362986, 149.165227, here.alt, 0)
             self.wait_location(east_loc, accuracy=1)
             self.set_rc(1, 1500)
             self.set_rc(2, 1600)
-            south_loc = mavutil.location(-35.363025, 149.165182, 0, 0)
+            south_loc = mavutil.location(-35.363025, 149.165182, here.alt, 0)
             self.wait_location(south_loc, accuracy=1)
             self.set_rc(2, 1500)
             self.do_RTL()
