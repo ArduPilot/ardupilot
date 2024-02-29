@@ -175,10 +175,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def fly_RTL(self):
         """Fly to home."""
         self.progress("Flying home in RTL")
+        target_loc = self.homeloc
+        target_loc.alt += 100
         self.change_mode('RTL')
-        self.wait_location(self.homeloc,
+        self.wait_location(target_loc,
                            accuracy=120,
-                           target_altitude=self.homeloc.alt+100,
                            height_accuracy=20,
                            timeout=180)
         self.progress("RTL Complete")
@@ -1877,8 +1878,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.homeloc = self.mav.location()
 
-        guided_loc = mavutil.location(-35.39723762, 149.07284612, 99.0, 0)
-        rally_loc = mavutil.location(-35.3654952000, 149.1558698000, 100, 0)
+        guided_loc = mavutil.location(-35.39723762, 149.07284612, self.homeloc.alt+99.0, 0)
+        rally_loc = mavutil.location(-35.3654952000, 149.1558698000, self.homeloc.alt+100, 0)
 
         terrain_wait_path(self.homeloc, rally_loc, 10)
 
@@ -1898,19 +1899,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("GUIDED")
         self.do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
         self.progress("Flying to guided location")
-        self.wait_location(guided_loc,
-                           accuracy=200,
-                           target_altitude=None,
-                           timeout=600)
+        self.wait_location(
+            guided_loc,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
 
         self.progress("Reached guided location")
         self.set_parameter("RALLY_LIMIT_KM", 50)
         self.change_mode("RTL")
         self.progress("Flying to rally point")
-        self.wait_location(rally_loc,
-                           accuracy=200,
-                           target_altitude=None,
-                           timeout=600)
+        self.wait_location(
+            rally_loc,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
         self.progress("Reached rally point with TERRAIN_FOLLOW")
 
         # Fly back to guided location
@@ -1933,17 +1938,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.check_rally_upload_download(rally_item)
 
         # Once back at guided location re-trigger RTL
-        self.wait_location(guided_loc,
-                           accuracy=200,
-                           target_altitude=None,
-                           timeout=600)
+        self.wait_location(
+            guided_loc,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
 
         self.change_mode("RTL")
         self.progress("Flying to rally point")
-        self.wait_location(rally_loc,
-                           accuracy=200,
-                           target_altitude=None,
-                           timeout=600)
+        self.wait_location(
+            rally_loc,
+            accuracy=200,
+            timeout=600,
+            height_accuracy=10,
+        )
         self.progress("Reached rally point with terrain alt frame")
 
         self.context_pop()
