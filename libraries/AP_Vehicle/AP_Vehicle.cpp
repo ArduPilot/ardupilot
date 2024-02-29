@@ -94,9 +94,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     // @Group: CUST_ROT
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
     AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
+#endif
 
 #if HAL_WITH_ESC_TELEM
     // @Group: ESC_TLM
@@ -488,7 +490,9 @@ void AP_Vehicle::setup()
     fence.init();
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     custom_rotations.init();
+#endif
 
 #if AP_FILTER_ENABLED
     filters.init();
