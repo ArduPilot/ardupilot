@@ -415,11 +415,10 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 void Mode::navigate_to_waypoint()
 {
     if ( g2.sailboat.in_irons()){
-            // rudder_percent ( 0.0f to 1.0f) sets the rudder angle used to turn the boat
-    // as it is blown backwards. Too much rudder angle can stall the rudders 
-    // and slow the process of getting out of irons
- 
-    //set rudder output to turn the boat in required direction
+       // set rudder output to turn the boat in required direction
+       // rudder_percent ( 0.0f to 1.0f) sets the rudder angle used to turn the boat
+       // as it is blown backwards. Too much rudder angle can stall the rudders
+       // and slow the process of getting out of irons
        g2.motors.set_steering(g2.sailboat.get_in_irons_rudder() * 4500.0f,false);
        return;
     }

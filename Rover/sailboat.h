@@ -92,6 +92,7 @@ public:
     // state machine. the state is updated at each call
     // return true if sailboat is stuck "in irons"
     bool in_irons();
+
     // return the rudder to set to get out of irons
     // between -1 and 1
     float get_in_irons_rudder() const { return in_irons_rudder;}
@@ -100,8 +101,10 @@ public:
     // Usually in_irons will clear itself by getting out of irons
     // Can be called whether sailboat is in_irons or not
     void clear_in_irons();
+
     // is get out of in irons in auto mode enabled?
     bool get_out_of_in_irons_in_auto_enabled() const;
+
     // is mainsail on a separate rc in channel?
     bool separate_mainsail_rcin_channel() const;
 private:

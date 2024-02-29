@@ -4,7 +4,7 @@
 #define SAILBOAT_TACKING_ACCURACY_DEG 10        // tack is considered complete when vehicle is within this many degrees of target tack angle
 #define SAILBOAT_NOGO_PAD 10                    // deg, the no go zone is padded by this much when deciding if we should use the Sailboat heading controller
 #define TACK_RETRY_TIME_MS 5000                 // Can only try another auto mode tack this many milliseconds after the last is cleared (either competed or timed-out)
-#define IN_IRONS_LIMBO_MS 250
+#define IN_IRONS_LIMBO_MS 250                   // Time spent going backwards before in irons is true
 /*
 To Do List
  - Improve tacking in light winds and bearing away in strong wings
@@ -106,17 +106,11 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Sailboat options
     // @Description: Sailboat setup options, Only available for separate mainsail RC channel.
-    /* @bitmask: 0:TODO Mainsail works as traditional RC sail in manual.
-        Range 1000 usec to 2000 usec.
-        1000 usec is fully sheeted in, 2000 usec is fully sheeted out */
+    // @bitmask: 0:TODO Mainsail works as traditional RC sail in manual. Range 1000 usec to 2000 usec. 1000 usec is fully sheeted in, 2000 usec is fully sheeted out
     // @bitmask: 1:reserved
     // @bitmask: 2:reserved
     // @bitmask: 3:reserved
-    /* @bitmask: 4:TODO mainsail channel modifies angle of attack in auto, acro.
-          MainSailRCIn range {1000 to 1900} usec:
-             Sail angle of attack = (1.0f - (MainsailChannelIn - 1000.0f)/900.0f) *
-                SAIL_ANGLE_IDEAL.
-          MainSailRCIn range {1900 +}  usec: Sail relaxed. */
+    // @bitmask: 4:TODO mainsail channel modifies angle of attack in auto, acro. MainSailRCIn range {1000 to 1900} usec: Sail angle of attack = (1.0f - (MainsailChannelIn - 1000.0f)/900.0f) * SAIL_ANGLE_IDEAL. MainSailRCIn range {1900 +}  usec: Sail relaxed.
     // @bitmask: 5:reserved
     // @bitmask: 6:reserved
     // @bitmask: 7:Detect and get out of "in Irons" in AUTO mode
@@ -427,9 +421,9 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
 float Sailboat::calc_heading(float desired_heading_cd)
 {
     if ( in_irons()){
-       // in irons dont change the best heading,
-       // keep slowly rotating in one direction
-       return degrees(in_irons_heading_rad) * 100.0f ;
+        // in irons dont change the best heading,
+        // keep slowly rotating in one direction
+        return degrees(in_irons_heading_rad) * 100.0f ;
     }
 
     if (!tack_enabled()) {
@@ -595,6 +589,14 @@ bool Sailboat::motor_assist_low_wind() const
 
 bool Sailboat::in_irons()
 {
+   // only enabled for separate mainsail and options bit set
+   if (! get_out_of_in_irons_in_auto_enabled()){
+       clear_in_irons();
+       return false;
+   }
+   // helper lambda functions
+
+   // do low level set in irons work
    auto set_in_irons = [this]()
    {
        // fix the desired heading while in irons
@@ -622,10 +624,6 @@ bool Sailboat::in_irons()
           (in_irons_rotate_sign == Sailboat::rotate_clockwise)? "port":"stbd");
    };
 
-   if (! get_out_of_in_irons_in_auto_enabled()){
-      clear_in_irons();
-      return false;
-   }
    auto going_backwards = []()-> bool{
       float speed;
       // return false if we don't have a valid speed (e.g no gps fix)
@@ -648,35 +646,33 @@ bool Sailboat::in_irons()
    };
 
    // Already "in irons" or not?
-   //if (!rover.g2.motors.sailboat_in_irons()){
-     if (! is_in_irons){
+     if (!is_in_irons){
       // not currently in irons, check conditions to enter "in irons limbo"
-      if ( cannot_motorsail() && going_backwards() && headed() ){
+      if (cannot_motorsail() && going_backwards() && headed()){
          // in_irons_limbo_start_ms == 0  means not yet "in irons limbo"
-         if ( in_irons_start_ms == 0){
+         if (in_irons_start_ms == 0){
             // start "in irons limbo"
             in_irons_start_ms = millis();
-         }else{
+         } else {
             // we have been in the "in irons limbo" period for a while
-            if ( ( millis() - in_irons_start_ms ) >= IN_IRONS_LIMBO_MS){
+            if ((millis() - in_irons_start_ms) >= IN_IRONS_LIMBO_MS){
                // OK, long enough
                set_in_irons();
             }
          }
-      }else { // not going backwards (anymore), so reset limbo timer.
+      } else { // not going backwards (anymore), so reset limbo timer.
           in_irons_start_ms = 0;
       }
    } else {
       // currently "in irons". Has boat rotated enough to
       // be able to sheet in, fill sails and Go?
-      if ( abs(wind_dir_apparent) > sail_no_go){
+      if (abs(wind_dir_apparent) > sail_no_go){
          in_irons_start_ms = 0;
          is_in_irons = false;
-         //rover.g2.motors.clear_sailboat_in_irons();
          gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Out of Irons");
       }
    }
-   return is_in_irons ; //rover.g2.motors.sailboat_in_irons();
+   return is_in_irons ;
 }
 
 void Sailboat::clear_in_irons()
