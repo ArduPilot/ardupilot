@@ -4246,9 +4246,9 @@ class TestSuite(ABC):
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
+        # match last line e.g. "Log 10  numLogs 10 lastLog 10 size 0"
+        mavproxy.expect(r"Log\s+(?P<num>\d+)\s+numLogs\s+(?P=num)")
+        mavproxy.send("repeat add 1 log status\n")
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
@@ -4308,11 +4308,10 @@ class TestSuite(ABC):
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
-            mavproxy.expect("numLogs")
-            # ensure the full list of logs has come out
-            for i in range(5):
-                self.wait_heartbeat()
+            # match last line e.g. "Log 10  numLogs 10 lastLog 10 size 0"
+            mavproxy.expect(r"Log\s+(?P<num>\d+)\s+numLogs\s+(?P=num)")
             mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.send("repeat add 1 log status\n")
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
             self.stop_mavproxy(mavproxy)
@@ -4349,11 +4348,9 @@ class TestSuite(ABC):
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
-            mavproxy.expect("numLogs")
-            # ensure the full list of logs has come out
-            for i in range(5):
-                self.wait_heartbeat()
+            mavproxy.expect(r"Log\s+(?P<num>\d+)\s+numLogs\s+(?P=num)")
             mavproxy.send("log download latest %s\n" % filename)
+            mavproxy.send("repeat add 1 log status\n")
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
             self.stop_mavproxy(mavproxy)
@@ -4382,12 +4379,10 @@ class TestSuite(ABC):
         mavproxy.expect("Detected vehicle")
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        # ensure the full list of logs has come out
-        for i in range(5):
-            self.wait_heartbeat()
+        mavproxy.expect(r"Log\s+(?P<num>\d+)\s+numLogs\s+(?P=num)")
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.send("repeat add 1 log status\n")
         mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
