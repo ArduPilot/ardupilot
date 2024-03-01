@@ -8,6 +8,7 @@
 // #include "AC_CustomControl_Empty.h"
 #include "AC_CustomControl_PID.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl::var_info[] = {

@@ -2087,6 +2087,13 @@ void AP_Param::convert_g2_objects(const void *g2, const G2ObjectConversion g2_co
     }
 }
 
+void AP_Param::convert_toplevel_objects(const TopLevelObjectConversion conversions[], uint8_t num_conversions)
+{
+    for (uint8_t i=0; i<num_conversions; i++) {
+        const auto &c { conversions[i] };
+        convert_class(c.old_index, c.object_pointer, c.var_info, 0, true);
+    }
+}
 
 /*
  convert width of a parameter, allowing update to wider scalar values

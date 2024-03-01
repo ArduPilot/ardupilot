@@ -65,6 +65,8 @@ public:
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
+    uint32_t get_baud_rate() const override { return _uart_baudrate; }
+
 private:
 
     int _fd;

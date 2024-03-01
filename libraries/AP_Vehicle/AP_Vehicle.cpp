@@ -276,6 +276,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 30, AP_Vehicle, AP_Gripper),
 #endif
 
+#if AP_SERIALMANAGER_ENABLED
+    // @Group: SERIAL
+    // @Path: ../AP_SerialManager/AP_SerialManager.cpp
+    AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
+#endif
+
     AP_GROUPEND
 };
 
@@ -294,8 +300,10 @@ void AP_Vehicle::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial port
     serial_manager.init_console();
+#endif
 
     DEV_PRINTF("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
@@ -345,8 +353,10 @@ void AP_Vehicle::setup()
     gcs().init();
 #endif
 
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial ports
     serial_manager.init();
+#endif
 #if HAL_GCS_ENABLED
     gcs().setup_console();
 #endif

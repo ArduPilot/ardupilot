@@ -39,6 +39,10 @@
 #define HAL_NUM_SERIAL_PORTS SERIALMANAGER_NUM_PORTS
 #endif
 
+#ifndef AP_SERIALMANAGER_ENABLED
+#define AP_SERIALMANAGER_ENABLED 1
+#endif
+
 /*
   array size for state[]. This needs to be at least
   SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
@@ -93,7 +97,7 @@
 
 // GPS default baud rates and buffer sizes
 // we need a 256 byte buffer for some GPS types (eg. UBLOX)
-#define AP_SERIALMANAGER_GPS_BAUD               38400
+#define AP_SERIALMANAGER_GPS_BAUD               230400
 #define AP_SERIALMANAGER_GPS_BUFSIZE_RX         256
 #define AP_SERIALMANAGER_GPS_BUFSIZE_TX         16
 
