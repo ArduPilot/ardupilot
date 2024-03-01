@@ -455,8 +455,10 @@ bool AP_Mount_Topotek::set_lens(uint8_t lens)
     if (!_initialised) {
         return false;
     }
-
-    return (send_packet(_next_pip_mode, 12));
+    if (lens > 0) {
+        return (send_packet(_next_pip_mode, 12));
+    }
+    return false;
 }
 
 // send camera information message to GCS
