@@ -690,6 +690,7 @@ protected:
     void handle_optical_flow(const mavlink_message_t &msg);
 
     void handle_manual_control(const mavlink_message_t &msg);
+    void handle_radio_rc_channels(const mavlink_message_t &msg);
 
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
