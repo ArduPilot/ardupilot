@@ -385,7 +385,7 @@ bool Sailboat::tacking() const
 
 // returns true if sailboat should take a indirect navigation route to go upwind
 // desired_heading should be in centi-degrees
-bool Sailboat::use_indirect_route(float desired_heading_cd)
+bool Sailboat::use_indirect_route(float desired_heading_cd) const
 {
    
     if (!tack_enabled()) {

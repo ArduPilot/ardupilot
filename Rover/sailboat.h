@@ -66,7 +66,7 @@ public:
     bool tacking() const;
 
     // returns true if sailboat should take a indirect navigation route to go upwind
-    bool use_indirect_route(float desired_heading_cd);
+    bool use_indirect_route(float desired_heading_cd) const;
 
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
