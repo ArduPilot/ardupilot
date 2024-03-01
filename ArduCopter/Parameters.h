@@ -214,7 +214,7 @@ public:
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
-        k_param_serial_manager,
+        k_param_serial_manager_old,
         k_param_ch9_option_old,
         k_param_ch10_option_old,
         k_param_ch11_option_old,
