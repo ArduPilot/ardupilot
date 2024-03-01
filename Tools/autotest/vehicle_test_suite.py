@@ -7822,6 +7822,12 @@ class TestSuite(ABC):
             if self.mav.motors_armed():
                 raise NotAchievedException("Armed when we shouldn't have")
 
+    def ready_to_arm(self):
+        '''returns true if the vehicle thinks it is ready to arm.  Note that
+        currently this implementation is *significantly* different to
+        wait_ready_to_arm'''
+        return self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True)
+
     def wait_ready_to_arm(self, timeout=120, require_absolute=True, check_prearm_bit=True):
         # wait for EKF checks to pass
         self.progress("Waiting for ready to arm")
@@ -7839,6 +7845,7 @@ class TestSuite(ABC):
         self.waiting_to_arm_count += 1
 
     def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:

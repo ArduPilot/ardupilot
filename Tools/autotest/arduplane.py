@@ -1334,6 +1334,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def ThrottleFailsafeFence(self):
+
         '''Fly fence survives throttle failsafe'''
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 

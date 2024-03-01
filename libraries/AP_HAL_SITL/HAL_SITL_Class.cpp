@@ -306,6 +306,11 @@ void HAL_SITL::actually_reboot()
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
+uint16_t *HAL_SITL::get_pwm_input() const
+{
+    return _sitl_state->pwm_input;
+}
+
 static HAL_SITL hal_sitl_inst;
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {

@@ -75,6 +75,9 @@ public:
 #if AP_RCPROTOCOL_GHST_ENABLED
         GHST       = 14,
 #endif
+#if AP_RCPROTOCOL_SITL_ENABLED  // 8 or 16 packed integers
+        SITL = 16,
+#endif
         NONE    //last enum always is None
     };
 
@@ -96,6 +99,7 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
     bool process_byte(uint8_t byte, uint32_t baudrate);
+    void process_bytes(uint8_t *byte, uint16_t count, uint32_t baudrate);
     void process_handshake(uint32_t baudrate);
     void update(void);
 
@@ -158,6 +162,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         case DRONECAN:
+#endif
+#if AP_RCPROTOCOL_SITL_ENABLED
+        case SITL:
 #endif
         case NONE:
             return false;
@@ -235,6 +242,8 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+    bool _process_bytes(uint8_t *byte, uint16_t count, uint32_t baudrate);
 
 #endif  // AP_RCPROTCOL_ENABLED
 

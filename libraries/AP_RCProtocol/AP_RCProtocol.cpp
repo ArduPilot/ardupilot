@@ -34,6 +34,7 @@
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
 #include "AP_RCProtocol_GHST.h"
+#include "AP_RCProtocol_SITL.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -87,6 +88,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
     backend[AP_RCProtocol::GHST] = new AP_RCProtocol_GHST(*this);
+#endif
+#if AP_RCPROTOCOL_SITL_ENABLED
+    backend[AP_RCProtocol::SITL] = new AP_RCProtocol_SITL(*this);
 #endif
 }
 
@@ -196,6 +200,27 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
         process_pulse(widths0, widths1);
         widths += 2;
         n -= 2;
+    }
+}
+
+void AP_RCProtocol::process_bytes(uint8_t *bytes, uint16_t count, uint32_t baudrate)
+{
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    if (!should_search(now) &&
+        _detected_protocol != AP_RCProtocol::NONE) {
+        // pass all the bytes to the backend directly:
+        backend[_detected_protocol]->process_bytes(bytes, count, baudrate);
+        return;
+    }
+
+    // we're searching, so process bytes one-at-a-time:
+    for (uint8_t i=0; i<count; i++) {
+        process_byte(bytes[i], baudrate);
     }
 }
 
@@ -423,6 +448,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         AP_RCProtocol::DRONECAN,
 #endif
+#if AP_RCPROTOCOL_SITL_ENABLED
+        AP_RCProtocol::SITL,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -554,6 +582,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_GHST_ENABLED
     case GHST:
         return "GHST";
+#endif
+#if AP_RCPROTOCOL_SITL_ENABLED
+    case SITL:
+        return "SITL";
 #endif
     case NONE:
         break;

@@ -25,6 +25,8 @@
 #include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket_native.h>
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
@@ -242,6 +244,7 @@ void SITL_State::_check_rc_input(void)
 
 bool SITL_State::_read_rc_sitl_input()
 {
+
     struct pwm_packet {
         uint16_t pwm[16];
     } pwm_pkt;
@@ -266,24 +269,19 @@ bool SITL_State::_read_rc_sitl_input()
         return size != -1;  // we must continue to drain _sitl_rc
     }
 
+    // consider transforming the data in the packet into a different
+    // protocol here.
+
     switch (size) {
     case -1:
         return false;
     case 8*2:
     case 16*2: {
         // a packet giving the receiver PWM inputs
-        for (uint8_t i=0; i<size/2; i++) {
-            // setup the pwm input for the RC channel inputs
-            if (i < _sitl->state.rcin_chan_count) {
-                // we're using rc from simulator
-                continue;
-            }
-            uint16_t pwm = pwm_pkt.pwm[i];
-            if (pwm != 0) {
-                pwm_input[i] = pwm;
-            }
-        }
-        return true;
+        const uint32_t baudrate = 0;
+        AP::RC().process_bytes((uint8_t*)pwm_pkt.pwm, size, baudrate);
+
+        return false;
     }
     default:
         fprintf(stderr, "Malformed SITL RC input (%ld)", (long)size);
