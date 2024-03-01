@@ -106,23 +106,12 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Sailboat options
     // @Description: Sailboat setup option bits only available for separate mainsail RC channel.
-    // @Bitmask: 0: TODO Mainsail works as traditional RC sail in manual. Range 1000 usec to 2000 usec. 1000 usec is fully sheeted in. 2000 usec is fully sheeted out
-    // @Bitmask: 1: reserved 1
-    // @Bitmask: 2: reserved 2
-    // @Bitmask: 3: reserved 3
-    // @Bitmask: 4: TODO mainsail channel modifies angle of attack in auto or acro. MainSailRCIn range {1000 to 1900} usec. Sail angle of attack = (1.0f - (MainsailChannelIn - 1000.0f)/900.0f) * SAIL_ANGLE_IDEAL. MainSailRCIn range {1900 +}  usec. Sail relaxed.
-    // @Bitmask: 5: reserved 4
-    // @Bitmask: 6: reserved 5
-    // @Bitmask: 7: Detect and get out of "in Irons" in AUTO mode
+    // @Bitmask: 0: Detect and get out of "in Irons" in AUTO mode
      AP_GROUPINFO("OPTIONS", 10, Sailboat, options, 0),
 
     AP_GROUPEND
 };
 
-namespace {
-   uint32_t constexpr getOutOfInIronsInAutoBit = 7U;
-   uint32_t constexpr getOutOfInIronsInAutoMask = (1U << getOutOfInIronsInAutoBit);
-}
 /*
   constructor
  */
@@ -396,8 +385,9 @@ bool Sailboat::tacking() const
 
 // returns true if sailboat should take a indirect navigation route to go upwind
 // desired_heading should be in centi-degrees
-bool Sailboat::use_indirect_route(float desired_heading_cd) const
+bool Sailboat::use_indirect_route(float desired_heading_cd)
 {
+   
     if (!tack_enabled()) {
         return false;
     }
@@ -412,17 +402,18 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
 
     // check if desired heading is in the no go zone, if it is we can't go direct
     // pad no go zone, this allows use of heading controller rather than L1 when close to the wind
-    return fabsf(wrap_PI(rover.g2.windvane.get_true_wind_direction_rad() - desired_heading_rad)) <= radians(sail_no_go + SAILBOAT_NOGO_PAD);
+    return fabsf(wrap_PI(rover.g2.windvane.get_true_wind_direction_rad() - desired_heading_rad)) <= 
+         radians(sail_no_go + SAILBOAT_NOGO_PAD);
 }
 
 // if we can't sail on the desired heading then we should pick the best heading that we can sail on
 // this function assumes the caller has already checked sailboat_use_indirect_route(desired_heading_cd) returned true
 float Sailboat::calc_heading(float desired_heading_cd)
 {
-    if ( in_irons()){
+    if (in_irons()) {
         // in irons dont change the best heading,
         // keep slowly rotating in one direction
-        return degrees(in_irons_heading_rad) * 100.0f ;
+        return degrees(_in_irons.heading_rad) * 100.0f ;
     }
 
     if (!tack_enabled()) {
@@ -586,110 +577,112 @@ bool Sailboat::motor_assist_low_wind() const
             (rover.g2.windvane.get_true_wind_speed() < sail_windspeed_min));
 }
 
-bool Sailboat::in_irons()
+void Sailboat::update_in_irons()
 {
    // only enabled for separate mainsail and options bit set
-   if (! get_out_of_in_irons_in_auto_enabled()){
-       clear_in_irons();
-       return false;
-   }
-   // helper lambda functions
-
-   // do low level set in irons work
-   auto set_in_irons = [this]()
    {
-       // fix the desired heading while in irons
-       in_irons_heading_rad =
-          (currently_tacking)
-             ? tack_heading_rad
-             : radians(rover.g2.wp_nav.oa_wp_bearing_cd() * 0.01)
-       ;
+        const bool separate_mainsail_channel =
+            (channel_mainsail !=nullptr) &&
+            (channel_mainsail != rover.channel_throttle);
 
-       // calculate which way to set the rudders to rotate the boat
-       // towards desired heading as it is being blown backwards
-       const int in_irons_rotate_sign =
-        (wrap_PI(in_irons_heading_rad - rover.ahrs.get_yaw()) >= 0.0f)
-           ? Sailboat::rotate_clockwise
-           : Sailboat::rotate_anticlockwise
-       ;
+        if (!(separate_mainsail_channel && 
+                option_is_set(OPTION::GET_OUT_OF_IRONS_IN_AUTO))) {
+            clear_in_irons();
+            return ;
+        }
+   }
 
-       // we want the boat to rotate so relax the sails
-       // to prevent them acting as a weather vane
-       relax_sails();
-       // set the rudder for in irons steering output
-       in_irons_rudder = in_irons_rotate_sign * Sailboat::in_irons_rudder_percent;
-       is_in_irons = true;
-       gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: In Irons rotate onto %s",
-          (in_irons_rotate_sign == Sailboat::rotate_clockwise)? "port":"stbd");
-   };
+   const float wind_dir_apparent = 
+       degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
 
-   auto going_backwards = []()-> bool{
-      float speed;
-      // return false if we don't have a valid speed (e.g no gps fix)
-      if (!rover.g2.attitude_control.get_forward_speed(speed)) {
-         return false;
-      }
-      return speed < -0.01f;
-   };
+     // Already "in irons" or not?
+     if (!_in_irons.state) {
 
-   // only pure sailboats get into irons
-   auto cannot_motorsail = [this]()-> bool {
-      return this->motor_state == UseMotor::USE_MOTOR_NEVER;
-   };
+        // check conditions to enter "in irons limbo"
 
-   const float wind_dir_apparent = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
-
-   // headed if in the no go region
-   auto headed = [=]()-> bool{
-      return abs(wind_dir_apparent) < sail_no_go;
-   };
-
-   // Already "in irons" or not?
-     if (!is_in_irons){
-      // not currently in irons, check conditions to enter "in irons limbo"
-      if (cannot_motorsail() && going_backwards() && headed()){
-         // in_irons_limbo_start_ms == 0  means not yet "in irons limbo"
-         if (in_irons_start_ms == 0){
-            // start "in irons limbo"
-            in_irons_start_ms = millis();
-         } else {
-            // we have been in the "in irons limbo" period for a while
-            if ((millis() - in_irons_start_ms) >= IN_IRONS_LIMBO_MS){
-               // OK, long enough
-               set_in_irons();
+        // being blown backwards by the wind
+        bool  going_backwards = false;
+        {
+            float speed;
+            // only useful if we have a valid speed (e.g fails if no gps fix)
+            if (rover.g2.attitude_control.get_forward_speed(speed)) {
+                going_backwards = is_negative(speed);
             }
-         }
-      } else { // not going backwards (anymore), so reset limbo timer.
-          in_irons_start_ms = 0;
+        }
+
+        // only pure sailboats get into irons
+        const bool cannot_motorsail = this->motor_state == UseMotor::USE_MOTOR_NEVER;
+
+        // only in irons if can't get power from sails
+        const bool headed = abs(wind_dir_apparent) < sail_no_go;
+
+        if (cannot_motorsail && going_backwards && headed) {
+            // in_irons_limbo_start_ms == 0  means not yet "in irons limbo"
+            if (_in_irons.start_ms == 0) {
+                // start "in irons limbo"
+                _in_irons.start_ms = millis();
+            } else {
+                   // signs of signal to the rudder to rotate required direction
+                   constexpr int rotate_clockwise = -1;
+                   constexpr int rotate_anticlockwise = 1;
+
+                // we have been in the "in irons limbo" period for a while
+                if ((millis() - _in_irons.start_ms) >= IN_IRONS_LIMBO_MS) {
+
+                    // OK, long enough
+
+                    // fix the desired heading while in irons
+                    _in_irons.heading_rad =
+                        (currently_tacking)
+                            ? tack_heading_rad
+                            : radians(rover.g2.wp_nav.oa_wp_bearing_cd() * 0.01)
+                    ;
+
+                    // calculate which way to set the rudders to rotate the boat
+                    // towards desired heading as it is being blown backwards
+                    const int in_irons_rotate_sign =
+                        (wrap_PI(_in_irons.heading_rad - rover.ahrs.get_yaw()) >= 0.0f)
+                            ? rotate_clockwise
+                            : rotate_anticlockwise
+                    ;
+
+                    // we want the boat to rotate so relax the sails
+                    // to prevent them acting as a weather vane
+                    relax_sails();
+
+                    // set the rudder for in irons steering output
+                    // gain is the amount of full rudder to apply in irons between 0 and 1
+                    // too much gain can stall the rudder and delay getting out of irons
+                    constexpr float in_irons_rudder_gain = 2.0f/3.0f;
+
+                    _in_irons.rudder = in_irons_rotate_sign * in_irons_rudder_gain;
+                    _in_irons.state = true;
+                    gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: In Irons rotate onto %s",
+                    (in_irons_rotate_sign == rotate_clockwise)? "port":"stbd");
+                }
+            }
+        } else { // not going backwards (anymore), so reset limbo timer.
+            _in_irons.start_ms = 0;
       }
    } else {
-      // currently "in irons". Has boat rotated enough to
+      // currently "in irons".
+      // Has boat rotated enough to
       // be able to sheet in, fill sails and Go?
-      if (abs(wind_dir_apparent) > sail_no_go){
-         in_irons_start_ms = 0;
-         is_in_irons = false;
+      if (abs(wind_dir_apparent) > sail_no_go) {
+         _in_irons.start_ms = 0;
+         _in_irons.state = false;
          gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Out of Irons");
       }
    }
-   return is_in_irons ;
+}
+
+bool Sailboat::in_irons() const
+{
+    return _in_irons.state == true;
 }
 
 void Sailboat::clear_in_irons()
 {
-    in_irons_start_ms = 0;
-    is_in_irons = false;
+    _in_irons.start_ms = 0;
+    _in_irons.state = false;
 }
-
-bool Sailboat::separate_mainsail_rcin_channel() const
-{
-    return (channel_mainsail !=nullptr) &&
-       (channel_mainsail != rover.channel_throttle);
-}
-
-bool Sailboat::get_out_of_in_irons_in_auto_enabled() const
-{
-   return separate_mainsail_rcin_channel()
-       && (options & getOutOfInIronsInAutoMask) != 0U;
-}
-
-

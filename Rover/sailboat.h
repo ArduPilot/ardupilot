@@ -20,11 +20,20 @@ class Sailboat
 {
 public:
 
+    enum class OPTION : uint32_t {
+        GET_OUT_OF_IRONS_IN_AUTO =  (1U << 0U)
+    };
+
+    bool option_is_set(OPTION option)const
+    {
+      return (static_cast<uint32_t>(options.get()) & static_cast<uint32_t>(option)) != 0U;
+    }
+
     // constructor
     Sailboat();
 
     // enabled
-    bool sail_enabled() const { return enable > 0;}
+    bool sail_enabled() const { return enable > 0; }
 
     // true if sailboat navigation (aka tacking) is enabled
     bool tack_enabled() const;
@@ -57,7 +66,7 @@ public:
     bool tacking() const;
 
     // returns true if sailboat should take a indirect navigation route to go upwind
-    bool use_indirect_route(float desired_heading_cd) const;
+    bool use_indirect_route(float desired_heading_cd);
 
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
@@ -89,24 +98,21 @@ public:
     // by feathering or sheeting right out
     void relax_sails();
 
-    // state machine. the state is updated at each call
-    // return true if sailboat is stuck "in irons"
-    bool in_irons();
+    // Updates sailboat stuck "in irons" state
+    void update_in_irons();
+
+    // return true if sailboat is in irons
+    bool in_irons() const;
 
     // return the rudder to set to get out of irons
     // between -1 and 1
-    float get_in_irons_rudder() const { return in_irons_rudder;}
+    float get_in_irons_rudder() const { return _in_irons.rudder; }
 
     // call this function only when changing modes to reset the in_irons
     // Usually in_irons will clear itself by getting out of irons
     // Can be called whether sailboat is in_irons or not
     void clear_in_irons();
 
-    // is get out of in irons in auto mode enabled?
-    bool get_out_of_in_irons_in_auto_enabled() const;
-
-    // is mainsail on a separate rc in channel?
-    bool separate_mainsail_rcin_channel() const;
 private:
 
     // true if motor is on to assist with slow tack
@@ -135,18 +141,16 @@ private:
     uint32_t tack_clear_ms;         // system time when tack was cleared
     bool tack_assist;               // true if we should use some throttle to assist tack
     UseMotor motor_state;           // current state of motor output
-    // in irons variables ---
-    static constexpr int rotate_clockwise = -1;
-    static constexpr int rotate_anticlockwise = 1;
-    // the percentage of full rudder to apply in irons
-    // too much can stall the rudder and delay getting out of irons
-    static constexpr float in_irons_rudder_percent = 2.0f/3.0f;
-    // system time when in_irons started
-    uint32_t in_irons_start_ms = 0U;
-    // in irons state flag. Dont set directly
-    bool is_in_irons           = false;
-    // value between -1 and 1 to send to steering when in irons
-    float in_irons_rudder = 0.0f;
-     // target heading in radians when in irons
-    float in_irons_heading_rad;
+
+    // in irons state variables. Dont set directly
+    struct{
+        // system time when in_irons started
+        uint32_t start_ms;
+        // in irons state flag. 
+        bool state;
+        // value between -1 and 1 to send to steering when in irons
+        float rudder;
+        // target heading in radians when in irons
+        float heading_rad;
+    } _in_irons;
 };

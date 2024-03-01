@@ -15,6 +15,7 @@ Mode::Mode() :
 
 void Mode::exit()
 {
+     g2.sailboat.clear_in_irons();
     // call sub-classes exit
     _exit();
 }
@@ -414,14 +415,15 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 // this function updates _distance_to_destination
 void Mode::navigate_to_waypoint()
 {
-    if ( g2.sailboat.in_irons()){
-       // set rudder output to turn the boat in required direction
-       // rudder_percent ( 0.0f to 1.0f) sets the rudder angle used to turn the boat
-       // as it is blown backwards. Too much rudder angle can stall the rudders
-       // and slow the process of getting out of irons
+     // update in irons state
+    g2.sailboat.update_in_irons();
+    
+    if (g2.sailboat.in_irons()){
+       // set sailboat in irons rudder output to turn the boat in required direction
        g2.motors.set_steering(g2.sailboat.get_in_irons_rudder() * 4500.0f,false);
        return;
     }
+
     // apply speed nudge from pilot
     // calc_speed_nudge's "desired_speed" argument should be negative when vehicle is reversing
     // AR_WPNav nudge_speed_max argu,ent should always be positive even when reversing

@@ -40,7 +40,6 @@ void ModeAuto::_exit()
     if (mission.state() == AP_Mission::MISSION_RUNNING) {
         mission.stop();
     }
-    g2.sailboat.clear_in_irons();
 }
 
 void ModeAuto::update()
