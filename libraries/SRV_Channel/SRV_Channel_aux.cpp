@@ -49,6 +49,7 @@ void SRV_Channel::output_ch(void)
         passthrough_mapped = true;
         break;
     }
+    #if AP_RC_CHANNEL_ENABLED
     if (passthrough_from != -1) {
         // we are doing passthrough from input to output for this channel
         RC_Channel *c = rc().channel(passthrough_from);
@@ -94,6 +95,10 @@ void SRV_Channel::output_ch(void)
             }
         }
     }
+    #else 
+        UNUSED_LOCAL(passthrough_from);
+        UNUSED_LOCAL(passthrough_mapped);
+    #endif
 #endif // HAL_BUILD_AP_PERIPH
 
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {

@@ -40,6 +40,9 @@
 #define UNUSED_PRIVATE_MEMBER
 #endif
 
+// for local vars that are unused in some builds
+#define UNUSED_LOCAL(x) ((void)(x))
+
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 

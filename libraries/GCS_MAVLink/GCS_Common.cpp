@@ -2002,19 +2002,24 @@ bool GCS_MAVLINK::sending_mavlink1() const
     return ((_channel_status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
 }
 
-#if AP_RC_CHANNEL_ENABLED
 /*
   send RC_CHANNELS messages
  */
 void GCS_MAVLINK::send_rc_channels() const
 {
     uint16_t values[18] = {};
+#if AP_RC_CHANNEL_ENABLED
     rc().get_radio_in(values, ARRAY_SIZE(values));
+#endif
 
     mavlink_msg_rc_channels_send(
         chan,
         AP_HAL::millis(),
+#if AP_RC_CHANNEL_ENABLED
         RC_Channels::get_valid_channel_count(),
+#else 
+        0,
+#endif
         values[0],
         values[1],
         values[2],
@@ -2050,7 +2055,9 @@ void GCS_MAVLINK::send_rc_channels_raw() const
     }
 
     uint16_t values[8] = {};
+#if AP_RC_CHANNEL_ENABLED
     rc().get_radio_in(values, ARRAY_SIZE(values));
+#endif
 
     mavlink_msg_rc_channels_raw_send(
         chan,
@@ -2071,7 +2078,6 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 #endif
 );
 }
-#endif  // AP_RC_CHANNEL_ENABLED
 
 void GCS_MAVLINK::send_raw_imu()
 {
@@ -2899,12 +2905,12 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
-#if AP_RC_CHANNEL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int_t &packet)
 {
     if (packet.param2 > 2) {
         return MAV_RESULT_DENIED;
     }
+#if AP_RC_CHANNEL_ENABLED
     const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
     const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
     if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTriggerSource::MAVLINK)) {
@@ -2912,9 +2918,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int
         // about our return code here.
         return MAV_RESULT_FAILED;
     }
+#endif
     return MAV_RESULT_ACCEPTED;
 }
-#endif  // AP_RC_CHANNEL_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_int_t &packet)
 {
@@ -3363,7 +3369,6 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &p
 #endif
 }
 
-#if AP_RC_CHANNEL_ENABLED
 /*
   handle a R/C bind request (for spektrum)
  */
@@ -3372,12 +3377,13 @@ MAV_RESULT GCS_MAVLINK::handle_START_RX_PAIR(const mavlink_command_int_t &packet
     // initiate bind procedure. We accept the DSM type from either
     // param1 or param2 due to a past mixup with what parameter is the
     // right one
+#if AP_RC_CHANNEL_ENABLED
     if (!RC_Channels::receiver_bind(packet.param2>0?packet.param2:packet.param1)) {
         return MAV_RESULT_FAILED;
     }
+#endif
     return MAV_RESULT_ACCEPTED;
 }
-#endif  // AP_RC_CHANNEL_ENABLED
 
 uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
 {
@@ -3777,7 +3783,6 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 #endif
 }
 
-#if AP_RC_CHANNEL_ENABLED
 // allow override of RC channel values for complete GCS
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
@@ -3791,6 +3796,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
     mavlink_rc_channels_override_t packet;
     mavlink_msg_rc_channels_override_decode(&msg, &packet);
 
+#if AP_RC_CHANNEL_ENABLED
     const uint16_t override_data[] = {
         packet.chan1_raw,
         packet.chan2_raw,
@@ -3826,11 +3832,11 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
             RC_Channels::set_override(i, value, tnow);
         }
     }
-
+#endif // AP_RC_CHANNEL_ENABLED
+    
     gcs().sysid_myggcs_seen(tnow);
 
 }
-#endif  // AP_RC_CHANNEL_ENABLED
 
 #if AP_OPTICALFLOW_ENABLED
 void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
@@ -4118,11 +4124,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if AP_RC_CHANNEL_ENABLED
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
         handle_manual_control(msg);
         break;
-#endif
 
 #if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
@@ -4185,11 +4189,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if AP_RC_CHANNEL_ENABLED
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
         handle_rc_channels_override(msg);
         break;
-#endif
 
 #if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
@@ -5192,10 +5194,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return  MAV_RESULT_FAILED;
 #endif
 
-#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
-#endif
 
 #if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -5346,10 +5346,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_set_ekf_source_set(packet);
 #endif
 
-#if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_START_RX_PAIR:
         return handle_START_RX_PAIR(packet);
-#endif
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
     case MAV_CMD_STORAGE_FORMAT:
@@ -6093,7 +6091,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-#if AP_RC_CHANNEL_ENABLED
     case MSG_RC_CHANNELS:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_rc_channels();
@@ -6103,7 +6100,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_rc_channels_raw();
         break;
-#endif
+
 
     case MSG_RAW_IMU:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
@@ -6779,12 +6776,12 @@ uint64_t GCS_MAVLINK::capabilities() const
 }
 
 
-#if AP_RC_CHANNEL_ENABLED
 void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_t offset, const float scaler, const uint32_t tnow, const bool reversed)
 {
     if (c == nullptr) {
         return;
     }
+#if AP_RC_CHANNEL_ENABLED
     int16_t override_value = 0;
     if (value_in != INT16_MAX) {
         const int16_t radio_min = c->get_radio_min();
@@ -6795,7 +6792,9 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     }
     c->set_override(override_value, tnow);
+#endif
 }
+
 
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
@@ -6818,7 +6817,6 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     // from the ground station for failsafe purposes
     gcs().sysid_myggcs_seen(tnow);
 }
-#endif  // AP_RC_CHANNEL_ENABLED
 
 #if AP_RSSI_ENABLED
 uint8_t GCS_MAVLINK::receiver_rssi() const

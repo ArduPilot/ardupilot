@@ -185,10 +185,12 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
     uint8_t len = 0;
     uint8_t buf2[sizeof(buf)*2+1];
 
+#if AP_RC_CHANNEL_ENABLED
     if (rc().option_is_enabled(RC_Channels::Option::FPORT_PAD)) {
         // this padding helps on some uarts that have hw pullups
         buf2[len++] = 0xff;
     }
+#endif
 
     for (uint8_t i=0; i<sizeof(buf); i++) {
         uint8_t c = buf[i];
