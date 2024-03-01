@@ -20,6 +20,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_TOPOTEK_UPDATE_INTERVAL_MS 100                 // resend angle or rate targets to gimbal at this interval
 #define AP_MOUNT_TOPOTEK_HEALTH_TIMEOUT_MS  1000                // timeout for health and rangefinder readings
 
+
 #define AP_MOUNT_TOPOTEK_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_TOPOTEK_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Topotek: " fmt, ## args); } } while (0)
 
@@ -94,6 +95,7 @@ void AP_Mount_Topotek::update()
             // request memory card information within the specified time
             request_gimbal_sdcard_info();
 
+
             // if trace mode is enabled, trace status information is requested within a specified period of time
             if (_is_tracking) {
                 request_track_status();
@@ -109,6 +111,7 @@ void AP_Mount_Topotek::update()
         }
         _last_req_count++;
     }
+
 
     // update based on mount mode
     switch (get_mode()) {
@@ -193,6 +196,7 @@ bool AP_Mount_Topotek::healthy() const
 {
     // exit immediately if not initialised
     if (!_initialised) {
+
         return false;
     }
 
@@ -219,6 +223,7 @@ bool AP_Mount_Topotek::take_picture()
         return false;
     }
 
+
     return send_packet(_take_pic, 12);
 }
 
@@ -236,6 +241,7 @@ bool AP_Mount_Topotek::record_video(bool start_recording)
     // exit immediately if the memory card is abnormal
     if (!_sdcard_status) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s sd card error", send_message_prefix);
+
         return false;
     }
 
@@ -248,6 +254,7 @@ bool AP_Mount_Topotek::record_video(bool start_recording)
     }
 
     return send_packet(_start_record_video, 12);
+
 }
 
 // set zoom specified as a rate
@@ -276,6 +283,7 @@ bool AP_Mount_Topotek::set_zoom(ZoomType zoom_type, float zoom_value)
         if (_zoom_cmd[11] == '0') {
             _last_zoom_stop = true;
         }
+
 
         return send_packet(_zoom_cmd, 12);
     }
@@ -310,6 +318,7 @@ SetFocusResult AP_Mount_Topotek::set_focus(FocusType focus_type, float focus_val
             _last_focus_stop = true;
         }
 
+
         if (send_packet(_focus_cmd, 12)) {
             // manual focus
             _focus_cmd[10] = '1';
@@ -337,6 +346,7 @@ SetFocusResult AP_Mount_Topotek::set_focus(FocusType focus_type, float focus_val
     return SetFocusResult::INVALID_PARAMETERS;
 }
 
+
 // set tracking to none, point or rectangle (see TrackingType enum)
 // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
 // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
@@ -347,10 +357,12 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
         return false;
     }
 
+
     switch (tracking_type) {
     case TrackingType::TRK_NONE:
         _is_tracking = false;
         return send_packet(_stop_track_cmd, 12);
+
     case TrackingType::TRK_POINT: {
         // the converted tracking center
         int16_t track_center_x = (int16_t)((p1.x*TRACK_TOTAL_WIDTH - 960) /  0.96);
@@ -459,6 +471,7 @@ bool AP_Mount_Topotek::set_lens(uint8_t lens)
         return (send_packet(_next_pip_mode, 12));
     }
     return false;
+
 }
 
 // send camera information message to GCS
@@ -641,6 +654,7 @@ void AP_Mount_Topotek::send_rate_target(float roll_rads, float pitch_rads, float
 
     // keep the speed within a reasonable range.
     uint8_t roll_angle_speed;
+
     if (roll_rads >= 0) {
         roll_angle_speed = RAD_TO_DEG*roll_rads*ANGULAR_VELOCITY_CONVERSION> 99 ? 99 : (uint8_t)(RAD_TO_DEG*roll_rads*ANGULAR_VELOCITY_CONVERSION);
     } else {
@@ -761,7 +775,6 @@ void AP_Mount_Topotek::gimbal_sdcard_analyse(void)
         return;
     }
     _sdcard_status = true;
-
 #if AP_RTC_ENABLED
     // send UTC time to the camera
      if (_sent_time_count < 2) {
@@ -771,6 +784,7 @@ void AP_Mount_Topotek::gimbal_sdcard_analyse(void)
         }
     }
 #endif
+
 
     return;
 }
