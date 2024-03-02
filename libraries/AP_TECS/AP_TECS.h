@@ -52,7 +52,8 @@ public:
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor);
+                               float load_factor,
+                               float pitch_trim_deg);
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
@@ -455,7 +456,7 @@ private:
     void _update_throttle_with_airspeed(void);
 
     // Update Demanded Throttle Non-Airspeed
-    void _update_throttle_without_airspeed(int16_t throttle_nudge);
+    void _update_throttle_without_airspeed(int16_t throttle_nudge, float pitch_trim_deg);
 
     // get integral gain which is flight_stage dependent
     float _get_i_gain(void);
