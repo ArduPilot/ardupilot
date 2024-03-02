@@ -16,6 +16,10 @@
 #define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
+#ifndef AP_PERIPH_MAG_HIRES
+#define AP_PERIPH_MAG_HIRES 0
+#endif
+
 /*
   update CAN magnetometer
  */
@@ -54,14 +58,16 @@ void AP_Periph_FW::can_mag_update(void)
     }
 
     last_mag_update_ms = compass.last_update_ms();
-    const Vector3f &field = compass.get_field();
+    Vector3f field_Ga = compass.get_field() * 0.001;
+
+#if !AP_PERIPH_MAG_HIRES
+    // normal message, float16 values
     uavcan_equipment_ahrs_MagneticFieldStrength pkt {};
 
-    // the canard dsdl compiler doesn't understand float16
     for (uint8_t i=0; i<3; i++) {
-        pkt.magnetic_field_ga[i] = field[i] * 0.001;
+        pkt.magnetic_field_ga[i] = field_Ga[i];
     }
-
+    
     uint8_t buffer[UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH_MAX_SIZE] {};
     uint16_t total_size = uavcan_equipment_ahrs_MagneticFieldStrength_encode(&pkt, buffer, !periph.canfdout());
 
@@ -70,6 +76,23 @@ void AP_Periph_FW::can_mag_update(void)
                     CANARD_TRANSFER_PRIORITY_LOW,
                     &buffer[0],
                     total_size);
+#else
+    // High resolution magnetometer, for magnetic surveys
+    dronecan_sensors_magnetometer_MagneticFieldStrengthHiRes pkt {};
+
+    for (uint8_t i=0; i<3; i++) {
+        pkt.magnetic_field_ga[i] = field_Ga[i];
+    }
+    
+    uint8_t buffer[DRONECAN_SENSORS_MAGNETOMETER_MAGNETICFIELDSTRENGTHHIRES_MAX_SIZE] {};
+    uint16_t total_size = dronecan_sensors_magnetometer_MagneticFieldStrengthHiRes_encode(&pkt, buffer, !periph.canfdout());
+
+    canard_broadcast(DRONECAN_SENSORS_MAGNETOMETER_MAGNETICFIELDSTRENGTHHIRES_SIGNATURE,
+                     DRONECAN_SENSORS_MAGNETOMETER_MAGNETICFIELDSTRENGTHHIRES_ID,
+                     CANARD_TRANSFER_PRIORITY_LOW,
+                     &buffer[0],
+                     total_size);
+#endif // AP_PERIPH_MAG_HIRES
 }
 
 #endif // HAL_PERIPH_ENABLE_MAG
