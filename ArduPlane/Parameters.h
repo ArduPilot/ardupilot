@@ -436,7 +436,6 @@ public:
     AP_Int16 dspoiler_rud_rate;
     AP_Int32 log_bitmask;
     AP_Float RTL_altitude;
-    AP_Float pitch_trim;
     AP_Float cruise_alt_floor;
 
     AP_Int8 flap_1_percent;

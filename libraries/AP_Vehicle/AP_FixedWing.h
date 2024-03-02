@@ -24,6 +24,7 @@ struct AP_FixedWing {
     AP_Int8  stall_prevention;
     AP_Int16 loiter_radius;
     AP_Float takeoff_throttle_max_t;
+    AP_Float pitch_trim;
 
     struct Rangefinder_State {
         bool in_range:1;

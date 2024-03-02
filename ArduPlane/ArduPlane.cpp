@@ -924,7 +924,7 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
     pitch = ahrs.get_pitch();
     roll = ahrs.get_roll();
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
-        pitch -= g.pitch_trim * DEG_TO_RAD;
+        pitch -= aparm.pitch_trim * DEG_TO_RAD;
     }
 }
 

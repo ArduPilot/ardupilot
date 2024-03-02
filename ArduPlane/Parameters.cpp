@@ -650,7 +650,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: deg
     // @Range: -45 45
     // @User: Standard
-    GSCALAR(pitch_trim,             "PTCH_TRIM_DEG",  0.0f),
+    ASCALAR(pitch_trim,             "PTCH_TRIM_DEG",  0.0f),
 
     // @Param: RTL_ALTITUDE
     // @DisplayName: RTL altitude
@@ -1497,7 +1497,7 @@ void Plane::load_parameters(void)
   
     // PARAMETER_CONVERSION - Added: Dec 2023
     // Convert _CM (centimeter) parameters to meters and _CD (centidegrees) parameters to meters
-    g.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
+    aparm.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
     aparm.airspeed_cruise.convert_centi_parameter(AP_PARAM_INT32);
     aparm.min_groundspeed.convert_centi_parameter(AP_PARAM_INT32);
     g.RTL_altitude.convert_centi_parameter(AP_PARAM_INT32);
