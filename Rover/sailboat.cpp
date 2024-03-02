@@ -107,7 +107,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @DisplayName: Sailboat options
     // @Description: Sailboat setup option bits only available for separate mainsail RC channel.
     // @Bitmask: 0: Detect and get out of "in Irons" in AUTO mode
-     AP_GROUPINFO("OPTIONS", 10, Sailboat, options, 0),
+    AP_GROUPINFO("OPTIONS", 10, Sailboat, options, 0),
 
     AP_GROUPEND
 };
@@ -184,11 +184,11 @@ void Sailboat::set_pilot_desired_mainsail()
 {
     // no RC input means mainsail is moved to trim
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
-       relax_sails();
+        relax_sails();
     } else {
-       rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f));
-       rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
-       rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
+        rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->get_control_in(), 0.0, 100.0));
+        rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->get_control_in(), -100.0, 100.0));
+        rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->get_control_in(), -100.0, 100.0));
     }
 }
 
@@ -197,18 +197,18 @@ void Sailboat::set_pilot_desired_mainsail()
 void Sailboat::set_auto_mainsail(float desired_speed)
 {
     // use PID controller to sheet out, this number is expected approximately in the 0 to 100 range (with default PIDs)
-    const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
+    const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0;
 
     // get apparent wind, + is wind over starboard side, - is wind over port side
     const float wind_dir_apparent = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
     const float wind_dir_apparent_abs = fabsf(wind_dir_apparent);
-    const float wind_dir_apparent_sign = is_negative(wind_dir_apparent) ? -1.0f : 1.0f;
+    const float wind_dir_apparent_sign = is_negative(wind_dir_apparent) ? -1.0 : 1.0;
 
     //
     // mainsail control.
     //
     // mainsail_out represents a range from 0 to 100
-    float mainsail_out = 100.0f;
+    float mainsail_out = 100.0;
     // main sails cannot be used to reverse
     if (is_positive(desired_speed)) {
         // Sails are sheeted the same on each side use abs wind direction
@@ -217,9 +217,9 @@ void Sailboat::set_auto_mainsail(float desired_speed)
             constrain_float(wind_dir_apparent_abs - sail_angle_ideal,sail_angle_min, sail_angle_max);
 
         // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
-        const float mainsail_base = linear_interpolate(0.0f, 100.0f, mainsail_angle,sail_angle_min,sail_angle_max);
+        const float mainsail_base = linear_interpolate(0.0, 100.0, mainsail_angle,sail_angle_min,sail_angle_max);
 
-        mainsail_out = constrain_float((mainsail_base + pid_offset), 0.0f ,100.0f);
+        mainsail_out = constrain_float((mainsail_base + pid_offset), 0.0,100.0);
     }
     rover.g2.motors.set_mainsail(mainsail_out);
     //
@@ -227,25 +227,25 @@ void Sailboat::set_auto_mainsail(float desired_speed)
     // wing sails auto trim, we only need to reduce power if we are tipping over, must also be trimmed for correct tack
     // dont allow to reduce power to less than 0, ie not backwinding the sail to self-right
     // wing sails can be used to go backwards, probably not recommended though
-    const float wing_sail_out_sign = is_negative(desired_speed) ? -1.0f : 1.0f;
-    const float wingsail_out = (100.0f - MIN(pid_offset,100.0f)) * wind_dir_apparent_sign * wing_sail_out_sign;
+    const float wing_sail_out_sign = is_negative(desired_speed) ? -1.0 : 1.0;
+    const float wingsail_out = (100.0 - MIN(pid_offset,100.0)) * wind_dir_apparent_sign * wing_sail_out_sign;
     rover.g2.motors.set_wingsail(wingsail_out);
     //
     // direct mast rotation control
     //
-    float mast_rotation_out = 0.0f;
+    float mast_rotation_out = 0.0;
     if (is_positive(desired_speed)) {
         // rotating sails can be used to reverse, but not in this version
         if (wind_dir_apparent_abs < sail_angle_ideal) {
             // in irons, center the sail.
-            mast_rotation_out = 0.0f;
+            mast_rotation_out = 0.0;
         } else {
             float mast_rotation_angle;
-            if (wind_dir_apparent_abs < (90.0f + sail_angle_ideal)) {
+            if (wind_dir_apparent_abs < (90.0 + sail_angle_ideal)) {
                 // use sail as a lift device, at ideal angle of attack, but depower to prevent excessive heel
                 // multiply pid_offset by 0.01 to keep the scaling in the same range as the other sail outputs
                 // this means the default PIDs should apply reasonably well to all sail types
-                mast_rotation_angle = wind_dir_apparent_abs - sail_angle_ideal * MAX(1.0f - pid_offset*0.01f,0.0f);
+                mast_rotation_angle = wind_dir_apparent_abs - sail_angle_ideal * MAX(1.0 - pid_offset * 0.01, 0.0);
 
                 // restore sign
                 mast_rotation_angle *= wind_dir_apparent_sign;
@@ -253,11 +253,11 @@ void Sailboat::set_auto_mainsail(float desired_speed)
             } else {
                 // use sail as drag device, but avoid wagging the sail as the wind oscillates
                 // between 180 and -180 degrees
-                mast_rotation_angle = 90.0f;
-                if (wind_dir_apparent_abs > 135.0f) {
+                mast_rotation_angle = 90.0;
+                if (wind_dir_apparent_abs > 135.0) {
                     // wind is almost directly behind, keep wing on current tack
                     if (is_negative(SRV_Channels::get_output_scaled(SRV_Channel::k_mast_rotation))) {
-                        mast_rotation_angle *= -1.0f;
+                        mast_rotation_angle *= -1.0;
                     }
                 } else {
                     // set the wing on the correct tack, so that is can be sheeted in if required
@@ -265,7 +265,7 @@ void Sailboat::set_auto_mainsail(float desired_speed)
                 }
             }
             // linear interpolate servo displacement (-100 to 100) from mast rotation angle and restore sign
-            mast_rotation_out = linear_interpolate(-100.0f, 100.0f, mast_rotation_angle, -sail_angle_max, sail_angle_max);
+            mast_rotation_out = linear_interpolate(-100.0, 100.0, mast_rotation_angle, -sail_angle_max, sail_angle_max);
         }
     }
     rover.g2.motors.set_mast_rotation(mast_rotation_out);
@@ -273,9 +273,9 @@ void Sailboat::set_auto_mainsail(float desired_speed)
 
 void Sailboat::relax_sails()
 {
-    rover.g2.motors.set_mainsail(100.0f);
-    rover.g2.motors.set_wingsail(0.0f);
-    rover.g2.motors.set_mast_rotation(0.0f);
+    rover.g2.motors.set_mainsail(100.0);
+    rover.g2.motors.set_wingsail(0.0);
+    rover.g2.motors.set_mast_rotation(0.0);
 }
 
 // calculate throttle and mainsail angle required to attain desired speed (in m/s)
@@ -283,28 +283,28 @@ void Sailboat::get_throttle_and_set_mainsail(float desired_speed, float &throttl
 {
     if (!sail_enabled()) {
         relax_sails();
-        throttle_out = 0.0f;
+        throttle_out = 0.0;
         return;
     }
 
-    if ( in_irons()){
-       throttle_out = 0.0f;
-       return;
+    if ( in_irons()) {
+        throttle_out = 0.0;
+        return;
     }
 
     // run speed controller if motor is forced on or motor assistance is required for low speeds or tacking
     if ((motor_state == UseMotor::USE_MOTOR_ALWAYS) ||
-         motor_assist_tack() ||
-         motor_assist_low_wind()) {
+        motor_assist_tack() ||
+        motor_assist_low_wind()) {
         // run speed controller - duplicate of calls found in mode::calc_throttle();
-        throttle_out = 100.0f * rover.g2.attitude_control.get_throttle_out_speed(desired_speed,
-                                                                        rover.g2.motors.limit.throttle_lower,
-                                                                        rover.g2.motors.limit.throttle_upper,
-                                                                        rover.g.speed_cruise,
-                                                                        rover.g.throttle_cruise * 0.01f,
-                                                                        rover.G_Dt);
+        throttle_out = 100.0 * rover.g2.attitude_control.get_throttle_out_speed(desired_speed,
+                       rover.g2.motors.limit.throttle_lower,
+                       rover.g2.motors.limit.throttle_upper,
+                       rover.g.speed_cruise,
+                       rover.g.throttle_cruise * 0.01,
+                       rover.G_Dt);
     } else {
-        throttle_out = 0.0f;
+        throttle_out = 0.0;
     }
 
     if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {
@@ -322,7 +322,7 @@ float Sailboat::get_VMG() const
     // return zero if we don't have a valid speed
     float speed;
     if (!rover.g2.attitude_control.get_forward_speed(speed)) {
-        return 0.0f;
+        return 0.0;
     }
 
     // return speed if not heading towards a waypoint
@@ -330,7 +330,7 @@ float Sailboat::get_VMG() const
         return speed;
     }
 
-    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01f) - rover.ahrs.get_yaw())));
+    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01) - rover.ahrs.get_yaw())));
 }
 
 // handle user initiated tack while in acro mode
@@ -341,7 +341,7 @@ void Sailboat::handle_tack_request_acro()
     }
     // set tacking heading target to the current angle relative to the true wind but on the new tack
     currently_tacking = true;
-    tack_heading_rad = wrap_2PI(rover.ahrs.get_yaw() + 2.0f * wrap_PI((rover.g2.windvane.get_true_wind_direction_rad() - rover.ahrs.get_yaw())));
+    tack_heading_rad = wrap_2PI(rover.ahrs.get_yaw() + 2.0 * wrap_PI((rover.g2.windvane.get_true_wind_direction_rad() - rover.ahrs.get_yaw())));
 
     tack_request_ms = AP_HAL::millis();
 }
@@ -350,7 +350,7 @@ void Sailboat::handle_tack_request_acro()
 float Sailboat::get_tack_heading_rad()
 {
     if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.get_yaw())) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
-       ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+        ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
         clear_tack();
     }
 
@@ -387,7 +387,6 @@ bool Sailboat::tacking() const
 // desired_heading should be in centi-degrees
 bool Sailboat::use_indirect_route(float desired_heading_cd) const
 {
-   
     if (!tack_enabled()) {
         return false;
     }
@@ -398,12 +397,12 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
     }
 
     // convert desired heading to radians
-    const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
+    const float desired_heading_rad = radians(desired_heading_cd * 0.01);
 
     // check if desired heading is in the no go zone, if it is we can't go direct
     // pad no go zone, this allows use of heading controller rather than L1 when close to the wind
-    return fabsf(wrap_PI(rover.g2.windvane.get_true_wind_direction_rad() - desired_heading_rad)) <= 
-         radians(sail_no_go + SAILBOAT_NOGO_PAD);
+    return fabsf(wrap_PI(rover.g2.windvane.get_true_wind_direction_rad() - desired_heading_rad)) <=
+           radians(sail_no_go + SAILBOAT_NOGO_PAD);
 }
 
 // if we can't sail on the desired heading then we should pick the best heading that we can sail on
@@ -413,7 +412,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
     if (in_irons()) {
         // in irons dont change the best heading,
         // keep slowly rotating in one direction
-        return degrees(_in_irons.heading_rad) * 100.0f ;
+        return degrees(_in_irons.heading_rad) * 100.0 ;
     }
 
     if (!tack_enabled()) {
@@ -425,7 +424,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
     const AP_WindVane::Sailboat_Tack current_tack = rover.g2.windvane.get_current_tack();
 
     // convert desired heading to radians
-    const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
+    const float desired_heading_rad = radians(desired_heading_cd * 0.01);
 
     // if the desired heading is outside the no go zone there is no need to change it
     // this allows use of heading controller rather than L1 when desired
@@ -491,14 +490,14 @@ float Sailboat::calc_heading(float desired_heading_cd)
         const char* tack_text[] = {"port","stbd"};
         int tack_idx = 0;
         switch (current_tack) {
-            case AP_WindVane::Sailboat_Tack::TACK_PORT:
-                tack_heading_rad = right_no_go_heading_rad;
-                tack_idx = 1;
-                break;
-            case AP_WindVane::Sailboat_Tack::TACK_STARBOARD:
-                tack_heading_rad = left_no_go_heading_rad;
-                tack_idx = 0;
-                break;
+        case AP_WindVane::Sailboat_Tack::TACK_PORT:
+            tack_heading_rad = right_no_go_heading_rad;
+            tack_idx = 1;
+            break;
+        case AP_WindVane::Sailboat_Tack::TACK_STARBOARD:
+            tack_heading_rad = left_no_go_heading_rad;
+            tack_idx = 0;
+            break;
         }
         gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Tacking onto %s",tack_text[tack_idx]);
         currently_tacking = true;
@@ -512,7 +511,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
             clear_tack();
         } else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
             // tack has taken too long
-            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0 * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
                 // if we have throttle available use it for another two time periods to get the tack done
                 tack_assist = true;
             } else {
@@ -521,14 +520,14 @@ float Sailboat::calc_heading(float desired_heading_cd)
             }
         }
         // return tack target heading
-        return degrees(tack_heading_rad) * 100.0f;
+        return degrees(tack_heading_rad) * 100.0;
     }
 
     // return the correct heading for our current tack
     if (current_tack == AP_WindVane::Sailboat_Tack::TACK_PORT) {
-        return degrees(left_no_go_heading_rad) * 100.0f;
+        return degrees(left_no_go_heading_rad) * 100.0;
     } else {
-        return degrees(right_no_go_heading_rad) * 100.0f;
+        return degrees(right_no_go_heading_rad) * 100.0;
     }
 }
 
@@ -579,24 +578,24 @@ bool Sailboat::motor_assist_low_wind() const
 
 void Sailboat::update_in_irons()
 {
-   // only enabled for separate mainsail and options bit set
-   {
+    // only enabled for separate mainsail and options bit set
+    {
         const bool separate_mainsail_channel =
             (channel_mainsail !=nullptr) &&
             (channel_mainsail != rover.channel_throttle);
 
-        if (!(separate_mainsail_channel && 
-                option_is_set(OPTION::GET_OUT_OF_IRONS_IN_AUTO))) {
+        if (!(separate_mainsail_channel &&
+              option_is_set(OPTION::GET_OUT_OF_IRONS_IN_AUTO))) {
             clear_in_irons();
             return ;
         }
-   }
+    }
 
-   const float wind_dir_apparent = 
-       degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
+    const float wind_dir_apparent =
+        degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
 
-     // Already "in irons" or not?
-     if (!_in_irons.state) {
+    // Already "in irons" or not?
+    if (!_in_irons.state) {
 
         // check conditions to enter "in irons limbo"
 
@@ -622,9 +621,9 @@ void Sailboat::update_in_irons()
                 // start "in irons limbo"
                 _in_irons.start_ms = millis();
             } else {
-                   // signs of signal to the rudder to rotate required direction
-                   constexpr int rotate_clockwise = -1;
-                   constexpr int rotate_anticlockwise = 1;
+                // signs of signal to the rudder to rotate required direction
+                constexpr int rotate_clockwise = -1;
+                constexpr int rotate_anticlockwise = 1;
 
                 // we have been in the "in irons limbo" period for a while
                 if ((millis() - _in_irons.start_ms) >= IN_IRONS_LIMBO_MS) {
@@ -634,17 +633,17 @@ void Sailboat::update_in_irons()
                     // fix the desired heading while in irons
                     _in_irons.heading_rad =
                         (currently_tacking)
-                            ? tack_heading_rad
-                            : radians(rover.g2.wp_nav.oa_wp_bearing_cd() * 0.01)
-                    ;
+                        ? tack_heading_rad
+                        : radians(rover.g2.wp_nav.oa_wp_bearing_cd() * 0.01)
+                        ;
 
                     // calculate which way to set the rudders to rotate the boat
                     // towards desired heading as it is being blown backwards
                     const int in_irons_rotate_sign =
-                        (wrap_PI(_in_irons.heading_rad - rover.ahrs.get_yaw()) >= 0.0f)
-                            ? rotate_clockwise
-                            : rotate_anticlockwise
-                    ;
+                        (wrap_PI(_in_irons.heading_rad - rover.ahrs.get_yaw()) >= 0.0)
+                        ? rotate_clockwise
+                        : rotate_anticlockwise
+                        ;
 
                     // we want the boat to rotate so relax the sails
                     // to prevent them acting as a weather vane
@@ -653,27 +652,27 @@ void Sailboat::update_in_irons()
                     // set the rudder for in irons steering output
                     // gain is the amount of full rudder to apply in irons between 0 and 1
                     // too much gain can stall the rudder and delay getting out of irons
-                    constexpr float in_irons_rudder_gain = 2.0f/3.0f;
+                    constexpr float in_irons_rudder_gain = 2.0/3.0;
 
                     _in_irons.rudder = in_irons_rotate_sign * in_irons_rudder_gain;
                     _in_irons.state = true;
                     gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: In Irons rotate onto %s",
-                    (in_irons_rotate_sign == rotate_clockwise)? "port":"stbd");
+                                    (in_irons_rotate_sign == rotate_clockwise)? "port":"stbd");
                 }
             }
         } else { // not going backwards (anymore), so reset limbo timer.
             _in_irons.start_ms = 0;
-      }
-   } else {
-      // currently "in irons".
-      // Has boat rotated enough to
-      // be able to sheet in, fill sails and Go?
-      if (abs(wind_dir_apparent) > sail_no_go) {
-         _in_irons.start_ms = 0;
-         _in_irons.state = false;
-         gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Out of Irons");
-      }
-   }
+        }
+    } else {
+        // currently "in irons".
+        // Has boat rotated enough to
+        // be able to sheet in, fill sails and Go?
+        if (abs(wind_dir_apparent) > sail_no_go) {
+            _in_irons.start_ms = 0;
+            _in_irons.state = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Out of Irons");
+        }
+    }
 }
 
 bool Sailboat::in_irons() const

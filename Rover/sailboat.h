@@ -21,19 +21,22 @@ class Sailboat
 public:
 
     enum class OPTION : uint32_t {
-        GET_OUT_OF_IRONS_IN_AUTO =  (1U << 0U)
+        GET_OUT_OF_IRONS_IN_AUTO =  (1U << 0U),
     };
 
     bool option_is_set(OPTION option)const
     {
-      return (static_cast<uint32_t>(options.get()) & static_cast<uint32_t>(option)) != 0U;
+        return (static_cast<uint32_t>(options.get()) & static_cast<uint32_t>(option)) != 0U;
     }
 
     // constructor
     Sailboat();
 
     // enabled
-    bool sail_enabled() const { return enable > 0; }
+    bool sail_enabled() const
+    {
+        return enable > 0;
+    }
 
     // true if sailboat navigation (aka tacking) is enabled
     bool tack_enabled() const;
@@ -86,7 +89,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return sailboat loiter radius
-    float get_loiter_radius() const {return loit_radius;}
+    float get_loiter_radius() const
+    {
+        return loit_radius;
+    }
 
     // set mainsail according to pilot input
     void set_pilot_desired_mainsail();
@@ -106,7 +112,10 @@ public:
 
     // return the rudder to set to get out of irons
     // between -1 and 1
-    float get_in_irons_rudder() const { return _in_irons.rudder; }
+    float get_in_irons_rudder() const
+    {
+        return _in_irons.rudder;
+    }
 
     // call this function only when changing modes to reset the in_irons
     // Usually in_irons will clear itself by getting out of irons
@@ -143,10 +152,10 @@ private:
     UseMotor motor_state;           // current state of motor output
 
     // in irons state variables. Dont set directly
-    struct{
+    struct {
         // system time when in_irons started
         uint32_t start_ms;
-        // in irons state flag. 
+        // in irons state flag.
         bool state;
         // value between -1 and 1 to send to steering when in irons
         float rudder;

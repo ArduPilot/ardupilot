@@ -418,7 +418,7 @@ void Mode::navigate_to_waypoint()
      // update in irons state
     g2.sailboat.update_in_irons();
     
-    if (g2.sailboat.in_irons()){
+    if (g2.sailboat.in_irons()) {
        // set sailboat in irons rudder output to turn the boat in required direction
        g2.motors.set_steering(g2.sailboat.get_in_irons_rudder() * 4500.0f,false);
        return;
