@@ -853,7 +853,7 @@ float AP_TECS::_get_i_gain(void)
 /*
   calculate throttle, non-airspeed case
  */
-void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
+void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pitch_trim_deg)
 {
     // reset clip status after possible use of synthetic airspeed
     _thr_clip_status = clipStatus::NONE;
@@ -873,7 +873,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     _pitch_demand_lpf.apply(_pitch_dem, _DT);
     const float pitch_demand_hpf = _pitch_dem - _pitch_demand_lpf.get();
     _pitch_measured_lpf.apply(_ahrs.get_pitch(), _DT);
-    const float pitch_corrected_lpf = _pitch_measured_lpf.get();
+    const float pitch_corrected_lpf = _pitch_measured_lpf.get() - radians(pitch_trim_deg);
     const float pitch_blended = pitch_demand_hpf + pitch_corrected_lpf;
 
     if (pitch_blended > 0.0f && _PITCHmaxf > 0.0f)
@@ -1205,7 +1205,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
-                                    float load_factor)
+                                    float load_factor,
+                                    float pitch_trim_deg)
 {
     uint64_t now = AP_HAL::micros64();
     // check how long since we last did the 50Hz update; do nothing in
@@ -1379,7 +1380,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _use_synthetic_airspeed_once = false;
         _using_airspeed_for_throttle = true;
     } else {
-        _update_throttle_without_airspeed(throttle_nudge);
+        _update_throttle_without_airspeed(throttle_nudge, pitch_trim_deg);
         _using_airspeed_for_throttle = false;
     }
 
