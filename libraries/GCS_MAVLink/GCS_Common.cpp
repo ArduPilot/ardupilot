@@ -6500,11 +6500,13 @@ void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
 #if HAL_HIGH_LATENCY2_ENABLED
     if (!is_high_latency_link) {
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+        set_mavlink_message_id_interval(MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 1000);
     } else {
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HIGH_LATENCY2, 5000);
     }
 #else
     set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+    set_mavlink_message_id_interval(MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 1000);
 #endif
 }
 
