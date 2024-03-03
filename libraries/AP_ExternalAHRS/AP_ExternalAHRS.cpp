@@ -301,6 +301,7 @@ void AP_ExternalAHRS::update(void)
             state.have_origin = true;
         }
     }
+#if HAL_LOGGING_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     if (log_rate.get() > 0 && now_ms - last_log_ms >= uint32_t(1000U/log_rate.get())) {
         last_log_ms = now_ms;
@@ -334,6 +335,7 @@ void AP_ExternalAHRS::update(void)
                                     state.location.lat, state.location.lng, state.location.alt*0.01,
                                     filterStatus.value);
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 // Get model/type name
