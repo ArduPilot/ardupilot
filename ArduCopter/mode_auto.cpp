@@ -164,7 +164,8 @@ void ModeAuto::run()
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
-    if (auto_RTL && (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE))) {
+    const bool auto_rtl_active = mission.get_in_landing_sequence_flag() || mission.get_in_rejoin_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE;
+    if (auto_RTL && !auto_rtl_active) {
         auto_RTL = false;
         // log exit from Auto RTL
 #if HAL_LOGGING_ENABLED
@@ -766,6 +767,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
     case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_LAND_REJOIN:
         break;
 
     default:
@@ -972,6 +974,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
     case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_LAND_REJOIN:
         cmd_complete = true;
         break;
 
