@@ -869,6 +869,18 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
     next_WP_loc = new_loc;
     next_WP_loc.change_alt_frame(old_loc.get_alt_frame());
 
+#if HAL_QUADPLANE_ENABLED
+    if (control_mode == &mode_qland) {
+        /*
+          support precision landing controlled by lua in QLAND mode
+         */
+        Vector2f rel_origin;
+        if (new_loc.get_vector_xy_from_origin_NE(rel_origin)) {
+            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
+        }
+    }
+#endif
+
     return true;
 }
 
