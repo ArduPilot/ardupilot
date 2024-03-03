@@ -219,34 +219,78 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
 
     // Use stopping point as location for start of auto RTL
-    Vector3p stopping_point_NEU;
-    copter.pos_control->get_stopping_point_xy_cm(stopping_point_NEU.xy());
-    copter.pos_control->get_stopping_point_z_cm(stopping_point_NEU.z);
-    Location stopping_point { stopping_point_NEU.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
+    Location stopping_point = get_stopping_point();
+    if (!mission.jump_to_landing_sequence(stopping_point)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
+        return false;
+    }
 
-    if (mission.jump_to_landing_sequence(stopping_point)) {
-        mission.set_force_resume(true);
-        // if not already in auto switch to auto
-        if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
-            auto_RTL = true;
+    return enter_auto_rtl(reason);
+}
+
+// Rejoin mission after DO_LAND_REJOIN waypoint, if succeeds pretend to be Auto RTL mode
+bool ModeAuto::rejoin_landing_sequence_auto_RTL(ModeReason reason)
+{
+    // Use stopping point as location for start of auto RTL
+    Location stopping_point = get_stopping_point();
+    if (!mission.jump_to_closest_mission_leg(stopping_point)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No rejoin found");
+        return false;
+    }
+
+    return enter_auto_rtl(reason);
+}
+
+// Try rejoin else do land start
+bool ModeAuto::rejoin_or_jump_to_landing_sequence_auto_RTL(ModeReason reason)
+{
+    // Use stopping point as location for start of auto RTL
+    Location stopping_point = get_stopping_point();
+    if (!mission.jump_to_closest_mission_leg(stopping_point) && !mission.jump_to_landing_sequence(stopping_point)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No rejoin or landing sequence found");
+        return false;
+    }
+
+    return enter_auto_rtl(reason);
+}
+
+// Enter auto rtl pseudo mode
+bool ModeAuto::enter_auto_rtl(ModeReason reason) 
+{
+    mission.set_force_resume(true);
+
+    // if not already in auto switch to auto
+    if ((copter.flightmode == this) || set_mode(Mode::Number::AUTO, reason)) {
+        auto_RTL = true;
 #if HAL_LOGGING_ENABLED
-            // log entry into AUTO RTL
-            copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+        // log entry into AUTO RTL
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
 #endif
 
-            // make happy noise
-            if (copter.ap.initialised) {
-                AP_Notify::events.user_mode_change = 1;
-            }
-            return true;
+        // make happy noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change = 1;
         }
-        // mode change failed, revert force resume flag
-        mission.set_force_resume(false);
-
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
-    } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
+        return true;
     }
+
+    // mode change failed, revert force resume flag
+    mission.set_force_resume(false);
 
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
     // make sad noise
