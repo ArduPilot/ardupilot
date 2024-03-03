@@ -836,6 +836,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return MAV_RESULT_ACCEPTED;
 
 #if MODE_AUTO_ENABLED == ENABLED
+    case MAV_CMD_DO_RETURN_PATH_START:
+        if (copter.mode_auto.return_path_start_auto_RTL(ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
     case MAV_CMD_DO_LAND_START:
         if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
