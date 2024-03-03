@@ -1335,6 +1335,64 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.remove_installed_script(applet_script)
         self.reboot_sitl()
 
+    def PrecisionLanding(self):
+        '''VTOL precision landing'''
+        applet_script = "plane_precland.lua"
+
+        self.install_applet_script(applet_script)
+
+        target = mavutil.location(-27.27440414, 151.28984285, 342.8, 0)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SPEEDUP": 4,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+            "SIM_PLD_ENABLE":   1,
+            "SIM_PLD_LAT" : target.lat,
+            "SIM_PLD_LON" : target.lng,
+            "SIM_PLD_HEIGHT" : 0,
+            "SIM_PLD_ALT_LMT" : 50,
+            "SIM_PLD_DIST_LMT" : 30,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_PIN" : 0,
+            "RNGFND1_SCALING" : 12.2,
+            "RNGFND1_MAX_CM" : 5000,
+            "RNGFND_LANDING" : 1,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "PLND_ALT_CUTOFF" : 5,
+            })
+
+        self.scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.takeoff(60, 'GUIDED')
+        self.wait_altitude(58, 62, relative=True)
+        self.drain_mav()
+        self.change_mode("QRTL")
+
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+
+        self.wait_disarmed(timeout=180)
+        loc2 = self.mav.location()
+        error = self.get_distance(target, loc2)
+        self.progress("Target error %.1fm" % error)
+        if error > 2:
+            raise NotAchievedException("too far from target %.1fm" % error)
+
+        self.context_pop()
+        self.remove_installed_script(applet_script)
+        self.reboot_sitl()
+
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
         self.set_parameter("RC9_OPTION", 106)
@@ -1578,6 +1636,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.PrecisionLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
                 "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
                 "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
