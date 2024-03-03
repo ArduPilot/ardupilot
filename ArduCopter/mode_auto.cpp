@@ -216,7 +216,14 @@ bool ModeAuto::allows_weathervaning() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
-    if (mission.jump_to_landing_sequence()) {
+
+    // Use stopping point as location for start of auto RTL
+    Vector3p stopping_point_NEU;
+    copter.pos_control->get_stopping_point_xy_cm(stopping_point_NEU.xy());
+    copter.pos_control->get_stopping_point_z_cm(stopping_point_NEU.z);
+    Location stopping_point { stopping_point_NEU, Location::AltFrame::ABOVE_ORIGIN };
+
+    if (mission.jump_to_landing_sequence(stopping_point)) {
         mission.set_force_resume(true);
         // if not already in auto switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
