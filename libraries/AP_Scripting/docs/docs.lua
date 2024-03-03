@@ -3263,6 +3263,30 @@ AR_PosControl = {}
 ---@return number -- velocity slew rate
 function AR_PosControl:get_srate() end
 
+-- precision landing access
+---@class precland
+precland = {}
+
+-- get Location of target or nil if target not acquired
+---@return Location_ud|nil
+function precland:get_target_location() end
+
+-- get NE velocity of target or nil if not available
+---@return Vector2f_ud|nil
+function precland:get_target_velocity() end
+
+-- get the time of the last valid target
+---@return uint32_t_ud
+function precland:get_last_valid_target_ms() end
+
+-- return true if target is acquired
+---@return boolean
+function precland:target_acquired() end
+
+-- return true if precland system is healthy
+---@return boolean
+function precland:healthy() end
+
 -- desc
 ---@class follow
 follow = {}
