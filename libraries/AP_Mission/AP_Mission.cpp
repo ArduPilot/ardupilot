@@ -261,6 +261,7 @@ void AP_Mission::reset()
     _flags.do_cmd_loaded   = false;
     _flags.do_cmd_all_done = false;
     _flags.in_landing_sequence = false;
+    _flags.in_return_path = false;
     _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
@@ -398,11 +399,18 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
-    // check for landing related commands and set in_landing_sequence flag
+    // check for landing related commands and set flags
     if (is_landing_type_cmd(cmd.id) || cmd.id == MAV_CMD_DO_LAND_START) {
-        set_in_landing_sequence_flag(true);
+        _flags.in_landing_sequence = true;
+
+    } else if (cmd.id == MAV_CMD_DO_RETURN_PATH_START) {
+        _flags.in_return_path = true;
+
     } else if (is_takeoff_type_cmd(cmd.id)) {
-        set_in_landing_sequence_flag(false);
+        // Clear landing and return path flags on takeoff
+        _flags.in_landing_sequence = false;
+        _flags.in_return_path = false;
+
     }
 
     if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
@@ -550,10 +558,20 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 // set_current_cmd - jumps to command specified by index
 bool AP_Mission::set_current_cmd(uint16_t index)
 {
-    // read command to check for DO_LAND_START
+    // Clear flags
+    _flags.in_landing_sequence = false;
+    _flags.in_return_path = false;
+
+    // read command to check for DO_LAND_START and DO_RETURN_PATH_START
     Mission_Command cmd;
-    if (!read_cmd_from_storage(index, cmd) || (cmd.id != MAV_CMD_DO_LAND_START)) {
-        _flags.in_landing_sequence = false;
+    if (read_cmd_from_storage(index, cmd)) {
+        if (cmd.id == MAV_CMD_DO_LAND_START) {
+            _flags.in_landing_sequence = true;
+
+        } else if (cmd.id == MAV_CMD_DO_RETURN_PATH_START) {
+            _flags.in_return_path = true;
+
+        }
     }
 
     // mission command has been set, don't track history.
@@ -853,6 +871,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
     case MAV_CMD_NAV_GUIDED_ENABLE:
     case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
     case MAV_CMD_DO_SET_ROI:
@@ -1169,6 +1188,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
 
+    case MAV_CMD_DO_RETURN_PATH_START:                  // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
         break;
 
@@ -1681,6 +1701,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
         break;
 
+    case MAV_CMD_DO_RETURN_PATH_START:                  // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
         break;
 
@@ -1940,6 +1961,7 @@ void AP_Mission::complete()
     // flag mission as complete
     _flags.state = MISSION_COMPLETE;
     _flags.in_landing_sequence = false;
+    _flags.in_return_path = false;
 
     // callback to main program's mission complete function
     _mission_complete_fn();
@@ -2319,7 +2341,6 @@ void AP_Mission::check_eeprom_version()
 // be found.
 uint16_t AP_Mission::get_landing_sequence_start(const Location &current_loc)
 {
-    const Location::AltFrame current_loc_alt_frame = current_loc.get_alt_frame();
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2339,15 +2360,7 @@ uint16_t AP_Mission::get_landing_sequence_start(const Location &current_loc)
                 continue;
             }
 
-            float tmp_distance;
-            if (current_loc_alt_frame == tmp.content.location.get_alt_frame() || tmp.content.location.change_alt_frame(current_loc_alt_frame)) {
-                // 3D distance - altitudes are able to be compared in the same frame
-                tmp_distance = tmp.content.location.get_distance_NED(current_loc).length();
-            } else {
-                // 2D distance - no altitude
-                tmp_distance = tmp.content.location.get_distance(current_loc);
-            }
-            
+            const float tmp_distance = tmp.content.location.get_distance_NED_alt_frame(current_loc).length();
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;
@@ -2374,11 +2387,59 @@ bool AP_Mission::jump_to_landing_sequence(const Location &current_loc)
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing sequence start");
-        _flags.in_landing_sequence = true;
         return true;
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    return false;
+}
+
+/*
+   find the closest point on the mission after a DO_RETURN_PATH_START and before DO_LAND_START or landing
+ */
+bool AP_Mission::jump_to_closest_mission_leg(const Location &current_loc)
+{
+    if (_flags.state == MISSION_RUNNING) {
+        // if mission is already running don't switch away from a active landing or return path
+        if (_flags.in_landing_sequence) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing sequence active");
+            return true;
+
+        } else if (_flags.in_return_path) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Return path active");
+            return true;
+        }
+    }
+
+    uint16_t landing_start_index = 0;
+    float min_distance = -1;
+
+    // Go through mission and check each DO_RETURN_PATH_START
+    for (uint16_t i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_RETURN_PATH_START)) {
+            uint16_t tmp_index;
+            float tmp_distance;
+            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
+                min_distance = tmp_distance;
+                landing_start_index = tmp_index;
+            }
+        }
+    }
+
+    if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
+
+        // if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Return path started");
+        _flags.in_return_path = true;
+        return true;
+    }
+
+    // Failed to find do land start
     return false;
 }
 
@@ -2412,8 +2473,6 @@ bool AP_Mission::jump_to_abort_landing_sequence(const Location &current_loc)
         if (state() == AP_Mission::MISSION_STOPPED) {
             resume();
         }
-
-        _flags.in_landing_sequence = false;
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing abort sequence start");
         return true;
@@ -2533,6 +2592,90 @@ reset_do_jump_tracking:
     return ret;
 }
 
+// Approximate the distance travelled to return to the mission path. DO_JUMP commands are observed in look forward.
+// Stop searching once reaching a landing or do-land-start
+bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc)
+{
+    Location prev_loc;
+    Mission_Command temp_cmd;
+    rejoin_distance = -1;
+    rejoin_index = -1;
+    bool ret = false;
+
+    // back up jump tracking to reset after distance calculation
+    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        _jump_tracking_backup[i] = _jump_tracking[i];
+    }
+
+    // run through remainder of mission to approximate a distance to landing
+    uint16_t index = start_index;
+    for (uint8_t i=0; i<255; i++) {
+        // search until the end of the mission command list
+        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
+            if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
+                break;
+            } else {
+                // got to the end of the mission
+                goto reset_do_jump_tracking;
+            }
+        }
+        index = temp_cmd.index + 1;
+
+        if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
+            if (prev_loc.lat == 0 && prev_loc.lng == 0) {
+                // Need a valid previous location to do distance to leg calculation
+                prev_loc = temp_cmd.content.location;
+
+                // single point dist calc
+                rejoin_distance = prev_loc.get_distance_NED_alt_frame(current_loc).length();
+                rejoin_index = temp_cmd.index;
+                ret = true;
+
+            } else {
+                // Calculate the distance to rejoin
+                const Vector3f mission_vector = prev_loc.get_distance_NED_alt_frame(temp_cmd.content.location);
+                if (!mission_vector.is_zero()) {
+                    Vector3f pos = prev_loc.get_distance_NED_alt_frame(current_loc);
+
+                    // project pos vector on to mission vector
+                    Vector3f p = pos.projected(mission_vector);
+
+                    // constrain to mission line
+                    p.x = constrain_float(p.x, MIN(0,mission_vector.x), MAX(0,mission_vector.x));
+                    p.y = constrain_float(p.y, MIN(0,mission_vector.y), MAX(0,mission_vector.y));
+                    p.z = constrain_float(p.z, MIN(0,mission_vector.z), MAX(0,mission_vector.z));
+
+                    const float disttemp = (p - pos).length();
+
+                    // store wp location as previous
+                    prev_loc = temp_cmd.content.location;
+
+                    if (disttemp < rejoin_distance || is_negative(rejoin_distance)) {
+                        rejoin_distance = disttemp;
+                        rejoin_index = temp_cmd.index;
+                    }
+                    ret = true;
+                }
+            }
+        }
+
+        if (is_landing_type_cmd(temp_cmd.id) || (temp_cmd.id == MAV_CMD_DO_LAND_START)) {
+            // reached a landing!
+            goto reset_do_jump_tracking;
+        }
+    }
+    // reached end of loop without getting to a landing or DO_LAND_START
+    ret = false;
+
+reset_do_jump_tracking:
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        _jump_tracking[i] = _jump_tracking_backup[i];
+    }
+
+    return ret;
+}
+
 // check if command is a landing type command.
 bool AP_Mission::is_landing_type_cmd(uint16_t id) const
 {
@@ -2633,6 +2776,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "EngineControl";
     case MAV_CMD_CONDITION_YAW:
         return "CondYaw";
+    case MAV_CMD_DO_RETURN_PATH_START:
+        return "ReturnPathStart";
     case MAV_CMD_DO_LAND_START:
         return "LandStart";
     case MAV_CMD_NAV_DELAY:
