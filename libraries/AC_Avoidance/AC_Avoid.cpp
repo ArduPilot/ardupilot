@@ -1139,10 +1139,6 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     }
 
     AP_Proximity &_proximity = *proximity;
-    // check for status of the sensor
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
     // get total number of obstacles
     const uint8_t obstacle_num = _proximity.get_obstacle_count();
     if (obstacle_num == 0) {
@@ -1434,14 +1430,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         return;
     }
     AP_Proximity &_proximity = *proximity;
-
-    // exit immediately if proximity sensor is not present
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
-
     const uint8_t obj_count = _proximity.get_object_count();
-
     // if no objects return
     if (obj_count == 0) {
         return;
