@@ -1856,7 +1856,11 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     // send a timesync message every 10 seconds; this is for data
     // collection purposes
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() && !is_high_latency_link) {
+#else
     if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private()) {
+#endif
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;

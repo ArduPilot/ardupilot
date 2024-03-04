@@ -99,6 +99,11 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
         if (!c.is_active()) {
             continue;
         }
+#if HAL_HIGH_LATENCY2_ENABLED
+        if (c.is_high_latency_link) {
+            continue;
+        }
+#endif
         // size checks done by this method:
         c.send_message(pkt, entry);
     }
