@@ -308,17 +308,19 @@ AP_Proximity::Status AP_Proximity::get_instance_status(uint8_t instance) const
     return state[instance].status;
 }
 
+// Returns status of first good sensor. If no good sensor found, returns status of last instance sensor
 AP_Proximity::Status AP_Proximity::get_status() const
 {
+    Status sensors_status = Status::NotConnected;
     for (uint8_t i=0; i<num_instances; i++) {
-        const Status sensors_status = get_instance_status(i);
-        if (sensors_status != Status::Good) {
-            // return first bad status
+        sensors_status = get_instance_status(i);
+        if (sensors_status == Status::Good) {
+            // return first good status
             return sensors_status;
         }
     }
-    // All valid sensors seem to be working
-    return Status::Good;
+    // no good sensor found
+    return sensors_status;
 }
 
 // return proximity backend for Lua scripting
@@ -459,7 +461,13 @@ bool AP_Proximity::sensor_enabled() const
 
 bool AP_Proximity::sensor_failed() const
 {
-    return get_status() != Status::Good;
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (get_instance_status(i) != Status::Good) {
+            // return first bad status
+            return true;
+        }
+    }
+    return false;
 }
 
 // get distance in meters upwards, returns true on success
