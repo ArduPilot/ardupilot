@@ -92,7 +92,7 @@ void AP_MotorsTri::output_to_motors()
             // sends minimum values out to the motors
             for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled_mask(i)) {
-                    rc_write(AP_MOTORS_MOT_1+i, output_to_pwm(0));
+                    _actuator[AP_MOTORS_MOT_1+i] = 0;
                 }
             }
             rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
