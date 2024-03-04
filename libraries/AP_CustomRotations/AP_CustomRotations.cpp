@@ -1,11 +1,13 @@
+#include "AP_CustomRotations_config.h"
+
+#if AP_CUSTOMROTATIONS_ENABLED
+
 #include "AP_CustomRotations.h"
 
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 
 const AP_Param::GroupInfo AP_CustomRotations::var_info[] = {
 
@@ -156,4 +158,4 @@ AP_CustomRotations &custom_rotations()
 
 }
 
-#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif  // AP_CUSTOMROTATIONS_ENABLED

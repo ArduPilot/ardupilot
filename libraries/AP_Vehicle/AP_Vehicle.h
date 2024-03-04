@@ -528,7 +528,10 @@ private:
 
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
+#if AP_CUSTOMROTATIONS_ENABLED
     AP_CustomRotations custom_rotations;
+#endif
+
 #if AP_FILTER_ENABLED
     AP_Filters filters;
 #endif

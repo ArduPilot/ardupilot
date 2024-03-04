@@ -941,6 +941,7 @@ private:
 
     uint8_t send_parameter_async_replies();
 
+#if AP_MAVLINK_FTP_ENABLED
     enum class FTP_OP : uint8_t {
         None = 0,
         TerminateSession = 1,
@@ -1016,6 +1017,7 @@ private:
     bool send_ftp_reply(const pending_ftp &reply);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
+#endif  // AP_MAVLINK_FTP_ENABLED
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
