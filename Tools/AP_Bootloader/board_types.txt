@@ -314,6 +314,8 @@ AP_HW_Holybro-PERIPH-H7              5404
 
 # IDs 6000-6099 reserved for SpektreWorks
 
+# IDs 6600-6699 reserved for Eagle Eye Drones
+
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
