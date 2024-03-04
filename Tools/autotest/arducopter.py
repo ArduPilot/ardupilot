@@ -9617,7 +9617,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_PLD_ALT_LMT": 15.000000,
             "SIM_PLD_DIST_LMT": 10.000000,
             "SIM_PLD_ENABLE": 1,
-            "SIM_PLD_HEIGHT": 942.0000000,
+            "SIM_PLD_HEIGHT": 0,
             "SIM_PLD_LAT": -20.558929,
             "SIM_PLD_LON": -47.415035,
             "SIM_PLD_RATE": 100,
