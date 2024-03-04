@@ -863,21 +863,20 @@ bool Plane::get_target_location(Location& target_loc)
  */
 bool Plane::update_target_location(const Location &old_loc, const Location &new_loc)
 {
-    if (!old_loc.same_loc_as(next_WP_loc)) {
+    /*
+      by checking the caller has provided the correct old target
+      location we prevent a race condition where the user changes mode
+      or commands a different target in the controlling lua script
+     */
+    if (!old_loc.same_loc_as(next_WP_loc) ||
+        old_loc.get_alt_frame() != new_loc.get_alt_frame()) {
         return false;
     }
     next_WP_loc = new_loc;
-    next_WP_loc.change_alt_frame(old_loc.get_alt_frame());
 
 #if HAL_QUADPLANE_ENABLED
     if (control_mode == &mode_qland) {
-        /*
-          support precision landing controlled by lua in QLAND mode
-         */
-        Vector2f rel_origin;
-        if (new_loc.get_vector_xy_from_origin_NE(rel_origin)) {
-            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
-        }
+        mode_qland.last_target_loc_set_ms = AP_HAL::millis();
     }
 #endif
 
@@ -901,7 +900,8 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 bool Plane::set_land_descent_rate(float descent_rate)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_vtol_land_descent()) {
+    if (quadplane.in_vtol_land_descent() ||
+        control_mode == &mode_qland) {
         quadplane.poscontrol.override_descent_rate = descent_rate;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
