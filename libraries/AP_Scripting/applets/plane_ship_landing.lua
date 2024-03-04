@@ -1,5 +1,10 @@
--- support takeoff and landing on moving platforms for VTOL planes
--- luacheck: only 0
+--[[
+ support takeoff and landing on moving platforms for VTOL planes
+
+ See this post for details: https://discuss.ardupilot.org/t/ship-landing-support
+--]]
+
+local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local PARAM_TABLE_KEY = 7
 local PARAM_TABLE_PREFIX = "SHIP_"
@@ -120,7 +125,7 @@ function check_parameters()
       assert(current, string.format("Parameter %s not found", p))
       if math.abs(v-current) > 0.001 then
          param:set_and_save(p, v)
-         gcs:send_text(0,string.format("Parameter %s set to %.2f was %.2f", p, v, current))
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Parameter %s set to %.2f was %.2f", p, v, current))
       end
    end
 end
@@ -145,11 +150,11 @@ function update_throttle_pos()
       reached_alt = false
       if landing_stage == STAGE_HOLDOFF and tpos <= THROTTLE_MID then
          landing_stage = STAGE_DESCEND
-         gcs:send_text(0, string.format("Descending for approach (hd=%.1fm h=%.1f th=%.1f)",
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Descending for approach (hd=%.1fm h=%.1f th=%.1f)",
                                         get_holdoff_distance(), current_pos:alt()*0.01, get_target_alt()))
       end
       if landing_stage == STAGE_DESCEND and tpos == THROTTLE_HIGH then
-         gcs:send_text(0,"Climbing for holdoff")
+         gcs:send_text(MAV_SEVERITY.INFO, "Climbing for holdoff")
          landing_stage = STAGE_HOLDOFF
       end
    end
@@ -263,7 +268,7 @@ function check_approach_tangent()
    local distance = current_pos:get_distance(target_pos)
    local holdoff_dist = get_holdoff_distance()
    if landing_stage == STAGE_HOLDOFF and throttle_pos <= THROTTLE_MID and distance < 4*holdoff_dist then
-      gcs:send_text(0, string.format("Descending for approach (hd=%.1fm)", holdoff_dist))
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("Descending for approach (hd=%.1fm)", holdoff_dist))
       landing_stage = STAGE_DESCEND
    end
    if reached_alt and landing_stage == STAGE_DESCEND then
@@ -274,8 +279,6 @@ function check_approach_tangent()
       local target_bearing_deg = wrap_180(math.deg(current_pos:get_bearing(target_pos)))
       local ground_bearing_deg = wrap_180(math.deg(ahrs:groundspeed_vector():angle()))
       local margin = 10
-      local distance = current_pos:get_distance(target_pos)
-      local holdoff_dist = get_holdoff_distance()
       local error1 = math.abs(wrap_180(target_bearing_deg - ground_bearing_deg))
       local error2 = math.abs(wrap_180(ground_bearing_deg - (target_heading + SHIP_LAND_ANGLE:get())))
       logger.write('SLND','TBrg,GBrg,Dist,HDist,Err1,Err2','ffffff',target_bearing_deg, ground_bearing_deg, distance, holdoff_dist, error1, error2)
@@ -284,7 +287,7 @@ function check_approach_tangent()
           distance > 0.7*holdoff_dist and
           error2 < 2*margin) then
          -- we are on the tangent, switch to QRTL
-         gcs:send_text(0, "Starting approach")
+         gcs:send_text(MAV_SEVERITY.INFO, "Starting approach")
          landing_stage = STAGE_APPROACH
          vehicle:set_mode(MODE_QRTL)
       end
@@ -298,7 +301,7 @@ function check_approach_abort()
    local alt = current_pos:alt() * 0.01
    local target_alt = get_target_alt()
    if alt > target_alt then
-      gcs:send_text(0, "Aborting landing")
+      gcs:send_text(MAV_SEVERITY.NOTICE, "Aborting landing")
       landing_stage = STAGE_HOLDOFF
       vehicle:set_mode(MODE_RTL)
    end
@@ -324,14 +327,14 @@ end
 function update_target()
    if not follow:have_target() then
       if have_target then
-         gcs:send_text(0,"Lost beacon")
+         gcs:send_text(MAV_SEVERITY.WARNING, "Lost beacon")
          arming:set_aux_auth_failed(auth_id, "Ship: no beacon")
       end
       have_target = false
       return
    end
    if not have_target then
-      gcs:send_text(0,"Have beacon")
+      gcs:send_text(MAV_SEVERITY.INFO, "Have beacon")
       arming:set_aux_auth_passed(auth_id)
    end
    have_target = true
@@ -358,7 +361,7 @@ function update_alt()
    if landing_stage == STAGE_HOLDOFF or landing_stage == STAGE_DESCEND then
       if math.abs(alt - target_alt) < 3 then
          if not reached_alt then
-            gcs:send_text(0,"Reached target altitude")
+            gcs:send_text(MAV_SEVERITY.INFO, "Reached target altitude")
          end
          reached_alt = true
       end
@@ -382,7 +385,7 @@ function update_auto_offset()
    local new = target_no_ofs:get_distance_NED(current_pos)
    new:rotate_xy(-math.rad(target_heading))
 
-   gcs:send_text(0,string.format("Set follow offset (%.2f,%.2f,%.2f)", new:x(), new:y(), new:z()))
+   gcs:send_text(MAV_SEVERITY.INFO, string.format("Set follow offset (%.2f,%.2f,%.2f)", new:x(), new:y(), new:z()))
    FOLL_OFS_X:set_and_save(new:x())
    FOLL_OFS_Y:set_and_save(new:y())
    FOLL_OFS_Z:set_and_save(new:z())
@@ -407,6 +410,16 @@ function update()
    end
    current_pos:change_alt_frame(ALT_FRAME_ABSOLUTE)
 
+   --[[
+      get target location before we check vehicle state to prevent a
+      race condition with the user changing mode or target
+   --]]
+   local next_WP = vehicle:get_target_location()
+   if not next_WP then
+      -- not in a flight mode with a target location
+      return
+   end
+
    update_throttle_pos()
    update_mode()
    update_alt()
@@ -414,11 +427,6 @@ function update()
 
    ahrs:set_home(target_pos)
 
-   local next_WP = vehicle:get_target_location()
-   if not next_WP then
-      -- not in a flight mode with a target location
-      return
-   end
    next_WP:change_alt_frame(ALT_FRAME_ABSOLUTE)
 
    if vehicle_mode == MODE_RTL then
@@ -463,13 +471,15 @@ end
 
 check_parameters()
 
+gcs:send_text(MAV_SEVERITY.INFO, "ShipLanding: loaded")
+
 -- wrapper around update(). This calls update() at 20Hz,
 -- and if update faults then an error is displayed, but the script is not
 -- stopped
 function protected_wrapper()
   local success, err = pcall(update)
   if not success then
-     gcs:send_text(0, "Internal Error: " .. err)
+     gcs:send_text(MAV_SEVERITY.ERROR, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
      return protected_wrapper, 1000
