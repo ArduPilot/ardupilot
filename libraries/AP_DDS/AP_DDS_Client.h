@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_DDS_config.h"
+
 #if AP_DDS_ENABLED
 
 #include "uxr/client/client.h"
@@ -27,7 +29,6 @@
 #include "fcntl.h"
 
 #include <AP_Param/AP_Param.h>
-#include "AP_DDS_config.h"
 
 #define DDS_MTU             512
 #define DDS_STREAM_HISTORY  8
