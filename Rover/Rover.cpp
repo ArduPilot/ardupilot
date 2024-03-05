@@ -70,74 +70,121 @@ SCHED_TASK_CLASS arguments:
  */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
-    SCHED_TASK(read_radio,             50,    200,   3),
-    SCHED_TASK(ahrs_update,           400,    400,   6),
-    SCHED_TASK(read_rangefinders,      50,    200,   9),
+    SCHED_TASK(read_radio, 50, 200, 3),
+    SCHED_TASK(ahrs_update, 400, 400, 6),
+    SCHED_TASK(read_rangefinders, 50, 200, 9),
+    SCHED_TASK(FireFight_open, 200, 400, 11), // 消防炮功能函数，200HZ速度
+    SCHED_TASK(Fire_CLED, 50, 200, 13),       // LED功能函数，50HZ速度
 #if AP_OPTICALFLOW_ENABLED
-    SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
+    SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 11),
 #endif
-    SCHED_TASK(update_current_mode,   400,    200,  12),
-    SCHED_TASK(set_servos,            400,    200,  15),
-    SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
-    SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
-    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
+    SCHED_TASK(update_current_mode, 400, 200, 12),
+    SCHED_TASK(set_servos, 400, 200, 15),
+    SCHED_TASK_CLASS(AP_GPS, &rover.gps, update, 50, 300, 18),
+    SCHED_TASK_CLASS(AP_Baro, &rover.barometer, update, 10, 200, 21),
+    SCHED_TASK_CLASS(AP_Beacon, &rover.g2.beacon, update, 50, 200, 24),
 #if HAL_PROXIMITY_ENABLED
-    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
+    SCHED_TASK_CLASS(AP_Proximity, &rover.g2.proximity, update, 50, 200, 27),
 #endif
-    SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100,  30),
-    SCHED_TASK(update_wheel_encoder,   50,    200,  36),
-    SCHED_TASK(update_compass,         10,    200,  39),
-    SCHED_TASK(update_logging1,        10,    200,  45),
-    SCHED_TASK(update_logging2,        10,    200,  48),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update_receive,                    400,    500,  51),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update_send,                       400,   1000,  54),
-    SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_mode_switch,        7,    200,  57),
-    SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_aux_all,           10,    200,  60),
-    SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300,  63),
-    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
+    SCHED_TASK_CLASS(AP_WindVane, &rover.g2.windvane, update, 20, 100, 30),
+    SCHED_TASK(update_wheel_encoder, 50, 200, 36),
+    SCHED_TASK(update_compass, 10, 200, 39),
+    SCHED_TASK(update_logging1, 10, 200, 45),
+    SCHED_TASK(update_logging2, 10, 200, 48),
+    SCHED_TASK_CLASS(GCS, (GCS *)&rover._gcs, update_receive, 400, 500, 51),
+    SCHED_TASK_CLASS(GCS, (GCS *)&rover._gcs, update_send, 400, 1000, 54),
+    SCHED_TASK_CLASS(RC_Channels, (RC_Channels *)&rover.g2.rc_channels, read_mode_switch, 7, 200, 57),
+    SCHED_TASK_CLASS(RC_Channels, (RC_Channels *)&rover.g2.rc_channels, read_aux_all, 10, 200, 60),
+    SCHED_TASK_CLASS(AP_BattMonitor, &rover.battery, read, 10, 300, 63),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events, 50, 200, 66),
 #if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
+    SCHED_TASK_CLASS(AP_Gripper, &rover.g2.gripper, update, 10, 75, 69),
 #if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland,      400,     50,  70),
+    SCHED_TASK(update_precland, 400, 50, 70),
 #endif
 #endif
 #if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
+    SCHED_TASK_CLASS(AP_RPM, &rover.rpm_sensor, update, 10, 100, 72),
 #endif
 #if HAL_MOUNT_ENABLED
-    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
+    SCHED_TASK_CLASS(AP_Mount, &rover.camera_mount, update, 50, 200, 75),
 #endif
 #if AP_CAMERA_ENABLED
-    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
+    SCHED_TASK_CLASS(AP_Camera, &rover.camera, update, 50, 200, 78),
 #endif
-    SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
-    SCHED_TASK(fence_check,            10,    200,  84),
-    SCHED_TASK(ekf_check,              10,    100,  87),
-    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
-    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300,  93),
-    SCHED_TASK(one_second_loop,         1,   1500,  96),
+    SCHED_TASK(gcs_failsafe_check, 10, 200, 81),
+    SCHED_TASK(fence_check, 10, 200, 84),
+    SCHED_TASK(ekf_check, 10, 100, 87),
+    SCHED_TASK_CLASS(ModeSmartRTL, &rover.mode_smartrtl, save_position, 3, 200, 90),
+    SCHED_TASK_CLASS(AP_Notify, &rover.notify, update, 50, 300, 93),
+    SCHED_TASK(one_second_loop, 1, 1500, 96),
 #if HAL_SPRAYER_ENABLED
-    SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
+    SCHED_TASK_CLASS(AC_Sprayer, &rover.g2.sprayer, update, 3, 90, 99),
 #endif
-    SCHED_TASK(compass_save,            0.1,  200, 105),
+    SCHED_TASK(compass_save, 0.1, 200, 105),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Logger,           &rover.logger,           periodic_tasks, 50,  300, 108),
+    SCHED_TASK_CLASS(AP_Logger, &rover.logger, periodic_tasks, 50, 300, 108),
 #endif
-    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200, 111),
-    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
+    SCHED_TASK_CLASS(AP_InertialSensor, &rover.ins, periodic, 400, 200, 111),
+    SCHED_TASK_CLASS(AP_Scheduler, &rover.scheduler, update_logging, 0.1, 200, 114),
 #if HAL_BUTTON_ENABLED
-    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
+    SCHED_TASK_CLASS(AP_Button, &rover.button, update, 5, 200, 117),
 #endif
 #if STATS_ENABLED == ENABLED
-    SCHED_TASK(stats_update,            1,    200, 120),
+    SCHED_TASK(stats_update, 1, 200, 120),
 #endif
-    SCHED_TASK(crash_check,            10,    200, 123),
-    SCHED_TASK(cruise_learn_update,    50,    200, 126),
+    SCHED_TASK(crash_check, 10, 200, 123),
+    SCHED_TASK(cruise_learn_update, 50, 200, 126),
 #if ADVANCED_FAILSAFE == ENABLED
-    SCHED_TASK(afs_fs_check,           10,    200, 129),
+    SCHED_TASK(afs_fs_check, 10, 200, 129),
 #endif
 };
 
+void Rover::FireFight_open() // 每20毫秒执行一次
+{
+    uint8_t static stat = 0;
+
+    if (hal.rcin->read(6) > 1800)
+    {
+        if (stat == 0)
+        {
+            firefight_rover.function_fire_fight(5);
+        }
+        if (stat == 1)
+        {
+            fire_motor_rover.function_fire_motor_485(5);
+        }
+        stat++;
+        if (stat >= 2)
+        {
+            stat = 0;
+        }
+    }
+    else
+    {
+        if (stat == 0)
+            firefight_rover.up_button(0);
+        if (stat == 1)
+            firefight_rover.down_button(0);
+        if (stat == 2)
+            firefight_rover.left_button(0);
+        if (stat == 3)
+            firefight_rover.right_button(0);
+        if (stat == 4)
+            firefight_rover.write_two(100, 0x2000, 6, 0);
+        if (stat == 5)
+            firefight_rover.write_two(101, 0x2000, 6, 0);
+        if (stat == 6)
+            stat = 0;
+        stat++;
+    }
+}
+
+void Rover::Fire_CLED()
+{
+    float v = battery.gcs_voltage(0);
+    fire_led.Fire_Power_LED(v, 20);
+}
 
 void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                 uint8_t &task_count,

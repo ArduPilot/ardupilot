@@ -31,10 +31,10 @@ volatile uint8_t action_index= 0;     // 执行动作
     hal.serial(1)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     hal.serial(1)->set_unbuffered_writes(true);
     hal.scheduler->delay(100);       //等待初始化串口
-    write_two(100,0x2003,10,5);
-    hal.scheduler->delay(100);       //设置电机加减速时间
-    write_two(101,0x2003,10,5);
-    hal.scheduler->delay(100);       //等待初始化串口
+    // write_two(100,0x2003,10,5);
+    // hal.scheduler->delay(100);       //设置电机加减速时间
+    // write_two(101,0x2003,10,5);
+    // hal.scheduler->delay(100);       //等待初始化串口
     write_one(0x01, 0x0002, 10);
     hal.scheduler->delay(100);       //上下电机堵转电流
     write_one(0x01, 0x0003, 200);

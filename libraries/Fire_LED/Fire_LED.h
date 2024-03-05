@@ -2,10 +2,10 @@
 #ifndef _FIRE_LED_H_
 #define _FIRE_LED_H_
 #include <AP_HAL/AP_HAL.h>
-#define power_led_on hal.gpio->write(2,1)
-#define power_led_off hal.gpio->write(2,0)
-#define Alert_led_on hal.gpio->write(3,1)
-#define Alert_led_off hal.gpio->write(3,0)
+#define power_led_on hal.gpio->write(2,0)
+#define power_led_off hal.gpio->write(2,1)
+#define Alert_led_on hal.gpio->write(3,0)
+#define Alert_led_off hal.gpio->write(3,1)
 
 
 extern const AP_HAL::HAL &hal;

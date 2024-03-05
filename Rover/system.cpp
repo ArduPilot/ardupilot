@@ -14,6 +14,10 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
+//增加初始化函数
+firefight_rover.uart_init();
+
+
 #if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();

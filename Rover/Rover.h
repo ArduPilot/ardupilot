@@ -42,7 +42,9 @@
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-
+#include <FireFight/FireFight.h> //添加消防炮头文件
+#include <Fire_LED/Fire_LED.h>   //添加灯的头文件
+#include <Fire_motor_485/Fire_motor_485.h> //添加电机驱动头文件
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -105,6 +107,10 @@ public:
 
 private:
 
+    //增加自己的函数
+    FireFight firefight_rover;
+    Fire_LED fire_led;
+    Fire_motor_485 fire_motor_rover;
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
     // variables
@@ -266,6 +272,13 @@ private:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 #endif // AP_SCRIPTING_ENABLED
+    //增加自己的声明函数
+    void FireFight_open(); // 消防炮对应函数
+
+    void Fire_motor(); // 消防车电机驱动
+
+    void Fire_CLED();  //灯驱动
+
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
