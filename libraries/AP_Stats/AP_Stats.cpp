@@ -72,6 +72,7 @@ void AP_Stats::flush()
 {
     params.flttime.set_and_save_ifchanged(flttime);
     params.runtime.set_and_save_ifchanged(runtime);
+    last_flush_ms = AP_HAL::millis();
 }
 
 void AP_Stats::update_flighttime()
@@ -101,7 +102,6 @@ void AP_Stats::update()
         update_flighttime();
         update_runtime();
         flush();
-        last_flush_ms = now_ms;
     }
     const uint32_t params_reset = params.reset;
     if (params_reset == 0) {
@@ -136,7 +136,11 @@ void AP_Stats::set_flying(const bool is_flying)
             _flying_ms = AP_HAL::millis();
         }
     } else {
-        update_flighttime();
+        if (_flying_ms) {
+            update_flighttime();
+            update_runtime();
+            flush();
+        }
         _flying_ms = 0;
     }
 }
