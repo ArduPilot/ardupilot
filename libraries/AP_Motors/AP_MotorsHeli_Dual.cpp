@@ -415,10 +415,6 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
         }
     }
 
-    if (_heliflags.inverted_flight) {
-        collective_in = 1 - collective_in;
-    }
-
     // constrain collective input
     float collective_out = collective_in;
     if (collective_out <= 0.0f) {

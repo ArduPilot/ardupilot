@@ -753,7 +753,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
     { AUX_FUNC::VISODOM_ALIGN,"VisOdomAlign"},
     { AUX_FUNC::AIRMODE, "AirMode"},
-    { AUX_FUNC::EKF_POS_SOURCE,"EKFPosSource"},
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
     { AUX_FUNC::GENERATOR,"Generator"},
     { AUX_FUNC::BATTERY_MPPT_ENABLE,"Battery MPPT Enable"},
@@ -1434,22 +1433,26 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif
 
-    case AUX_FUNC::EKF_POS_SOURCE:
+    case AUX_FUNC::EKF_POS_SOURCE: {
+        uint8_t source_set = 0;
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
             // low switches to primary source
-            AP::ahrs().set_posvelyaw_source_set(0);
+            source_set = 0;
             break;
         case AuxSwitchPos::MIDDLE:
             // middle switches to secondary source
-            AP::ahrs().set_posvelyaw_source_set(1);
+            source_set = 1;
             break;
         case AuxSwitchPos::HIGH:
             // high switches to tertiary source
-            AP::ahrs().set_posvelyaw_source_set(2);
+            source_set = 2;
             break;
         }
+        AP::ahrs().set_posvelyaw_source_set(source_set);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", source_set+1);
         break;
+    }
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
