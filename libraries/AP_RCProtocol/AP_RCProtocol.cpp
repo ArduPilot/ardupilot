@@ -394,6 +394,14 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
         return false;
     }
 
+#if AP_RC_CHANNEL_ENABLED
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (!protocol_enabled(protocol)) {
+        return false;
+    }
+
     // nobody is providing data; can we provide data?
     if (!p->new_input()) {
         // we can't provide data
@@ -582,7 +590,7 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
 // return true if a specific protocol is enabled
 bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
 {
-    if ((rc_protocols_mask & 1) != 0) {
+    if ((rc_protocols_mask & 1U) != 0) {
         // all protocols enabled
         return true;
     }
