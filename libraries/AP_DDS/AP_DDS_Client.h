@@ -15,6 +15,7 @@
 #include "sensor_msgs/msg/Joy.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
+#include "geographic_msgs/msg/GeoPointStamped.h"
 #include "geographic_msgs/msg/GeoPoseStamped.h"
 #include "rosgraph_msgs/msg/Clock.h"
 
@@ -58,6 +59,7 @@ private:
 
     // Outgoing Sensor and AHRS data
     builtin_interfaces_msg_Time time_topic;
+    geographic_msgs_msg_GeoPointStamped gps_global_origin_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped tx_local_velocity_topic;
@@ -91,6 +93,7 @@ private:
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
     static void update_topic(sensor_msgs_msg_Imu& msg);
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
+    static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 
     // subscription callback function
     static void on_topic_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
@@ -124,6 +127,8 @@ private:
     uint64_t last_geo_pose_time_ms;
     // The last ms timestamp AP_DDS wrote a Clock message
     uint64_t last_clock_time_ms;
+    // The last ms timestamp AP_DDS wrote a gps global origin message
+    uint64_t last_gps_global_origin_time_ms;
 
     // functions for serial transport
     bool ddsSerialInit();
@@ -196,6 +201,8 @@ public:
     void write_imu_topic();
     //! @brief Serialize the current clock and publish to the IO stream(s)
     void write_clock_topic();
+    //! @brief Serialize the current gps global origin and publish to the IO stream(s)
+    void write_gps_global_origin_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 

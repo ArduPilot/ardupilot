@@ -37,6 +37,7 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_PING_MS = 500;
 
 // Define the subscriber data members, which are static class scope.
@@ -457,6 +458,24 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
     update_topic(msg.clock);
+}
+
+void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Location ekf_origin;
+    // LLA is WGS-84 geodetic coordinate.
+    // Altitude converted from cm to m.
+    if (ahrs.get_origin(ekf_origin)) {
+        msg.position.latitude = ekf_origin.lat * 1E-7;
+        msg.position.longitude = ekf_origin.lng * 1E-7;
+        msg.position.altitude = ekf_origin.alt * 0.01;
+    }
 }
 
 /*
@@ -1040,6 +1059,20 @@ void AP_DDS_Client::write_clock_topic()
     }
 }
 
+void AP_DDS_Client::write_gps_global_origin_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&gps_global_origin_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1091,6 +1124,12 @@ void AP_DDS_Client::update()
         update_topic(clock_topic);
         last_clock_time_ms = cur_time_ms;
         write_clock_topic();
+    }
+
+    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
+        update_topic(gps_global_origin_topic);
+        last_gps_global_origin_time_ms = cur_time_ms;
+        write_gps_global_origin_topic();
     }
 
     status_ok = uxr_run_session_time(&session, 1);

@@ -246,6 +246,34 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="gps_global_origin__t">
+    <name>rt/ap/gps_global_origin/filtered</name>
+    <dataType>geographic_msgs::msg::dds_::GeoPointStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="gps_global_origin__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/gps_global_origin/filtered</name>
+      <dataType>geographic_msgs::msg::dds_::GeoPointStamped_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
   <topic profile_name="joy__t">
     <name>rt/ap/joy</name>
     <dataType>sensor_msgs::msg::dds_::Joy_</dataType>
