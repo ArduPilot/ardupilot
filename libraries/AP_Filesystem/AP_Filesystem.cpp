@@ -306,7 +306,9 @@ void AP_Filesystem::unmount(void)
 }
 
 /*
-  load a file to memory as a single chunk. Use only for small files
+  Load a file's contents into memory. Returned object must be `delete`d to free
+  the data. The data is guaranteed to be null-terminated such that it can be
+  treated as a string.
  */
 FileData *AP_Filesystem::load_file(const char *filename)
 {
