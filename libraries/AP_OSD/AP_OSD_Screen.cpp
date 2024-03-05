@@ -118,11 +118,13 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Horizontal position on screen
     // @Range: 0 59
 
+#if AP_RSSI_ENABLED
     // @Param: RSSI_Y
     // @DisplayName: RSSI_Y
     // @Description: Vertical position on screen
     // @Range: 0 21
     AP_SUBGROUPINFO(rssi, "RSSI", 6, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
     // @Param: CURRENT_EN
     // @DisplayName: CURRENT_EN
@@ -1412,18 +1414,20 @@ void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
 }
 #endif  // AP_BATTERY_ENABLED
 
-#if AP_RSSI_ENABLED
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
+#if AP_RSSI_ENABLED
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 100;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYMBOL(SYM_RSSI), rssiv);
     }
+#endif  // AP_RSSI_ENABLED
 }
 
 void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
 {
+#if AP_RSSI_ENABLED
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         const int16_t lqv = ap_rssi->read_receiver_link_quality();
@@ -1433,8 +1437,8 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
             backend->write(x, y, false, "%c%2d", SYMBOL(SYM_LQ), lqv);
         }
     }
-}
 #endif  // AP_RSSI_ENABLED
+}
 
 #if AP_BATTERY_ENABLED
 void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
@@ -2280,7 +2284,11 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
     }
 }
 
+#if AP_RSSI_ENABLED
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
+#else
+#define DRAW_SETTING(n)
+#endif
 
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_Screen::draw(void)

@@ -22,7 +22,9 @@ void Blimp::init_ardupilot()
     battery.init();
 
     // Init RSSI
+#if AP_RSSI_ENABLED
     rssi.init();
+#endif
 
     barometer.init();
 
