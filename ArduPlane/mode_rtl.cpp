@@ -18,6 +18,13 @@ bool ModeRTL::_enter()
             return true;
         }
 
+        // treat RTL as QLAND if we are armed but not flying
+        // (when disarmed, allow RTL mode, so pilots can test switches)
+        if (plane.arming.is_armed() && !plane.is_flying()) {
+            plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
+            return true;
+        }
+
         // if Q_RTL_MODE is QRTL always, immediately switch to QRTL mode
         if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::QRTL_ALWAYS) {
             plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
