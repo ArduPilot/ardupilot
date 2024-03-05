@@ -8,6 +8,10 @@
 -- If the aircraft drops below a predetermined minimum altitude, QLAND mode is engaged and the aircraft lands at its current position.
 -- If the aircraft arrives within Q_FW_LND_APR_RAD of the return point before dropping below the minimum altitude, it should loiter down to the minimum altitude before switching to QRTL and landing.
 
+-- constants
+local RC_OPTION = {TECS_PROP_FAILED=177}
+local AuxSwitchPos = {LOW=0, MIDDLE=1, HIGH=2}
+
 -- setup param block for VTOL failsafe params
 local PARAM_TABLE_KEY = 77
 local PARAM_TABLE_PREFIX = "VTFS_"
@@ -91,10 +95,8 @@ function trigger_failsafe()
      -- RTL_AUTOLAND
      param:set('RTL_AUTOLAND', 0)
   end
-  if param:get('TECS_SPDWEIGHT') < 2 then
-     -- force airspeed priority
-     param:set('TECS_SPDWEIGHT', 2)
-  end
+  -- tell the TECS that propulsion has failed
+  rc:run_aux_function(RC_OPTION.TECS_PROP_FAILED, AuxSwitchPos.HIGH)
   -- trigger an RTL to start bringing the vehicle home
   -- it will automatically go to the nearest rally point if set or go to home
   -- if no rally point available within the RALLY_LIMIT_KM
