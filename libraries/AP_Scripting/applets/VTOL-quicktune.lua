@@ -183,7 +183,7 @@ local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
 local PILOT_INPUT_DELAY = 4.0
 
-local YAW_FLTE_MAX = 2.0
+local YAW_FLTE_MAX = 8.0
 local FLTD_MUL = 0.5
 local FLTT_MUL = 0.5
 
