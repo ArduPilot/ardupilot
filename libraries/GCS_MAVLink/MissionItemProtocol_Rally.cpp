@@ -117,16 +117,16 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
     }
 
     // Default to relative to home
-    ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT_INT;
 
     if (rallypoint.alt_frame_valid == 1) {
         switch (Location::AltFrame(rallypoint.alt_frame)) {
             case Location::AltFrame::ABSOLUTE:
-                ret_packet.frame = MAV_FRAME_GLOBAL;
+                ret_packet.frame = MAV_FRAME_GLOBAL_INT;
                 break;
 
             case Location::AltFrame::ABOVE_HOME:
-                ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT_INT;
                 break;
 
             case Location::AltFrame::ABOVE_ORIGIN:
@@ -134,7 +134,7 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
                 return false;
 
             case Location::AltFrame::ABOVE_TERRAIN:
-                ret_packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
+                ret_packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT_INT;
                 break;
         }
     }
