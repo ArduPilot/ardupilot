@@ -634,6 +634,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
     }
+
+    // flush buffers
+    status_ok = uxr_run_session_time(&session, 1);
 }
 
 /*
@@ -648,7 +651,7 @@ void AP_DDS_Client::main_loop(void)
     //! @todo check for request to stop task
     while (true) {
         if (comm == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: transport invalid, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
 
@@ -656,20 +659,21 @@ void AP_DDS_Client::main_loop(void)
         const uint64_t ping_timeout_ms{1000};
         const uint8_t ping_max_attempts{10};
         if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: No ping response, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
             return;
         }
 
         // create session
         if (!init_session() || !create()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Creation Requests failed");
-            return;
-        }
-        connected = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Initialization passed");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
+            connected = false;
+        } else {
+            connected = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
-        populate_static_transforms(tx_static_transforms_topic);
-        write_static_transforms();
+            populate_static_transforms(tx_static_transforms_topic);
+            write_static_transforms();
+        }
 
         uint64_t last_ping_ms{0};
         uint8_t num_pings_missed{0};
@@ -705,7 +709,7 @@ void AP_DDS_Client::main_loop(void)
 
             if (num_pings_missed > 2) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
-                              "DDS Client: No ping response, disconnecting");
+                              "%s No ping response, disconnecting", msg_prefix);
                 connected = false;
             }
         }
@@ -756,16 +760,30 @@ bool AP_DDS_Client::init_session()
 
     // setup reliable stream buffers
     input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
+    if (input_reliable_stream == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"%s input reliable stream allocation failed", msg_prefix);
+        return false;
+    }
     output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
+    if (output_reliable_stream == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"%s output reliable stream allocation failed", msg_prefix);
         return false;
     }
 
     reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
     reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Init complete", msg_prefix);
+    // setup best effort stream buffers
+    output_besteffort_stream = new uint8_t[DDS_BUFFER_SIZE];
+    if (output_besteffort_stream == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"%s output best effort stream allocation failed", msg_prefix);
+        return false;
+    }
+
+    besteffort_in = uxr_create_input_best_effort_stream(&session);
+    besteffort_out = uxr_create_output_best_effort_stream(&session, output_besteffort_stream, DDS_BUFFER_SIZE);
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"%s Init Complete", msg_prefix);
 
     return true;
 }
@@ -864,8 +882,18 @@ bool AP_DDS_Client::create()
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
-                uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
+                switch (topics[i].dr_stream_type) {
+                case uxrStreamType::UXR_RELIABLE_STREAM:
+                    uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
+                    break;
+                case uxrStreamType::UXR_BEST_EFFORT_STREAM:
+                    uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, besteffort_in, &delivery_control);
+                    break;
+                default:
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s  Topic/Sub/Reader invalid stream type for index '%u'", msg_prefix, i);
+                    return false;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"%s  Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
             }
         }
     }
@@ -890,11 +918,20 @@ bool AP_DDS_Client::create()
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, &request, &status, 1)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Service/Replier session request failure for index '%u'", msg_prefix, i);
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status result '%u'", msg_prefix, status);
-                // TODO add a failure log message sharing the status results
                 return false;
             } else {
+                switch (services[i].rq_stream_type) {
+                case uxrStreamType::UXR_RELIABLE_STREAM:
+                    uxr_buffer_request_data(&session, reliable_out, rep_id, reliable_in, &delivery_control);
+                    break;
+                case uxrStreamType::UXR_BEST_EFFORT_STREAM:
+                    uxr_buffer_request_data(&session, reliable_out, rep_id, besteffort_in, &delivery_control);
+                    break;
+                default:
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Service/Replier invalid stream type for index '%u'", msg_prefix, i);
+                    return false;
+                }
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Service/Replier session pass for index '%u'", msg_prefix, i);
-                uxr_buffer_request_data(&session, reliable_out, rep_id, reliable_in, &delivery_control);
             }
 
         } else if (strlen(services[i].req_profile_label) > 0) {
@@ -926,7 +963,7 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
     if (connected) {
         ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::NAV_SAT_FIX_PUB)].dw_id, &ub, topic_size);
+        uxr_prepare_output_stream(&session, besteffort_out, topics[to_underlying(TopicIndex::NAV_SAT_FIX_PUB)].dw_id, &ub, topic_size);
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
@@ -971,7 +1008,7 @@ void AP_DDS_Client::write_local_pose_topic()
     if (connected) {
         ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_POSE_PUB)].dw_id, &ub, topic_size);
+        uxr_prepare_output_stream(&session, besteffort_out, topics[to_underlying(TopicIndex::LOCAL_POSE_PUB)].dw_id, &ub, topic_size);
         const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
@@ -986,7 +1023,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     if (connected) {
         ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&tx_local_velocity_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_VELOCITY_PUB)].dw_id, &ub, topic_size);
+        uxr_prepare_output_stream(&session, besteffort_out, topics[to_underlying(TopicIndex::LOCAL_VELOCITY_PUB)].dw_id, &ub, topic_size);
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &tx_local_velocity_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
@@ -1016,7 +1053,7 @@ void AP_DDS_Client::write_geo_pose_topic()
     if (connected) {
         ucdrBuffer ub {};
         const uint32_t topic_size = geographic_msgs_msg_GeoPoseStamped_size_of_topic(&geo_pose_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GEOPOSE_PUB)].dw_id, &ub, topic_size);
+        uxr_prepare_output_stream(&session, besteffort_out, topics[to_underlying(TopicIndex::GEOPOSE_PUB)].dw_id, &ub, topic_size);
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.

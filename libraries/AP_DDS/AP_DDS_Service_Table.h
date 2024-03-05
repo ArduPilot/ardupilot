@@ -17,11 +17,15 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .rep_id = to_underlying(ServiceIndex::ARMING_MOTORS),
         .req_profile_label = "",
         .rep_profile_label = "arm_motors__replier",
+        .rq_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .rr_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
     },
     {
         .req_id = to_underlying(ServiceIndex::MODE_SWITCH),
         .rep_id = to_underlying(ServiceIndex::MODE_SWITCH),
         .req_profile_label = "",
         .rep_profile_label = "mode_switch__replier",
+        .rq_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
+        .rr_stream_type = uxrStreamType::UXR_RELIABLE_STREAM,
     },
 };
