@@ -81,6 +81,9 @@ public:
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         MAVLINK_RADIO = 15,
 #endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        JOYSTICK_SFML = 16,
+#endif
         NONE    //last enum always is None
     };
 
@@ -167,6 +170,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         case MAVLINK_RADIO:
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        case JOYSTICK_SFML:
 #endif
         case NONE:
             return false;

@@ -35,6 +35,7 @@
 #include "AP_RCProtocol_DroneCAN.h"
 #include "AP_RCProtocol_GHST.h"
 #include "AP_RCProtocol_MAVLinkRadio.h"
+#include "AP_RCProtocol_Joystick_SFML.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -91,6 +92,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
     backend[AP_RCProtocol::MAVLINK_RADIO] = new AP_RCProtocol_MAVLinkRadio(*this);
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+    backend[AP_RCProtocol::JOYSTICK_SFML] = new AP_RCProtocol_Joystick_SFML(*this);
 #endif
 }
 
@@ -438,6 +442,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         AP_RCProtocol::MAVLINK_RADIO,
 #endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        AP_RCProtocol::JOYSTICK_SFML,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -573,6 +580,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
     case MAVLINK_RADIO:
         return "MAVRadio";
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+    case JOYSTICK_SFML:
+        return "SFML";
 #endif
     case NONE:
         break;
