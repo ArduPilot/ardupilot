@@ -1067,6 +1067,7 @@ bool CompassCalibrator::fix_radius(void)
 {
     Location loc;
     if (!AP::ahrs().get_location(loc)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mag(%u) no position, fix_radius skipped", _compass_idx);
         // we don't have a position, leave scale factor as 0. This
         // will disable use of WMM in the EKF. Users can manually set
         // scale factor after calibration if it is known
