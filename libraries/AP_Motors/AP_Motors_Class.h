@@ -155,6 +155,7 @@ public:
     float               get_yaw() const { return _yaw_in; }
     float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
+    float               get_throttle_in() const { return _throttle_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_throttle_slew_rate() const { return _throttle_slew_rate; }

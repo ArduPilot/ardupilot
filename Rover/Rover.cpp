@@ -170,7 +170,7 @@ bool Rover::set_target_location(const Location& target_loc)
 }
 
 // set target velocity (for use by scripting)
-bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
+bool Rover::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!control_mode->in_guided_mode()) {

@@ -343,16 +343,24 @@ bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector
     return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cms, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, yaw_relative);
 }
 
-bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
+bool Copter::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
         return false;
     }
 
+    // optionally line up the copter with the velocity vector
+    float yaw_cd = 0.0f;
+    if (align_yaw_to_target) {
+        const float speed_sq = vel_ned.xy().length_squared();
+        if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
+            yaw_cd = degrees(atan2f(vel_ned.y,vel_ned.x))*100.0f;
+        }
+    }
     // convert vector to neu in cm
     const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
-    mode_guided.set_velocity(vel_neu_cms);
+    mode_guided.set_velaccel(vel_neu_cms, Vector3f(), align_yaw_to_target, yaw_cd);
     return true;
 }
 
@@ -383,6 +391,20 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
 
     mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
+    return true;
+}
+
+bool Copter::set_target_angle_and_thrust(float roll_deg, float pitch_deg, float yaw_deg, float thrust, bool use_yaw_rate, float yaw_rate_degs)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    Quaternion q;
+    q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
+
+    mode_guided.set_angle(q, Vector3f{}, thrust, true);
     return true;
 }
 #endif
