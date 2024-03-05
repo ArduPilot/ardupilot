@@ -682,7 +682,7 @@ public:
 
     // payload place parameters
     AP_Float pldp_thrust_placed_fraction;
-    AP_Float pldp_range_finder_minimum_m;
+    AP_Float pldp_range_finder_maximum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
 };

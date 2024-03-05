@@ -1176,13 +1176,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("PLDP_THRESH", 1, ParametersG2, pldp_thrust_placed_fraction, 0.9),
 
-    // @Param: PLDP_RNG_MIN
-    // @DisplayName: Payload Place minimum range finder altitude
-    // @Description: Minimum range finder altitude in m to trigger payload touchdown, set to zero to disable.
+    // @Param: PLDP_RNG_MAX
+    // @DisplayName: Payload Place maximum range finder altitude
+    // @Description: Maximum range finder altitude in m to trigger payload touchdown, set to zero to disable.
     // @Units: m
     // @Range: 0 100
     // @User: Standard
-    AP_GROUPINFO("PLDP_RNG_MIN", 2, ParametersG2, pldp_range_finder_minimum_m, 0.0),
+    AP_GROUPINFO("PLDP_RNG_MAX", 2, ParametersG2, pldp_range_finder_maximum_m, 0.0),
 
     // @Param: PLDP_DELAY
     // @DisplayName: Payload Place climb delay
