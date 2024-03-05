@@ -113,14 +113,11 @@ uint8_t AP_Camera_Backend::get_gimbal_device_id() const
     const uint8_t mount_instance = get_mount_instance();
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
-            return (mount_instance + 1);
-        }
+        return mount->get_gimbal_device_id(mount_instance); // returns 0 if instance not available
     }
 #endif
     return 0;
 }
-
 
 // take a picture.  returns true on success
 bool AP_Camera_Backend::take_picture()
