@@ -252,7 +252,7 @@ void loop(void)
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
         hal.console->discard_input();
-        hal.scheduler->reboot(false);
+        hal.scheduler->reboot();
     }
     hal.console->discard_input();
 }
