@@ -648,6 +648,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         {
             geofence_data.radius = AP::fence()->get_radius();
             geofence_data.fence_type = AP::fence()->get_enabled_fences();
+            geofence_data.is_enabled = AP::fence()->enabled();
             geofence_data.no_vertex = AP::fence()->polyfence().num_stored_items();
             geofence_data.max_height = AP::fence()->get_safe_alt_max();
             geofence_data.min_height = AP::fence()->get_safe_alt_min();
