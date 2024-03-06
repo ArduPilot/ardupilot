@@ -999,7 +999,7 @@ void AP_Vehicle::accel_cal_update()
     if (ins.accel_cal_requires_reboot() &&
         !hal.util->get_soft_armed()) {
         hal.scheduler->delay(1000);
-        hal.scheduler->reboot(false);
+        hal.scheduler->reboot();
     }
 #endif
 }
