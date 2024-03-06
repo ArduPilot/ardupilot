@@ -599,7 +599,6 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
     }
     if ((now != 0) && ((now - transition->last_vtol_mode_ms) > 2000)) {
         // only just come out of forward flight
-        set_climb_rate_cms(0);
         return true;
     }
     return false;

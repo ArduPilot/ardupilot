@@ -2938,6 +2938,7 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_ABORT:
     case QPOS_LAND_FINAL: {
         if (tailsitter.enabled() && now_ms-last_pos2_ms<7000) {
+               set_climb_rate_cms(0);
                break;
         }
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
