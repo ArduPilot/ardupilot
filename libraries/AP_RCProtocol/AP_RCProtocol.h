@@ -20,6 +20,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
@@ -74,6 +77,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
         GHST       = 14,
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        MAVLINK_RADIO = 15,
 #endif
         NONE    //last enum always is None
     };
@@ -159,6 +165,9 @@ public:
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         case DRONECAN:
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        case MAVLINK_RADIO:
+#endif
         case NONE:
             return false;
         }
@@ -204,6 +213,11 @@ public:
     bool using_uart(void) const {
         return _detected_with_bytes;
     }
+
+    // handle mavlink radio
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    void handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet);
+#endif
 
 private:
     void check_added_uart(void);

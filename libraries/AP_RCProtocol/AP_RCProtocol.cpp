@@ -34,6 +34,7 @@
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
 #include "AP_RCProtocol_GHST.h"
+#include "AP_RCProtocol_MAVLinkRadio.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -87,6 +88,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
     backend[AP_RCProtocol::GHST] = new AP_RCProtocol_GHST(*this);
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    backend[AP_RCProtocol::MAVLINK_RADIO] = new AP_RCProtocol_MAVLinkRadio(*this);
 #endif
 }
 
@@ -431,6 +435,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         AP_RCProtocol::DRONECAN,
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        AP_RCProtocol::MAVLINK_RADIO,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -563,6 +570,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case GHST:
         return "GHST";
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    case MAVLINK_RADIO:
+        return "MAVRadio";
+#endif
     case NONE:
         break;
     }
@@ -596,6 +607,17 @@ bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
     }
     return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
+
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet)
+{
+    if (backend[AP_RCProtocol::MAVLINK_RADIO] == nullptr) {
+        return;
+    }
+
+    backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_rc_channels(packet);
+};
+#endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
 namespace AP {
     AP_RCProtocol &RC()
