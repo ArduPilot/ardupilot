@@ -5017,6 +5017,8 @@ class TestSuite(ABC):
             items,
             "fence",
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('fence list\n')
 
     def check_mission_upload_download(self, items, strict=True):
         self.check_mission_item_upload_download(
@@ -5024,6 +5026,8 @@ class TestSuite(ABC):
             "waypoints",
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             strict=strict)
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
 
     def check_rally_upload_download(self, items):
         self.check_mission_item_upload_download(
@@ -5031,6 +5035,8 @@ class TestSuite(ABC):
             "rally",
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY
         )
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('rally list\n')
 
     def check_dflog_message_rates(self, log_filepath, message_rates):
         reader = self.dfreader_for_path(log_filepath)
