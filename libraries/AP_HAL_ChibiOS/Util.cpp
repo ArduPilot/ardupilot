@@ -835,7 +835,7 @@ void Util::boot_to_dfu()
 {
     hal.util->persistent_data.boot_to_dfu = true;
     stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
-    hal.scheduler->reboot(false);
+    hal.scheduler->reboot();
 }
 #endif
 
