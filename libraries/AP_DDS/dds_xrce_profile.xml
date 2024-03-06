@@ -299,7 +299,7 @@
     <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
     <reply_topic_name>rr/ap/mode_switchReply</reply_topic_name>
   </replier>
-  <replier profile_name="geofence_request__replier" service_name="rs/ap/geofence_requestService" request_type="geofence_msgs::srv::dds_::PolyFenceItem_Request_" reply_type="ardupilot_msgs::srv::dds_::PolyFenceItem_Response_">
+  <replier profile_name="geofence_request__replier" service_name="rs/ap/geofence_requestService" request_type="geofence_msgs::srv::dds_::PolyFenceItem_Request_" reply_type="geofence_msgs::srv::dds_::PolyFenceItem_Response_">
     <request_topic_name>rq/ap/geofence_requestRequest</request_topic_name>
     <reply_topic_name>rr/ap/geofence_requestReply</reply_topic_name>
   </replier>
