@@ -660,7 +660,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint8_t reply_buffer[8] {};
+        uint8_t reply_buffer[1024] {};
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
