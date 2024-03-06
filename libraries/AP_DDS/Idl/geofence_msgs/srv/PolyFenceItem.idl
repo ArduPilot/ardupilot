@@ -14,7 +14,7 @@ module geofence_msgs {
     @verbatim (language="comment", text=
       "True if arming/disarming request for motors was successful , false otherwise. ")
     struct PolyFenceItem_Response {
-      boolean result;
+      uint8 result;
     };
   };
 };

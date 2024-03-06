@@ -17,6 +17,7 @@
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
+#include "geofence_msgs/src/PolyFenceItem.h"
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -631,6 +632,31 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
+        break;
+    }
+    case services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id: {
+        geofence_msgs_srv_PolyFenceItem_Request geofence_request;
+        geofence_msgs_srv_PolyFenceItem_Response geofence_data;
+
+        const bool deserialize_success = geofence_msgs_srv_PolyFenceItem_Request_deserialize_topic(ub, &geofence_request);
+        geofence_data.result = 24;
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = geofence_msgs_srv_PolyFenceItem_serialize_topic(&reply_ub, &geofence_data);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Geofencing data is given");
         break;
     }
     }
