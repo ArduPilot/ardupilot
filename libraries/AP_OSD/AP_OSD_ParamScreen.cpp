@@ -486,7 +486,7 @@ void AP_OSD_ParamScreen::update_state_machine()
             if (_selected_param == SAVE_PARAM) {
                 if (_transition_count >= OSD_HOLD_BUTTON_PRESS_COUNT) {
                     save_parameters();
-                    hal.scheduler->reboot(false);
+                    hal.scheduler->reboot();
                 } else {
                     save_parameters();
                 }
