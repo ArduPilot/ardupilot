@@ -12,6 +12,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AC_Fence/AC_Fence.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
@@ -642,7 +643,8 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         if (deserialize_success == false) {
             break;
         }
-        geofence_data.result = 24;
+        
+        geofence_data.result = AP::fence().get_radius();;
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id,
