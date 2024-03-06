@@ -161,6 +161,7 @@ void Sub::fifty_hz_loop()
 
     // Update rc input/output
     rc().read_input();
+    SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 }
 
