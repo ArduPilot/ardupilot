@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/ArmMotors.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    struct GeoFence_Request {
+      boolean req;
+    }
+
+    struct GeoFence_Response {
+      uint8 fence_type;
+      uint8 radius;
+      uint8 no_vertex;
+      float min_height;
+      float max_height;
+    }
+  };
+};

@@ -2,7 +2,11 @@
 # This service requests the vehicle to arm or disarm its motors.
 
 # Set true to arm motors, false to disarm motors.
-bool arm
+bool req
 ---
 # True if arming/disarming request for motors was successful , false otherwise. 
-uint8 result
+uint8 fence_type
+uint8 radius
+uint8 no_vertex
+float min_height
+float max_height

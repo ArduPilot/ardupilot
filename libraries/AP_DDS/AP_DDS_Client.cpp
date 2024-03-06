@@ -18,7 +18,7 @@
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
-#include "ardupilot_msgs/srv/PolyFenceItem.h"
+#include "ardupilot_msgs/srv/GeoFence.h"
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -636,15 +636,24 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
     case services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id: {
-        ardupilot_msgs_srv_PolyFenceItem_Request geofence_request;
-        ardupilot_msgs_srv_PolyFenceItem_Response geofence_data;
+        ardupilot_msgs_srv_GeoFence_Request geofence_request;
+        ardupilot_msgs_srv_GeoFence_Response geofence_data;
 
         const bool deserialize_success = ardupilot_msgs_srv_PolyFenceItem_Request_deserialize_topic(ub, &geofence_request);
         if (deserialize_success == false) {
             break;
         }
         
-        geofence_data.result = AP::fence().get_radius();;
+        if(geofence_request.req)
+        {
+            geofence_data.radius = AP::fence()->get_radius();
+            geofence_data.fence_type = AP::fence()->get_enabled_fences();
+            geofence_data.no_vertex = AP::fence()->polyfence().num_stored_items();
+            geofence_data.max_height = AP::fence()->get_safe_alt_max();
+            geofence_data.min_height = AP::fence()->get_safe_alt_min();
+
+        }
+        
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id,
