@@ -79,7 +79,7 @@ void loop(void)
         }
 
         if (user_input == 'r') {
-            hal.scheduler->reboot(false);
+            hal.scheduler->reboot();
         }
     }
 }
