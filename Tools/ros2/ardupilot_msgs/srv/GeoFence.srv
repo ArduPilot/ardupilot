@@ -9,5 +9,5 @@ uint8 fence_type
 uint8 radius
 uint8 is_enabled
 uint8 no_vertex
-float min_height
-float max_height
+float32 min_height
+float32 max_height
