@@ -7,7 +7,7 @@ module ardupilot_msgs {
   module srv {
     struct GeoFence_Request {
       boolean req;
-    }
+    };
 
     struct GeoFence_Response {
       uint8 fence_type;
@@ -15,6 +15,6 @@ module ardupilot_msgs {
       uint8 no_vertex;
       float min_height;
       float max_height;
-    }
+    };
   };
 };
