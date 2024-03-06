@@ -3,7 +3,7 @@
 // generated code does not contain a copyright notice
 
 
-module geofence_msgs {
+module ardupilot_msgs {
   module srv {
     struct PolyFenceItem_Request {
       @verbatim (language="comment", text=

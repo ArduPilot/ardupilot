@@ -17,7 +17,7 @@
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
-#include "geofence_msgs/srv/PolyFenceItem.h"
+#include "ardupilot_msgs/srv/PolyFenceItem.h"
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -635,10 +635,10 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         break;
     }
     case services[to_underlying(ServiceIndex::GEOFENCE_REQUEST)].rep_id: {
-        geofence_msgs_srv_PolyFenceItem_Request geofence_request;
-        geofence_msgs_srv_PolyFenceItem_Response geofence_data;
+        ardupilot_msgs_srv_PolyFenceItem_Request geofence_request;
+        ardupilot_msgs_srv_PolyFenceItem_Response geofence_data;
 
-        const bool deserialize_success = geofence_msgs_srv_PolyFenceItem_Request_deserialize_topic(ub, &geofence_request);
+        const bool deserialize_success = ardupilot_msgs_srv_PolyFenceItem_Request_deserialize_topic(ub, &geofence_request);
         if (deserialize_success == false) {
             break;
         }
@@ -653,7 +653,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
-        const bool serialize_success = geofence_msgs_srv_PolyFenceItem_Response_serialize_topic(&reply_ub, &geofence_data);
+        const bool serialize_success = ardupilot_msgs_srv_PolyFenceItem_Response_serialize_topic(&reply_ub, &geofence_data);
         if (serialize_success == false) {
             break;
         }
