@@ -5173,6 +5173,32 @@ MAV_RESULT GCS_MAVLINK::handle_do_set_safety_switch_state(const mavlink_command_
     }
 }
 
+#if AP_MAVLINK_MAV_CMD_DO_SET_SYS_CMP_ID_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_do_set_sys_cmp_id(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    const uint8_t new_system_id = packet.param1;
+    const uint8_t new_component_id = packet.param2;
+    const uint8_t do_reboot = packet.param3;
+
+    if (new_system_id == 0 || hal.util->get_soft_armed()) {
+        return MAV_RESULT_DENIED;
+    }
+
+    if (!AP_Param::set_and_save_by_name_ifchanged("SYSID_THISMAV", new_system_id)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (new_component_id != 0 && !AP_Param::set_and_save_by_name_ifchanged("COMPID_THISMAV", new_component_id)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (do_reboot) {
+        hal.scheduler->late_reboot();
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+#endif
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -5333,6 +5359,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_SAFETY_SWITCH_STATE:
         return handle_do_set_safety_switch_state(packet, msg);
+
+    case MAV_CMD_DO_SET_SYS_CMP_ID:
+        return handle_do_set_sys_cmp_id(packet, msg);
 
 #if AP_MAVLINK_SERVO_RELAY_ENABLED
     case MAV_CMD_DO_SET_SERVO:
