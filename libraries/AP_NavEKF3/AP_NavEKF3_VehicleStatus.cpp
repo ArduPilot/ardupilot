@@ -368,8 +368,26 @@ void NavEKF3_core::detectFlight()
         }
 
     } else {
-        // Non fly forward vehicle, so can only use height and motor arm status
+        // Non fly-forward vehicle
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        // The external barometer can improve the arming signal
+        if (motorsArmed) {
+            if (baroDataNew.hgt < -0.1) {
+                // We are very likely in the water
+                onGround = false;
+            }
 
+            if (baroDataNew.hgt < -0.4) {
+                // We are very likely diving (flying)
+                inFlight = true;
+            }
+        } else {
+            if (baroDataNew.hgt > -0.05) {
+                // We are very likely out of the water
+                inFlight = false;
+            }
+        }
+#else
         // If the motors are armed then we could be flying and if they are not armed then we are definitely not flying
         if (motorsArmed) {
             onGround = false;
@@ -395,7 +413,7 @@ void NavEKF3_core::detectFlight()
                 inFlight = true;
             }
         }
-
+#endif
     }
 
     // Store vehicle height and range prior to takeoff for use in post takeoff checks
