@@ -41,7 +41,7 @@ void Compass::cal_update()
         return;
     } else if (_cal_has_run && _auto_reboot()) {
         hal.scheduler->delay(1000);
-        hal.scheduler->reboot(false);
+        hal.scheduler->reboot();
     }
 }
 
