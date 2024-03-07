@@ -1,8 +1,10 @@
 # Plane Precision Landing
 
 This script implements a precision landing system for VTOL fixed wing
-aircraft (quadplanes). It is a simple script which is intended to be
-modified by vendors for their specific aircraft.
+aircraft (quadplanes).
+
+Precision positioning over a landing sensor is supported in QLOITER,
+QLAND, QRTL and AUTO landing.
 
 # Parameters
 
@@ -47,3 +49,11 @@ may malfunction.
 If the PLND_OPTIONS bit for a moving target is enabled then the
 vehicle will be set to track the estimated target velocity during
 descent
+
+## Precision QLoiter
+
+To enable precision position hold in QLOITER you will need to use
+auxiliary function 39 (PRECISION_LOITER) on an R/C switch or via GCS
+auxiliary switch buttons. When enabled the vehicle will position
+itself above the landing target. Height control is under user control.
+
