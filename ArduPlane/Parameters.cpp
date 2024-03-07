@@ -1362,9 +1362,15 @@ struct RCConversionInfo {
 static const RCConversionInfo rc_option_conversion[] = {
     { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
     { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
+#if AP_FENCE_ENABLED
     { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
+#endif
+#if AP_MISSION_ENABLED
     { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
+#endif
+#if HAL_PARACHUTE_ENABLED
     { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
+#endif
     { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
     { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
 };
