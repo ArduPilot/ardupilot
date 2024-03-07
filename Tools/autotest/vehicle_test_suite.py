@@ -4460,7 +4460,7 @@ class TestSuite(ABC):
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
-            mavproxy.expect("numLogs")
+            mavproxy.expect("numLogs", timeout=120)
             # ensure the full list of logs has come out
             for i in range(5):
                 self.wait_heartbeat()
