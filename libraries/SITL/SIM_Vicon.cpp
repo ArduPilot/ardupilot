@@ -207,10 +207,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // send vision speed estimate
     if (should_send(ViconTypeMask::VISION_SPEED_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
         const mavlink_vision_speed_estimate_t vicon_speed_estimate{
-            now_us + time_offset_us,
-            vel_corrected.x,
-            vel_corrected.y,
-            vel_corrected.z
+        usec: now_us + time_offset_us,
+        x: vel_corrected.x,
+        y: vel_corrected.y,
+        z: vel_corrected.z
         };
         mavlink_msg_vision_speed_estimate_encode_status(
             system_id,
