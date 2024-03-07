@@ -94,9 +94,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     // @Group: CUST_ROT
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
     AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
+#endif
 
 #if HAL_WITH_ESC_TELEM
     // @Group: ESC_TLM
@@ -276,6 +278,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 30, AP_Vehicle, AP_Gripper),
 #endif
 
+#if AP_SERIALMANAGER_ENABLED
+    // @Group: SERIAL
+    // @Path: ../AP_SerialManager/AP_SerialManager.cpp
+    AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
+#endif
+
     AP_GROUPEND
 };
 
@@ -294,8 +302,10 @@ void AP_Vehicle::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial port
     serial_manager.init_console();
+#endif
 
     DEV_PRINTF("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
@@ -345,8 +355,10 @@ void AP_Vehicle::setup()
     gcs().init();
 #endif
 
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial ports
     serial_manager.init();
+#endif
 #if HAL_GCS_ENABLED
     gcs().setup_console();
 #endif
@@ -478,7 +490,9 @@ void AP_Vehicle::setup()
     fence.init();
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     custom_rotations.init();
+#endif
 
 #if AP_FILTER_ENABLED
     filters.init();

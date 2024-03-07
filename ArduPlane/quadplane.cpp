@@ -1761,10 +1761,8 @@ void SLT_Transition::update()
     }
 
     case TRANSITION_DONE:
-        if (!quadplane.tiltrotor.motors_active()) {
-            quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-            motors->output();
-        }
+        quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        motors->output();
         set_last_fw_pitch();
         in_forced_transition = false;
         return;
@@ -1851,7 +1849,7 @@ void QuadPlane::update(void)
             plane.control_mode == &plane.mode_acro ||
             plane.control_mode == &plane.mode_training) {
             // in manual modes quad motors are always off
-            if (!tiltrotor.motors_active() && !tailsitter.enabled()) {
+            if (!tailsitter.enabled()) {
                 set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
                 motors->output();
             }

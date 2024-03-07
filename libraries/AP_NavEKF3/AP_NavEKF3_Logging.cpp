@@ -238,7 +238,8 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     }
 
     // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
-    if (rngBcn.fuseDataReportIndex >= rngBcn.N) {
+    if (rngBcn.fuseDataReportIndex >= rngBcn.N ||
+        rngBcn.fuseDataReportIndex > rngBcn.numFusionReports) {
         rngBcn.fuseDataReportIndex = 0;
     }
 

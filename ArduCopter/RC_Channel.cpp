@@ -421,17 +421,17 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
 #if FRAME_CONFIG == HELI_FRAME
             switch (ch_flag) {
             case AuxSwitchPos::HIGH:
-                copter.motors->set_inverted_flight(true);
-                copter.attitude_control->set_inverted_flight(true);
-                copter.heli_flags.inverted_flight = true;
+                if (copter.flightmode->allows_inverted()) {
+                    copter.attitude_control->set_inverted_flight(true);
+                } else {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Inverted flight not available in %s mode", copter.flightmode->name());
+                }
                 break;
             case AuxSwitchPos::MIDDLE:
                 // nothing
                 break;
             case AuxSwitchPos::LOW:
-                copter.motors->set_inverted_flight(false);
                 copter.attitude_control->set_inverted_flight(false);
-                copter.heli_flags.inverted_flight = false;
                 break;
             }
 #endif

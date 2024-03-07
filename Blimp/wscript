@@ -18,6 +18,7 @@ def build(bld):
             'AP_KDECAN',
             'AP_Beacon',
             'AP_AdvancedFailsafe', # TODO for some reason compiling GCS_Common.cpp (in libraries) fails if this isn't included.
+            'AC_AttitudeControl',  # for PSCx logging
         ],
     )
 

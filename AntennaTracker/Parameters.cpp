@@ -308,10 +308,8 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),
-    
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
+
+    // AP_SerialManager was here
 
     // @Param: PITCH2SRV_P
     // @DisplayName: Pitch axis controller P gain
@@ -588,18 +586,27 @@ void Tracker::load_parameters(void)
 
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, true);
 #endif
 
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
-    AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, true);
 #endif
 
     // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
 #if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, 0, true);
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
+
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
 #if HAL_HAVE_SAFETY_SWITCH
     // configure safety switch to allow stopping the motors while armed

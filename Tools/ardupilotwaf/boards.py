@@ -770,6 +770,11 @@ class sitl(Board):
                     env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
 
         if len(env.ROMFS_FILES) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in env.ROMFS_FILES:
+                if file[0].startswith("scripts") and file[0].endswith(".lua"):
+                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                    break
             env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
         if cfg.options.sitl_rgbled:
@@ -883,6 +888,7 @@ class sitl_periph(sitl):
             HAL_RALLY_ENABLED = 0,
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_TERRAIN_AVAILABLE = 0,
+            AP_CUSTOMROTATIONS_ENABLED = 0,
         )
 
         try:
@@ -1343,6 +1349,11 @@ class linux(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
         if len(env.ROMFS_FILES) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in env.ROMFS_FILES:
+                if file[0].startswith("scripts") and file[0].endswith(".lua"):
+                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                    break
             env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
     def build(self, bld):

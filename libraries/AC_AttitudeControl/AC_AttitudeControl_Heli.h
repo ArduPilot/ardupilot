@@ -28,6 +28,7 @@
 #define AC_ATTITUDE_HELI_RATE_Y_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
 #define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
+#define AC_ATTITUDE_HELI_INVERTED_TRANSITION_TIME    3.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
@@ -82,9 +83,7 @@ public:
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
     
     // enable/disable inverted flight
-    void set_inverted_flight(bool inverted) override {
-        _inverted_flight = inverted;
-    }
+    void set_inverted_flight(bool inverted) override;
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
@@ -100,6 +99,10 @@ private:
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
+
+    // true in inverted flight mode
+    bool _inverted_flight;
+    uint16_t _transition_count;
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();

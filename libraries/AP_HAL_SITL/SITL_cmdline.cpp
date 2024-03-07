@@ -37,6 +37,7 @@
 #include <SITL/SIM_Webots_Python.h>
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
+#include <SITL/SIM_NoVehicle.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -181,6 +182,7 @@ static const struct {
     { "webots",             Webots::create },
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
+    { "novehicle",          NoVehicle::create },
 };
 
 void SITL_State::_set_signal_handlers(void) const
@@ -212,7 +214,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
-    const char *vehicle_str = SKETCH;
+    const char *vehicle_str = AP_BUILD_TARGET_NAME;
     _use_fg_view = false;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
@@ -239,7 +241,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
-    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
+    const bool is_example = APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -348,8 +350,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
-    if (is_replay) {
-        model_str = "quad";
+    if (is_example) {
+        model_str = "novehicle";
         HALSITL::UARTDriver::_console = true;
     }
 
@@ -371,7 +373,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:v:",
                     options);
-    while (!is_replay && (opt = gopt.getoption()) != -1) {
+    while (!is_example && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
             erase_all_storage = true;

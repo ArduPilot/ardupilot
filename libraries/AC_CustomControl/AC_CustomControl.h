@@ -12,7 +12,6 @@
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AP_Motors/AP_MotorsMulticopter.h>
-#include <AP_Logger/AP_Logger.h>
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
 #define CUSTOMCONTROL_MAX_TYPES 2

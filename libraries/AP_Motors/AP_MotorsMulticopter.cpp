@@ -272,6 +272,8 @@ void AP_MotorsMulticopter::output()
     // check for any external limit flags
     update_external_limits();
 
+    // clear mask of overridden motors
+    _motor_mask_override = 0;
 };
 
 void AP_MotorsMulticopter::update_external_limits()
@@ -728,9 +730,11 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float 
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
 
+    _motor_mask_override = mask;
+
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            if ((mask & (1U << i)) && armed() && get_interlock()) {
+        if (motor_enabled[i] && (mask & (1U << i)) != 0) {
+            if (armed() && get_interlock()) {
                 /*
                  apply rudder mixing differential thrust
                  copter frame roll is plane frame yaw as this only
@@ -738,11 +742,12 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float 
                  */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
                 set_actuator_with_slew(_actuator[i], thrust + diff_thrust);
-                int16_t pwm_output = pwm_min + pwm_range * _actuator[i];
-                rc_write(i, pwm_output);
             } else {
-                rc_write(i, pwm_min);
+                // zero throttle
+                _actuator[i] = 0.0;
             }
+            int16_t pwm_output = pwm_min + pwm_range * _actuator[i];
+            rc_write(i, pwm_output);
         }
     }
 }

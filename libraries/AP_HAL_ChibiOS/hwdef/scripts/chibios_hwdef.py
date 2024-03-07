@@ -2625,6 +2625,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.embed_bootloader(f)
 
         if len(self.romfs) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in self.romfs.keys():
+                if file.startswith("scripts") and file.endswith(".lua"):
+                    f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_LUA 1\n')
+                    break
             f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
 
         if self.mcu_series.startswith('STM32F1'):
@@ -3049,6 +3054,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     self.baro_list = []
                 if u == 'AIRSPEED':
                     self.airspeed_list = []
+                if u == 'ROMFS':
+                    self.romfs = {}
         elif a[0] == 'env':
             self.progress("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
@@ -3204,14 +3211,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # write out hw.dat for ROMFS
         self.write_all_lines(os.path.join(self.outdir, "hw.dat"))
 
+        # Add ROMFS directories
+        self.romfs_add_dir(['scripts'])
+        self.romfs_add_dir(['param'])
+
         # write out hwdef.h
         self.write_hwdef_header(os.path.join(self.outdir, "hwdef.h"))
 
         # write out ldscript.ld
         self.write_ldscript(os.path.join(self.outdir, "ldscript.ld"))
-
-        self.romfs_add_dir(['scripts'])
-        self.romfs_add_dir(['param'])
 
         self.write_ROMFS(self.outdir)
 

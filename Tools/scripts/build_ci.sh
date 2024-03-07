@@ -176,7 +176,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "examples" ]; then
-        ./waf configure --board=linux --debug
+        ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
         continue
@@ -466,6 +466,13 @@ for t in $CI_BUILD_TARGET; do
              --no-enable-in-turn \
              --build-targets=copter \
              --build-targets=plane
+        echo "Checking building with logging disabled works"
+        echo "define HAL_LOGGING_ENABLED 0" >/tmp/extra.hwdef
+        time ./waf configure \
+             --board=CubeOrange \
+             --extra-hwdef=/tmp/extra.hwdef
+        time ./waf plane
+        time ./waf copter
         continue
     fi
 

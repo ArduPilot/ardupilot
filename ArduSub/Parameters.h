@@ -61,7 +61,7 @@ public:
         k_param_BoardConfig = 20, // Board configuration (Pixhawk/Linux/etc)
         k_param_scheduler, // Scheduler (for debugging/perf_info)
         k_param_logger, // AP_Logger Logging
-        k_param_serial_manager, // Serial ports, AP_SerialManager
+        k_param_serial_manager_old, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
         k_param_arming = 26, // Arming checks
         k_param_can_mgr,

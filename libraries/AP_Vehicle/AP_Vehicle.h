@@ -317,7 +317,9 @@ protected:
     AP_GPS gps;
 #endif
     AP_Baro barometer;
+#if AP_COMPASS_ENABLED
     Compass compass;
+#endif
 #if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor ins;
 #endif
@@ -352,7 +354,10 @@ protected:
 #if AP_VIDEOTX_ENABLED
     AP_VideoTX vtx;
 #endif
+
+#if AP_SERIALMANAGER_ENABLED
     AP_SerialManager serial_manager;
+#endif
 
 #if AP_RELAY_ENABLED
     AP_Relay relay;
@@ -523,7 +528,10 @@ private:
 
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
+#if AP_CUSTOMROTATIONS_ENABLED
     AP_CustomRotations custom_rotations;
+#endif
+
 #if AP_FILTER_ENABLED
     AP_Filters filters;
 #endif

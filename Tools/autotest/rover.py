@@ -1369,7 +1369,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # location copied in from rover-test-rally.txt:
         loc = mavutil.location(40.071553,
                                -105.229401,
-                               0,
+                               1583,
                                0)
 
         self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)

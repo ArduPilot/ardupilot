@@ -214,7 +214,7 @@ public:
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
-        k_param_serial_manager,
+        k_param_serial_manager_old,
         k_param_ch9_option_old,
         k_param_ch10_option_old,
         k_param_ch11_option_old,
@@ -682,7 +682,7 @@ public:
 
     // payload place parameters
     AP_Float pldp_thrust_placed_fraction;
-    AP_Float pldp_range_finder_minimum_m;
+    AP_Float pldp_range_finder_maximum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
 };

@@ -286,7 +286,7 @@ static void main_loop()
     hal.scheduler->set_system_initialized();
 
     thread_running = true;
-    chRegSetThreadName(SKETCHNAME);
+    chRegSetThreadName(AP_BUILD_TARGET_NAME);
 
     /*
       switch to high priority for main loop

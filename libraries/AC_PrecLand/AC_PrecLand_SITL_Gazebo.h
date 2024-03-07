@@ -31,10 +31,10 @@ public:
     bool get_los_body(Vector3f& ret) override;
 
     // returns system time in milliseconds of last los measurement
-    uint32_t los_meas_time_ms() override;
+    uint32_t los_meas_time_ms() override { return _los_meas_time_ms; }
 
     // return true if there is a valid los measurement available
-    bool have_los_meas() override;
+    bool have_los_meas() override { return _have_los_meas; }
 
 private:
     AP_IRLock_SITL_Gazebo irlock;

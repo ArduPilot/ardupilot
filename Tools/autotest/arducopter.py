@@ -7090,22 +7090,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def check_avoidance_corners(self):
         self.takeoff(10, mode="LOITER")
+        here = self.mav.location()
         self.set_rc(2, 1400)
         west_loc = mavutil.location(-35.363007,
                                     149.164911,
-                                    0,
+                                    here.alt,
                                     0)
         self.wait_location(west_loc, accuracy=6)
         north_loc = mavutil.location(-35.362908,
                                      149.165051,
-                                     0,
+                                     here.alt,
                                      0)
         self.reach_heading_manual(0)
         self.wait_location(north_loc, accuracy=6, timeout=200)
         self.reach_heading_manual(90)
         east_loc = mavutil.location(-35.363013,
                                     149.165194,
-                                    0,
+                                    here.alt,
                                     0)
         self.wait_location(east_loc, accuracy=6)
         self.reach_heading_manual(225)
@@ -7556,18 +7557,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.takeoff(10, mode="LOITER")
             self.set_rc(2, 1400)
-            west_loc = mavutil.location(-35.362919, 149.165055, 0, 0)
+            here = self.mav.location()
+            west_loc = mavutil.location(-35.362919, 149.165055, here.alt, 0)
             self.wait_location(west_loc, accuracy=1)
             self.reach_heading_manual(0)
-            north_loc = mavutil.location(-35.362881, 149.165103, 0, 0)
+            north_loc = mavutil.location(-35.362881, 149.165103, here.alt, 0)
             self.wait_location(north_loc, accuracy=1)
             self.set_rc(2, 1500)
             self.set_rc(1, 1600)
-            east_loc = mavutil.location(-35.362986, 149.165227, 0, 0)
+            east_loc = mavutil.location(-35.362986, 149.165227, here.alt, 0)
             self.wait_location(east_loc, accuracy=1)
             self.set_rc(1, 1500)
             self.set_rc(2, 1600)
-            south_loc = mavutil.location(-35.363025, 149.165182, 0, 0)
+            south_loc = mavutil.location(-35.363025, 149.165182, here.alt, 0)
             self.wait_location(south_loc, accuracy=1)
             self.set_rc(2, 1500)
             self.do_RTL()
@@ -9024,41 +9026,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SMART_RTL(self):
         '''Check SMART_RTL'''
-        self.context_push()
-        ex = None
-        try:
-            self.progress("arm the vehicle and takeoff in Guided")
-            self.takeoff(20, mode='GUIDED')
-            self.progress("fly around a bit (or whatever)")
-            locs = [
-                (50, 0, 20),
-                (-50, 50, 20),
-                (-50, 0, 20),
-            ]
-            for (lat, lng, alt) in locs:
-                self.fly_guided_move_local(lat, lng, alt)
+        self.progress("arm the vehicle and takeoff in Guided")
+        self.takeoff(20, mode='GUIDED')
+        self.progress("fly around a bit (or whatever)")
+        locs = [
+            (50, 0, 20),
+            (-50, 50, 20),
+            (-50, 0, 20),
+        ]
+        for (lat, lng, alt) in locs:
+            self.fly_guided_move_local(lat, lng, alt)
 
-            self.change_mode('SMART_RTL')
-            for (lat, lng, alt) in reversed(locs):
-                self.wait_distance_to_local_position(
-                    (lat, lng, -alt),
-                    0,
-                    10,
-                    timeout=60
-                )
-            self.wait_disarmed()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-            self.disarm_vehicle(force=True)
-
-        self.context_pop()
-
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
+        self.change_mode('SMART_RTL')
+        for (lat, lng, alt) in reversed(locs):
+            self.wait_distance_to_local_position(
+                (lat, lng, -alt),
+                0,
+                10,
+                timeout=60
+            )
+        self.wait_disarmed()
 
     def get_ground_effect_duration_from_current_onboard_log(self, bit, ignore_multi=False):
         '''returns a duration in seconds we were expecting to interact with
@@ -9632,7 +9619,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_PLD_ALT_LMT": 15.000000,
             "SIM_PLD_DIST_LMT": 10.000000,
             "SIM_PLD_ENABLE": 1,
-            "SIM_PLD_HEIGHT": 942.0000000,
+            "SIM_PLD_HEIGHT": 0,
             "SIM_PLD_LAT": -20.558929,
             "SIM_PLD_LON": -47.415035,
             "SIM_PLD_RATE": 100,
@@ -10280,6 +10267,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.change_mode('LAND')
         self.wait_disarmed()
+
+        # test turning safty on/off using explicit MAVLink command:
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_SAFE)
+        self.assert_prearm_failure("safety switch")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_DANGEROUS)
+        self.wait_ready_to_arm()
 
     def GuidedYawRate(self):
         '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''

@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
@@ -727,7 +731,7 @@ void Compass::init()
 
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_CUSTOMROTATIONS_ENABLED
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
             continue;
@@ -747,7 +751,7 @@ void Compass::init()
         }
         break;
     }
-#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif  // AP_CUSTOMROTATIONS_ENABLED
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
@@ -2236,3 +2240,5 @@ Compass &compass()
 }
 
 }
+
+#endif  // AP_COMPASS_ENABLED

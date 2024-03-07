@@ -595,6 +595,8 @@ protected:
     void deadlock_sem(void);
 #endif
 
+    MAV_RESULT handle_do_set_safety_switch_state(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_get_message_interval(const mavlink_command_int_t &packet);
@@ -939,6 +941,7 @@ private:
 
     uint8_t send_parameter_async_replies();
 
+#if AP_MAVLINK_FTP_ENABLED
     enum class FTP_OP : uint8_t {
         None = 0,
         TerminateSession = 1,
@@ -1014,6 +1017,7 @@ private:
     bool send_ftp_reply(const pending_ftp &reply);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
+#endif  // AP_MAVLINK_FTP_ENABLED
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 

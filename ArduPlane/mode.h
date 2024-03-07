@@ -400,7 +400,7 @@ public:
     void run() override;
 
     // true if throttle min/max limits should be applied
-    bool use_throttle_limits() const override { return false; }
+    bool use_throttle_limits() const override;
 
     // true if voltage correction should be applied to throttle
     bool use_battery_compensation() const override { return false; }
@@ -669,6 +669,7 @@ protected:
 class ModeQLand : public Mode
 {
 public:
+    friend class Plane;
 
     Number mode_number() const override { return Number::QLAND; }
     const char *name() const override { return "QLAND"; }
@@ -686,6 +687,7 @@ protected:
     bool _enter() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
 
+    uint32_t last_target_loc_set_ms;
 };
 
 class ModeQRTL : public Mode
