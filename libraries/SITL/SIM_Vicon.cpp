@@ -37,21 +37,31 @@ void Vicon::maybe_send_heartbeat()
 {
     const uint32_t now = AP_HAL::millis();
 
-    if (now - last_heartbeat_ms < 100) {
+    if (now - last_heartbeat_ms < 500) {
         // we only provide a heartbeat every so often
         return;
     }
+
+    uint8_t msg_buf_index;
+    if (!get_free_msg_buf_index(msg_buf_index)) {
+        return;
+    }
+
     last_heartbeat_ms = now;
 
-    mavlink_message_t msg;
-    mavlink_msg_heartbeat_pack(system_id,
-                               component_id,
-                               &msg,
-                               MAV_TYPE_GCS,
-                               MAV_AUTOPILOT_INVALID,
-                               0,
-                               0,
-                               0);
+    const mavlink_heartbeat_t heartbeat{
+    type : MAV_TYPE_GCS,
+    autopilot : MAV_AUTOPILOT_INVALID,
+    };
+
+    mavlink_msg_heartbeat_encode_status(
+        system_id,
+        component_id,
+        &mav_status,
+        &msg_buf[msg_buf_index].obs_msg,
+        &heartbeat
+    );
+    msg_buf[msg_buf_index].time_send_us = AP_HAL::millis();
 }
 
 // get unused index in msg_buf
