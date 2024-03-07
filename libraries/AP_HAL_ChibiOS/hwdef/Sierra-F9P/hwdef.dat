@@ -98,7 +98,6 @@ define HAL_NO_GPIO_IRQ
 # avoid RCIN thread to save memory
 define HAL_USE_RTC TRUE
 define DMA_RESERVE_SIZE 0
-define PERIPH_FW TRUE
 
 # enable CAN support
 PB8 CAN1_RX CAN1

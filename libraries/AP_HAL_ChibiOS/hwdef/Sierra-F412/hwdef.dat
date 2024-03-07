@@ -87,7 +87,6 @@ define HAL_NO_GPIO_IRQ
 # avoid RCIN thread to save memory
 define HAL_USE_RTC FALSE
 define DMA_RESERVE_SIZE 0
-define PERIPH_FW TRUE
 
 # enable CAN support
 PA11 CAN1_RX CAN1
