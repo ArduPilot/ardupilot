@@ -11,6 +11,11 @@ local PARAM_TABLE_PREFIX = "PLND_"
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local MODE_QLAND = 20
+local MODE_QLOITER = 19
+
+local AUX_PRECLOITER = 39
+
+local precloiter_enabled = false
 
 -- bind a parameter to a variable
 function bind_param(name)
@@ -63,7 +68,7 @@ local rangefinder_orient = 25 -- downward
 --[[
    update the have_target variable
 --]]
-function update_target()
+local function update_target()
    if not precland:healthy() then
       have_target = false
       return
@@ -88,18 +93,44 @@ function update_target()
 end
 
 --[[
-   return true if we are in an automatic landing and should
-   try to use precision landing
+   return true if we are in a state where precision landing control should apply
 --]]
-function in_auto_land()
-   return quadplane:in_vtol_land_descent() or vehicle:get_mode() == MODE_QLAND
+local function precision_landing_active()
+   local mode = vehicle:get_mode()
+
+   if mode == MODE_QLOITER then
+      -- support precision loiter under pilot control
+      return precloiter_enabled
+   end
+
+   return quadplane:in_vtol_land_descent() or mode == MODE_QLAND
+end
+
+--[[
+   check for user activating precision loiter
+--]]
+local function precloiter_check()
+   local precloiter_pos = rc:get_aux_cached(AUX_PRECLOITER)
+   if precloiter_pos then
+      enabled = precloiter_pos == 2
+      if enabled ~= precloiter_enabled then
+         precloiter_enabled = enabled
+         if enabled then
+            gcs:send_text(MAV_SEVERITY.INFO, "PLND: PrecLoiter enabled")
+         else
+            gcs:send_text(MAV_SEVERITY.INFO, "PLND: PrecLoiter disabled")
+         end
+      end
+   end
 end
 
 -- main update function
-function update()
+local function update()
    if PLND_ENABLED:get() < 1 then
       return
    end
+
+   precloiter_check()
 
    --[[
       get the current navigation target. Note that we must get this
@@ -112,8 +143,8 @@ function update()
       return
    end
 
-   -- see if we are landing
-   if not in_auto_land() then
+   -- see if we are a precision landing state
+   if not precision_landing_active() then
       return
    end
 
@@ -155,7 +186,7 @@ function update()
       PLND_OPTIONS then ask vehicle to match
    --]]
    local target_vel = precland:get_target_velocity()
-   if target_vel and (PLND_OPTIONS:get():toint() & 1) ~= 0 then
+   if target_vel and (PLND_OPTIONS:get() & 1) ~= 0 then
       vehicle:set_velocity_match(target_vel)
    end
    if not target_vel then
@@ -196,7 +227,7 @@ gcs:send_text(MAV_SEVERITY.INFO, "PLND: Loaded")
 -- wrapper around update(). This calls update() at 20Hz,
 -- and if update faults then an error is displayed, but the script is not
 -- stopped
-function protected_wrapper()
+local function protected_wrapper()
   local success, err = pcall(update)
   if not success then
      gcs:send_text(0, "Internal Error: " .. err)
