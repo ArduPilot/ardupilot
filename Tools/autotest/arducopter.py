@@ -10828,6 +10828,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if abs(got - want) > 1:
                 raise NotAchievedException(f"Incorrect relalt {want=} {got=}")
 
+    def LoiterToGuidedHomeVSOrigin(self):
+        '''test moving from guided to loiter mode when home is a different alt
+        to origin'''
+        self.set_parameters({
+            "TERRAIN_ENABLE": 1,
+            "SIM_TERRAIN": 1,
+        })
+        self.takeoff(10, mode='GUIDED')
+        here = self.mav.location()
+        self.set_home(here)
+        self.change_mode('LOITER')
+        self.wait_altitude(here.alt-1, here.alt+1, minimum_duration=10)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()  # to "unstick" home
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10906,6 +10921,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.PILOT_THR_BHV,
             self.GPSForYawCompassLearn,
             self.CameraLogMessages,
+            self.LoiterToGuidedHomeVSOrigin,
         ])
         return ret
 
