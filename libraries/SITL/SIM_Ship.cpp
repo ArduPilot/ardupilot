@@ -171,12 +171,11 @@ void ShipSim::send_report(void)
 
     if (now - last_heartbeat_ms >= 1000) {
         last_heartbeat_ms = now;
+
         const mavlink_heartbeat_t heartbeat{
-            MAV_TYPE_SURFACE_BOAT,
-            MAV_AUTOPILOT_INVALID,
-            0,
-            0,
-            0};
+        type : MAV_TYPE_SURFACE_BOAT,
+        autopilot : MAV_AUTOPILOT_INVALID};
+
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
             sys_id.get(),
