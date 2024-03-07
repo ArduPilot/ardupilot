@@ -76,16 +76,28 @@ ShipSim::ShipSim()
 }
 
 /*
+  get the location of the ship
+ */
+bool ShipSim::get_location(Location &loc) const
+{
+    if (!enable) {
+        return false;
+    }
+    loc = home;
+    loc.offset(ship.position.x, ship.position.y);
+    return true;
+}
+
+/*
   get ground speed adjustment if we are landed on the ship
  */
 Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_rate)
 {
-    if (!enable) {
+    Location shiploc;
+    if (!get_location(shiploc)) {
         yaw_rate = 0;
         return Vector2f(0,0);
     }
-    Location shiploc = home;
-    shiploc.offset(ship.position.x, ship.position.y);
     if (loc.get_distance(shiploc) > deck_size) {
         yaw_rate = 0;
         return Vector2f(0,0);
@@ -193,8 +205,10 @@ void ShipSim::send_report(void)
     /*
       send a GLOBAL_POSITION_INT messages
      */
-    Location loc = home;
-    loc.offset(ship.position.x, ship.position.y);
+    Location loc;
+    if (!get_location(loc)) {
+        return;
+    }
 
     int32_t alt_mm = home.alt * 10;  // assume home altitude
 
