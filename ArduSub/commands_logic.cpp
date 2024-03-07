@@ -15,16 +15,20 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
     const Location &target_loc = cmd.content.location;
+    auto alt_frame = target_loc.get_alt_frame();
 
-    // target alt must be negative (underwater)
-    if (target_loc.alt > 0.0f) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
-        return false;
-    }
-
-    // only tested/supported alt frame so far is AltFrame::ABOVE_HOME, where Home alt is always water's surface ie zero depth
-    if (target_loc.get_alt_frame() != Location::AltFrame::ABOVE_HOME) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV AltFrame %d", (int8_t)target_loc.get_alt_frame());
+    if (alt_frame == Location::AltFrame::ABOVE_HOME) {
+        if (target_loc.alt > 0) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above home must be negative");
+            return false;
+        }
+    } else if (alt_frame == Location::AltFrame::ABOVE_TERRAIN) {
+        if (target_loc.alt < 0) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above terrain must be positive");
+            return false;
+        }
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Bad alt frame");
         return false;
     }
 
@@ -111,6 +115,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // unable to use the command, allow the vehicle to try the next command
+        gcs().send_text(MAV_SEVERITY_WARNING, "Ignoring command %d", cmd.id);
         return false;
     }
 

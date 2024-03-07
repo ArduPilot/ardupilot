@@ -88,6 +88,7 @@ void ModeAuto::auto_wp_start(const Location& dest_loc)
     // send target to waypoint controller
     if (!sub.wp_nav.set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
+        gcs().send_text(MAV_SEVERITY_WARNING, "Terrain data (rangefinder) not available");
         sub.failsafe_terrain_on_event();
         return;
     }
