@@ -424,7 +424,8 @@ void AP_Vehicle::setup()
 #endif
 #endif  // AP_AIRSPEED_ENABLED
 
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+
+#if AP_SRV_CHANNELS_ENABLED
     SRV_Channels::init();
 #endif
 
