@@ -1090,6 +1090,7 @@ void AP_Torqeedo::log_TRQD(bool force_logging)
     }
     _last_log_TRQD_ms = now_ms;
 
+#if HAL_LOGGING_ENABLED || HAL_GCS_ENABLED
     const bool health = healthy();
     int16_t actual_motor_speed = get_motor_speed_limited();
 
@@ -1121,6 +1122,7 @@ void AP_Torqeedo::log_TRQD(bool force_logging)
                 (unsigned long)_parse_success_count,
                 (unsigned long)_parse_error_count);
     }
+#endif  // HAL_LOGGING_ENABLED || HAL_GCS_ENABLED
 }
 
 // send ESC telemetry
