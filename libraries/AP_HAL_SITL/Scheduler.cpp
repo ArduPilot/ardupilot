@@ -290,7 +290,7 @@ void Scheduler::_run_io_procs()
     check_thread_stacks();
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     AP::RC().update();
 #endif
 }
