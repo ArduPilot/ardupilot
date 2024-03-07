@@ -233,7 +233,7 @@ void Tailsitter::setup()
 
     // Setup for control surface less operation
     if (enable == 2) {
-        quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::FORCE_ENABLED);
+        quadplane.assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
         quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
 
         // Do not allow arming in forward flight modes

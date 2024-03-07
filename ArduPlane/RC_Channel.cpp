@@ -61,17 +61,17 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
     switch(ch_flag) {
         case AuxSwitchPos::HIGH:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
-            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::FORCE_ENABLED);
+            plane.quadplane.assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
             break;
 
         case AuxSwitchPos::MIDDLE:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
-            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_ENABLED);
+            plane.quadplane.assist.set_state(VTOL_Assist::STATE::ASSIST_ENABLED);
             break;
 
         case AuxSwitchPos::LOW:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
-            plane.quadplane.assist.set_state(QuadPlane::VTOL_Assist::STATE::ASSIST_DISABLED);
+            plane.quadplane.assist.set_state(VTOL_Assist::STATE::ASSIST_DISABLED);
             break;
     }
 }
