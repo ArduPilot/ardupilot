@@ -1387,9 +1387,11 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                     break; //default to MSL altitude
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     cmd.content.location.relative_alt = true;
                     break;
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
                     cmd.content.location.relative_alt = true;
                     cmd.content.location.terrain_alt = true;
