@@ -26,6 +26,7 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+#include "VTOL_Assist.h"
 
 /*
   QuadPlane specific functionality
@@ -45,6 +46,7 @@ public:
     friend class Tiltrotor;
     friend class SLT_Transition;
     friend class Tailsitter_Transition;
+    friend class VTOL_Assist;
 
     friend class Mode;
     friend class ModeManual;
@@ -326,75 +328,8 @@ private:
 
     AP_Int16 rc_speed;
 
-
     // VTOL assistance in a forward flight mode
-    class VTOL_Assist {
-    public:
-        VTOL_Assist(QuadPlane& _quadplane):quadplane(_quadplane) {};
-
-        // check for assistance needed
-        bool should_assist(float aspeed, bool have_airspeed);
-
-        // Assistance not needed, reset any state
-        void reset();
-
-        // speed below which quad assistance is given
-        AP_Float speed;
-
-        // angular error at which quad assistance is given
-        AP_Int8 angle;
-
-        // altitude to trigger assistance
-        AP_Int16 alt;
-
-        // Time hysteresis for triggering of assistance
-        AP_Float delay;
-
-        // State from pilot
-        enum class STATE {
-            ASSIST_DISABLED,
-            ASSIST_ENABLED,
-            FORCE_ENABLED,
-        };
-        void set_state(STATE _state) { state = _state; }
-
-        // Logging getters for assist types
-        bool in_force_assist() const { return force_assist; }
-        bool in_speed_assist() const { return speed_assist; }
-        bool in_alt_assist() const { return alt_error.is_active(); }
-        bool in_angle_assist() const { return angle_error.is_active(); }
-
-    private:
-
-        // Default to enabled
-        STATE state = STATE::ASSIST_ENABLED;
-
-        class Assist_Hysteresis {
-        public:
-            // Reset state
-            void reset();
-
-            // Update state, return true when first triggered
-            bool update(const bool trigger, const uint32_t &now_ms, const uint32_t &trigger_delay_ms, const uint32_t &clear_delay_ms);
-
-            // Return true if the output is active
-            bool is_active() const { return active; }
-
-        private:
-            uint32_t start_ms;
-            uint32_t last_ms;
-            bool active;
-        };
-        Assist_Hysteresis angle_error;
-        Assist_Hysteresis alt_error;
-
-        // Force and speed assist have no hysteresis
-        bool force_assist;
-        bool speed_assist;
-
-        // Reference to access quadplane
-        QuadPlane& quadplane;
-    } assist {*this};
+    VTOL_Assist assist {*this};
 
     // landing speed in m/s
     AP_Float land_final_speed;
