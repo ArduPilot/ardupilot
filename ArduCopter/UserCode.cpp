@@ -18,7 +18,7 @@ void Copter::userhook_FastLoop()
 #ifdef USERHOOK_50HZLOOP
 void Copter::userhook_50Hz()
 {
-    // put your 50Hz code here
+    // put your 50Hz code here    
 }
 #endif
 
