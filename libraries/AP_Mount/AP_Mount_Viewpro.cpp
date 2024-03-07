@@ -313,14 +313,14 @@ void AP_Mount_Viewpro::process_packet()
             const uint8_t patch_ver = atoi((const char*)fw_patch_str) & 0xFF;
             _firmware_version = (patch_ver << 16) | (minor_ver << 8) | major_ver;
             _got_firmware_version = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
             // gimbal model, length is 10 bytes
             strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
             _got_model_name = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
             break;
         default:
             // unsupported control command
@@ -340,16 +340,16 @@ void AP_Mount_Viewpro::process_packet()
             _last_tracking_status = tracking_status;
             switch (tracking_status) {
             case TrackingStatus::STOPPED:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
                 break;
             case TrackingStatus::SEARCHING:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
                 break;
             case TrackingStatus::TRACKING:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
                 break;
             case TrackingStatus::LOST:
-                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
                 break;
             }
         }
@@ -368,7 +368,7 @@ void AP_Mount_Viewpro::process_packet()
         const bool recording = (recording_status == RecordingStatus::RECORDING);
         if (recording != _recording) {
             _recording = recording;
-            gcs().send_text(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
         }
 
         // get optical zoom times
