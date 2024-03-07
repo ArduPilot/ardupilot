@@ -8993,6 +8993,15 @@ Also, ignores heartbeats not from our target system'''
             self.progress("GroundSpeed OK (got=%f) (want=%f)" %
                           (m.groundspeed, want))
 
+    def set_home(self, loc):
+        '''set home to supplied loc'''
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=int(loc.lat*1e7),
+            p6=int(loc.lng*1e7),
+            p7=loc.alt,
+        )
+
     def SetHome(self):
         '''Setting and fetching of home'''
         if self.is_tracker():
