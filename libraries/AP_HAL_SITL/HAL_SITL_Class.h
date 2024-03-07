@@ -41,6 +41,8 @@ public:
     bool run_in_maintenance_mode() const;
 #endif
 
+    uint16_t *get_pwm_input() const;
+
 private:
     HALSITL::SITL_State *_sitl_state;
 
@@ -53,6 +55,7 @@ private:
 
     // set to true if simulation is to wipe storage as it is opened:
     bool wipe_storage;
+
 };
 
 #if HAL_NUM_CAN_IFACES
