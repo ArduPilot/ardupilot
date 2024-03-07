@@ -13,10 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "SIM_config.h"
+
 #include "SIM_Precland.h"
 #include "AP_HAL/AP_HAL.h"
 #include "AP_Math/AP_Math.h"
 #include "AP_Common/Location.h"
+#include "SITL.h"
 #include <stdio.h>
 
 using namespace SITL;
@@ -112,10 +115,19 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  10, SIM_Precland, _options, 0),
 
+#if AP_SIM_SHIP_ENABLED
+    // @Param: SHIP
+    // @DisplayName: SIM_Precland follow ship
+    // @Description: This makes the position of the landing beacon follow the simulated ship from SIM_SHIP. The ship movement is controlled with the SIM_SHIP parameters
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("SHIP",  11, SIM_Precland, _ship, 0),
+#endif
+    
     AP_GROUPEND
 };
 
-void SIM_Precland::update(const Location &loc, const Vector3d &position_relhome)
+void SIM_Precland::update(const Location &loc)
 {
     if (!_enable) {
         _healthy = false;
@@ -126,22 +138,32 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position_relhome)
         return;
     }
 
-    const Location device_center(static_cast<int32_t>(_device_lat * 1.0e7f),
-                                 static_cast<int32_t>(_device_lon * 1.0e7f),
-                                 static_cast<int32_t>(_device_height*100),
-            Location::AltFrame::ABOVE_ORIGIN);
-    Vector3f centerf;
-    if (!device_center.get_vector_from_origin_NEU(centerf)) {
-        _healthy = false;
-        return;
+    Location device_center(static_cast<int32_t>(_device_lat * 1.0e7f),
+                           static_cast<int32_t>(_device_lon * 1.0e7f),
+                           static_cast<int32_t>(_device_height*100),
+                           Location::AltFrame::ABOVE_ORIGIN);
+
+#if AP_SIM_SHIP_ENABLED
+    if (_ship == 1) {
+        /*
+          make precland target follow the simulated ship if the ship is enabled
+         */
+        auto *sitl = AP::sitl();
+        Location shiploc;
+        if (sitl != nullptr && sitl->shipsim.get_location(shiploc) && !shiploc.is_zero()) {
+            shiploc.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+            device_center = shiploc;
+        }
     }
-    centerf = centerf * 0.01f;        // cm to m
-    centerf.z *= -1; // NEU to NED
+#endif
 
     // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
     Vector3d axis{1, 0, 0};
     axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
-    Vector3d position_wrt_device = position_relhome - centerf.todouble();  // position of vehicle with respect to preland device center
+
+    device_center.change_alt_frame(loc.get_alt_frame());
+
+    Vector3d position_wrt_device = device_center.get_distance_NED_double(loc);  // position of vehicle with respect to preland device center
     
     // longitudinal distance of vehicle from the precland device
     // this is the distance of vehicle from the plane which is passing through precland device center and perpendicular to axis of cone/cylinder
