@@ -277,13 +277,14 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // confidence: Normalized confidence level [0, 100]
     if (should_send(ViconTypeMask::VISION_POSITION_DELTA) && get_free_msg_buf_index(msg_buf_index)) {
         const mavlink_vision_position_delta_t vision_position_delta{
-            now_us + time_offset_us,
-            time_delta,
-            { attitude_curr_prev.get_euler_roll(),
-              attitude_curr_prev.get_euler_pitch(),
-              attitude_curr_prev.get_euler_yaw()
-            },
-            {pos_delta.x, pos_delta.y, pos_delta.z}
+        time_usec: now_us + time_offset_us,
+        time_delta_usec: time_delta,
+        angle_delta: { attitude_curr_prev.get_euler_roll(),
+            attitude_curr_prev.get_euler_pitch(),
+            attitude_curr_prev.get_euler_yaw()
+        },
+        position_delta: {pos_delta.x, pos_delta.y, pos_delta.z},
+        confidence: 0
         };
         mavlink_msg_vision_position_delta_encode_status(
             system_id,
