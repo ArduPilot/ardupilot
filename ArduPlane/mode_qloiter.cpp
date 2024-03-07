@@ -17,6 +17,10 @@ bool ModeQLoiter::_enter()
 
     // prevent re-init of target position
     quadplane.last_loiter_ms = AP_HAL::millis();
+
+    // clear precland timestamp
+    last_target_loc_set_ms = 0;
+
     return true;
 }
 
@@ -29,6 +33,36 @@ void ModeQLoiter::update()
 void ModeQLoiter::run()
 {
     const uint32_t now = AP_HAL::millis();
+
+#if AC_PRECLAND_ENABLED
+    const uint32_t precland_timeout_ms = 250;
+    /*
+      see if precision landing or precision loiter is active with
+      an override of the target location.
+
+    */
+    const uint32_t last_pos_set_ms = last_target_loc_set_ms;
+    const uint32_t last_vel_set_ms = quadplane.poscontrol.last_velocity_match_ms;
+
+    if (last_pos_set_ms != 0 && now - last_pos_set_ms < precland_timeout_ms) {
+        // we have an active landing target override
+        Vector2f rel_origin;
+        if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
+            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
+            last_target_loc_set_ms = 0;
+        }
+    }
+
+    // allow for velocity override as well
+    if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
+        // we have an active landing velocity override
+        Vector2f target_accel;
+        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match.x*100, quadplane.poscontrol.velocity_match.y*100};
+        quadplane.pos_control->input_vel_accel_xy(target_speed_xy_cms, target_accel);
+        quadplane.poscontrol.last_velocity_match_ms = 0;
+    }
+#endif // AC_PRECLAND_ENABLED
+
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
         Mode::run();
