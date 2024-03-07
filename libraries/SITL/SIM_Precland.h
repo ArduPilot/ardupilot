@@ -28,7 +28,7 @@ public:
     };
 
     // update precland state
-    void update(const Location &loc, const Vector3d &position);
+    void update(const Location &loc);
 
     // true if precland sensor is online and healthy
     bool healthy() const { return _healthy; }
@@ -56,7 +56,9 @@ public:
     AP_Float _alt_limit;
     AP_Float _dist_limit;
     AP_Int8 _orient;
+    AP_Int8 _ship;
     AP_Enum<Option> _options;
+
     bool _over_precland_base;
 
     enum PreclandType {
