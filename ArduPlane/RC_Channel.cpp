@@ -177,6 +177,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
+    case AUX_FUNC::PRECISION_LOITER:
         break;
 
     case AUX_FUNC::SOARING:
@@ -441,6 +442,10 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         } else {
            plane.autotune_enable(false); 
         }
+        break;
+
+    case AUX_FUNC::PRECISION_LOITER:
+        // handled by lua scripting, just ignore here
         break;
 
     default:
