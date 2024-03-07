@@ -1,3 +1,7 @@
+#include "AP_Scheduler_config.h"
+
+#if AP_SCHEDULER_ENABLED
+
 #include "PerfInfo.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -217,3 +221,5 @@ void AP::PerfInfo::set_loop_rate(uint16_t rate_hz)
         filtered_loop_time = 1.0f / rate_hz;
     }
 }
+
+#endif  // AP_SCHEDULER_ENABLED
