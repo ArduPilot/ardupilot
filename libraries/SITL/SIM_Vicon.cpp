@@ -166,13 +166,13 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     uint8_t msg_buf_index;
     if (should_send(ViconTypeMask::VISION_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
         const mavlink_vision_position_estimate_t vision_position_estimate{
-            now_us + time_offset_us,
-            float(pos_corrected.x),
-            float(pos_corrected.y),
-            float(pos_corrected.z),
-            roll,
-            pitch,
-            yaw
+        usec: now_us + time_offset_us,
+        x: float(pos_corrected.x),
+        y: float(pos_corrected.y),
+        z: float(pos_corrected.z),
+        roll: roll,
+        pitch: pitch,
+        yaw: yaw
         };
         mavlink_msg_vision_position_estimate_encode_status(
             system_id,
@@ -187,13 +187,13 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // send older vicon position estimate message
     if (should_send(ViconTypeMask::VICON_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
         const mavlink_vicon_position_estimate_t vicon_position_estimate{
-            now_us + time_offset_us,
-            float(pos_corrected.x),
-            float(pos_corrected.y),
-            float(pos_corrected.z),
-            roll,
-            pitch,
-            yaw
+        usec: now_us + time_offset_us,
+        x: float(pos_corrected.x),
+        y: float(pos_corrected.y),
+        z: float(pos_corrected.z),
+        roll: roll,
+        pitch: pitch,
+        yaw: yaw
         };
         mavlink_msg_vicon_position_estimate_encode_status(
             system_id,
