@@ -86,7 +86,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::LAND:
     case AUX_FUNC::LOITER:
+#if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
+#endif
     case AUX_FUNC::POSHOLD:
     case AUX_FUNC::RESETTOARMEDYAW:
     case AUX_FUNC::RTL:
@@ -98,7 +100,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::USER_FUNC1:
     case AUX_FUNC::USER_FUNC2:
     case AUX_FUNC::USER_FUNC3:
+#if AP_WINCH_ENABLED
     case AUX_FUNC::WINCH_CONTROL:
+#endif
     case AUX_FUNC::ZIGZAG:
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
@@ -115,15 +119,21 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ATTCON_FEEDFWD:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::MOTOR_INTERLOCK:
+#if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
     case AUX_FUNC::PARACHUTE_ENABLE:
+#endif
     case AUX_FUNC::PRECISION_LOITER:
+#if AP_RANGEFINDER_ENABLED
     case AUX_FUNC::RANGEFINDER:
+#endif
     case AUX_FUNC::SIMPLE_MODE:
     case AUX_FUNC::STANDBY:
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
+#if AP_WINCH_ENABLED
     case AUX_FUNC::WINCH_ENABLE:
+#endif
     case AUX_FUNC::AIRMODE:
     case AUX_FUNC::FORCEFLYING:
     case AUX_FUNC::CUSTOM_CONTROLLER:
@@ -269,7 +279,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
                 copter.rangefinder_state.enabled = false;
             }
             break;
-#endif
+#endif // AP_RANGEFINDER_ENABLED
 
 #if MODE_ACRO_ENABLED == ENABLED
         case AUX_FUNC::ACRO_TRAINER:
@@ -339,7 +349,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
                     break;
             }
             break;
-#endif
+#endif  // HAL_PARACHUTE_ENABLED
 
         case AUX_FUNC::ATTCON_FEEDFWD:
             // enable or disable feed forward
@@ -447,11 +457,11 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
                     break;
                 }
             break;
-#endif
 
         case AUX_FUNC::WINCH_CONTROL:
             // do nothing, used to control the rate of the winch and is processed within AP_Winch
             break;
+#endif  // AP_WINCH_ENABLED
 
 #ifdef USERHOOK_AUXSWITCH
         case AUX_FUNC::USER_FUNC1:
