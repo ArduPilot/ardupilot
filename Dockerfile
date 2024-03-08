@@ -55,6 +55,14 @@ RUN export ARDUPILOT_ENTRYPOINT="/home/${USER_NAME}/ardupilot_entrypoint.sh" \
 # Set the buildlogs directory into /tmp as other directory aren't accessible
 ENV BUILDLOGS=/tmp/buildlogs
 
+# Additional commands after installing the base image: installing simulators
+RUN sudo apt-get install -y python3-dev python3-opencv python3-wxgtk4.0 python3-pip python3-matplotlib python3-lxml python3-pygame
+RUN pip3 install PyYAML mavproxy --user
+RUN echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
+RUN echo 'export PATH="$PATH:$HOME/usr/games"' >> ~/.bashrc
+RUN sudo apt-get install flightgear -y
+RUN sudo apt-get install vim -y
+
 # Cleanup
 RUN sudo apt-get clean \
     && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
