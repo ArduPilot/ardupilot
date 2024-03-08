@@ -379,6 +379,9 @@ public:
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
 
+    // enable accessor for inverted flight flag on backends that support it
+    virtual bool get_inverted_flight() { return false;}
+
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
     
