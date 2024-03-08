@@ -39,6 +39,11 @@ private:
     // Check if we have received an warning code and populate message with warning code
     bool check_for_warning_code(char* msg_txt, uint8_t msg_len) const override;
 
+#if HAL_GCS_ENABLED
+    // Get the MAV_SEVERITY level of a given error code
+    MAV_SEVERITY get_mav_severity(uint32_t err_code) const override;
+#endif
+
     // Check for error codes that are deemed critical
     bool is_critical_error(const uint32_t err_in) const;
 
