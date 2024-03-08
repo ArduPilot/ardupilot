@@ -3,6 +3,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include "Parameters.h"
+#include "GCS_GenericVehicle.h"
 
 class AP_GenericVehicle : public AP_Vehicle {
 public:
@@ -22,6 +23,19 @@ public:
     }
     uint8_t get_mode() const override { return 0; }
 
+    void init_ardupilot() override;
+
+#if AP_SCHEDULER_ENABLED
+    static const AP_Scheduler::Task scheduler_tasks[];
+    uint32_t log_bitx;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) override;
+#endif
+
+#if HAL_GCS_ENABLED
+    // GCS selection
+    GCS_GenericVehicle _gcs; // avoid using this; use gcs()
+    GCS_GenericVehicle &gcs() { return _gcs; }
+#endif
 
 };
 

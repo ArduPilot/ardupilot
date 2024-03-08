@@ -16,7 +16,13 @@ public:
         //
         k_param_format_version =   0,
         k_param_vehicle =   1,
+#if HAL_GCS_ENABLED
+        k_param_sysid_this_mav =   2,
+#endif
     };
 
     AP_Int16 format_version;
+#if HAL_GCS_ENABLED
+    AP_Int16 sysid_this_mav;
+#endif
 };

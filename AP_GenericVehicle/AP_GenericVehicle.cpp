@@ -27,4 +27,29 @@ AP_GenericVehicle::AP_GenericVehicle()
 {
 }
 
+#if AP_SCHEDULER_ENABLED
+const AP_Scheduler::Task AP_GenericVehicle::scheduler_tasks[] {
+#if HAL_GCS_ENABLED
+    SCHED_TASK_CLASS(GCS,            (GCS*)&genericvehicle._gcs,       update_receive,   300,  500,  57),
+    SCHED_TASK_CLASS(GCS,            (GCS*)&genericvehicle._gcs,       update_send,      300,  750,  60),
+#endif  // HAL_GCS_ENABLED
+};
+void AP_GenericVehicle::get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) {
+    tasks = scheduler_tasks;
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = log_bitx;
+}
+#endif  // AP_SCHEDULER_ENABLED
+
+void AP_GenericVehicle::init_ardupilot()
+{
+#if AP_INERTIALSENSOR_ENABLED
+#if AP_SCHEDULER_ENABLED
+    ins.init(scheduler.get_loop_rate_hz());
+#else
+    ins.init(1000);
+#endif  // AP_SCHEDULER_ENABLED
+#endif  // AP_INERTIALSENSOR_ENABLED
+}
+
 AP_HAL_MAIN_CALLBACKS(&genericvehicle);
