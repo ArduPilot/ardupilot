@@ -59,6 +59,8 @@ ENV BUILDLOGS=/tmp/buildlogs
 RUN sudo apt-get clean \
     && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+ENV PATH=${PATH}:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin/
+
 ENV CCACHE_MAXSIZE=1G
 ENTRYPOINT ["/ardupilot_entrypoint.sh"]
 CMD ["bash"]
