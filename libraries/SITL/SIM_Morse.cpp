@@ -566,7 +566,9 @@ void Morse::update(const struct sitl_input &input)
 
     report_FPS();
 
+#if HAL_GCS_ENABLED
     send_report();
+#endif
 }
 
 
@@ -591,6 +593,7 @@ void Morse::report_FPS(void)
 
 
 
+#if HAL_GCS_ENABLED
 /*
   send a report to the vehicle control code over MAVLink
 */
@@ -669,5 +672,6 @@ void Morse::send_report(void)
     }
 
 }
+#endif  // HAL_GCS_ENABLED
 
 #endif  // HAL_SIM_MORSE_ENABLED

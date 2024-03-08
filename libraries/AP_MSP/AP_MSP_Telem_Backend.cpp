@@ -1061,8 +1061,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     if (rcmap == nullptr) {
         return MSP_RESULT_ERROR;
     }
-    uint16_t values[16] = {};
-    rc().get_radio_in(values, ARRAY_SIZE(values));
+
+    // note: rcmap channels start at 1
+    float roll = rc().rc_channel(rcmap->roll()-1)->norm_input_dz();
+    float pitch = -rc().rc_channel(rcmap->pitch()-1)->norm_input_dz();
+    float yaw = rc().rc_channel(rcmap->yaw()-1)->norm_input_dz();
+    float throttle = rc().rc_channel(rcmap->throttle()-1)->norm_input_dz();
 
     const struct PACKED {
         uint16_t a;
@@ -1071,11 +1075,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
         uint16_t t;
     } rc {
         // send only 4 channels, MSP order is AERT
-        // note: rcmap channels start at 1
-        a : values[rcmap->roll()-1],       // A
-        e : values[rcmap->pitch()-1],      // E
-        r : values[rcmap->yaw()-1],        // R
-        t : values[rcmap->throttle()-1]    // T
+        a : uint16_t(roll*500+1500),       // A
+        e : uint16_t(pitch*500+1500),      // E
+        r : uint16_t(yaw*500+1500),        // R
+        t : uint16_t(throttle*1000+1000)    // T
     };
 
     sbuf_write_data(dst, &rc, sizeof(rc));
