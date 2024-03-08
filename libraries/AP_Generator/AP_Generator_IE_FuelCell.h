@@ -5,6 +5,7 @@
 #if AP_GENERATOR_IE_ENABLED
 
 #include <AP_Logger/AP_Logger_config.h>
+#include <GCS_MAVLink/GCS.h>
 
 class AP_Generator_IE_FuelCell : public AP_Generator_Backend
 {
@@ -116,6 +117,11 @@ protected:
 
     // Print msg to user updating on state change
     virtual void update_state_msg();
+
+#if HAL_GCS_ENABLED
+    // Get the MAV_SEVERITY level of a given error code
+    virtual MAV_SEVERITY get_mav_severity(uint32_t err_code) const { return MAV_SEVERITY_ALERT; }
+#endif
 
 };
 #endif  // AP_GENERATOR_IE_ENABLED
