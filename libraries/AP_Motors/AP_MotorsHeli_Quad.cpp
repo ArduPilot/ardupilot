@@ -126,7 +126,7 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
 {
     // assume X quad layout, with motors at 45, 135, 225 and 315 degrees
-    // order FrontRight, RearLeft, FrontLeft, RearLeft
+    // order FrontRight, RearLeft, FrontLeft, RearRight
     const float angles[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { 45, 225, 315, 135 };
     const bool x_clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
     const float cos45 = cosf(radians(45));
