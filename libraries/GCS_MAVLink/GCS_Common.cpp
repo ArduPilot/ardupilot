@@ -100,6 +100,11 @@
 #endif
 #include <AP_GPS/AP_GPS.h>
 
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
+#if AP_RCPROTOCOL_ENABLED
+#include <AP_RCProtocol/AP_RCProtocol.h>
+#endif
+
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
