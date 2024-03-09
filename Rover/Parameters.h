@@ -397,8 +397,10 @@ public:
     // Sailboat functions
     Sailboat sailboat;
 
+#if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
     AP_OAPathPlanner oa;
+#endif
 
     // maximum speed for vehicle
     AP_Float speed_max;
