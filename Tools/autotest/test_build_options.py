@@ -182,8 +182,6 @@ class TestBuildOptions(object):
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
-                    'AC_AVOID_ENABLED',  # Rover doesn't obey this
-                    'AC_OAPATHPLANNER_ENABLED',   # Rover doesn't obey this
                     'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
                     'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
                 ])
