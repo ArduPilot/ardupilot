@@ -116,8 +116,10 @@ void Rover::init_ardupilot()
     // initialize SmartRTL
     g2.smart_rtl.init();
 
+#if AP_OAPATHPLANNER_ENABLED
     // initialise object avoidance
     g2.oa.init();
+#endif
 
     startup_ground();
 
