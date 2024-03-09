@@ -42,8 +42,8 @@ BUILD_OPTIONS = [
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
     Feature('Safety', 'FENCE', 'AP_FENCE_ENABLED', 'Enable Geofence', 2, None),
     Feature('Safety', 'RALLY', 'HAL_RALLY_ENABLED', 'Enable Rally Points', 0, None),  # noqa
-    Feature('Safety', 'AC_AVOID', 'AC_AVOID_ENABLED', 'Enable Avoidance', 0, 'FENCE'),
-    Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
+    Feature('Safety', 'AC_AVOID', 'AP_AVOIDANCE_ENABLED', 'Enable Avoidance', 0, 'FENCE'),
+    Feature('Safety', 'AC_OAPATHPLANNER', 'AP_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
 
     Feature('Battery', 'BATTERY_FUELFLOW', 'AP_BATTERY_FUELFLOW_ENABLED', 'Enable Fuel Flow BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_FUELLEVEL_PWM', 'AP_BATTERY_FUELLEVEL_PWM_ENABLED', 'Enable Flow Level PWM BatteryMonitor', 0, None),  # noqa: E501
