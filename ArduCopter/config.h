@@ -195,7 +195,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
+#if AP_FOLLOW_ENABLED && AP_AVOIDANCE_ENABLED
+#define MODE_FOLLOW_ENABLED ENABLED
+#else
+#define MODE_FOLLOW_ENABLED DISABLED
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
