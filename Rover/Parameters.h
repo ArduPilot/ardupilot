@@ -345,8 +345,10 @@ public:
     class ModeDock *mode_dock_ptr;
 #endif
 
+#if AP_AVOIDANCE_ENABLED
     // avoidance library
     AC_Avoid avoid;
+#endif
 
     // pitch angle at 100% throttle
     AP_Float bal_pitch_max;

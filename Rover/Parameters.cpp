@@ -487,9 +487,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
 #endif
 
+#if AP_AVOIDANCE_ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
+#endif
 
     // 20 was PIVOT_TURN_RATE and should not be re-used
 
@@ -741,7 +743,9 @@ ParametersG2::ParametersG2(void)
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif
+#if AP_AVOIDANCE_ENABLED
     avoid(),
+#endif
 #if AP_FOLLOW_ENABLED
     follow(),
 #endif
