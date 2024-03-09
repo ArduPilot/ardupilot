@@ -29,7 +29,7 @@
 #include "APM_Config.h"
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
-
+#include <AC_Avoidance/AC_Avoidance_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -557,16 +557,8 @@
 // Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
-#ifndef AC_AVOID_ENABLED
- #define AC_AVOID_ENABLED   ENABLED
-#endif
-
-#ifndef AC_OAPATHPLANNER_ENABLED
- #define AC_OAPATHPLANNER_ENABLED   ENABLED
-#endif
-
-#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
-  #error Follow Mode relies on AC_AVOID which is disabled
+#if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
+  #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
