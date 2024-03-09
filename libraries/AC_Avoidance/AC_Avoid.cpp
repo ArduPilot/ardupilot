@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_AVOIDANCE_ENABLED
+
 #include "AC_Avoid.h"
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
@@ -1477,3 +1481,5 @@ AC_Avoid *ac_avoid()
 }
 
 #endif // !APM_BUILD_Arduplane
+
+#endif  // AP_AVOIDANCE_ENABLED
