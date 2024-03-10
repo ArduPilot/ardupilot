@@ -405,7 +405,7 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     case STATUS_TEXT:
         return rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY) && !queue_empty;
     case GENERAL_COMMAND:
-        return _baud_rate_request.pending;
+        return _baud_rate_request.pending || _bind_request_pending;
     case VERSION_PING:
         return _crsf_version.pending && AP::crsf()->is_detected(); // only send pings if protocol has been detected
     case HEARTBEAT:
@@ -461,7 +461,11 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             calc_status_text();
             break;
         case GENERAL_COMMAND:
-            calc_command_response();
+            if (_bind_request_pending) {
+                calc_bind();
+            } else {
+                calc_command_response();
+            }
             break;
         case VERSION_PING:
             // to get crossfire firmware version we send an RX device ping
@@ -1036,6 +1040,31 @@ void AP_CRSF_Telem::calc_command_response() {
     _baud_rate_request.pending = false;
 
     debug("sent baud rate response: %u", _baud_rate_request.valid);
+    _telem_pending = true;
+}
+
+// send a command response
+void AP_CRSF_Telem::calc_bind() {
+    _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
+    _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_RX;
+    _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_RX_BIND;
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
+
+    // calculate command crc
+    uint8_t len = 4;
+    uint8_t* crcptr = &_telem.ext.command.destination;
+    uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+    for (uint8_t i = 0; i < len; i++) {
+        crc = crc8_dvb(crc, crcptr[i], 0xBA);
+    }
+    crcptr[len] = crc;
+    _telem_size = len + 1;
+
+    _pending_request.frame_type = 0;
+    _bind_request_pending = false;
+
+    debug("sent bind request");
     _telem_pending = true;
 }
 
