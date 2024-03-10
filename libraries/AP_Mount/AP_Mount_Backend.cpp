@@ -799,6 +799,8 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 {
     const uint16_t flags = (get_mode() == MAV_MOUNT_MODE_RETRACT ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
                            (get_mode() == MAV_MOUNT_MODE_NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
+                           (_yaw_lock ? GIMBAL_DEVICE_FLAGS_YAW_LOCK : 0) |
+                           GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME | // Yaw angle is always in vehicle-frame
                            GIMBAL_DEVICE_FLAGS_ROLL_LOCK | // roll angle is always earth-frame
                            GIMBAL_DEVICE_FLAGS_PITCH_LOCK; // pitch angle is always earth-frame, yaw_angle is always body-frame
     return flags;
