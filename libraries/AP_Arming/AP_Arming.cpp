@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
-    // @Values: 0:None,1:Disable prearm display,2:Do not send status text on state change
+    // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
 
