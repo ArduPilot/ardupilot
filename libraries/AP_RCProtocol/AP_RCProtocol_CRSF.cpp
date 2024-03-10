@@ -680,6 +680,17 @@ int16_t AP_RCProtocol_CRSF::derive_scaled_lq_value(uint8_t uplink_lq)
     return int16_t(roundf(constrain_float(uplink_lq*2.5f,0,255)));
 }
 
+// start bind
+#if HAL_CRSF_TELEM_ENABLED
+void AP_RCProtocol_CRSF::start_bind(void)
+{
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    if (telem != nullptr) {
+        telem->start_bind();
+    }
+}
+#endif
+
 namespace AP {
     AP_RCProtocol_CRSF* crsf() {
         return AP_RCProtocol_CRSF::get_singleton();
