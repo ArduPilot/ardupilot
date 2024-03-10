@@ -10,7 +10,6 @@ AP_FLAKE8_CLEAN
 from __future__ import print_function
 import os
 import sys
-import time
 
 from pymavlink import mavutil
 
@@ -480,39 +479,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.change_mode('MANUAL')
         self.disarm_vehicle()
 
-    def reboot_sitl(self):
-        """Reboot SITL instance and wait it to reconnect."""
-        # our battery is reset to full on reboot.  So reduce it to 10%
-        # and wait for it to go above 50.
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=65535,   # battery mask
-            p2=10,      # percentage
-        )
-        self.run_cmd_reboot()
-        tstart = time.time()
-        while True:
-            if time.time() - tstart > 30:
-                raise NotAchievedException("Did not detect reboot")
-            # ask for the message:
-            batt = None
-            try:
-                self.send_cmd(
-                    mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-                    p1=mavutil.mavlink.MAVLINK_MSG_ID_BATTERY_STATUS,
-                )
-                batt = self.mav.recv_match(type='BATTERY_STATUS',
-                                           blocking=True,
-                                           timeout=1)
-            except ConnectionResetError:
-                pass
-            self.progress("Battery: %s" % str(batt))
-            if batt is None:
-                continue
-            if batt.battery_remaining > 50:
-                break
-        self.initialise_after_reboot_sitl()
-
     def DoubleCircle(self):
         '''Test entering circle twice'''
         self.change_mode('CIRCLE')
@@ -525,13 +491,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def default_parameter_list(self):
         ret = super(AutoTestSub, self).default_parameter_list()
         ret["FS_GCS_ENABLE"] = 0  # FIXME
-        return ret
-
-    def disabled_tests(self):
-        ret = super(AutoTestSub, self).disabled_tests()
-        ret.update({
-            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
-        })
         return ret
 
     def MAV_CMD_NAV_LOITER_UNLIM(self):
