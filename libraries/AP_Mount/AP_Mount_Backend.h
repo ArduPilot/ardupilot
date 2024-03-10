@@ -83,6 +83,9 @@ public:
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
+    // get yaw lock state
+    bool get_yaw_lock() { return _yaw_lock; }
+
     // set angle target in degrees
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
     void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
