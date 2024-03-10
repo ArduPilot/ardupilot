@@ -340,6 +340,15 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
         return MAV_RESULT_ACCEPTED;
     }
 
+    // Check for yaw lock/follow in flags, and apply to backend if needed.
+    // We don't return yet, as we could have a command sending targets plus yaw lock/unlock
+    bool yaw_lock = flags & GIMBAL_DEVICE_FLAGS_YAW_LOCK;
+    bool yaw_lock_changed = false;
+    if (backend->get_yaw_lock() != yaw_lock) {
+        backend->set_yaw_lock(yaw_lock);
+        yaw_lock_changed = true;
+    }
+
     // param1 : pitch_angle (in degrees)
     // param2 : yaw angle (in degrees)
     const float pitch_angle_deg = packet.param1;
@@ -358,7 +367,8 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
         return MAV_RESULT_ACCEPTED;
     }
 
-    return MAV_RESULT_FAILED;
+    // If this was a yaw lock/unlock only command, we need to return MAV_RESULT_ACCEPTED
+    return yaw_lock_changed ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 
 // handle mav_cmd_do_gimbal_manager_configure for deconflicting different mavlink message senders
