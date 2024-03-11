@@ -38,13 +38,13 @@ class AP_ExternalAHRS_AdvancedNavigation_Decoder
 {
 public:
     uint8_t _buffer[AN_DECODE_BUFFER_SIZE];
-    uint16_t _buffer_length = 0;
-    uint64_t _packets_decoded = 0;
-    uint64_t _bytes_decoded = 0;
-    uint64_t _bytes_discarded = 0;
-    uint64_t _lrc_errors = 0;
-    uint64_t _crc_errors = 0;
-    size_t _bytes_received = 0;
+    uint16_t _buffer_length;
+    uint64_t _packets_decoded;
+    uint64_t _bytes_decoded;
+    uint64_t _bytes_discarded;
+    uint64_t _lrc_errors;
+    uint64_t _crc_errors;
+    size_t _bytes_received;
 
     int decode_packet(uint8_t* out_buffer, size_t buf_size);
 
@@ -330,7 +330,7 @@ private:
             } b;
         } filter;
     };
-    
+
     struct PACKED AN_SYSTEM_STATE {
         AN_STATUS status;
         uint32_t unix_time_seconds;
@@ -439,7 +439,7 @@ private:
         void update_checks(uint8_t header_id, uint8_t payload_length)
         {
             length = payload_length;
-            
+
             // Update the packet check and header id
             crc = crc16_ccitt(payload.raw_packet, payload_length, 0xFFFF);
             id = header_id;
@@ -450,7 +450,7 @@ private:
         }
 
         uint8_t getPeriodsLength(AN_PACKET_PERIODS packet_periods)
-        {            
+        {
             // Find the utilized size of the packet and make it the payload length.
             for (uint32_t idx = 0; idx < (AN_MAXIMUM_PACKET_SIZE - 2)/sizeof(AN_PERIOD); idx++)
             {
@@ -494,7 +494,7 @@ private:
     uint32_t _last_raw_gnss_pkt_ms;
     uint32_t _device_id;
     uint32_t _hardware_rev;
-    
+
     bool _gnss_disable;
     bool _fly_forward;
 

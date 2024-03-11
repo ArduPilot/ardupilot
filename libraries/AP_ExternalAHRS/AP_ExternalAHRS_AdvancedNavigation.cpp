@@ -241,7 +241,7 @@ bool AP_ExternalAHRS_AdvancedNavigation::request_data(void)
         _fly_forward = in_fly_forward();
         _gnss_disable = gnss_is_disabled();
 
-        // Select AdNav vehicle for current flight mode. 
+        // Select AdNav vehicle for current flight mode.
         vehicle_type_e vehicle_type = vehicle_type_3d_aircraft;
         if (_fly_forward == true) {
             vehicle_type = vehicle_type_fixed_wing_plane;
@@ -254,7 +254,7 @@ bool AP_ExternalAHRS_AdvancedNavigation::request_data(void)
 
 int8_t AP_ExternalAHRS_AdvancedNavigation::get_port(void) const
 {
-    if (!_uart) {
+    if (_uart == nullptr) {
         return -1;
     }
     return _port_num;
@@ -531,7 +531,7 @@ bool AP_ExternalAHRS_AdvancedNavigation::sendPacketRequest()
     };
 
     AN_PACKET packet;
-   
+
     // load the AN_PACKETS_PERIOD Into the payload.
     packet.payload.packet_periods = periods;
     packet.update_checks(packet_id_packet_periods, packet.getPeriodsLength(periods));
@@ -603,7 +603,7 @@ bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(bool gnss_en, vehicl
     options_packet.dual_antenna_disabled = false;
     // set reserved packets to 0
     memset(options_packet.reserved, 0, sizeof(options_packet.reserved));
-    
+
     return set_filter_options(options_packet);
 }
 
