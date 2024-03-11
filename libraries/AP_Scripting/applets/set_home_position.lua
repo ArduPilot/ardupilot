@@ -4,6 +4,8 @@
 
 local rc_option = 300
 local channel = rc:find_channel_for_option(rc_option)
+  if not channel then
+return
 local sw_state = -1
 
 -- Define and initialize the location object with desired coordinates; enter the coordinates with the first 9 numbers and the height in centimetres
