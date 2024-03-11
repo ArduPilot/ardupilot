@@ -138,6 +138,10 @@ public:
 #endif
     };
 
+    // convenience methods for working out what general type an instance is:
+    bool is_rtk_base(uint8_t instance) const;
+    bool is_rtk_rover(uint8_t instance) const;
+
     /// GPS status codes.  These are kept aligned with MAVLink by
     /// static_assert in AP_GPS.cpp
     enum GPS_Status {
