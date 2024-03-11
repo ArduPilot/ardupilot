@@ -2598,7 +2598,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def mavproxy_can_do_mision_item_protocols(self):
         return False
-        if not self.mavproxy_version_gt(1, 8, 12):
+        if not self.mavproxy_version_gt(1, 8, 69):
             self.progress("MAVProxy is too old; skipping tests")
             return False
         return True
@@ -4862,7 +4862,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        mavproxy = self.start_mavproxy()
+        self.load_fence_using_mavproxy(mavproxy, "rover-path-planning-fence.txt")
+        self.stop_mavproxy(mavproxy)
+        # self.load_fence("rover-path-planning-fence.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.context_push()
         ex = None
@@ -4881,11 +4884,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.mavproxy.send("fence list\n")
             # target_loc is copied from the mission file
             target_loc = mavutil.location(40.073799, -105.229156)
-            self.wait_location(target_loc, timeout=300)
+            self.wait_location(target_loc, height_accuracy=None, timeout=300)
             # mission has RTL as last item
             self.wait_distance_to_home(3, 7, timeout=300)
             self.disarm_vehicle()
         except Exception as e:
+            self.disarm_vehicle(force=True)
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
@@ -5225,9 +5229,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def PolyFenceObjectAvoidance(self, target_system=1, target_component=1):
         '''PolyFence object avoidance tests'''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_auto(
             target_system=target_system,
             target_component=target_component)
