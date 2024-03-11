@@ -22,12 +22,19 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-
+#include <AP_Logger/AP_Logger.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 // create barometer object
 static AP_Baro barometer;
+
+// creating other objects
+static AP_Int32 log_bitmask;
+static AP_Logger logger{log_bitmask};
+static AP_AHRS ahrs;
+
 #if HAL_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;
 #endif // HAL_EXTERNAL_AHRS_ENABLED
