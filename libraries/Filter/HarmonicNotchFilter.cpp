@@ -427,17 +427,19 @@ void HarmonicNotchFilter<T>::reset()
 // @Description: Filter Center Message - per motor
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
-// @Field: NDn: number of active dynamic harmonic notches
-// @Field: CF1: centre frequency for motor 1
-// @Field: CF2: centre frequency for motor 2
-// @Field: CF3: centre frequency for motor 3
-// @Field: CF4: centre frequency for motor 4
-// @Field: CF5: centre frequency for motor 5
-// @Field: HF1: 2nd harmonic frequency for motor 1
-// @Field: HF2: 2nd harmonic frequency for motor 2
-// @Field: HF3: 2nd harmonic frequency for motor 3
-// @Field: HF4: 2nd harmonic frequency for motor 4
-// @Field: HF5: 2nd harmonic frequency for motor 5
+// @Field: NF: total number of active harmonic notches
+// @Field: CF1: First harmonic centre frequency for motor 1
+// @Field: CF2: First harmonic centre frequency for motor 2
+// @Field: CF3: First harmonic centre frequency for motor 3
+// @Field: CF4: First harmonic centre frequency for motor 4
+// @Field: CF5: First harmonic centre frequency for motor 5
+// @Field: CF6: First harmonic centre frequency for motor 6
+// @Field: HF1: Second harmonic centre frequency for motor 1
+// @Field: HF2: Second harmonic centre frequency for motor 2
+// @Field: HF3: Second harmonic centre frequency for motor 3
+// @Field: HF4: Second harmonic centre frequency for motor 4
+// @Field: HF5: Second harmonic centre frequency for motor 5
+// @Field: HF6: Second harmonic centre frequency for motor 6
 
 // @LoggerMessage: FCNS
 // @Description: Filter Center Message
@@ -448,7 +450,7 @@ void HarmonicNotchFilter<T>::reset()
 
 /*
   log center frequencies of 1st and 2nd harmonic of a harmonic notch
-  instance for up to 5 frequency sources
+  instance for up to 6 frequency sources
 
   the instance number passed in corresponds to the harmonic notch
   instance in AP_InertialSensor
@@ -465,9 +467,9 @@ void HarmonicNotchFilter<T>::log_notch_centers(uint8_t instance, uint64_t now_us
     if (_num_filters == 0 || filters_per_source == 0) {
         return;
     }
-    const uint8_t num_sources = MIN(5, _num_filters / filters_per_source);
-    float centers[5] {};
-    float first_harmonic[5] {};
+    const uint8_t num_sources = MIN(6, _num_filters / filters_per_source);
+    float centers[6] {};
+    float first_harmonic[6] {};
 
     for (uint8_t i=0; i<num_sources; i++) {
         /*
@@ -480,12 +482,12 @@ void HarmonicNotchFilter<T>::log_notch_centers(uint8_t instance, uint64_t now_us
 
     if (num_sources > 1) {
         AP::logger().WriteStreaming(
-            "FCN", "TimeUS,I,NDn,CF1,CF2,CF3,CF4,CF5,HF1,HF2,HF3,HF4,HF5", "s#-zzzzzzzzzz", "F------------", "QBBffffffffff",
+            "FCN", "TimeUS,I,NF,CF1,CF2,CF3,CF4,CF5,CF6,HF1,HF2,HF3,HF4,HF5,HF6", "s#-zzzzzzzzzzzz", "F--------------", "QBHffffffffffff",
             now_us,
             instance,
-            num_sources,
-            centers[0], centers[1], centers[2], centers[3], centers[4],
-            first_harmonic[0], first_harmonic[1], first_harmonic[2], first_harmonic[3], first_harmonic[4]);
+            _num_filters,
+            centers[0], centers[1], centers[2], centers[3], centers[4], centers[5],
+            first_harmonic[0], first_harmonic[1], first_harmonic[2], first_harmonic[3], first_harmonic[4], first_harmonic[5]);
     } else {
         // log single center frequency
         AP::logger().WriteStreaming(
