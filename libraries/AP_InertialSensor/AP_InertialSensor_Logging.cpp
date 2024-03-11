@@ -145,24 +145,24 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
 // @Field: NDn: number of active harmonic notches
-// @Field: NF1: desired notch centre frequency for motor 1
-// @Field: NF2: desired notch centre frequency for motor 2
-// @Field: NF3: desired notch centre frequency for motor 3
-// @Field: NF4: desired notch centre frequency for motor 4
-// @Field: NF5: desired notch centre frequency for motor 5
-// @Field: NF6: desired notch centre frequency for motor 6
-// @Field: NF7: desired notch centre frequency for motor 7
-// @Field: NF8: desired notch centre frequency for motor 8
-// @Field: NF9: desired notch centre frequency for motor 9
-// @Field: NF10: desired notch centre frequency for motor 10
-// @Field: NF11: desired notch centre frequency for motor 11
-// @Field: NF12: desired notch centre frequency for motor 12
+// @Field: NF1: desired harmonic notch centre frequency for motor 1
+// @Field: NF2: desired harmonic notch centre frequency for motor 2
+// @Field: NF3: desired harmonic notch centre frequency for motor 3
+// @Field: NF4: desired harmonic notch centre frequency for motor 4
+// @Field: NF5: desired harmonic notch centre frequency for motor 5
+// @Field: NF6: desired harmonic notch centre frequency for motor 6
+// @Field: NF7: desired harmonic notch centre frequency for motor 7
+// @Field: NF8: desired harmonic notch centre frequency for motor 8
+// @Field: NF9: desired harmonic notch centre frequency for motor 9
+// @Field: NF10: desired harmonic notch centre frequency for motor 10
+// @Field: NF11: desired harmonic notch centre frequency for motor 11
+// @Field: NF12: desired harmonic notch centre frequency for motor 12
 
 // @LoggerMessage: FTNS
 // @Description: Filter Tuning Message
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
-// @Field: NF: desired notch centre frequency
+// @Field: NF: desired harmonic notch centre frequency
 
 void AP_InertialSensor::write_notch_log_messages() const
 {
