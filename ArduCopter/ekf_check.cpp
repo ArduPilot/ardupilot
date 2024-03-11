@@ -113,15 +113,27 @@ void Copter::ekf_check()
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
-    // return false immediately if disabled
-    if (g.fs_ekf_thresh <= 0.0f) {
+    // use EKF to get variance
+    float position_var, vel_var, height_var, tas_variance;
+    Vector3f mag_variance;
+    variances_valid = ahrs.get_variances(vel_var, position_var, height_var, mag_variance, tas_variance);
+
+    if (!variances_valid) {
         return false;
     }
 
-    // use EKF to get variance
-    float position_variance, vel_variance, height_variance, tas_variance;
-    Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    uint32_t now_us = AP_HAL::micros();
+    float dt = (now_us - last_ekf_check_us) * 1e-6f;
+
+    // always update filtered values as this serves the vibration check as well
+    position_var = pos_variance_filt.apply(position_var, dt);
+    vel_var = vel_variance_filt.apply(vel_var, dt);
+    height_var = hgt_variance_filt.apply(height_var, dt);
+
+    last_ekf_check_us = now_us;
+
+    // return false if disabled
+    if (g.fs_ekf_thresh <= 0.0f) {
         return false;
     }
 
@@ -137,13 +149,13 @@ bool Copter::ekf_over_threshold()
 #if AP_OPTICALFLOW_ENABLED
     optflow_healthy = optflow.healthy();
 #endif
-    if (!optflow_healthy && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {
+    if (!optflow_healthy && (vel_var >= (2.0f * g.fs_ekf_thresh))) {
         over_thresh_count += 2;
-    } else if (vel_variance >= g.fs_ekf_thresh) {
+    } else if (vel_var >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
 
-    if ((position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
+    if ((position_var >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
         return true;
     }
 
@@ -264,14 +276,12 @@ void Copter::check_vibration()
     const bool innov_velD_posD_positive = is_positive(vel_innovation.z) && is_positive(pos_innovation.z);
 
     // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
-    float position_variance, vel_variance, height_variance, tas_variance;
-    Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    // filtered variances are updated in ekf_check() which runs at the same rate (10Hz) as this check
+    if (!variances_valid) {
         innovation_checks_valid = false;
     }
-
     const bool is_vibration_affected = ahrs.is_vibration_affected();
-    const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance > 1.0f)) || is_vibration_affected;
+    const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance_filt.get() > 1.0f)) || is_vibration_affected;
     const bool do_bad_vibe_actions = (g2.fs_vibe_enabled == 1) && bad_vibe_detected && motors->armed() && !flightmode->has_manual_throttle();
 
     if (!vibration_check.high_vibes) {

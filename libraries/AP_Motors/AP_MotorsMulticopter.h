@@ -192,4 +192,14 @@ protected:
 
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
+
+    /* motor enabled, checking the override mask
+       _motor_mask_override is only set for tilt quadplanes
+     */
+    bool motor_enabled_mask(uint8_t i) const {
+        return motor_enabled[i] && (_motor_mask_override & (1U << i)) == 0;
+    }
+
+    // mask of overridden motors (used by quadplane tiltrotors)
+    uint16_t _motor_mask_override;
 };

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_BattMonitor_Backend.h"
+#include "AP_BattMonitor_config.h"
 
 #if AP_BATTERY_SCRIPTING_ENABLED
+
+#include "AP_BattMonitor_Backend.h"
 
 class AP_BattMonitor_Scripting : public AP_BattMonitor_Backend
 {
@@ -28,5 +30,4 @@ protected:
     HAL_Semaphore sem;
 };
 
-#endif // AP_BATTMONITOR_SCRIPTING_ENABLED
-
+#endif // AP_BATTERY_SCRIPTING_ENABLED

@@ -144,6 +144,9 @@ bool GCS_MAVLINK_Sub::send_info()
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("RollPitch", sub.roll_pitch_flag);
 
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() / 100.0f);
+
     return true;
 }
 
@@ -386,7 +389,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_SYSTEM_TIME,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
 #if AP_TERRAIN_AVAILABLE
     MSG_TERRAIN,

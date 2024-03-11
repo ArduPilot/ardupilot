@@ -134,10 +134,23 @@ int main(void)
         try_boot = false;
         led_set(LED_BAD_FW);
     }
+#if AP_BOOTLOADER_NETWORK_ENABLED
+    if (ok == check_fw_result_t::CHECK_FW_OK) {
+        const auto *app_descriptor = get_app_descriptor();
+        if (app_descriptor != nullptr) {
+            network.status_printf("Firmware OK: %ld.%ld.%lx\n", app_descriptor->version_major,
+                                                                app_descriptor->version_minor,
+                                                                app_descriptor->git_hash);
+        }
+    } else {
+        network.status_printf("Firmware Error: %d\n", (int)ok);
+    }
+#endif
 #endif  // AP_CHECK_FIRMWARE_ENABLED
 #ifndef BOOTLOADER_DEV_LIST
-    else if (timeout != 0) {
-        // fast boot for good firmware
+    else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
+        // fast boot for good firmware if we haven't been told to stay
+        // in bootloader
         try_boot = true;
         timeout = 1000;
     }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #make debug
 #make test
 if [ ! -L /sys/class/gpio/gpio80 ] || [ ! -e /sys/class/gpio/gpio80 ] ; then

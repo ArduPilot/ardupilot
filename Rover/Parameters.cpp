@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
   Rover parameter definitions
 */
@@ -272,9 +274,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
 #endif
 
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager,         "SERIAL",   AP_SerialManager),
+    // AP_SerialManager was here
 
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
@@ -315,12 +315,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming),
-
-#if HAL_LOGGING_ENABLED
-    // @Group: LOG
-    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(logger,           "LOG",  AP_Logger),
-#endif
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -404,11 +398,8 @@ const AP_Param::Info Rover::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
-#if STATS_ENABLED == ENABLED
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
-#endif
+    // 1 was AP_Stats
+
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
@@ -589,11 +580,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
-#endif
+    // 39 was AP_Gripper
 
     // @Param: BAL_PITCH_TRIM
     // @DisplayName: Balance Bot pitch trim angle
@@ -604,11 +591,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
 
-#if AP_SCRIPTING_ENABLED
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
-    AP_SUBGROUPINFO(scripting, "SCR_", 41, ParametersG2, AP_Scripting),
-#endif
+    // 41 was Scripting
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
@@ -824,22 +807,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
 
 void Rover::load_parameters(void)
 {
-    if (!g.format_version.load() ||
-         g.format_version != Parameters::k_format_version) {
-        // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
-
-    const uint32_t before = micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
@@ -852,7 +821,6 @@ void Rover::load_parameters(void)
     }
 
     SRV_Channels::upgrade_parameters();
-    hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
 
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
     const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
@@ -905,20 +873,47 @@ void Rover::load_parameters(void)
     }
 #endif
 
-// PARAMETER_CONVERSION - Added: JAN-2022
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
-    const uint16_t old_index = 37;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4069;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
+// PARAMETER_CONVERSION - Added: JAN-2022
+        { &airspeed, airspeed.var_info, 37 },
 #endif
-
-// PARAMETER_CONVERSION - Added: MAR-2022
 #if AP_AIS_ENABLED
-    AP_Param::convert_class(info.old_key, &ais, ais.var_info, 50, 114, false);
+// PARAMETER_CONVERSION - Added: MAR-2022
+        { &ais, ais.var_info, 50 },
+#endif
+#if AP_FENCE_ENABLED
+// PARAMETER_CONVERSION - Added: Mar-2022
+        { &fence, fence.var_info, 17 },
+#endif
+#if AP_STATS_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+        { &stats, stats.var_info, 1 },
+#endif
+#if AP_SCRIPTING_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+        { &scripting, scripting.var_info, 41 },
+#endif
+#if AP_GRIPPER_ENABLED
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+        { &gripper, gripper.var_info, 39 },
+#endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+#if HAL_LOGGING_ENABLED
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
-// PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(info.old_key, &fence, fence.var_info, 17, 4049, false);
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
 #endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
 }

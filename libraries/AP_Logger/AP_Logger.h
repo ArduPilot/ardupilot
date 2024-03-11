@@ -187,7 +187,7 @@ class AP_Logger
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
-    AP_Logger(const AP_Int32 &log_bitmask);
+    AP_Logger();
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Logger);
@@ -198,7 +198,7 @@ public:
     }
 
     // initialisation
-    void Init(const struct LogStructure *structure, uint8_t num_types);
+    void init(const AP_Int32 &log_bitmask, const struct LogStructure *structure, uint8_t num_types);
     void set_num_types(uint8_t num_types) { _num_types = num_types; }
 
     bool CardInserted(void);
@@ -273,9 +273,6 @@ public:
                           const class RallyLocation &rally_point);
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
-    void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
-    void Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
-    void Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
 
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
@@ -426,7 +423,7 @@ private:
     #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
-    const AP_Int32 &_log_bitmask;
+    const AP_Int32 *_log_bitmask;
 
     enum class Backend_Type : uint8_t {
         NONE       = 0,
@@ -597,10 +594,6 @@ private:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
 
     /* end support for retrieving logs via mavlink: */
-
-    // convenience method for writing out the identical NED PIDs - and
-    // to save bytes
-    void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     void log_file_content(FileContent &file_content, const char *filename);

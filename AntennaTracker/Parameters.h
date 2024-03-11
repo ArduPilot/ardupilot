@@ -91,10 +91,7 @@ public:
         k_param_can_mgr,
         k_param_battery,
 
-        //
-        // 150: Telemetry control
-        //
-        k_param_serial_manager,     // serial manager library
+        k_param_serial_manager_old = 144,     // serial manager library
         k_param_servo_yaw_type,
         k_param_alt_source,
         k_param_mavlink_update_rate,
@@ -114,8 +111,8 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
-        k_param_stats = 218,
-        k_param_scripting = 219,
+        k_param_stats_old = 218,
+        k_param_scripting_old = 219,
 
         //
         // 220: Waypoint data

@@ -175,6 +175,14 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             // don't failsafe in a landing sequence
             break;
         }
+
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.in_vtol_takeoff()) {
+            set_mode(mode_qland, reason);
+            // QLAND if in VTOL takeoff
+            break;
+        }
+#endif
         FALLTHROUGH;
 
     case Mode::Number::AVOID_ADSB:

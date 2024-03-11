@@ -1221,7 +1221,6 @@ compass = {}
 ---@return boolean
 function compass:healthy(instance) end
 
-
 -- desc
 ---@class camera
 camera = {}
@@ -1496,15 +1495,39 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
--- Check if a specific gyrometer sensor is healthy
----@param instance integer -- the 0-based index of the gyrometer instance to return.
+-- Check if the gyrometers are consistent
+---@param threshold integer -- the allowed threshold in degrees per second
+---@return boolean
+function ins:gyros_consistent(threshold) end
+
+-- Check if a specific gyroscope sensor is healthy
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
 ---@return boolean
 function ins:get_gyro_health(instance) end
+
+-- Check if the accelerometers are consistent
+---@param threshold float -- the threshold allowed before returning false
+---@return boolean
+function ins:accels_consistent(threshold) end
 
 -- Check if a specific accelerometer sensor is healthy
 ---@param instance integer -- the 0-based index of the accelerometer instance to return.
 ---@return boolean
 function ins:get_accel_health(instance) end
+
+-- Get if the INS is currently calibrating
+---@return boolean
+function ins:calibrating() end
+
+-- Get the value of a specific gyroscope
+---@param instance integer -- the 0-based index of the gyroscope instance to return.
+---@return Vector3f_ud
+function ins:get_gyro(instance) end
+
+-- Get the value of a specific accelerometer
+---@param instance integer -- the 0-based index of the accelerometer instance to return.
+---@return Vector3f_ud
+function ins:get_accel(instance) end
 
 -- desc
 ---@class Motors_dynamic
@@ -1667,6 +1690,19 @@ function sub:is_button_pressed(index) end
 ---@param index integer
 ---@return integer
 function sub:get_and_clear_button_count(index) end
+
+-- Return true if rangefinder is healthy, includes a check for good signal quality
+---@return boolean
+function sub:rangefinder_alt_ok() end
+
+-- SURFTRAK mode: return the rangefinder target in cm
+---@return float
+function sub:get_rangefinder_target_cm() end
+
+-- SURFTRAK mode: set the rangefinder target in cm, return true if successful
+---@param new_target_cm float
+---@return boolean
+function sub:set_rangefinder_target_cm(new_target_cm) end
 
 
 -- desc
@@ -2765,6 +2801,14 @@ function notify:handle_rgb(red, green, blue, rate_hz) end
 ---@param tune string
 function notify:play_tune(tune) end
 
+-- Display text on a notify display, text too long to fit will automatically be scrolled.
+---@param text string -- upto 50 characters
+---@param row integer -- row number to display on, 0 is at the top.
+function notify:send_text(text, row) end
+
+-- desc
+---@param row integer
+function notify:release_text(row) end
 
 -- desc
 ---@class gps
@@ -3219,6 +3263,30 @@ AR_PosControl = {}
 ---@return number -- velocity slew rate
 function AR_PosControl:get_srate() end
 
+-- precision landing access
+---@class precland
+precland = {}
+
+-- get Location of target or nil if target not acquired
+---@return Location_ud|nil
+function precland:get_target_location() end
+
+-- get NE velocity of target or nil if not available
+---@return Vector2f_ud|nil
+function precland:get_target_velocity() end
+
+-- get the time of the last valid target
+---@return uint32_t_ud
+function precland:get_last_valid_target_ms() end
+
+-- return true if target is acquired
+---@return boolean
+function precland:target_acquired() end
+
+-- return true if precland system is healthy
+---@return boolean
+function precland:healthy() end
+
 -- desc
 ---@class follow
 follow = {}
@@ -3372,6 +3440,18 @@ fs = {}
 ---@return stat_t_ud|nil
 function fs:stat(param1) end
 
+-- Format the SD card. This is a async operation, use get_format_status to get the status of the format
+---@return boolean
+function fs:format() end
+
+-- Get the current status of a format. 0=NOT_STARTED, 1=PENDING, 2=IN_PROGRESS, 3=SUCCESS, 4=FAILURE
+---@return number
+function fs:get_format_status() end
+
+-- Get crc32 checksum of a file with given name
+---@return uint32_t_ud|nil
+function fs:crc32(file_name) end
+
 -- desc
 ---@class networking
 networking = {}
@@ -3392,3 +3472,15 @@ function networking:get_netmask_active() end
 -- desc
 ---@return uint32_t_ud
 function networking:get_ip_active() end
+
+-- visual odometry object
+--@class visual_odom
+visual_odom = {}
+
+-- visual odometry health
+---@return boolean
+function visual_odom:healthy() end
+
+-- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
+---@return integer
+function visual_odom:quality() end

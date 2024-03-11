@@ -44,7 +44,6 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
@@ -86,6 +85,11 @@
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Plane.h"
+#endif
+
+#include <AC_PrecLand/AC_PrecLand_config.h>
+#if AC_PRECLAND_ENABLED
+ # include <AC_PrecLand/AC_PrecLand.h>
 #endif
 
 #include "GCS_Mavlink.h"
@@ -193,10 +197,6 @@ private:
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger logger;
-#endif
-
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
     float pitch_limit_min;
@@ -254,6 +254,10 @@ private:
 #if HAL_RALLY_ENABLED
     // Rally Points
     AP_Rally rally;
+#endif
+
+#if AC_PRECLAND_ENABLED
+    void precland_update(void);
 #endif
 
     // returns a Location for a rally point or home; if
@@ -887,9 +891,16 @@ private:
     int16_t calc_nav_yaw_course(void);
     int16_t calc_nav_yaw_ground(void);
 
-    // Log.cpp
-    uint32_t last_log_fast_ms;
+#if HAL_LOGGING_ENABLED
 
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
+    // Log.cpp
     void Log_Write_FullRate(void);
     void Log_Write_Attitude(void);
     void Log_Write_Control_Tuning();
@@ -901,6 +912,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AETR();
     void log_init();
+#endif
 
     // Parameters.cpp
     void load_parameters(void) override;
@@ -1090,6 +1102,7 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
+    bool check_takeoff_timeout(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);

@@ -20,6 +20,7 @@
 #include <SITL/SIM_Tracker.h>
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_Blimp.h>
+#include <SITL/SIM_NoVehicle.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
@@ -45,6 +46,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS Blimp
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define AP_SIM_FRAME_CLASS Submarine
+#else
+#define AP_SIM_FRAME_CLASS NoVehicle
 #endif
 #endif
 
@@ -63,6 +66,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "blimp"
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define AP_SIM_FRAME_STRING "sub"
+#else
+#define AP_SIM_FRAME_STRING ""
 #endif
 #endif
 

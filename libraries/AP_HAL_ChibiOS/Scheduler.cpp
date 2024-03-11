@@ -224,7 +224,10 @@ void Scheduler::delay(uint16_t ms)
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
             if (in_main_thread()) {
+                const auto old_task = hal.util->persistent_data.scheduler_task;
+                hal.util->persistent_data.scheduler_task = -4;
                 call_delay_cb();
+                hal.util->persistent_data.scheduler_task = old_task;
             }
         }
     }

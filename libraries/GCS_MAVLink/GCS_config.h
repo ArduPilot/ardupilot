@@ -84,12 +84,16 @@
 #define AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED HAL_ADSB_ENABLED
 #endif
 
+#ifndef AP_MAVLINK_FTP_ENABLED
+#define AP_MAVLINK_FTP_ENABLED HAL_GCS_ENABLED
+#endif
+
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
 // sending warnings to the GCS in Sep 2022 if this command was used.
 // Copter 4.4.0 sends this warning.
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
-#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
+#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ENABLED
 #endif
 
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't

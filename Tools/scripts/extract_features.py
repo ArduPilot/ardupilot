@@ -232,6 +232,8 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
             ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_mission_request\b'),
+            ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::ftp_worker'),
+
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
             ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
@@ -241,7 +243,10 @@ class ExtractFeatures(object):
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
-            ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
+            ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
+            ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'AP_Compass::mag_cal_fixed_yaw'),
+            ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
+            ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotation::init'),
         ]
 
     def progress(self, msg):

@@ -59,6 +59,8 @@
 #include <AP_Relay/AP_Relay.h>
 #endif
 
+#include <AP_TemperatureSensor/AP_TemperatureSensor_DroneCAN.h>
+
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
@@ -390,6 +392,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 #endif
 #if HAL_MOUNT_XACTI_ENABLED
     AP_Mount_Xacti::subscribe_msgs(this);
+#endif
+#if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
+    AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);
 #endif
 
     act_out_array.set_timeout_ms(5);
@@ -1451,14 +1456,44 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
  */
 void AP_DroneCAN::handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg)
 {
-#if HAL_LOGGING_ENABLED
-    if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
+#if AP_HAVE_GCS_SEND_TEXT
+    const auto log_level = AP::can().get_log_level();
+    const auto msg_level = msg.level.value;
+    bool send_mavlink = false;
+
+    if (log_level != AP_CANManager::LOG_NONE) {
         // log to onboard log and mavlink
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
-    } else {
-        // only log to onboard log
-        AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
+        enum MAV_SEVERITY mavlink_level = MAV_SEVERITY_INFO;
+        switch (msg_level) {
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_DEBUG:
+            mavlink_level = MAV_SEVERITY_DEBUG;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_DEBUG);
+            break;
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_INFO:
+            mavlink_level = MAV_SEVERITY_INFO;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_INFO);
+            break;
+        case UAVCAN_PROTOCOL_DEBUG_LOGLEVEL_WARNING:
+            mavlink_level = MAV_SEVERITY_WARNING;
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_WARNING);
+            break;
+        default:
+            send_mavlink = uint8_t(log_level) >= uint8_t(AP_CANManager::LogLevel::LOG_ERROR);
+            mavlink_level = MAV_SEVERITY_ERROR;
+            break;
+        }
+        if (send_mavlink) {
+            // when we send as MAVLink it also gets logged locally, so
+            // we return to avoid a duplicate
+            GCS_SEND_TEXT(mavlink_level, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
+            return;
+        }
     }
+#endif // AP_HAVE_GCS_SEND_TEXT
+
+#if HAL_LOGGING_ENABLED
+    // always log locally if we have logging enabled
+    AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
 #endif
 }
 

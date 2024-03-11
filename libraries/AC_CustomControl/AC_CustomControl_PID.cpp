@@ -1,7 +1,9 @@
+#include "AC_CustomControl_config.h"
+
+#if AP_CUSTOMCONTROL_PID_ENABLED
+
 #include "AC_CustomControl_PID.h"
 #include "AC_AttitudeControl/AC_AttitudeControl_Multi.h"
-
-#if CUSTOMCONTROL_PID_ENABLED
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
@@ -321,9 +323,9 @@ AC_CustomControl_PID::AC_CustomControl_PID(AC_CustomControl& frontend, AP_AHRS_V
     _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
-    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f),
-    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f),
-    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f)
+    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f),
+    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f),
+    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f)
 {
     _dt = dt;
     AP_Param::setup_object_defaults(this, var_info);
@@ -403,4 +405,4 @@ void AC_CustomControl_PID::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-#endif
+#endif  // AP_CUSTOMCONTROL_PID_ENABLED

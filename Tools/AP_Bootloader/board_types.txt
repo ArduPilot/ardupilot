@@ -260,6 +260,8 @@ AP_HW_YJUAV_A6Ultra                  1144
 AP_HW_TULIP_BATTMON                  1145
 AP_HW_AnyleafH7                      1146
 AP_HW_mRoKitCANrevC                  1147
+AP_HW_BotBloxSwitch                  1148
+AP_HW_MatekH7A3                      1149
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -276,7 +278,7 @@ AP_HW_VIMDRONES_PERIPH               1407
 
 AP_HW_PIXHAWK6X_PERIPH               1408
 AP_HW_CUBERED_PERIPH                 1409
-
+AP_HW_RadiolinkPIX6                  1410
 
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems

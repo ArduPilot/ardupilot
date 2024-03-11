@@ -34,6 +34,7 @@
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
 #include "AP_RCProtocol_GHST.h"
+#include "AP_RCProtocol_MAVLinkRadio.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -55,7 +56,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
 #endif
@@ -85,6 +88,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
     backend[AP_RCProtocol::GHST] = new AP_RCProtocol_GHST(*this);
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    backend[AP_RCProtocol::MAVLINK_RADIO] = new AP_RCProtocol_MAVLinkRadio(*this);
 #endif
 }
 
@@ -365,6 +371,52 @@ void AP_RCProtocol::update()
     check_added_uart();
 }
 
+// explicitly investigate a backend for data, as opposed to feeding
+// the backend a byte (or pulse-train) at a time and having them make
+// an "add_input" callback):
+bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
+{
+    auto *p = backend[protocol];
+    if (p == nullptr) {
+        // backend is not allocated?!
+        return false;
+    }
+
+    if (_detected_protocol == protocol) {
+        // we are using this protocol already, see if there is new
+        // data.  Caller will handle the case where we stop presenting
+        // data
+        return p->new_input();
+    }
+
+    // we are not the currently in-use protocol.
+    const uint32_t now = AP_HAL::millis();
+
+    // see if another backend is providing data:
+    if (!should_search(now)) {
+        // apparently, yes
+        return false;
+    }
+
+#if AP_RC_CHANNEL_ENABLED
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (!protocol_enabled(protocol)) {
+        return false;
+    }
+
+    // nobody is providing data; can we provide data?
+    if (!p->new_input()) {
+        // we can't provide data
+        return false;
+    }
+
+    // we can provide data, change the detected protocol to be us:
+    _detected_protocol = protocol;
+    return true;
+}
+
 bool AP_RCProtocol::new_input()
 {
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
@@ -377,21 +429,24 @@ bool AP_RCProtocol::new_input()
         }
     }
 
+    // iterate through backends which don't do either of pulse or uart
+    // input, and thus won't update_new_input
+    const rcprotocol_t pollable[] {
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    uint32_t now = AP_HAL::millis();
-    if (should_search(now)) {
-        if (backend[AP_RCProtocol::DRONECAN] != nullptr &&
-            backend[AP_RCProtocol::DRONECAN]->new_input()) {
-            _detected_protocol = AP_RCProtocol::DRONECAN;
-            _last_input_ms = now;
-        }
-    } else if (_detected_protocol == AP_RCProtocol::DRONECAN) {
-        _new_input = backend[AP_RCProtocol::DRONECAN]->new_input();
-        if (_new_input) {
-            _last_input_ms = now;
-        }
-    }
+        AP_RCProtocol::DRONECAN,
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        AP_RCProtocol::MAVLINK_RADIO,
+#endif
+    };
+    for (const auto protocol : pollable) {
+        if (!detect_async_protocol(protocol)) {
+            continue;
+        }
+        _new_input = true;
+        _last_input_ms = AP_HAL::millis();
+        break;
+    }
 
     bool ret = _new_input;
     _new_input = false;
@@ -475,8 +530,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case FASTSBUS:
         return "FastSBUS";
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
     case DSM:
         return "DSM";
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
@@ -513,6 +570,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case GHST:
         return "GHST";
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    case MAVLINK_RADIO:
+        return "MAVRadio";
+#endif
     case NONE:
         break;
     }
@@ -540,12 +601,23 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
 // return true if a specific protocol is enabled
 bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
 {
-    if ((rc_protocols_mask & 1) != 0) {
+    if ((rc_protocols_mask & 1U) != 0) {
         // all protocols enabled
         return true;
     }
     return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
+
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet)
+{
+    if (backend[AP_RCProtocol::MAVLINK_RADIO] == nullptr) {
+        return;
+    }
+
+    backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_rc_channels(packet);
+};
+#endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
 namespace AP {
     AP_RCProtocol &RC()

@@ -47,6 +47,13 @@
 static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
               "Storage is not multiple of line size");
 
+/*
+  on boards with 8k sector sizes we double up to treat pairs of sectors as one
+ */
+#ifndef AP_FLASH_STORAGE_DOUBLE_PAGE
+#define AP_FLASH_STORAGE_DOUBLE_PAGE 0
+#endif
+
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
@@ -86,7 +93,11 @@ private:
 
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*2,
+#else
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
+#endif
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),

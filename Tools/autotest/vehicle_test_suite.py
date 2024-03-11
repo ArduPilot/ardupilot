@@ -342,6 +342,117 @@ class Telem(object):
         self.update_read()
 
 
+class WaitAndMaintain(object):
+    def __init__(self,
+                 test_suite,
+                 minimum_duration=None,
+                 progress_print_interval=1,
+                 timeout=30,
+                 ):
+        self.test_suite = test_suite
+        self.minimum_duration = minimum_duration
+        self.achieving_duration_start = None
+        self.timeout = timeout
+        self.last_progress_print = 0
+        self.progress_print_interval = progress_print_interval
+
+    def run(self):
+        self.announce_test_start()
+
+        tstart = self.test_suite.get_sim_time_cached()
+        while True:
+            now = self.test_suite.get_sim_time_cached()
+            current_value = self.get_current_value()
+            if now - self.last_progress_print > self.progress_print_interval:
+                self.print_progress(now, current_value)
+                self.last_progress_print = now
+
+            # check for timeout
+            if now - tstart > self.timeout:
+                raise self.timeoutexception()
+
+            # handle the case where we are are achieving our value:
+            if self.validate_value(current_value):
+                if self.achieving_duration_start is None:
+                    self.achieving_duration_start = now
+                if (self.minimum_duration is None or
+                        now - self.achieving_duration_start > self.minimum_duration):
+                    self.announce_success()
+                    return True
+                continue
+
+            # handle the case where we are not achieving our value:
+            self.achieving_duration_start = None
+
+    def progress(self, text):
+        self.test_suite.progress(text)
+
+    def announce_test_start(self):
+        self.progress(self.announce_start_text())
+
+    def announce_success(self):
+        self.progress(self.success_text())
+
+    def print_progress(self, now, value):
+        text = self.progress_text(value)
+        if self.achieving_duration_start is not None:
+            delta = now - self.achieving_duration_start
+            text += f" (maintain={delta:.1f}/{self.minimum_duration})"
+        self.progress(text)
+
+
+class WaitAndMaintainLocation(WaitAndMaintain):
+    def __init__(self, test_suite, target, accuracy=5, height_accuracy=1, **kwargs):
+        super(WaitAndMaintainLocation, self).__init__(test_suite, **kwargs)
+        self.target = target
+        self.height_accuracy = height_accuracy
+        self.accuracy = accuracy
+
+    def announce_start_text(self):
+        t = self.target
+        if self.height_accuracy is not None:
+            return ("Waiting for distance to Location (%.4f, %.4f, %.2f) (h_err<%f, v_err<%.2f " %
+                    (t.lat, t.lng, t.alt*0.01, self.accuracy, self.height_accuracy))
+        return ("Waiting for distance to Location (%.4f, %.4f) (h_err<%f" %
+                (t.lat, t.lng, self.accuracy))
+
+    def get_target_value(self):
+        return self.loc
+
+    def get_current_value(self):
+        return self.test_suite.mav.location()
+
+    def horizontal_error(self, value):
+        return self.test_suite.get_distance(value, self.target)
+
+    def vertical_error(self, value):
+        return math.fabs(value.alt*0.01 - self.target.alt*0.01)
+
+    def validate_value(self, value):
+        if self.horizontal_error(value) > self.accuracy:
+            return False
+
+        if self.height_accuracy is None:
+            return True
+
+        if self.vertical_error(value) > self.height_accuracy:
+            return False
+
+        return True
+
+    def success_text(self):
+        return "Reached location"
+
+    def timeoutexception(self):
+        return AutoTestTimeoutException("Failed to attain location")
+
+    def progress_text(self, current_value):
+        if self.height_accuracy is not None:
+            return (f"Want=({self.target.lat:.7f},{self.target.lng:.7f},{self.target.alt:.2f}) Got=({current_value.lat:.7f},{current_value.lng:.7f},{current_value.alt:.2f}) dist={self.horizontal_error(current_value):.2f} vdist={self.vertical_error(current_value):.2f}")  # noqa
+
+        return (f"Want=({self.target.lat},{self.target.lng}) distance={self.horizontal_error(current_value)}")
+
+
 class MSP_Generic(Telem):
     def __init__(self, destination_address):
         super(MSP_Generic, self).__init__(destination_address)
@@ -2002,14 +2113,14 @@ class TestSuite(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None, force=False):
+    def reboot_sitl(self, required_bootcount=None, force=False, check_position=True):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        if self.frame != 'sailboat':  # sailboats drift with wind!
+        if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
@@ -2438,19 +2549,6 @@ class TestSuite(ABC):
             "SIM_VIB_MOT_MASK",
             "SIM_VIB_MOT_MAX",
             "SIM_VIB_MOT_MULT",
-            "SIM_VICON_FAIL",
-            "SIM_VICON_GLIT_X",
-            "SIM_VICON_GLIT_Y",
-            "SIM_VICON_GLIT_Z",
-            "SIM_VICON_POS_X",
-            "SIM_VICON_POS_Y",
-            "SIM_VICON_POS_Z",
-            "SIM_VICON_TMASK",
-            "SIM_VICON_VGLI_X",
-            "SIM_VICON_VGLI_Y",
-            "SIM_VICON_VGLI_Z",
-            "SIM_VICON_YAW",
-            "SIM_VICON_YAWERR",
             "SIM_WAVE_AMP",
             "SIM_WAVE_DIR",
             "SIM_WAVE_ENABLE",
@@ -4258,6 +4356,7 @@ class TestSuite(ABC):
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
+        self.set_parameter('SIM_SPEEDUP', 1)
         mavproxy.send("log list\n")
         mavproxy.expect("numLogs")
         self.wait_heartbeat()
@@ -4309,6 +4408,9 @@ class TestSuite(ABC):
             "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         endpoints = [('UDPClient', ':16001') ,
                      ('UDPServer', 'udpout:127.0.0.1:16002'),
                      ('TCPClient', 'tcpin:0.0.0.0:16003'),
@@ -4352,6 +4454,9 @@ class TestSuite(ABC):
             "LOG_DISARMED": 0,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         endpoints = [('UDPMulticast', 'mcast:16005') ,
                      ('UDPBroadcast', ':16006')]
         for name, e in endpoints:
@@ -4389,6 +4494,9 @@ class TestSuite(ABC):
             "CAN_D1_UC_S1_PRO": 2,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         filename = "MAVProxy-downloaded-can-log.BIN"
         # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
         mavproxy = self.start_mavproxy(master=':15550')
@@ -5030,6 +5138,8 @@ class TestSuite(ABC):
             items,
             "fence",
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('fence list\n')
 
     def check_mission_upload_download(self, items, strict=True):
         self.check_mission_item_upload_download(
@@ -5037,6 +5147,8 @@ class TestSuite(ABC):
             "waypoints",
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             strict=strict)
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
 
     def check_rally_upload_download(self, items):
         self.check_mission_item_upload_download(
@@ -5044,6 +5156,8 @@ class TestSuite(ABC):
             "rally",
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY
         )
+        if self.use_map and self.mavproxy is not None:
+            self.mavproxy.send('rally list\n')
 
     def check_dflog_message_rates(self, log_filepath, message_rates):
         reader = self.dfreader_for_path(log_filepath)
@@ -7497,38 +7611,9 @@ class TestSuite(ABC):
                                       0, # "land dir"
                                       0) # flags
 
-    def wait_location(self,
-                      loc,
-                      accuracy=5.0,
-                      timeout=30,
-                      target_altitude=None,
-                      height_accuracy=-1,
-                      **kwargs):
-        """Wait for arrival at a location."""
-        def get_distance_to_loc():
-            return self.get_distance(self.mav.location(), loc)
-
-        def validator(value2, empty=None):
-            if value2 <= accuracy:
-                if target_altitude is not None:
-                    height_delta = math.fabs(self.mav.location().alt - target_altitude)
-                    if height_accuracy != -1 and height_delta > height_accuracy:
-                        return False
-                return True
-            else:
-                return False
-        debug_text = "Distance to Location (%.4f, %.4f) " % (loc.lat, loc.lng)
-        if target_altitude is not None:
-            debug_text += ",at altitude %.1f height_accuracy=%.1f, d" % (target_altitude, height_accuracy)
-        self.wait_and_maintain(
-            value_name=debug_text,
-            target=0,
-            current_value_getter=lambda: get_distance_to_loc(),
-            accuracy=accuracy,
-            validator=lambda value2, target2: validator(value2, None),
-            timeout=timeout,
-            **kwargs
-        )
+    def wait_location(self, loc, **kwargs):
+        waiter = WaitAndMaintainLocation(self, loc, **kwargs)
+        waiter.run()
 
     def assert_current_waypoint(self, wpnum):
         seq = self.mav.waypoint_current()
@@ -7966,7 +8051,7 @@ Also, ignores heartbeats not from our target system'''
         if "STATUSTEXT" not in c.collections:
             raise NotAchievedException("Asked to check context but it isn't collecting!")
         for x in c.collections["STATUSTEXT"]:
-            self.progress("  statustext=%s vs text=%s" % (x.text, text))
+            self.progress("  statustext got=(%s) want=(%s)" % (x.text, text))
             if regex:
                 if re.match(text, x.text):
                     return x
@@ -10781,7 +10866,7 @@ Also, ignores heartbeats not from our target system'''
         # Disable heading and yaw test on rover type
 
         if self.is_rover():
-            test_alt = False
+            test_alt = True
             test_heading = False
             test_yaw_rate = False
         else:
@@ -10842,6 +10927,16 @@ Also, ignores heartbeats not from our target system'''
                 0,  # yawrate
             )
 
+        def testpos(self, targetpos : mavutil.location, test_alt : bool, frame_name : str, frame):
+            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+            self.wait_location(
+                targetpos,
+                accuracy=wp_accuracy,
+                timeout=timeout,
+                height_accuracy=(2 if test_alt else None),
+                minimum_duration=2,
+            )
+
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
             self.start_subtest("Testing Set Position in %s" % frame_name)
@@ -10849,37 +10944,25 @@ Also, ignores heartbeats not from our target system'''
             targetpos.lat += 0.0001
             if test_alt:
                 targetpos.alt += 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                               target_altitude=(targetpos.alt if test_alt else None),
-                               height_accuracy=2, minimum_duration=2)
+            testpos(self, targetpos, test_alt, frame_name, frame)
 
             self.start_subtest("Changing Longitude")
             targetpos.lng += 0.0001
             if test_alt:
                 targetpos.alt -= 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                               target_altitude=(targetpos.alt if test_alt else None),
-                               height_accuracy=2, minimum_duration=2)
+            testpos(self, targetpos, test_alt, frame_name, frame)
 
             self.start_subtest("Revert Latitude")
             targetpos.lat -= 0.0001
             if test_alt:
                 targetpos.alt += 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                               target_altitude=(targetpos.alt if test_alt else None),
-                               height_accuracy=2, minimum_duration=2)
+            testpos(self, targetpos, test_alt, frame_name, frame)
 
             self.start_subtest("Revert Longitude")
             targetpos.lng -= 0.0001
             if test_alt:
                 targetpos.alt -= 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                               target_altitude=(targetpos.alt if test_alt else None),
-                               height_accuracy=2, minimum_duration=2)
+            testpos(self, targetpos, test_alt, frame_name, frame)
 
             if test_heading:
                 self.start_subtest("Testing Yaw targetting in %s" % frame_name)
@@ -10907,9 +10990,13 @@ Also, ignores heartbeats not from our target system'''
                     math.radians(42),  # yaw
                     0,  # yawrate
                 )
-                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                                   target_altitude=(targetpos.alt if test_alt else None),
-                                   height_accuracy=2, minimum_duration=2)
+                self.wait_location(
+                    targetpos,
+                    accuracy=wp_accuracy,
+                    timeout=timeout,
+                    height_accuracy=(2 if test_alt else None),
+                    minimum_duration=2,
+                )
                 self.wait_heading(42, minimum_duration=5, timeout=timeout)
 
                 self.start_subtest("Revert Latitude and Heading")
@@ -10936,9 +11023,13 @@ Also, ignores heartbeats not from our target system'''
                     math.radians(0),  # yaw
                     0,  # yawrate
                 )
-                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                                   target_altitude=(targetpos.alt if test_alt else None),
-                                   height_accuracy=2, minimum_duration=2)
+                self.wait_location(
+                    targetpos,
+                    accuracy=wp_accuracy,
+                    timeout=timeout,
+                    height_accuracy=(2 if test_alt else None),
+                    minimum_duration=2,
+                )
                 self.wait_heading(0, minimum_duration=5, timeout=timeout)
 
             if test_yaw_rate:
@@ -10974,9 +11065,12 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_yaw_speed(target_rate, timeout=timeout,
                                     called_function=lambda plop, empty: send_yaw_rate(
                                         target_rate, None), minimum_duration=5)
-                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                                   target_altitude=(targetpos.alt if test_alt else None),
-                                   height_accuracy=2)
+                self.wait_location(
+                    targetpos,
+                    accuracy=wp_accuracy,
+                    timeout=timeout,
+                    height_accuracy=(2 if test_alt else None),
+                )
 
                 self.start_subtest("Revert Latitude and invert Yaw rate")
                 target_rate = -1.0
@@ -10986,9 +11080,12 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_yaw_speed(target_rate, timeout=timeout,
                                     called_function=lambda plop, empty: send_yaw_rate(
                                         target_rate, None), minimum_duration=5)
-                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
-                                   target_altitude=(targetpos.alt if test_alt else None),
-                                   height_accuracy=2)
+                self.wait_location(
+                    targetpos,
+                    accuracy=wp_accuracy,
+                    timeout=timeout,
+                    height_accuracy=(2 if test_alt else None),
+                )
                 self.start_subtest("Changing Yaw rate to zero")
                 target_rate = 0.0
                 self.wait_yaw_speed(target_rate, timeout=timeout,
@@ -13509,11 +13606,11 @@ switch value'''
         # if gps_type is None we auto-detect
         sim_gps = [
             # (0, "NONE"),
-            (1, "UBLOX", None, "u-blox", 5, 'detected'),
-            (5, "NMEA", 5, "NMEA", 5, 'detected'),
-            (6, "SBP", None, "SBP", 5, 'detected'),
+            (1, "UBLOX", None, "u-blox", 5, 'probing'),
+            (5, "NMEA", 5, "NMEA", 5, 'probing'),
+            (6, "SBP", None, "SBP", 5, 'probing'),
             # (7, "SBP2", 9, "SBP2", 5),  # broken, "waiting for config data"
-            (8, "NOVA", 15, "NOVA", 5, 'detected'),  # no attempt to auto-detect this in AP_GPS
+            (8, "NOVA", 15, "NOVA", 5, 'probing'),  # no attempt to auto-detect this in AP_GPS
             (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
@@ -13528,7 +13625,11 @@ switch value'''
             self.set_parameter("GPS_TYPE", gps_type)
             self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
-            self.wait_statustext("%s as %s" % (detect_prefix, detect_name), check_context=True)
+            if detect_prefix == "probing":
+                self.wait_statustext(f"probing for {detect_name}", check_context=True)
+            else:
+                self.wait_statustext(f"specified as {detect_name}", check_context=True)
+            self.wait_statustext(f"detected {detect_name}", check_context=True)
             n = self.poll_home_position(timeout=120)
             distance = self.get_distance_int(orig, n)
             if distance > 1:
@@ -13565,8 +13666,8 @@ switch value'''
         # AP_GPS::init() at boot time, so it will never be detected.
         self.context_collect("STATUSTEXT")
         self.reboot_sitl()
-        self.wait_statustext("GPS 1: detected as u-blox", check_context=True)
-        self.wait_statustext("GPS 2: detected as u-blox", check_context=True)
+        self.wait_statustext("GPS 1: detected u-blox", check_context=True)
+        self.wait_statustext("GPS 2: detected u-blox", check_context=True)
         m = self.assert_receive_message("GPS2_RAW")
         self.progress(self.dump_message_verbose(m))
         # would be nice for it to take some time to get a fix....

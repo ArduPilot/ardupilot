@@ -35,8 +35,6 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#include "AP_Gripper/AP_Gripper.h"
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros, _priority)
@@ -101,9 +99,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
 #endif
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
-#endif
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
 #endif
@@ -135,9 +130,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
 #endif
-#if STATS_ENABLED == ENABLED
-    SCHED_TASK(stats_update,            1,    200, 120),
-#endif
     SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
 #if ADVANCED_FAILSAFE == ENABLED
@@ -160,9 +152,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-#if HAL_LOGGING_ENABLED
-    logger{g.log_bitmask},
-#endif
     modes(&g.mode1),
     control_mode(&mode_initializing)
 {
@@ -302,14 +291,13 @@ void Rover::nav_script_time_done(uint16_t id)
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if STATS_ENABLED == ENABLED
+#if AP_STATS_ENABLED
 /*
   update AP_Stats
 */
 void Rover::stats_update(void)
 {
-    g2.stats.set_flying(g2.motors.active());
-    g2.stats.update();
+    AP::stats()->set_flying(g2.motors.active());
 }
 #endif
 

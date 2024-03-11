@@ -776,6 +776,7 @@ class ChibiOSHWDef(object):
 
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
+        mcu_type = self.mcu_type
         if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
             if self.get_config('FLASH_SIZE_KB', type=int) == 512:
                 return [16, 16, 16, 16, 64, 128, 128, 128]
@@ -802,6 +803,8 @@ class ChibiOSHWDef(object):
                         256, 256, 256, 256]
             else:
                 raise Exception("Unsupported flash size %u" % self.get_config('FLASH_SIZE_KB', type=int))
+        elif mcu_type.startswith('STM32H7A'):
+            return [8] * (self.get_config('FLASH_SIZE_KB', type=int)//8)
         elif mcu_series.startswith('STM32H7'):
             return [128] * (self.get_config('FLASH_SIZE_KB', type=int)//128)
         elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
@@ -873,6 +876,8 @@ class ChibiOSHWDef(object):
         storage_flash_page = self.get_storage_flash_page()
         pages = self.get_flash_pages_sizes()
         page_size = pages[storage_flash_page] * 1024
+        if self.intdefines.get('AP_FLASH_STORAGE_DOUBLE_PAGE', 0) == 1:
+            page_size *= 2
         storage_size = self.intdefines.get('HAL_STORAGE_SIZE', None)
         if storage_size is None:
             self.error('Need HAL_STORAGE_SIZE define')
@@ -1101,7 +1106,7 @@ class ChibiOSHWDef(object):
             f.write('#define APP_START_OFFSET_KB %u\n' % self.get_config('APP_START_OFFSET_KB', default=0, type=int))
         f.write('\n')
 
-        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        ram_reserve_start, ram0_start_address = self.get_ram_reserve_start()
         f.write('#define HAL_RAM0_START 0x%08x\n' % ram0_start_address)
         if ram_reserve_start > 0:
             f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
@@ -1380,7 +1385,7 @@ class ChibiOSHWDef(object):
         if ext_flash_size > 32:
             self.error("We only support 24bit addressing over external flash")
 
-        ram_reserve_start,ram0_start_address = self.get_ram_reserve_start()
+        ram_reserve_start, ram0_start_address = self.get_ram_reserve_start()
         if ram_reserve_start > 0 and ram0_start_address == ram0_start:
             ram0_start += ram_reserve_start
             ram0_len -= ram_reserve_start
@@ -2408,6 +2413,10 @@ INCLUDE common.ld
         this_dir = os.path.realpath(__file__)
         rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
         hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef[0]))
+        # allow re-using of bootloader from different build:
+        use_bootloader_from_board = self.get_config('USE_BOOTLOADER_FROM_BOARD', default=None, required=False)
+        if use_bootloader_from_board is not None:
+            hwdef_dirname = use_bootloader_from_board
         bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
         bootloader_path = os.path.join(rootdir,
                                        "Tools",
@@ -2616,6 +2625,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.embed_bootloader(f)
 
         if len(self.romfs) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in self.romfs.keys():
+                if file.startswith("scripts") and file.endswith(".lua"):
+                    f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_LUA 1\n')
+                    break
             f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
 
         if self.mcu_series.startswith('STM32F1'):
@@ -3040,6 +3054,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     self.baro_list = []
                 if u == 'AIRSPEED':
                     self.airspeed_list = []
+                if u == 'ROMFS':
+                    self.romfs = {}
         elif a[0] == 'env':
             self.progress("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
@@ -3195,14 +3211,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # write out hw.dat for ROMFS
         self.write_all_lines(os.path.join(self.outdir, "hw.dat"))
 
+        # Add ROMFS directories
+        self.romfs_add_dir(['scripts'])
+        self.romfs_add_dir(['param'])
+
         # write out hwdef.h
         self.write_hwdef_header(os.path.join(self.outdir, "hwdef.h"))
 
         # write out ldscript.ld
         self.write_ldscript(os.path.join(self.outdir, "ldscript.ld"))
-
-        self.romfs_add_dir(['scripts'])
-        self.romfs_add_dir(['param'])
 
         self.write_ROMFS(self.outdir)
 

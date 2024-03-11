@@ -50,6 +50,7 @@ protected:
     void send_pid_tuning() override;
 
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
+    void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
 private:
 

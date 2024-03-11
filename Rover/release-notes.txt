@@ -1,4 +1,304 @@
 Rover Release Notes:
+--------------------
+
+Rover 4.5.0-beta2 14th February 2024
+Changes from 4.5.0-beta1:
+
+1) New Autopilots supported
+ - YJUAV_A6Ultra
+ - AnyLeaf H7
+
+2) System level changes
+ - fixed float rounding issue in HAL_Linux millis and micros functions
+ - fixed loading of defaults.parm parameters for dynamic parameter subtrees
+ - fixed discrimination between GHST and CRSF protocols
+ - fixed bug in DroneCAN packet parsing for corrupt packets that could cause a crash
+ - fixed handling of network sockets in scripting when used after close
+ - fixed bit timing of CANFD buses
+
+3) Camera and gimbal enhancements
+ - wait for non-zero camera version in SIYI driver
+
+4) Miscellaneous
+ - do relay parameter conversion for parachute parameters if ever has been used
+ - broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
+
+------------------------------------------------------------------
+Rover 4.5.0-beta1 30-Jan-2025
+Changes from 4.4.4
+1) New autopilots supported
+    - ACNS-F405AIO
+    - Airvolute DCS2 onboard FMU
+    - Aocoda-RC-H743Dual
+    - BrainFPV RADIX 2 HD
+    - CAN-Zero
+    - CM4Pilot
+    - CubeRed
+    - Esp32-tomte76, esp32nick, esp32s3devkit
+    - FlyingMoonH743
+    - Flywoo F405 Pro
+    - FlywooF405S-AIO with alternative IMUs
+    - Here4 GPS as flight controller
+    - Holybro 6X revision 6
+    - Holybro6X-45686 with 3x ICM45686 IMUs
+    - JAE JFB110
+    - KakuteH7 using ICM42688
+    - PixFlamingo (uses STM32L4PLUS CPU)
+    - PixPilot-C3
+    - PixSurveyA1-IND
+    - QiotekAdeptF407
+    - Sierra TrueNavIC
+    - SPRacing H7RF
+    - SW-Nav-F405
+    - YJUAV_A6
+    - YJUAV_A6SE, YJUAV_A6SE_H743
+2) Autopilot specific changes
+    - 1MB boards lose features to save flash (Payload Place, some battery monitors, NMEA Output, bootloaders, Turtle mode)
+    - CubeOrangePlus supports IMU high resolution sampling (works with ICM42688, ICM42652, ICM42670, ICM45686 IMUs)
+    - F4 processors with only 1 IMU gain Triple Harmonic Notch support
+    - F765-SE bdshot support on 1st 4 pin
+    - F7 and H7 boards lose DMA on I2C ports (not required, limited DMA better used elsewhere)
+    - FlyingMoonH743, FlyingMoonF427 2nd and 3rd IMU order swapped
+    - HEEWING-F405 supports CRSF
+    - MatekL431-RC bootloader added, DMA used for RC and GPS
+    - PH4-mini, PH4-mini-bdshot, Swan-K1 and TBS-Colibri-F7 BRD_SER4_RTSCTS param conflict fixed
+    - Pixhawk6C supports BMI088 baro
+    - TMotorH743, Heewing-F405 serial parameter definitions fixed
+3) AHRS/EKF enhancements and fixes
+    - AHRS_OPTIONS supports disabling fallback to DCM
+    - BARO_ALT_OFFSET slews more slowly (was 20sec, now 1min)
+    - EKF2 removed (can be re-enabled with Custom build server)
+    - External AHRS support for multiple GPSs
+    - InertialLabs INS-U external AHRS support
+    - Lord external AHRS renamed to MicroStrain5
+    - MAV_CMD_EXTERNAL_POSITION_ESTIMATE supports setting approximate position during dead-reckoning
+    - Microstrain7 (aka 3DM-QG7) external AHRS support
+4) Driver enhancements
+    - 3DR Solo supports up to 6S batteries
+    - Airspeed health checks vs GPS use 3D velocity
+    - BDshot on the first four channels of boards with F103-based IOMCUs (e.g. Pixhawk 6X)
+    - Dshot on all IOMCU channels on all boards with an IOMCU (e.g. all CubePilot autopilots)
+    - Dshot commands (e.g. motor reversal abd beeps) and EDT supported on IOMCU
+    - DroneCAN battery monitors calculate consumed energy if battery doesn't provide directly
+    - DroneCAN RC and Ghost RC protocol support
+    - EFI MAVLink driver
+    - Extended DShot Telemetry support (requires BLHeli32 ver 32.10 or BlueJay, set SERVO_DSHOT_ESC=3 or 4)
+    - GPS L5 band health override to enable L5 signal use (see GPS_DRV_OPTIONS)
+    - GPS-for-yaw works at lower update rate (3hz minimum)
+    - GSOF GPS supports GPS_COM_PORT parameter
+    - Hirth ICEngine support
+    - ICE option to enable/disable starting while disarmed
+    - ICE support for starter via relay
+    - IMUDATA serial protocol outputs raw IMU data on serial port (only available using custom build server)
+    - Innomaker LD06 360deg lidar support
+    - Intelligent Energy fuel cells new protocol support
+    - IRC Tramp supports 1G3 bands A and B
+    - IRC Ghost support
+    - JAE JRE-30 radar
+    - KDECAN driver rewrite (params moved to KDE_, works on all vehicles)
+    - MCP9601 temperature sensor support
+    - NanoRadar NRA24 rangefinder support
+    - NeoPixelsRGB support
+    - NoopLoop TOFSense, TOFSenseF-I2c rangefinder support
+    - OSD shows flashing horizon when inverted
+    - OSD2 support (e.g. second OSD)
+    - QMC5883P compass support
+    - Relay refactored to support RELAYx_FUNCTION, RELAY_STATUS message support added
+    - Reventech fuel level support (extends existing analog driver, see BATT_FL_xx parameters)
+    - RPLidarS1 360 deg lidar support and improved reliability for all RPLidars
+    - SBF GPS supports yaw from dual antennas
+    - Temperature sensor using analog voltages supported
+    - Trimble PX-1 support added as a GPS
+    - Winch driver enhancements including stuck protection, option for spin-free on startup
+5) Control and navigation changes and enhancements
+    - Auto missions can always be cleared while disarmed (would fail if mission still running)
+    - DO_ENGINE_CONTROL allows starting engine even when disarmed
+    - DO_SET_MISSION_CURRENT command can reset mission (see Reset Mission field)
+    - DO_SET_SERVO, DO_REPEAT_SERVO work with servo outputs set to RCInxScaled
+    - Fractional Loiter Turn Support in missions
+    - HarmonicNotch supports up to 16 harmonics
+    - JUMP command sends improved text msg to pilot (says where will jump to)
+    - MAV_CMD_AIRFRAME_CONFIGURATION can control landing gear on all vehicles
+    - MAV_CMD_NAV_SET_YAW_SPEED deprecated
+    - MOT_OPTIONS allows voltage compensation to use raw battery voltages (instead of current corrected voltage)
+    - PID controllers get DFF/D_FF (derivative feed-forward), NTF (target notch filter index) and NEF (error notch filter index)
+    - PID controllers get PDMX param to limit P+D output (useful for large vehicles and/or slow actuators)
+    - PID notch filter configured via new filter library using FILT parameters
+6) Parameters renamed
+    - COMPASS_TYPEMASK renamed to COMPASS_DISBLMSK
+7) ROS2 / DDS support
+    - Added support for EProsima MicroXRCEDDS as a transport in SITL and hardware
+    - Added sensor data topic support such as NavSatStatus and BatteryState
+    - Added a new AP_ExternalControl library for generic control support in SI units
+    - Added support for building ArduPilot with the colcon build system
+    - DDS topics comply with ROS REP-147
+    - Added Gazebo Garden and Gazebo Harmonic simulation with examples
+    - Added support for ROS 2 services such as Arm and Mode control
+    - Added high level goal interface for waypoints
+    - Wiki updated to support ROS 2
+    - Added ROS 2 launch scripts for SITL, MAVProxy and micro-ROS agent
+    - Add pytests for DDS client and ROS 2 launch scripts and integrate into CI
+8) Camera and gimbal enhancements
+    - Calculates location where camera gimbal is pointing (see CAMERA_FOV_STATUS)
+    - CAMx_MNT_INST allows specifying which mount camera is in
+    - Camera lens (e.g. live video stream) selectable using RC aux function
+    - Interval timer (for taking pictures at timed intervals)
+    - Image tracking support (ViewPro only)
+    - MAVLink Gimbal Protocol v2 support for better GCS integration
+    - MNTx_SYSID_DFLT allows easier pointing gimbal at another vehicle
+    - MOUNT_CONTROL, MOUNT_CONFIGURE messages deprecated
+    - RangeFinder support (only logged, only supported on Siyi, Viewpro)
+    - Pilot's RC input re-takes manual control of gimbal (e.g. switches to RC_TARGETING mode)
+    - Siyi driver gets Zoom control, sends autopilot attitude and time (reduces leans)
+    - Video recording may start when armed (see CAMx_OPTIONS)
+    - ViewPro driver (replaces equivalent Lua driver)
+    - Xacti camera gimbal support
+    - Zoom percentage support (for both missions and GCS commands)
+9) Logging and reporting changes
+    - Battery logging (e.g. BAT) includes health, temperature, state-of-health percentage
+    - CAM and MNT messages contain camera gimbal's desired and actual angles
+    - INS_RAW_LOG_OPT allows raw, pre-filter and post-filter sensor data logging (alternative to "batch logging", good for filtering analysis)
+    - PID logging gets reset and I-term-set flags
+    - Rangefinder logging (e.g. RFND) includes signal quality
+    - RC aux functions sorted alphabetically for GCS
+    - RC logging (RCI, RCI2) include valid input and failsafe flags
+    - RTK GPS logging includes number of fragments used or discarded
+10) Scripting enhancements
+    - Autopilot reboot support
+    - Baro, Compass, IMU, IOMCU health check support
+    - Battery cell voltage bindings
+    - Battery driver support
+    - BattEsimate.lua applet estimates SoC from voltage
+    - Camera and Mount bindings improved
+    - CAN input packet filtering reduces work required by Lua CAN drivers
+    - DJI RS2/RS3 gimbal driver supports latest DJI firmware version (see mount-djirs2-driver.lua)
+    - EFI drivers for DLA serial, InnoFlight Inject EFI driver
+    - EFI bindings improved
+    - Fence support
+    - Generator drivers for Halo6000, Zhuhai SVFFI
+    - GCS failsafe support
+    - Hobbywing_DataLink driver (see Hobbywing_DataLink.lua)
+    - is_landing, is_taking_off bindings
+    - led_on_a_switch.lua sets LED brightness from RC switch
+    - MAVLink sending and receiving support
+    - Mission jump_to_landing_sequence binding
+    - mount-poi.lua upgraded to applet, sends better feedback, can lock onto Location
+    - Networking/Ethernet support
+    - Plane dual-aircraft synchronised aerobatics
+    - Proximity driver support
+    - Rangefinder drivers can support signal quality
+    - revert_param.lua applet for quickly reverting params during tuning
+    - RockBlock.lua applet supports setting mode, fix for battery voltage reporting
+    - Serial/UART reading performance improvement using readstring binding
+    - sport_aerobatics.lua rudder control fixed
+    - Thread priority can be set using SCR_THD_PRIORITY (useful for Lua drivers)
+    - Wind alignment and head_wind speed bindings
+11) Safety related enhancements and fixes
+    - Arm/Disarmed GPIO may be disabled using BRD_OPTIONS
+    - Arming check that Auto mode requires mission
+    - Arming check of compass vs world magnetic model to detect metal in ground (see ARMING_MAGTHRESH)
+    - Arming check of GPIO pin interrupt storm
+    - Arming check of Lua script CRC
+    - Arming check of mission loaded from SD card
+    - Arming check of Relay pin conflicts
+    - Arming check of emergency stop skipped if emergency stop aux function configured
+    - Arming check that at least some outputs are configured
+    - Arming failures reported more quickly when changing from success to failed
+    - ARMING_OPTIONS allows supressing "Armed", "Disarmed" text messages
+    - BRD_SAFETY_MASK extended to apply to CAN ESCs and servos
+    - Buzzer noise for gyro calibration and arming checks passed
+    - Dijkstras object avoidance supports "fast waypoints" (see AVOID_OPTIONS)
+    - Fence breach failsafe gets disarm action
+    - FENCE_OPTIONS supports union OR intersection of all polygon fences
+    - FLTMODE_GCSBLOCK blocks GCS from changing vehicle to specified modes
+    - Main loop lockup recovery by forcing mutex release (only helps if caused by software bug)
+    - Mandatory arming checks cannot be skipped (previously setting ARMING_CHECKS=0 skipped all)
+    - Rally points supports altitude frame (AMSL, Relative or Terrain)
+    - SERVO_RC_FS_MSK allows outputs using RC passthrough to move to SERVOx_TRIM on RC failsafe
+12) System Enhancements
+    - CAN port can support a second CAN protocol on the same bus (2nd protocol must be 11 bit, see CAN_Dn_PROTOCOL2)
+    - CAN-FD support (allows faster data transfer rates)
+    - Crash dump info logged if main thread locksup (helps with root cause analysis)
+    - Ethernet/Networking support for UDP and TCP server and client (see NET_ENABLED) and PPP (see SERIALx_PROTOCOL)
+    - Firmware flashing from SD card
+    - Linux board SBUS input decoding made consistent with ChibiOS
+    - Linux boards support DroneCAN
+    - Parameter defaults stored in @ROMFS/defaults.parm
+    - SD Card formatting supported on all boards
+    - Second USB endpoint defaults to MAVLink (instead of SLCAN) except on CubePilot boards
+    - Serial over DroneCAN (see CAN_D1_UC_SER_EN) useful for configuring F9P DroneCAN GPSs using uCenter
+13) Custom Build server include/exclude features extended to include
+    - APJ Tools
+    - Bootloader flashing
+    - Button
+    - Compass calibration
+    - DroneCAN GPS
+    - ExternalAHRS (e.g. MicroStrain, Vectornav)
+    - Generator
+    - Highmark Servo
+    - Hobbywing ESCs
+    - Kill IMU
+    - Payload Place
+    - Plane BlackBox arming allows Plane to be used as logger (see ARMING_BBOX_SPD)
+    - Plane's TX Tuning
+    - Precision landing
+    - Proximity sensor
+    - RC Protocol
+    - Relay
+    - SBUS Output
+    - ToneAlarm
+    - Winch
+14) Developer specific items
+    - ChibiOS upgrade to 21.11
+    - UAVCAN replaced with DroneCAN
+    - AUTOPILOT_VERSION_REQUEST message deprecated (use REQUEST_MESSAGE instead)
+    - PREFLIGHT_SET_SENSOR_OFFSETS support deprecated (was unused by all known ground stations)
+    - MISSION_SET_CURRENT message deprecated (use DO_SET_MISSION_CURRENT command instead)
+    - MISSION_CURRENT message sends num commands and stopped/paused/running/complete state
+    - Python version requirement increased to 3.6.9
+    - mavlink_parse.py shows all suported mavlink messages
+    - COMMAND_INT messages can be used for nearly all commands (previously COMMAND_LONG)
+15) Bug fixes:
+    - 3DR Solo gimbal mavlink routing fixed
+    - Bootloop fixed if INS_GYRO_FILTER set too high
+    - Button Internal Error caused by floating pin or slow device power-up fixed
+    - CAN Compass order maintained even if compass powered up after autopilot
+    - Compass device IDs only saved when calibrated to ensure external compasses appear as primary on new boards
+    - Currawong ECU EFI does not send exhaust gas temperature
+    - DCM fallback in order to get better GPS is disabled if GPS is not used
+    - DJI RS2/RS3 gimbal reported angle fix
+    - DO_SET_ROI, ROI_LOCATION, ROI_NONE bug fix that could lead to gimbal pointing at old target
+    - Generator parameter init fix (defaults might not always have been loaded correctly)
+    - GPS_TC_BLEND parameter removed (it was unused)
+    - Harmonic Notch gets protection against extremely low notch filter frequencies
+    - IE 650/800 Generators report fuel remaining
+    - INS calibration prevents unlikely case of two calibrations running at same time
+    - LPS2XH Baro supported over I2C fixed
+    - MatekH743 storage eeprom size fixed
+    - MAVLink routing fix to avoid processing packet meant for another vehicle
+    - Mount properly enforces user defined angle limits
+    - MPU6500 IMU filter corrected to 4k
+    - NMEA output time and altitude fixed
+    - OSD gets labels for all supported serial protocols
+    - OSD RF panel format fixed
+    - Omni vehicle support fixed
+    - RobotisServo initialisation fix
+    - RPM accuracy and time wrap handling improved
+    - Sagetech ADSB MXS altitude fix (needs amsl, was sending alt-above-terrain)
+    - SageTechMXS ADSB climb rate direction fixed
+    - SBUS out exactly matches SBUS in decoding
+    - Serial port RTS pins default to pulldown (SiK radios could getting stuck in bootloader mode)
+    - SERIALx_ parameters removed for ports that can't actually be used
+    - Servo gimbal attitude reporting fix
+    - Servo output fix when using scaled RC passthrough (e.g. SERVOx_FUNCTION = RCinXScaled)
+    - Siyi continuous zoom stutter fixed
+    - Siyi gimbal upside-down mode fixed (avoid bobbing if upside-down)
+    - SmartRTL premature "buffer full" failure fixed
+    - ST24 RC protocol fixed
+    - STM32L496 CAN2 init fix (AP_Periph only?)
+    - VFR_HUD climb rate reports best estimate during high vibration events (previously it would stop updating)
+    - Visual Odometry healthy check fix in case of out-of-memory
+    - VTX_MAX_POWER restored (allows setting radio's power)
 ------------------------------------------------------------------
 Rover 4.4.0 19-Dec-2023 / Rover 4.4.0-beta11 05-Dec-2023
 Changes from 4.4.0-beta10

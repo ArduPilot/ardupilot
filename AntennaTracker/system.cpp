@@ -5,14 +5,6 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 void Tracker::init_ardupilot()
 {
-    // initialise stats module
-    stats.init();
-
-    BoardConfig.init();
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
     // initialise notify
     notify.init();
     AP_Notify::flags.pre_arm_check = true;
@@ -31,14 +23,6 @@ void Tracker::init_ardupilot()
     // be an arm message we don't trigger an internal error when we
     // try to initialise stream rates in the main loop.
     gcs().update_send();
-
-#if HAL_LOGGING_ENABLED
-    log_init();
-#endif
-
-#if AP_SCRIPTING_ENABLED
-    scripting.init();
-#endif // AP_SCRIPTING_ENABLED
 
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);

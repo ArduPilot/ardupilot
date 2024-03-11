@@ -117,12 +117,6 @@ private:
     const float max_current = 50.0f;
     const float base_supply_voltage = 50.0;
 
-    // we share channels with the ArduPilot binary!
-    // Beware: the mavlink rangefinder and other stuff shares this channel.
-    const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+5);
-
-    class SIM *_sitl;
-
     uint32_t last_sent_ms;
 
     void update_receive();

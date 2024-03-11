@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_BattMonitor_Params.h"
@@ -99,7 +103,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // @Param: CRT_MAH
     // @DisplayName: Battery critical capacity
-    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@_FS_CRT_ACT parameter.
+    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@FS_CRT_ACT parameter.
     // @Units: mAh
     // @Increment: 50
     // @User: Standard
@@ -172,3 +176,5 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 AP_BattMonitor_Params::AP_BattMonitor_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_BATTERY_ENABLED

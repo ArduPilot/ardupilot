@@ -50,6 +50,15 @@ uint16_t AP_Param::sentinal_offset;
 // singleton instance
 AP_Param *AP_Param::_singleton;
 
+#ifndef AP_PARAM_STORAGE_BAK_ENABLED
+// we only have a storage region for backup storage if we have at
+// least 32768 bytes or storage. We also don't enable when using flash
+// storage as this can lead to loss of storage when updating to a
+// larger storage size
+#define AP_PARAM_STORAGE_BAK_ENABLED (HAL_STORAGE_SIZE>=32768) && !defined(STORAGE_FLASH_PAGE)
+#endif
+
+
 #define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
@@ -106,6 +115,8 @@ uint16_t AP_Param::num_read_only;
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
 
+bool AP_Param::done_all_default_params;
+
 AP_Param::defaults_list *AP_Param::default_list;
 
 // we need a dummy object for the parameter save callback
@@ -128,8 +139,10 @@ const AP_Param::param_defaults_struct AP_Param::param_defaults_data = {
 // storage object
 StorageAccess AP_Param::_storage(StorageManager::StorageParam);
 
+#if AP_PARAM_STORAGE_BAK_ENABLED
 // backup storage object
 StorageAccess AP_Param::_storage_bak(StorageManager::StorageParamBak);
+#endif
 
 // flags indicating frame type
 uint16_t AP_Param::_frame_type_flags;
@@ -138,7 +151,9 @@ uint16_t AP_Param::_frame_type_flags;
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
     _storage.write_block(ofs, ptr, size);
+#if AP_PARAM_STORAGE_BAK_ENABLED
     _storage_bak.write_block(ofs, ptr, size);
+#endif
 }
 
 bool AP_Param::_hide_disabled_groups = true;
@@ -337,14 +352,19 @@ void AP_Param::check_var_info(void)
 bool AP_Param::setup(void)
 {
     struct EEPROM_header hdr {};
-    struct EEPROM_header hdr2 {};
 
     // check the header
     _storage.read_block(&hdr, 0, sizeof(hdr));
+
+#if AP_PARAM_STORAGE_BAK_ENABLED
+    struct EEPROM_header hdr2 {};
     _storage_bak.read_block(&hdr2, 0, sizeof(hdr2));
+#endif
+
     if (hdr.magic[0] != k_EEPROM_magic0 ||
         hdr.magic[1] != k_EEPROM_magic1 ||
         hdr.revision != k_EEPROM_revision) {
+#if AP_PARAM_STORAGE_BAK_ENABLED
         if (hdr2.magic[0] == k_EEPROM_magic0 &&
             hdr2.magic[1] == k_EEPROM_magic1 &&
             hdr2.revision == k_EEPROM_revision &&
@@ -353,14 +373,17 @@ bool AP_Param::setup(void)
             INTERNAL_ERROR(AP_InternalError::error_t::params_restored);
             return true;
         }
+#endif // AP_PARAM_STORAGE_BAK_ENABLED
         // header doesn't match. We can't recover any variables. Wipe
         // the header and setup the sentinal directly after the header
         Debug("bad header in setup - erasing");
         erase_all();
     }
 
+#if AP_PARAM_STORAGE_BAK_ENABLED
     // ensure that backup is in sync with primary
     _storage_bak.copy_area(_storage);
+#endif
 
     return true;
 }
@@ -946,7 +969,6 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token
 AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token)
 {
     AP_Param *ap;
-    uint16_t count = 0;
     for (ap = AP_Param::first(token, ptype);
          ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
          ap = AP_Param::next_scalar(token, ptype)) {
@@ -958,7 +980,6 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
                 break;
             }
         }
-        count++;
     }
     return ap;
 }
@@ -1668,6 +1689,13 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
         }
     }
 
+    if (!done_all_default_params) {
+        /*
+          the new subtree may need defaults from defaults.parm
+         */
+        reload_defaults_file(false);
+    }
+
     // reset cached param counter as we may be loading a dynamic var_info
     invalidate_count();
 }
@@ -2003,7 +2031,7 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
                                     const struct AP_Param::GroupInfo *group_info,
-                                    uint16_t old_index, uint16_t old_top_element, bool is_top_level)
+                                    uint16_t old_index, bool is_top_level)
 {
     const uint8_t group_shift = is_top_level ? 0 : 6;
 
@@ -2042,6 +2070,29 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter
     flush();
+}
+
+// convert an object which was stored in a vehicle's G2 into a new
+// object in AP_Vehicle.cpp:
+void AP_Param::convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions)
+{
+    // Find G2's Top Level Key
+    ConversionInfo info;
+    if (!find_top_level_key_by_pointer(g2, info.old_key)) {
+        return;
+    }
+    for (uint8_t i=0; i<num_conversions; i++) {
+        const auto &c { g2_conversions[i] };
+        convert_class(info.old_key, c.object_pointer, c.var_info, c.old_index, false);
+    }
+}
+
+void AP_Param::convert_toplevel_objects(const TopLevelObjectConversion conversions[], uint8_t num_conversions)
+{
+    for (uint8_t i=0; i<num_conversions; i++) {
+        const auto &c { conversions[i] };
+        convert_class(c.old_index, c.object_pointer, c.var_info, 0, true);
+    }
 }
 
 /*
@@ -2229,6 +2280,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         return false;
     }
 
+    bool done_all = true;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
         char *pname;
@@ -2249,6 +2301,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
                          pname, filename);
 #endif
             }
+            done_all = false;
             continue;
         }
         if (idx >= param_overrides_len) {
@@ -2267,6 +2320,8 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         }
     }
     AP::FS().close(file_apfs);
+
+    done_all_default_params = done_all;
 
     return true;
 }
@@ -2335,8 +2390,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || (!AP_FILESYSTEM_FILE_READING_ENABLED && defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H))
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 /*
   count the number of parameter defaults present in supplied string
  */
@@ -2381,18 +2435,6 @@ bool AP_Param::count_param_defaults(const volatile char *ptr, int32_t length, ui
     }
     return true;
 }
-
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-/*
- * load a default set of parameters from a embedded parameter region
- * @last_pass: if this is the last pass on defaults - unknown parameters are
- *             ignored but if this is set a warning will be emitted
- */
-void AP_Param::load_embedded_param_defaults(bool last_pass)
-{
-    load_param_defaults(param_defaults_data.data, param_defaults_data.length, last_pass);
-}
-#endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
 
 /*
  *  load parameter defaults from supplied string
@@ -2474,7 +2516,21 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
     }
     num_param_overrides = num_defaults;
 }
-#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0
+#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+/*
+ * load a default set of parameters from a embedded parameter region
+ * @last_pass: if this is the last pass on defaults - unknown parameters are
+ *             ignored but if this is set a warning will be emitted
+ */
+void AP_Param::load_embedded_param_defaults(bool last_pass)
+{
+    load_param_defaults(param_defaults_data.data, param_defaults_data.length, last_pass);
+}
+#endif  // AP_PARAM_MAX_EMBEDDED_PARAM > 0
+
 
 /* 
    find a default value given a pointer to a default value in flash

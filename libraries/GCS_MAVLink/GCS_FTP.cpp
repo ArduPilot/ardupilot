@@ -17,7 +17,7 @@
 
 #include "GCS_config.h"
 
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_FTP_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -624,6 +624,12 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
 
     request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
+    // Strip trailing /
+    const size_t dir_len = strlen((char *)request.data);
+    if ((dir_len > 1) && (request.data[dir_len - 1] == '/')) {
+        request.data[dir_len - 1] = 0;
+    }
+
     // open the dir
     auto *dir = AP::FS().opendir((char *)request.data);
     if (dir == nullptr) {
@@ -688,4 +694,4 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     AP::FS().closedir(dir);
 }
 
-#endif  // HAL_GCS_ENABLED
+#endif  // AP_MAVLINK_FTP_ENABLED

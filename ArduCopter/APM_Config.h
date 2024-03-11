@@ -9,7 +9,6 @@
 //#define AC_OAPATHPLANNER_ENABLED DISABLED         // disable path planning around obstacles
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
-//#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
 //#define MODE_BRAKE_ENABLED    DISABLED            // disable brake mode support

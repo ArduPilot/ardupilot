@@ -7,18 +7,26 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 #include <AP_HAL_Linux/Scheduler.h>
+#include <AP_Math/div1000.h>
 
 extern const AP_HAL::HAL& hal;
 
 namespace AP_HAL {
 
 static struct {
-    struct timespec start_time;
+    uint64_t start_time_ns;
 } state;
+
+static uint64_t ts_to_nsec(struct timespec &ts)
+{
+    return ts.tv_sec*1000000000ULL + ts.tv_nsec;
+}
 
 void init()
 {
-    clock_gettime(CLOCK_MONOTONIC, &state.start_time);
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    state.start_time_ns = ts_to_nsec(ts);
 }
 
 void WEAK panic(const char *errormsg, ...)
@@ -59,24 +67,12 @@ uint64_t micros64()
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (state.start_time.tv_sec +
-                   (state.start_time.tv_nsec*1.0e-9)));
+    return uint64_div1000(ts_to_nsec(ts) - state.start_time_ns);
 }
 
 uint64_t millis64()
 {
-    const Linux::Scheduler* scheduler = Linux::Scheduler::from(hal.scheduler);
-    uint64_t stopped_usec = scheduler->stopped_clock_usec();
-    if (stopped_usec) {
-        return stopped_usec / 1000;
-    }
-
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (state.start_time.tv_sec +
-                   (state.start_time.tv_nsec*1.0e-9)));
+    return uint64_div1000(micros64());
 }
 
 } // namespace AP_HAL

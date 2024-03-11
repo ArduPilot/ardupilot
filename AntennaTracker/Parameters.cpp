@@ -308,10 +308,8 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),
-    
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
+
+    // AP_SerialManager was here
 
     // @Param: PITCH2SRV_P
     // @DisplayName: Pitch axis controller P gain
@@ -505,12 +503,6 @@ const AP_Param::Info Tracker::var_info[] = {
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
-#if AP_SCRIPTING_ENABLED
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
-    GOBJECT(scripting, "SCR_", AP_Scripting),
-#endif
-
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
     // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
@@ -560,10 +552,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
 
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    GOBJECT(stats, "STAT",  AP_Stats),
-
     // @Param: AUTO_OPTIONS
     // @DisplayName: Auto mode options
     // @Description: 1: Scan for unknown target
@@ -575,12 +563,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
-
-#if HAL_LOGGING_ENABLED
-    // @Group: LOG
-    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(logger,           "LOG",  AP_Logger),
-#endif
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -600,24 +582,31 @@ const AP_Param::Info Tracker::var_info[] = {
 
 void Tracker::load_parameters(void)
 {
-    if (!g.format_version.load() ||
-        g.format_version != Parameters::k_format_version) {
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-        // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
+#if AP_STATS_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024
+    AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, true);
+#endif
 
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
+#if AP_SCRIPTING_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024
+    AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, true);
+#endif
 
-    uint32_t before = AP_HAL::micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
-    hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
+#if HAL_LOGGING_ENABLED
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
+#endif
+
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024 for Tracker-4.6
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
+#endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
 #if HAL_HAVE_SAFETY_SWITCH
     // configure safety switch to allow stopping the motors while armed

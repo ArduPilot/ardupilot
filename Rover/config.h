@@ -76,10 +76,6 @@
   #define ADVANCED_FAILSAFE DISABLED
 #endif
 
-#ifndef STATS_ENABLED
- # define STATS_ENABLED ENABLED
-#endif
-
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
 #endif

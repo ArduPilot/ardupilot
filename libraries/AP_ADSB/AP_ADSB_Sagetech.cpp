@@ -516,7 +516,8 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     if (loc.have_epoch_from_rtc_us) {
         // not completely accurate, our time includes leap seconds and time_t should be without
         const time_t time_sec = time_usec / 1000000;
-        struct tm* tm = gmtime(&time_sec);
+        struct tm tmd {};
+        struct tm* tm = gmtime_r(&time_sec, &tmd);
 
         // format time string
         snprintf((char*)&pkt.payload[36], 11, "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);

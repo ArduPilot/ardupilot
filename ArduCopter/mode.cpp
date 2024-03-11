@@ -457,6 +457,11 @@ void Copter::exit_mode(Mode *&old_flightmode,
             input_manager.set_stab_col_ramp(0.0);
         }
     }
+
+    // Make sure inverted flight is disabled if not supported in the new mode
+    if (!new_flightmode->allows_inverted()) {
+        attitude_control->set_inverted_flight(false);
+    }
 #endif //HELI_FRAME
 }
 
@@ -472,7 +477,7 @@ void Copter::notify_flight_mode() {
 void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         roll_out_cd = 0.0;
         pitch_out_cd = 0.0;
         return;
@@ -494,7 +499,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     Vector2f vel;
 
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return vel;
     }
     // fetch roll and pitch inputs
@@ -1013,7 +1018,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
 

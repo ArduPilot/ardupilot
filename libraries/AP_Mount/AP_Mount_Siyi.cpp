@@ -353,11 +353,16 @@ void AP_Mount_Siyi::process_packet()
         _fw_version.camera.major = _msg_buff[_msg_buff_data_start+2];  // firmware major version
         _fw_version.camera.minor = _msg_buff[_msg_buff_data_start+1];  // firmware minor version
         _fw_version.camera.patch = _msg_buff[_msg_buff_data_start+0];  // firmware revision (aka patch)
-        
+
         _fw_version.gimbal.major = _msg_buff[_msg_buff_data_start+6];  // firmware major version
         _fw_version.gimbal.minor = _msg_buff[_msg_buff_data_start+5];  // firmware minor version
         _fw_version.gimbal.patch = _msg_buff[_msg_buff_data_start+4];  // firmware revision (aka patch)
-        
+
+        // camera firmware version may be all zero soon after startup.  giveup and try again later
+        if (_fw_version.camera.major == 0 && _fw_version.camera.minor == 0 && _fw_version.camera.patch == 0) {
+            break;
+        }
+
         _fw_version.received = true;
 
         // display camera info to user

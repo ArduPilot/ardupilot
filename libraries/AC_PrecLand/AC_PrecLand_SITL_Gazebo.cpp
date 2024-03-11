@@ -45,14 +45,4 @@ bool AC_PrecLand_SITL_Gazebo::get_los_body(Vector3f& ret) {
     return false;
 }
 
-// returns system time in milliseconds of last los measurement
-uint32_t AC_PrecLand_SITL_Gazebo::los_meas_time_ms() {
-    return _los_meas_time_ms;
-}
-
-// return true if there is a valid los measurement available
-bool AC_PrecLand_SITL_Gazebo::have_los_meas() {
-    return _have_los_meas;
-}
-
 #endif  // AC_PRECLAND_SITL_GAZEBO_ENABLED

@@ -152,6 +152,10 @@ void AP_RCProtocol_GHST::_process_byte(uint32_t timestamp_us, uint8_t byte)
         return;
     }
 
+    if (_frame.device_address != DeviceAddress::GHST_ADDRESS_FLIGHT_CONTROLLER) {
+        return;
+    }
+
     // parse the length
     if (_frame_ofs == GHST_HEADER_TYPE_LEN) {
         _frame_crc = crc8_dvb_s2(0, _frame.type);
@@ -421,19 +425,25 @@ void AP_RCProtocol_GHST::process_byte(uint8_t byte, uint32_t baudrate)
     _process_byte(AP_HAL::micros(), byte);
 }
 
-// change the bootstrap baud rate to ELRS standard if configured
+// change the bootstrap baud rate to Ghost standard if configured
 void AP_RCProtocol_GHST::process_handshake(uint32_t baudrate)
 {
     AP_HAL::UARTDriver *uart = get_current_UART();
 
-    // only change the baudrate if we are bootstrapping CRSF
+    // only change the baudrate if we are specifically bootstrapping Ghost
     if (uart == nullptr
         || baudrate != CRSF_BAUDRATE
         || baudrate == GHST_BAUDRATE
         || uart->get_baud_rate() == GHST_BAUDRATE
-        || (get_rc_protocols_mask() & ((1U<<(uint8_t(AP_RCProtocol::GHST)+1))+1)) == 0) {
+        || !protocol_enabled(AP_RCProtocol::GHST)) {
         return;
     }
+#if AP_RCPROTOCOL_CRSF_ENABLED
+    if (protocol_enabled(AP_RCProtocol::CRSF)) {
+        // don't fight CRSF
+        return;
+    }
+#endif
 
     uart->begin(GHST_BAUDRATE);
 }

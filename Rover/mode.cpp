@@ -56,7 +56,7 @@ bool Mode::enter()
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
 // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
 // throttle_out is in the range -100 ~ +100
-void Mode::get_pilot_input(float &steering_out, float &throttle_out)
+void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
 {
     // no RC input means no throttle and centered steering
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
@@ -102,7 +102,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
 // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
 // throttle_out is in the range -100 ~ +100
-void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out) const
 {
     // do basic conversion
     get_pilot_input(steering_out, throttle_out);
@@ -130,7 +130,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
 }
 
 // decode pilot steering and return steering_out and speed_out (in m/s)
-void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out)
+void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const
 {
     float desired_throttle;
     get_pilot_input(steering_out, desired_throttle);
@@ -146,7 +146,7 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
 }
 
 // decode pilot lateral movement input and return in lateral_out argument
-void Mode::get_pilot_desired_lateral(float &lateral_out)
+void Mode::get_pilot_desired_lateral(float &lateral_out) const
 {
     // no RC input means no lateral input
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (rover.channel_lateral == nullptr)) {
@@ -159,7 +159,7 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
 }
 
 // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
+void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const
 {
     // get steering and throttle in the -1 to +1 range
     float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
@@ -183,7 +183,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
 
 // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
 // outputs are in the range -1 to +1
-void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
+void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out) const
 {
     if (channel_roll != nullptr) {
         roll_out = channel_roll->norm_input();
@@ -199,7 +199,7 @@ void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
 
 // decode pilot walking_height inputs and return in walking_height_out arguments
 // outputs are in the range -1 to +1
-void Mode::get_pilot_desired_walking_height(float &walking_height_out)
+void Mode::get_pilot_desired_walking_height(float &walking_height_out) const
 {
     if (channel_walking_height != nullptr) {
         walking_height_out = channel_walking_height->norm_input();
@@ -304,13 +304,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 
     if (rover.g2.sailboat.sail_enabled()) {
         // sailboats use special throttle and mainsail controller
-        float mainsail_out = 0.0f;
-        float wingsail_out = 0.0f;
-        float mast_rotation_out = 0.0f;
-        rover.g2.sailboat.get_throttle_and_mainsail_out(target_speed, throttle_out, mainsail_out, wingsail_out, mast_rotation_out);
-        rover.g2.motors.set_mainsail(mainsail_out);
-        rover.g2.motors.set_wingsail(wingsail_out);
-        rover.g2.motors.set_mast_rotation(mast_rotation_out);
+        rover.g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
     } else {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {
@@ -348,8 +342,7 @@ bool Mode::stop_vehicle()
     }
 
     // relax sails if present
-    g2.motors.set_mainsail(100.0f);
-    g2.motors.set_wingsail(0.0f);
+    g2.sailboat.relax_sails();
 
     // send to motor
     g2.motors.set_throttle(throttle_out);

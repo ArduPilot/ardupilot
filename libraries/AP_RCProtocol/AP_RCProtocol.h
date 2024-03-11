@@ -20,6 +20,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
@@ -42,7 +45,9 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         SBUS_NI    =  3,
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
         DSM        =  4,
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
 #endif
@@ -72,6 +77,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
         GHST       = 14,
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        MAVLINK_RADIO = 15,
 #endif
         NONE    //last enum always is None
     };
@@ -111,7 +119,9 @@ public:
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
         switch (p) {
+#if AP_RCPROTOCOL_DSM_ENABLED
         case DSM:
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         case FASTSBUS:
 #endif
@@ -154,6 +164,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         case DRONECAN:
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        case MAVLINK_RADIO:
 #endif
         case NONE:
             return false;
@@ -201,11 +214,21 @@ public:
         return _detected_with_bytes;
     }
 
+    // handle mavlink radio
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    void handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet);
+#endif
+
 private:
     void check_added_uart(void);
 
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
+
+    // explicitly investigate a backend for data, as opposed to
+    // feeding the backend a byte (or pulse-train) at a time and
+    // having them make an "add_input" callback):
+    bool detect_async_protocol(rcprotocol_t protocol);
 
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;

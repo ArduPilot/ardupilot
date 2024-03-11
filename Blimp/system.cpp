@@ -14,15 +14,6 @@ static void failsafe_check_static()
 
 void Blimp::init_ardupilot()
 {
-
-#if STATS_ENABLED == ENABLED
-    // initialise stats module
-    g2.stats.init();
-#endif
-
-    BoardConfig.init();
-
-
     // initialise notify system
     notify.init();
     notify_flight_mode();
@@ -37,10 +28,6 @@ void Blimp::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
-
-#if HAL_LOGGING_ENABLED
-    log_init();
-#endif
 
     init_rc_in();               // sets up rc channels from radio
 
@@ -87,10 +74,6 @@ void Blimp::init_ardupilot()
 #endif
 
     startup_INS_ground();
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 

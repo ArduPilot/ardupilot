@@ -62,9 +62,6 @@ void loop(void)
 static uint32_t start_ms;
 
 AP_Periph_FW::AP_Periph_FW()
-#if HAL_LOGGING_ENABLED
-    : logger(g.log_bitmask)
-#endif
 {
     if (_singleton != nullptr) {
         AP_HAL::panic("AP_Periph_FW must be singleton");
@@ -127,7 +124,7 @@ void AP_Periph_FW::init()
 #endif
 
 #if HAL_LOGGING_ENABLED
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
+    logger.init(g.log_bitmask, log_structure, ARRAY_SIZE(log_structure));
 #endif
 
     check_firmware_print();

@@ -1,3 +1,5 @@
+#include "AP_DDS_config.h"
+
 #if AP_DDS_ENABLED
 
 #include "AP_DDS_ExternalControl.h"

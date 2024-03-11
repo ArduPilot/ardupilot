@@ -149,6 +149,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 
     SCHED_TASK(rc_loop,              250,    130,  3),
     SCHED_TASK(throttle_loop,         50,     75,  6),
+#if AP_FENCE_ENABLED
+    SCHED_TASK(fence_check,           25,    100,  7),
+#endif
     SCHED_TASK_CLASS(AP_GPS,               &copter.gps,                 update,          50, 200,   9),
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,          &copter.optflow,             update,         200, 160,  12),
@@ -236,9 +239,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_TERRAIN_AVAILABLE
     SCHED_TASK(terrain_update,        10,    100, 144),
 #endif
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,           &copter.g2.gripper,          update,          10,  75, 147),
-#endif
 #if AP_WINCH_ENABLED
     SCHED_TASK_CLASS(AP_Winch,             &copter.g2.winch,            update,          50,  50, 150),
 #endif
@@ -259,9 +259,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,            &copter.button,              update,           5, 100, 168),
-#endif
-#if STATS_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
 };
 
@@ -628,12 +625,6 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
-#if AP_FENCE_ENABLED
-    // check if we have breached a fence
-    fence_check();
-#endif // AP_FENCE_ENABLED
-
-
     // update ch6 in flight tuning
     tuning();
 
@@ -823,9 +814,6 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
  */
 Copter::Copter(void)
     :
-#if HAL_LOGGING_ENABLED
-    logger(g.log_bitmask),
-#endif
     flight_modes(&g.flight_mode1),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
@@ -833,7 +821,10 @@ Copter::Copter(void)
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
     param_loader(var_info),
-    flightmode(&mode_stabilize)
+    flightmode(&mode_stabilize),
+    pos_variance_filt(FS_EKF_FILT_DEFAULT),
+    vel_variance_filt(FS_EKF_FILT_DEFAULT),
+    hgt_variance_filt(FS_EKF_FILT_DEFAULT)
 {
 }
 

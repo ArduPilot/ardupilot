@@ -69,7 +69,7 @@ mcu = {
 		('STM32_OSPICLK', 	200000000),
 		('STM32_SDMMC1CLK',  86666666),
 		('STM32_SPI45CLK',  100000000),
-		('STM32_FDCANCLK',   86666666),
+		('STM32_FDCANCLK',   80000000),
 	],
 
     # this MCU has M7 instructions and hardware double precision
