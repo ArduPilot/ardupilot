@@ -978,11 +978,13 @@ private:
     void log_TRO1_vel_();
     void log_TRO1_hum_();
     void log_TRO1_uc_();
+    char convert_Dec_to_Char(int data);
     void log_TRO1_uq_();
     void log_TRO1_ut_();
     void log_TRO1_PWM_();
     void log_TRO1_FM_();
     void get_CAM_device_Data();
+    void send_Quad1_CAM1_qpd_Data();
     void get_PAMD_device_Data();
     void gains_data_from_Rpi();
     void Portenta_data();

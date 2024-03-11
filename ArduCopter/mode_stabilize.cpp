@@ -18,7 +18,7 @@ void ModeStabilize::run()
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
     
-    hal.console->printf("%3.3f,",  qp[0]);
+    // hal.console->printf("%3.3f,",  qp[0]);
 
     if (!motors->armed()) {
         // Motors should be Stopped
