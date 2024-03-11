@@ -12,6 +12,8 @@
 
 #include "mavlink_sha256.h"
 
+#define MAVLINK_NO_ENCRYPTION
+
 #ifndef MAVLINK_NO_ENCRYPTION
 #include "mavlink_chacha20.h"
 
@@ -214,14 +216,14 @@ MAVLINK_HELPER bool mavlink_signature_check(mavlink_signing_t *signing,
 }
 #endif
 
-#ifndef MAVLINK_NO_ENCRYPT
+#ifndef MAVLINK_NO_ENCRYPTION
 /**
  * @brief Encrypt the mavlink payload being sent
  */
 
 MAVLINK_HELPER bool mavlink_encrypt_message(mavlink_message_t* msg) {
 
-	uint8_t cipher_text_len;
+	uint8_t cipher_text_len = 0;
 	bool status = false;
 
 	// Make a buffer here incase we can't use src and destination as the same buffer
@@ -239,7 +241,7 @@ MAVLINK_HELPER bool mavlink_encrypt_message(mavlink_message_t* msg) {
 
 MAVLINK_HELPER bool mavlink_decrypt_message (mavlink_message_t* msg) {
 	
-	uint8_t plain_text_len;
+	uint8_t plain_text_len = 0;
 	bool status = false;
 
 
@@ -289,6 +291,9 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 #ifndef MAVLINK_NO_ENCRYPTION
 	// Add encryption here
 	bool validEncryption = mavlink_encrypt_message(msg);
+	if (!validEncryption) {
+		fprintf(stderr, "Invalid encryption occured.\n");
+	}
 	// This shouldn't be needed as mavlink_encrypt_message doesn't change
 	// the message size
 	length = msg->len;
@@ -325,7 +330,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		buf[8] = (msg->msgid >> 8) & 0xFF;
 		buf[9] = (msg->msgid >> 16) & 0xFF;
 	}
-
+	
 	uint16_t checksum = crc_calculate(&buf[1], header_len-1);
 	crc_accumulate_buffer(&checksum, _MAV_PAYLOAD(msg), msg->len);
 	crc_accumulate(crc_extra, &checksum);
@@ -1066,7 +1071,10 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
     }
 
 #ifndef MAVLINK_NO_ENCRYPTION
-	const bool decode_status = mavlink_decrypt_message(r_message);
+	const bool valid_decryption = mavlink_decrypt_message(r_message);
+	if (!valid_decryption) {
+		fprintf(stderr, "Did not decrypt mavlink message.\n");
+	}
 #endif
     return msg_received;
 }

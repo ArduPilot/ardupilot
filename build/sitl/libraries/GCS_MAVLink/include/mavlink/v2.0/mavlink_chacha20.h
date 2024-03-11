@@ -24,12 +24,17 @@
  * SOFTWARE.
  */
 
+
+#define MAVLINK_NO_ENCRYPTION
+#ifndef MAVLINK_NO_ENCRYPTION
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-
+#endif
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
+
+#ifndef MAVLINK_NO_ENCRYPTION
 
 static const uint32_t mavlink_chacha20_256_uint32_arr_key[8] = {
     0x80f346ad, 0x0b700f24, 0xb53fbc01, 0x09166e1a,
@@ -41,16 +46,10 @@ static const uint32_t mavlink_chacha20_256_uint32_arr_key[8] = {
 #define EVP_SUCCESS 1
 
 static const u_char * mavlink_chacha20_256_key = (const u_char *) mavlink_chacha20_256_uint32_arr_key;
-static u_char  mavlink_chacha20_256_iv[16];
-static inline bool mavlink_chacha20_256_init() {
+static u_char  mavlink_chacha20_256_iv[12] = {
+    0x0a,  0xf1,  0xda,  0x2b,  0x21,  0x71,
+    0x24,  0x22,  0xcd,  0x2d,  0x61,  0x23 };
 
-    if (!RAND_bytes(mavlink_chacha20_256_iv, sizeof(mavlink_chacha20_256_iv))) {
-        fprintf(stderr, "Failed to generate an Initialization Vector for AES.\n");
-        return MAVLINK_CHACHA20_ERROR;
-    }
-    return MAVLINK_CHACHA20_SUCCESS;
-}
-static const bool mavlink_chacha20_is_init = mavlink_chacha20_256_init();
 static inline bool mavlink_chacha20_256_encrypt(const u_char * plain_text, const uint8_t &plain_text_len, 
     u_char * cipher_text, uint8_t &cipher_text_len) {
 
@@ -125,6 +124,7 @@ static inline bool mavlink_chacha20_256_decrypt(const u_char * cipher_text, cons
 
     return MAVLINK_CHACHA20_SUCCESS;
 }
+#endif
 
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 } // namespace mavlink

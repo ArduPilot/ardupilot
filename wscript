@@ -632,10 +632,12 @@ def configure(cfg):
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
     
-    # Add in RSA support
-    cfg.env.append_value('INCLUDES', '/usr/include/openssl')
-    cfg.env.append_value('LIBS',     'ssl')
-    cfg.env.append_value('LIBS',     'crypto')
+    # Add in encryption support
+    # cfg.env.append_value('INCLUDES',  '/usr/include/openssl')
+    # cfg.env.append_value('LIBS',      'ssl')
+    # cfg.env.append_value('LIBS',      'crypto')
+    # cfg.env.append_value('LINKFLAGS', '-lcrypto')
+    # cfg.env.append_value('LINKFLAGS', '-lssl')
 
     _collect_autoconfig_files(cfg)
 
@@ -868,6 +870,10 @@ def build(bld):
     bld.post_mode = Build.POST_LAZY
 
     bld.load('ardupilotwaf')
+
+    # Add encryption support
+    bld.env.append_value('LIB', 'crypto')
+    bld.env.append_value('LIB', 'ssl')
 
     bld.env.AP_LIBRARIES_OBJECTS_KW.update(
         use=['mavlink'],
