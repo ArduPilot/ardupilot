@@ -1182,10 +1182,7 @@ void AP_GPS::update_primary(void)
       significant lagged and gives no more information on position or
       velocity
     */
-    const bool using_moving_base = (_type[0] == GPS_TYPE_UAVCAN_RTK_BASE ||
-                                    _type[0] == GPS_TYPE_UBLOX_RTK_BASE ||
-                                    _type[1] == GPS_TYPE_UAVCAN_RTK_BASE ||
-                                    _type[1] == GPS_TYPE_UBLOX_RTK_BASE);
+    const bool using_moving_base = (is_rtk_base(_type[0]) || is_rtk_base(_type[1]));
     if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
@@ -1237,8 +1234,8 @@ void AP_GPS::update_primary(void)
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (((_type[i] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[i] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
-            ((_type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i^1] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
+        if (is_rtk_base(_type[i]) &&
+            is_rtk_rover(_type[i^1]) &&
             ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
@@ -1426,8 +1423,7 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if ((get_type(i) == GPS_TYPE_UBLOX_RTK_ROVER) ||
-                (get_type(i) == GPS_TYPE_UAVCAN_RTK_ROVER)) {
+            if (is_rtk_rover(i)) {
                 // we don't externally inject to moving baseline rover
                 continue;
             }
@@ -2255,8 +2251,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       fact that the rate of yaw data is not critical
      */
     const uint8_t delay_threshold = 2;
-    const auto type = get_type(instance);
-    const float delay_avg_max = ((type == GPS_TYPE_UBLOX_RTK_ROVER) || (type == GPS_TYPE_UAVCAN_RTK_ROVER))?333:215;
+    const float delay_avg_max = is_rtk_rover(instance) ? 333 : 215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
@@ -2288,8 +2283,8 @@ bool AP_GPS::prepare_for_arming(void) {
 
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-        const auto type = get_type(i);
 #if AP_GPS_DRONECAN_ENABLED
+        const auto type = _type[i];
         if (type == GPS_TYPE_UAVCAN ||
             type == GPS_TYPE_UAVCAN_RTK_BASE ||
             type == GPS_TYPE_UAVCAN_RTK_ROVER) {
@@ -2298,8 +2293,7 @@ bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
             }
         }
 #endif
-        if (type == GPS_TYPE_UBLOX_RTK_ROVER ||
-            type == GPS_TYPE_UAVCAN_RTK_ROVER) {
+        if (is_rtk_rover(i)) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
                 return false;
@@ -2411,16 +2405,37 @@ void AP_GPS::Write_GPS(uint8_t i)
 }
 #endif
 
+bool AP_GPS::is_rtk_base(uint8_t instance) const
+{
+    switch (get_type(instance)) {
+    case GPS_TYPE_UBLOX_RTK_BASE:
+    case GPS_TYPE_UAVCAN_RTK_BASE:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool AP_GPS::is_rtk_rover(uint8_t instance) const
+{
+    switch (get_type(instance)) {
+    case GPS_TYPE_UBLOX_RTK_ROVER:
+    case GPS_TYPE_UAVCAN_RTK_ROVER:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
 /*
   get GPS based yaw
  */
 bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
 {
 #if GPS_MAX_RECEIVERS > 1
-    const auto type = get_type(instance);
-    if (
-        ((type == GPS_TYPE_UBLOX_RTK_BASE) || (type == GPS_TYPE_UAVCAN_RTK_BASE)) &&
-        ((get_type(instance^1) == GPS_TYPE_UBLOX_RTK_ROVER) || (get_type(instance^1) == GPS_TYPE_UAVCAN_RTK_ROVER))) {
+    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
         // return the yaw from the rover
         instance ^= 1;
     }
