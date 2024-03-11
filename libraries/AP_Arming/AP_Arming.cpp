@@ -1833,9 +1833,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 #if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
-        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
-            fence->enable_configured(false);
-        }
+        fence->auto_disable_fence_on_disarming();
     }
 #endif
 #if defined(HAL_ARM_GPIO_PIN)
