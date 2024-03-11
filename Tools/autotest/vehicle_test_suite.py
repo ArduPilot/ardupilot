@@ -4372,7 +4372,7 @@ class TestSuite(ABC):
         self.context_push()
         self.set_parameters({
             "NET_ENABLED": 1,
-            "LOG_DISARMED": 1,
+            "LOG_DISARMED": 0,
             "LOG_DARM_RATEMAX": 1, # make small logs
             # UDP client
             "NET_P1_TYPE": 1,
@@ -4408,6 +4408,17 @@ class TestSuite(ABC):
             "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
+
+        # ensure the latest log file is very small:
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(15)
+        self.progress(f"Current onboard log filepath {self.current_onboard_log_filepath()}")
+        self.context_pop()
+
+        # ensure that the autopilot has a timestamp on that file by
+        # now, or MAVProxy does not see it as the latest log:
+        self.wait_gps_fix_type_gte(3)
 
         self.set_parameter('SIM_SPEEDUP', 1)
 
