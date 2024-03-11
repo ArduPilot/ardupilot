@@ -39,6 +39,11 @@
 #endif
 
 /*
+  cutoff proportion of sample rate above which we do not use the notch
+ */
+#define HARMONIC_NYQUIST_CUTOFF 0.48f
+
+/*
   point at which the harmonic notch goes to zero attenuation
  */
 #define NOTCHFILTER_ATTENUATION_CUTOFF 0.25
@@ -166,7 +171,7 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
     const float attenuation_dB = params->attenuation_dB();
     float center_freq_hz = params->center_freq_hz();
 
-    const float nyquist_limit = sample_freq_hz * 0.48f;
+    const float nyquist_limit = sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
     const float bandwidth_limit = bandwidth_hz * 0.52f;
 
     // remember the lowest frequency we will have a notch enabled at
@@ -248,7 +253,7 @@ void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
 template <class T>
 void HarmonicNotchFilter<T>::set_center_frequency(uint16_t idx, float notch_center, float spread_mul, uint8_t harmonic_mul)
 {
-    const float nyquist_limit = _sample_freq_hz * 0.48f;
+    const float nyquist_limit = _sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
     auto &notch = _filters[idx];
 
     // scale the notch with the harmonic multiplier
@@ -339,7 +344,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     }
 
     // adjust the frequencies to be in the allowable range
-    const float nyquist_limit = _sample_freq_hz * 0.48f;
+    const float nyquist_limit = _sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
 
     const uint16_t total_notches = num_centers * _num_harmonics * _composite_notches;
     if (total_notches > _num_filters) {
