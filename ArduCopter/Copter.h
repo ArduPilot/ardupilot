@@ -979,6 +979,7 @@ private:
     void log_TRO1_hum_();
     void log_TRO1_uc_();
     char convert_Dec_to_Char(int data);
+    float limit_on_forces_from_quad1(float u);
     void log_TRO1_uq_();
     void log_TRO1_ut_();
     void log_TRO1_PWM_();

@@ -185,9 +185,14 @@ char Copter::convert_Dec_to_Char(int data)
     return pratik[0];
 }
 
-void Copter::limit_on_forces()
+float Copter::limit_on_forces_from_quad1(float u)
 {
+    float limited_data = 0.0;
 
+    if (u < 0.0){ limited_data = 0.0;}
+    if (u > 15.0){ limited_data = 15.0;}
+
+    return limited_data;
 }
 
 void Copter::get_PAMD_device_Data()
@@ -283,20 +288,17 @@ void Copter::get_PAMD_device_Data()
 
 void Copter::send_Quad1_CAM1_qpd_Data()
 {
+        int u1_pos_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_1) * 100;
+        int u1_pos_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_2) * 100;
+        int u1_pos_3_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_3) * 100;
 
-    // while (hal.console->available()) {
-        
-        int u1_pos_1_scaled         = 50000 + u1_POS_1 * 100;
-        int u1_pos_2_scaled         = 50000 + u1_POS_2 * 100;
-        int u1_pos_3_scaled         = 50000 + u1_POS_3 * 100;
+        int u1_CAC_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_CAC_1) * 100;
+        int u1_CAC_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_CAC_2) * 100;
+        int u1_CAC_3_scaled         = 5000 + limit_on_forces_from_quad1(u1_CAC_3) * 100;
 
-        int u1_CAC_1_scaled         = 50000 + u1_CAC_1 * 100;
-        int u1_CAC_2_scaled         = 50000 + u1_CAC_2 * 100;
-        int u1_CAC_3_scaled         = 50000 + u1_CAC_3 * 100;
-
-        int u1_PAC_1_scaled         = 50000 + u1_PAC_1 * 100;
-        int u1_PAC_2_scaled         = 50000 + u1_PAC_2 * 100;
-        int u1_PAC_3_scaled         = 50000 + u1_PAC_3 * 100;
+        int u1_PAC_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_PAC_1) * 100;
+        int u1_PAC_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_PAC_2) * 100;
+        int u1_PAC_3_scaled         = 5000 + limit_on_forces_from_quad1(u1_PAC_3) * 100;
 
         for (int i = 4; i >= 0; i--) {
             u1_POS_1_array[i] = u1_pos_1_scaled % 10;
@@ -329,49 +331,48 @@ void Copter::send_Quad1_CAM1_qpd_Data()
 
         hal.serial(QuadCam1qpd_port)->write(",");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_POS_1_array[j]));
         }
             hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_POS_2_array[j]));
         }
             hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_POS_3_array[j]));
         }
 
             hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_CAC_1_array[j]));
         }
                      hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_CAC_2_array[j]));
         }
             hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_CAC_3_array[j]));
         }
-
             hal.serial(QuadCam1qpd_port)->write("_");
         
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_PAC_1_array[j]));
         }
             hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_PAC_2_array[j]));
         }
                     hal.serial(QuadCam1qpd_port)->write("_");
 
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_PAC_3_array[j]));
         }
         
@@ -381,60 +382,8 @@ void Copter::send_Quad1_CAM1_qpd_Data()
         // char pratik_char = (char)
         hal.serial(QuadCam1qpd_port)->write("\n");
 
-
-        // int u1_PAC_3_int        = 50000 + u1_PAC_3 * 100;
-
-        // char* charVal = "abcd";
-        // vasprintf(*charVal, "%f", u1_PAC_3);
-        // sprintf(fmt, "TRACE: %s\n", message);
-
-        // char abcd[] = (char) (123);
-
-        //4 is mininum width, 3 is precision; float value is copied onto buff
-        // dtostrf(123.234, 4, 3, charVal);
-
-        // hal.serial(QuadCam1qpd_port)->write("%d", u1_PAC_3_int);
-        // char* abbcd, "%f", u1_PAC_3);
-        // hal.serial(QuadCam1qpd_port)->write(abcd);
-        // // hal.serial(QuadCam1qpd_port)->write("%f", u1_PAC_3);
-        // hal.serial(QuadCam1qpd_port)-cd[6];
-        // sprintf(a>write("\n");
-
-        // int array[6];
-        // for (int i = 5; i >= 0; i--) {
-        //     array[i] = u1_PAC_3_int % 10;
-        //     u1_PAC_3_int /= 10;
-        // }
-
-        // char a[]                = u1_PAC_3_int / 10;
-
-        // char p[] = printf("%f\n", u1_PAC_3);
-
-        // float send_data_to_quad_2   = floor(u1_PAC_3 / scale + 0.5) * 0.01;
-
-        // int pratik_int              = ftoi(send_data_to_quad_2);
-
-        // hal.console->printf("%f\n", send_data_to_quad_2);
-
-        // char data[] = ftoa(send_data_to_quad_2);
-
-        // ftoi()
-        
-        // char str[6];
-        // gcvt(send_data_to_quad_2, 6, str);
-
-        // string s;
-        // s = to_string(send_data_to_quad_2);
-
-
-        // float num = 123.45;
-        // ftoa(str, "%f", send_data_to_quad_2) ;
-        // string abcd = to_string(u1_PAC_3_int);
-
-
-    // }
-    // hal.serial(CAM_device_port)->write(p);
 }
+
 
 void Copter::get_CAM_device_Data()
 {
