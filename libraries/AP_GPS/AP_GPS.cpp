@@ -2418,7 +2418,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 {
 #if GPS_MAX_RECEIVERS > 1
     const auto type = get_type(instance);
-    if (instance < GPS_MAX_RECEIVERS &&
+    if (
         ((type == GPS_TYPE_UBLOX_RTK_BASE) || (type == GPS_TYPE_UAVCAN_RTK_BASE)) &&
         ((get_type(instance^1) == GPS_TYPE_UBLOX_RTK_ROVER) || (get_type(instance^1) == GPS_TYPE_UAVCAN_RTK_ROVER))) {
         // return the yaw from the rover
