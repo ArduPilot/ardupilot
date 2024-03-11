@@ -229,7 +229,8 @@ void AC_Fence::update()
 #ifdef AC_FENCE_DEBUG
     static uint32_t last_msg_count = 0;
     if (get_enabled_fences() && last_msg_count++ % 10 == 0) {
-        print_fence_message("fences active", get_enabled_fences());
+        print_fence_message("active", get_enabled_fences());
+        print_fence_message("breached", get_breaches());
     }
 #endif
 }
@@ -310,6 +311,19 @@ void AC_Fence::auto_enable_fence_on_arming(void)
 }
 
 /*
+  called on disarming
+*/
+void AC_Fence::auto_disable_fence_on_disarming(void)
+{
+    if (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+        return;
+    }
+
+    const uint8_t fences = enable(false, _auto_enable_mask, false);
+    print_fence_message("auto-disabled", fences);
+}
+
+/*
   called when an auto-takeoff is complete
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
@@ -349,7 +363,7 @@ void AC_Fence::auto_disable_fence_for_landing(void)
         }
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
         case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
-            disable_floor();
+            enable(false, AC_FENCE_TYPE_ALT_MIN, false);
             _floor_disabled_for_landing = true;
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence auto-disabled");
             break;
@@ -619,10 +633,13 @@ bool AC_Fence::auto_enable_fence_floor()
 // inclusions zones
 bool AC_Fence::check_fence_polygon()
 {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+        // not enabled; no breach
+        return false;
+    }
+
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    const bool breached = ((_configured_fences & AC_FENCE_TYPE_POLYGON) &&
-                           _poly_loader.breached());
-    if (breached) {
+    if (_poly_loader.breached()) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
@@ -895,6 +912,7 @@ void AC_Fence::update() {}
 void AC_Fence::auto_enable_fence_after_takeoff() {}
 void AC_Fence::auto_disable_fence_for_landing() {}
 void AC_Fence::auto_enable_fence_on_arming() {}
+void AC_Fence::auto_disable_fence_on_disarming() {}
 
 uint8_t AC_Fence::present() const { return 0; }
 
