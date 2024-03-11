@@ -18,6 +18,7 @@ function update()
     if sw_pos == 1 then
       ahrs:set_home(my_home_location)
       gcs:send_text(6, string.format("Set Home to preset position: Lat:%.7f Long:%.7f Alt:%.1f", my_home_location:lat()/10000000, my_home_location:lng()/10000000, my_home_location:alt()/100))
+	  gcs:send_text(1, string.format("Home position updated"))
     elseif sw_pos == 2 then
       if ahrs:home_is_set() then
         local location = ahrs:get_location()
@@ -25,6 +26,7 @@ function update()
           location:alt(0)
           ahrs:set_home(location)
           gcs:send_text(6, string.format("Set Home to current position: Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
+	      gcs:send_text(1, string.format("Home position updated"))
         else
           gcs:send_text(6, "Waiting for GPS lock")
         end
