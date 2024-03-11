@@ -159,7 +159,7 @@ void AR_PosControl::update(float dt)
     if (avoid != nullptr) {
         Vector3f vel_3d_cms{_vel_target.x * 100.0f, _vel_target.y * 100.0f, 0.0f};
         const float accel_max_cmss = MIN(_accel_max, _lat_accel_max) * 100.0;
-        avoid->adjust_velocity(vel_3d_cms, backing_up, _p_pos.kP(), accel_max_cmss, _p_pos.kP(), accel_max_cmss, dt);
+        avoid->adjust_velocity(vel_3d_cms, backing_up, _p_pos.kP(), accel_max_cmss, _p_pos.kP(), accel_max_cmss, dt, false);
         _vel_target.x = vel_3d_cms.x * 0.01;
         _vel_target.y = vel_3d_cms.y * 0.01;
     }
