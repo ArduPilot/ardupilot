@@ -971,6 +971,38 @@ private:
     void userhook_auxSwitch1(const RC_Channel::AuxSwitchPos ch_flag);
     void userhook_auxSwitch2(const RC_Channel::AuxSwitchPos ch_flag);
     void userhook_auxSwitch3(const RC_Channel::AuxSwitchPos ch_flag);
+    void Log_Write_position();
+    void Log_Write_velocity();
+    void log_attitude_tracking();
+    void log_TRO1_pos_();
+    void log_TRO1_vel_();
+    void log_TRO1_hum_();
+    void log_TRO1_uc_();
+    void log_TRO1_uq_();
+    void log_TRO1_ut_();
+    void log_TRO1_PWM_();
+    void log_TRO1_FM_();
+    void get_CAM_device_Data();
+    void get_PAMD_device_Data();
+    void gains_data_from_Rpi();
+    void Portenta_data();
+    void getHumanIMUdata();
+    void getHumanEncoderdata();
+    void get_Gain_data_from_portenta();
+    void log_thurst_moment();
+    void get_IROS_data();
+    void log_IROS_raw_data();
+    void log_IROS_data();
+    void log_IROS_HH_acc();
+    void log_IROS_ATT_Track();
+    Matrix3f eulerAnglesToRotationMatrix(Vector3f rpy);
+    Vector3f Matrix_vector_mul(Matrix3f R, Vector3f v);
+    Matrix3f hatmap(Vector3f v);
+    void cable_states();
+    Vector3f sat_q(Vector3f vec);
+    Vector3f sat_q_dot(Vector3f vec);
+
+
 
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
