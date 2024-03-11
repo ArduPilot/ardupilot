@@ -90,6 +90,9 @@ public:
     /// auto_enable_fences_on_arming - auto enables all applicable fences on arming
     void auto_enable_fence_on_arming();
 
+    /// auto_disable_fences_on_disarming - auto disables all applicable fences on disarming
+    void auto_disable_fence_on_disarming();
+
     /// auto_enable_fence_floor - auto enables fence floor once desired altitude has been reached.
     bool auto_enable_fence_floor();
 

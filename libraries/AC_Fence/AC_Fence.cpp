@@ -310,6 +310,19 @@ void AC_Fence::auto_enable_fence_on_arming(void)
 }
 
 /*
+  called on disarming
+*/
+void AC_Fence::auto_disable_fence_on_disarming(void)
+{
+    if (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+        return;
+    }
+
+    const uint8_t fences = enable(false, _auto_enable_mask, false);
+    print_fence_message("auto-disabled", fences);
+}
+
+/*
   called when an auto-takeoff is complete
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
@@ -349,7 +362,7 @@ void AC_Fence::auto_disable_fence_for_landing(void)
         }
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
         case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
-            disable_floor();
+            enable(false, AC_FENCE_TYPE_ALT_MIN, false);
             _floor_disabled_for_landing = true;
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence auto-disabled");
             break;
@@ -895,6 +908,7 @@ void AC_Fence::update() {}
 void AC_Fence::auto_enable_fence_after_takeoff() {}
 void AC_Fence::auto_disable_fence_for_landing() {}
 void AC_Fence::auto_enable_fence_on_arming() {}
+void AC_Fence::auto_disable_fence_on_disarming() {}
 
 uint8_t AC_Fence::present() const { return 0; }
 
