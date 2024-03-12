@@ -31,7 +31,7 @@
 
 class AP_GPS_DroneCAN : public AP_GPS_Backend {
 public:
-    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
+    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
     ~AP_GPS_DroneCAN();
 
     bool read() override;

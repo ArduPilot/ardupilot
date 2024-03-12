@@ -850,7 +850,7 @@ void AP_GPS_NMEA::send_config(void)
         return;
     }
     last_config_ms = now_ms;
-    const uint16_t rate_ms = gps._rate_ms[state.instance];
+    const uint16_t rate_ms = params.rate_ms;
 #if AP_GPS_NMEA_UNICORE_ENABLED
     const float rate_s = rate_ms * 0.001;
 #endif
