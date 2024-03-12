@@ -45,20 +45,20 @@ HSW_PRESET_LNG = bind_add_param('PRESET_LNG', 3, 0) -- example value 11.123456
 HSW_PRESET_ALT = bind_add_param('PRESET_ALT', 4, 0) -- example value 1000 = 10m
 
 local rc_option = 300
-local sw_channel = rc:find_channel_for_option(rc_option)
+local sw_channel = assert(rc:find_channel_for_option(rc_option), "RCx_OPTION 300 not configured")
 local sw_last_pos = -1
 local home_location
 local script_enabled = false
 local last_arming_status = false
 
-gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home switch script started"))
+gcs:send_text(MAV_SEVERITY.INFO, "HSW: home switch script started")
 
 function update()
   if last_arming_status ~= arming:is_armed() then
     if arming:is_armed() then
       home_location = ahrs:get_home()
       if home_location then
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: vehicle armed, home set to current location"))
+        gcs:send_text(MAV_SEVERITY.INFO, "HSW: vehicle armed, home set to current location")
       end
     end
     last_arming_status = arming:is_armed()
@@ -66,9 +66,9 @@ function update()
 
   if script_enabled ~= (HSW_ENABLE:get() > 0) then
     if HSW_ENABLE:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home switch script ENABLED"))
+      gcs:send_text(MAV_SEVERITY.INFO, "HSW: home switch script ENABLED")
     else
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home switch script DISABLED"))
+      gcs:send_text(MAV_SEVERITY.INFO, "HSW: home switch script DISABLED")
     end
     script_enabled = HSW_ENABLE:get() > 0
   end
@@ -90,10 +90,10 @@ function update()
       -- MID set HOME to preset my_home_location
       if my_home_location:lat() ~= 0 and my_home_location:lng() ~= 0 then
         ahrs:set_home(my_home_location)
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to preset position: Lat:%.7f Long:%.7f Alt:%.1f", my_home_location:lat()/10000000, my_home_location:lng()/10000000, my_home_location:alt()/100))
-		gcs:send_text(MAV_SEVERITY.ALERT, string.format("Preset home activated"))
+        gcs:send_text(MAV_SEVERITY.INFO, "HSW: home set to preset position: Lat:%.7f Long:%.7f Alt:%.1f", my_home_location:lat()/10000000, my_home_location:lng()/10000000, my_home_location:alt()/100)
+		gcs:send_text(MAV_SEVERITY.ALERT, "Preset home activated")
         else
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: preset home position missing, unable to set home to preset location"))
+          gcs:send_text(MAV_SEVERITY.INFO, "HSW: preset home position missing, unable to set home to preset location")
       end
     elseif sw_pos == 2 then
       -- HIGH set HOME to current position keeping altitude of previous home
@@ -103,10 +103,10 @@ function update()
         if current_home then
           location:alt(current_home:alt()) -- new home has same altitude as previous home
           ahrs:set_home(location)
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to current position: Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
-		  gcs:send_text(MAV_SEVERITY.ALERT, string.format("Dynamic home activated"))
+          gcs:send_text(MAV_SEVERITY.INFO, "HSW: home set to current position: Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100)
+		  gcs:send_text(MAV_SEVERITY.ALERT, "Dynamic home activated")
         else
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home position not set, unable to set home to current position"))
+          gcs:send_text(MAV_SEVERITY.INFO, "HSW: home position not set, unable to set home to current position")
         end
       else
         gcs:send_text(MAV_SEVERITY.INFO, "HSW: waiting for GPS lock")
@@ -115,8 +115,8 @@ function update()
       -- LOW set HOME to arming location
       if home_location then
         ahrs:set_home(home_location)
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to arming position: Lat:%.7f Long:%.7f Alt:%.1f", home_location:lat()/10000000, home_location:lng()/10000000, home_location:alt()/100))
-		gcs:send_text(MAV_SEVERITY.ALERT, string.format("Arming home restored"))
+        gcs:send_text(MAV_SEVERITY.INFO, "HSW: home set to arming position: Lat:%.7f Long:%.7f Alt:%.1f", home_location:lat()/10000000, home_location:lng()/10000000, home_location:alt()/100)
+		gcs:send_text(MAV_SEVERITY.ALERT, "Arming home activated")
     end
   end
     sw_last_pos = sw_pos -- debounce
