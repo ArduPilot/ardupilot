@@ -557,9 +557,11 @@ bool Tailsitter::transition_vtol_complete(void) const
         return true;
     }
     int32_t roll_cd = labs(plane.ahrs.roll_sensor);
+#if AP_INVERTED_FLIGHT_ENABLED
     if (plane.fly_inverted()) {
         roll_cd = 18000 - roll_cd;
     }
+#endif
     if (roll_cd > MAX(4500, plane.roll_limit_cd + 500)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
         return true;
@@ -845,7 +847,11 @@ void Tailsitter_Transition::update()
         quadplane.assisted_flight = true;
         uint32_t dt = now - fw_transition_start_ms;
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+#if AP_INVERTED_FLIGHT_ENABLED
         plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
+#else
+        plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f, -8500, 8500);
+#endif
         plane.nav_roll_cd = 0;
         quadplane.disable_yaw_rate_time_constant();
         quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,

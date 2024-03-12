@@ -376,8 +376,10 @@ public:
                         char *failure_msg,
                         const uint8_t failure_msg_len);
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
+#endif
 
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);

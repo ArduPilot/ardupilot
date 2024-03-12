@@ -169,6 +169,7 @@ void Plane::autotune_enable(bool enable)
     }
 }
 
+#if AP_INVERTED_FLIGHT_ENABLED
 /*
   are we flying inverted?
  */
@@ -186,3 +187,4 @@ bool Plane::fly_inverted(void)
     }
     return false;
 }
+#endif
