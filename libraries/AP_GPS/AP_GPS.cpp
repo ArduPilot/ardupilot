@@ -1182,7 +1182,7 @@ void AP_GPS::update_primary(void)
       significant lagged and gives no more information on position or
       velocity
     */
-    const bool using_moving_base = (is_rtk_base(_type[0]) || is_rtk_base(_type[1]));
+    const bool using_moving_base = is_rtk_base(0) || is_rtk_base(1);
     if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
@@ -1234,8 +1234,8 @@ void AP_GPS::update_primary(void)
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (is_rtk_base(_type[i]) &&
-            is_rtk_rover(_type[i^1]) &&
+        if (is_rtk_base(i) &&
+            is_rtk_rover(i^1) &&
             ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
