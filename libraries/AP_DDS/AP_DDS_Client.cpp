@@ -13,6 +13,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
@@ -511,6 +512,33 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy: %f, %f, %f, %f",
                           msg_prefix, rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
             // TODO implement joystick RC control to AP
+            const uint32_t tnow = AP_HAL::millis();
+            
+            for (uint8_t i=0; i<rx_joy_topic.axes_size; i++) {
+                const uint16_t override_data = static_cast<uint16_t>(rx_joy_topic.axes[i]);
+                const RC_Channel *c = rc().channel(i);
+                radio_min_val=c->get_radio_min();
+                radio_max_val=c->get_radio_max();
+
+
+                // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
+                if (override_data != UINT16_MAX) {
+                    const uint16_t mapped_data=linear_interpolate(radio_min_val,radio_max_val,override_data,-1.0,1.0);
+                    RC_Channels::set_override(i, mapped_data, tnow);
+                }
+            }
+            for (uint8_t i=8; i<rx_joy_topic.axes_size; i++) {
+                const uint16_t override_data = static_cast<uint16_t>(rx_joy_topic.axes[i]);
+
+                // Per MAVLink spec a value of zero or UINT16_MAX means to
+                // ignore this field.
+                if (override_data != 0 && override_data != UINT16_MAX) {
+                    // per the mavlink spec, a value of UINT16_MAX-1 means
+                    // return the field to RC radio values:
+                    const uint16_t value = override_data == (UINT16_MAX-1) ? 0 : linear_interpolate(radio_min_val,radio_max_val,override_data,-1.0,1.0);
+                    RC_Channels::set_override(i, value, tnow);
+                }
+            }
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy. Axes size must be >= 4", msg_prefix);
         }
