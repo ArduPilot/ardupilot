@@ -46,7 +46,7 @@ HSW_PRESET_ALT = bind_add_param('PRESET_ALT', 4, 0) -- example value 1000 = 10m
 
 local rc_option = 300
 local sw_channel = assert(rc:find_channel_for_option(rc_option), "RCx_OPTION 300 not configured")
-local sw_last_pos = -1
+local sw_last_pos = 0 -- ignore switch LOW at script start
 local home_location
 local script_enabled = false
 local last_arming_status = false
@@ -90,8 +90,8 @@ function update()
       -- MID set HOME to preset my_home_location
       if my_home_location:lat() ~= 0 and my_home_location:lng() ~= 0 then
         ahrs:set_home(my_home_location)
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to preset position: Lat:%.7f Long:%.7f Alt:%.1f", my_home_location:lat()/10000000, my_home_location:lng()/10000000, my_home_location:alt()/100))
-		gcs:send_text(MAV_SEVERITY.ALERT, "Preset home activated")
+        gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to preset position: Lat:%.7f Long:%.7f Alt:%.1fm", my_home_location:lat()/10000000, my_home_location:lng()/10000000, my_home_location:alt()/100))
+		    gcs:send_text(MAV_SEVERITY.ALERT, "HSW: preset home activated")
         else
           gcs:send_text(MAV_SEVERITY.INFO, "HSW: preset home position missing, unable to set home to preset location")
       end
@@ -99,12 +99,19 @@ function update()
       -- HIGH set HOME to current position keeping altitude of previous home
       local location = ahrs:get_location()
       if location then
-        current_home = ahrs:get_home()
-        if current_home then
-          location:alt(current_home:alt()) -- new home has same altitude as previous home
+        local current_home_location = ahrs:get_home()
+        if current_home_location then
+          local new_home_altitude_cm = home_location:alt() -- new home has same altitude as arming home as default
+          -- use terrain if available
+          local height_amsl_m = terrain:height_amsl(location, false)
+          if height_amsl_m then
+            new_home_altitude_cm = math.floor(height_amsl_m*100 + 0.5) -- meters to cm
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: using terrain data, altitude amsl=%.2fm", height_amsl_m))
+          end
+          location:alt(new_home_altitude_cm)
           ahrs:set_home(location)
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to current position: Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
-		  gcs:send_text(MAV_SEVERITY.ALERT, "Dynamic home activated")
+          gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to current position: Lat:%.7f Long:%.7f Alt:%.1fm", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
+		      gcs:send_text(MAV_SEVERITY.ALERT, "HSW: dynamic home activated")
         else
           gcs:send_text(MAV_SEVERITY.INFO, "HSW: home position not set, unable to set home to current position")
         end
@@ -116,9 +123,9 @@ function update()
       if home_location then
         ahrs:set_home(home_location)
         gcs:send_text(MAV_SEVERITY.INFO, string.format("HSW: home set to arming position: Lat:%.7f Long:%.7f Alt:%.1f", home_location:lat()/10000000, home_location:lng()/10000000, home_location:alt()/100))
-		gcs:send_text(MAV_SEVERITY.ALERT, "Arming home activated")
+		    gcs:send_text(MAV_SEVERITY.ALERT, "HSW: arming home activated")
+      end
     end
-  end
     sw_last_pos = sw_pos -- debounce
   end
   return update, 2000
