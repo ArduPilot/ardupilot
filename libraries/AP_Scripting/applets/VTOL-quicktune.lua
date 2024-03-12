@@ -288,6 +288,7 @@ end
 -- setup filter frequencies
 function setup_filters(axis)
    if QUIK_AUTO_FILTER:get() <= 0 then
+      filters_done[axis] = true
       return
    end
    local fltd = axis .. "_FLTD"
