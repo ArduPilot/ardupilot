@@ -17,14 +17,14 @@ Activating via 2-pos switch sets the current gps coordinates and the original he
 2) Activate the LUA script functionality in the parameters by setting SCR_ENABLE to 1 and reboot the FC.
 
 3) Choose and set a 2-pos or 3-pos switch on the RC and check that it works in the Radio Calibration screen
-   of the Mission Planner.
+of the Mission Planner.
 
 4) For the corresponding channel chosen set RCx_OPTION to 300.
 
 5) With the GPS fix and the system armed flip the switch to the high state position and check on the Mission Planner hud
-   if the "Dynamic home set" message appears, the new home will be set.
-   In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
-   Without the GPS fix the message "Home position not set, unable to set HOME to current position" will be shown.
+if the "Dynamic home set" message appears, the new home will be set.
+In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
+Without the GPS fix the message "Home position not set, unable to set HOME to current position" will be shown.
    
 6) To set a new home dynamic point you will need to flip the switch again, the intermediate position of the switch will have no effect.
 
@@ -32,8 +32,8 @@ Activating via 2-pos switch sets the current gps coordinates and the original he
 - Preset and dynamic home
 
 1) Edit the LUA script by uncommenting the three lines (location object) with the coordinates and height and set them with the syntax:
-   the coordinates with the first 9 numbers and the height in centimeters, the example is in the script.
-   Uncomment them only when you are sure you have edited them correctly, do not use the preset ones in the script!
+the coordinates with the first 9 numbers and the height in centimeters, the example is in the script.
+Uncomment them only when you are sure you have edited them correctly, do not use the preset ones in the script!
 
 2) Copy the LUA script via MavFTP to the APM/SCRIPTS directory, if it does not exist create it.
 
@@ -44,17 +44,17 @@ Activating via 2-pos switch sets the current gps coordinates and the original he
 5) For the corresponding channel chosen set RCx_OPTION to 300.
 
 6) Dynamic home position: with the GPS fix and the system armed flip the switch to the high state position and check on the
-   Mission Planner hud if the "Dynamic home set" message appears, the new home will be set.
-   In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
-   Without the GPS fix the message "Home position not set, unable to set HOME to current position" will be shown.
-   To set a new home dynamic point you will need to flip the switch again, the intermediate position of the switch will have no effect.
+Mission Planner hud if the "Dynamic home set" message appears, the new home will be set.
+In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
+Without the GPS fix the message "Home position not set, unable to set HOME to current position" will be shown.
+To set a new home dynamic point you will need to flip the switch again, the intermediate position of the switch will have no effect.
    
-   Preset home position: with the GPS fix and the system armed flip the switch to the middle state position and check on the
-   Mission Planner hud if the "Preset home activated" message appears, the new home will be set.
-   In "Data->Messages" the coordinates and height set in the script will be shown.
+Preset home position: with the GPS fix and the system armed flip the switch to the middle state position and check on the
+Mission Planner hud if the "Preset home activated" message appears, the new home will be set.
+In "Data->Messages" the coordinates and height set in the script will be shown.
 
 7) To set a new dynamic or preset home point you will need to switching to another position and returning to the desired one.
-   Always return the switch to the low position after making the desired choice.   
+Always return the switch to the low position after making the desired choice.   
 
 ## Disclamer
 
