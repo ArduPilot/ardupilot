@@ -288,7 +288,17 @@ void Copter::get_PAMD_device_Data()
 
 void Copter::send_Quad1_CAM1_qpd_Data()
 {
-        u1_POS_1 = quad_roll
+        u1_POS_1 = quad_roll;
+        u1_POS_2 = quad_pitch;
+        u1_POS_3 = quad_yaw;
+
+        u1_CAC_1 = quad_roll    + 10.0;
+        u1_CAC_2 = quad_pitch   + 10.0;
+        u1_CAC_3 = quad_yaw     + 10.0;
+
+        u1_PAC_1 = quad_roll    + 10.0;
+        u1_PAC_2 = quad_pitch   + 10.0;
+        u1_PAC_3 = quad_yaw     + 10.0;
 
         int u1_pos_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_1) * 100;
         int u1_pos_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_2) * 100;
