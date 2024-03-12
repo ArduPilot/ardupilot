@@ -187,12 +187,10 @@ char Copter::convert_Dec_to_Char(int data)
 
 float Copter::limit_on_forces_from_quad1(float u)
 {
-    float limited_data = 0.0;
 
-    if (u < 0.0){ limited_data = 0.0;}
-    if (u > 15.0){ limited_data = 15.0;}
-
-    return limited_data;
+    if (u < 0.0){ u = 0.0;}
+    if (u > 15.0){ u = 15.0;}
+    return u;
 }
 
 void Copter::get_PAMD_device_Data()
@@ -288,21 +286,26 @@ void Copter::get_PAMD_device_Data()
 
 void Copter::send_Quad1_CAM1_qpd_Data()
 {
+
         u1_POS_1 = quad_roll;
         u1_POS_2 = quad_pitch;
         u1_POS_3 = quad_yaw;
 
-        u1_CAC_1 = quad_roll    + 10.0;
-        u1_CAC_2 = quad_pitch   + 10.0;
-        u1_CAC_3 = quad_yaw     + 10.0;
+        u1_CAC_1 = quad_roll    + 1.0;
+        u1_CAC_2 = quad_pitch   + 1.0;
+        u1_CAC_3 = quad_yaw     + 1.0;
 
-        u1_PAC_1 = quad_roll    + 20.0;
-        u1_PAC_2 = quad_pitch   + 20.0;
-        u1_PAC_3 = quad_yaw     + 20.0;
+        u1_PAC_1 = quad_roll    + 2.0;
+        u1_PAC_2 = quad_pitch   + 2.0;
+        u1_PAC_3 = quad_yaw     + 2.0;
+
+        // hal.console->printf("%2.2f, %2.2f, %2.2f \n", u1_POS_1, u1_POS_2, u1_POS_3);
 
         int u1_pos_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_1) * 100;
         int u1_pos_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_2) * 100;
         int u1_pos_3_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_3) * 100;
+        hal.console->printf("%d", u1_pos_1_scaled);
+        hal.console->printf("\n");
 
         int u1_CAC_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_CAC_1) * 100;
         int u1_CAC_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_CAC_2) * 100;
@@ -341,11 +344,17 @@ void Copter::send_Quad1_CAM1_qpd_Data()
             u1_PAC_3_scaled /= 10;
         }
 
+        // hal.console->printf("%c, %c, %c \n", u1_POS_1_array, u1_POS_2_array, u1_POS_3_array);
+
+
         hal.serial(QuadCam1qpd_port)->write(",");
 
         for (int j = 0; j < 4; j++) {
             hal.serial(QuadCam1qpd_port)->write(convert_Dec_to_Char(u1_POS_1_array[j]));
+            // hal.console->printf("%c", u1_POS_1_array[j]);
         }
+            // hal.console->printf("\n");
+
             hal.serial(QuadCam1qpd_port)->write("_");
 
         for (int j = 0; j < 4; j++) {
