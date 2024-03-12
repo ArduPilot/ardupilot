@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # useful script to test all the different build types that we support.
 # This helps when doing large merges
 # Andrew Tridgell, November 2011

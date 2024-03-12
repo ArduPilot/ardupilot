@@ -36,9 +36,9 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Camera_Backend);
 
-    // camera options parameter values
-    enum class Options : int8_t {
-        RecordWhileArmed = (1 << 0U)
+    enum CAMOPTIONS {
+        NONE = 0,
+        REC_ARM_DISARM = 1, // Recording start/stop on Arm/Disarm
     };
 
     // init - performs any required initialisation

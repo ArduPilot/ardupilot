@@ -69,7 +69,6 @@ public:
 
     // return true if a stream ID is shared between two peripherals
     static bool is_shared(uint8_t stream_id);
-    bool is_shared();
 
 private:
     dma_allocate_fn_t allocate;

@@ -15,6 +15,22 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
+
+#if STATS_ENABLED == ENABLED
+    // initialise stats module
+    g2.stats.init();
+#endif
+
+    BoardConfig.init();
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    can_mgr.init();
+#endif
+
+    // init cargo gripper
+#if AP_GRIPPER_ENABLED
+    g2.gripper.init();
+#endif
+
     // init winch
 #if AP_WINCH_ENABLED
     g2.winch.init();
@@ -37,6 +53,10 @@ void Copter::init_ardupilot()
 
 #if OSD_ENABLED == ENABLED
     osd.init();
+#endif
+
+#if LOGGING_ENABLED == ENABLED
+    log_init();
 #endif
 
     // update motor interlock state
@@ -93,7 +113,7 @@ void Copter::init_ardupilot()
     airspeed.set_log_bit(MASK_LOG_IMU);
 #endif
 
-#if AP_OAPATHPLANNER_ENABLED
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
     g2.oa.init();
 #endif
 
@@ -163,12 +183,14 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
-#if HAL_LOGGING_ENABLED
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
-#endif
 
     startup_INS_ground();
+
+#if AP_SCRIPTING_ENABLED
+    g2.scripting.init();
+#endif // AP_SCRIPTING_ENABLED
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     custom_control.init();
@@ -185,15 +207,11 @@ void Copter::init_ardupilot()
 
     motors->output_min();  // output lowest possible value to motors
 
-    // attempt to set the initial_mode, else set to STABILIZE
+    // attempt to set the intial_mode, else set to STABILIZE
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
         // set mode to STABILIZE will trigger mode change notification to pilot
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
     }
-
-    pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
-    vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
-    hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -334,16 +352,18 @@ void Copter::update_auto_armed()
     }
 }
 
-#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Copter::should_log(uint32_t mask)
 {
+#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-}
+#else
+    return false;
 #endif
+}
 
 /*
   allocate the motors class
@@ -424,24 +444,26 @@ void Copter::allocate_motors(void)
         AP_BoardConfig::allocation_error("AP_AHRS_View");
     }
 
+    const struct AP_Param::GroupInfo *ac_var_info;
+
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
 #if AP_SCRIPTING_ENABLED
         attitude_control = new AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors);
-        attitude_control_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
+        ac_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // AP_SCRIPTING_ENABLED
     } else {
         attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors);
-        attitude_control_var_info = AC_AttitudeControl_Multi::var_info;
+        ac_var_info = AC_AttitudeControl_Multi::var_info;
     }
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors);
-    attitude_control_var_info = AC_AttitudeControl_Heli::var_info;
+    ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
         AP_BoardConfig::allocation_error("AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, attitude_control_var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (pos_control == nullptr) {
@@ -449,7 +471,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
-#if AP_OAPATHPLANNER_ENABLED
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
     wp_nav = new AC_WPNav_OA(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
 #else
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);

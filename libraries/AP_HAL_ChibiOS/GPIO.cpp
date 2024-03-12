@@ -37,8 +37,9 @@ using namespace ChibiOS;
 extern AP_IOMCU iomcu;
 #endif
 
+
 // GPIO pin table from hwdef.dat
-struct gpio_entry {
+static struct gpio_entry {
     uint8_t pin_num;
     bool enabled;
     uint8_t pwm_num;
@@ -50,22 +51,13 @@ struct gpio_entry {
     uint16_t isr_quota;
     uint8_t isr_disabled_ticks;
     AP_HAL::GPIO::INTERRUPT_TRIGGER_TYPE isr_mode;
-};
-
-#ifdef HAL_GPIO_PINS
-#define HAVE_GPIO_PINS 1
-static struct gpio_entry _gpio_tab[] = HAL_GPIO_PINS;
-#else
-#define HAVE_GPIO_PINS 0
-#endif
-
+} _gpio_tab[] = HAL_GPIO_PINS;
 
 /*
   map a user pin number to a GPIO table entry
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
-#if HAVE_GPIO_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         const auto &t = _gpio_tab[i];
         if (pin_num == t.pin_num) {
@@ -75,7 +67,6 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
             return &_gpio_tab[i];
         }
     }
-#endif
     return NULL;
 }
 
@@ -88,9 +79,7 @@ GPIO::GPIO()
 void GPIO::init()
 {
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !defined(HAL_BOOTLOADER_BUILD)
-#if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t chan_offset = 0;
-#endif
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         uint8_t GPIO_mask = 0;
@@ -104,14 +93,12 @@ void GPIO::init()
     }
 #endif
     // auto-disable pins being used for PWM output
-#if HAVE_GPIO_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
             g->enabled = SRV_Channels::is_GPIO((g->pwm_num-1)+chan_offset);
         }
     }
-#endif // HAVE_GPIO_PINS
 #endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
@@ -152,7 +139,6 @@ void GPIO::setup_alt_config(void)
         if (alt_config == alt.alternate) {
             if (alt.periph_type == PERIPH_TYPE::GPIO) {
                 // enable pin in GPIO table
-#if HAVE_GPIO_PINS
                 for (uint8_t j=0; j<ARRAY_SIZE(_gpio_tab); j++) {
                     struct gpio_entry *g = &_gpio_tab[j];
                     if (g->pal_line == alt.line) {
@@ -160,7 +146,6 @@ void GPIO::setup_alt_config(void)
                         break;
                     }
                 }
-#endif // HAVE_GPIO_PINS
                 continue;
             }
             const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
@@ -538,9 +523,7 @@ bool GPIO::valid_pin(uint8_t pin) const
 // servo_ch uses zero-based indexing
 bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
 {
-#if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t fmu_chan_offset = 0;
-#endif
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // check if this is one of the main pins
@@ -554,7 +537,6 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
     }
 #endif
 
-#if HAVE_GPIO_PINS
     // search _gpio_tab for matching pin
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (_gpio_tab[i].pin_num == pin) {
@@ -565,7 +547,6 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
             return true;
         }
     }
-#endif // HAVE_GPIO_PINS
     return false;
 }
 
@@ -600,7 +581,6 @@ void GPIO::timer_tick()
 {
     // allow 100k interrupts/second max for GPIO interrupt sources, which is
     // 10k per 100ms call to timer_tick()
-#if HAVE_GPIO_PINS
     const uint16_t quota = 10000U;
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (_gpio_tab[i].isr_quota != 1) {
@@ -648,20 +628,17 @@ void GPIO::timer_tick()
             }
         }
     }
-#endif // HAVE_GPIO_PINS
 }
 
 // Check for ISR floods
 bool GPIO::arming_checks(size_t buflen, char *buffer) const
 {
-#if HAVE_GPIO_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (_gpio_tab[i].isr_disabled_ticks != 0) {
             hal.util->snprintf(buffer, buflen, "Pin %u disabled (ISR flood)", _gpio_tab[i].pin_num);
             return false;
         }
     }
-#endif // HAVE_GPIO_PINS
     return true;
 }
 #endif // IOMCU_FW

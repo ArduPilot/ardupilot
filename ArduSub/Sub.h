@@ -62,7 +62,6 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_Proximity/AP_Proximity.h>
-#include <AP_Rally/AP_Rally.h>
 
 // Local modules
 #include "defines.h"
@@ -88,6 +87,11 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
+#include <AP_Gripper/AP_Gripper_config.h>
+#if AP_GRIPPER_ENABLED
+#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
+#endif
+
 #if AVOIDANCE_ENABLED == ENABLED
 #include <AC_Avoidance/AC_Avoid.h>           // Stop at fence library
 #endif
@@ -111,7 +115,6 @@ public:
     friend class ModeStabilize;
     friend class ModeAcro;
     friend class ModeAlthold;
-    friend class ModeSurftrak;
     friend class ModeGuided;
     friend class ModePoshold;
     friend class ModeAuto;
@@ -142,19 +145,17 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
+    AP_Logger logger;
+
     AP_LeakDetector leak_detector;
 
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
         int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
-        int16_t min_cm;     // min rangefinder distance (in cm)
-        int16_t max_cm;     // max rangefinder distance (in cm)
         uint32_t last_healthy_ms;
-        float inertial_alt_cm;                  // inertial alt at time of last rangefinder sample
-        float rangefinder_terrain_offset_cm;    // terrain height above EKF origin
-        LowPassFilterFloat alt_cm_filt;         // altitude filter
-    } rangefinder_state = { false, false, 0, 0, 0, 0, 0, 0 };
+        LowPassFilterFloat alt_cm_filt; // altitude filter
+    } rangefinder_state = { false, false, 0, 0 };
 
 #if AP_RPM_ENABLED
     AP_RPM rpm_sensor;
@@ -273,6 +274,7 @@ private:
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
+    float target_rangefinder_alt;      // desired altitude in cm above the ground
 
     // Turn counter
     int32_t quarter_turn_count;
@@ -395,15 +397,8 @@ private:
     float get_roi_yaw();
     float get_look_ahead_yaw();
     float get_pilot_desired_climb_rate(float throttle_control);
+    float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void rotate_body_frame_to_NE(float &x, float &y);
-#if HAL_LOGGING_ENABLED
-    // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
-    const struct LogStructure *get_log_structures() const override {
-        return log_structure;
-    }
-    uint8_t get_num_log_structures() const override;
-
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Data(LogDataID id, int32_t value);
@@ -413,7 +408,6 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
-#endif
     void load_parameters(void) override;
     void userhook_init();
     void userhook_FastLoop();
@@ -461,15 +455,7 @@ private:
     void init_rc_out();
     void enable_motor_output();
     void init_joystick();
-    void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons, uint16_t buttons2, uint8_t enabled_extensions,
-            int16_t s,
-            int16_t t,
-            int16_t aux1,
-            int16_t aux2,
-            int16_t aux3,
-            int16_t aux4,
-            int16_t aux5,
-            int16_t aux6);
+    void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     void handle_jsbutton_release(uint8_t button, bool shift);
     JSButton* get_button(uint8_t index);
@@ -478,6 +464,7 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
+    bool rangefinder_alt_ok(void) const;
     void terrain_update();
     void terrain_logging();
     void init_ardupilot() override;
@@ -535,6 +522,9 @@ private:
     void translate_circle_nav_rp(float &lateral_out, float &forward_out);
     void translate_pos_control_rp(float &lateral_out, float &forward_out);
 
+    bool surface_init(void);
+    void surface_run();
+
     void stats_update();
 
     uint16_t get_pilot_speed_dn() const;
@@ -586,7 +576,6 @@ private:
     ModeCircle mode_circle;
     ModeSurface mode_surface;
     ModeMotordetect mode_motordetect;
-    ModeSurftrak mode_surftrak;
 
     // Auto
     AutoSubMode auto_mode;   // controls which auto controller is run
@@ -598,7 +587,6 @@ private:
 
 public:
     void mainloop_failsafe_check();
-    bool rangefinder_alt_ok() const WARN_IF_UNUSED;
 
     static Sub *_singleton;
 
@@ -612,11 +600,6 @@ public:
 
     // For Lua scripting, so index is 1..4, not 0..3
     uint8_t get_and_clear_button_count(uint8_t index);
-
-#if RANGEFINDER_ENABLED == ENABLED
-    float get_rangefinder_target_cm() const WARN_IF_UNUSED { return mode_surftrak.get_rangefinder_target_cm(); }
-    bool set_rangefinder_target_cm(float new_target_cm) { return mode_surftrak.set_rangefinder_target_cm(new_target_cm); }
-#endif // RANGEFINDER_ENABLED
 #endif // AP_SCRIPTING_ENABLED
 };
 

@@ -142,8 +142,6 @@ class MicroRosAgentLaunch:
             transport,
             "--middleware",
             middleware,
-            "--verbose",
-            verbose,
         ]
 
         if transport in ["udp4", "udp6", "tcp4", "tcp6"]:
@@ -284,21 +282,21 @@ class MAVProxyLaunch:
 
         # Retrieve launch arguments.
         master = LaunchConfiguration("master").perform(context)
-        out = LaunchConfiguration("out").perform(context)
+        # out = LaunchConfiguration("out").perform(context)
         sitl = LaunchConfiguration("sitl").perform(context)
 
         # Display launch arguments.
         print(f"command:          {command}")
         print(f"master:           {master}")
         print(f"sitl:             {sitl}")
-        print(f"out:              {out}")
 
         # Create action.
         mavproxy_process = ExecuteProcess(
             cmd=[
                 [
                     f"{command} ",
-                    f"--out {out} ",
+                    "--out ",
+                    "127.0.0.1:14550 ",
                     "--out ",
                     "127.0.0.1:14551 ",
                     f"--master {master} ",

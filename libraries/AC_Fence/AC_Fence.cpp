@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Plane}: AUTOENABLE
     // @DisplayName: Fence Auto-Enable
-    // @Description: Auto-enable of fences. AutoEnableOnTakeoff enables all configured fences after autotakeoffs reach altitude. During autolandings the fences will be disabled.  AutoEnableDisableFloorOnLanding enables all configured fences after autotakeoffs reach altitude. During autolandings only the Minimum Altitude fence will be disabled. AutoEnableOnlyWhenArmed enables all configured fences, but no fences are disabled during autolandings. However, fence breaches are ignored while executing prior breach recovery actions which may include autolandings.
+    // @Description: Auto-enable of fence
     // @Values: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
     // @Range: 0 3
     // @Increment: 1
@@ -160,13 +160,11 @@ AC_Fence::AC_Fence()
 /// enable the Fence code generally; a master switch for all fences
 void AC_Fence::enable(bool value)
 {
-#if HAL_LOGGING_ENABLED
     if (_enabled && !value) {
         AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
     } else if (!_enabled && value) {
         AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
     }
-#endif
     _enabled.set(value);
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
@@ -179,23 +177,19 @@ void AC_Fence::enable(bool value)
 /// enable/disable fence floor only
 void AC_Fence::enable_floor()
 {
-#if HAL_LOGGING_ENABLED
     if (!_floor_enabled) {
         // Floor is currently disabled, enable it
         AP::logger().Write_Event(LogEvent::FENCE_FLOOR_ENABLE);
     }
-#endif
     _floor_enabled = true;
 }
 
 void AC_Fence::disable_floor()
 {
-#if HAL_LOGGING_ENABLED
     if (_floor_enabled) {
         // Floor is currently enabled, disable it
         AP::logger().Write_Event(LogEvent::FENCE_FLOOR_DISABLE);
     }
-#endif
     _floor_enabled = false;
     clear_breach(AC_FENCE_TYPE_ALT_MIN);
 }
@@ -205,14 +199,11 @@ void AC_Fence::disable_floor()
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
 {
-    if (_enabled) {
-        return;
-    } 
     switch(auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             enable(true);
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
             break;
         default:
             // fence does not auto-enable in other takeoff conditions
@@ -228,11 +219,11 @@ void AC_Fence::auto_disable_fence_for_landing(void)
     switch (auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
             enable(false);
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             disable_floor();
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             break;
         default:
             // fence does not auto-disable in other landing conditions

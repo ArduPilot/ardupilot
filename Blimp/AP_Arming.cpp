@@ -29,10 +29,8 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
-    return parameter_checks(display_failure)
-#if AP_FENCE_ENABLED
-           & fence_checks(display_failure)
-#endif
+    return fence_checks(display_failure)
+           & parameter_checks(display_failure)
            & motor_checks(display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)
@@ -304,10 +302,8 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
-#if HAL_LOGGING_ENABLED
     // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
-#endif
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
@@ -325,7 +321,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
-        LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+        AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
         blimp.arming_altitude_m = 0;
@@ -344,10 +340,8 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
     // finally actually arm the motors
     blimp.motors->armed(true);
 
-#if HAL_LOGGING_ENABLED
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode((uint8_t)blimp.control_mode, blimp.control_mode_reason);
-#endif
 
     // perf monitor ignores delay due to arming
     AP::scheduler().perf_info.ignore_this_loop();
@@ -395,9 +389,7 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
     // send disarm command to motors
     blimp.motors->armed(false);
 
-#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(false);
-#endif
 
     hal.util->set_soft_armed(false);
 

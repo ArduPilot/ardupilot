@@ -52,9 +52,6 @@ static const SysFileList sysfs_file_list[] = {
 #endif
     {"crash_dump.bin"},
     {"storage.bin"},
-#if AP_FILESYSTEM_SYS_FLASH_ENABLED
-    {"flash.bin"},
-#endif
 };
 
 int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
@@ -155,13 +152,6 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
             r.str->set_buffer((char*)ptr, size, size);
         }
     }
-#if AP_FILESYSTEM_SYS_FLASH_ENABLED
-    if (strcmp(fname, "flash.bin") == 0) {
-        void *ptr = (void*)0x08000000;
-        const size_t size = BOARD_FLASH_SIZE*1024;
-        r.str->set_buffer((char*)ptr, size, size);
-    }
-#endif
     
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;

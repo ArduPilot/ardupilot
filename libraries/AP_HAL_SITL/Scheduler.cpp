@@ -14,7 +14,6 @@
 #endif
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #ifdef UBSAN_ENABLED
-#include <fcntl.h>
 #include <sanitizer/asan_interface.h>
 #endif
 
@@ -62,7 +61,6 @@ void __ubsan_get_current_report_data(const char **OutIssueKind,
                                      const char **OutFilename, unsigned *OutLine,
                                      unsigned *OutCol, char **OutMemoryAddr);
 
-void __ubsan_on_report();
 void __ubsan_on_report()
 {
     static int fd = -1;
@@ -128,11 +126,6 @@ bool Scheduler::semaphore_wait_hack_required() const
 
 void Scheduler::delay_microseconds(uint16_t usec)
 {
-    if (_sitlState->_sitl == nullptr) {
-        // this allows examples to run
-        hal.scheduler->stop_clock(AP_HAL::micros64()+usec);
-        return;
-    }
     uint64_t start = AP_HAL::micros64();
     do {
         uint64_t dtime = AP_HAL::micros64() - start;
@@ -290,7 +283,7 @@ void Scheduler::_run_io_procs()
     check_thread_stacks();
 #endif
 
-#if AP_RCPROTOCOL_ENABLED
+#ifndef HAL_BUILD_AP_PERIPH
     AP::RC().update();
 #endif
 }
@@ -301,7 +294,7 @@ void Scheduler::_run_io_procs()
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     _stopped_clock_usec = time_usec;
-    if (_sitlState->_sitl != nullptr && time_usec - _last_io_run > 10000) {
+    if (time_usec - _last_io_run > 10000) {
         _last_io_run = time_usec;
         _run_io_procs();
     }
@@ -384,11 +377,6 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     if (pthread_create(&thread, &a->attr, thread_create_trampoline, a) != 0) {
         goto failed;
     }
-
-#if !defined(__APPLE__)
-    pthread_setname_np(thread, name);
-#endif
-
     a->next = threads;
     threads = a;
     return true;

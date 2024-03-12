@@ -14,8 +14,7 @@ class AP_RangeFinder_Backend_CAN : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_Backend_CAN(RangeFinder::RangeFinder_State &_state,
-                                AP_RangeFinder_Params &_params, AP_CAN::Protocol can_type,
-                                const char *driver_name);
+                                  AP_RangeFinder_Params &_params);
 
     friend class RangeFinder_MultiCAN;
 
@@ -54,11 +53,26 @@ protected:
     AP_Int32 receive_id; // CAN ID to receive for this backend
     AP_Int32 snr_min; // minimum signal strength to accept packet
 
-    MultiCAN* multican_rangefinder; // Allows for multiple CAN rangefinders on a single bus
 private:
 
     float _distance_sum; // meters
     uint32_t _distance_count;
+};
+
+// a class to allow for multiple CAN backends with one
+// CANSensor driver
+class RangeFinder_MultiCAN : public CANSensor {
+public:
+    RangeFinder_MultiCAN(AP_CAN::Protocol can_type, const char *driver_name) : CANSensor(driver_name) {
+        register_driver(can_type);
+    }
+
+    // handler for incoming frames
+    void handle_frame(AP_HAL::CANFrame &frame) override;
+
+    // Semaphore for access to shared backend data
+    HAL_Semaphore sem;
+    AP_RangeFinder_Backend_CAN *drivers;
 };
 
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS

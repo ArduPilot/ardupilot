@@ -88,9 +88,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
-#if AP_OAPATHPLANNER_ENABLED
             & oa_check(report)
-#endif
             & parameter_checks(report)
             & mode_checks(report));
 }
@@ -108,9 +106,7 @@ void AP_Arming_Rover::update_soft_armed()
 {
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
-#endif
 }
 
 /*
@@ -159,7 +155,6 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
     return true;
 }
 
-#if AP_OAPATHPLANNER_ENABLED
 // check object avoidance has initialised correctly
 bool AP_Arming_Rover::oa_check(bool report)
 {
@@ -176,7 +171,6 @@ bool AP_Arming_Rover::oa_check(bool report)
     }
     return false;
 }
-#endif  // AP_OAPATHPLANNER_ENABLED
 
 // perform parameter checks
 bool AP_Arming_Rover::parameter_checks(bool report)

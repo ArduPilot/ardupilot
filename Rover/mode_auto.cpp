@@ -512,12 +512,10 @@ void ModeAuto::send_guided_position_target()
 /********************************************************************************/
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_LOGGING_ENABLED
     // log when new commands start
     if (rover.should_log(MASK_LOG_CMD)) {
         rover.logger.Write_Mission_Cmd(mission, cmd);
     }
-#endif
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
@@ -945,9 +943,8 @@ bool ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 
 bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
-    const float turns = cmd.get_loiter_turns();
     // check if we have completed circling
-    return ((g2.mode_circle.get_angle_total_rad() / M_2PI) >= turns);
+    return ((g2.mode_circle.get_angle_total_rad() / M_2PI) >= LOWBYTE(cmd.p1));
 }
 
 /********************************************************************************/

@@ -17,7 +17,7 @@
 
 #include "GCS_config.h"
 
-#if AP_MAVLINK_FTP_ENABLED
+#if HAL_GCS_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -444,11 +444,25 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                         request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
-                        uint32_t checksum = 0;
-                        if (!AP::FS().crc32((char *)request.data, checksum)) {
+                        // actually open the file
+                        int fd = AP::FS().open((char *)request.data, O_RDONLY);
+                        if (fd == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
                         }
+
+                        uint32_t checksum = 0;
+                        ssize_t read_size;
+                        do {
+                            read_size = AP::FS().read(fd, reply.data, sizeof(reply.data));
+                            if (read_size == -1) {
+                                ftp_error(reply, FTP_ERROR::FailErrno);
+                                break;
+                            }
+                            checksum = crc_crc32(checksum, reply.data, MIN((size_t)read_size, sizeof(reply.data)));
+                        } while (read_size > 0);
+
+                        AP::FS().close(fd);
 
                         // reset our scratch area so we don't leak data, and can leverage trimming
                         memset(reply.data, 0, sizeof(reply.data));
@@ -624,12 +638,6 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
 
     request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
-    // Strip trailing /
-    const size_t dir_len = strlen((char *)request.data);
-    if ((dir_len > 1) && (request.data[dir_len - 1] == '/')) {
-        request.data[dir_len - 1] = 0;
-    }
-
     // open the dir
     auto *dir = AP::FS().opendir((char *)request.data);
     if (dir == nullptr) {
@@ -694,4 +702,4 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     AP::FS().closedir(dir);
 }
 
-#endif  // AP_MAVLINK_FTP_ENABLED
+#endif  // HAL_GCS_ENABLED

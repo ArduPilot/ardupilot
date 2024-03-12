@@ -15,7 +15,6 @@ class RCInput;
 class Util;
 class Semaphore;
 class Semaphore_Recursive;
-class BinarySemaphore;
 class GPIO;
 class DigitalSource;
 class Storage;

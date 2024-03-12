@@ -68,7 +68,6 @@
 #endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
-class RTCM3_Parser;
 
 /// @class AP_GPS
 /// GPS driver main class
@@ -137,10 +136,6 @@ public:
         GPS_TYPE_SITL = 100,
 #endif
     };
-
-    // convenience methods for working out what general type an instance is:
-    bool is_rtk_base(uint8_t instance) const;
-    bool is_rtk_rover(uint8_t instance) const;
 
     /// GPS status codes.  These are kept aligned with MAVLink by
     /// static_assert in AP_GPS.cpp
@@ -217,7 +212,6 @@ public:
         float undulation;                   //<height that WGS84 is above AMSL at the current location
         bool have_undulation;               ///<do we have a value for the undulation
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
-        bool announced_detection;           ///< true once we have announced GPS has been seen to the user
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
@@ -251,7 +245,7 @@ public:
     void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_msg(const mavlink_message_t &msg);
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
@@ -597,6 +591,7 @@ protected:
     AP_Int8 _type[GPS_MAX_RECEIVERS];
     AP_Int8 _navfilter;
     AP_Int8 _auto_switch;
+    AP_Int8 _min_dgps;
     AP_Int16 _sbp_logmask;
     AP_Int8 _inject_to;
     uint32_t _last_instance_swap_ms;
@@ -629,9 +624,6 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
-        GPSL5HealthOverride = (1U << 5),
-        AlwaysRTCMDecode = (1U << 6),
-        DisableRTCMDecode = (1U << 7),
     };
 
     // check if an option is set
@@ -684,7 +676,6 @@ private:
     struct detect_state {
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
-        uint32_t probe_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct SIRF_detect_state sirf_detect_state;
@@ -736,7 +727,7 @@ private:
     } rtcm_stats;
 
     // re-assemble GPS_RTCM_DATA message
-    void handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
@@ -793,20 +784,6 @@ private:
 
     // logging support
     void Write_GPS(uint8_t instance);
-
-#if AP_GPS_RTCM_DECODE_ENABLED
-    /*
-      per mavlink channel RTCM decoder, enabled with RTCM decode
-       option in GPS_DRV_OPTIONS
-    */
-    struct {
-        RTCM3_Parser *parsers[MAVLINK_COMM_NUM_BUFFERS];
-        uint32_t sent_crc[32];
-        uint8_t sent_idx;
-        uint16_t seen_mav_channels;
-    } rtcm;
-    bool parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt);
-#endif
 
 };
 

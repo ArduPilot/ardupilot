@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1

@@ -29,7 +29,7 @@
 #include "APM_Config.h"
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
-#include <AC_Avoidance/AC_Avoidance_config.h>
+
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -134,10 +134,6 @@
  # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
 
-#ifndef FS_EKF_FILT_DEFAULT
-# define FS_EKF_FILT_DEFAULT     5.0f    // frequency cutoff of EKF variance filters
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
 #ifndef AUTOTUNE_ENABLED
@@ -195,11 +191,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
-#if AP_FOLLOW_ENABLED && AP_AVOIDANCE_ENABLED
-#define MODE_FOLLOW_ENABLED ENABLED
-#else
-#define MODE_FOLLOW_ENABLED DISABLED
-#endif
+# define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -247,7 +239,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED HAL_LOGGING_ENABLED
+# define MODE_SYSTEMID_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -441,6 +433,10 @@
  # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
+#ifndef RTL_ABS_MIN_CLIMB
+ # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
+#endif
+
 #ifndef RTL_CONE_SLOPE_DEFAULT
  # define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
 #endif
@@ -537,6 +533,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // Logging control
 //
+#ifndef LOGGING_ENABLED
+ # define LOGGING_ENABLED                ENABLED
+#endif
 
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
@@ -561,8 +560,16 @@
 // Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
-#if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
-  #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
+#ifndef AC_AVOID_ENABLED
+ #define AC_AVOID_ENABLED   ENABLED
+#endif
+
+#ifndef AC_OAPATHPLANNER_ENABLED
+ #define AC_OAPATHPLANNER_ENABLED   ENABLED
+#endif
+
+#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
+  #error Follow Mode relies on AC_AVOID which is disabled
 #endif
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
@@ -615,6 +622,10 @@
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
   #error Toy mode is not available on Helicopters
+#endif
+
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
 #endif
 
 #ifndef OSD_ENABLED

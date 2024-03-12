@@ -44,6 +44,7 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
@@ -84,12 +85,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
-#include "AP_ExternalControl_Plane.h"
-#endif
-
-#include <AC_PrecLand/AC_PrecLand_config.h>
-#if AC_PRECLAND_ENABLED
- # include <AC_PrecLand/AC_PrecLand.h>
+#include <AP_ExternalControl/AP_ExternalControl.h>
 #endif
 
 #include "GCS_Mavlink.h"
@@ -171,10 +167,6 @@ public:
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
 
-#if AP_EXTERNAL_CONTROL_ENABLED
-    friend class AP_ExternalControl_Plane;
-#endif
-
     Plane(void);
 
 private:
@@ -197,9 +189,11 @@ private:
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
 
+    AP_Logger logger;
+
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
-    float pitch_limit_min;
+    int32_t pitch_limit_min_cd;
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
@@ -254,10 +248,6 @@ private:
 #if HAL_RALLY_ENABLED
     // Rally Points
     AP_Rally rally;
-#endif
-
-#if AC_PRECLAND_ENABLED
-    void precland_update(void);
 #endif
 
     // returns a Location for a rally point or home; if
@@ -786,9 +776,9 @@ private:
 
     AP_Param param_loader {var_info};
 
-    // external control library
+    // dummy implementation of external control
 #if AP_EXTERNAL_CONTROL_ENABLED
-    AP_ExternalControl_Plane external_control;
+    AP_ExternalControl external_control;
 #endif
 
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -891,16 +881,9 @@ private:
     int16_t calc_nav_yaw_course(void);
     int16_t calc_nav_yaw_ground(void);
 
-#if HAL_LOGGING_ENABLED
-
-    // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
-    const struct LogStructure *get_log_structures() const override {
-        return log_structure;
-    }
-    uint8_t get_num_log_structures() const override;
-
     // Log.cpp
+    uint32_t last_log_fast_ms;
+
     void Log_Write_FullRate(void);
     void Log_Write_Attitude(void);
     void Log_Write_Control_Tuning();
@@ -912,7 +895,6 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AETR();
     void log_init();
-#endif
 
     // Parameters.cpp
     void load_parameters(void) override;
@@ -1102,7 +1084,6 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
-    bool check_takeoff_timeout(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
@@ -1110,8 +1091,7 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
-    float apply_throttle_limits(float throttle_in);
-    void set_throttle(void);
+    void set_servos_controlled(void);
     void set_takeoff_expected(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
@@ -1123,6 +1103,7 @@ private:
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void force_flare();
+    void throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const;
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
     bool suppress_throttle(void);
@@ -1260,10 +1241,8 @@ public:
     void failsafe_check(void);
     bool is_landing() const override;
     bool is_taking_off() const override;
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
-    bool set_target_location(const Location& target_loc) override;
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
+    bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_velocity_match(const Vector2f &velocity) override;

@@ -63,7 +63,9 @@
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
-#define HAL_BinarySemaphore ChibiOS::BinarySemaphore
+
+#include <AP_HAL/EventHandle.h>
+#define HAL_EventHandle AP_HAL::EventHandle
 #endif
 
 /* string names for well known SPI devices */

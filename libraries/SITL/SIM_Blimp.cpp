@@ -106,7 +106,6 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
 
   Vector3f rot_T{0,0,0};
 
-#if HAL_LOGGING_ENABLED
   AP::logger().WriteStreaming("SFT", "TimeUS,f0,f1,f2,f3",
                               "Qffff",
                               AP_HAL::micros64(),
@@ -139,7 +138,6 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
                               "Qfff",
                               AP_HAL::micros64(),
                               rot_T.x, rot_T.y, rot_T.z);
-#endif  // HAL_LOGGING_ENABLED
 
 #if 0 //"Wobble" attempt
   rot_T.y = fin[0].Fz * radius + fin[1].Fz * radius;

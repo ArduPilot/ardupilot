@@ -1,7 +1,3 @@
-#include "AP_Compass_config.h"
-
-#if AP_COMPASS_ENABLED
-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
@@ -512,12 +508,12 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
 #endif
 
-    // @Param: DISBLMSK
+    // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
     // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
     // @User: Advanced
-    AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
+    AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
 
     // @Param: FLTR_RNG
     // @DisplayName: Range in which sample is accepted
@@ -731,7 +727,7 @@ void Compass::init()
 
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
-#if AP_CUSTOMROTATIONS_ENABLED
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
             continue;
@@ -751,7 +747,7 @@ void Compass::init()
         }
         break;
     }
-#endif  // AP_CUSTOMROTATIONS_ENABLED
+#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
@@ -2240,5 +2236,3 @@ Compass &compass()
 }
 
 }
-
-#endif  // AP_COMPASS_ENABLED

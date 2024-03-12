@@ -108,12 +108,11 @@ void AP_NMEA_Output::update()
 
     // not completely accurate, our time includes leap seconds and time_t should be without
     const time_t time_sec = time_usec / 1000000;
-    struct tm tmd {};
-    struct tm* tm = gmtime_r(&time_sec, &tmd);
+    struct tm* tm = gmtime(&time_sec);
 
     // format time string
-    char tstring[10];
-    hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%05.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    char tstring[11];
+    snprintf(tstring, sizeof(tstring), "%02u%02u%06.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
     Location loc;
     const auto &gps = AP::gps();
@@ -132,7 +131,7 @@ void AP_NMEA_Output::update()
     char lat_string[13];
     double deg = fabs(loc.lat * 1.0e-7f);
     double min_dec = ((fabs(loc.lat) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f;
-    hal.util->snprintf(lat_string,
+    snprintf(lat_string,
             sizeof(lat_string),
             "%02u%08.5f,%c",
             (unsigned) deg,
@@ -143,7 +142,7 @@ void AP_NMEA_Output::update()
     char lng_string[14];
     deg = fabs(loc.lng * 1.0e-7f);
     min_dec = ((fabs(loc.lng) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f; 
-    hal.util->snprintf(lng_string,
+    snprintf(lng_string,
             sizeof(lng_string),
             "%03u%08.5f,%c",
             (unsigned) deg,
@@ -209,7 +208,7 @@ void AP_NMEA_Output::update()
                                     lng_string,
                                     fix_quality,
                                     gps.num_sats(),
-                                    gps.get_hdop()*0.01,
+                                    gps.get_hdop(),
                                     loc.alt * 0.01f);
 
         space_required += gga_length;
@@ -220,7 +219,7 @@ void AP_NMEA_Output::update()
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::GPRMC)) != 0) {
         // format date string
         char dstring[7];
-        hal.util->snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
+        snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
         // get speed
 #if AP_AHRS_ENABLED

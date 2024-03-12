@@ -61,6 +61,9 @@ void Blimp::read_radio()
         set_throttle_and_failsafe(channel_up->get_radio_in());
         set_throttle_zero_flag(channel_up->get_control_in());
 
+        // RC receiver must be attached if we've just got input
+        ap.rc_receiver_present = true;
+
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(channel_up->get_control_in(), dt);
         last_radio_update_ms = tnow_ms;
@@ -84,13 +87,13 @@ void Blimp::read_radio()
         // throttle failsafe not enabled
         return;
     }
-    if (!rc().has_ever_seen_rc_input() && !motors->armed()) {
+    if (!ap.rc_receiver_present && !motors->armed()) {
         // we only failsafe if we are armed OR we have ever seen an RC receiver
         return;
     }
 
     // Nobody ever talks to us.  Log an error and enter failsafe.
-    LOGGER_WRITE_ERROR(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
+    AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
 }
 
@@ -106,7 +109,7 @@ void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(rc().has_ever_seen_rc_input() || motors->armed())) {
+        if (failsafe.radio || !(ap.rc_receiver_present || motors->armed())) {
             return;
         }
 

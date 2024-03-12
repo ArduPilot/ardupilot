@@ -32,10 +32,8 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_MCU_STATUS,
 #endif
     MSG_MEMINFO,
-#if AP_GPS_ENABLED
     MSG_GPS_RAW,
     MSG_GPS_RTK,
-#endif
 };
 
 static const ap_message STREAM_POSITION_msgs[] = {

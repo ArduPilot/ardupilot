@@ -19,6 +19,7 @@
 -- presses, I want the script to be responsive and start recording as
 -- soon as the vehicle arms, so there I use a shorter delay.
 
+-- luacheck: only 0
 
 
 -- constants
@@ -45,6 +46,7 @@ function update()
    local is_armed = arming:is_armed()
 
    local delay = DELAY_SHORT
+
    if is_armed ~= prev_armed then
       -- a state transition has occurred
       if is_armed then
@@ -55,6 +57,8 @@ function update()
          rc:run_aux_function(RC_OPTION.RunCamControl, AuxSwitchPos.LOW)
       end
       delay = DELAY_LONG
+   else
+      delay = DELAY_SHORT
    end
 
    prev_armed = is_armed

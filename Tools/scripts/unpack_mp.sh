@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # unpack latest MissionPlanner*.zip on firmware.ardupilot.org
 # to facilitate upgrade of existing MissionPlanner installs

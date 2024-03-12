@@ -14,10 +14,6 @@
  */
 #pragma once
 
-#include "AP_WindVane_config.h"
-
-#if AP_WINDVANE_AIRSPEED_ENABLED
-
 #include "AP_WindVane_Backend.h"
 
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -31,5 +27,3 @@ public:
     // update state
     void update_speed() override;
 };
-
-#endif  // AP_WINDVANE_AIRSPEED_ENABLED

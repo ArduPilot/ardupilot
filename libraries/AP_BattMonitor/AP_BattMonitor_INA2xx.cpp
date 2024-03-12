@@ -31,10 +31,8 @@ extern const AP_HAL::HAL& hal;
 #define REG_228_CURRENT       0x07
 #define REG_228_MANUFACT_ID   0x3e
 #define REG_228_DEVICE_ID     0x3f
-#define REG_228_DIETEMP       0x06
-#define INA_228_TEMP_C_LSB    7.8125e-3
 
-// INA237/INA238 specific registers
+// INA238 specific registers
 #define REG_238_CONFIG        0x00
 #define  REG_238_CONFIG_RESET   0x8000
 #define REG_238_ADC_CONFIG    0x01
@@ -43,8 +41,6 @@ extern const AP_HAL::HAL& hal;
 #define REG_238_CURRENT       0x07
 #define REG_238_MANUFACT_ID   0x3e
 #define REG_238_DEVICE_ID     0x3f
-#define REG_238_DIETEMP       0x06
-#define INA_238_TEMP_C_LSB    7.8125e-3 // need to mask bottom 4 bits
 
 #ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
 #define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
@@ -266,12 +262,10 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
 
     if (read_word16(REG_228_MANUFACT_ID, id) && id == 0x5449 &&
         read_word16(REG_228_DEVICE_ID, id) && (id&0xFFF0) == 0x2280) {
-        has_temp = true;
         return configure(DevType::INA228);
     }
     if (read_word16(REG_238_MANUFACT_ID, id) && id == 0x5449 &&
         read_word16(REG_238_DEVICE_ID, id) && (id&0xFFF0) == 0x2380) {
-        has_temp = true;
         return configure(DevType::INA238);
     }
     if (read_word16(REG_226_MANUFACT_ID, id) && id == 0x5449 &&
@@ -317,10 +311,8 @@ void AP_BattMonitor_INA2XX::timer(void)
 
     case DevType::INA228: {
         int32_t bus_voltage24, current24;
-        int16_t temp16;
         if (!read_word24(REG_228_VBUS, bus_voltage24) ||
-            !read_word24(REG_228_CURRENT, current24) ||
-            !read_word16(REG_228_DIETEMP, temp16)) {
+            !read_word24(REG_228_CURRENT, current24)) {
             failed_reads++;
             if (failed_reads > 10) {
                 // device has disconnected, we need to reconfigure it
@@ -330,15 +322,13 @@ void AP_BattMonitor_INA2XX::timer(void)
         }
         voltage = (bus_voltage24>>4) * voltage_LSB;
         current = (current24>>4) * current_LSB;
-        temperature = temp16 * INA_228_TEMP_C_LSB;
         break;
     }
 
     case DevType::INA238: {
-        int16_t bus_voltage16, current16, temp16;
+        int16_t bus_voltage16, current16;
         if (!read_word16(REG_238_VBUS, bus_voltage16) ||
-            !read_word16(REG_238_CURRENT, current16) ||
-            !read_word16(REG_238_DIETEMP, temp16)) {
+            !read_word16(REG_238_CURRENT, current16)) {
             failed_reads++;
             if (failed_reads > 10) {
                 // device has disconnected, we need to reconfigure it
@@ -348,7 +338,6 @@ void AP_BattMonitor_INA2XX::timer(void)
         }
         voltage = bus_voltage16 * voltage_LSB;
         current = current16 * current_LSB;
-        temperature = (temp16&0xFFF0) * INA_238_TEMP_C_LSB;
         break;
     }
     }
@@ -359,15 +348,6 @@ void AP_BattMonitor_INA2XX::timer(void)
     accumulate.volt_sum += voltage;
     accumulate.current_sum += current;
     accumulate.count++;
-}
-
-/*
-  get last temperature
- */
-bool AP_BattMonitor_INA2XX::get_temperature(float &temp) const
-{
-    temp = temperature;
-    return has_temp;
 }
 
 #endif // AP_BATTERY_INA2XX_ENABLED

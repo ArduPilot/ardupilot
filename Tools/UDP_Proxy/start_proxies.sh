@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # an example script that starts udpproxy for multiple ports under GNU
 # screen, allowing for unattended operation of the proxy for long
 # periods

@@ -61,9 +61,10 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
     } averageStruct;
 
     // read any available lines from the lidar
-    for (auto i=0; i<8192; i++) {
-        uint8_t b;
-        if (!uart->read(b)) {
+    int16_t nbytes = uart->available();
+    while (nbytes-- > 0) {
+        const int16_t b = uart->read();
+        if (b < 0) {
             break;
         }
         if (protocol.parse_byte(b) == PingProtocol::MessageId::DISTANCE_SIMPLE) {

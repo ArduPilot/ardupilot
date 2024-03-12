@@ -14,10 +14,6 @@
  */
 #pragma once
 
-#include "AP_RSSI_config.h"
-
-#if AP_RSSI_ENABLED
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -106,5 +102,3 @@ private:
 namespace AP {
     AP_RSSI *rssi();
 };
-
-#endif  // AP_RSSI_ENABLED

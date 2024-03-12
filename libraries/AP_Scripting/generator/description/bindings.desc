@@ -38,8 +38,6 @@ singleton AP_AHRS method get_gyro Vector3f
 singleton AP_AHRS method get_accel Vector3f
 singleton AP_AHRS method get_hagl boolean float'Null
 singleton AP_AHRS method wind_estimate Vector3f
-singleton AP_AHRS method wind_alignment float'skip_check float'skip_check
-singleton AP_AHRS method head_wind float'skip_check
 singleton AP_AHRS method groundspeed_vector Vector2f
 singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
@@ -65,7 +63,7 @@ singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 include AP_Arming/AP_Arming.h
 
 singleton AP_Arming rename arming
-singleton AP_Arming depends AP_ARMING_ENABLED
+singleton AP_Arming depends (!defined(HAL_BUILD_AP_PERIPH))
 singleton AP_Arming method disarm boolean AP_Arming::Method::SCRIPTING'literal
 singleton AP_Arming method is_armed boolean
 singleton AP_Arming method pre_arm_checks boolean false'literal
@@ -76,21 +74,8 @@ singleton AP_Arming method set_aux_auth_failed void uint8_t'skip_check string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
-include AP_BattMonitor/AP_BattMonitor_Scripting.h
-userdata BattMonitorScript_State depends AP_BATTERY_SCRIPTING_ENABLED
-userdata BattMonitorScript_State field healthy boolean write
-userdata BattMonitorScript_State field voltage float'skip_check write
-userdata BattMonitorScript_State field cell_count uint8_t'skip_check write
-userdata BattMonitorScript_State field capacity_remaining_pct uint8_t'skip_check write
-userdata BattMonitorScript_State field cell_voltages'array int(ARRAY_SIZE(ud->cell_voltages)) uint16_t'skip_check write
-userdata BattMonitorScript_State field cycle_count uint16_t'skip_check write
-userdata BattMonitorScript_State field current_amps float'skip_check write
-userdata BattMonitorScript_State field consumed_mah float'skip_check write
-userdata BattMonitorScript_State field consumed_wh float'skip_check write
-userdata BattMonitorScript_State field temperature float'skip_check write
-
 singleton AP_BattMonitor rename battery
-singleton AP_BattMonitor depends AP_BATTERY_ENABLED
+singleton AP_BattMonitor depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY))
 singleton AP_BattMonitor method num_instances uint8_t
 singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()
@@ -106,8 +91,6 @@ singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud-
 singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
 singleton AP_BattMonitor method reset_remaining boolean uint8_t 0 ud->num_instances() float 0 100
 singleton AP_BattMonitor method get_cell_voltage boolean uint8_t'skip_check uint8_t'skip_check float'Null
-singleton AP_BattMonitor method handle_scripting boolean uint8_t'skip_check BattMonitorScript_State
-singleton AP_BattMonitor method handle_scripting depends AP_BATTERY_SCRIPTING_ENABLED
 
 include AP_GPS/AP_GPS.h
 
@@ -192,10 +175,6 @@ singleton AP_Notify depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
-singleton AP_Notify method send_text_scripting void string uint8_t'skip_check
-singleton AP_Notify method send_text_scripting rename send_text
-singleton AP_Notify method release_text_scripting void uint8_t'skip_check
-singleton AP_Notify method release_text_scripting rename release_text
 
 include AP_Proximity/AP_Proximity.h
 include AP_Proximity/AP_Proximity_Backend.h
@@ -219,35 +198,18 @@ singleton AP_Proximity method get_backend AP_Proximity_Backend uint8_t'skip_chec
 include AP_RangeFinder/AP_RangeFinder.h
 include AP_RangeFinder/AP_RangeFinder_Backend.h
 
-userdata RangeFinder::RangeFinder_State depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
-userdata RangeFinder::RangeFinder_State rename RangeFinder_State
-userdata RangeFinder::RangeFinder_State field last_reading_ms uint32_t'skip_check read write
-userdata RangeFinder::RangeFinder_State field last_reading_ms rename last_reading
-userdata RangeFinder::RangeFinder_State field status RangeFinder::Status'enum read write RangeFinder::Status::NotConnected RangeFinder::Status::Good
-userdata RangeFinder::RangeFinder_State field range_valid_count uint8_t'skip_check read write
-userdata RangeFinder::RangeFinder_State field distance_m float'skip_check read write
-userdata RangeFinder::RangeFinder_State field distance_m rename distance
-userdata RangeFinder::RangeFinder_State field signal_quality_pct int8_t'skip_check read write
-userdata RangeFinder::RangeFinder_State field signal_quality_pct rename signal_quality
-userdata RangeFinder::RangeFinder_State field voltage_mv uint16_t'skip_check read write
-userdata RangeFinder::RangeFinder_State field voltage_mv rename voltage
-
 ap_object AP_RangeFinder_Backend depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
 ap_object AP_RangeFinder_Backend method distance float
-ap_object AP_RangeFinder_Backend method signal_quality_pct float
-ap_object AP_RangeFinder_Backend method signal_quality_pct rename signal_quality
 ap_object AP_RangeFinder_Backend method orientation Rotation'enum
 ap_object AP_RangeFinder_Backend method type uint8_t
 ap_object AP_RangeFinder_Backend method status uint8_t
-ap_object AP_RangeFinder_Backend manual handle_script_msg lua_range_finder_handle_script_msg 1
-ap_object AP_RangeFinder_Backend method get_state void RangeFinder::RangeFinder_State'Ref
+ap_object AP_RangeFinder_Backend method handle_script_msg boolean float'skip_check
 
 singleton RangeFinder depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
 singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
-singleton RangeFinder method signal_quality_pct_orient int8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method max_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method min_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
@@ -392,9 +354,9 @@ singleton RC_Channels method get_aux_cached boolean RC_Channel::AUX_FUNC'enum 0 
 
 include AP_SerialManager/AP_SerialManager.h
 
+ap_object AP_HAL::UARTDriver depends HAL_GCS_ENABLED
 ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
 ap_object AP_HAL::UARTDriver method read int16_t
-ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1
 ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
 ap_object AP_HAL::UARTDriver method available uint32_t
 ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
@@ -489,8 +451,6 @@ singleton AP_Mission method cmd_has_location boolean uint16_t'skip_check
 singleton AP_Mission method jump_to_tag boolean uint16_t 0 UINT16_MAX
 singleton AP_Mission method get_index_of_jump_tag uint16_t uint16_t 0 UINT16_MAX
 singleton AP_Mission method get_last_jump_tag boolean uint16_t'Null uint16_t'Null
-singleton AP_Mission method jump_to_landing_sequence boolean
-singleton AP_Mission method jump_to_abort_landing_sequence boolean
 
 
 userdata mavlink_mission_item_int_t depends AP_MISSION_ENABLED
@@ -539,9 +499,6 @@ singleton Sub rename sub
 singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
 singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
 singleton Sub method is_button_pressed boolean uint8_t 1 4
-singleton Sub method rangefinder_alt_ok boolean
-singleton Sub method get_rangefinder_target_cm float
-singleton Sub method set_rangefinder_target_cm boolean float'skip_check
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -579,23 +536,6 @@ ap_object AP_HAL::I2CDevice method write_register boolean uint8_t'skip_check uin
 ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
 ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
-include AP_HAL/utility/Socket.h depends (AP_NETWORKING_ENABLED==1)
-global manual Socket lua_get_SocketAPM 1 depends (AP_NETWORKING_ENABLED==1)
-
-ap_object SocketAPM depends (AP_NETWORKING_ENABLED==1)
-ap_object SocketAPM method connect boolean string uint16_t'skip_check
-ap_object SocketAPM method bind boolean string uint16_t'skip_check
-ap_object SocketAPM method send int32_t string uint32_t'skip_check
-ap_object SocketAPM method listen boolean uint8_t'skip_check
-ap_object SocketAPM method set_blocking boolean boolean
-ap_object SocketAPM method is_connected boolean
-ap_object SocketAPM method pollout boolean uint32_t'skip_check
-ap_object SocketAPM method pollin boolean uint32_t'skip_check
-ap_object SocketAPM method reuseaddress boolean
-ap_object SocketAPM manual sendfile SocketAPM_sendfile 1
-ap_object SocketAPM manual close SocketAPM_close 0
-ap_object SocketAPM manual recv SocketAPM_recv 1
-ap_object SocketAPM manual accept SocketAPM_accept 1
 
 ap_object AP_HAL::AnalogSource depends !defined(HAL_DISABLE_ADC_DRIVER)
 ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t'skip_check
@@ -640,12 +580,7 @@ singleton AP_InertialSensor depends AP_INERTIALSENSOR_ENABLED
 singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 singleton AP_InertialSensor method get_gyro_health boolean uint8_t'skip_check
-singleton AP_InertialSensor method accels_consistent boolean float'skip_check
 singleton AP_InertialSensor method get_accel_health boolean uint8_t'skip_check
-singleton AP_InertialSensor method calibrating boolean
-singleton AP_InertialSensor method get_gyro Vector3f uint8_t'skip_check
-singleton AP_InertialSensor method get_accel Vector3f uint8_t'skip_check
-singleton AP_InertialSensor method gyros_consistent boolean uint8_t'skip_check
 
 singleton CAN manual get_device lua_get_CAN_device 1
 singleton CAN manual get_device2 lua_get_CAN_device2 1
@@ -667,7 +602,7 @@ userdata AP_HAL::CANFrame method isErrorFrame boolean
 ap_object ScriptingCANBuffer depends AP_SCRIPTING_CAN_SENSOR_ENABLED
 ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t'skip_check
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
-ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
+
 
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
@@ -675,7 +610,6 @@ singleton AP_Periph_FW rename periph
 singleton AP_Periph_FW method get_yaw_earth float
 singleton AP_Periph_FW method get_vehicle_state uint32_t
 singleton AP_Periph_FW method can_printf void "%s"'literal string
-singleton AP_Periph_FW method reboot void boolean
 
 include AP_Motors/AP_Motors_Class.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -718,15 +652,6 @@ singleton AP_Follow method get_last_update_ms uint32_t
 singleton AP_Follow method get_target_location_and_velocity boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
-
-include AC_PrecLand/AC_PrecLand.h
-singleton AC_PrecLand depends AC_PRECLAND_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
-singleton AC_PrecLand rename precland
-singleton AC_PrecLand method healthy boolean
-singleton AC_PrecLand method target_acquired boolean
-singleton AC_PrecLand method get_last_valid_target_ms uint32_t
-singleton AC_PrecLand method get_target_velocity boolean Vector2f'Null
-singleton AC_PrecLand method get_target_location boolean Location'Null
 
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -789,7 +714,7 @@ singleton AP_IOMCU method healthy boolean
 
 include AP_Compass/AP_Compass.h
 singleton Compass rename compass
-singleton Compass depends AP_COMPASS_ENABLED
+singleton Compass depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_MAG))
 singleton Compass method healthy boolean uint8_t'skip_check
 
 -- ----EFI Library----
@@ -889,44 +814,3 @@ singleton AC_Fence depends AP_FENCE_ENABLED
 singleton AC_Fence rename fence
 singleton AC_Fence method get_breaches uint8_t
 singleton AC_Fence method get_breach_time uint32_t
-
-include AP_Filesystem/AP_Filesystem.h depends AP_FILESYSTEM_FILE_READING_ENABLED
-include AP_Filesystem/AP_Filesystem_config.h
-userdata AP_Filesystem::stat_t depends AP_FILESYSTEM_FILE_READING_ENABLED
-userdata AP_Filesystem::stat_t rename stat_t
-userdata AP_Filesystem::stat_t field size uint32_t read
-userdata AP_Filesystem::stat_t field mode int32_t read
-userdata AP_Filesystem::stat_t field mtime uint32_t read
-userdata AP_Filesystem::stat_t field atime uint32_t read
-userdata AP_Filesystem::stat_t field ctime uint32_t read
-userdata AP_Filesystem::stat_t method is_directory boolean
-
-singleton AP_Filesystem rename fs
-singleton AP_Filesystem method stat boolean string AP_Filesystem::stat_t'Null
-singleton AP_Filesystem method format boolean
-singleton AP_Filesystem method format depends AP_FILESYSTEM_FORMAT_ENABLED
-singleton AP_Filesystem method get_format_status uint8_t'skip_check
-singleton AP_Filesystem method get_format_status depends AP_FILESYSTEM_FORMAT_ENABLED
-singleton AP_Filesystem method crc32 boolean string uint32_t'Null
-
-include AP_RTC/AP_RTC.h depends AP_RTC_ENABLED
-include AP_RTC/AP_RTC_config.h
-singleton AP_RTC depends AP_RTC_ENABLED
-singleton AP_RTC rename rtc
-singleton AP_RTC method clock_s_to_date_fields boolean uint32_t'skip_check uint16_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null uint8_t'Null
-singleton AP_RTC method date_fields_to_clock_s uint32_t uint16_t'skip_check int8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
-
-include AP_Networking/AP_Networking.h depends AP_NETWORKING_ENABLED
-include AP_Networking/AP_Networking_Config.h
-singleton AP_Networking depends AP_NETWORKING_ENABLED
-singleton AP_Networking rename networking
-singleton AP_Networking method get_ip_active uint32_t
-singleton AP_Networking method get_netmask_active uint32_t
-singleton AP_Networking method get_gateway_active uint32_t
-singleton AP_Networking method address_to_str string uint32_t'skip_check
-
-include AP_VisualOdom/AP_VisualOdom.h
-singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
-singleton AP_VisualOdom rename visual_odom
-singleton AP_VisualOdom method healthy boolean
-singleton AP_VisualOdom method quality int8_t

@@ -1,11 +1,7 @@
 #pragma once
 
-#include <AP_HAL/utility/Socket_native.h>
 #include "SerialDevice.h"
-
-#ifndef AP_SOCKET_NATIVE_ENABLED
-#error "need native"
-#endif
+#include <AP_HAL/utility/Socket.h>
 
 class TCPServerDevice: public SerialDevice {
 public:
@@ -20,8 +16,8 @@ public:
     virtual ssize_t read(uint8_t *buf, uint16_t n) override;
 
 private:
-    SocketAPM_native listener{false};
-    SocketAPM_native *sock = nullptr;
+    SocketAPM listener{false};
+    SocketAPM *sock = nullptr;
     const char *_ip;
     uint16_t _port;
     bool _wait;

@@ -4,7 +4,8 @@
 
 void SITL::InvensenseV3::update(const class Aircraft &aircraft)
 {
-    ASSERT_STORAGE_SIZE(FIFOData, 16);
+    assert_storage_size<FIFOData, 16> _assert_fifo_size;
+    (void)_assert_fifo_size;
 
     const SIM *sitl = AP::sitl();
     const int16_t xAccel = sitl->state.xAccel / accel_scale();

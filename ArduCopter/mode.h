@@ -128,10 +128,6 @@ public:
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
 
-#if FRAME_CONFIG == HELI_FRAME
-    virtual bool allows_inverted() const { return false; };
-#endif
-
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
@@ -245,7 +241,7 @@ protected:
     AC_PosControl *&pos_control;
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
-    AC_AttitudeControl *&attitude_control;
+    AC_AttitudeControl_t *&attitude_control;
     MOTOR_CLASS *&motors;
     RC_Channel *&channel_roll;
     RC_Channel *&channel_pitch;
@@ -683,7 +679,6 @@ private:
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
 
-    // Land within Auto state
     enum class State {
         FlyToLocation = 0,
         Descending = 1
@@ -718,13 +713,6 @@ private:
         float climb_rate;   // climb rate in m/s. provided by mission command
         uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
-
-    // desired speeds
-    struct {
-        float xy;     // desired speed horizontally in m/s. 0 if unset
-        float up;     // desired speed upwards in m/s. 0 if unset
-        float down;   // desired speed downwards in m/s. 0 if unset
-    } desired_speed_override;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -747,9 +735,7 @@ protected:
     float get_pilot_desired_climb_rate_cms(void) const override;
     void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
     void init_z_limits() override;
-#if HAL_LOGGING_ENABLED
     void log_pids() override;
-#endif
 };
 
 class ModeAutoTune : public Mode {
@@ -1578,8 +1564,6 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool allows_inverted() const override { return true; };
-
 protected:
 
 private:
@@ -1774,7 +1758,7 @@ private:
 
 };
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if AP_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
 
 public:

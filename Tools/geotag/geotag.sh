@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Advanced geotagging tool by André Kjellstrup
 ######################################################################  VARIABLES ########################

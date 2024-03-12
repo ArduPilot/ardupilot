@@ -14,8 +14,6 @@
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
 
-#include <SITL/SITL.h>
-
 extern const AP_HAL::HAL& hal;
 
 #define TELEM_HEADER 0x9B

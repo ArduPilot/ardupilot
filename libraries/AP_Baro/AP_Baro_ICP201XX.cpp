@@ -106,7 +106,6 @@ bool AP_Baro_ICP201XX::init()
     uint8_t id = 0xFF;
     uint8_t ver = 0xFF;
     read_reg(REG_DEVICE_ID, &id);
-    read_reg(REG_DEVICE_ID, &id);
     read_reg(REG_VERSION, &ver);
 
     if (id != ICP201XX_ID) {

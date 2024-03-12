@@ -36,11 +36,9 @@ public:
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 
 #if AP_SCRIPTING_ENABLED
-    void get_state(RangeFinder::RangeFinder_State &state_arg);
-
-    // Returns false if scripting backing hasn't been setup.
-    virtual bool handle_script_msg(float dist_m) { return false; } // legacy interface
-    virtual bool handle_script_msg(const RangeFinder::RangeFinder_State &state_arg) { return false; }
+    // Returns false if scripting backing hasn't been setup
+    // Get distance from lua script
+    virtual bool handle_script_msg(float dist_m) { return false; }
 #endif
 
 #if HAL_MSP_RANGEFINDER_ENABLED
@@ -82,12 +80,10 @@ public:
 protected:
 
     // update status based on distance measurement
-    void update_status(RangeFinder::RangeFinder_State &state_arg) const;
-    void update_status() { update_status(state); }
+    void update_status();
 
     // set status and update valid_count
-    static void set_status(RangeFinder::RangeFinder_State &state_arg, RangeFinder::Status status);
-    void set_status(RangeFinder::Status status) { set_status(state, status); }
+    void set_status(RangeFinder::Status status);
 
     RangeFinder::RangeFinder_State &state;
     AP_RangeFinder_Params &params;

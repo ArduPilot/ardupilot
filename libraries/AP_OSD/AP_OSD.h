@@ -329,18 +329,6 @@ class AP_OSD_ParamSetting
 {
 public:
 
-    enum class Type : uint8_t {
-        NONE = 0,
-        SERIAL_PROTOCOL    =  1,
-        SERVO_FUNCTION     =  2,
-        AUX_FUNCTION       =  3,
-        FLIGHT_MODE        =  4,
-        FAILSAFE_ACTION    =  5,
-        FAILSAFE_ACTION_1  =  6,
-        FAILSAFE_ACTION_2  =  7,
-        NUM_TYPES          =  8,
-    };
-
     AP_Int8 enabled;
     AP_Int8 xpos;
     AP_Int8 ypos;
@@ -353,7 +341,7 @@ public:
     AP_Float _param_min;
     AP_Float _param_max;
     AP_Float _param_incr;
-    AP_Enum<Type> _type;
+    AP_Int8 _type;
 
     // parameter number
     uint8_t _param_number;
@@ -369,12 +357,11 @@ public:
         uint8_t values_max;
         const char** values;
     };
-
     // compact structure used to hold default values for static initialization
     struct Initializer {
         uint8_t index;
         AP_Param::ParamToken token;
-        Type type;
+        int8_t type;
     };
 
     static const ParamMetadata _param_metadata[];

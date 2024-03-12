@@ -14,10 +14,6 @@
  */
 #pragma once
 
-#include "AP_WindVane_config.h"
-
-#if AP_WINDVANE_SIM_ENABLED
-
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_SITL : public AP_WindVane_Backend
@@ -28,8 +24,8 @@ public:
     using AP_WindVane_Backend::AP_WindVane_Backend;
 
     // update state
-    void update_direction() override;
-    void update_speed() override;
+    #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        void update_direction() override;
+        void update_speed() override;
+    #endif
 };
-
-#endif  // AP_WINDVANE_SIM_ENABLED

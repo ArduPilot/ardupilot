@@ -55,10 +55,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include "AP_GPS_FixType.h"
 
-#if AP_GPS_RTCM_DECODE_ENABLED
-#include "RTCM3_Parser.h"
-#endif
-
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
@@ -162,7 +158,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("_AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
 
-    // 4 was _MIN_GPS, removed Feb 2024
+    // @Param: _MIN_DGPS
+    // @DisplayName: Minimum Lock Type Accepted for DGPS
+    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
+    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("_MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
 
     // @Param: _SBAS_MODE
     // @DisplayName: SBAS Mode
@@ -345,7 +347,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -613,10 +615,8 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
  */
 void AP_GPS::send_blob_start(uint8_t instance)
 {
-    const auto type = _type[instance];
-
 #if AP_GPS_UBLOX_ENABLED
-    if (type == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
+    if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -624,8 +624,8 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #endif // AP_GPS_UBLOX_ENABLED
 
 #if GPS_MOVING_BASELINE && AP_GPS_UBLOX_ENABLED
-    if ((type == GPS_TYPE_UBLOX_RTK_BASE ||
-         type == GPS_TYPE_UBLOX_RTK_ROVER) &&
+    if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+         _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
         !option_set(DriverOptions::UBX_MBUseUart2)) {
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
@@ -640,7 +640,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
     // the following devices don't have init blobs:
     const char *blob = nullptr;
     uint32_t blob_size = 0;
-    switch (type) {
+    switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     case GPS_TYPE_SBF:
     case GPS_TYPE_SBF_DUAL_ANTENNA:
@@ -725,9 +725,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 {
     struct detect_state *dstate = &detect_state[instance];
 
-    const auto type = _type[instance];
-
-    switch (type) {
+    switch (_type[instance]) {
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
@@ -778,23 +776,19 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         // try the next baud rate
         // incrementing like this will skip the first element in array of bauds
         // this is okay, and relied upon
-        if (dstate->probe_baud == 0) {
-            dstate->probe_baud = _port[instance]->get_baud_rate();
-        } else {
-            dstate->current_baud++;
-            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-                dstate->current_baud = 0;
-            }
-            dstate->probe_baud = _baudrates[dstate->current_baud];
+        dstate->current_baud++;
+        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+            dstate->current_baud = 0;
         }
+        uint32_t baudrate = _baudrates[dstate->current_baud];
         uint16_t rx_size=0, tx_size=0;
-        if (type == GPS_TYPE_UBLOX_RTK_ROVER) {
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
             tx_size = 2048;
         }
-        if (type == GPS_TYPE_UBLOX_RTK_BASE) {
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        _port[instance]->begin(dstate->probe_baud, rx_size, tx_size);
+        _port[instance]->begin(baudrate, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
@@ -807,7 +801,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         send_blob_update(instance);
     }
 
-    switch (type) {
+    switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
@@ -840,8 +834,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
-        if ((type == GPS_TYPE_AUTO ||
-             type == GPS_TYPE_UBLOX) &&
+        if ((_type[instance] == GPS_TYPE_AUTO ||
+             _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
              (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
@@ -850,12 +844,12 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 
         const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
-        if ((type == GPS_TYPE_UBLOX_RTK_BASE ||
-             type == GPS_TYPE_UBLOX_RTK_ROVER) &&
+        if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+             _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
             _baudrates[dstate->current_baud] == ublox_mb_required_baud &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             GPS_Role role;
-            if (type == GPS_TYPE_UBLOX_RTK_BASE) {
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
                 role = GPS_ROLE_MB_BASE;
             } else {
                 role = GPS_ROLE_MB_ROVER;
@@ -864,37 +858,37 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
-        if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
+        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             return new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
 #if AP_GPS_SBP_ENABLED
-        if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
+        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             return new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
-        if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SIRF) &&
+        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
             return new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
-        if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_ERB) &&
+        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             return new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
 #endif // AP_GPS_ERB_ENABLED
 #if AP_GPS_NMEA_ENABLED
-        if ((type == GPS_TYPE_NMEA ||
-                    type == GPS_TYPE_HEMI ||
+        if ((_type[instance] == GPS_TYPE_NMEA ||
+                    _type[instance] == GPS_TYPE_HEMI ||
 #if AP_GPS_NMEA_UNICORE_ENABLED
-                    type == GPS_TYPE_UNICORE_NMEA ||
-                    type == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
+                    _type[instance] == GPS_TYPE_UNICORE_NMEA ||
+                    _type[instance] == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
 #endif
-                    type == GPS_TYPE_ALLYSTAR) &&
+                    _type[instance] == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             return new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
@@ -937,12 +931,11 @@ bool AP_GPS::should_log() const
  */
 void AP_GPS::update_instance(uint8_t instance)
 {
-    const auto type = _type[instance];
-    if (type == GPS_TYPE_HIL) {
+    if (_type[instance] == GPS_TYPE_HIL) {
         // in HIL, leave info alone
         return;
     }
-    if (type == GPS_TYPE_NONE) {
+    if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
         state[instance].hdop = GPS_UNKNOWN_DOP;
@@ -982,10 +975,10 @@ void AP_GPS::update_instance(uint8_t instance)
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
             // do not try to detect again if type is MAV or UAVCAN
-            if (type == GPS_TYPE_MAV ||
-                type == GPS_TYPE_UAVCAN ||
-                type == GPS_TYPE_UAVCAN_RTK_BASE ||
-                type == GPS_TYPE_UAVCAN_RTK_ROVER) {
+            if (_type[instance] == GPS_TYPE_MAV ||
+                _type[instance] == GPS_TYPE_UAVCAN ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER) {
                 state[instance].status = NO_FIX;
             } else {
                 // free the driver before we run the next detection, so we
@@ -1006,13 +999,6 @@ void AP_GPS::update_instance(uint8_t instance)
             tnow = state[instance].last_corrected_gps_time_us/1000U;
             state[instance].corrected_timestamp_updated = false;
         }
-
-        // announce the GPS type once
-        if (!state[instance].announced_detection) {
-            state[instance].announced_detection = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
-        }
-
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
@@ -1025,7 +1011,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
 #if GPS_MAX_RECEIVERS > 1
-    if (drivers[instance] && type == GPS_TYPE_UBLOX_RTK_BASE) {
+    if (drivers[instance] && _type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
         // see if a moving baseline base has some RTCMv3 data
         // which we need to pass along to the rover
         const uint8_t *rtcm_data;
@@ -1182,7 +1168,10 @@ void AP_GPS::update_primary(void)
       significant lagged and gives no more information on position or
       velocity
     */
-    const bool using_moving_base = (is_rtk_base(_type[0]) || is_rtk_base(_type[1]));
+    const bool using_moving_base = (_type[0] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[0] == GPS_TYPE_UBLOX_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                                    _type[1] == GPS_TYPE_UBLOX_RTK_BASE);
     if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
@@ -1234,8 +1223,8 @@ void AP_GPS::update_primary(void)
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (is_rtk_base(_type[i]) &&
-            is_rtk_rover(_type[i^1]) &&
+        if (((_type[i] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[i] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
+            ((_type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i^1] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
             ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
@@ -1344,12 +1333,12 @@ void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 /*
   pass along a mavlink message (for MAV type)
  */
-void AP_GPS::handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg)
+void AP_GPS::handle_msg(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         // pass data to de-fragmenter
-        handle_gps_rtcm_data(chan, msg);
+        handle_gps_rtcm_data(msg);
         break;
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg);
@@ -1393,7 +1382,7 @@ bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 
 void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
 {
-    if (get_type(instance) == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+    if (_type[instance] == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
         drivers[instance]->handle_external(pkt);
     }
 }
@@ -1423,7 +1412,7 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (is_rtk_rover(i)) {
+            if ((_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i] == GPS_TYPE_UAVCAN_RTK_ROVER)) {
                 // we don't externally inject to moving baseline rover
                 continue;
             }
@@ -1643,7 +1632,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         rtcm_buffer->fragment_count = 0;
-        rtcm_stats.fragments_discarded += __builtin_popcount(rtcm_buffer->fragments_received);
+        rtcm_stats.fragments_discarded += rtcm_buffer->fragments_received;
         rtcm_buffer->fragments_received = 0;
     }
 
@@ -1672,7 +1661,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     if (rtcm_buffer->fragment_count != 0 &&
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
-        rtcm_stats.fragments_used += __builtin_popcount(rtcm_buffer->fragments_received);
+        rtcm_stats.fragments_used += rtcm_buffer->fragments_received;
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
         rtcm_buffer->fragment_count = 0;
         rtcm_buffer->fragments_received = 0;
@@ -1682,7 +1671,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
 /*
    re-assemble GPS_RTCM_DATA message
  */
-void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg)
+void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t &msg)
 {
     mavlink_gps_rtcm_data_t packet;
     mavlink_msg_gps_rtcm_data_decode(&msg, &packet);
@@ -1692,88 +1681,8 @@ void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_
         return;
     }
 
-#if AP_GPS_RTCM_DECODE_ENABLED
-    if (!option_set(DriverOptions::DisableRTCMDecode)) {
-        const uint16_t mask = (1U << unsigned(chan));
-        rtcm.seen_mav_channels |= mask;
-        if (option_set(DriverOptions::AlwaysRTCMDecode) ||
-            (rtcm.seen_mav_channels & ~mask) != 0) {
-            /*
-              we are seeing RTCM on multiple mavlink channels. We will run
-              the data through a full per-channel RTCM decoder
-            */
-            if (parse_rtcm_injection(chan, packet)) {
-                return;
-            }
-        }
-    }
-#endif
-
     handle_gps_rtcm_fragment(packet.flags, packet.data, packet.len);
 }
-
-#if AP_GPS_RTCM_DECODE_ENABLED
-/*
-  fully parse RTCM data coming in from a MAVLink channel, when we have
-  a full message inject it to the GPS. This approach allows for 2 or
-  more MAVLink channels to be used for the same RTCM data, allowing
-  for redundent transports for maximum reliability at the cost of some
-  extra CPU and a bit of re-assembly lag
- */
-bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt)
-{
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
-        return false;
-    }
-    if (rtcm.parsers[chan] == nullptr) {
-        rtcm.parsers[chan] = new RTCM3_Parser();
-        if (rtcm.parsers[chan] == nullptr) {
-            return false;
-        }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS: RTCM parsing for chan %u", unsigned(chan));
-    }
-    for (uint16_t i=0; i<pkt.len; i++) {
-        if (rtcm.parsers[chan]->read(pkt.data[i])) {
-            // we have a full message, inject it
-            const uint8_t *buf = nullptr;
-            uint16_t len = rtcm.parsers[chan]->get_len(buf);
-
-            // see if we have already sent it. This prevents
-            // duplicates from multiple sources
-            const uint32_t crc = crc_crc32(0, buf, len);
-
-#if HAL_LOGGING_ENABLED
-            AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
-                                        AP_HAL::micros64(),
-                                        uint8_t(chan),
-                                        rtcm.parsers[chan]->get_id(),
-                                        len,
-                                        crc);
-#endif
-            
-            bool already_seen = false;
-            for (uint8_t c=0; c<ARRAY_SIZE(rtcm.sent_crc); c++) {
-                if (rtcm.sent_crc[c] == crc) {
-                    // we have already sent this message
-                    already_seen = true;
-                    break;
-                }
-            }
-            if (already_seen) {
-                continue;
-            }
-            rtcm.sent_crc[rtcm.sent_idx] = crc;
-            rtcm.sent_idx = (rtcm.sent_idx+1) % ARRAY_SIZE(rtcm.sent_crc);
-
-            if (buf != nullptr && len > 0) {
-                inject_data(buf, len);
-            }
-            rtcm.parsers[chan]->reset();
-        }
-    }
-    return true;
-}
-#endif // AP_GPS_RTCM_DECODE_ENABLED
 
 void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
@@ -1815,12 +1724,11 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         return true;
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
         // no GPS was detected in this instance so return the worst possible lag term
-        const auto type = _type[instance];
-        if (type == GPS_TYPE_NONE) {
+        if (_type[instance] == GPS_TYPE_NONE) {
             lag_sec = 0.0f;
             return true;
         }
-        return type == GPS_TYPE_AUTO;
+        return _type[instance] == GPS_TYPE_AUTO;
     } else {
         // the user has not specified a delay so we determine it from the GPS type
         return drivers[instance]->get_lag(lag_sec);
@@ -2251,7 +2159,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       fact that the rate of yaw data is not critical
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = is_rtk_rover(instance) ? 333 : 215;
+    const float delay_avg_max = ((_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER))?333:215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
@@ -2284,16 +2192,16 @@ bool AP_GPS::prepare_for_arming(void) {
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
 #if AP_GPS_DRONECAN_ENABLED
-        const auto type = _type[i];
-        if (type == GPS_TYPE_UAVCAN ||
-            type == GPS_TYPE_UAVCAN_RTK_BASE ||
-            type == GPS_TYPE_UAVCAN_RTK_ROVER) {
+        if (_type[i] == GPS_TYPE_UAVCAN ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_BASE ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
             if (!AP_GPS_DroneCAN::backends_healthy(failure_msg, failure_msg_len)) {
                 return false;
             }
         }
 #endif
-        if (is_rtk_rover(i)) {
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
                 return false;
@@ -2346,7 +2254,6 @@ bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
     return true;
 }
 
-#if HAL_LOGGING_ENABLED
 // Logging support:
 // Write an GPS packet
 void AP_GPS::Write_GPS(uint8_t i)
@@ -2403,31 +2310,6 @@ void AP_GPS::Write_GPS(uint8_t i)
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
-#endif
-
-bool AP_GPS::is_rtk_base(uint8_t instance) const
-{
-    switch (get_type(instance)) {
-    case GPS_TYPE_UBLOX_RTK_BASE:
-    case GPS_TYPE_UAVCAN_RTK_BASE:
-        return true;
-    default:
-        break;
-    }
-    return false;
-}
-
-bool AP_GPS::is_rtk_rover(uint8_t instance) const
-{
-    switch (get_type(instance)) {
-    case GPS_TYPE_UBLOX_RTK_ROVER:
-    case GPS_TYPE_UAVCAN_RTK_ROVER:
-        return true;
-    default:
-        break;
-    }
-    return false;
-}
 
 /*
   get GPS based yaw
@@ -2435,7 +2317,9 @@ bool AP_GPS::is_rtk_rover(uint8_t instance) const
 bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
 {
 #if GPS_MAX_RECEIVERS > 1
-    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
+    if (instance < GPS_MAX_RECEIVERS &&
+        ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
+        ((_type[instance^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance^1] == GPS_TYPE_UAVCAN_RTK_ROVER))) {
         // return the yaw from the rover
         instance ^= 1;
     }

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 usage() {
     cat >&$1 <<EOF

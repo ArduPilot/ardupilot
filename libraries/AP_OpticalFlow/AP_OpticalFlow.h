@@ -79,10 +79,10 @@ public:
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }
 
-    // flowRate - returns the raw movement from the sensor in rad/s
+    // raw - returns the raw movement from the sensor
     const Vector2f& flowRate() const { return _state.flowRate; }
 
-    // bodyRate - returns the IMU-adjusted movement in rad/s
+    // velocity - returns the velocity in m/s
     const Vector2f& bodyRate() const { return _state.bodyRate; }
 
     // last_update() - returns system time of last sensor update

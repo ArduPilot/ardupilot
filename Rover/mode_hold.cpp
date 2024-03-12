@@ -10,7 +10,8 @@ void ModeHold::update()
     }
 
     // relax mainsail
-    g2.sailboat.relax_sails();
+    g2.motors.set_mainsail(100.0f);
+    g2.motors.set_wingsail(0.0f);
 
     // hold position - stop motors and center steering
     g2.motors.set_throttle(throttle);

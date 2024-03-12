@@ -4,7 +4,7 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_REGISTER_PORT_ENABLED
+#if AP_NETWORKING_ENABLED
 
 #include "AP_Networking.h"
 #include <AP_HAL/utility/Socket.h>
@@ -31,23 +31,21 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Port type
-    // @Description: Port type for network serial port. For the two client types a valid destination IP address must be set. For the two server types either 0.0.0.0 or a local address can be used. The UDP client type will use broadcast if the IP is set to 255.255.255.255 and will use UDP multicast if the IP is in the multicast address range.
-    // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
+    // @Description: Port type for network serial port. For the two client types a valid destination IP address must be set. For the two server types either 0.0.0.0 or a local address can be used.
+    // @Values: 0:Disabled, 1:UDP client, 2:TCP client, 3:TCP server
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PROTOCOL
-    // @DisplayName: Protocol
-    // @Description: Networked serial port protocol
+    // @DisplayName: protocol
+    // @Description: protocol
     // @User: Advanced
-    // @RebootRequired: True
-    // @CopyFieldsFrom: SERIAL1_PROTOCOL
+    // @CopyFieldsFrom: SERIAL0_PROTOCOL
     AP_GROUPINFO("PROTOCOL", 2,  AP_Networking::Port, state.protocol, 0),
 
     // @Group: IP
     // @Path: AP_Networking_address.cpp
-    // @RebootRequired : True
     AP_SUBGROUPINFO(ip, "IP", 3,  AP_Networking::Port, AP_Networking_IPV4),
 
     // @Param: PORT
@@ -173,11 +171,22 @@ void AP_Networking::Port::tcp_client_init(void)
 }
 
 /*
+  wait for networking stack to be up
+ */
+void AP_Networking::Port::wait_startup(void)
+{
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay(100);
+    }
+    hal.scheduler->delay(1000);
+}
+
+/*
   update a UDP client
  */
 void AP_Networking::Port::udp_client_loop(void)
 {
-    AP::network().startup_wait();
+    wait_startup();
 
     const char *dest = ip.get_str();
     if (!sock->connect(dest, port.get())) {
@@ -205,7 +214,7 @@ void AP_Networking::Port::udp_client_loop(void)
  */
 void AP_Networking::Port::udp_server_loop(void)
 {
-    AP::network().startup_wait();
+    wait_startup();
 
     const char *addr = ip.get_str();
     if (!sock->bind(addr, port.get())) {
@@ -232,7 +241,7 @@ void AP_Networking::Port::udp_server_loop(void)
  */
 void AP_Networking::Port::tcp_server_loop(void)
 {
-    AP::network().startup_wait();
+    wait_startup();
 
     const char *addr = ip.get_str();
     if (!listen_sock->bind(addr, port.get()) || !listen_sock->listen(1)) {
@@ -276,7 +285,7 @@ void AP_Networking::Port::tcp_server_loop(void)
  */
 void AP_Networking::Port::tcp_client_loop(void)
 {
-    AP::network().startup_wait();
+    wait_startup();
 
     close_on_recv_error = true;
 
@@ -319,14 +328,10 @@ bool AP_Networking::Port::send_receive(void)
 {
 
     bool active = false;
-    uint32_t space;
-
+    WITH_SEMAPHORE(sem);
 
     // handle incoming packets
-    {
-        WITH_SEMAPHORE(sem);
-        space = readbuffer->space();
-    }
+    const auto space = readbuffer->space();
     if (space > 0) {
         const uint32_t n = MIN(300U, space);
         uint8_t buf[n];
@@ -338,7 +343,6 @@ bool AP_Networking::Port::send_receive(void)
             return false;
         }
         if (ret > 0) {
-            WITH_SEMAPHORE(sem);
             readbuffer->write(buf, ret);
             active = true;
             have_received = true;
@@ -347,33 +351,20 @@ bool AP_Networking::Port::send_receive(void)
 
     if (connected) {
         // handle outgoing packets
-        uint32_t available;
-
-        {
-            WITH_SEMAPHORE(sem);
-            available = writebuffer->available();
-            available = MIN(300U, available);
-#if HAL_GCS_ENABLED
-            if (packetise) {
-                available = mavlink_packetise(*writebuffer, available);
-            }
-#endif
-            if (available == 0) {
-                return active;
-            }
+        uint32_t available = writebuffer->available();
+        available = MIN(300U, available);
+        if (packetise) {
+            available = mavlink_packetise(*writebuffer, available);
         }
-        uint8_t buf[available];
-        uint32_t n;
-        {
-            WITH_SEMAPHORE(sem);
-            n = writebuffer->peekbytes(buf, available);
-        }
-        if (n > 0) {
-            const auto ret = sock->send(buf, n);
-            if (ret > 0) {
-                WITH_SEMAPHORE(sem);
-                writebuffer->advance(ret);
-                active = true;
+        if (available > 0) {
+            uint8_t buf[available];
+            auto n = writebuffer->peekbytes(buf, available);
+            if (n > 0) {
+                const auto ret = sock->send(buf, n);
+                if (ret > 0) {
+                    writebuffer->advance(ret);
+                    active = true;
+                }
             }
         }
     } else {
@@ -476,6 +467,4 @@ enum AP_HAL::UARTDriver::flow_control AP_Networking::Port::get_flow_control(void
     return AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
 }
 
-#endif // AP_NETWORKING_REGISTER_PORT_ENABLED
-
-
+#endif // AP_NETWORKING_ENABLED

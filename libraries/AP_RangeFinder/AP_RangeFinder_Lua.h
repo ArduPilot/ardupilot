@@ -21,7 +21,6 @@ public:
 
     // Get update from Lua script
     bool handle_script_msg(float dist_m) override;
-    bool handle_script_msg(const RangeFinder::RangeFinder_State &state_arg) override;
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
@@ -29,7 +28,7 @@ public:
 
 private:
 
-    RangeFinder::RangeFinder_State _state_pending = {};
+    float _distance_m;   // stored data from lua script:
 };
 
 #endif  // AP_RANGEFINDER_LUA_ENABLED

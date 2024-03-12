@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Run lua check for all lua files passing AP specific config
 # Can also pass any number of arguments that are passed onto luacheck
 # for example the path of a single script could be given

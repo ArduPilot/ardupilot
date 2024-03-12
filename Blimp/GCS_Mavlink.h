@@ -2,8 +2,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-#include "defines.h"
-
 class GCS_MAVLINK_Blimp : public GCS_MAVLINK
 {
 
@@ -46,13 +44,10 @@ protected:
     };
     virtual MAV_LANDED_STATE landed_state() const override;
 
-#if HAL_LOGGING_ENABLED
-    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
-#endif
-
 private:
 
-    void handle_message(const mavlink_message_t &msg) override;
+    void handleMessage(const mavlink_message_t &msg) override;
+    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
 
     void packetReceived(const mavlink_status_t &status,

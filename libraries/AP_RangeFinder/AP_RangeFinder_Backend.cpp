@@ -53,39 +53,30 @@ bool AP_RangeFinder_Backend::has_data() const {
 }
 
 // update status based on distance measurement
-void AP_RangeFinder_Backend::update_status(RangeFinder::RangeFinder_State &state_arg) const
+void AP_RangeFinder_Backend::update_status()
 {
     // check distance
-    if (state_arg.distance_m > max_distance_cm() * 0.01f) {
-        set_status(state_arg, RangeFinder::Status::OutOfRangeHigh);
-    } else if (state_arg.distance_m < min_distance_cm() * 0.01f) {
-        set_status(state_arg, RangeFinder::Status::OutOfRangeLow);
+    if (state.distance_m > max_distance_cm() * 0.01f) {
+        set_status(RangeFinder::Status::OutOfRangeHigh);
+    } else if (state.distance_m < min_distance_cm() * 0.01f) {
+        set_status(RangeFinder::Status::OutOfRangeLow);
     } else {
-        set_status(state_arg, RangeFinder::Status::Good);
+        set_status(RangeFinder::Status::Good);
     }
 }
 
 // set status and update valid count
-void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_State &state_arg, RangeFinder::Status _status)
+void AP_RangeFinder_Backend::set_status(RangeFinder::Status _status)
 {
-    state_arg.status = _status;
+    state.status = _status;
 
     // update valid count
     if (_status == RangeFinder::Status::Good) {
-        if (state_arg.range_valid_count < 10) {
-            state_arg.range_valid_count++;
+        if (state.range_valid_count < 10) {
+            state.range_valid_count++;
         }
     } else {
-        state_arg.range_valid_count = 0;
+        state.range_valid_count = 0;
     }
 }
-
-#if AP_SCRIPTING_ENABLED
-// get a copy of state structure
-void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg)
-{
-    WITH_SEMAPHORE(_sem);
-    state_arg = state;
-}
-#endif
 

@@ -6,7 +6,6 @@
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
-#include "AP_Proximity/AP_Proximity_config.h"
 
 class AP_Arming {
 public:
@@ -236,9 +235,9 @@ protected:
 
     bool fettec_checks(bool display_failure) const;
 
-#if HAL_PROXIMITY_ENABLED
+    bool kdecan_checks(bool display_failure) const;
+
     virtual bool proximity_checks(bool report) const;
-#endif
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;

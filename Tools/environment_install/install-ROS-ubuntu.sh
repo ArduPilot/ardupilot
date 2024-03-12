@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 echo "---------- $0 start ----------"
 set -e
 # set -x

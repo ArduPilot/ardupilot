@@ -522,11 +522,12 @@ void CANIface::handleTxInterrupt(const uint64_t utc_usec)
         handleTxMailboxInterrupt(2, txok, utc_usec);
     }
 
-    if (sem_handle != nullptr) {
+#if CH_CFG_USE_EVENTS == TRUE
+    if (event_handle_ != nullptr) {
         PERF_STATS(stats.num_events);
-        sem_handle->signal_ISR();
+        evt_src_.signalI(1 << self_index_);
     }
-
+#endif
     pollErrorFlagsFromISR();
 }
 
@@ -589,11 +590,12 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
 
     had_activity_ = true;
 
-    if (sem_handle != nullptr) {
+#if CH_CFG_USE_EVENTS == TRUE
+    if (event_handle_ != nullptr) {
         PERF_STATS(stats.num_events);
-        sem_handle->signal_ISR();
+        evt_src_.signalI(1 << self_index_);
     }
-
+#endif
     pollErrorFlagsFromISR();
 }
 
@@ -700,12 +702,17 @@ uint32_t CANIface::getErrorCount() const
 
 #endif // #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
 
-bool CANIface::set_event_handle(AP_HAL::BinarySemaphore *handle)
+#if CH_CFG_USE_EVENTS == TRUE
+ChibiOS::EventSource CANIface::evt_src_;
+bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
 {
-    sem_handle = handle;
-    return true;
+    CriticalSectionLocker lock;
+    event_handle_ = handle;
+    event_handle_->set_source(&evt_src_);
+    return event_handle_->register_event(1 << self_index_);
 }
 
+#endif // #if CH_CFG_USE_EVENTS == TRUE
 
 void CANIface::checkAvailable(bool& read, bool& write, const AP_HAL::CANFrame* pending_tx) const
 {
@@ -738,13 +745,13 @@ bool CANIface::select(bool &read, bool &write,
         return true;
     }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
     // we don't support blocking select in AP_Periph and bootloader
     while (time < blocking_deadline) {
-        if (sem_handle == nullptr) {
+        if (event_handle_ == nullptr) {
             break;
         }
-        IGNORE_RETURN(sem_handle->wait(blocking_deadline - time)); // Block until timeout expires or any iface updates
+        event_handle_->wait(blocking_deadline - time); // Block until timeout expires or any iface updates
         checkAvailable(read, write, pending_tx);  // Check what we got
         if ((read && in_read) || (write && in_write)) {
             return true;

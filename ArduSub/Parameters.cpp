@@ -1,7 +1,5 @@
 #include "Sub.h"
 
-#include <AP_Gripper/AP_Gripper.h>
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -63,7 +61,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Increment: .5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
-    // AP_SerialManager was here
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
@@ -72,6 +72,16 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:None,1:Roll,2:Pitch,4:Yaw
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+
+#if RANGEFINDER_ENABLED == ENABLED
+    // @Param: RNGFND_GAIN
+    // @DisplayName: Rangefinder gain
+    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the sub
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(rangefinder_gain,     "RNGFND_GAIN",           RANGEFINDER_GAIN_DEFAULT),
+#endif
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
@@ -340,70 +350,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
     GGROUP(jbtn_15,                   "BTN15_", JSButton),
 
-    // @Group: BTN16_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_16,                   "BTN16_", JSButton),
-
-    // @Group: BTN17_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_17,                   "BTN17_", JSButton),
-
-    // @Group: BTN18_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_18,                   "BTN18_", JSButton),
-
-    // @Group: BTN19_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_19,                   "BTN19_", JSButton),
-
-    // @Group: BTN20_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_20,                   "BTN20_", JSButton),
-
-    // @Group: BTN21_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_21,                   "BTN21_", JSButton),
-
-    // @Group: BTN22_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_22,                   "BTN22_", JSButton),
-
-    // @Group: BTN23_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_23,                   "BTN23_", JSButton),
-
-    // @Group: BTN24_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_24,                   "BTN24_", JSButton),
-
-    // @Group: BTN25_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_25,                   "BTN25_", JSButton),
-
-    // @Group: BTN26_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_26,                   "BTN26_", JSButton),
-
-    // @Group: BTN27_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_27,                   "BTN27_", JSButton),
-
-    // @Group: BTN28_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_28,                   "BTN28_", JSButton),
-
-    // @Group: BTN29_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_29,                   "BTN29_", JSButton),
-
-    // @Group: BTN30_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_30,                   "BTN30_", JSButton),
-
-    // @Group: BTN31_
-    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-    GGROUP(jbtn_31,                   "BTN31_", JSButton),
-
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
@@ -466,9 +412,9 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if AP_RELAY_ENABLED
-    // @Group: RELAY
+    // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY", AP_Relay),
+    GOBJECT(relay,                  "RELAY_", AP_Relay),
 #endif
 
     // @Group: COMPASS_
@@ -550,6 +496,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
+
+    // @Group: LOG
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -635,20 +585,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
-
-    // @Param: RNGFND_SQ_MIN
-    // @DisplayName: Rangefinder signal quality minimum
-    // @Description: Minimum signal quality for good rangefinder readings
-    // @Range: 0 100
-    // @User: Advanced
-    GSCALAR(rangefinder_signal_min, "RNGFND_SQ_MIN", RANGEFINDER_SIGNAL_MIN_DEFAULT),
-
-    // @Param: SURFTRAK_DEPTH
-    // @DisplayName: SURFTRAK minimum depth
-    // @Description: Minimum depth to engage SURFTRAK mode
-    // @Units: cm
-    // @User: Standard
-    GSCALAR(surftrak_depth, "SURFTRAK_DEPTH", SURFTRAK_DEPTH_DEFAULT),
 #endif
 
 #if AP_TERRAIN_AVAILABLE
@@ -688,16 +624,22 @@ const AP_Param::Info Sub::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
-
-    // 1 was AP_Stats
-
+#if STATS_ENABLED == ENABLED
+    // @Group: STAT
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
+#endif
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     AP_SUBGROUPINFO(proximity, "PRX", 2, ParametersG2, AP_Proximity),
 #endif
 
-    // 3 was AP_Gripper
+#if AP_GRIPPER_ENABLED
+    // @Group: GRIP_
+    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
+    AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
+#endif
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -707,7 +649,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
-    // 18 was scripting
+#if AP_SCRIPTING_ENABLED
+    // @Group: SCR_
+    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
+    AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
+#endif
 
     // 19 was airspeed
 
@@ -732,8 +678,26 @@ const AP_Param::ConversionInfo conversion_table[] = {
 
 void Sub::load_parameters()
 {
-    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
+    hal.util->set_soft_armed(false);
 
+    if (!g.format_version.load() ||
+            g.format_version != Parameters::k_format_version) {
+
+        // erase all parameters
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
+        AP_Param::erase_all();
+
+        // save the current format version
+        g.format_version.set_and_save(Parameters::k_format_version);
+        hal.console->println("done.");
+    }
+    g.format_version.set_default(Parameters::k_format_version);
+
+    uint32_t before = AP_HAL::micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    hal.console->printf("load_all took %uus\n", (unsigned)(AP_HAL::micros() - before));
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
@@ -743,45 +707,24 @@ void Sub::load_parameters()
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
+// PARAMETER_CONVERSION - Added: JAN-2022
+#if AP_AIRSPEED_ENABLED
+    // Find G2's Top Level Key
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+        return;
+    }
+
+    const uint16_t old_index = 19;          // Old parameter index in the tree
+    const uint16_t old_top_element = 4051;  // Old group element in the tree for the first subgroup element
+    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
+#endif
+
+
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
+    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
 #endif
-
-    static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 19 },
-#endif
-#if AP_STATS_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2024
-        { &stats, stats.var_info, 1 },
-#endif
-#if AP_SCRIPTING_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2024
-        { &scripting, scripting.var_info, 18 },
-#endif
-#if AP_GRIPPER_ENABLED
-    // PARAMETER_CONVERSION - Added: Feb-2024
-        { &gripper, gripper.var_info, 3 },
-#endif
-    };
-
-    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
-
-    // PARAMETER_CONVERSION - Added: Feb-2024
-#if HAL_LOGGING_ENABLED
-    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
-#endif
-
-    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
-#if AP_SERIALMANAGER_ENABLED
-        // PARAMETER_CONVERSION - Added: Feb-2024
-        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
-#endif
-    };
-
-    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 }
 
 void Sub::convert_old_parameters()

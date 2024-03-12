@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # script to build 32 bit cygwin binaries for SITL
 
 export PATH="/usr/local/bin:/usr/bin:/bin"

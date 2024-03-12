@@ -204,7 +204,7 @@ private:
         GimbalMountingDirection mounting_dir;
         VideoOutputStatus video_mode;
     } GimbalConfigInfo;
-    static_assert(sizeof(GimbalConfigInfo) == 7, "GimbalConfigInfo must be 7 bytes");
+    static_assert(sizeof(GimbalConfigInfo) == 7);
 
     // camera image types (aka lens)
     enum class CameraImageType : uint8_t {

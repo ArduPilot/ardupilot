@@ -32,7 +32,7 @@ static AP_SerialManager serial_manager;
 static AP_BoardConfig board_config;
 static AP_InertialSensor ins;
 AP_Int32 logger_bitmask;
-static AP_Logger logger;
+static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle {
 public:

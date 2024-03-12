@@ -24,9 +24,8 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)
-    // @Description: Parachute release mechanism type (relay number in versions prior to 4.5, or servo). Values 0-3 all are relay. Relay number used for release is set by RELAYx_FUNCTION in 4.5 or later. 
-    // @Values: 0: Relay,10:Servo 
-
+    // @Description: Parachute release mechanism type (relay or servo)
+    // @Values: 0:First Relay,1:Second Relay,2:Third Relay,3:Fourth Relay,10:Servo
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AP_Parachute, _release_type, AP_PARACHUTE_TRIGGER_TYPE_RELAY_0),
 
@@ -93,7 +92,7 @@ void AP_Parachute::enabled(bool on_off)
     // clear release_time
     _release_time = 0;
 
-    LOGGER_WRITE_EVENT(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
+    AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -105,7 +104,7 @@ void AP_Parachute::release()
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Parachute: Released");
-    LOGGER_WRITE_EVENT(LogEvent::PARACHUTE_RELEASED);
+    AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
@@ -143,7 +142,7 @@ void AP_Parachute::update()
                 // set relay
                 AP_Relay*_relay = AP::relay();
                 if (_relay != nullptr) {
-                    _relay->set(AP_Relay_Params::FUNCTION::PARACHUTE, true); 
+                    _relay->on(_release_type);
                 }
 #endif
             }
@@ -160,7 +159,7 @@ void AP_Parachute::update()
             // set relay back to zero volts
             AP_Relay*_relay = AP::relay();
             if (_relay != nullptr) {
-                _relay->set(AP_Relay_Params::FUNCTION::PARACHUTE, false);
+                _relay->off(_release_type);
             }
 #endif
         }
@@ -219,8 +218,8 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
         } else {
 #if AP_RELAY_ENABLED
             AP_Relay*_relay = AP::relay();
-            if (_relay == nullptr || !_relay->enabled(AP_Relay_Params::FUNCTION::PARACHUTE)) {
-                hal.util->snprintf(buffer, buflen, "Chute has no relay");
+            if (_relay == nullptr || !_relay->enabled(_release_type)) {
+                hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
                 return false;
             }
 #else
@@ -235,29 +234,6 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
     }
     return true;
 }
-
-#if AP_RELAY_ENABLED
-// Return the relay index that would be used for param conversion to relay functions
-bool AP_Parachute::get_legacy_relay_index(int8_t &index) const
-{
-    // PARAMETER_CONVERSION - Added: Dec-2023
-    if (_release_type > AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
-        // Not relay type
-        return false;
-    }
-    if (!enabled() && !_enabled.configured()) {
-        // Disabled and parameter never changed
-        // Copter manual parachute release enables and deploys in one step
-        // This means it is possible for parachute to still function correctly if disabled at boot
-        // Checking if the enable param is configured means the user must have setup chute at some point
-        // this means relay parm conversion will be done if parachute has ever been enabled
-        // Parachute has priority in relay param conversion, so this might mean we overwrite some other function
-        return false;
-    }
-    index = _release_type; 
-    return true;
-}
-#endif
 
 // singleton instance
 AP_Parachute *AP_Parachute::_singleton;

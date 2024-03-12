@@ -4,7 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
-#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 #include "hal.h"
 #include "ch.h"
@@ -30,8 +29,6 @@ public:
     void pwm_out_update();
     void heater_update();
     void rcin_update();
-    void erpm_update();
-    void telem_update();
 
     bool handle_code_write();
     bool handle_code_read();
@@ -115,11 +112,12 @@ public:
     } rate;
 
     // output mode values
-    struct page_mode_out mode_out;
+    struct {
+        uint16_t mask;
+        uint16_t mode;
+    } mode_out;
 
     uint16_t last_output_mode_mask;
-    uint16_t last_output_bdmask;
-    uint16_t last_output_esc_type;
 
     // MIXER values
     struct page_mixing mixing;
@@ -137,15 +135,6 @@ public:
     void tx_dma_deallocate(ChibiOS::Shared_DMA *ctx);
 
     ChibiOS::Shared_DMA* tx_dma_handle;
-#endif
-#ifdef HAL_WITH_BIDIR_DSHOT
-    struct page_dshot_erpm dshot_erpm;
-    uint32_t last_erpm_us;
-    struct page_dshot_telem dshot_telem[IOMCU_MAX_TELEM_CHANNELS/4];
-    uint32_t last_telem_ms;
-#if HAL_WITH_ESC_TELEM
-    AP_ESC_Telem esc_telem;
-#endif
 #endif
 
     // true when override channel active

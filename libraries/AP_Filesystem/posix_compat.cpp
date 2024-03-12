@@ -30,6 +30,14 @@
 #include <stdarg.h>
 #include <AP_Math/AP_Math.h>
 
+struct apfs_file {
+    int fd;
+    bool error;
+    bool eof;
+    int16_t unget;
+    char *tmpfile_name;
+};
+
 #define CHECK_STREAM(stream, ret) while (stream == NULL || stream->fd < 0) { errno = EBADF; return ret; }
 
 #define modecmp(str, pat) (strcmp(str, pat) == 0 ? 1: 0)
@@ -162,8 +170,7 @@ int apfs_fseek(APFS_FILE *stream, long offset, int whence)
 {
     CHECK_STREAM(stream, EOF);
     stream->eof = false;
-    AP::FS().lseek(stream->fd, offset, whence);
-    return 0;
+    return AP::FS().lseek(stream->fd, offset, whence);
 }
 
 int apfs_ferror(APFS_FILE *stream)

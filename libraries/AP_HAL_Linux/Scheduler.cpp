@@ -26,7 +26,6 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_MAX_PRIORITY          20
 #define APM_LINUX_TIMER_PRIORITY        15
 #define APM_LINUX_UART_PRIORITY         14
-#define APM_LINUX_NET_PRIORITY          14
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
@@ -38,8 +37,7 @@ extern const AP_HAL::HAL& hal;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_RCIN_RATE             500
 #define APM_LINUX_IO_RATE               50
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
@@ -173,20 +171,15 @@ void Scheduler::delay(uint16_t ms)
         return;
     }
 
-    if (ms == 0) {
-        return;
-    }
+    uint64_t start = AP_HAL::millis64();
 
-    uint64_t now = AP_HAL::micros64();
-    uint64_t end = now + 1000UL * ms + 1U;
-    do {
+    while ((AP_HAL::millis64() - start) < ms) {
         // this yields the CPU to other apps
-        microsleep(MIN(1000UL, end-now));
+        microsleep(1000);
         if (in_main_thread() && _min_delay_cb_ms <= ms) {
             call_delay_cb();
         }
-        now = AP_HAL::micros64();
-    } while (now < end);
+    }
 }
 
 void Scheduler::delay_microseconds(uint16_t us)
@@ -391,7 +384,6 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
         { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
-        { PRIORITY_NET, APM_LINUX_NET_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

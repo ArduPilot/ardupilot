@@ -14,16 +14,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <sys/select.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
 
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
-#include <AP_HAL/utility/Socket_native.h>
+#include <AP_HAL/utility/Socket.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -113,25 +108,28 @@ void SITL_State::_sitl_setup()
 /*
   setup a SITL FDM listening UDP port
  */
-bool SITL_State::_setup_fdm(void)
+void SITL_State::_setup_fdm(void)
 {
-    if (_rc_in_started) {
-        return true;
-    }
     if (!_sitl_rc_in.reuseaddress()) {
-        return false;
+        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
     }
     if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
-        return false;
+        fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
     }
     if (!_sitl_rc_in.set_blocking(false)) {
-        return false;
+        fprintf(stderr, "SITL: socket set_blocking(false) failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
     }
     if (!_sitl_rc_in.set_cloexec()) {
-        return false;
+        fprintf(stderr, "SITL: socket set_cloexec() failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
     }
-    _rc_in_started = true;
-    return true;
 }
 
 
@@ -246,9 +244,6 @@ bool SITL_State::_read_rc_sitl_input()
         uint16_t pwm[16];
     } pwm_pkt;
 
-    if (!_setup_fdm()) {
-        return false;
-    }
     const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
 
     // if we are simulating no pulses RC failure, do not update pwm_input
@@ -332,13 +327,12 @@ void SITL_State::_output_to_flightgear(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    if (_sitl == nullptr) {
-        return;
-    }
     struct sitl_input input;
 
     // check for direct RC input
-    _check_rc_input();
+    if (_sitl != nullptr) {
+        _check_rc_input();
+    }
 
     // construct servos structure for FDM
     _simulator_servos(input);
@@ -356,17 +350,19 @@ void SITL_State::_fdm_input_local(void)
     sitl_model->update_model(input);
 
     // get FDM output from the model
-    sitl_model->fill_fdm(_sitl->state);
+    if (_sitl) {
+        sitl_model->fill_fdm(_sitl->state);
 
 #if HAL_NUM_CAN_IFACES
-    if (CANIface::num_interfaces() > 0) {
-        multicast_state_send();
-    }
+        if (CANIface::num_interfaces() > 0) {
+            multicast_state_send();
+        }
 #endif
 
-    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
-        for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-            pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
+        if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
+            for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
+                pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
+            }
         }
     }
 
@@ -377,12 +373,16 @@ void SITL_State::_fdm_input_local(void)
 
     sim_update();
 
-    if (_use_fg_view) {
+    if (_sitl && _use_fg_view) {
         _output_to_flightgear();
     }
 
     // update simulation time
-    hal.scheduler->stop_clock(_sitl->state.timestamp_us);
+    if (_sitl) {
+        hal.scheduler->stop_clock(_sitl->state.timestamp_us);
+    } else {
+        hal.scheduler->stop_clock(AP_HAL::micros64()+100);
+    }
 
     set_height_agl();
 
@@ -395,9 +395,6 @@ void SITL_State::_fdm_input_local(void)
  */
 void SITL_State::_simulator_servos(struct sitl_input &input)
 {
-    if (_sitl == nullptr) {
-        return;
-    }
     static uint32_t last_update_usec;
 
     /* this maps the registers used for PWM outputs. The RC
@@ -598,7 +595,7 @@ void SITL_State::set_height_agl(void)
         AP_Terrain *_terrain = AP_Terrain::get_singleton();
         if (_terrain != nullptr &&
             _terrain->height_amsl(location, terrain_height_amsl, false)) {
-            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
+            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }
     }
@@ -606,7 +603,7 @@ void SITL_State::set_height_agl(void)
 
     if (_sitl != nullptr) {
         // fall back to flat earth model
-        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
+        _sitl->height_agl = _sitl->state.altitude - home_alt;
     }
 }
 
@@ -663,7 +660,7 @@ void SITL_State::multicast_state_open(void)
     }
 
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sockaddr.sin_port = htons(SITL_SERVO_PORT + _instance);
+    sockaddr.sin_port = htons(SITL_SERVO_PORT);
 
     ret = bind(servo_in_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {

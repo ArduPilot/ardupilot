@@ -165,10 +165,10 @@ void Copter::motors_output()
     bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
     if (!motors->get_interlock() && interlock) {
         motors->set_interlock(true);
-        LOGGER_WRITE_EVENT(LogEvent::MOTORS_INTERLOCK_ENABLED);
+        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_ENABLED);
     } else if (motors->get_interlock() && !interlock) {
         motors->set_interlock(false);
-        LOGGER_WRITE_EVENT(LogEvent::MOTORS_INTERLOCK_DISABLED);
+        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_DISABLED);
     }
 
     if (ap.motor_test) {

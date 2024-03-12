@@ -141,7 +141,7 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 }
 
 
-void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
+void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
@@ -177,7 +177,6 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
-    case AUX_FUNC::PRECISION_LOITER:
         break;
 
     case AUX_FUNC::SOARING:
@@ -213,7 +212,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
@@ -442,10 +441,6 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         } else {
            plane.autotune_enable(false); 
         }
-        break;
-
-    case AUX_FUNC::PRECISION_LOITER:
-        // handled by lua scripting, just ignore here
         break;
 
     default:

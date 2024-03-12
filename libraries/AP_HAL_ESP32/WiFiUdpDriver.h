@@ -22,9 +22,6 @@
 #include "lwip/sockets.h"
 #include "esp_event.h"
 
-#ifndef WIFI_MAX_CONNECTION
-#define WIFI_MAX_CONNECTION 5
-#endif
 
 class ESP32::WiFiUdpDriver : public AP_HAL::UARTDriver
 {

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Try to run a command in an appropriate type of terminal window
 # depending on whats available

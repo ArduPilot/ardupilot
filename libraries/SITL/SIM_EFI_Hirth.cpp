@@ -206,7 +206,8 @@ void SITL::EFI_Hirth::send_record1()
 
     write_to_autopilot((char*)&packed_record1, sizeof(packed_record1));
 
-    ASSERT_STORAGE_SIZE(Record1, 84);
+    assert_storage_size<Record1, 84> _assert_storage_size_Record1;
+    (void)_assert_storage_size_Record1;
 }
 
 void SITL::EFI_Hirth::send_record2()
@@ -223,7 +224,8 @@ void SITL::EFI_Hirth::send_record2()
 
     write_to_autopilot((char*)&packed_record2, sizeof(packed_record2));
 
-    ASSERT_STORAGE_SIZE(Record2, 98);
+    assert_storage_size<Record2, 98> _assert_storage_size_Record2;
+    (void)_assert_storage_size_Record2;
 }
 
 
@@ -241,5 +243,6 @@ void SITL::EFI_Hirth::send_record3()
 
     write_to_autopilot((char*)&packed_record3, sizeof(packed_record3));
 
-    ASSERT_STORAGE_SIZE(Record3, 100);
+    assert_storage_size<Record3, 100> _assert_storage_size_Record3;
+    (void)_assert_storage_size_Record3;
 }

@@ -57,24 +57,22 @@ using namespace Linux;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR ||  \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 static UtilRPI utilInstance;
 #else
 static Util utilInstance;
 #endif
 
-// 10 serial ports on Linux
-static UARTDriver serial0Driver(true);
-static UARTDriver serial1Driver(false);
-static UARTDriver serial2Driver(false);
-// serial3Driver declared below depending on board type
-static UARTDriver serial4Driver(false);
-static UARTDriver serial5Driver(false);
-static UARTDriver serial6Driver(false);
-static UARTDriver serial7Driver(false);
-static UARTDriver serial8Driver(false);
-static UARTDriver serial9Driver(false);
+// 9 serial ports on Linux
+static UARTDriver uartADriver(true);
+static UARTDriver uartCDriver(false);
+static UARTDriver uartDDriver(false);
+static UARTDriver uartEDriver(false);
+static UARTDriver uartFDriver(false);
+static UARTDriver uartGDriver(false);
+static UARTDriver uartHDriver(false);
+static UARTDriver uartIDriver(false);
+static UARTDriver uartJDriver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
@@ -82,31 +80,17 @@ static SPIDeviceManager spi_mgr_instance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-static SPIUARTDriver serial3Driver;
+static SPIUARTDriver uartBDriver;
 #else
-static UARTDriver serial3Driver(false);
+static UARTDriver uartBDriver(false);
 #endif
-
-static UARTDriver* serialDrivers[] = {
-    &serial0Driver,
-    &serial1Driver,
-    &serial2Driver,
-    &serial3Driver,
-    &serial4Driver,
-    &serial5Driver,
-    &serial6Driver,
-    &serial7Driver,
-    &serial8Driver,
-    &serial9Driver,
-};
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR|| \
-    ((CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1) && (OBAL_ALLOW_ADC ==1)) || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+    ((CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1) && (OBAL_ALLOW_ADC ==1))
 static AnalogIn_ADS1115 analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
@@ -139,8 +123,7 @@ static GPIO_BBB gpioDriver;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 static GPIO_RPI gpioDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 static GPIO_Navigator gpioDriver;
@@ -171,8 +154,7 @@ static RCInput_Multi rcinDriver{2, new RCInput_AioPRU, new RCInput_RCProtocol(NU
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 static RCInput_RPI rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
@@ -237,8 +219,6 @@ static RCOutput_Sysfs rcoutDriver(0, 0, 15);
 static RCOutput_Sysfs rcoutDriver(0, 0, 8);
 #elif  CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(1, PCA9685_PRIMARY_ADDRESS), 0, 0, RPI_GPIO_<17>());
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
-static RCOutput_Sysfs rcoutDriver(0, 0, 2);
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
@@ -251,9 +231,7 @@ static OpticalFlow_Onboard opticalFlow;
 static Empty::OpticalFlow opticalFlow;
 #endif
 
-#if HAL_WITH_DSP
 static Empty::DSP dspDriver;
-#endif
 static Empty::Flash flashDriver;
 static Empty::WSPIDeviceManager wspi_mgr_instance;
 
@@ -263,22 +241,22 @@ static CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
-        &serial0Driver,
-        &serial1Driver,
-        &serial2Driver,
-        &serial3Driver,
-        &serial4Driver,
-        &serial5Driver,
-        &serial6Driver,
-        &serial7Driver,
-        &serial8Driver,
-        &serial9Driver,
+        &uartADriver,
+        &uartBDriver,
+        &uartCDriver,
+        &uartDDriver,
+        &uartEDriver,
+        &uartFDriver,
+        &uartGDriver,
+        &uartHDriver,
+        &uartIDriver,
+        &uartJDriver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
         &wspi_mgr_instance,
         &analogIn,
         &storageDriver,
-        &serial0Driver,
+        &uartADriver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -286,9 +264,7 @@ HAL_Linux::HAL_Linux() :
         &utilInstance,
         &opticalFlow,
         &flashDriver,
-#if HAL_WITH_DSP
         &dspDriver,
-#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
@@ -299,16 +275,16 @@ HAL_Linux::HAL_Linux() :
 
 void _usage(void)
 {
-    printf("Usage: --serial0 serial0Path --serial1 serial1Path \n");
+    printf("Usage: --serial0 serial0Path --serial1 serial2Path \n");
     printf("Examples:\n");
     printf("\tserial (0 through 9 available):\n");
     printf("\t                  --serial0 /dev/ttyO4\n");
     printf("\t                  --serial3 /dev/ttyS1\n");
-    printf("\tlegacy UART options are deprecated, their mappings are:\n");
+    printf("\tlegacy UART options still work, their mappings are:\n");
     printf("\t                  -A/--uartA is SERIAL0\n");
-    printf("\t                  -C/--uartC is SERIAL1\n"); // ordering captures the historical use of uartB as SERIAL3
-    printf("\t                  -D/--uartD is SERIAL2\n");
     printf("\t                  -B/--uartB is SERIAL3\n");
+    printf("\t                  -C/--uartC is SERIAL1\n");
+    printf("\t                  -D/--uartD is SERIAL2\n");
     printf("\t                  -E/--uartE is SERIAL4\n");
     printf("\t                  -F/--uartF is SERIAL5\n");
     printf("\t                  -G/--uartG is SERIAL6\n");
@@ -348,41 +324,28 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
 #endif
 
-    enum long_options {
-        CMDLINE_SERIAL0 = 1, // must be in 0-9 order and numbered consecutively
-        CMDLINE_SERIAL1,
-        CMDLINE_SERIAL2,
-        CMDLINE_SERIAL3,
-        CMDLINE_SERIAL4,
-        CMDLINE_SERIAL5,
-        CMDLINE_SERIAL6,
-        CMDLINE_SERIAL7,
-        CMDLINE_SERIAL8,
-        CMDLINE_SERIAL9,
-    };
-
     int opt;
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
+        {"serial0",       true,  0, 'A'},
         {"uartB",         true,  0, 'B'},
+        {"serial3",       true,  0, 'B'},
         {"uartC",         true,  0, 'C'},
+        {"serial1",       true,  0, 'C'},
         {"uartD",         true,  0, 'D'},
+        {"serial2",       true,  0, 'D'},
         {"uartE",         true,  0, 'E'},
+        {"serial4",       true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
+        {"serial5",       true,  0, 'F'},
         {"uartG",         true,  0, 'G'},
+        {"serial6",       true,  0, 'G'},
         {"uartH",         true,  0, 'H'},
+        {"serial7",       true,  0, 'H'},
         {"uartI",         true,  0, 'I'},
+        {"serial8",       true,  0, 'I'},
         {"uartJ",         true,  0, 'J'},
-        {"serial0",       true,  0, CMDLINE_SERIAL0},
-        {"serial1",       true,  0, CMDLINE_SERIAL1},
-        {"serial2",       true,  0, CMDLINE_SERIAL2},
-        {"serial3",       true,  0, CMDLINE_SERIAL3},
-        {"serial4",       true,  0, CMDLINE_SERIAL4},
-        {"serial5",       true,  0, CMDLINE_SERIAL5},
-        {"serial6",       true,  0, CMDLINE_SERIAL6},
-        {"serial7",       true,  0, CMDLINE_SERIAL7},
-        {"serial8",       true,  0, CMDLINE_SERIAL8},
-        {"serial9",       true,  0, CMDLINE_SERIAL9},
+        {"serial9",       true,  0, 'J'},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
@@ -402,36 +365,34 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'A':
-        case 'B':
-        case 'C':
-        case 'D':
-        case 'E':
-        case 'F':
-        case 'G':
-        case 'H':
-        case 'I':
-        case 'J': {
-            int uart_idx = opt - 'A';
-            // ordering captures the historical use of uartB as SERIAL3
-            static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
-            int serial_idx = mapping[uart_idx];
-            printf("WARNING: deprecated option --uart%c/-%c will be removed in "
-                "a future release. Use --serial%d instead.\n",
-                (char)opt, (char)opt, serial_idx);
-            serialDrivers[serial_idx]->set_device_path(gopt.optarg);
+            uartADriver.set_device_path(gopt.optarg);
             break;
-        }
-        case CMDLINE_SERIAL0:
-        case CMDLINE_SERIAL1:
-        case CMDLINE_SERIAL2:
-        case CMDLINE_SERIAL3:
-        case CMDLINE_SERIAL4:
-        case CMDLINE_SERIAL5:
-        case CMDLINE_SERIAL6:
-        case CMDLINE_SERIAL7:
-        case CMDLINE_SERIAL8:
-        case CMDLINE_SERIAL9:
-            serialDrivers[opt - CMDLINE_SERIAL0]->set_device_path(gopt.optarg);
+        case 'B':
+            uartBDriver.set_device_path(gopt.optarg);
+            break;
+        case 'C':
+            uartCDriver.set_device_path(gopt.optarg);
+            break;
+        case 'D':
+            uartDDriver.set_device_path(gopt.optarg);
+            break;
+        case 'E':
+            uartEDriver.set_device_path(gopt.optarg);
+            break;
+        case 'F':
+            uartFDriver.set_device_path(gopt.optarg);
+            break;
+        case 'G':
+            uartGDriver.set_device_path(gopt.optarg);
+            break;
+        case 'H':
+            uartHDriver.set_device_path(gopt.optarg);
+            break;
+        case 'I':
+            uartIDriver.set_device_path(gopt.optarg);
+            break;
+        case 'J':
+            uartJDriver.set_device_path(gopt.optarg);
             break;
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);

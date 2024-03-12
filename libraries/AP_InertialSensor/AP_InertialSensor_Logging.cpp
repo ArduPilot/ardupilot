@@ -1,7 +1,3 @@
-#include <AP_Logger/AP_Logger_config.h>
-
-#if HAL_LOGGING_ENABLED
-
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
@@ -192,5 +188,3 @@ void AP_InertialSensor::write_notch_log_messages() const
         }
     }
 }
-
-#endif  // HAL_LOGGING_ENABLED

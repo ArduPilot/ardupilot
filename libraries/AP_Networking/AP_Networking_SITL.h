@@ -16,6 +16,7 @@ public:
     bool init() override {
         return true;
     }
+    void update() override {}
 };
 
 #endif // AP_NETWORKING_BACKEND_SITL

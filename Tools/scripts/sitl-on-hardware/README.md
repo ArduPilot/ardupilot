@@ -7,21 +7,21 @@ Run the sitl-on-hw.sh script to compile and flash for MatekH743.  Adjust for you
 ::
 
 	cd $HOME/ardupilot
-    ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board	MatekH743 --vehicle copter
+    ./libraries/SITL/examples/on-hardware/sitl-on-hw.py --board	MatekH743 --vehicle copter
 
 Plane can also be simulated:
 
 ::
 
 	cd $HOME/ardupilot
-    ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board MatekH743 --vehicle plane
+    ./libraries/SITL/examples/on-hardware/sitl-on-hw.py --board MatekH743 --vehicle plane
 
 and quadplane:
 
 ::
 
 	cd $HOME/ardupilot
-    ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board MatekH743 --vehicle plane --simclass QuadPlane
+    ./libraries/SITL/examples/on-hardware/sitl-on-hw.py --board MatekH743 --vehicle plane --simclass QuadPlane
 
 ## Configuring
 

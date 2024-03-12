@@ -6,7 +6,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -38,23 +37,17 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _last_imu_time_us = imu_us;
 
     // we force write all msgs when logging starts
-#if HAL_LOGGING_ENABLED
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
     if (logging && !logging_started) {
         force_write = true;
     }
     logging_started = logging;
-#endif
 
     end_frame();
 
     _RFRF.frame_types = uint8_t(frametype);
-
-#if AP_VEHICLE_ENABLED
+    
     _RFRH.time_flying_ms = AP::vehicle()->get_time_flying_ms();
-#else
-    _RFRH.time_flying_ms = 0;
-#endif
     _RFRH.time_us = AP_HAL::micros64();
     WRITE_REPLAY_BLOCK(RFRH, _RFRH);
 
@@ -282,7 +275,6 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 #endif
 }
 
-#if HAL_LOGGING_ENABLED
 // write out a DAL log message. If old_msg is non-null, then
 // only write if the content has changed
 void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
@@ -304,7 +296,6 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
         _end = 0;
     }
 }
-#endif
 
 /*
   check if we are low on CPU for this core. This needs to capture the

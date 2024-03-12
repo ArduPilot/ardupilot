@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 function format {
 	DIR=$1
 	find $DIR -regex ".*\.\(h\|cpp\|pde\)" -exec astyle {} \;

@@ -147,8 +147,7 @@ public:
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,
-        MEM_FAST,
-        MEM_FILESYSTEM
+        MEM_FAST
     };
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }

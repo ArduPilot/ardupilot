@@ -1,13 +1,11 @@
-#include "AP_Radio_config.h"
-
-#if AP_RADIO_BK2425_ENABLED
-
 /*
   driver for Beken_2425 radio
  */
 #include <AP_HAL/AP_HAL.h>
 
 //#pragma GCC optimize("O0")
+
+#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_bk2425.h"
@@ -1423,4 +1421,7 @@ void SyncAdaptive::Miss(uint8_t channel)
     }
 }
 
-#endif // AP_RADIO_BK2425_ENABLED
+
+
+#endif // HAL_RCINPUT_WITH_AP_RADIO
+

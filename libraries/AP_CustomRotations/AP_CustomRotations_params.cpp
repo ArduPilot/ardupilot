@@ -1,8 +1,7 @@
-#include "AP_CustomRotations_config.h"
-
-#if AP_CUSTOMROTATIONS_ENABLED
-
 #include "AP_CustomRotations.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 
 const AP_Param::GroupInfo AP_CustomRotation_params::var_info[] = {
 
@@ -34,4 +33,4 @@ AP_CustomRotation_params::AP_CustomRotation_params() {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#endif  // AP_CUSTOMROTATIONS_ENABLED
+#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)

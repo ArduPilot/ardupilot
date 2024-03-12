@@ -52,10 +52,8 @@ public:
     // send status to ground station
     void send_status(const GCS_MAVLINK &channel) override;
 
-#if HAL_LOGGING_ENABLED
     // write log
     void write_log() override;
-#endif
 
 private:
 

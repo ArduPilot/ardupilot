@@ -17,10 +17,6 @@
   Converted to a library by Andrew Tridgell, and rewritten to include helicopters by Bill Geyer
  */
 
-#include "AC_AutoTune_config.h"
-
-#if AC_AUTOTUNE_ENABLED
-
 #include "AC_AutoTune_Heli.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -250,12 +246,12 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         if ((tune_type == RP_UP || tune_type == RD_UP) && (max_rate_p.max_allowed <= 0.0f || max_rate_d.max_allowed <= 0.0f)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Gain Determination Failed");
             mode = FAILED;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_FAILED);
             update_gcs(AUTOTUNE_MESSAGE_FAILED);
         } else if ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq)){
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Exceeded frequency range");
             mode = FAILED;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_FAILED);
             update_gcs(AUTOTUNE_MESSAGE_FAILED);
         } else if (tune_type == TUNE_COMPLETE) {
             counter = AUTOTUNE_SUCCESS_COUNT;
@@ -442,7 +438,7 @@ void AC_AutoTune_Heli::backup_gains_and_initialise()
     tune_yaw_sp = attitude_control->get_angle_yaw_p().kP();
     tune_yaw_accel = attitude_control->get_accel_yaw_max_cdss();
 
-    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_INITIALISED);
+    AP::logger().Write_Event(LogEvent::AUTOTUNE_INITIALISED);
 }
 
 // load_orig_gains - set gains to their original values
@@ -660,7 +656,7 @@ void AC_AutoTune_Heli::save_tuning_gains()
 
     // update GCS and log save gains event
     update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
-    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_SAVEDGAINS);
+    AP::logger().Write_Event(LogEvent::AUTOTUNE_SAVEDGAINS);
 
     reset();
 }
@@ -1166,10 +1162,8 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
                 if (dwell_type == DRB) {test_accel_max = freqresp.get_accel_max();}
                 // reset cycle_complete to allow indication of next cycle
                 freqresp.reset_cycle_complete();
-#if HAL_LOGGING_ENABLED
                 // log sweep data
                 Log_AutoTuneSweep();
-#endif
             } else {
                 dwell_gain = freqresp.get_gain();
                 dwell_phase = freqresp.get_phase();
@@ -1385,14 +1379,14 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
         if (tune_ff <= AUTOTUNE_RFF_MIN) {
             tune_ff = AUTOTUNE_RFF_MIN;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
         }
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
         tune_ff = 1.02f * tune_ff;
         if (tune_ff >= AUTOTUNE_RFF_MAX) {
             tune_ff = AUTOTUNE_RFF_MAX;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
         }
     } else {
         if (!is_zero(meas_rate)) {
@@ -1549,7 +1543,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             // exceeded max response gain at the minimum allowable tuning gain. terminate testing.
             tune_p = AUTOTUNE_SP_MIN;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
         } else if (gain[freq_cnt] > gain[freq_cnt_max]) {
             freq_cnt_max = freq_cnt;
             phase_max = phase[freq_cnt];
@@ -1581,7 +1575,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
                 if (tune_p >= AUTOTUNE_SP_MAX) {
                     tune_p = AUTOTUNE_SP_MAX;
                     counter = AUTOTUNE_SUCCESS_COUNT;
-                    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                    AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 }
             }
             curr_test.freq = freq[freq_cnt];
@@ -1724,7 +1718,6 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
 
 }
 
-#if HAL_LOGGING_ENABLED
 // log autotune summary data
 void AC_AutoTune_Heli::Log_AutoTune()
 {
@@ -1843,7 +1836,6 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneSweep(float freq, float gain, float pha
         gain,
         phase);
 }
-#endif  // HAL_LOGGING_ENABLED
 
 // reset the test variables for each vehicle
 void AC_AutoTune_Heli::reset_vehicle_test_variables()
@@ -1949,5 +1941,3 @@ bool AC_AutoTune_Heli::exceeded_freq_range(float frequency)
     }
     return ret;
 }
-
-#endif  // AC_AUTOTUNE_ENABLED

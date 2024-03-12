@@ -786,7 +786,6 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
-#if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
 {
@@ -817,7 +816,6 @@ void RangeFinder::Log_RFND() const
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
 }
-#endif  // HAL_LOGGING_ENABLED
 
 bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const
 {

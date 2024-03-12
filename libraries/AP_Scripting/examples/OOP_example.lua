@@ -1,4 +1,5 @@
 -- this is an example of how to do object oriented programming in Lua
+-- luacheck: only 0
 
 function constrain(v, minv, maxv)
    -- constrain a value between two limits
@@ -24,6 +25,7 @@ local function PIFF(kFF,kP,kI,iMax)
    local _kFF = kFF
    local _kP = kP or 0.0
    local _kI = kI or 0.0
+   local _kD = kD or 0.0
    local _iMax = iMax
    local _last_t = nil
    local _log_data = {}

@@ -57,6 +57,9 @@
 //
 // Logging control
 //
+#ifndef LOGGING_ENABLED
+# define LOGGING_ENABLED        ENABLED
+#endif
 
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
@@ -68,8 +71,4 @@
     MASK_LOG_RCOUT | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT
-#endif
-
-#ifndef AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
-#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED 1
 #endif

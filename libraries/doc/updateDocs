@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 rm -rf html
 svn cleanup
 svn update html

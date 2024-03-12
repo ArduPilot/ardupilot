@@ -391,7 +391,6 @@ bool AP_Beacon::device_ready(void) const
     return ((_driver != nullptr) && (_type != AP_BeaconType_None));
 }
 
-#if HAL_LOGGING_ENABLED
 // Write beacon sensor (position) data
 void AP_Beacon::log()
 {
@@ -418,7 +417,6 @@ void AP_Beacon::log()
     };
     AP::logger().WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
-#endif
 
 // singleton instance
 AP_Beacon *AP_Beacon::_singleton;

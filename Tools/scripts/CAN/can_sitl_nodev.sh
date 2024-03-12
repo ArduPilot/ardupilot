@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # once run, you can configure SITL for CAN just like a real board, with the CAN parameters
 #

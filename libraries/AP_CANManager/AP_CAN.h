@@ -28,6 +28,6 @@ public:
         Benewake = 11,
         Scripting2 = 12,
         TOFSenseP = 13,
-        NanoRadar = 14,
+        NanoRadar_NRA24 = 14,
     };
 };

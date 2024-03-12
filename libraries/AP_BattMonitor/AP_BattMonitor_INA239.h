@@ -23,8 +23,6 @@ public:
     void init(void) override;
     void read() override;
 
-    static const struct AP_Param::GroupInfo var_info[];
-
 protected:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
@@ -46,9 +44,6 @@ protected:
     } accumulate;
     float current_LSB;
     float voltage_LSB;
-
-    AP_Float max_amps;
-    AP_Float rShunt;
 };
 
 #endif // AP_BATTERY_INA239_ENABLED

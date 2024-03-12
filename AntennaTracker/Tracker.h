@@ -40,6 +40,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
 // Configuration
@@ -53,6 +54,10 @@
 
 #include "AP_Arming.h"
 
+#if AP_SCRIPTING_ENABLED
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 #include "mode.h"
 
 class Tracker : public AP_Vehicle {
@@ -64,6 +69,8 @@ public:
     friend class ModeGuided;
     friend class Mode;
 
+    Tracker(void);
+
     void arm_servos();
     void disarm_servos();
 
@@ -71,6 +78,8 @@ private:
     Parameters g;
 
     uint32_t start_time_ms = 0;
+
+    AP_Logger logger;
 
     /**
        antenna control channels
@@ -86,6 +95,8 @@ private:
 
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
+
+    AP_Stats stats;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -104,6 +115,10 @@ private:
     ModeScan mode_scan;
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
+
+#if AP_SCRIPTING_ENABLED
+    AP_Scripting scripting;
+#endif
 
     // Vehicle state
     struct {
@@ -154,20 +169,12 @@ private:
     // GCS_Mavlink.cpp
     void send_nav_controller_output(mavlink_channel_t chan);
 
-#if HAL_LOGGING_ENABLED
-    // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
-    const struct LogStructure *get_log_structures() const override {
-        return log_structure;
-    }
-    uint8_t get_num_log_structures() const override;
-
     // Log.cpp
     void Log_Write_Attitude();
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
     void Log_Write_Vehicle_Startup_Messages();
-#endif
+    void log_init(void);
 
     // Parameters.cpp
     void load_parameters(void) override;

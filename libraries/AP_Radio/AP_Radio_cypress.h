@@ -14,9 +14,7 @@
  */
 #pragma once
 
-#include "AP_Radio_config.h"
-
-#if AP_RADIO_CYRF6936_ENABLED
+#if HAL_RCINPUT_WITH_AP_RADIO
 
 /*
   AP_Radio implementation for Cypress 2.4GHz radio.
@@ -281,4 +279,4 @@ private:
     void setup_timeout(uint32_t timeout_ms);
 };
 
-#endif  // AP_RADIO_CYRPRESS_ENABLED
+#endif

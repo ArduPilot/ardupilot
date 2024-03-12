@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Build and run the motors example stability test at a range of yaw headroom and throttle average max values
 # Output results to files for comparison
 

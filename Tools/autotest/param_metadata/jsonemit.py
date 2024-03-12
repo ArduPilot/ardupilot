@@ -55,12 +55,9 @@ class JSONEmit(Emit):
             if ':' in name:
                 name = name.split(':')[1]
 
-            # Remove various unwanted keys
-            for key in 'real_path', 'SortValues', '__field_text':
-                try:
-                    param.__dict__.pop(key)
-                except KeyError:
-                    pass
+            # Remove real_path key
+            if 'real_path' in param.__dict__:
+                param.__dict__.pop('real_path')
 
             # Get range section if available
             range_json = {}

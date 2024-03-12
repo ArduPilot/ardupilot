@@ -30,25 +30,29 @@ local SITL_wind = false
 
 
 -- Read in required params
-local value = param:get('AIRSPEED_CRUISE')
+local value = param:get('TRIM_ARSPD_CM')
 if value then
-  air_speed = value
+  air_speed = value / 100
 else
-  error('LUA: get AIRSPEED_CRUISE failed')
+  error('LUA: get TRIM_ARSPD_CM failed')
 end
-value = param:get('AIRSPEED_MIN')
+value = param:get('ARSPD_FBW_MIN')
 if value then
   min_air_speed = value
 else
-  error('LUA: get AIRSPEED_MIN failed')
+  error('LUA: get ARSPD_FBW_MIN failed')
 end
-min_ground_speed = param:get('MIN_GROUNDSPEED')
-if not min_groundspeed then
-  error('LUA: get MIN_GROUNDSPEED failed')
+value = param:get('MIN_GNDSPD_CM')
+if value then
+  min_ground_speed = value / 100
+else
+  error('LUA: get MIN_GNDSPD_CM failed')
 end
-max_bank_angle = param:get('ROLL_LIMIT_DEG')
-if not max_bank_angle then
-  error('LUA: get ROLL_LIMIT_DEG failed')
+value = param:get('LIM_ROLL_CD')
+if value then
+  max_bank_angle = value / 100
+else
+  error('LUA: get LIM_ROLL_CD failed')
 end
 
 -- https://en.wikipedia.org/wiki/Standard_rate_turn#Radius_of_turn_formula

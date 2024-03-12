@@ -28,7 +28,7 @@
 
 #include <string>
 
-#include <AP_HAL/utility/Socket_native.h>
+#include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
 
@@ -84,8 +84,8 @@ private:
     void send_servos(const struct sitl_input &input);
 
     uint64_t prev_timestamp_us;
-    SocketAPM_native recv_sock;
-    SocketAPM_native send_sock;
+    SocketAPM recv_sock;
+    SocketAPM send_sock;
 };
 
 } // namespace SITL

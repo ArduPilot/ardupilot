@@ -219,8 +219,7 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     }
 
     if (!active_msg_sent) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Weathervane Active: %s", dir_string);
-        (void)dir_string;  // in case GCS is disabled
+        gcs().send_text(MAV_SEVERITY_INFO, "Weathervane Active: %s", dir_string);
         active_msg_sent = true;
     }
 

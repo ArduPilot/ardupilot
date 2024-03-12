@@ -96,10 +96,8 @@ ESPBAUD=921600 ./waf plane --upload
 You can use your default build system (make or ninja) to build other esp-idf target.
 
 For example :
-  source modules/esp_idf/export.sh
-  cd /home/buzz2/ardupilot/build/esp32buzz/esp-idf_build
-  ninja flash
-  ninja monitor
+- ninja flash
+- ninja monitor
 
 If you want to specify the port, specify before any command:
 ```

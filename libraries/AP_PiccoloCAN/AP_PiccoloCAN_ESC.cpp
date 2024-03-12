@@ -20,7 +20,7 @@
 #if HAL_PICCOLO_CAN_ENABLE
 
 /*
- * Decode a received CAN frame.
+ * Decode a recevied CAN frame.
  * It is assumed at this point that the received frame is intended for *this* ESC
  */
 bool AP_PiccoloCAN_ESC::handle_can_frame(AP_HAL::CANFrame &frame)

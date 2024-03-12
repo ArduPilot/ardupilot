@@ -22,6 +22,7 @@ from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
+from xmlemit_mp import XmlEmitMP
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -35,7 +36,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
 
 args = parser.parse_args()
@@ -65,7 +66,7 @@ def find_vehicle_parameter_filepath(vehicle_name):
         "Sub": "ArduSub",
     }
 
-    # first try ArduCopter/Parameters.cpp
+    # first try ArduCopter/Parmameters.cpp
     for top_dir in apm_path, apm_tools_path:
         path = os.path.join(top_dir, vehicle_name, "Parameters.cpp")
         if os.path.exists(path):
@@ -108,12 +109,11 @@ def lua_applets():
 
 libraries = []
 
-if args.vehicle != "AP_Periph":
-    # AP_Vehicle also has parameters rooted at "", but isn't referenced
-    # from the vehicle in any way:
-    ap_vehicle_lib = Library("", reference="VEHICLE") # the "" is tacked onto the front of param name
-    setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
-    libraries.append(ap_vehicle_lib)
+# AP_Vehicle also has parameters rooted at "", but isn't referenced
+# from the vehicle in any way:
+ap_vehicle_lib = Library("", reference="VEHICLE") # the "" is tacked onto the front of param name
+setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
+libraries.append(ap_vehicle_lib)
 
 libraries.append(lua_applets())
 
@@ -630,6 +630,7 @@ all_emitters = {
     'rst': RSTEmit,
     'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
+    'xml_mp': XmlEmitMP,
 }
 
 try:

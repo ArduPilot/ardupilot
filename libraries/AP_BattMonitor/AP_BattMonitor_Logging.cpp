@@ -1,8 +1,3 @@
-#include "AP_BattMonitor_config.h"
-#include <AP_Logger/AP_Logger_config.h>
-
-#if AP_BATTERY_ENABLED && HAL_LOGGING_ENABLED
-
 #include "AP_BattMonitor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 
@@ -21,9 +16,6 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         temperature_cd = temperature * 100.0;
     }
 
-    uint8_t soh_pct = 0;
-    IGNORE_RETURN(get_state_of_health_pct(soh_pct));
-
     const struct log_BAT pkt{
         LOG_PACKET_HEADER_INIT(LOG_BAT_MSG),
         time_us             : time_us,
@@ -36,8 +28,7 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         temperature         : temperature_cd,
         resistance          : _state.resistance,
         rem_percent         : percent,
-        health              : _state.healthy,
-        state_of_health_pct : soh_pct
+        health              : _state.healthy
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
@@ -88,5 +79,3 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
     }
 #endif
 }
-
-#endif  // AP_BATTERY_ENABLED && HAL_LOGGING_ENABLED

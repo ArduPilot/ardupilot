@@ -20,12 +20,9 @@
   With thanks to cleanflight and betaflight projects
  */
 
-#include "AP_Radio_config.h"
-
-#if AP_RADIO_BK2425_ENABLED
-
 #include "AP_Radio_backend.h"
 
+#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 #include "hal.h"
 #include "telem_structure.h"
 #include "driver_bk2425.h"
@@ -261,4 +258,4 @@ private:
     uint8_t myDroneId[4]; // CRC of the flight boards UUID, to inform the tx
 };
 
-#endif // AP_RADIO_BK2425_ENABLED
+#endif // HAL_RCINPUT_WITH_AP_RADIO

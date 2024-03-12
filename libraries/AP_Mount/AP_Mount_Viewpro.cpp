@@ -76,9 +76,6 @@ void AP_Mount_Viewpro::update()
     // send vehicle attitude and position
     send_m_ahrs();
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
     // if tracking is active we do not send new targets to the gimbal
     if (_last_tracking_status == TrackingStatus::SEARCHING || _last_tracking_status == TrackingStatus::TRACKING) {
         return;
@@ -313,14 +310,14 @@ void AP_Mount_Viewpro::process_packet()
             const uint8_t patch_ver = atoi((const char*)fw_patch_str) & 0xFF;
             _firmware_version = (patch_ver << 16) | (minor_ver << 8) | major_ver;
             _got_firmware_version = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
+            gcs().send_text(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
             // gimbal model, length is 10 bytes
             strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
             _got_model_name = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
             break;
         default:
             // unsupported control command
@@ -340,16 +337,16 @@ void AP_Mount_Viewpro::process_packet()
             _last_tracking_status = tracking_status;
             switch (tracking_status) {
             case TrackingStatus::STOPPED:
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking OFF", send_text_prefix);
                 break;
             case TrackingStatus::SEARCHING:
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking searching", send_text_prefix);
                 break;
             case TrackingStatus::TRACKING:
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking ON", send_text_prefix);
                 break;
             case TrackingStatus::LOST:
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s tracking Lost", send_text_prefix);
                 break;
             }
         }
@@ -368,7 +365,7 @@ void AP_Mount_Viewpro::process_packet()
         const bool recording = (recording_status == RecordingStatus::RECORDING);
         if (recording != _recording) {
             _recording = recording;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
+            gcs().send_text(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
         }
 
         // get optical zoom times
@@ -544,7 +541,7 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     }
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);

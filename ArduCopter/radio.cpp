@@ -87,6 +87,9 @@ void Copter::read_radio()
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
+        // RC receiver must be attached if we've just got input
+        ap.rc_receiver_present = true;
+
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
 
@@ -112,13 +115,13 @@ void Copter::read_radio()
         // throttle failsafe not enabled
         return;
     }
-    if (!rc().has_ever_seen_rc_input() && !motors->armed()) {
+    if (!ap.rc_receiver_present && !motors->armed()) {
         // we only failsafe if we are armed OR we have ever seen an RC receiver
         return;
     }
 
     // Log an error and enter failsafe.
-    LOGGER_WRITE_ERROR(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
+    AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
 }
 
@@ -134,7 +137,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(rc().has_ever_seen_rc_input() || motors->armed())) {
+        if (failsafe.radio || !(ap.rc_receiver_present || motors->armed())) {
             return;
         }
 

@@ -25,9 +25,6 @@ public:
         return &obj_channels[chan];
     }
 
-    // we always trust our RC inputs ATM:
-    bool in_rc_failsafe() const override { return false; }
-
 protected:
 
     // note that these callbacks are not presently used on Tracker:

@@ -159,15 +159,6 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     if (!dir[idx].path) {
         return nullptr;
     }
-
-    // Take a sneak peek and reset
-    const char *name = AP_ROMFS::dir_list(dir[idx].path, dir[idx].ofs);
-    dir[idx].ofs = 0;
-    if (!name) {
-        // Directory does not exist
-        return nullptr;
-    }
-
     return (void*)&dir[idx];
 }
 
@@ -183,28 +174,12 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         return nullptr;
     }
     const uint32_t plen = strlen(dir[idx].path);
-    if (plen > 0) {
-        // Offset to get just file/directory name
-        name += plen + 1;
+    if (strncmp(name, dir[idx].path, plen) != 0 || name[plen] != '/') {
+        return nullptr;
     }
-
-    // Copy full name
+    name += plen + 1;
+    dir[idx].de.d_type = DT_REG;
     strncpy(dir[idx].de.d_name, name, sizeof(dir[idx].de.d_name));
-
-    const char* slash = strchr(name, '/');
-    if (slash == nullptr) {
-        // File
-        dir[idx].de.d_type = DT_REG;
-
-    } else {
-        // Directory
-        dir[idx].de.d_type = DT_DIR;
-
-        // Add null termination after directory name
-        const size_t index = slash - name;
-        dir[idx].de.d_name[index] = 0;
-    }
-
     return &dir[idx].de;
 }
 

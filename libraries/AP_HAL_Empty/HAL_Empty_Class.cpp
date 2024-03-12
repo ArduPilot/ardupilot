@@ -9,10 +9,9 @@
 
 using namespace Empty;
 
-static UARTDriver serial0Driver;
-static UARTDriver serial1Driver;
-static UARTDriver serial2Driver;
-static UARTDriver serial3Driver;
+static UARTDriver uartADriver;
+static UARTDriver uartBDriver;
+static UARTDriver uartCDriver;
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 static Storage storageDriver;
@@ -26,20 +25,20 @@ static Flash flashDriver;
 
 HAL_Empty::HAL_Empty() :
     AP_HAL::HAL(
-        &serial0Driver,
-        &serial1Driver,
-        &serial2Driver,
-        &serial3Driver,
-        nullptr,            /* no SERIAL4 */
-        nullptr,            /* no SERIAL5 */
-        nullptr,            /* no SERIAL6 */
-        nullptr,            /* no SERIAL7 */
-        nullptr,            /* no SERIAL8 */
-        nullptr,            /* no SERIAL9 */
+        &uartADriver,
+        &uartBDriver,
+        &uartCDriver,
+        nullptr,            /* no uartD */
+        nullptr,            /* no uartE */
+        nullptr,            /* no uartF */
+        nullptr,            /* no uartG */
+        nullptr,            /* no uartH */
+        nullptr,            /* no uartI */
+        nullptr,            /* no uartJ */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &serial0Driver,
+        &uartADriver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,

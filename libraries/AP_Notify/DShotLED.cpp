@@ -23,8 +23,7 @@ extern const AP_HAL::HAL& hal;
 bool DShotLED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     // don't play the motor LEDs while flying
-    if (hal.util->get_soft_armed() || (hal.rcout->get_dshot_esc_type() != AP_HAL::RCOutput::DSHOT_ESC_BLHELI
-        && hal.rcout->get_dshot_esc_type() != AP_HAL::RCOutput::DSHOT_ESC_BLHELI_EDT)) {
+    if (hal.util->get_soft_armed() || hal.rcout->get_dshot_esc_type() != AP_HAL::RCOutput::DSHOT_ESC_BLHELI) {
         return false;
     }
 
