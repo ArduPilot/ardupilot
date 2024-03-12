@@ -49,11 +49,11 @@ In "Data->Messages" the coordinates and height (that of arming) of the dynamic h
 Without the GPS fix the message "Home position not set, unable to set HOME to current position" will be shown.
 To set a new home dynamic point you will need to flip the switch again, the intermediate position of the switch will have no effect.
    
-Preset home position: with the GPS fix and the system armed flip the switch to the middle state position and check on the
+7) Preset home position: with the GPS fix and the system armed flip the switch to the middle state position and check on the
 Mission Planner hud if the "Preset home activated" message appears, the new home will be set.
 In "Data->Messages" the coordinates and height set in the script will be shown.
 
-7) To set a new dynamic or preset home point you will need to switching to another position and returning to the desired one.
+8) To set a new dynamic or preset home point you will need to switching to another position and returning to the desired one.
 Always return the switch to the low position after making the desired choice.   
 
 ## Disclamer
