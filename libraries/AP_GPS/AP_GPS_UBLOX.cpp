@@ -94,8 +94,12 @@ extern const AP_HAL::HAL& hal;
  # define CFG_Debug(fmt, args ...)
 #endif
 
-AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
-    AP_GPS_Backend(_gps, _state, _port),
+AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
+                           AP_GPS::Params &_params,
+                           AP_GPS::GPS_State &_state,
+                           AP_HAL::UARTDriver *_port,
+                           AP_GPS::GPS_Role _role) :
+    AP_GPS_Backend(_gps, _params, _state, _port),
     _next_message(STEP_PVT),
     _ublox_port(255),
     _unconfigured_messages(CONFIG_ALL),
@@ -1110,7 +1114,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
 #if UBLOX_GNSS_SETTINGS
         case MSG_CFG_GNSS:
-            if (gps._gnss_mode[state.instance] != 0) {
+            if (params.gnss_mode != 0) {
                 struct ubx_cfg_gnss start_gnss = _buffer.gnss;
                 uint8_t gnssCount = 0;
                 Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -1129,13 +1133,13 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
 
                 for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
-                    if((gps._gnss_mode[state.instance] & (1 << i)) && i != GNSS_SBAS) {
+                    if((params.gnss_mode & (1 << i)) && i != GNSS_SBAS) {
                         gnssCount++;
                     }
                 }
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
-                    if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                    if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
                         if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
@@ -1210,7 +1214,7 @@ AP_GPS_UBLOX::_parse_gps(void)
            _ublox_port = _buffer.prt.portID;
            return false;
         case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
+            if(_buffer.nav_rate.measure_rate_ms != params.rate_ms ||
                _buffer.nav_rate.nav_rate != 1 ||
                _buffer.nav_rate.timeref != 0) {
                _configure_rate();

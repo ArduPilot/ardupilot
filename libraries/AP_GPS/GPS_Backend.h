@@ -49,7 +49,7 @@
 class AP_GPS_Backend
 {
 public:
-    AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_Backend(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // we declare a virtual destructor so that GPS drivers can
     // override with a custom destructor if need be.
@@ -119,6 +119,7 @@ protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
     AP_GPS::GPS_State &state;           ///< public state for this instance
+    AP_GPS::Params &params;
 
     uint64_t _last_pps_time_us;
     JitterCorrection jitter_correction;

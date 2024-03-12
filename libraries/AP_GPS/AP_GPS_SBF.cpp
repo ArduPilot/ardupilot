@@ -58,9 +58,11 @@ constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
 
-AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
+AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
+                       AP_GPS::Params &_params,
+                       AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
@@ -112,7 +114,7 @@ AP_GPS_SBF::read(void)
                         switch (config_step) {
                             case Config_State::Baud_Rate:
                                 if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
-                                             (int)gps._com_port[state.instance],
+                                             (int)params.com_port,
                                              230400,
                                              port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
                                     config_string = nullptr;
@@ -131,7 +133,7 @@ AP_GPS_SBF::read(void)
                                 }
                                 if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod%s,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)gps._com_port[state.instance],
+                                             (int)params.com_port,
                                              extra_config) == -1) {
                                     config_string = nullptr;
                                 }

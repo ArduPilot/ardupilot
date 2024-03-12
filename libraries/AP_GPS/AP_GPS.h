@@ -142,6 +142,29 @@ public:
     bool is_rtk_base(uint8_t instance) const;
     bool is_rtk_rover(uint8_t instance) const;
 
+    // params for an instance:
+    class Params {
+    public:
+        // Constructor
+        Params(void);
+
+        AP_Enum<GPS_Type> type;
+        AP_Int8 gnss_mode;
+        AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
+        AP_Vector3f antenna_offset;
+        AP_Int16 delay_ms;
+        AP_Int8  com_port;
+#if HAL_ENABLE_DRONECAN_DRIVERS
+        AP_Int32 node_id;
+        AP_Int32 override_node_id;
+#endif
+#if GPS_MOVING_BASELINE
+        MovingBase mb_params;
+#endif // GPS_MOVING_BASELINE
+
+        static const struct AP_Param::GroupInfo var_info[];
+    };
+
     /// GPS status codes.  These are kept aligned with MAVLink by
     /// static_assert in AP_GPS.cpp
     enum GPS_Status {
@@ -570,7 +593,7 @@ public:
 
     // get configured type by instance
     GPS_Type get_type(uint8_t instance) const {
-        return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
+        return instance>=ARRAY_SIZE(params) ? GPS_Type::GPS_TYPE_NONE : params[instance].type;
     }
 
     // get iTOW, if supported, zero otherwie
@@ -596,7 +619,7 @@ public:
 protected:
 
     // configuration parameters
-    AP_Int8 _type[GPS_MAX_RECEIVERS];
+    Params params[GPS_MAX_RECEIVERS];
     AP_Int8 _navfilter;
     AP_Int8 _auto_switch;
     AP_Int16 _sbp_logmask;
@@ -605,23 +628,11 @@ protected:
     AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode[GPS_MAX_RECEIVERS];
-    AP_Int16 _rate_ms[GPS_MAX_RECEIVERS];   // this parameter should always be accessed using get_rate_ms()
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    AP_Vector3f _antenna_offset[GPS_MAX_RECEIVERS];
-    AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
-    AP_Int8  _com_port[GPS_MAX_RECEIVERS];
     AP_Int8 _blend_mask;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if HAL_ENABLE_DRONECAN_DRIVERS
-    AP_Int32 _node_id[GPS_MAX_RECEIVERS];
-    AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
-#endif
-#if GPS_MOVING_BASELINE
-    MovingBase mb_params[GPS_MAX_RECEIVERS];
-#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 

@@ -50,9 +50,11 @@ do {                                            \
 # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
+AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
+                         AP_GPS::Params &_params,
+                         AP_GPS::GPS_State &_state,
                          AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
@@ -60,14 +62,14 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     msg.state = Msg_Parser::State::STARTTX;
 
     constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
-    gps._com_port[state.instance].set_default(default_com_port);
-    const auto com_port = gps._com_port[state.instance].get();
+    params.com_port.set_default(default_com_port);
+    const auto com_port = params.com_port;
     if (!validate_com_port(com_port)) {
         // The user parameter for COM port is not a valid GSOF port
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, com_port);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port);
         return;
     }
-    requestBaud(static_cast<HW_Port>(com_port));
+    requestBaud(static_cast<HW_Port>(unsigned(com_port)));
 
     const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
@@ -81,7 +83,7 @@ AP_GPS_GSOF::read(void)
     const uint32_t now = AP_HAL::millis();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
-        const auto com_port = gps._com_port[state.instance].get();
+        const auto com_port = params.com_port.get();
         if (!validate_com_port(com_port)) {
             // The user parameter for COM port is not a valid GSOF port
             return false;

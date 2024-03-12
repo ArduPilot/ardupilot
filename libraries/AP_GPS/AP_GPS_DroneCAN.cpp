@@ -63,8 +63,11 @@ AP_GPS_DroneCAN::DetectedModules AP_GPS_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_GPS_DroneCAN::_sem_registry;
 
 // Member Methods
-AP_GPS_DroneCAN::AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role _role) :
-    AP_GPS_Backend(_gps, _state, nullptr),
+AP_GPS_DroneCAN::AP_GPS_DroneCAN(AP_GPS &_gps,
+                                 AP_GPS::Params &_params,
+                                 AP_GPS::GPS_State &_state,
+                                 AP_GPS::GPS_Role _role) :
+    AP_GPS_Backend(_gps, _params, _state, nullptr),
     interim_state(_state),
     role(_role)
 {
@@ -126,13 +129,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     bool bad_override_config = false;
     for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
-            if (_gps._override_node_id[_state.instance] != 0 &&
-                _gps._override_node_id[_state.instance] != _detected_modules[i].node_id) {
+            if (_gps.params[_state.instance].override_node_id != 0 &&
+                _gps.params[_state.instance].override_node_id != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
             }
             last_match = found_match;
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_detected_modules[i].node_id == _gps._override_node_id[j] &&
+                if (_detected_modules[i].node_id == _gps.params[j].override_node_id &&
                     (j != _state.instance)) {
                     //wrong instance
                     found_match = -1;
@@ -143,13 +146,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 
             // Handle Duplicate overrides
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_gps._override_node_id[i] != 0 && (i != j) &&
-                    _gps._override_node_id[i] == _gps._override_node_id[j]) {
+                if (_gps.params[i].override_node_id != 0 && (i != j) &&
+                    _gps.params[i].override_node_id == _gps.params[j].override_node_id) {
                     bad_override_config = true;
                 }
             }
             if (bad_override_config) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps._override_node_id[i].get());
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps.params[i].override_node_id.get());
                 last_match = i;
             }
 
@@ -167,14 +170,14 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     // initialise the backend based on the UAVCAN Moving baseline selection
     switch (_gps.get_type(_state.instance)) {
         case AP_GPS::GPS_TYPE_UAVCAN:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_NORMAL);
+            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_NORMAL);
             break;
 #if GPS_MOVING_BASELINE
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_BASE);
+            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_BASE);
             break;
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_ROVER);
+            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_ROVER);
             break;
 #endif
         default:
@@ -198,15 +201,15 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
-            if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
+            if (_detected_modules[found_match].node_id == AP::gps().params[i].node_id) {
                 if (i == _state.instance) {
                     // Nothing to do here
                     break;
                 }
                 // else swap
-                uint8_t tmp = AP::gps()._node_id[_state.instance].get();
-                AP::gps()._node_id[_state.instance].set_and_notify(_detected_modules[found_match].node_id);
-                AP::gps()._node_id[i].set_and_notify(tmp);
+                uint8_t tmp = AP::gps().params[_state.instance].node_id.get();
+                AP::gps().params[_state.instance].node_id.set_and_notify(_detected_modules[found_match].node_id);
+                AP::gps().params[i].node_id.set_and_notify(tmp);
             }
         }
 #if GPS_MOVING_BASELINE
@@ -225,31 +228,33 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 bool AP_GPS_DroneCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_len)
 {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        const auto &params_i = AP::gps().params[i];
         bool overriden_node_found = false;
         bool bad_override_config = false;
-        if (AP::gps()._override_node_id[i] == 0) {
+        if (params_i.override_node_id == 0) {
             //anything goes
             continue;
         }
         for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-            if (AP::gps()._override_node_id[i] == AP::gps()._override_node_id[j] && (i != j)) {
+            const auto &params_j = AP::gps().params[j];
+            if (params_i.override_node_id == params_j.override_node_id && (i != j)) {
                 bad_override_config = true;
                 break;
             }
             if (i == _detected_modules[j].instance && _detected_modules[j].driver) {
-                if (AP::gps()._override_node_id[i] == _detected_modules[j].node_id) {
+                if (params_i.override_node_id == _detected_modules[j].node_id) {
                     overriden_node_found = true;
                     break;
                 }
             }
         }
         if (bad_override_config) {
-            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)AP::gps()._override_node_id[i].get());
+            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)params_i.override_node_id.get());
             return false;
         }
 
         if (!overriden_node_found) {
-            snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)AP::gps()._override_node_id[i].get(), i + 1);
+            snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)params_i.override_node_id.get(), i + 1);
             return false;
         }
     }
@@ -287,7 +292,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
                 _detected_modules[i].node_id = node_id;
                 // Just set the Node ID in order of appearance
                 // This will be used to set select ids
-                AP::gps()._node_id[i].set_and_notify(node_id);
+                AP::gps().params[i].node_id.set_and_notify(node_id);
                 break;
             }
         }
@@ -494,7 +499,7 @@ void AP_GPS_DroneCAN::handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg)
 void AP_GPS_DroneCAN::handle_heading_msg(const ardupilot_gnss_Heading& msg)
 {
 #if GPS_MOVING_BASELINE
-    if (seen_relposheading && gps.mb_params[interim_state.instance].type.get() != 0) {
+    if (seen_relposheading && gps.params[interim_state.instance].mb_params.type.get() != 0) {
         // we prefer to use the relposheading to get yaw as it allows
         // the user to more easily control the relative antenna positions
         return;
