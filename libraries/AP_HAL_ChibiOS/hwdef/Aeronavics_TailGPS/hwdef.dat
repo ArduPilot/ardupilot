@@ -1,68 +1,125 @@
-# hw definition file for processing by chibios_pins.py
+# hw definition file for Aeronavics_TailGPS
 
-
+include ../include/no_bootloader_DFU.inc
 
 # MCU class and specific type
 MCU STM32F103 STM32F103xB
 
-# bootloader starts firmware at 23k + 2k (STORAGE_FLASH_PAGES)
-FLASH_RESERVE_START_KB 0
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+FLASH_SIZE_KB 128
 
-# store parameters in pages 23 and 24
-#STORAGE_FLASH_PAGE 23
+# store parameters in pages 18 and 19
+STORAGE_FLASH_PAGE 18
 define HAL_STORAGE_SIZE 800
-
-# board ID for firmware load
-APJ_BOARD_ID 1000
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
 
-# setup build for a peripheral firmware
-env AP_PERIPH 1
-
-# enable watchdog
-                      
-
-define HAL_USE_ADC FALSE
-
-
-###timer settings - add this block to common/stm32f1_mcuconf.h
-
-#elif STM32_HSECLK == 16000000U     //existing line
-
-#ifdef STM32F103_MCUCONF
-#define STM32_SW                            STM32_SW_PLL
-#define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV2
-#define STM32_PLLSRC                        STM32_PLLSRC_HSE
-#define STM32_PLLMUL_VALUE                  9
-#define STM32_HPRE                          STM32_HPRE_DIV1
-#define STM32_PPRE1                         STM32_PPRE1_DIV2
-#define STM32_PPRE2                         STM32_PPRE2_DIV1
-#define STM32_ADCPRE                        STM32_ADCPRE_DIV6
-#else
-
-#################################################################
+# board ID for firmware load
+APJ_BOARD_ID 1000
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
+# setup build for a peripheral firmware
+env AP_PERIPH 1     
 
+
+define HAL_NO_GPIO_IRQ
+define DMA_RESERVE_SIZE 0
+
+
+#MAIN_STACK is stack of initial thread and ISRs
+MAIN_STACK 0x300
+
+#PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+define HAL_DISABLE_LOOP_DELAY
+
+# disable unnecessary threads
+define HAL_NO_MONITOR_THREAD
+define HAL_NO_TIMER_THREAD
+define HAL_NO_RCOUT_THREAD
+define HAL_NO_RCIN_THREAD
+
+
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# we're too low on flash with old compiler for bootloader
+#define HAL_NO_ROMFS_SUPPORT
+
+
+
+
+
+define HAL_USE_ADC FALSE
 
 define CH_CFG_ST_FREQUENCY 1000
 
-# assume the 128k flash part for now
-FLASH_SIZE_KB 128
+define CH_CFG_ST_TIMEDELTA 0
+#define CH_CFG_USE_DYNAMIC FALSE
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
 
 
-# order of UARTs
-SERIAL_ORDER USART1 USART2
+
+#defined to turn off undef warnings
+define __FPU_PRESENT 0
+
+define HAL_USE_RTC FALSE
+define DISABLE_SERIAL_ESC_COMM TRUE
+
+#define HAL_USE_I2C FALSE
+#define STM32_I2C_USE_I2C1 FALSE
+
+#define HAL_UART_MIN_TX_SIZE 256
+#define HAL_UART_MIN_RX_SIZE 128
+
+#define HAL_UART_STACK_SIZE 256
+#define STORAGE_THD_WA_SIZE 300
+#define IO_THD_WA_SIZE      300
+
+
+define HAL_DEVICE_THREAD_STACK 256
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 0
+
+
+
+
+
+# disable stack checking to reduce flash cost
+define CH_DBG_ENABLE_STACK_CHECK FALSE
+
+
+
+
+
+
+
+# -------------------- MSP --------------------------------
+define HAL_PERIPH_ENABLE_MSP
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 1
+
+
+# ------------------  LED  -------------------------------
 
 # a LED to flash
 PB0 LED OUTPUT HIGH
 PB1 LED1 OUTPUT HIGH
 
 define HAL_LED_ON 1
+
+# ------------------  USART  -------------------------------
+
+# order of UARTs
+SERIAL_ORDER USART1 USART2
 
 # USART1, connected to RangeFinder
 PA9  USART1_TX USART1 SPEED_HIGH NODMA
@@ -75,9 +132,14 @@ PA3 USART2_RX USART2 SPEED_HIGH NODMA
 define HAL_UART_NODMA
 
 
-# enable CAN support
+# ------------------  CAN  -------------------------------
 PA11 CAN_RX CAN
 PA12 CAN_TX CAN
+
+define HAL_CAN_POOL_SIZE 2500
+
+
+# ------------------  SPI  -------------------------------
 
 define AP_BARO_MS56XX_ENABLED 1
 
@@ -86,69 +148,15 @@ PA5 SPI1_SCK  SPI1
 PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 
-
 PA4 BARO_CS CS
-
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 16*MHZ 16*MHZ
 
 
-define HAL_NO_GPIO_IRQ
-define CH_CFG_ST_TIMEDELTA 0
-#define CH_CFG_USE_DYNAMIC FALSE
-define SERIAL_BUFFERS_SIZE 512
-define PORT_INT_REQUIRED_STACK 64
-
-# avoid timer and RCIN threads to save memory
-define HAL_NO_TIMER_THREAD
-define HAL_NO_RCOUT_THREAD
-define HAL_NO_RCIN_THREAD
-
-#defined to turn off undef warnings
-define __FPU_PRESENT 0
-
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
-
-define DMA_RESERVE_SIZE 0
-
-
-#MAIN_STACK is stack of initial thread and ISRs
-MAIN_STACK 0x200
-
-#PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0xA00
-define HAL_DISABLE_LOOP_DELAY
-
-
-
-
-
-# reduce memory overheads
-define HAL_CAN_POOL_SIZE 2500
-
-define HAL_USE_I2C FALSE
-define STM32_I2C_USE_I2C1 FALSE
-
-define HAL_UART_MIN_TX_SIZE 256
-define HAL_UART_MIN_RX_SIZE 128
-
-define HAL_UART_STACK_SIZE 256
-define STORAGE_THD_WA_SIZE 300
-define IO_THD_WA_SIZE      300
-
-define HAL_NO_MONITOR_THREAD
-
-
-
-
-define HAL_DEVICE_THREAD_STACK 256
-
-define AP_PARAM_MAX_EMBEDDED_PARAM 0
-
-
-# GPS
+# ------------------  GPS  -------------------------------
 define HAL_PERIPH_ENABLE_GPS
+
+define GPS_MAX_RATE_MS 200
 
 # restrict backends available on f103:
 #define AP_GPS_NOVA_ENABLED 0
@@ -168,12 +176,16 @@ define GPS_MAX_INSTANCES 1
 #define HAL_GYROFFT_ENABLED 0
 
 
+# ------------------  BUZZER  -------------------------------
 
 define AP_NOTIFY_TONEALARM_ENABLED 1
 
 # PWM output for buzzer
 PA8 TIM1_CH1 TIM1 GPIO(20) ALARM
 
+
+
+# ------------------  RANGEFINDER  -------------------------------
 
 #RangeFinder
 #define HAL_PERIPH_ENABLE_RANGEFINDER
@@ -185,21 +197,25 @@ define AP_PERIPH_PROBE_CONTINUOUS 1
 
 
 
-# we're too low on flash with old compiler for bootloader
-define HAL_NO_ROMFS_SUPPORT
-include ../include/no_bootloader_DFU.inc
 
 
-# setup for MSP
-define HAL_MSP_ENABLED 1
 
 
-# keep ROMFS uncompressed as we don't have enough RAM
-# to uncompress the bootloader at runtime
-env ROMFS_UNCOMPRESSED True
 
-# reduce the number of CAN RX Buffer
-define HAL_CAN_RX_QUEUE_SIZE 32
+#-----------------------------------------------------------------
+#timer settings - add this block to common/stm32f1_mcuconf.h
 
-# disable stack checking to reduce flash cost
-define CH_DBG_ENABLE_STACK_CHECK FALSE
+#elif STM32_HSECLK == 16000000U     //existing line
+
+#ifdef STM32F103_MCUCONF
+#define STM32_SW                            STM32_SW_PLL
+#define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV2
+#define STM32_PLLSRC                        STM32_PLLSRC_HSE
+#define STM32_PLLMUL_VALUE                  9
+#define STM32_HPRE                          STM32_HPRE_DIV1
+#define STM32_PPRE1                         STM32_PPRE1_DIV2
+#define STM32_PPRE2                         STM32_PPRE2_DIV1
+#define STM32_ADCPRE                        STM32_ADCPRE_DIV6
+#else
+
+#################################################################
