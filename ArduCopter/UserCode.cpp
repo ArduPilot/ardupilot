@@ -36,17 +36,17 @@ int CAM_device_port     = 4;
 int PAMD_device_port    = 2;
 int QuadCam1qpd_port    = 1;
 
-float u1_POS_1          = 11.11;
-float u1_POS_2          = 12.12;
-float u1_POS_3          = 13.13;
+float u1_POS_1          = 0.0;
+float u1_POS_2          = 0.0;
+float u1_POS_3          = 0.0;
 
-float u1_CAC_1          = 14.14;
-float u1_CAC_2          = 15.15;
-float u1_CAC_3          = 16.16;
+float u1_CAC_1          = 0.0;
+float u1_CAC_2          = 0.0;
+float u1_CAC_3          = 0.0;
 
-float u1_PAC_1          = 17.17;
-float u1_PAC_2          = 18.18;
-float u1_PAC_3          = 19.19;
+float u1_PAC_1          = 0.0;
+float u1_PAC_2          = 0.0;
+float u1_PAC_3          = 0.0;
 
 char u1_data[]          = "12345_67890_12345";
 char CAC1_data[]        = "67890_12345_67890";
@@ -288,6 +288,8 @@ void Copter::get_PAMD_device_Data()
 
 void Copter::send_Quad1_CAM1_qpd_Data()
 {
+        u1_POS_1 = quad_roll
+
         int u1_pos_1_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_1) * 100;
         int u1_pos_2_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_2) * 100;
         int u1_pos_3_scaled         = 5000 + limit_on_forces_from_quad1(u1_POS_3) * 100;
