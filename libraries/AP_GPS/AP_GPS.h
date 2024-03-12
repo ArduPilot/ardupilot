@@ -821,6 +821,7 @@ private:
     bool parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt);
 #endif
 
+    void convert_parameters();
 };
 
 namespace AP {
