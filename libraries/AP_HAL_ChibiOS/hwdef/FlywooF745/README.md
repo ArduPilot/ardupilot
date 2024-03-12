@@ -31,7 +31,13 @@ The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://f
 
 ## Pinout
 
-![GOKU GN 745 40A AIO](GOKUGN745AIO_Pinout.png "GOKU GN 745 40A AIO")
+This board currently has two versions produced, with different pinouts. This is the original v1.0 board.
+
+![GOKU GN 745 40A AIO v1.0](GOKUGN745AIO_v1.0_Pinout.png "GOKU GN 745 40A AIO v1.0")
+
+The newer v1.2 board is shown below. Unfortunately, due to the reduced number of pads, some features, such as motors 5-8, are no longer available.
+
+![GOKU GN 745 40A AIO v1.2](GOKUGN745AIO_v1.2_Pinout.jpg "GOKU GN 745 40A AIO v1.2")
 
 ## UART Mapping
 

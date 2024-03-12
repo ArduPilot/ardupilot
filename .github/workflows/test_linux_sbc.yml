@@ -149,7 +149,8 @@ jobs:
             bebop,
             erlebrain2,
             pxfmini,
-            pxf
+            pxf,
+            canzero,
         ]
         toolchain: [
             armhf,

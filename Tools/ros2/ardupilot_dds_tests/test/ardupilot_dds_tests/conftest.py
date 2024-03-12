@@ -145,7 +145,7 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
             "speedup": "10",
             "slave": "0",
             "instance": "0",
-            "uartC": f"uart:{str(tty1)}",
+            "serial1": f"uart:{str(tty1)}",
             "defaults": str(
                 Path(
                     get_package_share_directory("ardupilot_sitl"),

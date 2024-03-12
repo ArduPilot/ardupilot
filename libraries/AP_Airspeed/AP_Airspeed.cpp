@@ -52,6 +52,7 @@
 #include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_External.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -435,6 +436,11 @@ void AP_Airspeed::allocate()
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
             break;
+        case TYPE_EXTERNAL:
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+            sensor[i] = new AP_Airspeed_External(*this, i);
+#endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -556,7 +562,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
             // check if new offset differs too greatly from last calibration, indicating pitot uncovered in wind
             if (fixed_wing_parameters != nullptr) {
                 float airspeed_min = fixed_wing_parameters->airspeed_min.get();
-                // use percentage of ARSPD_FBW_MIN as criteria for max allowed change in offset
+                // use percentage of AIRSPEED_MIN as criteria for max allowed change in offset
                 float max_change = 0.5*(sq((1 + (max_speed_pcnt * 0.01))*airspeed_min) - sq(airspeed_min));
                 if (max_speed_pcnt > 0 && (abs(calibrated_offset-param[i].offset) > max_change) && (abs(param[i].offset) > 0)) {
                     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Arspd %d offset change large;cover and recal", i +1);
@@ -731,6 +737,25 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
 }
 #endif 
 
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+/*
+  handle airspeed airspeed data
+ */
+void AP_Airspeed::handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt)
+{
+    if (!lib_enabled()) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (param[i].type == TYPE_EXTERNAL && sensor[i]) {
+            sensor[i]->handle_external(pkt);
+        }
+    }
+}
+#endif 
+
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: HYGR
 // @Description: Hygrometer data
 // @Field: TimeUS: Time since system startup
@@ -788,6 +813,7 @@ void AP_Airspeed::Log_Airspeed()
 #endif
     }
 }
+#endif
 
 bool AP_Airspeed::use(uint8_t i) const
 {

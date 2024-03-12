@@ -192,13 +192,15 @@ jobs:
       - name: build rover ${{ matrix.toolchain }}
         shell: bash
         run: |
+          sudo apt-get update || true
+          sudo apt-get -y install ppp || true
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang
             export CXX=clang++
           fi
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl
+          ./waf configure --board sitl --debug --enable-math-check-indexes
           ./waf build --target bin/ardurover
           ccache -s
           ccache -z

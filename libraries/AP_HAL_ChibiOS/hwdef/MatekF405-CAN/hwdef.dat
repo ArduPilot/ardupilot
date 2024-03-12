@@ -170,9 +170,4 @@ undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-
-
-
 define DEFAULT_NTF_LED_TYPES 487

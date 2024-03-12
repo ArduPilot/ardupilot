@@ -37,7 +37,8 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #endif
-#ifndef HAL_BOOTLOADER_BUILD
+#include <AP_Logger/AP_Logger_config.h>
+#if HAL_LOGGING_ENABLED
 #include <AP_Logger/AP_Logger.h>
 #endif
 
@@ -76,6 +77,12 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
         return malloc_fastmem(size);
+    } else if (mem_type == AP_HAL::Util::MEM_FILESYSTEM) {
+#if defined(STM32H7)
+        return malloc_axi_sram(size);
+#else
+        return malloc_dma(size);
+#endif
     } else {
         return calloc(1, size);
     }
@@ -220,7 +227,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
-    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
         return;
     }
 
@@ -261,6 +268,7 @@ uint64_t Util::get_hw_rtc() const
 #if AP_BOOTLOADER_FLASHING_ENABLED
 
 #if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS.h>
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
@@ -755,7 +763,7 @@ bool Util::get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us)
 */
 void Util::log_stack_info(void)
 {
-#if !defined(HAL_BOOTLOADER_BUILD) && HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED
     static thread_t *last_tp;
     static uint8_t thread_id;
     thread_t *tp = last_tp;

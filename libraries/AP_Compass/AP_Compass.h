@@ -39,7 +39,7 @@
 #define COMPASS_MOT_ENABLED 1
 #endif
 #ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED 1
+#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 #endif
 
 // define default compass calibration fitness and consistency checks
@@ -342,12 +342,14 @@ public:
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
       fast compass calibration given vehicle position and yaw
      */
-    MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                 float lat_deg, float lon_deg,
-                                 bool force_use=false);
+    bool mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
+                           float lat_deg, float lon_deg,
+                           bool force_use=false);
+#endif
 
 #if AP_COMPASS_MSP_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
@@ -405,12 +407,14 @@ private:
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
 
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
       get mag field with the effects of offsets, diagonals and
       off-diagonals removed
     */
     bool get_uncorrected_field(uint8_t instance, Vector3f &field) const;
-    
+#endif
+
 #if COMPASS_CAL_ENABLED
     //keep track of which calibrators have been saved
     RestrictIDTypeArray<bool, COMPASS_MAX_INSTANCES, Priority> _cal_saved;
@@ -422,7 +426,7 @@ private:
     bool _cal_requires_reboot;
     bool _cal_has_run;
 
-    // enum of drivers for COMPASS_TYPEMASK
+    // enum of drivers for COMPASS_DISBLMSK
     enum DriverType {
 #if AP_COMPASS_HMC5843_ENABLED
         DRIVER_HMC5843  =0,

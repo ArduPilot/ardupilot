@@ -198,6 +198,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     }
 
     // reset input filter to value received
+    _pid_info.reset = _flags._reset_filter;
     if (_flags._reset_filter) {
         _flags._reset_filter = false;
         _target = target;
@@ -319,11 +320,15 @@ void AC_PID::update_i(float dt, bool limit)
     }
     _pid_info.I = _integrator;
     _pid_info.limit = limit;
+
+    // Set I set flag for logging and clear
+    _pid_info.I_term_set = _flags._I_set;
+    _flags._I_set = false;
 }
 
 float AC_PID::get_p() const
 {
-    return _error * _kp;
+    return _pid_info.P;
 }
 
 float AC_PID::get_i() const
@@ -333,16 +338,17 @@ float AC_PID::get_i() const
 
 float AC_PID::get_d() const
 {
-    return _kd * _derivative;
+    return _pid_info.D;
 }
 
-float AC_PID::get_ff()
+float AC_PID::get_ff() const
 {
     return  _pid_info.FF + _pid_info.DFF;
 }
 
 void AC_PID::reset_I()
 {
+    _flags._I_set = true;
     _integrator = 0.0;
 }
 
@@ -402,18 +408,9 @@ float AC_PID::get_filt_D_alpha(float dt) const
     return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
-void AC_PID::set_integrator(float target, float measurement, float integrator)
-{
-    set_integrator(target - measurement, integrator);
-}
-
-void AC_PID::set_integrator(float error, float integrator)
-{
-    _integrator = constrain_float(integrator - error * _kp, -_kimax, _kimax);
-}
-
 void AC_PID::set_integrator(float integrator)
 {
+    _flags._I_set = true;
     _integrator = constrain_float(integrator, -_kimax, _kimax);
 }
 
@@ -421,6 +418,7 @@ void AC_PID::relax_integrator(float integrator, float dt, float time_constant)
 {
     integrator = constrain_float(integrator, -_kimax, _kimax);
     if (is_positive(dt)) {
+        _flags._I_set = true;
         _integrator = _integrator + (integrator - _integrator) * (dt / (dt + time_constant));
     }
 }

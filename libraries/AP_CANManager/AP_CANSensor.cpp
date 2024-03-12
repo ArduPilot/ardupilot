@@ -21,6 +21,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include "AP_CANSensor.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -127,7 +128,7 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
         return false;
     }
 
-    if (!_can_iface->set_event_handle(&_event_handle)) {
+    if (!_can_iface->set_event_handle(&sem_handle)) {
         debug_can(AP_CANManager::LOG_ERROR, "Cannot add event handle");
         return false;
     }
@@ -186,6 +187,58 @@ void CANSensor::loop()
             if (res == 1) {
                 handle_frame(frame);
             }
+        }
+    }
+}
+
+MultiCAN::MultiCANLinkedList* MultiCAN::callbacks;
+
+MultiCAN::MultiCAN(ForwardCanFrame cf, AP_CAN::Protocol can_type, const char *driver_name) :
+        CANSensor(driver_name)
+{
+    if (callbacks == nullptr) {
+        callbacks = new MultiCANLinkedList();
+    }
+    if (callbacks == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create multican callback");
+    }
+
+    // Register new driver
+    register_driver(can_type);
+    callbacks->register_callback(cf);
+}
+
+// handle a received frame from the CAN bus
+void MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
+{
+    if (callbacks != nullptr) {
+        callbacks->handle_frame(frame);
+    }
+
+}
+
+// register a callback for a CAN frame by adding it to the linked list
+void MultiCAN::MultiCANLinkedList::register_callback(ForwardCanFrame callback)
+{
+    CANSensor_Multi* newNode = new CANSensor_Multi();
+    if (newNode == nullptr) {
+        AP_BoardConfig::allocation_error("Failed to create multican node");
+    }
+    WITH_SEMAPHORE(sem);
+    {
+        newNode->_callback = callback;
+        newNode->next = head;
+        head = newNode;
+    }
+}
+
+// distribute the CAN frame to the registered callbacks
+void MultiCAN::MultiCANLinkedList::handle_frame(AP_HAL::CANFrame &frame)
+{
+    WITH_SEMAPHORE(sem);
+    for (CANSensor_Multi* current = head; current != nullptr; current = current->next) {
+        if (current->_callback(frame)) {
+            return;
         }
     }
 }

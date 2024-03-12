@@ -54,9 +54,7 @@
 // allow for static semaphores
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
-
-#include <AP_HAL/EventHandle.h>
-#define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_BinarySemaphore HALSITL::BinarySemaphore
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES

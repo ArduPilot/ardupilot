@@ -1,3 +1,7 @@
+#include "AP_Vehicle_config.h"
+
+#if AP_VEHICLE_ENABLED
+
 #include "AP_Vehicle.h"
 
 #include <AP_BLHeli/AP_BLHeli.h>
@@ -22,6 +26,7 @@
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
+#include <AP_Scripting/AP_Scripting.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -89,9 +94,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     // @Group: CUST_ROT
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
     AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
+#endif
 
 #if HAL_WITH_ESC_TELEM
     // @Group: ESC_TLM
@@ -246,6 +253,37 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../Filter/AP_Filter.cpp
     AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
 #endif
+
+#if AP_STATS_ENABLED
+    // @Group: STAT
+    // @Path: ../AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 27, AP_Vehicle, AP_Stats),
+#endif
+
+#if AP_SCRIPTING_ENABLED
+    // @Group: SCR_
+    // @Path: ../AP_Scripting/AP_Scripting.cpp
+    AP_SUBGROUPINFO(scripting, "SCR_", 28, AP_Vehicle, AP_Scripting),
+#endif
+
+#if HAL_LOGGING_ENABLED
+    // @Group: LOG
+    // @Path: ../AP_Logger/AP_Logger.cpp
+    AP_SUBGROUPINFO(logger, "LOG",  29, AP_Vehicle, AP_Logger),
+#endif
+
+#if AP_GRIPPER_ENABLED
+    // @Group: GRIP_
+    // @Path: ../AP_Gripper/AP_Gripper.cpp
+    AP_SUBGROUPINFO(gripper, "GRIP_", 30, AP_Vehicle, AP_Gripper),
+#endif
+
+#if AP_SERIALMANAGER_ENABLED
+    // @Group: SERIAL
+    // @Path: ../AP_SerialManager/AP_SerialManager.cpp
+    AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
+#endif
+
     AP_GROUPEND
 };
 
@@ -264,8 +302,10 @@ void AP_Vehicle::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial port
     serial_manager.init_console();
+#endif
 
     DEV_PRINTF("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
@@ -289,6 +329,7 @@ void AP_Vehicle::setup()
     }
 #endif
 
+#if AP_SCHEDULER_ENABLED
     // initialise the main loop scheduler
     const AP_Scheduler::Task *tasks;
     uint8_t task_count;
@@ -299,6 +340,7 @@ void AP_Vehicle::setup()
     // time per loop - this gets updated in the main loop() based on
     // actual loop rate
     G_Dt = scheduler.get_loop_period_s();
+#endif
 
     // this is here for Plane; its failsafe_check method requires the
     // RC channels to be set as early as possible for maximum
@@ -313,14 +355,16 @@ void AP_Vehicle::setup()
     gcs().init();
 #endif
 
-#if AP_NETWORKING_ENABLED
-    networking.init();
-#endif
-
+#if AP_SERIALMANAGER_ENABLED
     // initialise serial ports
     serial_manager.init();
+#endif
 #if HAL_GCS_ENABLED
     gcs().setup_console();
+#endif
+
+#if AP_NETWORKING_ENABLED
+    networking.init();
 #endif
 
     // Register scheduler_delay_cb, which will run anytime you have
@@ -341,8 +385,32 @@ void AP_Vehicle::setup()
     generator.init();
 #endif
 
+#if AP_STATS_ENABLED
+    // initialise stats module
+    stats.init();
+#endif
+
+    BoardConfig.init();
+
+#if HAL_CANMANAGER_ENABLED
+    can_mgr.init();
+#endif
+
+#if HAL_LOGGING_ENABLED
+    logger.init(get_log_bitmask(), get_log_structures(), get_num_log_structures());
+#endif
+
+    // init cargo gripper
+#if AP_GRIPPER_ENABLED
+    AP::gripper().init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+
+#if AP_SCRIPTING_ENABLED
+    scripting.init();
+#endif // AP_SCRIPTING_ENABLED
 
 #if AP_AIRSPEED_ENABLED
     airspeed.init();
@@ -356,7 +424,8 @@ void AP_Vehicle::setup()
 #endif
 #endif  // AP_AIRSPEED_ENABLED
 
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+
+#if AP_SRV_CHANNELS_ENABLED
     SRV_Channels::init();
 #endif
 
@@ -422,7 +491,9 @@ void AP_Vehicle::setup()
     fence.init();
 #endif
 
+#if AP_CUSTOMROTATIONS_ENABLED
     custom_rotations.init();
+#endif
 
 #if AP_FILTER_ENABLED
     filters.init();
@@ -471,7 +542,7 @@ void AP_Vehicle::loop()
     }
     const uint32_t new_internal_errors = AP::internalerror().errors();
     if(_last_internal_errors != new_internal_errors) {
-        AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
         _last_internal_errors = new_internal_errors;
     }
@@ -562,16 +633,22 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   50, 200, 250),
 #endif
-#if HAL_INS_ACCELCAL_ENABLED
-    SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
+#if AP_GRIPPER_ENABLED
+    SCHED_TASK_CLASS(AP_Gripper,   &vehicle.gripper,        update,                   10,  75, 251),
 #endif
+    SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     SCHED_TASK(check_motor_noise,      5,     50, 252),
 #endif
 #if AP_FILTER_ENABLED
     SCHED_TASK_CLASS(AP_Filters,   &vehicle.filters,        update,                   1, 100, 252),
 #endif
+#if AP_STATS_ENABLED
+    SCHED_TASK_CLASS(AP_Stats,             &vehicle.stats,            update,           1, 100, 252),
+#endif
+#if AP_ARMING_ENABLED
     SCHED_TASK(update_arming,          1,     50, 253),
+#endif
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -595,10 +672,12 @@ void AP_Vehicle::scheduler_delay_callback()
 
     static uint32_t last_1hz, last_50hz, last_5s;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger &logger = AP::logger();
 
     // don't allow potentially expensive logging calls:
     logger.EnableWrites(false);
+#endif
 
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -623,7 +702,9 @@ void AP_Vehicle::scheduler_delay_callback()
         }
     }
 
+#if HAL_LOGGING_ENABLED
     logger.EnableWrites(true);
+#endif
 }
 
 // if there's been a watchdog reset, notify the world via a statustext:
@@ -654,10 +735,14 @@ void AP_Vehicle::send_watchdog_reset_statustext()
 
 bool AP_Vehicle::is_crashed() const
 {
+#if AP_ARMING_ENABLED
     if (AP::arming().is_armed()) {
         return false;
     }
     return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
+#else
+    return false;
+#endif
 }
 
 // update the harmonic notch filter for throttle based notch
@@ -804,7 +889,7 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %u", mode_number);
-    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
 }
 
 // reboot the vehicle in an orderly manner, doing various cleanups and
@@ -847,6 +932,7 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 #if OSD_ENABLED
 void AP_Vehicle::publish_osd_info()
 {
+#if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         return;
@@ -869,13 +955,19 @@ void AP_Vehicle::publish_osd_info()
     }
     nav_info.wp_number = mission->get_current_nav_index();
     osd->set_nav_info(nav_info);
+#endif
 }
 #endif
 
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
-    roll = ahrs.roll;
-    pitch = ahrs.pitch;
+#if AP_AHRS_ENABLED
+    roll = ahrs.get_roll();
+    pitch = ahrs.get_pitch();
+#else
+    roll = 0.0;
+    pitch = 0.0;
+#endif
 }
 
 #if HAL_INS_ACCELCAL_ENABLED
@@ -894,11 +986,14 @@ void AP_Vehicle::accel_cal_update()
         return;
     }
     ins.acal_update();
+
+#if AP_AHRS_ENABLED
     // check if new trim values, and set them
     Vector3f trim_rad;
     if (ins.get_new_trim(trim_rad)) {
         ahrs.set_trim(trim_rad);
     }
+#endif
 
 #if HAL_CAL_ALWAYS_REBOOT
     if (ins.accel_cal_requires_reboot() &&
@@ -910,11 +1005,13 @@ void AP_Vehicle::accel_cal_update()
 }
 #endif // HAL_INS_ACCELCAL_ENABLED
 
+#if AP_ARMING_ENABLED
 // call the arming library's update function
 void AP_Vehicle::update_arming()
 {
     AP::arming().update();
 }
+#endif
 
 /*
   one Hz checks common to all vehicles
@@ -944,6 +1041,11 @@ void AP_Vehicle::one_Hz_update(void)
         }
 #endif
     }
+
+#if AP_SCRIPTING_ENABLED
+    scripting.update();
+#endif
+
 }
 
 void AP_Vehicle::check_motor_noise()
@@ -1022,3 +1124,4 @@ AP_Vehicle *vehicle()
 
 };
 
+#endif  // AP_VEHICLE_ENABLED

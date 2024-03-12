@@ -1,3 +1,7 @@
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -71,7 +75,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         level_start_time_ms = step_start_time_ms;
         // reset gains to tuning-start gains (i.e. low I term)
         load_gains(GAIN_INTRA_TEST);
-        AP::logger().Write_Event(LogEvent::AUTOTUNE_RESTART);
+        LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_RESTART);
         update_gcs(AUTOTUNE_MESSAGE_STARTED);
         break;
 
@@ -79,7 +83,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         // we have completed a tune and the pilot wishes to test the new gains
         load_gains(GAIN_TUNED);
         update_gcs(AUTOTUNE_MESSAGE_TESTING);
-        AP::logger().Write_Event(LogEvent::AUTOTUNE_PILOT_TESTING);
+        LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_PILOT_TESTING);
         break;
     }
 
@@ -98,7 +102,8 @@ void AC_AutoTune::stop()
     attitude_control->use_sqrt_controller(true);
 
     update_gcs(AUTOTUNE_MESSAGE_STOPPED);
-    AP::logger().Write_Event(LogEvent::AUTOTUNE_OFF);
+
+    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_OFF);
 
     // Note: we leave the mode as it was so that we know how the autotune ended
     // we expect the caller will change the flight mode back to the flight mode indicated by the flight mode switch
@@ -396,10 +401,12 @@ void AC_AutoTune::control_attitude()
             step = WAITING_FOR_LEVEL;
         }
 
+#if HAL_LOGGING_ENABLED
         // log this iterations lean angle and rotation rate
         Log_AutoTuneDetails();
         ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         log_pids();
+#endif
         break;
     }
 
@@ -408,8 +415,10 @@ void AC_AutoTune::control_attitude()
         // re-enable rate limits
         attitude_control->use_sqrt_controller(true);
 
+#if HAL_LOGGING_ENABLED
         // log the latest gains
         Log_AutoTune();
+#endif
 
         // Announce tune type test results
         // must be done before updating method because this method changes parameters for next test
@@ -515,7 +524,7 @@ void AC_AutoTune::control_attitude()
                 if (complete) {
                     mode = SUCCESS;
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
-                    AP::logger().Write_Event(LogEvent::AUTOTUNE_SUCCESS);
+                    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_SUCCESS);
                     AP_Notify::events.autotune_complete = true;
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
@@ -757,3 +766,4 @@ void AC_AutoTune::next_tune_type(TuneType &curr_tune_type, bool reset)
     curr_tune_type = tune_seq[tune_seq_curr];
 }
 
+#endif  // AC_AUTOTUNE_ENABLED

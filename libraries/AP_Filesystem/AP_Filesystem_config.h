@@ -34,7 +34,7 @@
 #define AP_FILESYSTEM_SYS_ENABLED 1
 #endif
 
-// AP_FILESYSTEM_FILE_READING_ENABLED is true if you could expect to
+// AP_FILESYSTEM_FILE_WRITING_ENABLED is true if you could expect to
 // be able to open and write a non-virtual file.  Notably this
 // excludes virtual files like SYSFS, and the magic param/mission
 // upload targets, and also excludes ROMFS (where you can read but not
@@ -50,3 +50,6 @@
 #define AP_FILESYSTEM_FILE_READING_ENABLED (AP_FILESYSTEM_FILE_WRITING_ENABLED || AP_FILESYSTEM_ROMFS_ENABLED)
 #endif
 
+#ifndef AP_FILESYSTEM_SYS_FLASH_ENABLED
+#define AP_FILESYSTEM_SYS_FLASH_ENABLED CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif

@@ -1160,26 +1160,28 @@ void AC_PosControl::standby_xyz_reset()
     init_ekf_xy_reset();
 }
 
+#if HAL_LOGGING_ENABLED
 // write PSC and/or PSCZ logs
 void AC_PosControl::write_log()
 {
     if (is_active_xy()) {
         float accel_x, accel_y;
         lean_angles_to_accel_xy(accel_x, accel_y);
-        AP::logger().Write_PSCN(get_pos_target_cm().x, _inav.get_position_neu_cm().x,
+        Write_PSCN(get_pos_target_cm().x, _inav.get_position_neu_cm().x,
                                 get_vel_desired_cms().x, get_vel_target_cms().x, _inav.get_velocity_neu_cms().x,
                                 _accel_desired.x, get_accel_target_cmss().x, accel_x);
-        AP::logger().Write_PSCE(get_pos_target_cm().y, _inav.get_position_neu_cm().y,
+        Write_PSCE(get_pos_target_cm().y, _inav.get_position_neu_cm().y,
                                 get_vel_desired_cms().y, get_vel_target_cms().y, _inav.get_velocity_neu_cms().y,
                                 _accel_desired.y, get_accel_target_cmss().y, accel_y);
     }
 
     if (is_active_z()) {
-        AP::logger().Write_PSCD(-get_pos_target_cm().z, -_inav.get_position_z_up_cm(),
+        Write_PSCD(-get_pos_target_cm().z, -_inav.get_position_z_up_cm(),
                                 -get_vel_desired_cms().z, -get_vel_target_cms().z, -_inav.get_velocity_z_up_cms(),
                                 -_accel_desired.z, -get_accel_target_cmss().z, -get_z_accel_cmss());
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 /// crosstrack_error - returns horizontal error to the closest point to the current track
 float AC_PosControl::crosstrack_error() const

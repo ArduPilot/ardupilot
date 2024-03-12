@@ -122,9 +122,14 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #define STM32_FLASH_NPAGES 1
 #define STM32_FLASH_NBANKS 1
 #define STM32_FLASH_FIXED_PAGE_SIZE 128
+#elif defined(STM32H7A3xx)
+#define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE / 8)
+#define STM32_FLASH_NBANKS (BOARD_FLASH_SIZE/1024)
+#define STM32_FLASH_FIXED_PAGE_SIZE 8
 #elif defined(STM32H7)
 #define STM32_FLASH_NPAGES  (BOARD_FLASH_SIZE / 128)
 #define STM32_FLASH_FIXED_PAGE_SIZE 128
+#define STM32_FLASH_NBANKS (BOARD_FLASH_SIZE/1024)
 #elif defined(STM32F100_MCUCONF) || defined(STM32F103_MCUCONF)
 #define STM32_FLASH_NPAGES BOARD_FLASH_SIZE
 #define STM32_FLASH_FIXED_PAGE_SIZE 1
@@ -145,6 +150,11 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
 #else
 #error "Unsupported processor for flash.c"
+#endif
+
+// for now all multi-bank MCUs have 1MByte banks
+#ifdef STM32_FLASH_FIXED_PAGE_SIZE
+#define STM32_FLASH_FIXED_PAGE_PER_BANK (1024 / STM32_FLASH_FIXED_PAGE_SIZE)
 #endif
 
 #ifndef STM32_FLASH_NBANKS
@@ -465,16 +475,18 @@ bool stm32_flash_erasepage(uint32_t page)
     stm32_flash_clear_errors();
 
 #if defined(STM32H7)
-    if (page < 8) {
+    if (page < STM32_FLASH_FIXED_PAGE_PER_BANK) {
         // first bank
         FLASH->SR1 = ~0;
 
         stm32_flash_wait_idle();
 
-        uint32_t snb = page << 8;
-
         // use 32 bit operations
-        FLASH->CR1 = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
+#ifdef FLASH_CR_PSIZE_1
+        FLASH->CR1 = FLASH_CR_PSIZE_1 | (page<<FLASH_CR_SNB_Pos) | FLASH_CR_SER;
+#else
+        FLASH->CR1 = (page<<FLASH_CR_SNB_Pos) | FLASH_CR_SER;
+#endif
         FLASH->CR1 |= FLASH_CR_START;
         while (FLASH->SR1 & FLASH_SR_QW) ;
     }
@@ -485,10 +497,12 @@ bool stm32_flash_erasepage(uint32_t page)
 
         stm32_flash_wait_idle();
 
-        uint32_t snb = (page-8) << 8;
-
         // use 32 bit operations
-        FLASH->CR2 = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
+#ifdef FLASH_CR_PSIZE_1
+        FLASH->CR2 = FLASH_CR_PSIZE_1 | ((page-STM32_FLASH_FIXED_PAGE_PER_BANK)<<FLASH_CR_SNB_Pos) | FLASH_CR_SER;
+#else
+        FLASH->CR2 = ((page-STM32_FLASH_FIXED_PAGE_PER_BANK)<<FLASH_CR_SNB_Pos) | FLASH_CR_SER;
+#endif
         FLASH->CR2 |= FLASH_CR_START;
         while (FLASH->SR2 & FLASH_SR_QW) ;
     }
@@ -568,7 +582,7 @@ static bool stm32h7_flash_write32(uint32_t addr, const void *buf)
     volatile uint32_t *CCR = &FLASH->CCR1;
     volatile uint32_t *SR = &FLASH->SR1;
 #if STM32_FLASH_NBANKS > 1
-    if (addr - STM32_FLASH_BASE >= 8 * STM32_FLASH_FIXED_PAGE_SIZE * 1024) {
+    if (addr - STM32_FLASH_BASE >= STM32_FLASH_FIXED_PAGE_PER_BANK * STM32_FLASH_FIXED_PAGE_SIZE * 1024) {
         CR = &FLASH->CR2;
         CCR = &FLASH->CCR2;
         SR = &FLASH->SR2;

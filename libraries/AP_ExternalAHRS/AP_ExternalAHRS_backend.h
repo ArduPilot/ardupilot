@@ -53,6 +53,23 @@ protected:
     uint16_t get_rate(void) const;
     bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t sensors) {
+        frontend.set_default_sensors(sensors);
+    }
+
+    /*
+      return true if the GNSS is disabled
+     */
+    bool gnss_is_disabled(void) const {
+        return frontend.gnss_is_disabled;
+    }
+
+    /*
+      return true when we are in fixed wing flight
+     */
+    bool in_fly_forward(void) const;
+
 private:
     AP_ExternalAHRS &frontend;
 };

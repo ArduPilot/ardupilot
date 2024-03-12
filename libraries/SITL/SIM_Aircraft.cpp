@@ -35,10 +35,8 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if USE_PICOJSON
-#include "picojson.h"
+#include <AP_JSON/AP_JSON.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#endif
 
 using namespace SITL;
 
@@ -456,6 +454,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         last_speedup = sitl->speedup;
     }
 
+#if HAL_LOGGING_ENABLED
     // for EKF comparison log relhome pos and velocity at loop rate
     static uint16_t last_ticks;
     uint16_t ticks = AP::scheduler().ticks();
@@ -482,6 +481,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
                                     airspeed_pitot,
                                     achieved_rate_hz/rate_hz);
     }
+#endif
 }
 
 // returns perpendicular height to surface downward-facing rangefinder
@@ -490,7 +490,7 @@ float Aircraft::perpendicular_distance_to_rangefinder_surface() const
 {
     switch ((Rotation)sitl->sonar_rot.get()) {
     case Rotation::ROTATION_PITCH_270:
-        return sitl->height_agl;
+        return sitl->state.height_agl;
     case ROTATION_NONE ... ROTATION_YAW_315:
         return sitl->measure_distance_at_angle_bf(location, sitl->sonar_rot.get()*45);
     default:
@@ -607,7 +607,11 @@ void Aircraft::update_home()
 void Aircraft::update_model(const struct sitl_input &input)
 {
     local_ground_level = 0.0f;
-    update(input);
+    if (sitl != nullptr) {
+        update(input);
+    } else {
+        time_advance();
+    }
 }
 
 /*
@@ -997,7 +1001,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
     if (precland && precland->is_enabled()) {
-        precland->update(get_location(), get_position_relhome());
+        precland->update(get_location());
         if (precland->_over_precland_base) {
             local_ground_level += precland->_device_height;
         }
@@ -1007,6 +1011,13 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (richenpower) {
         richenpower->update(input);
     }
+
+#if AP_SIM_LOWEHEISER_ENABLED
+    // update Loweheiser generator
+    if (loweheiser) {
+        loweheiser->update();
+    }
+#endif
 
     if (fetteconewireesc) {
         fetteconewireesc->update(*this);

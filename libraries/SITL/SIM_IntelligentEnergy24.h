@@ -15,7 +15,7 @@
 /*
   Simulator for the IntelligentEnergy 2.4kW FuelCell
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:ie24 --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:ie24 --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 30  # Generator
 param set SERIAL5_BAUD 115200

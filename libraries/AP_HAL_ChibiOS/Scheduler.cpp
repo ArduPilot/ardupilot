@@ -224,7 +224,10 @@ void Scheduler::delay(uint16_t ms)
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
             if (in_main_thread()) {
+                const auto old_task = hal.util->persistent_data.scheduler_task;
+                hal.util->persistent_data.scheduler_task = -4;
                 call_delay_cb();
+                hal.util->persistent_data.scheduler_task = old_task;
             }
         }
     }
@@ -697,6 +700,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_UART, APM_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
         { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
+        { PRIORITY_NET, APM_NET_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

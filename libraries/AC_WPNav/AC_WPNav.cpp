@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL_C
     // @DisplayName: Waypoint Cornering Acceleration
-    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions, zero uses max lean angle.
+    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions.  If zero uses 2x accel value.
     // @Units: cm/s/s
     // @Range: 0 500
     // @Increment: 10
@@ -350,6 +350,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 
     _this_leg_is_spline = false;
     _scurve_next_leg.init();
+    _next_destination.zero();       // clear next destination
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.reached_destination = false;
 
@@ -379,6 +380,9 @@ bool AC_WPNav::set_wp_destination_next(const Vector3f& destination, bool terrain
 
     // next destination provided so fast waypoint
     _flags.fast_waypoint = true;
+
+    // record next destination
+    _next_destination = destination;
 
     return true;
 }
@@ -621,6 +625,29 @@ bool AC_WPNav::update_wpnav()
 bool AC_WPNav::is_active() const
 {
     return (AP_HAL::millis() - _wp_last_update) < 200;
+}
+
+// force stopping at next waypoint.  Used by Dijkstra's object avoidance when path from destination to next destination is not clear
+// only affects regular (e.g. non-spline) waypoints
+// returns true if this had any affect on the path
+bool AC_WPNav::force_stop_at_next_wp()
+{
+    // exit immediately if vehicle was going to stop anyway
+    if (!_flags.fast_waypoint) {
+        return false;
+    }
+
+    _flags.fast_waypoint = false;
+
+    // update this_leg's final velocity and next leg's initial velocity to zero
+    if (!_this_leg_is_spline) {
+        _scurve_this_leg.set_destination_speed_max(0);
+    }
+    if (!_next_leg_is_spline) {
+        _scurve_next_leg.init();
+    }
+
+    return true;
 }
 
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)

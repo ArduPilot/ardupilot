@@ -43,10 +43,11 @@ public:
 
     // allow for backends that need regular polling
     virtual void update(void) {}
-    enum {
-        PARSE_TYPE_SIGREAD,
-        PARSE_TYPE_SERIAL
-    };
+
+    // update from mavlink messages
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    virtual void update_radio_rc_channels(const mavlink_radio_rc_channels_t* packet) {}
+#endif
 
     // get number of frames, ignoring failsafe
     uint32_t get_rc_frame_count(void) const {
@@ -65,6 +66,10 @@ public:
 
     uint32_t get_rc_protocols_mask(void) const {
         return frontend.rc_protocols_mask;
+    }
+
+    bool protocol_enabled(enum AP_RCProtocol::rcprotocol_t protocol) const {
+        return frontend.protocol_enabled(protocol);
     }
 
     // get RSSI
@@ -93,6 +98,10 @@ public:
     // is the receiver active, used to detect power loss and baudrate changes
     virtual bool is_rx_active() const {
         return true;
+    }
+
+    bool is_detected() const {
+        return frontend._detected_protocol != AP_RCProtocol::NONE && frontend.backend[frontend._detected_protocol] == this;
     }
 
 #if AP_VIDEOTX_ENABLED

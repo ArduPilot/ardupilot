@@ -43,18 +43,18 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ABORT_DEG", 2, AP_Landing, slope_recalc_steep_threshold_to_abort, 0),
 
-    // @Param: PITCH_CD
+    // @Param: PITCH_DEG
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
-    // @Units: cdeg
-    // @Range: -2000 2000
+    // @Units: deg
+    // @Range: -20 20
     // @Increment: 10
     // @User: Advanced
-    AP_GROUPINFO("PITCH_CD", 3, AP_Landing, pitch_cd, 0),
+    AP_GROUPINFO("PITCH_DEG", 3, AP_Landing, pitch_deg, 0),
 
     // @Param: FLARE_ALT
     // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
+    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_DEG pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
     // @Units: m
     // @Range: 0 30
     // @Increment: 0.1
@@ -141,7 +141,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Landing options bitmask
     // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to ARSPD_FBW_MAX
+    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to AIRSPEED_MAX
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
 
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
     // @Param: WIND_COMP
     // @DisplayName: Headwind Compensation when Landing
-    // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to ARSPD_FBW_MAX.
+    // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to AIRSPEED_MAX.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
@@ -253,7 +253,7 @@ bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc,
     default:
         // returning TRUE while executing verify_land() will increment the
         // mission index which in many cases will trigger an RTL for end-of-mission
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
         success = true;
         break;
     }
@@ -486,14 +486,14 @@ bool AP_Landing::restart_landing_sequence()
             mission.set_current_cmd(current_index+1))
     {
         // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)cmd.content.location.alt/100);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", (signed)cmd.content.location.alt/100);
         success =  true;
     }
     else if (do_land_start_index != 0 &&
             mission.set_current_cmd(do_land_start_index))
     {
         // look for a DO_LAND_START and use that index
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
         success =  true;
     }
     else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
@@ -501,10 +501,10 @@ bool AP_Landing::restart_landing_sequence()
     {
         // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
         // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
         success =  true;
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
         success =  false;
     }
 
@@ -549,40 +549,13 @@ bool AP_Landing::get_target_altitude_location(Location &location)
 }
 
 /*
- * Determine how aligned heading_deg is with the wind. Return result
- * is 1.0 when perfectly aligned heading into wind, -1 when perfectly
- * aligned with-wind, and zero when perfect cross-wind. There is no
- * distinction between a left or right cross-wind. Wind speed is ignored
- */
-float AP_Landing::wind_alignment(const float heading_deg)
-{
-    const Vector3f wind = ahrs.wind_estimate();
-    const float wind_heading_rad = atan2f(-wind.y, -wind.x);
-    return cosf(wind_heading_rad - radians(heading_deg));
-}
-
-/*
- * returns head-wind in m/s, 0 for tail-wind.
- */
-float AP_Landing::head_wind(void)
-{
-    const float alignment = wind_alignment(ahrs.yaw_sensor*0.01f);
-
-    if (alignment <= 0) {
-        return 0;
-    }
-
-    return alignment * ahrs.wind_estimate().length();
-}
-
-/*
  * returns target airspeed in cm/s depending on flight stage
  */
 int32_t AP_Landing::get_target_airspeed_cm(void)
 {
     if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
-        return aparm.airspeed_cruise_cm;
+        return aparm.airspeed_cruise*100;
     }
 
     switch (type) {
@@ -652,6 +625,7 @@ bool AP_Landing::is_complete(void) const
 
 void AP_Landing::Log(void) const
 {
+#if HAL_LOGGING_ENABLED
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_log();
@@ -664,6 +638,7 @@ void AP_Landing::Log(void) const
     default:
         break;
     }
+#endif
 }
 
 /*
@@ -733,4 +708,13 @@ bool AP_Landing::terminate(void) {
     default:
         return false;
     }
+}
+
+/*
+  run parameter conversions
+ */
+void AP_Landing::convert_parameters(void)
+{
+    // added January 2024
+    pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
 }

@@ -8,14 +8,6 @@
 #include <SITL/SITL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
-#ifdef SFML_JOYSTICK
-  #ifdef HAVE_SFML_GRAPHICS_HPP
-    #include <SFML/Window/Joystick.hpp>
-  #elif HAVE_SFML_GRAPHIC_H
-    #include <SFML/Window/Joystick.h>
-  #endif
-#endif // SFML_JOYSTICK
-
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
@@ -50,22 +42,7 @@ uint16_t RCInput::read(uint8_t ch)
     if (ch >= num_channels()) {
         return 0;
     }
-#ifdef SFML_JOYSTICK
-    SITL::SIM *_sitl = AP::sitl();
-    if (_sitl) {
-        const sf::Joystick::Axis axis = sf::Joystick::Axis(_sitl->sfml_joystick_axis[ch].get());
-        const unsigned int stickID = _sitl->sfml_joystick_id;
-        if (sf::Joystick::hasAxis(stickID, axis)) {
-            return (constrain_float(sf::Joystick::getAxisPosition(stickID, axis) + 100, 0, 200) * 5) + 1000;
-        } else {
-            return 0;
-        }
-    } else {
-      return 0;
-    }
-#else
     return _sitlState->pwm_input[ch];
-#endif
 }
 
 uint8_t RCInput::read(uint16_t* periods, uint8_t len)
@@ -86,11 +63,7 @@ uint8_t RCInput::num_channels()
     }
     SITL::SIM *_sitl = AP::sitl();
     if (_sitl) {
-#ifdef SFML_JOYSTICK
-        return (sf::Joystick::isConnected(_sitl->sfml_joystick_id.get())) ? ARRAY_SIZE(_sitl->sfml_joystick_axis) : 0;
-#else
         return MIN(_sitl->rc_chancount.get(), SITL_RC_INPUT_CHANNELS);
-#endif // SFML_JOYSTICK
     }
     return SITL_RC_INPUT_CHANNELS;
 }

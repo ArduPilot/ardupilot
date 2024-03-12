@@ -136,8 +136,6 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
-    AP_Logger logger;
-
     // flight modes convenience array
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
@@ -226,7 +224,9 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
 
     static const AP_Param::Info var_info[];
+#if HAL_LOGGING_ENABLED
     static const LogStructure log_structure[];
+#endif
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -267,8 +267,6 @@ private:
         uint32_t log_count;
     } cruise_learn_t;
     cruise_learn_t cruise_learn;
-
-private:
 
     // Rover.cpp
 #if AP_SCRIPTING_ENABLED
@@ -330,6 +328,14 @@ private:
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
+#if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     // Log.cpp
     void Log_Write_Attitude();
     void Log_Write_Depth();
@@ -341,7 +347,7 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
-    void log_init(void);
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(enum Mode::Number num);

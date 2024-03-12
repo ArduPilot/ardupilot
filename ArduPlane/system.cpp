@@ -17,19 +17,7 @@ static void failsafe_check_static()
 void Plane::init_ardupilot()
 {
 
-#if STATS_ENABLED == ENABLED
-    // initialise stats module
-    g2.stats.init();
-#endif
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
-
-    // setup any board specific drivers
-    BoardConfig.init();
-
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
 
     rollController.convert_pid();
     pitchController.convert_pid();
@@ -74,10 +62,6 @@ void Plane::init_ardupilot()
 
 #if OSD_ENABLED == ENABLED
     osd.init();
-#endif
-
-#if LOGGING_ENABLED == ENABLED
-    log_init();
 #endif
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
@@ -149,9 +133,8 @@ void Plane::init_ardupilot()
     }
 #endif
 
-// init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
+#if AC_PRECLAND_ENABLED
+    g2.precland.init(scheduler.get_loop_rate_hz());
 #endif
 }
 
@@ -182,15 +165,11 @@ void Plane::startup_ground(void)
     mission.init();
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -341,7 +320,9 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     old_mode.exit();
 
     // log and notify mode change
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+#endif
     notify_mode(*control_mode);
     gcs().send_message(MSG_HEARTBEAT);
 
@@ -466,17 +447,15 @@ void Plane::notify_mode(const Mode& mode)
     notify.set_flight_mode_str(mode.name4());
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Plane::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 /*
   return throttle percentage from 0 to 100 for normal use and -100 to 100 when using reverse thrust

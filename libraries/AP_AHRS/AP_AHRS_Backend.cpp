@@ -244,6 +244,7 @@ Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
 
+#if HAL_LOGGING_ENABLED
 // log ahrs home and EKF origin
 void AP_AHRS::Log_Write_Home_And_Origin()
 {
@@ -260,6 +261,7 @@ void AP_AHRS::Log_Write_Home_And_Origin()
         Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
+#endif
 
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) {

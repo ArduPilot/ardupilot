@@ -14,6 +14,7 @@
 #include "AP_OpticalFlow_UPFLOW.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -267,6 +268,7 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
     _state = state;
     _last_update_ms = AP_HAL::millis();
 
+#if AP_AHRS_ENABLED
     // write to log and send to EKF if new data has arrived
     AP::ahrs().writeOptFlowMeas(quality(),
                                 _state.flowRate,
@@ -274,6 +276,7 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _last_update_ms,
                                 get_pos_offset(),
                                 get_height_override());
+#endif
 #if HAL_LOGGING_ENABLED
     Log_Write_Optflow();
 #endif

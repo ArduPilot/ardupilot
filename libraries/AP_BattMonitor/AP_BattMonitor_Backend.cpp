@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor.h"
@@ -105,6 +109,16 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
 
     // update estimated voltage without sag
     _state.voltage_resting_estimate = _state.voltage + _state.current_amps * _state.resistance;
+}
+
+// return true if state of health can be provided and fills in soh_pct argument
+bool AP_BattMonitor_Backend::get_state_of_health_pct(uint8_t &soh_pct) const
+{
+    if (!_state.has_state_of_health_pct) {
+        return false;
+    }
+    soh_pct = _state.state_of_health_pct;
+    return true;
 }
 
 float AP_BattMonitor_Backend::voltage_resting_estimate() const
@@ -324,3 +338,5 @@ void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &
         state.consumed_wh  += 0.001 * mah * state.voltage;
     }
 }
+
+#endif  // AP_BATTERY_ENABLED

@@ -19,6 +19,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
+#include <AP_SerialManager/AP_SerialManager_config.h>
 #include "AP_InertialSensor_Params.h"
 #include "AP_InertialSensor_tempcal.h"
 
@@ -136,6 +137,7 @@ public:
     bool get_gyro_health(uint8_t instance) const { return (instance<_gyro_count) ? _gyro_healthy[instance] : false; }
     bool get_gyro_health(void) const { return get_gyro_health(_primary_gyro); }
     bool get_gyro_health_all(void) const;
+    bool gyros_consistent(uint8_t threshold) const;
     uint8_t get_gyro_count(void) const { return MIN(INS_MAX_INSTANCES, _gyro_count); }
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
@@ -145,6 +147,7 @@ public:
     bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
     bool get_accel_health_all(void) const;
+    bool accels_consistent(float accel_error_threshold) const;
     uint8_t get_accel_count(void) const { return MIN(INS_MAX_INSTANCES, _accel_count); }
     bool accel_calibrated_ok_all() const;
     bool use_accel(uint8_t instance) const;
@@ -301,6 +304,17 @@ public:
 
     // for killing an IMU for testing purposes
     void kill_imu(uint8_t imu_idx, bool kill_it);
+
+#if AP_SERIALMANAGER_IMUOUT_ENABLED
+    // optional UART for sending IMU data to an external process
+    void set_imu_out_uart(AP_HAL::UARTDriver *uart);
+    void send_uart_data(void);
+
+    struct {
+        uint16_t counter;
+        AP_HAL::UARTDriver *imu_out_uart;
+    } uart;
+#endif // AP_SERIALMANAGER_IMUOUT_ENABLED
 
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,

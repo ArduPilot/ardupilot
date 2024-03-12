@@ -21,13 +21,13 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
 #define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
 #else
-// we need a minimum of 4 to allow for a GPS due to the odd ordering
-// of hal.uartB as SERIAL3
+// we want a minimum of 4 as the default GPS port is SERIAL3
 #define SERIALMANAGER_NUM_PORTS 4
 #endif
 #else
@@ -37,6 +37,10 @@
 
 #ifndef HAL_NUM_SERIAL_PORTS
 #define HAL_NUM_SERIAL_PORTS SERIALMANAGER_NUM_PORTS
+#endif
+
+#ifndef AP_SERIALMANAGER_ENABLED
+#define AP_SERIALMANAGER_ENABLED 1
 #endif
 
 /*
@@ -54,6 +58,10 @@
 
 #ifndef AP_SERIALMANAGER_REGISTER_ENABLED
 #define AP_SERIALMANAGER_REGISTER_ENABLED BOARD_FLASH_SIZE > 1024 && (AP_NETWORKING_ENABLED || HAL_ENABLE_DRONECAN_DRIVERS)
+#endif
+
+#ifndef AP_SERIALMANAGER_IMUOUT_ENABLED
+#define AP_SERIALMANAGER_IMUOUT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && AP_INERTIALSENSOR_ENABLED
 #endif
 
 // serial ports registered by AP_Networking will use IDs starting at 21 for the first port
@@ -89,7 +97,7 @@
 
 // GPS default baud rates and buffer sizes
 // we need a 256 byte buffer for some GPS types (eg. UBLOX)
-#define AP_SERIALMANAGER_GPS_BAUD               38400
+#define AP_SERIALMANAGER_GPS_BAUD               230400
 #define AP_SERIALMANAGER_GPS_BUFSIZE_RX         256
 #define AP_SERIALMANAGER_GPS_BUFSIZE_TX         16
 
@@ -127,3 +135,44 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
+
+// IMU OUT protocol
+#define AP_SERIALMANAGER_IMUOUT_BAUD           921600
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_TX     2048
+
+// PPP protocol
+#define AP_SERIALMANAGER_PPP_BAUD           921600
+#define AP_SERIALMANAGER_PPP_BUFSIZE_RX     4096
+#define AP_SERIALMANAGER_PPP_BUFSIZE_TX     4096
+
+#ifndef HAL_HAVE_SERIAL0
+#define HAL_HAVE_SERIAL0 HAL_NUM_SERIAL_PORTS > 0
+#endif
+#ifndef HAL_HAVE_SERIAL1
+#define HAL_HAVE_SERIAL1 HAL_NUM_SERIAL_PORTS > 1
+#endif
+#ifndef HAL_HAVE_SERIAL2
+#define HAL_HAVE_SERIAL2 HAL_NUM_SERIAL_PORTS > 2
+#endif
+#ifndef HAL_HAVE_SERIAL3
+#define HAL_HAVE_SERIAL3 HAL_NUM_SERIAL_PORTS > 3
+#endif
+#ifndef HAL_HAVE_SERIAL4
+#define HAL_HAVE_SERIAL4 HAL_NUM_SERIAL_PORTS > 4
+#endif
+#ifndef HAL_HAVE_SERIAL5
+#define HAL_HAVE_SERIAL5 HAL_NUM_SERIAL_PORTS > 5
+#endif
+#ifndef HAL_HAVE_SERIAL6
+#define HAL_HAVE_SERIAL6 HAL_NUM_SERIAL_PORTS > 6
+#endif
+#ifndef HAL_HAVE_SERIAL7
+#define HAL_HAVE_SERIAL7 HAL_NUM_SERIAL_PORTS > 7
+#endif
+#ifndef HAL_HAVE_SERIAL8
+#define HAL_HAVE_SERIAL8 HAL_NUM_SERIAL_PORTS > 8
+#endif
+#ifndef HAL_HAVE_SERIAL9
+#define HAL_HAVE_SERIAL9 HAL_NUM_SERIAL_PORTS > 9
+#endif

@@ -179,14 +179,16 @@ void AP_Generator_IE_FuelCell::check_for_err_code_if_changed()
         return;
     }
 
+#if HAL_GCS_ENABLED
     char msg_txt[64];
     if (check_for_err_code(msg_txt, sizeof(msg_txt)) || check_for_warning_code(msg_txt, sizeof(msg_txt))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "%s", msg_txt);
+        GCS_SEND_TEXT(get_mav_severity(_err_code), "%s", msg_txt);
 
     } else if ((_err_code == 0) && (_sub_err_code == 0)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Fuel cell error cleared");
 
     }
+#endif
 
     _last_err_code = _err_code;
     _last_sub_err_code = _sub_err_code;

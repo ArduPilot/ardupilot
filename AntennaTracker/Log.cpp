@@ -1,6 +1,6 @@
 #include "Tracker.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Code to Write and Read packets from AP_Logger log memory
 
@@ -87,24 +87,15 @@ const struct LogStructure Tracker::log_structure[] = {
        "VPOS", "QLLefff", "TimeUS,Lat,Lng,Alt,VelX,VelY,VelZ", "sddmnnn", "FGGB000", true }
 };
 
+uint8_t Tracker::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
     logger.Write_Mode((uint8_t)mode->number(), ModeReason::INITIALISED);
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-void Tracker::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Tracker::Log_Write_Attitude(void) {}
-
-void Tracker::log_init(void) {}
-void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel) {}
-void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude) {}
-void Tracker::Log_Write_Vehicle_Startup_Messages() {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

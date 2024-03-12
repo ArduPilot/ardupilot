@@ -129,12 +129,12 @@ void GCS_MAVLINK_Plane::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    float r = ahrs.roll;
-    float p = ahrs.pitch;
-    float y = ahrs.yaw;
+    float r = ahrs.get_roll();
+    float p = ahrs.get_pitch();
+    float y = ahrs.get_yaw();
 
-    if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH_CD))) {
-        p -= radians(plane.g.pitch_trim_cd * 0.01f);
+    if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH))) {
+        p -= radians(plane.g.pitch_trim);
     }
 
 #if HAL_QUADPLANE_ENABLED
@@ -675,7 +675,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_WIND,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE
@@ -745,6 +747,16 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
     plane.reset_offset_altitude();
 }
 
+
+/*
+  handle a LANDING_TARGET command. The timestamp has been jitter corrected
+*/
+void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
+{
+#if AC_PRECLAND_ENABLED
+    plane.g2.precland.handle_msg(packet, timestamp_ms);
+#endif
+}
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -1095,6 +1107,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
 }
 
 #if HAL_QUADPLANE_ENABLED
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
 void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out)
 {
     // convert to MAV_FRAME_LOCAL_OFFSET_NED, "NED local tangent frame
@@ -1115,7 +1128,6 @@ void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink
     out.z = -in.param7;  // up -> down
 }
 
-#if AP_MAVLINK_COMMAND_LONG_ENABLED
 void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     switch (in.command) {
@@ -1223,16 +1235,9 @@ void GCS_MAVLINK_Plane::handle_manual_control_axes(const mavlink_manual_control_
     manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
 }
 
-void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS:
-    {
-        handle_radio_status(msg, plane.should_log(MASK_LOG_PM));
-        break;
-    }
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
@@ -1242,6 +1247,24 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+        handle_set_attitude_target(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+        handle_set_position_target_local_ned(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+        handle_set_position_target_global_int(msg);
+        break;
+
+    default:
+        GCS_MAVLINK::handle_message(msg);
+        break;
+    } // end switch
+} // end handle mavlink
+
+void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
     {
         // Only allow companion computer (or other external controller) to
         // control attitude in GUIDED mode.  We DON'T want external control
@@ -1249,7 +1272,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
         if (plane.control_mode != &plane.mode_guided) { // don't screw up failsafes
-            break; 
+            return;
         }
 
         mavlink_set_attitude_target_t att_target;
@@ -1307,11 +1330,9 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
             // Update timer for external throttle
             plane.guided_state.last_forced_throttle_ms = now;
         }
-
-        break;
     }
 
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_message_t &msg)
     {
         // decode packet
         mavlink_set_position_target_local_ned_t packet;
@@ -1319,23 +1340,21 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 
         // exit if vehicle is not in Guided mode
         if (plane.control_mode != &plane.mode_guided) {
-            break;
+            return;
         }
 
         // only local moves for now
         if (packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED) {
-            break;
+            return;
         }
 
         // just do altitude for now
         plane.next_WP_loc.alt += -packet.z*100.0;
         gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
                         (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
-        
-        break;
     }
 
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_message_t &msg)
     {
         // Only want to allow companion computer position control when
         // in a certain mode to avoid inadvertently sending these
@@ -1345,7 +1364,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
         if (plane.control_mode != &plane.mode_guided) {
             //don't screw up failsafes
-            break;
+            return;
         }
 
         mavlink_set_position_target_global_int_t pos_target;
@@ -1368,9 +1387,11 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                     break; //default to MSL altitude
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     cmd.content.location.relative_alt = true;
                     break;
+                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
                     cmd.content.location.relative_alt = true;
                     cmd.content.location.terrain_alt = true;
@@ -1385,15 +1406,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
                 handle_change_alt_request(cmd);
             }
         } // end if alt_mask       
-
-        break;
     }
-
-    default:
-        handle_common_message(msg);
-        break;
-    } // end switch
-} // end handle mavlink
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {

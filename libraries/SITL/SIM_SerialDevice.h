@@ -46,7 +46,7 @@ protected:
     ByteBuffer *to_autopilot;
     ByteBuffer *from_autopilot;
 
-    bool init_sitl_pointer();
+    bool init_sitl_pointer() WARN_IF_UNUSED;
 
 private:
 

@@ -257,7 +257,11 @@ AP_HW_YJUAV_A6SE_H743                1141
 AP_HW_FSO_POWER_STACK                1142
 AP_HW_ATOMRCF405NAVI_DLX             1143
 AP_HW_YJUAV_A6Ultra                  1144
-
+AP_HW_TULIP_BATTMON                  1145
+AP_HW_AnyleafH7                      1146
+AP_HW_mRoKitCANrevC                  1147
+AP_HW_BotBloxSwitch                  1148
+AP_HW_MatekH7A3                      1149
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -272,6 +276,10 @@ AP_HW_VIMDRONES_MOSAIC_X5            1405
 AP_HW_VIMDRONES_MOSAIC_H             1406
 AP_HW_VIMDRONES_PERIPH               1407
 
+AP_HW_PIXHAWK6X_PERIPH               1408
+AP_HW_CUBERED_PERIPH                 1409
+AP_HW_RadiolinkPIX6                  1410
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
@@ -280,6 +288,17 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 # IDs 5210-5219 reserved for Aocoda-RC
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
+
+#IDs 5301-5399 reserved for Sierra Aerospace
+AP_HW_Sierra-TrueNavPro-G4           5301
+AP_HW_Sierra-TrueNavIC               5302
+AP_HW_Sierra-TrueNorth-G4            5303
+AP_HW_Sierra-TrueSpeed-G4            5304
+AP_HW_Sierra-PrecisionPoint-G4       5305
+AP_HW_Sierra-AeroNex                 5306
+AP_HW_Sierra-TrueFlow                5307
+AP_HW_Sierra-TrueNavIC-Pro           5308
+AP_HW_Sierra-F1-Pro                  5309
 
 # IDs 6000-6099 reserved for SpektreWorks
 

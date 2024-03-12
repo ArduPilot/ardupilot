@@ -5,6 +5,7 @@
 #include <Filter/Filter.h>         // filter library
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -275,8 +276,10 @@ public:
     void set_frame_string(const char * str);
 #endif
 
+#if HAL_LOGGING_ENABLED
     // write log, to be called at 10hz
     virtual void Log_Write() {};
+#endif
 
     enum MotorOptions : uint8_t {
         BATT_RAW_VOLTAGE = (1 << 0U)

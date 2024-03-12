@@ -168,9 +168,9 @@ PASS_TO_BACKEND(grabbed)
 
 namespace AP {
 
-AP_Gripper *gripper()
+AP_Gripper &gripper()
 {
-    return AP_Gripper::get_singleton();
+    return *AP_Gripper::get_singleton();
 }
 
 };

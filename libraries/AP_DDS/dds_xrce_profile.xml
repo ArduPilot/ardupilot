@@ -114,6 +114,29 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="imu__t">
+    <name>rt/ap/imu/experimental/data</name>
+    <dataType>sensor_msgs::msg::dds_::Imu_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="imu__dw">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/imu/experimental/data</name>
+      <dataType>sensor_msgs::msg::dds_::Imu_</dataType>
+    </topic>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+      <durability>
+        <kind>TRANSIENT_LOCAL</kind>
+      </durability>
+    </qos>
+  </data_writer>
   <topic profile_name="localpose__t">
     <name>rt/ap/pose/filtered</name>
     <dataType>geometry_msgs::msg::dds_::PoseStamped_</dataType>
@@ -276,4 +299,19 @@
     <request_topic_name>rq/ap/mode_switchRequest</request_topic_name>
     <reply_topic_name>rr/ap/mode_switchReply</reply_topic_name>
   </replier>
+  <topic profile_name="globalposcontrol__t">
+    <name>rt/ap/cmd_gps_pose</name>
+    <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="globalposcontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_gps_pose</name>
+      <dataType>ardupilot_msgs::msg::dds_::GlobalPosition_</dataType>
+    </topic>
+  </data_reader>
 </profiles>

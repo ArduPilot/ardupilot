@@ -86,6 +86,29 @@ def _set_build_context_variant(board):
             continue
         c.variant = board
 
+# Remove all submodules and then sync
+@conf
+def submodule_force_clean(ctx):
+    whitelist = {
+                            'COLCON_IGNORE',
+                            'esp_idf',
+                          }
+
+    # Get all items in the modules folder
+    module_list = os.scandir('modules')
+
+    # Delete all directories except those in the whitelist
+    for module in module_list:
+        if (module.is_dir()) and (module.name not in whitelist):
+            shutil.rmtree(module)
+
+    submodulesync(ctx)
+
+# run Tools/gittools/submodule-sync.sh to sync submodules
+@conf
+def submodulesync(ctx):
+    subprocess.call(['Tools/gittools/submodule-sync.sh'])
+
 def init(ctx):
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
@@ -180,6 +203,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable OS level thread statistics.')
+
+    g.add_option('--enable-ppp',
+        action='store_true',
+        default=False,
+        help='enable PPP networking.')
     
     g.add_option('--bootloader',
         action='store_true',
@@ -548,6 +576,8 @@ def configure(cfg):
     cfg.recurse('libraries/AP_HAL_SITL')
     cfg.recurse('libraries/SITL')
 
+    cfg.recurse('libraries/AP_Networking')
+
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
         cfg.end_msg('enabled')
@@ -695,7 +725,7 @@ def _build_dynamic_sources(bld):
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/[a-z]* libraries/AP_DroneCAN/dsdl/[a-z]*', dir=True, src=False),
             output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
             name='dronecan',
             export_includes=[

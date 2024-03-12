@@ -52,7 +52,7 @@ void ModeGuided::update()
 
         float error = 0.0f;
         if (plane.guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().yaw);
+            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw());
         } else {
             Vector2f groundspeed = AP::ahrs().groundspeed_vector();
             error = wrap_PI(plane.guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
@@ -77,18 +77,26 @@ void ModeGuided::update()
 
     if (plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
-        plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min_cd, plane.aparm.pitch_limit_max_cd.get());
+        plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
     } else {
         plane.calc_nav_pitch();
     }
 
-    // Received an external msg that guides throttle in the last 3 seconds?
-    if (plane.aparm.throttle_cruise > 1 &&
+    // Throttle output
+    if (plane.guided_throttle_passthru) {
+        // manual passthrough of throttle in fence breach
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+
+    }  else if (plane.aparm.throttle_cruise > 1 &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
+        // Received an external msg that guides throttle in the last 3 seconds?
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
+
     } else {
+        // TECS control
         plane.calc_throttle();
+
     }
 
 }

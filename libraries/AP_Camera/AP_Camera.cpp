@@ -771,6 +771,28 @@ void AP_Camera::convert_params()
     }
 }
 
+#if AP_RELAY_ENABLED
+// Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
+bool AP_Camera::get_legacy_relay_index(int8_t &index) const
+{
+    // PARAMETER_CONVERSION - Added: Dec-2023
+
+    // Note that this assumes that the camera param conversion has already been done
+    // Copter, Plane, Sub and Rover all have both relay and camera and all init relay first
+    // This will only be a issue if the relay and camera conversion were done at once, if the user skipped 4.4
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+#if AP_CAMERA_RELAY_ENABLED
+        if ((CameraType)_params[i].type.get() == CameraType::RELAY) {
+            // Camera was hard coded to relay 0
+            index = 0;
+            return true;
+        }
+#endif
+    }
+    return false;
+}
+#endif
+
 // singleton instance
 AP_Camera *AP_Camera::_singleton;
 

@@ -24,9 +24,7 @@ public:
 private:
 
     uint32_t telem_delay() const override { return 0; }
-    void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
-    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:

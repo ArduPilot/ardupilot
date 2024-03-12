@@ -90,7 +90,7 @@ void AP_Generator_IE_2400::assign_measurements(const uint32_t now)
         // If received 20 valid packets for a single protocol version then lock on
         if (_last_version_packet_count > 20) {
             _version = new_version;
-            gcs().send_text(MAV_SEVERITY_INFO, "Generator: IE using %s protocol", (_version == ProtocolVersion::V2) ? "V2" : "legacy" );
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Generator: IE using %s protocol", (_version == ProtocolVersion::V2) ? "V2" : "legacy" );
 
         } else {
             // Don't record any data during version detection
@@ -561,5 +561,19 @@ void AP_Generator_IE_2400::update_state_msg()
         }
     }
 }
+
+#if HAL_GCS_ENABLED
+// Get the MAV_SEVERITY level of a given error code
+MAV_SEVERITY AP_Generator_IE_2400::get_mav_severity(uint32_t err_code) const
+{
+    if (err_code <= 9) {
+        return MAV_SEVERITY_INFO;
+    }
+    if (err_code <= 20) {
+        return MAV_SEVERITY_WARNING;
+    }
+    return MAV_SEVERITY_CRITICAL;
+}
+#endif // HAL_GCS_ENABLED
 
 #endif  // AP_GENERATOR_IE_2400_ENABLED

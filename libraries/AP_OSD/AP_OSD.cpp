@@ -446,6 +446,7 @@ void AP_OSD::update_stats()
     // maximum altitude
     alt = -alt;
     _stats.max_alt_m = fmaxf(_stats.max_alt_m, alt);
+#if AP_BATTERY_ENABLED
     // maximum current
     AP_BattMonitor &battery = AP::battery();
     float amps;
@@ -457,11 +458,14 @@ void AP_OSD::update_stats()
     if (voltage > 0) {
         _stats.min_voltage_v = fminf(_stats.min_voltage_v, voltage);
     }
+#endif
+#if AP_RSSI_ENABLED
     // minimum rssi
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         _stats.min_rssi = fminf(_stats.min_rssi, ap_rssi->read_receiver_rssi());
     }
+#endif
     // max airspeed either true or synthetic
     if (have_airspeed_estimate) {
         _stats.max_airspeed_mps = fmaxf(_stats.max_airspeed_mps, aspd_mps);
@@ -509,6 +513,7 @@ void AP_OSD::update_current_screen()
         return;
     }
 
+#if AP_RC_CHANNEL_ENABLED
     RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
     if (channel == nullptr) {
         return;
@@ -564,6 +569,7 @@ void AP_OSD::update_current_screen()
         break;
     }
     switch_debouncer = false;
+#endif  // AP_RC_CHANNEL_ENABLED
 }
 
 //select next avaliable screen, do nothing if all screens disabled

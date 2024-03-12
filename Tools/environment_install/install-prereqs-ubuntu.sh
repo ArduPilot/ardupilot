@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
 set -x
@@ -152,7 +152,7 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy ptyprocess dronecan"
+PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -322,6 +322,8 @@ LBTBIN=$(apt-cache search -n '^libtool-bin')
 if [ -n "$LBTBIN" ]; then
     SITL_PKGS+=" libtool-bin"
 fi
+
+SITL_PKGS+=" ppp"
 
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS

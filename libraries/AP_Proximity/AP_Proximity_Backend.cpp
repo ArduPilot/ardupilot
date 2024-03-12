@@ -88,7 +88,7 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
 // returns true if database is ready to be pushed to and all cached data is ready
 bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_OADATABASE_ENABLED
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
@@ -122,7 +122,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
 void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
 {
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_OADATABASE_ENABLED
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
@@ -142,7 +142,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     temp_pos.z = temp_pos.z * -1.0f;
 
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
-#endif
+#endif  // AP_OADATABASE_ENABLED
 }
 
 #endif // HAL_PROXIMITY_ENABLED

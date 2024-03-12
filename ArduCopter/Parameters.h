@@ -6,10 +6,6 @@
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
 
-#include <AP_Gripper/AP_Gripper_config.h>
-#if AP_GRIPPER_ENABLED
- # include <AP_Gripper/AP_Gripper.h>
-#endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
@@ -218,7 +214,7 @@ public:
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
-        k_param_serial_manager,
+        k_param_serial_manager_old,
         k_param_ch9_option_old,
         k_param_ch10_option_old,
         k_param_ch11_option_old,
@@ -383,6 +379,8 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param_throw_altitude_min,
+        k_param_throw_altitude_max,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -463,6 +461,8 @@ public:
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
+    AP_Int16         throw_altitude_min; // minimum altitude in m above which a throw can be detected
+    AP_Int16         throw_altitude_max; // maximum altitude in m below which a throw can be detected
 #endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
@@ -502,15 +502,6 @@ public:
     // button checking
 #if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
-#endif
-
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
-
-#if AP_GRIPPER_ENABLED
-    AP_Gripper gripper;
 #endif
 
 #if MODE_THROW_ENABLED == ENABLED
@@ -601,14 +592,10 @@ public:
     void *autotune_ptr;
 #endif
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
-
     AP_Float tuning_min;
     AP_Float tuning_max;
 
-#if AC_OAPATHPLANNER_ENABLED == ENABLED
+#if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning
     AP_OAPathPlanner oa;
 #endif
@@ -686,13 +673,16 @@ public:
     AP_Int16 takeoff_rpm_max;
 #endif
 
+    // EKF variance filter cutoff
+    AP_Float fs_ekf_filt_hz;
+
 #if WEATHERVANE_ENABLED == ENABLED
     AC_WeatherVane weathervane;
 #endif
 
     // payload place parameters
     AP_Float pldp_thrust_placed_fraction;
-    AP_Float pldp_range_finder_minimum_m;
+    AP_Float pldp_range_finder_maximum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
 };

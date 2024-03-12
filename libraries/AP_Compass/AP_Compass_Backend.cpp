@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass.h"
@@ -294,3 +298,5 @@ enum Rotation AP_Compass_Backend::get_board_orientation(void) const
 {
     return _compass._board_orientation;
 }
+
+#endif  // AP_COMPASS_ENABLED

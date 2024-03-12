@@ -52,7 +52,8 @@ public:
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor);
+                               float load_factor,
+                               float pitch_trim_deg);
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
@@ -197,7 +198,8 @@ private:
     AP_Float _hgt_dem_tconst;
 
     enum {
-        OPTION_GLIDER_ONLY=(1<<0)
+        OPTION_GLIDER_ONLY=(1<<0),
+        OPTION_DESCENT_SPEEDUP=(1<<1)
     };
 
     AP_Float _pitch_ff_v0;
@@ -334,6 +336,7 @@ private:
 
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
+
     };
     union {
         struct flags _flags;
@@ -349,9 +352,10 @@ private:
     // pitch demand before limiting
     float _pitch_dem_unc;
 
-    // Maximum and minimum specific total energy rate limits
-    float _STEdot_max;
-    float _STEdot_min;
+    // Specific total energy rate limits
+    float _STEdot_max;     // Specific total energy rate gain at cruise airspeed & THR_MAX (m/s/s)
+    float _STEdot_min;     // Specific total energy rate loss at cruise airspeed & THR_MIN (m/s/s)
+    float _STEdot_neg_max; // Specific total energy rate loss at max airspeed & THR_MIN (m/s/s)
 
     // Maximum and minimum floating point throttle limits
     float _THRmaxf;
@@ -388,6 +392,7 @@ private:
     // used to scale max climb and sink limits to match vehicle ability
     float _max_climb_scaler;
     float _max_sink_scaler;
+    float _sink_fraction;
 
     // Specific energy error quantities
     float _STE_error;
@@ -451,7 +456,7 @@ private:
     void _update_throttle_with_airspeed(void);
 
     // Update Demanded Throttle Non-Airspeed
-    void _update_throttle_without_airspeed(int16_t throttle_nudge);
+    void _update_throttle_without_airspeed(int16_t throttle_nudge, float pitch_trim_deg);
 
     // get integral gain which is flight_stage dependent
     float _get_i_gain(void);

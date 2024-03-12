@@ -72,17 +72,11 @@ public:
     // todo: remove function when it is no longer used.
     float update_error(float error, float dt, bool limit = false);
 
-    //  update_i - update the integral
-    //  if the limit flag is set the integral is only allowed to shrink
-    void update_i(float dt, bool limit);
-
     // get_pid - get results from pid controller
-    float get_pid() const;
-    float get_pi() const;
     float get_p() const;
     float get_i() const;
     float get_d() const;
-    float get_ff();
+    float get_ff() const;
 
     // reset_I - reset the integrator
     void reset_I();
@@ -113,9 +107,11 @@ public:
     AP_Float &filt_E_hz() { return _filt_E_hz; }
     AP_Float &filt_D_hz() { return _filt_D_hz; }
     AP_Float &slew_limit() { return _slew_rate_max; }
+    AP_Float &kDff() { return _kdff; }
 
     float imax() const { return _kimax.get(); }
     float pdmax() const { return _kpdmax.get(); }
+
     float get_filt_T_alpha(float dt) const;
     float get_filt_E_alpha(float dt) const;
     float get_filt_D_alpha(float dt) const;
@@ -131,14 +127,13 @@ public:
     void filt_E_hz(const float v);
     void filt_D_hz(const float v);
     void slew_limit(const float v);
+    void kDff(const float v) { _kdff.set(v); }
 
     // set the desired and actual rates (for logging purposes)
     void set_target_rate(float target) { _pid_info.target = target; }
     void set_actual_rate(float actual) { _pid_info.actual = actual; }
 
     // integrator setting functions
-    void set_integrator(float target, float measurement, float i);
-    void set_integrator(float error, float i);
     void set_integrator(float i);
     void relax_integrator(float integrator, float dt, float time_constant);
 
@@ -150,19 +145,16 @@ public:
 
     const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
-    AP_Float &kDff() { return _kdff; }
-    void kDff(const float v) { _kdff.set(v); }
     void set_notch_sample_rate(float);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
-    // the time constant tau is not currently configurable, but is set
-    // as an AP_Float to make it easy to make it configurable for a
-    // single user of AC_PID by adding the parameter in the param
-    // table of the parent class. It is made public for this reason
-    AP_Float _slew_rate_tau;
-    
 protected:
+
+    //  update_i - update the integral
+    //  if the limit flag is set the integral is only allowed to shrink
+    void update_i(float dt, bool limit);
 
     // parameters
     AP_Float _kp;
@@ -180,11 +172,19 @@ protected:
     AP_Int8 _notch_T_filter;
     AP_Int8 _notch_E_filter;
 #endif
+
+    // the time constant tau is not currently configurable, but is set
+    // as an AP_Float to make it easy to make it configurable for a
+    // single user of AC_PID by adding the parameter in the param
+    // table of the parent class. It is made public for this reason
+    AP_Float _slew_rate_tau;
+
     SlewLimiter _slew_limiter{_slew_rate_max, _slew_rate_tau};
 
     // flags
     struct ac_pid_flags {
         bool _reset_filter :1; // true when input filter should be reset during next call to set_input
+        bool _I_set :1; // true if if the I terms has been set externally including zeroing
     } _flags;
 
     // internal variables

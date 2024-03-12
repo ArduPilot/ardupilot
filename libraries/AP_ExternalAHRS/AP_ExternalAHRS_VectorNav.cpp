@@ -208,6 +208,8 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
         return false;
     }
     WITH_SEMAPHORE(state.sem);
+    // ensure we own the uart
+    uart->begin(0);
     uint32_t n = uart->available();
     if (n == 0) {
         return false;
@@ -475,6 +477,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
                                   int32_t(pkt1.positionLLA[1] * 1.0e7),
                                   int32_t(pkt1.positionLLA[2] * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
+        state.last_location_update_us = AP_HAL::micros();
         state.have_location = true;
     }
 
@@ -508,36 +511,6 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
 
         AP::ins().handle_external(ins);
     }
-
-
-    // @LoggerMessage: EAH1
-    // @Description: External AHRS data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Roll: euler roll
-    // @Field: Pitch: euler pitch
-    // @Field: Yaw: euler yaw
-    // @Field: VN: velocity north
-    // @Field: VE: velocity east
-    // @Field: VD: velocity down
-    // @Field: Lat: latitude
-    // @Field: Lon: longitude
-    // @Field: Alt: altitude AMSL
-    // @Field: UXY: uncertainty in XY position
-    // @Field: UV: uncertainty in velocity
-    // @Field: UR: uncertainty in roll
-    // @Field: UP: uncertainty in pitch
-    // @Field: UY: uncertainty in yaw
-
-    AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
-                       "sdddnnnDUmmnddd", "F000000GG000000",
-                       "QffffffLLffffff",
-                       AP_HAL::micros64(),
-                       pkt1.ypr[2], pkt1.ypr[1], pkt1.ypr[0],
-                       pkt1.velNED[0], pkt1.velNED[1], pkt1.velNED[2],
-                       int32_t(pkt1.positionLLA[0]*1.0e7), int32_t(pkt1.positionLLA[1]*1.0e7),
-                       float(pkt1.positionLLA[2]),
-                       pkt1.posU, pkt1.velU,
-                       pkt1.yprU[2], pkt1.yprU[1], pkt1.yprU[0]);
 }
 
 /*
@@ -648,6 +621,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
         AP::ins().handle_external(ins);
     }
 
+#if HAL_LOGGING_ENABLED
     // @LoggerMessage: EAH3
     // @Description: External AHRS data
     // @Field: TimeUS: Time since system startup
@@ -678,7 +652,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
                        state.accel[0], state.accel[1], state.accel[2],
                        state.gyro[0], state.gyro[1], state.gyro[2],
                        state.quat[0], state.quat[1], state.quat[2], state.quat[3]);
-
+#endif  // HAL_LOGGING_ENABLED
 }
 
 

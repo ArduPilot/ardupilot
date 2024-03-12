@@ -19,8 +19,8 @@
 #ifndef AC_ATC_MULTI_RATE_RP_IMAX
  # define AC_ATC_MULTI_RATE_RP_IMAX         0.5f
 #endif
-#ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
- # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
+#ifndef AC_ATC_MULTI_RATE_RPY_FILT_HZ
+ # define AC_ATC_MULTI_RATE_RPY_FILT_HZ      20.0f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_P
  # define AC_ATC_MULTI_RATE_YAW_P           0.180f
@@ -106,9 +106,9 @@ protected:
             .d         = AC_ATC_MULTI_RATE_RP_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_RP_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = 0.0f,
-            .filt_D_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }
@@ -120,9 +120,9 @@ protected:
             .d         = AC_ATC_MULTI_RATE_RP_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_RP_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = 0.0f,
-            .filt_D_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }
@@ -135,9 +135,9 @@ protected:
             .d         = AC_ATC_MULTI_RATE_YAW_D,
             .ff        = 0.0f,
             .imax      = AC_ATC_MULTI_RATE_YAW_IMAX,
-            .filt_T_hz = AC_ATC_MULTI_RATE_RP_FILT_HZ,
+            .filt_T_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .filt_E_hz = AC_ATC_MULTI_RATE_YAW_FILT_HZ,
-            .filt_D_hz = 0.0f,
+            .filt_D_hz = AC_ATC_MULTI_RATE_RPY_FILT_HZ,
             .srmax     = 0,
             .srtau     = 1.0
         }

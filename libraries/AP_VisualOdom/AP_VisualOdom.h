@@ -83,6 +83,13 @@ public:
     // return yaw measurement noise in rad
     float get_yaw_noise() const { return _yaw_noise; }
 
+    // return quality threshold
+    int8_t get_quality_min() const { return _quality_min; }
+
+    // return quality as a measure from -1 ~ 100
+    // -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    int8_t quality() const;
+
 #if HAL_GCS_ENABLED
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
@@ -90,12 +97,14 @@ public:
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians
-    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter);
-    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter);
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter, int8_t quality);
+    void handle_pose_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter, int8_t quality);
     
     // general purpose methods to consume velocity estimate data and send to EKF
     // velocity in NED meters per second
-    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter);
+    // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
+    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality);
 
     // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
     void request_align_yaw_to_ahrs();
@@ -126,6 +135,7 @@ private:
     AP_Float _vel_noise;        // velocity measurement noise in m/s
     AP_Float _pos_noise;        // position measurement noise in meters
     AP_Float _yaw_noise;        // yaw measurement noise in radians
+    AP_Int8 _quality_min;       // positions and velocities will only be sent to EKF if over this value.  if 0 all values sent to EKF
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;

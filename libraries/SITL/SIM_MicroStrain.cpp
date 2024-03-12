@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-    simulate LORD MicroStrain serial device
+    simulate MicroStrain GNSS-INS devices
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
@@ -24,15 +24,12 @@
 
 using namespace SITL;
 
-MicroStrain5::MicroStrain5() :SerialDevice::SerialDevice()
+MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 {
 }
 
 
-/*
-  get timeval using simulation time
- */
-static void simulation_timeval(struct timeval *tv)
+void MicroStrain::simulation_timeval(struct timeval *tv)
 {
     uint64_t now = AP_HAL::micros64();
     static uint64_t first_usec;
@@ -48,7 +45,7 @@ static void simulation_timeval(struct timeval *tv)
     tv->tv_usec = new_usec % 1000000ULL;
 }
 
-void MicroStrain5::generate_checksum(MicroStrain_Packet& packet)
+void MicroStrain::generate_checksum(MicroStrain_Packet& packet)
 {
     uint8_t checksumByte1 = 0;
     uint8_t checksumByte2 = 0;
@@ -67,7 +64,7 @@ void MicroStrain5::generate_checksum(MicroStrain_Packet& packet)
     packet.checksum[1] = checksumByte2;
 }
 
-void MicroStrain5::send_packet(MicroStrain_Packet packet)
+void MicroStrain::send_packet(MicroStrain_Packet packet)
 {
     generate_checksum(packet);
 
@@ -77,7 +74,7 @@ void MicroStrain5::send_packet(MicroStrain_Packet packet)
 }
 
 
-void MicroStrain5::send_imu_packet(void)
+void MicroStrain::send_imu_packet(void)
 {
     const auto &fdm = _sitl->state;
     MicroStrain_Packet packet;
@@ -135,7 +132,6 @@ void MicroStrain5::send_imu_packet(void)
     send_packet(packet);
 }
 
-
 void MicroStrain5::send_gnss_packet(void)
 {
     const auto &fdm = _sitl->state;
@@ -148,9 +144,9 @@ void MicroStrain5::send_gnss_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x81; // GNSS Descriptor
 
-    // Add GPS Time
+    // Add GPS Timestamp
     packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
-    packet.payload[packet.payload_size++] = 0x09; // Descriptor
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_sec);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0);
@@ -205,6 +201,8 @@ void MicroStrain5::send_gnss_packet(void)
     send_packet(packet);
 }
 
+
+
 void MicroStrain5::send_filter_packet(void)
 {
     const auto &fdm = _sitl->state;
@@ -217,9 +215,9 @@ void MicroStrain5::send_filter_packet(void)
     packet.header[1] = 0x65; // Sync Two
     packet.header[2] = 0x82; // Filter Descriptor
 
-    // Add Filter Time
-    packet.payload[packet.payload_size++] = 0x0E; // Filter Time Field Size
-    packet.payload[packet.payload_size++] = 0x11; // Descriptor
+    // Add GPS Timestamp Shared Data
+    packet.payload[packet.payload_size++] = 0x0E; // GPS Timestamp Field Size
+    packet.payload[packet.payload_size++] = 0xD3; // Descriptor
     put_double(packet, (double) tv.tv_usec / 1e6);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0x0001);
@@ -256,34 +254,34 @@ void MicroStrain5::send_filter_packet(void)
 /*
   send MicroStrain data
  */
-void MicroStrain5::update(void)
+void MicroStrain::update(void)
 {
     if (!init_sitl_pointer()) {
         return;
     }
 
-    uint32_t us_between_imu_packets = 20000;
-    uint32_t us_between_gnss_packets = 250000;
-    uint32_t us_between_filter_packets = 100000;
+    uint32_t ms_between_imu_packets = 40;
+    uint32_t ms_between_gnss_packets = 500;
+    uint32_t ms_between_filter_packets = 40;
 
-    uint32_t now = AP_HAL::micros();
-    if (now - last_imu_pkt_us >= us_between_imu_packets) {
-        last_imu_pkt_us = now;
+    uint32_t now = AP_HAL::millis();
+    if (now - last_imu_pkt_ms >= ms_between_imu_packets) {
+        last_imu_pkt_ms = now;
         send_imu_packet();
     }
 
-    if (now - last_gnss_pkt_us >= us_between_gnss_packets) {
-        last_gnss_pkt_us = now;
+    if (now - last_gnss_pkt_ms >= ms_between_gnss_packets) {
+        last_gnss_pkt_ms = now;
         send_gnss_packet();
     }
 
-    if (now - last_filter_pkt_us >= us_between_filter_packets) {
-        last_filter_pkt_us = now;
+    if (now - last_filter_pkt_ms >= ms_between_filter_packets) {
+        last_filter_pkt_ms = now;
         send_filter_packet();
     }
 }
 
-void MicroStrain5::put_float(MicroStrain_Packet &packet, float f)
+void MicroStrain::put_float(MicroStrain_Packet &packet, float f)
 {
     uint32_t fbits = 0;
     memcpy(&fbits, &f, sizeof(fbits));
@@ -291,7 +289,7 @@ void MicroStrain5::put_float(MicroStrain_Packet &packet, float f)
     packet.payload_size += sizeof(float);
 }
 
-void MicroStrain5::put_double(MicroStrain_Packet &packet, double d)
+void MicroStrain::put_double(MicroStrain_Packet &packet, double d)
 {
     uint64_t dbits = 0;
     memcpy(&dbits, &d, sizeof(dbits));
@@ -299,7 +297,7 @@ void MicroStrain5::put_double(MicroStrain_Packet &packet, double d)
     packet.payload_size += sizeof(double);
 }
 
-void MicroStrain5::put_int(MicroStrain_Packet &packet, uint16_t t)
+void MicroStrain::put_int(MicroStrain_Packet &packet, uint16_t t)
 {
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);

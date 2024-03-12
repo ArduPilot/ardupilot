@@ -27,3 +27,6 @@
 #endif // REPL_OUT
 
 int lua_get_current_ref();
+const char* lua_get_modules_path();
+void lua_abort(void) __attribute__((noreturn));
+

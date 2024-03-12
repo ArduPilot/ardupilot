@@ -1,6 +1,6 @@
 --[[
 
-Rover QuickTune tunes the steering (aka turn rate), speed and position controller velocity gains for rovers and boats
+Rover QuickTune tunes the steering (aka turn rate) and speed controller gains for rovers and boats
 
 The script is designed to be used in Circle mode and updates the following parameters
 
@@ -13,9 +13,6 @@ ATC_SPEED_I
 ATC_SPEED_D
 CRUISE_SPEED
 CRUISE_THROTTLE
-PSC_VEL_P
-PSC_VEL_I
-PSC_VEL_D
 
 See the accompanying rover-quiktune.md file for instructions on how to use
 
@@ -24,8 +21,9 @@ See the accompanying rover-quiktune.md file for instructions on how to use
 -- global definitions
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
-local PARAM_TABLE_KEY = 12
+local PARAM_TABLE_KEY = 15
 local PARAM_TABLE_PREFIX = "RTUN_"
+local PARAM_TABLE_SIZE = 11
 
 -- bind a parameter to a variable
 function bind_param(name)
@@ -41,7 +39,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), "RTun: could not add param table")
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, PARAM_TABLE_SIZE), "RTun: could not add param table")
 
 --[[
   // @Param: RTUN_ENABLE
@@ -50,72 +48,70 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), "RTun: could no
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-local RTUN_ENABLE = bind_add_param('ENABLE', 1, 1) 
+local RTUN_ENABLE = bind_add_param('ENABLE', 1, 1)
 
 --[[
   // @Param: RTUN_AXES
   // @DisplayName: Rover Quicktune axes
   // @Description: axes to tune
-  // @Bitmask: 0:Steering,1:Speed,2:Velocity
+  // @Bitmask: 0:Steering,1:Speed
   // @User: Standard
 --]]
-local RTUN_AXES = bind_add_param('AXES', 2, 7)
+local RTUN_AXES = bind_add_param('AXES', 2, 3)
 
 --[[
-  // @Param: RTUN_DOUBLE_TIME
-  // @DisplayName: Rover Quicktune doubling time
-  // @Description: Time to double a tuning parameter. Raise this for a slower tune.
-  // @Range: 5 20
-  // @Units: s
+  // @Param: RTUN_STR_FFRATIO
+  // @DisplayName: Rover Quicktune Steering Rate FeedForward ratio
+  // @Description: Ratio between measured response and FF gain. Raise this to get a higher FF gain
+  // @Range: 0 1.0
   // @User: Standard
 --]]
-local RTUN_DOUBLE_TIME = bind_add_param('DOUBLE_TIME', 3, 10)
+local RTUN_STR_FFRATIO = bind_add_param('STR_FFRATIO', 3, 0.9)
 
 --[[
-  // @Param: RTUN_PD_GAINMARG
-  // @DisplayName: Rover Quicktune P and D gain margin
-  // @Description: Reduction in P and D gain after oscillation detected. Raise this number to get a more conservative tune
-  // @Range: 20 90
-  // @Units: %
+  // @Param: RTUN_STR_P_RATIO
+  // @DisplayName: Rover Quicktune Steering FF to P ratio
+  // @Description: Ratio between steering FF and P gains. Raise this to get a higher P gain, 0 to leave P unchanged
+  // @Range: 0 2.0
   // @User: Standard
 --]]
-local RTUN_PD_GAINMARG = bind_add_param('PD_GAINMARG', 4, 80)
+local RTUN_STR_P_RATIO = bind_add_param('STR_P_RATIO', 4, 0.5)
 
 --[[
-  // @Param: RTUN_OSC_SMAX
-  // @DisplayName: Rover Quicktune oscillation rate threshold
-  // @Description: Threshold for oscillation detection. A lower value will lead to a more conservative tune.
-  // @Range: 1 10
+  // @Param: RTUN_STR_I_RATIO
+  // @DisplayName: Rover Quicktune Steering FF to I ratio
+  // @Description: Ratio between steering FF and I gains. Raise this to get a higher I gain, 0 to leave I unchanged
+  // @Range: 0 2.0
   // @User: Standard
 --]]
-local RTUN_OSC_SMAX = bind_add_param('OSC_SMAX', 5, 1)
+local RTUN_STR_I_RATIO = bind_add_param('STR_I_RATIO', 5, 0.5)
 
 --[[
-  // @Param: RTUN_SPD_P_MAX
-  // @DisplayName: Rover Quicktune Speed P max
-  // @Description: Maximum value for speed P gain
-  // @Range: 0.1 10
+  // @Param: RTUN_SPD_FFRATIO
+  // @DisplayName: Rover Quicktune Speed FeedForward (equivalent) ratio
+  // @Description: Ratio between measured response and CRUISE_THROTTLE value. Raise this to get a higher CRUISE_THROTTLE value
+  // @Range: 0 1.0
   // @User: Standard
 --]]
-local RTUN_SPD_P_MAX = bind_add_param('SPD_P_MAX', 6, 5.0)
+local RTUN_SPD_FFRATIO = bind_add_param('SPD_FFRATIO', 6, 1.0)
 
 --[[
-  // @Param: RTUN_SPD_D_MAX
-  // @DisplayName: Rover Quicktune Speed D max
-  // @Description: Maximum value for speed D gain
-  // @Range: 0.001 1
+  // @Param: RTUN_SPD_P_RATIO
+  // @DisplayName: Rover Quicktune Speed FF to P ratio
+  // @Description: Ratio between speed FF and P gain. Raise this to get a higher P gain, 0 to leave P unchanged
+  // @Range: 0 2.0
   // @User: Standard
 --]]
-local RTUN_SPD_D_MAX = bind_add_param('SPD_D_MAX', 7, 0.5)
+local RTUN_SPD_P_RATIO = bind_add_param('SPD_P_RATIO', 7, 1.0)
 
 --[[
-  // @Param: RTUN_PI_RATIO
-  // @DisplayName: Rover Quicktune PI ratio
-  // @Description: Ratio between P and I gains. Raise this to get a lower I gain, 0 to disable
-  // @Range: 0.5 1.0
+  // @Param: RTUN_SPD_I_RATIO
+  // @DisplayName: Rover Quicktune Speed FF to I ratio
+  // @Description: Ratio between speed FF and I gain. Raise this to get a higher I gain, 0 to leave I unchanged
+  // @Range: 0 2.0
   // @User: Standard
 --]]
-local RTUN_PI_RATIO = bind_add_param('PI_RATIO', 8, 1.0)
+local RTUN_SPD_I_RATIO = bind_add_param('SPD_I_RATIO', 8, 1.0)
 
 --[[
   // @Param: RTUN_AUTO_FILTER
@@ -133,7 +129,7 @@ local RTUN_AUTO_FILTER = bind_add_param('AUTO_FILTER', 9, 1)
   // @Units: s
   // @User: Standard
 --]]
-local RTUN_AUTO_SAVE = bind_add_param('AUTO_SAVE', 10, 0)
+local RTUN_AUTO_SAVE = bind_add_param('AUTO_SAVE', 10, 5)
 
 --[[
   // @Param: RTUN_RC_FUNC
@@ -143,16 +139,6 @@ local RTUN_AUTO_SAVE = bind_add_param('AUTO_SAVE', 10, 0)
   // @User: Standard
 --]]
 local RTUN_RC_FUNC = bind_add_param('RC_FUNC', 11, 300)
-
---[[
-  // @Param: RTUN_FF_GAINMARG
-  // @DisplayName: Rover Quicktune Steering Rate FeedForward gain margin
-  // @Description: Reduction in Steering Turn Rate FF gain from measured outputs and response. Raise this number to get a more conservative tune
-  // @Range: 0 80
-  // @Units: %
-  // @User: Standard
---]]
-local RTUN_FF_GAINMARG = bind_add_param('FF_GAINMARG', 12, 10)
 
 -- other vehicle parameters used by this script
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
@@ -164,7 +150,7 @@ local RCIN_THROTTLE = rc:get_channel(RCMAP_THROTTLE:get())
 
 -- definitions
 local UPDATE_RATE_HZ = 40           -- this script updates at 40hz
-local STAGE_DELAY = 4.0             -- gains increased every 4 seconds
+local AXIS_CHANGE_DELAY = 4.0       -- delay of 4 seconds between axis to allow vehicle to settle
 local PILOT_INPUT_DELAY = 4.0       -- gains are not updated for 4 seconds after pilot releases sticks
 local FLTD_MUL = 0.5                -- ATC_STR_RAT_FLTD set to 0.5 * INS_GYRO_FILTER
 local FLTT_MUL = 0.5                -- ATC_STR_RAT_FLTT set to 0.5 * INS_GYRO_FILTER
@@ -179,19 +165,12 @@ function get_time()
 end
 
 -- local variables
-local axis_names = { "ATC_STR_RAT", "ATC_SPEED", "PSC_VEL" }            -- table of axis that may be tuned
+local axis_names = { "ATC_STR_RAT", "ATC_SPEED" }                       -- table of axis that may be tuned
 local param_suffixes = { "FF", "P", "I", "D", "FLTT", "FLTD", "FLTE" }  -- table of parameters that may be tuned
 local params_extra = {"CRUISE_SPEED", "CRUISE_THROTTLE"}                -- table of extra parameters that may be changed
-local params_skip = {"PSC_VEL_FLTT"}    -- parameters that should be skipped from saving/restoring (because they do not exist)
-local stages = { "D", "P", "FF" }       -- table of tuning stages
-local stage = stages[1]                 -- current tuning stage
-local last_stage_change = get_time()    -- time (in seconds) that stage last changed
-local last_gain_report = get_time()     -- time of last update to user on parameter gain actively being tuned
+local last_axis_change = get_time()     -- time (in seconds) that axis last changed
 local last_pilot_input = get_time()     -- time pilot last provided RC input
 local tune_done_time = nil              -- time that tuning completed (used for auto save feature)
-local slew_parm = nil                   -- parameter name being slewed towards a target.  params are sometimes slewed to reduce impact on controllers
-local slew_delta = 0                    -- gain change increment to be applied to parameter being actively tuned
-local slew_steps = 0                    -- max number of times to increment parameter being actively tuned
 local axes_done = {}                    -- list of axes that have been tuned
 local filters_done = {}                 -- table recording if filters have been set for each axis
 local gcs_pid_mask_done = {}            -- table recording if GCS_PID_MASK has been set for each axis
@@ -213,28 +192,15 @@ local param_saved = {}                  -- table holding backup of each paramete
 local param_changed = {}                -- table holding whether each param's gain has been saved
 local need_restore = false              -- true if any param's gain has been changed
 
--- check for an item within a table
--- returns true if found, false if not found
-function in_skip_table(pname)
-  for _, skip_item in ipairs(params_skip) do
-    if pname == skip_item then
-      return true
-    end
-  end
-  return false
-end
-
 -- initialise params, params_axis and param_changed tables
 function init_params_tables()
   -- add parameters to params dictionary
   for _, axis in ipairs(axis_names) do
     for _, suffix in ipairs(param_suffixes) do
       local pname = axis .. "_" .. suffix
-      if not in_skip_table(pname) then
-        params[pname] = bind_param(pname)
-        params_axis[pname] = axis
-        param_changed[pname] = false
-      end
+      params[pname] = bind_param(pname)
+      params_axis[pname] = axis
+      param_changed[pname] = false
     end
   end
 
@@ -254,7 +220,8 @@ function reset_axes_done()
     gcs_pid_mask_done[axis] = false
   end
   tune_done_time = nil
-  stage = stages[1]
+  init_steering_ff()
+  init_speed_ff()
 end
 
 -- get all current param values into param_saved dictionary
@@ -313,8 +280,6 @@ function setup_gcs_pid_mask(axis)
     GCS_PID_MASK:set(1)
   elseif axis == "ATC_SPEED" then
     GCS_PID_MASK:set(2)
-  elseif axis == "PSC_VEL" then
-    GCS_PID_MASK:set(64)
   else
     gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: setup_gcs_pid_mask received unhandled aixs %s", axis))
   end
@@ -352,93 +317,32 @@ function get_slew_rate(axis)
   if axis == "ATC_SPEED" then
     return speed_srate
   end
-  if axis == "PSC_VEL" then
-    local velocity_srate = AR_PosControl:get_srate()
-    return velocity_srate
-  end
   gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTUN: get_slew_rate unsupported axis:%s", axis))
   return 0.0
 end
 
--- move to next stage of tune
-function advance_stage(axis)
+-- move to next axis of tune
+function advance_axis(axis)
   local now_sec = get_time()
-  if stage == "D" then
-    stage = "P"
-  elseif stage == "P" then
-    stage = "FF"
-  else
-    local prev_axis = get_current_axis()
-    axes_done[axis] = true
-    gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: %s tuning done", axis))
-    stage = "D"
-    -- check for tune completion
-    if prev_axis ~= nil and get_current_axis() == nil then
-      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: Tuning DONE"))
-      tune_done_time = now_sec
-    end
+  local prev_axis = get_current_axis()
+  axes_done[axis] = true
+  -- check for tune completion
+  if prev_axis ~= nil and get_current_axis() == nil then
+    gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: Tuning DONE"))
+    tune_done_time = now_sec
   end
-  last_stage_change = now_sec
+  last_axis_change = now_sec
 end
 
--- change a gain
+-- change a gain, log and update user
 function adjust_gain(pname, value)
-  -- sanity check parameter shouldn't be skipped
-  if in_skip_table(pname) then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: attempted to update skipped param %s", pname))
-    return
-  end
   local P = params[pname]
+  local old_value = P:get()
   need_restore = true
   param_changed[pname] = true
   P:set(value)
-  if string.sub(pname, -2) == "_P" then
-    -- if we are updating a P value we may also update I
-    local ffname = string.gsub(pname, "_P", "_FF")
-    local FF = params[ffname]
-    if FF:get() > 0 then
-      -- if we have any FF on an axis then we don't couple I to P,
-      -- usually we want I = FF for a one sectond time constant for trim
-      return
-    end
-    -- if PI_RATIO is non-zero then update I
-    local PI_ratio = RTUN_PI_RATIO:get()
-    if PI_ratio > 0 then
-      local iname = string.gsub(pname, "_P", "_I")
-      local I = params[iname]
-      new_I_gain = value/PI_ratio
-      I:set(new_I_gain)
-      param_changed[iname] = true
-      write_log(iname)
-    end
-  end
-end
-
--- return gain multipler for one loop
-function get_gain_mul()
-  return math.exp(math.log(2.0)/(UPDATE_RATE_HZ*RTUN_DOUBLE_TIME:get()))
-end
-
--- setup parameter slewing.  slewing some changes over 2 seconds reduces shock to controllers
-function setup_slew_gain(pname, gain)
-  slew_parm = pname
-  slew_steps = UPDATE_RATE_HZ / 2
-  slew_delta = (gain - params[pname]:get()) / slew_steps
-end
-
--- update parameter slewing.  slewing some changes over 2 seconds reduces shock to controllers
-function update_slew_gain()
-  if slew_parm ~= nil then
-    local P = params[slew_parm]
-    adjust_gain(slew_parm, P:get()+slew_delta)
-    write_log(slew_parm)
-    slew_steps = slew_steps - 1
-    -- check if slewing is complete
-    if slew_steps == 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.3f", slew_parm, P:get()))
-      slew_parm = nil
-    end
-  end
+  write_log(pname)
+  gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.3f -> %.3f", pname, old_value, value))
 end
 
 -- log parameter, current gain and current slew rate
@@ -449,25 +353,6 @@ function write_log(pname)
   logger:write("RTUN","SRate,Gain,Param", "ffN", slew_rate, param_gain, pname)
 end
 
--- return gain limits on a parameter, or 0 for no limit
-function gain_limit(pname)
-  if pname == "ATC_SPEED_P" then
-    return RTUN_SPD_P_MAX:get()
-  elseif pname == "ATC_SPEED_D" then
-    return RTUN_SPD_D_MAX:get()
-  end
-  return 0.0
-end
-
--- check if parameter's gain has reached its limit
-function reached_limit(pname, gain)
-  local limit = gain_limit(pname)
-  if limit > 0.0 and gain >= limit then
-    return true
-  end
-  return false
-end
-
 -- initialise steering ff tuning
 function init_steering_ff()
   ff_steering_sum = 0
@@ -476,7 +361,9 @@ function init_steering_ff()
 end
 
 -- run steering turn rate controller feedforward calibration
-function update_steering_ff(pname)
+-- ff_pname is the FF parameter being tuned
+-- returns true once the tuning has completed
+function update_steering_ff(ff_pname)
   -- get steering, turn rate, throttle and speed
   local steering_out, _ = vehicle:get_steering_and_throttle()
   local turn_rate_rads = ahrs:get_gyro():z()
@@ -502,7 +389,7 @@ function update_steering_ff(pname)
     ff_turn_rate_sum = ff_turn_rate_sum + math.abs(turn_rate_rads)
     ff_turn_rate_count = ff_turn_rate_count + 1
     if (update_user) then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", pname, complete_pct))
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", ff_pname, complete_pct))
     end
   else
     if update_user then
@@ -516,28 +403,38 @@ function update_steering_ff(pname)
 
   -- check for completion of two rotations of turns data and 10 seconds
   if complete_pct >= 100 then
-    local old_gain = params[pname]:get()
-    local new_gain = (ff_steering_sum / ff_turn_rate_sum) * (1.0-(RTUN_FF_GAINMARG:get()*0.01))
-    adjust_gain(pname, new_gain)
-    write_log(pname)
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.3f -> %.3f", pname, old_gain, new_gain))
+    local FF_new_gain = (ff_steering_sum / ff_turn_rate_sum) * RTUN_STR_FFRATIO:get()
+    adjust_gain(ff_pname, FF_new_gain)
 
-    -- set I gain equal to FF
-    local iname = string.gsub(pname, "_FF", "_I")
-    local I = params[iname]
-    local I_old_gain = I:get()
-    I:set(new_gain)
-    param_changed[iname] = true
-    write_log(iname)
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.3f -> %.3f", iname, I_old_gain, new_gain))
+    -- set P gain
+    if RTUN_STR_P_RATIO:get() > 0 then
+      local pname = string.gsub(ff_pname, "_FF", "_P")
+      adjust_gain(pname, FF_new_gain * RTUN_STR_P_RATIO:get())
+    end
+
+    -- set I gain
+    if RTUN_STR_I_RATIO:get() > 0 then
+      local iname = string.gsub(ff_pname, "_FF", "_I")
+      adjust_gain(iname, FF_new_gain * RTUN_STR_I_RATIO:get())
+    end
+
     return true
   end
 
   return false
 end
 
+-- initialise speed ff tuning
+function init_speed_ff()
+  ff_throttle_sum = 0
+  ff_speed_sum = 0
+  ff_speed_count = 0
+end
+
 -- run speed controller feedforward calibration
-function update_speed_ff(pname)
+-- ff_pname is the FF parameter being tuned
+-- returns true once the tuning has completed
+function update_speed_ff(ff_pname)
   -- get steering, turn rate, throttle and speed
   local _, throttle_out = vehicle:get_steering_and_throttle()
   local velocity_ned = ahrs:get_velocity_NED()
@@ -564,13 +461,13 @@ function update_speed_ff(pname)
     ff_speed_sum = ff_speed_sum + speed
     ff_speed_count = ff_speed_count + 1
     if (update_user) then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", pname, complete_pct))
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", ff_pname, complete_pct))
     end
   else
     if update_user then
       if not throttle_ok then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase throttle (%d < %d)", math.floor(throttle_out * 100), math.floor(SPEED_FF_THROTTLE_MIN * 100)))
-      elseif not turnrate_ok then
+      elseif not speed_ok then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase speed (%3.1f < %3.1f)", speed, SPEED_FF_SPEED_MIN))
       end
     end
@@ -578,26 +475,28 @@ function update_speed_ff(pname)
 
   -- check for 10 seconds of data
   if complete_pct >= 100 then
-    local cruise_speed_old = params["CRUISE_SPEED"]:get()
     local cruise_speed_new = ff_speed_sum / ff_speed_count
-    local cruise_throttle_old = params["CRUISE_THROTTLE"]:get()
-    local cruise_throttle_new = (ff_throttle_sum / ff_speed_count) * 100
+    local cruise_throttle_new = (ff_throttle_sum / ff_speed_count) * 100 * RTUN_SPD_FFRATIO:get()
     adjust_gain("CRUISE_SPEED", cruise_speed_new)
     adjust_gain("CRUISE_THROTTLE", cruise_throttle_new)
-    write_log("CRUISE_SPEED")
-    write_log("CRUISE_THROTTLE")
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.2f -> %.2f", "CRUISE_SPEED", cruise_speed_old, cruise_speed_new))
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.1f -> %.1f", "CRUISE_THROTTLE", cruise_throttle_old, cruise_throttle_new))
 
-    -- set I gain equal to FF
-    local iname = string.gsub(pname, "_FF", "_I")
-    local I = params[iname]
-    local I_old_gain = I:get()
-    local I_new_gain =  ff_throttle_sum / ff_speed_sum    
-    I:set(I_new_gain)
-    param_changed[iname] = true
-    write_log(iname)
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusted %s %.3f -> %.3f", iname, I_old_gain, I_new_gain))
+    -- calculate FF equivalent gain (used for setting P and I below)
+    local speed_ff_equivalent = (ff_throttle_sum / ff_speed_sum) * RTUN_SPD_FFRATIO:get();
+
+    -- set P gain
+    if RTUN_SPD_P_RATIO:get() > 0 then
+      local pname = string.gsub(ff_pname, "_FF", "_P")
+      local P_new_gain = speed_ff_equivalent * RTUN_SPD_P_RATIO:get()
+      adjust_gain(pname, P_new_gain)
+    end
+
+    -- set I gain
+    if RTUN_SPD_I_RATIO:get() > 0 then
+      local iname = string.gsub(ff_pname, "_FF", "_I")
+      local I_new_gain = speed_ff_equivalent * RTUN_SPD_I_RATIO:get()
+      adjust_gain(iname, I_new_gain)
+    end
+
     return true
   end
 
@@ -663,11 +562,8 @@ function update()
     return
   end
 
-  -- update param gains for params being slewed towards a target
-  update_slew_gain()
-
   -- return if we have just changed stages to give time for oscillations to subside
-  if get_time() - last_stage_change < STAGE_DELAY then
+  if get_time() - last_axis_change < AXIS_CHANGE_DELAY then
     return
   end
 
@@ -710,70 +606,21 @@ function update()
   end
 
   -- get parameter currently being tuned
-  local srate = get_slew_rate(axis)
-  local pname = axis .. "_" .. stage
-  local param = params[pname]
+  local pname = axis .. "_FF"
 
-  if stage == "FF" then
-    -- feedforward tuning
-    local ff_done
-    if axis == "ATC_STR_RAT" then
-      ff_done = update_steering_ff(pname)
-    elseif axis == "ATC_SPEED" then
-      ff_done = update_speed_ff(pname)
-    elseif axis == "PSC_VEL" then
-      -- position controller feed-forward is not tuned
-      ff_done = true
-    else
-      gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: unsupported FF tuning %s", pname))
-      ff_done = true
-    end
-    if ff_done then
-      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: %s tuning done", pname))
-      advance_stage(axis)
-    end
+  -- feedforward tuning
+  local ff_done
+  if axis == "ATC_STR_RAT" then
+    ff_done = update_steering_ff(pname)
+  elseif axis == "ATC_SPEED" then
+    ff_done = update_speed_ff(pname)
   else
-    local oscillating = srate > RTUN_OSC_SMAX:get()
-    local limited = reached_limit(pname, param:get())
-    if limited or oscillating then
-      local reduction = (100.0-RTUN_PD_GAINMARG:get())*0.01
-      if not oscillating then
-        reduction = 1.0
-      end
-      local new_gain = param:get() * reduction
-      local limit = gain_limit(pname)
-      if limit > 0.0 and new_gain > limit then
-        gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: %s passed limit (>%.3f)", pname, limit))
-        new_gain = limit
-      end
-      local old_gain = param_saved[pname]
-      if new_gain < old_gain and string.sub(pname,-2) == '_D' then
-        -- we are lowering a D gain from the original gain. Also lower the P gain by the same amount
-        -- so that we don't trigger P oscillation. We don't drop P by more than a factor of 2
-        local ratio = math.max(new_gain / old_gain, 0.5)
-        local P_name = string.gsub(pname, "_D", "_P")
-        local old_P = params[P_name]:get()
-        local new_P = old_P * ratio
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: adjusting %s %.3f -> %.3f", P_name, old_P, new_P))
-        adjust_gain(P_name, new_P)
-        write_log(P_name)
-      end
-      -- slew gain change over 2 seconds to ease impact on controller
-      setup_slew_gain(pname, new_gain)
-      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: %s tuning done %.3f", pname, new_gain))
-      advance_stage(axis)
-    else
-      local new_gain = param:get()*get_gain_mul()
-      if new_gain <= 0.0001 then
-        new_gain = 0.001
-      end
-      adjust_gain(pname, new_gain)
-      write_log(pname)
-      if get_time() - last_gain_report > 3 then
-        last_gain_report = get_time()
-        gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.3f sr:%.2f", pname, new_gain, srate))
-      end
-    end
+    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: unsupported FF tuning %s", pname))
+    ff_done = true
+  end
+  if ff_done then
+    gcs:send_text(MAV_SEVERITY.NOTICE, string.format("RTun: %s tuning done", pname))
+    advance_axis(axis)
   end
 end
 

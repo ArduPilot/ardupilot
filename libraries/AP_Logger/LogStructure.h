@@ -143,6 +143,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_RPM/LogStructure.h>
 #include <AC_Fence/LogStructure.h>
 #include <AP_Landing/LogStructure.h>
+#include <AC_AttitudeControl/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -607,20 +608,6 @@ struct PACKED log_Winch {
     int8_t temp;
 };
 
-// position controller per-axis logging
-struct PACKED log_PSCx {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float pos_target;
-    float pos;
-    float vel_desired;
-    float vel_target;
-    float vel;
-    float accel_desired;
-    float accel_target;
-    float accel;
-};
-
 // thread stack usage
 struct PACKED log_STAK {
     LOG_PACKET_HEADER;
@@ -684,10 +671,6 @@ struct PACKED log_VER {
 #define PID_FMT    "QffffffffffB"
 #define PID_UNITS  "s-----------"
 #define PID_MULTS  "F-----------"
-
-#define PIDx_FMT "Qffffffff"
-#define PIDx_UNITS "smmnnnooo"
-#define PIDx_MULTS "F00000000"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependent Serveillance - Broadcast detected vehicle information
@@ -817,7 +800,8 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: LandingGear: Current landing gear state
 // @FieldValueEnum: LandingGear: AP_LandingGear::LG_LandingGear_State
-// @Field: WeightOnWheels: True if there is weight on wheels
+// @Field: WeightOnWheels: Weight on wheels state
+// @FieldValueEnum: WeightOnWheels: AP_LandingGear::LG_WOW_State
 
 // @LoggerMessage: MAG
 // @Description: Information received from compasses
@@ -891,8 +875,8 @@ struct PACKED log_VER {
 // @Field: Qual: Estimated sensor data quality
 // @Field: flowX: Sensor flow rate, X-axis
 // @Field: flowY: Sensor flow rate,Y-axis
-// @Field: bodyX: derived velocity, X-axis
-// @Field: bodyY: derived velocity, Y-axis
+// @Field: bodyX: derived rotational velocity, X-axis
+// @Field: bodyY: derived rotational velocity, Y-axis
 
 // @LoggerMessage: PARM
 // @Description: parameter value
@@ -901,8 +885,20 @@ struct PACKED log_VER {
 // @Field: Value: parameter value
 // @Field: Default: default parameter value for this board and config
 
-// @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS,PIDN,PIDE
-// @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Altitude/Steering
+// @LoggerMessage: PIDR
+// @Description: Proportional/Integral/Derivative gain values for Roll rate
+// @LoggerMessage: PIDP
+// @Description: Proportional/Integral/Derivative gain values for Pitch rate
+// @LoggerMessage: PIDY
+// @Description: Proportional/Integral/Derivative gain values for Yaw rate
+// @LoggerMessage: PIDA
+// @Description: Proportional/Integral/Derivative gain values for vertical acceleration
+// @LoggerMessage: PIDS
+// @Description: Proportional/Integral/Derivative gain values for ground steering yaw rate
+// @LoggerMessage: PIDN
+// @Description: Proportional/Integral/Derivative gain values for North/South velocity
+// @LoggerMessage: PIDE
+// @Description: Proportional/Integral/Derivative gain values for East/West velocity
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
@@ -941,7 +937,9 @@ struct PACKED log_VER {
 // @Field: Vcc: Flight board voltage
 // @Field: VServo: Servo rail voltage
 // @Field: Flags: System power flags
+// @FieldBitmaskEnum: Flags: AP_HAL::AnalogIn::PowerStatusFlag
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
+// @FieldBitmaskEnum: AccFlags: AP_HAL::AnalogIn::PowerStatusFlag
 // @Field: Safety: Hardware Safety Switch status
 
 // @LoggerMessage: MCU
@@ -1135,42 +1133,6 @@ struct PACKED log_VER {
 // @Field: Vcc: Voltage to Motor
 // @Field: Temp: Motor temperature
 
-// @LoggerMessage: PSCN
-// @Description: Position Control North
-// @Field: TimeUS: Time since system startup
-// @Field: TPN: Target position relative to EKF origin
-// @Field: PN: Position relative to EKF origin
-// @Field: DVN: Desired velocity North
-// @Field: TVN: Target velocity North
-// @Field: VN: Velocity North
-// @Field: DAN: Desired acceleration North
-// @Field: TAN: Target acceleration North
-// @Field: AN: Acceleration North
-
-// @LoggerMessage: PSCE
-// @Description: Position Control East
-// @Field: TimeUS: Time since system startup
-// @Field: TPE: Target position relative to EKF origin
-// @Field: PE: Position relative to EKF origin
-// @Field: DVE: Desired velocity East
-// @Field: TVE: Target velocity East
-// @Field: VE: Velocity East
-// @Field: DAE: Desired acceleration East
-// @Field: TAE: Target acceleration East
-// @Field: AE: Acceleration East
-
-// @LoggerMessage: PSCD
-// @Description: Position Control Down
-// @Field: TimeUS: Time since system startup
-// @Field: TPD: Target position relative to EKF origin
-// @Field: PD: Position relative to EKF origin
-// @Field: DVD: Desired velocity Down
-// @Field: TVD: Target velocity Down
-// @Field: VD: Velocity Down
-// @Field: DAD: Desired acceleration Down
-// @Field: TAD: Target acceleration Down
-// @Field: AD: Acceleration Down
-
 // @LoggerMessage: STAK
 // @Description: Stack information
 // @Field: TimeUS: Time since system startup
@@ -1180,6 +1142,13 @@ struct PACKED log_VER {
 // @Field: Free: free stack
 // @Field: Name: thread name
 
+// @LoggerMessage: FILE
+// @Description: File data
+// @Field: FileName: File name
+// @Field: Offset: Offset into the file of this block
+// @Field: Length: Length of this data block
+// @Field: Data: File data of this block
+
 // @LoggerMessage: SCR
 // @Description: Scripting runtime stats
 // @Field: TimeUS: Time since system startup
@@ -1187,6 +1156,20 @@ struct PACKED log_VER {
 // @Field: Runtime: run time
 // @Field: Total_mem: total memory usage of all scripts
 // @Field: Run_mem: run memory usage
+
+// @LoggerMessage: VER
+// @Description: Ardupilot version
+// @Field: TimeUS: Time since system startup
+// @Field: BT: Board type
+// @Field: BST: Board subtype
+// @Field: Maj: Major version number
+// @Field: Min: Minor version number
+// @Field: Pat: Patch number
+// @Field: FWT: Firmware type
+// @Field: GH: Github commit
+// @Field: FWS: Firmware version string
+// @Field: APJ: Board ID
+// @Field: BU: Build vehicle type
 
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
@@ -1224,7 +1207,7 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_RCOUT3_MSG, sizeof(log_RCOUT), \
       "RCO3",  "QHHHHHHHHHHHHHH",     "TimeUS,C19,C20,C21,C22,C23,C24,C25,C26,C27,C28,C29,C30,C31,C32", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
-      "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--", true  }, \
+      "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s-%", "F--", true  }, \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
@@ -1257,7 +1240,7 @@ LOG_STRUCTURE_FROM_MOUNT \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
 LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
-      "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????", true }, \
+      "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU----", "FBBB0GG0000", true }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
@@ -1308,12 +1291,7 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
-    { LOG_PSCN_MSG, sizeof(log_PSCx), \
-      "PSCN", PIDx_FMT, "TimeUS,TPN,PN,DVN,TVN,VN,DAN,TAN,AN", PIDx_UNITS, PIDx_MULTS }, \
-    { LOG_PSCE_MSG, sizeof(log_PSCx), \
-      "PSCE", PIDx_FMT, "TimeUS,TPE,PE,DVE,TVE,VE,DAE,TAE,AE", PIDx_UNITS, PIDx_MULTS }, \
-    { LOG_PSCD_MSG, sizeof(log_PSCx), \
-      "PSCD", PIDx_FMT, "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", PIDx_UNITS, PIDx_MULTS }, \
+    LOG_STRUCTURE_FROM_AC_ATTITUDECONTROL,                              \
     { LOG_STAK_MSG, sizeof(log_STAK), \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
     { LOG_FILE_MSG, sizeof(log_File), \
@@ -1398,9 +1376,7 @@ enum LogMessages : uint8_t {
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
     LOG_WINCH_MSG,
-    LOG_PSCN_MSG,
-    LOG_PSCE_MSG,
-    LOG_PSCD_MSG,
+    LOG_IDS_FROM_AC_ATTITUDECONTROL,
     LOG_IDS_FROM_PRECLAND,
     LOG_IDS_FROM_AIS,
     LOG_STAK_MSG,

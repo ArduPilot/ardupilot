@@ -26,7 +26,7 @@
 #include "Device.h"
 
 #ifndef HAL_SPI_SCK_SAVE_RESTORE
-#define HAL_SPI_SCK_SAVE_RESTORE TRUE
+#define HAL_SPI_SCK_SAVE_RESTORE !defined(STM32F1)
 #endif
 
 namespace ChibiOS {

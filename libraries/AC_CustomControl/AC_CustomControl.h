@@ -3,14 +3,15 @@
 /// @file    AC_CustomControl.h
 /// @brief   ArduCopter custom control library
 
+#include "AC_CustomControl_config.h"
+
+#if AP_CUSTOMCONTROL_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_AHRS/AP_AHRS_View.h>
-#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AP_Motors/AP_MotorsMulticopter.h>
-#include <AP_Logger/AP_Logger.h>
-
-#if AP_CUSTOMCONTROL_ENABLED
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
 #define CUSTOMCONTROL_MAX_TYPES 2
@@ -20,7 +21,7 @@ class AC_CustomControl_Backend;
 
 class AC_CustomControl {
 public:
-    AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& _att_control, AP_MotorsMulticopter*& motors, float dt);
+    AC_CustomControl(AP_AHRS_View*& ahrs, AC_AttitudeControl*& _att_control, AP_MotorsMulticopter*& motors, float dt);
 
     CLASS_NO_COPY(AC_CustomControl);  /* Do not allow copies */
 
@@ -62,7 +63,7 @@ protected:
 
     // References to external libraries
     AP_AHRS_View*& _ahrs;
-    AC_AttitudeControl_Multi*& _att_control;
+    AC_AttitudeControl*& _att_control;
     AP_MotorsMulticopter*& _motors;
 
     AP_Enum<CustomControlType> _controller_type;
@@ -72,4 +73,4 @@ private:
     AC_CustomControl_Backend *_backend;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_ENABLED

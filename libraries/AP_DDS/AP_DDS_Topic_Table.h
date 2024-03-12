@@ -3,6 +3,7 @@
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
 #include "geographic_msgs/msg/GeoPoseStamped.h"
+#include "sensor_msgs/msg/Imu.h"
 
 #include "uxr/client/client.h"
 
@@ -15,6 +16,7 @@ enum class TopicIndex: uint8_t {
     NAV_SAT_FIX_PUB,
     STATIC_TRANSFORMS_PUB,
     BATTERY_STATE_PUB,
+    IMU_PUB,
     LOCAL_POSE_PUB,
     LOCAL_VELOCITY_PUB,
     GEOPOSE_PUB,
@@ -22,6 +24,7 @@ enum class TopicIndex: uint8_t {
     JOY_SUB,
     DYNAMIC_TRANSFORMS_SUB,
     VELOCITY_CONTROL_SUB,
+    GLOBAL_POSITION_SUB,
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -70,6 +73,16 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAREADER_ID},
         .topic_profile_label = "batterystate0__t",
         .dw_profile_label = "batterystate0__dw",
+        .dr_profile_label = "",
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::IMU_PUB),
+        .pub_id = to_underlying(TopicIndex::IMU_PUB),
+        .sub_id = to_underlying(TopicIndex::IMU_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::IMU_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::IMU_PUB), .type=UXR_DATAREADER_ID},
+        .topic_profile_label = "imu__t",
+        .dw_profile_label = "imu__dw",
         .dr_profile_label = "",
     },
     {
@@ -141,5 +154,15 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "velocitycontrol__t",
         .dw_profile_label = "",
         .dr_profile_label = "velocitycontrol__dr",
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::GLOBAL_POSITION_SUB),
+        .pub_id = to_underlying(TopicIndex::GLOBAL_POSITION_SUB),
+        .sub_id = to_underlying(TopicIndex::GLOBAL_POSITION_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GLOBAL_POSITION_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GLOBAL_POSITION_SUB), .type=UXR_DATAREADER_ID},
+        .topic_profile_label = "globalposcontrol__t",
+        .dw_profile_label = "",
+        .dr_profile_label = "globalposcontrol__dr",
     },
 };

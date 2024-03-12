@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -711,6 +712,7 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
+#if HAL_LOGGING_ENABLED
 // write mount log packet for all backends
 void AP_Mount::write_log()
 {
@@ -730,6 +732,7 @@ void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
     }
     backend->write_log(timestamp_us);
 }
+#endif
 
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)

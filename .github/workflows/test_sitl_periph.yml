@@ -185,14 +185,15 @@ jobs:
       - name: run dronecan dsdlc generator test
         run: |
           PATH="/github/home/.local/bin:$PATH"
+          python -m pip install --upgrade dronecan
           python modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py -O dsdlc_generated modules/DroneCAN/DSDL/uavcan modules/DroneCAN/DSDL/dronecan modules/DroneCAN/DSDL/com --run-test
 
-      - name: build sitl_periph_gps
+      - name: build sitl_periph_universal
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl_periph_gps
+          ./waf configure --board sitl_periph_universal --debug
           ./waf build --target bin/AP_Periph
           ccache -s
           ccache -z

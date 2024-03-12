@@ -5,6 +5,7 @@
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_EFI/AP_EFI_config.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 
 MAV_TYPE GCS_Rover::frame_type() const
 {
@@ -380,6 +381,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.g2.windvane.send_wind(chan);
         break;
 
+#if AP_OADATABASE_ENABLED
     case MSG_ADSB_VEHICLE: {
         AP_OADatabase *oadb = AP::oadatabase();
         if (oadb != nullptr) {
@@ -391,6 +393,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         }
         break;
     }
+#endif
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -568,7 +571,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_WIND,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_BATTERY_ENABLED
@@ -777,7 +782,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
-void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Rover::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -793,13 +798,8 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
         handle_set_position_target_global_int(msg);
         break;
 
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS:
-        handle_radio(msg);
-        break;
-
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     }
 }
@@ -1061,11 +1061,6 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         // consume just turn rate(probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }
-}
-
-void GCS_MAVLINK_Rover::handle_radio(const mavlink_message_t &msg)
-{
-    handle_radio_status(msg, rover.should_log(MASK_LOG_PM));
 }
 
 /*

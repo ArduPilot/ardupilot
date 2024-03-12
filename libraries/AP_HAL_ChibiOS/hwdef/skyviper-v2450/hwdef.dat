@@ -32,6 +32,9 @@ SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
 define HAL_RCINPUT_WITH_AP_RADIO 1
+define AP_RADIO_BACKEND_DEFAULT_ENABLED 0
+define AP_RADIO_CC2500_ENABLED 1
+define AP_RADIO_CYRF6936_ENABLED 1
 
 define HAL_GPIO_RADIO_RESET      1 // PB0 GPIO from FMU3
 
@@ -60,8 +63,6 @@ PA1 UART4_RX UART4 NODMA
 
 # use flash storage
 STORAGE_FLASH_PAGE 22
-
-env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
 
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True

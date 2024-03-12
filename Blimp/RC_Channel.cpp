@@ -58,7 +58,7 @@ RC_Channel * RC_Channels_Blimp::get_arming_channel(void) const
 }
 
 // init_aux_switch_function - initialize aux functions
-void RC_Channel_Blimp::init_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+void RC_Channel_Blimp::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     // init channel options
     switch (ch_option) {
@@ -99,7 +99,7 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
 
@@ -132,7 +132,7 @@ void Blimp::save_trim()
     float roll_trim = ToRad((float)channel_right->get_control_in()/100.0f);
     float pitch_trim = ToRad((float)channel_front->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
-    AP::logger().Write_Event(LogEvent::SAVE_TRIM);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 

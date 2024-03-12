@@ -45,7 +45,7 @@ struct PACKED log_DSTL {
 
 #define LOG_STRUCTURE_FROM_LANDING        \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
-        "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" , true },
+        "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s-hDUm--------", "F-0000--------" , true },
 #else
 #define LOG_STRUCTURE_FROM_LANDING
 #endif

@@ -28,7 +28,7 @@ class DecodeICSR(object):
             ("25", "PENDSTCLR", self.decoder_m4_pendstclr),
             ("26", "PENDSTSET", self.decoder_m4_pendstset),
             ("27", "PENDSVCLR", self.decoder_m4_pendsvclr),
-            ("28", "PENDSVSET", self.decoder_m4_pendstset),
+            ("28", "PENDSVSET", self.decoder_m4_pendsvset),
             ("29-30", "RESERVED4", None),
             ("31", "NMIPENDSET", self.decoder_m4_nmipendset),
         ]

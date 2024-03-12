@@ -24,14 +24,16 @@ public:
     static const char *dir_list(const char *dirname, uint16_t &ofs);
 
 private:
-    // find an embedded file
-    static const uint8_t *find_file(const char *name, uint32_t &size, uint32_t &crc);
-
     struct embedded_file {
         const char *filename;
-        uint32_t size;
+        uint32_t compressed_size;
+        uint32_t decompressed_size;
         uint32_t crc;
         const uint8_t *contents;
     };
+
+    // find an embedded file
+    static const AP_ROMFS::embedded_file *find_file(const char *name);
+
     static const struct embedded_file files[];
 };
