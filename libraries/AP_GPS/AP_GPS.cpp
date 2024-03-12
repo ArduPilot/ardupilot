@@ -320,6 +320,8 @@ void AP_GPS::init()
     // set the default for the first GPS according to define:
     params[0].type.set_default(HAL_GPS_TYPE_DEFAULT);
 
+    convert_parameters();
+
     // Set new primary param based on old auto_switch use second option
     if ((_auto_switch.get() == 3) && !_primary.configured()) {
         _primary.set_and_save(1);
@@ -349,6 +351,52 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
+}
+
+void AP_GPS::convert_parameters()
+{
+    // find GPS's top level key
+    uint16_t k_param_gps_key;
+    if (!AP_Param::find_top_level_key_by_pointer(this, k_param_gps_key)) {
+        return;
+    }
+
+    // table parameters to convert without scaling
+    static const AP_Param::ConversionInfo conversion_info[] {
+        // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+        { k_param_gps_key, 0, AP_PARAM_INT8, "GPS_TYPE" },
+        { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
+        { k_param_gps_key, 10, AP_PARAM_INT8, "GPS_GNSS_MODE" },
+        { k_param_gps_key, 12, AP_PARAM_INT8, "GPS2_GNSS_MODE" },
+        { k_param_gps_key, 14, AP_PARAM_INT16, "GPS_RATE_MS" },
+        { k_param_gps_key, 15, AP_PARAM_INT16, "GPS2_RATE_MS" },
+        { k_param_gps_key, 16, AP_PARAM_VECTOR3F, "GPS_POS" },
+        { k_param_gps_key, 17, AP_PARAM_VECTOR3F, "GPS2_POS" },
+        { k_param_gps_key, 18, AP_PARAM_INT16, "GPS_DELAY_MS" },
+        { k_param_gps_key, 19, AP_PARAM_INT16, "GPS2_DELAY_MS" },
+#if AP_GPS_SBF_ENABLED
+        { k_param_gps_key, 23, AP_PARAM_INT8, "GPS_COM_PORT" },
+        { k_param_gps_key, 24, AP_PARAM_INT8, "GPS2_COM_PORT" },
+#endif
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+        { k_param_gps_key, 28, AP_PARAM_INT32, "GPS_CAN_NODEID" },
+        { k_param_gps_key, 29, AP_PARAM_INT32, "GPS2_CAN_NODEID" },
+        { k_param_gps_key, 30, AP_PARAM_INT32, "GPS_CAN_OVRIDE" },
+        { k_param_gps_key, 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
+#endif
+    };
+    AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
+
+#if GPS_MOVING_BASELINE
+    // convert old MovingBaseline parameters
+    // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+    for (uint8_t i=0; i<MIN(2, GPS_MAX_RECEIVERS); i++) {
+        // the old _MB parameters were 25 and 26:
+        const uint8_t old_index = 25 + i;
+        AP_Param::convert_class(k_param_gps_key, &params[i].mb_params, params[i].mb_params.var_info, old_index, false);
+    }
+#endif  // GPS_MOVING_BASELINE
 }
 
 // return number of active GPS sensors. Note that if the first GPS
