@@ -2681,7 +2681,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "CAN_P1_DRIVER": 1,
             "GPS_TYPE": 9,
-            "GPS_TYPE2": 9,
+            "GPS2_TYPE": 9,
             # disable simulated GPS, so only via DroneCAN
             "SIM_GPS_DISABLE": 1,
             "SIM_GPS2_DISABLE": 1,
@@ -2729,7 +2729,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         for case in GPS_Order_Tests:
             self.progress("############################### Trying Case: " + str(case))
             self.set_parameters({
-                "GPS1_CAN_OVRIDE": case[0],
+                "GPS_CAN_OVRIDE": case[0],
                 "GPS2_CAN_OVRIDE": case[1],
             })
             self.drain_mav()
@@ -2860,7 +2860,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "EK3_SRC1_POSZ": 3,
             "EK3_AFFINITY" : 1,
-            "GPS_TYPE2" : 1,
+            "GPS2_TYPE" : 1,
             "SIM_GPS2_DISABLE" : 0,
             "SIM_GPS2_GLTCH_Z" : -30
             })
@@ -8640,13 +8640,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK2_ENABLE": 1,
             "AHRS_TRIM_X": 0.01,
             "AHRS_TRIM_Y": -0.03,
-            "GPS_TYPE2": 1,
-            "GPS_POS1_X": 0.1,
-            "GPS_POS1_Y": 0.2,
-            "GPS_POS1_Z": 0.3,
-            "GPS_POS2_X": -0.1,
-            "GPS_POS2_Y": -0.02,
-            "GPS_POS2_Z": -0.31,
+            "GPS2_TYPE": 1,
+            "GPS_POS_X": 0.1,
+            "GPS_POS_Y": 0.2,
+            "GPS_POS_Z": 0.3,
+            "GPS2_POS_X": -0.1,
+            "GPS2_POS_Y": -0.02,
+            "GPS2_POS_Z": -0.31,
             "INS_POS1_X": 0.12,
             "INS_POS1_Y": 0.14,
             "INS_POS1_Z": -0.02,
@@ -8717,7 +8717,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         try:
             # configure:
             self.set_parameters({
-                "GPS_TYPE2": 1,
+                "GPS2_TYPE": 1,
                 "SIM_GPS2_TYPE": 1,
                 "SIM_GPS2_DISABLE": 0,
                 "GPS_AUTO_SWITCH": 2,
